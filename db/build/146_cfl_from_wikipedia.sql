@@ -48,7 +48,7 @@ insert into amap values
   ('toronto argonauts', 1946, 9999, '165', null),
   ('winnipeg blue bombers', 1946, 9999, '166', null),
   ('edmonton eskimos', 1946, 9999, '167', null), ('edmonton football team', 2020, 2021, '167', null), ('edmonton elks', 2021, 9999, '167', null),
-  ('saskatchewan roughriders', 1946, 9999, '168', null),
+  ('saskatchewan roughriders', 1946, 9999, '168', null), ('saskatchewan rough riders', 1946, 9999, '168', null),
   ('calgary stampeders', 1946, 9999, '169', null),
   ('bc lions', 1953, 9999, '170', null), ('british columbia lions', 1953, 9999, '170', null),
   ('baltimore cfl colts', 1994, 1994, null, 'BAL'), ('baltimore football club', 1994, 1994, null, 'BAL'), ('baltimore cflers', 1994, 1994, null, 'BAL'), ('baltimore stallions', 1994, 1995, null, 'BAL'),
@@ -257,6 +257,12 @@ select (select source_id from src), 'game', g.source_key, 'CFL: SPX game not fou
 from spx_g s join core.game g using (game_id)
 where s.game_id not in (select game_id from matched) and s.status = 'final' and s.start_year in (select distinct season from wg);
 
+-- A game only one club's page lists is not added: nothing corroborates its date or score.
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from src), 'game', 'wpcfl:' || n.season || ':' || n.phase || ':' || n.game_date || ':' || n.home_team || ':' || n.away_team || ':' || n.game_seq,
+       'CFL: only one club''s Wikipedia page lists this game (' || n.src || ')', 'Not added; needs a second source'
+from ng n where n.wid not in (select key from matched) and n.views < 2 and n.phase = 'regular' and n.home_pts is not null;
+
 insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
                        home_score, away_score, went_to_overtime, source_id, source_key)
 select s.season_id, n.phase::core.season_phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
@@ -265,7 +271,7 @@ select s.season_id, n.phase::core.season_phase, n.game_date, hts.team_season_id,
 from ng n join core.season s on s.league_code = 'cfl' and s.start_year = n.season
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
-where n.wid not in (select key from matched) and n.home_pts is not null and n.away_pts is not null;
+where n.wid not in (select key from matched) and (n.views >= 2 or n.phase = 'playoffs') and n.home_pts is not null and n.away_pts is not null;
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', g.game_id, g.source_id, substr(g.source_key, 1) from core.game g

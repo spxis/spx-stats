@@ -138,7 +138,7 @@ def team_games(text, year, team, season_teams):
                 out.append(dict(season=year, team=team, week=wk, game_date=d, opponent=opp, location=where, result=res, team_pts=mine,
                                 opp_pts=theirs, overtime=bool(re.search(r"\bOT\b|overtime", " ".join(cl[vh + 2:vh + 3]), re.I)), src=" | ".join(cl)))
                 continue
-            oi = next((i for i in range(di + 1, len(cl)) if re.match(r"^(?:at|vs\.?|v\.?|@)\s", cl[i], re.I) or first_link_title(cells[i]) or (cl[i] and not SCORE_RE.search(cl[i]) and not re.match(r"^\d+\s*[–-]\s*\d+", cl[i]))), None)
+            oi = next((i for i in range(di + 1, len(cl)) if re.match(r"^(?:at|vs\.?|v\.?|@)\s", cl[i], re.I) or first_link_title(cells[i]) or (cl[i] and not SCORE_RE.search(cl[i]) and not re.match(r"^\d+\s*[–-]\s*\d+", cl[i]) and not re.match(r"^(?:\d{1,2}(?::\d{2})?\s*[ap]\.?m|TBA|TBD)", cl[i], re.I))), None)
             if oi is None: continue
             raw_opp = cells[oi]
             where = "away" if re.match(r"^(?:at|@)\s", clean(raw_opp), re.I) or clean(raw_opp).startswith("@") else ("home" if re.match(r"^(?:vs\.?|v\.?)\s", clean(raw_opp), re.I) else None)
@@ -289,7 +289,7 @@ def season_info(text):
 
 def brackets(text, year):
     """Playoff games from the {{NTeamBracket}} template."""
-    m = re.search(r"\{\{\s*(\d*Team\w*Bracket\w*)\s*\n(.*?)\n\}\}", text, re.S)
+    m = re.search(r"\{\{\s*(\d*Team\w*Bracket\w*)[^\n]*\n(.*?)\n\}\}", text, re.S)
     if not m: return [], None
     body = m.group(2)
     kv = dict((a.strip(), b.strip()) for a, b in re.findall(r"^\|\s*([\w\-]+)\s*=\s*(.*)$", body, re.M))

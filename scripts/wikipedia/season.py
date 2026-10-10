@@ -15,8 +15,8 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import fetch as F, parse as P
 
-CACHE = "raw/wikipedia/2026-10-10"
-BUNDLE = "raw/cfl-bundle"
+CACHE = "/home/user/spxwork/cfl/raw/wikipedia/2026-10-10"
+BUNDLE = "/home/user/spxwork/cfl/bundle"
 PSQL = ["psql", "-h", "/tmp", "-p", "55432", "-U", "postgres", "-d", "spx_stats"]
 FETCHED_ON = "2026-10-10"
 
@@ -32,7 +32,7 @@ def season_files(year):
     tpl = sorted(set(re.findall(r"\{\{\s*(\d{4} CFL [^{}|]*?[Ss]tandings)\s*\}\}", stext)))
     ttext = ""
     for t in tpl: ttext += F.save(CACHE, "template", "Template:" + t) or ""
-    titles = {m.strip() for m in re.findall(r"\[\[(%d [^\]|]+? season)" % year, stext + ttext) if "CFL season" not in m}
+    titles = {m.strip() for m in re.findall(r"\[\[(%d [^\]|]+? season)" % year, stext + ttext) if "CFL season" not in m and not re.search(r"NFL|NBA|MLB|NHL|MLS|Olympic|FIFA|Pan Am|NCAA|college|CIS|U Sports", m)}
     for t in sorted(titles): F.save(CACHE, "team", t)
     return stext, tpl, sorted(titles)
 
@@ -106,7 +106,7 @@ def cmd_load(year):
     tpl = sorted(set(re.findall(r"\{\{\s*(\d{4} CFL [^{}|]*?[Ss]tandings)\s*\}\}", stext)))
     ttext = "\n".join(F.read(CACHE, "template", "Template:" + t) for t in tpl)
     team_pages = sorted(re.sub(r"\.wikitext$", "", os.path.basename(f)).replace("_", " ") for f in glob.glob(f"{CACHE}/team/{year}_*.wikitext"))
-    team_pages = [t for t in team_pages if not F.read(CACHE, "team", t).startswith("#MISSING")]
+    team_pages = [t for t in team_pages if not re.search(r"NFL|NBA|MLB|NHL|MLS|Olympic|FIFA|Pan Am|NCAA", t) and not F.read(CACHE, "team", t).startswith("#MISSING")]
     # a club's page is named for the club that year; team_name is the name without year and "season"
     names = [P.title_name(t) for t in team_pages]
     unparsed, views = [], []
@@ -140,6 +140,11 @@ def cmd_load(year):
         else:
             away = b["b"]["team"] if home == b["a"]["team"] else b["a"]["team"]
             hp, ap = (sa, sb) if home == b["a"]["team"] else (sb, sa)
+        if gc and not b["game_date"]: b["game_date"] = P.mk_date(year, info["grey_cup_date"] or "")  # no dates in early brackets: the infobox dates the final
+        if gc and not b["game_date"] and info["grey_cup"]:  # no date in the infobox either: the Grey Cup article's own
+            gt = F.read(CACHE, "greycup", info["grey_cup"])
+            dm = re.search(r"^\|\s*date\s*=\s*(.*)", gt or "", re.M)
+            if dm: b["game_date"] = P.mk_date(year, P.clean(dm.group(1)))
         tm = sorted([b["a"]["team"], b["b"]["team"]])
         i = seq.get(("p", b["game_date"], tuple(tm)), -1) + 1; seq[("p", b["game_date"], tuple(tm))] = i
         grows.append([year, "playoffs", n(b["game_date"]), None, b["round_name"], n(home), n(away), "{" + ",".join('"%s"' % t for t in tm) + "}",
