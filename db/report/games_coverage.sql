@@ -3,7 +3,7 @@
 -- expected_regular is teams x games per team / 2 for that season.
 with expected(league, from_year, to_year, regular) as (values
   ('nhl', 2000, 2003, 1230), ('nhl', 2004, 2004, 0), ('nhl', 2005, 2011, 1230), ('nhl', 2012, 2012, 720),
-  ('nba', 2002, 2003, 1189), ('nba', 2004, 2010, 1230), ('nba', 2011, 2011, 990),
+  ('nba', 2002, 2003, 1189), ('nba', 2004, 2010, 1230), ('nba', 2011, 2011, 990), ('nba', 2012, 2012, 1230),
   ('mlb', 2002, 2012, 2430),
   ('nfl', 2002, 2012, 256),
   ('cfl', 2002, 2005, 81), ('cfl', 2006, 2012, 72)
