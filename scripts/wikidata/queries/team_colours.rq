@@ -1,0 +1,8 @@
+SELECT ?league ?team ?teamLabel ?colour ?colourLabel ?hex ?ordinal WHERE {
+  VALUES ?league { wd:Q1215892 wd:Q155223 wd:Q1163715 wd:Q1215884 wd:Q1066376 }
+  ?team wdt:P118 ?league .
+  ?team p:P462 ?st . ?st ps:P462 ?colour .
+  OPTIONAL { ?st pq:P1545 ?ordinal }
+  OPTIONAL { ?colour wdt:P465 ?hex }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
