@@ -19,3 +19,16 @@ create table legacy_files.player_season_table (
   primary key (league, season, season_type, table_name, player_key, team)
 );
 comment on table legacy_files.player_season_table is 'A player''s line in one saved season stat table; stats is keyed by the column codes the table printed.';
+
+create table legacy_files.schedule_game (
+  league        text not null,
+  season        text not null,
+  game_date     timestamp not null,
+  away_team     text not null,          -- as the file names it (an SPX team id or abbreviation)
+  home_team     text not null,
+  network       text,
+  source_file   text not null,
+  _seen_in      text[] not null,
+  primary key (league, game_date, away_team, home_team)
+);
+comment on table legacy_files.schedule_game is 'A game as an SPX schedule file listed it; no result.';
