@@ -36,10 +36,10 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
             <text className="lab" x={0} y={rowH / 2 + 5}>{LG[lg as keyof typeof LG]}</text>
             {seasons.filter((s) => s.league === lg).map((s) => (
               <rect key={s.year} x={x(s.year) + 0.5} y={3} width={Math.max(1, cw - 1)} height={rowH - 6}
-                fill={shareColor(s.share)} stroke={s.share > 0 ? "none" : "var(--rule)"} strokeWidth={0.5} style={{ cursor: "pointer" }}
+                fill={s.games === 0 && !s.champion ? "var(--soft)" : shareColor(s.share)} stroke={s.share > 0 ? "none" : "var(--rule)"} strokeWidth={0.5} style={{ cursor: "pointer" }}
                 onClick={() => router.push(`/${lg}/${s.year}`)}
                 onMouseMove={(ev) => tip.show(ev, <TipLines title={`${LG[lg as keyof typeof LG]} ${s.label}`} lines={[
-                  s.games ? say("heatmap.share", { finals: fmt(s.finals), games: fmt(s.games) }) : say("heatmap.none"),
+                  s.games ? say("heatmap.share", { finals: fmt(s.finals), games: fmt(s.games) }) : s.champion ? say("noseason.awards") : say("noseason.league"),
                   s.champion ? say("tip.champion", { team: s.champion }) : null]} />)}
                 onMouseLeave={tip.hide} />
             ))}

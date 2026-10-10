@@ -341,4 +341,7 @@ export const FR: Dictionary = {
   "logos.removalTitle": "Demander un retrait",
   "logos.removal": "Si vous êtes propriétaire d’un logo montré ici et souhaitez qu’il soit retiré, dites-le-nous et il sera retiré promptement, sans poser de questions : {link}.",
   "logos.openIssue": "ouvrez un signalement",
+  "noseason.league": "Pas de saison",
+  "noseason.team": "N’a pas joué",
+  "noseason.awards": "Récompenses seulement",
 };

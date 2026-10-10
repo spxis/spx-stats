@@ -341,4 +341,7 @@ export const JA: Dictionary = {
   "logos.removalTitle": "削除のご依頼",
   "logos.removal": "ここに表示しているロゴの所有者で、削除をご希望の場合は、お知らせください。理由は問わず、速やかに削除します：{link}。",
   "logos.openIssue": "Issueを作成",
+  "noseason.league": "シーズンなし",
+  "noseason.team": "不参加",
+  "noseason.awards": "表彰のみ",
 };

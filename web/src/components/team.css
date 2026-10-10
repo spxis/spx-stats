@@ -33,3 +33,8 @@
 .teammap { position: relative; }
 .teammap .pinab { font: 700 var(--fs, 6px) var(--body); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: calc(var(--fs, 6px) * .22); stroke-linejoin: round; pointer-events: none; }
 .cupcol .sortbtn::before { content: "★"; color: var(--accent); }
+
+/* A season, or a team's season, with no games: grey and quiet, in the page's own tokens so both themes follow. */
+.noseason { display: inline-block; font: 500 12px/1 var(--mono); letter-spacing: .02em; padding: 4px 7px; color: var(--muted); background: var(--soft); border: 1px dashed var(--rule); white-space: nowrap; cursor: default; }
+.noseason.compact { font-size: 13px; padding: 6px 7px; text-align: center; }
+.idlerow td { color: var(--muted); }

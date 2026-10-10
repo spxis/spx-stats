@@ -5,7 +5,7 @@ import { AccentStyle } from "@/components/AccentStyle";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
-import { Badge, TeamLink } from "@/components/ui";
+import { Badge, NoSeason, TeamLink } from "@/components/ui";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
 import { brandFor } from "@/lib/brand";
@@ -15,6 +15,7 @@ import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
+import { leagueSat } from "@/lib/noSeason";
 import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
 
@@ -106,7 +107,9 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
         </nav>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1>{say("season.title", { label: d.label })}</h1>
-        <p className="lede">{say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}</p>
+        {d.games.length === 0 && !champ && summary.seasons.some((s) => s.league === lg && s.year === y && leagueSat(s))
+          ? <p><NoSeason /></p>
+          : <p className="lede">{say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}</p>}
       </section>
       {champ ? (
         <section className="banner">

@@ -31,6 +31,24 @@ export function TeamLink({ lg, f, name, className, year, abbr }: {
   );
 }
 
+export type NoSeasonKind = "league" | "team";
+export const NO_SEASON_KEY = { league: "noseason.league", team: "noseason.team" } as const;
+
+/**
+ * The quiet grey box for a season, or a team's season, with no games. Full size shows the short label (table rows, headings);
+ * `compact` is for chips, pickers and cells with no room: just the box (a dash, or the chip's own text as children), with the
+ * wording only in the tooltip and the accessible name.
+ */
+export function NoSeason({ kind = "league", compact = false, children }: { kind?: NoSeasonKind; compact?: boolean; children?: React.ReactNode }) {
+  const { say } = useSpeaker();
+  const label = say(NO_SEASON_KEY[kind]);
+  return (
+    <span className={"noseason" + (compact ? " compact" : "")} title={label} role="img" aria-label={compact && children != null ? `${children}: ${label}` : label}>
+      {compact ? (children ?? "–") : label}
+    </span>
+  );
+}
+
 export function Figures({ items }: { items: [string, number | string][] }) {
   const { fmt } = useSpeaker();
   return (

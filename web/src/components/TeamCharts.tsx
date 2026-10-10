@@ -9,6 +9,7 @@ import { HomeRoadBars } from "./HomeRoadBars";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { LocSwitch, useLocParam } from "./LocSwitch";
 import { MarginBars } from "./MarginBars";
+import type { NoSeasonKind } from "./ui";
 import { WinLine, type WinSeason } from "./WinLine";
 import "./team.css";
 
@@ -21,7 +22,7 @@ const WIN_NOTE = { all: "team.winNote", home: "team.winNoteHome", road: "team.wi
  * The charts of a team's page that follow the Home / Road / All switch: the record donuts, the scoring margin (all games
  * only, because points are not split by home and road) and the winning share by season. Then the home-versus-road chart.
  */
-export function TeamCharts({ lg, f, rows, titles, seasons }: { lg: string; f: number; rows: StandingRow[]; titles: number[]; seasons: WinSeason[] }) {
+export function TeamCharts({ lg, f, rows, titles, seasons, idle }: { lg: string; f: number; rows: StandingRow[]; titles: number[]; seasons: WinSeason[]; idle: [number, NoSeasonKind][] }) {
   const { say, plural } = useSpeaker();
   const [loc, setLoc] = useLocParam();
   const total = rows.reduce((a, r) => addRec(a, recordAt(r, loc)), EMPTY);
@@ -49,12 +50,12 @@ export function TeamCharts({ lg, f, rows, titles, seasons }: { lg: string; f: nu
       <section className="section">
         <h2>{say(WIN_TITLE[loc])}</h2>
         <p className="note">{say(WIN_NOTE[loc])}</p>
-        <WinLine seasons={winSeasons} titles={titles} lg={lg} />
+        <WinLine seasons={winSeasons} titles={titles} lg={lg} idle={idle} />
       </section>
       <section className="section">
         <h2>{say("hr.title")}</h2>
         <p className="note">{say("hr.note")}</p>
-        <HomeRoadBars rows={rows} lg={lg} f={f} />
+        <HomeRoadBars rows={rows} lg={lg} f={f} idle={idle} />
       </section>
     </>
   );

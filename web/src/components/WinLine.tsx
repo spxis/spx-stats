@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { fmt3 } from "@/lib/format";
 import { seasonLabel } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
+import { NO_SEASON_KEY, type NoSeasonKind } from "./ui";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
 
@@ -12,7 +13,7 @@ import { useChartWidth } from "./useChartWidth";
 export type WinSeason = [number, number, number | null, number | null, number | null];
 
 /** A franchise's winning share, season by season; filled dots are championship seasons. */
-export function WinLine({ seasons, titles, lg }: { seasons: WinSeason[]; titles: number[]; lg: string }) {
+export function WinLine({ seasons, titles, lg, idle = [] }: { seasons: WinSeason[]; titles: number[]; lg: string; idle?: [number, NoSeasonKind][] }) {
   const router = useRouter();
   const { say } = useSpeaker();
   const [ref, W] = useChartWidth(1180, 300);
@@ -27,6 +28,7 @@ export function WinLine({ seasons, titles, lg }: { seasons: WinSeason[]; titles:
   const y = scaleLinear([0, 1], [H - m.b, m.t]);
   const won = new Set(titles);
   const path = line<(typeof pts)[number]>().defined((p, i) => i === 0 || p.y - pts[i - 1].y <= 1).x((p) => x(p.y)).y((p) => y(p.pct))(pts);
+  const slot = Math.min(14, (W - m.l - m.r) / Math.max(1, b - a));
   const rules = [0.25, 0.5, 0.75];
   return (
     <div className="chart" ref={ref}>
@@ -34,6 +36,10 @@ export function WinLine({ seasons, titles, lg }: { seasons: WinSeason[]; titles:
         <g>{rules.map((v) => <line key={v} x1={m.l} x2={W - m.r} y1={y(v)} y2={y(v)} stroke={v === 0.5 ? "var(--muted)" : "var(--rule)"} strokeDasharray={v === 0.5 ? "4 3" : undefined} />)}</g>
         <g>{rules.map((v) => <text key={v} x={m.l - 6} y={y(v)} dy="0.32em" textAnchor="end">{format(".3f")(v)}</text>)}</g>
         <g>{x.ticks(Math.min(8, pts.length)).filter(Number.isInteger).map((v) => <text key={v} x={x(v)} y={H - 6} textAnchor="middle">{v}</text>)}</g>
+        <g>{idle.filter(([v]) => v >= a && v <= b).map(([v, k]) => (
+          <rect key={v} x={x(v) - slot / 2} width={slot} y={m.t} height={H - m.b - m.t} fill="var(--soft)" stroke="var(--rule)" strokeDasharray="3 2"
+            onMouseMove={(ev) => tip.show(ev, <TipLines title={seasonLabel(lg, v)} lines={[say(NO_SEASON_KEY[k])]} />)} onMouseLeave={tip.hide} />
+        ))}</g>
         <path d={path ?? undefined} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" />
         <g>{pts.map((p) => (
           <circle key={p.y} cx={x(p.y)} cy={y(p.pct)} r={won.has(p.y) ? 6 : 2.5} fill={won.has(p.y) ? "var(--accent)" : "var(--panel)"}

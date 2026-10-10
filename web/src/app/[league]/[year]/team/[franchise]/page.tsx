@@ -7,7 +7,7 @@ import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyIcon";
-import { Figures } from "@/components/ui";
+import { Figures, NoSeason } from "@/components/ui";
 import { brandFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
@@ -17,6 +17,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { parseLoc } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
+import { leagueSat } from "@/lib/noSeason";
 import { recordText } from "@/lib/record";
 import { parseSelection } from "@/lib/season";
 import { parseSort } from "@/lib/sort";
@@ -65,7 +66,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
     return (
       <>
         <AccentStyle league={lg} />
-        <p className="note">{say("tseason.none")}</p>
+        <p><NoSeason kind={summary.seasons.some((x) => x.league === lg && x.year === y && leagueSat(x)) ? "league" : "team"} /></p>
         <p><Link href={`/${lg}/${y}`}>{say("tseason.back")}</Link></p>
       </>
     );

@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { SeasonBars } from "@/components/SeasonBars";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
-import { Badge, TeamLink } from "@/components/ui";
+import { Badge, NoSeason, TeamLink } from "@/components/ui";
+import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -58,7 +59,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
       <section className="section">
         <h2>{say("league.seasons")}</h2>
         <div className="seasonlist">
-          {list.map((x) => (
+          {list.map((x) => leagueSat(x) ? <NoSeason key={x.year} compact>{x.label}</NoSeason> : (
             <Link key={x.year} prefetch={false} href={`/${lg}/${x.year}`} className={x.share >= 0.98 ? "full" : undefined}
               title={x.games ? say("league.seasonTip", { finals: fmt(x.finals), games: fmt(x.games) }) : say("league.awardsOnly")}>
               {x.label}
@@ -73,7 +74,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
             <span><i style={{ background: "var(--accent)" }} />{say("league.withResult")}</span>
             <span><i style={{ background: "var(--accent)", opacity: 0.22 }} />{say("league.heldNoResult")}</span>
           </div>
-          <SeasonBars lg={lg} list={withGames.map((x) => ({ year: x.year, label: x.label, games: x.games, finals: x.finals, champion: x.champion }))} />
+          <SeasonBars lg={lg} list={list.filter((x) => x.games > 0 || leagueSat(x)).map((x) => ({ year: x.year, label: x.label, games: x.games, finals: x.finals, champion: x.champion, none: leagueSat(x) }))} />
         </section>
       ) : null}
       <section className="section">

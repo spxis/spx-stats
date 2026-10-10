@@ -346,6 +346,9 @@ export const PHRASES = {
   "logos.removalTitle": "Asking for removal",
   "logos.removal": "If you own a logo shown here and want it removed, tell us and it will be taken down promptly, no questions asked: {link}.",
   "logos.openIssue": "open an issue",
+  "noseason.league": "No season",
+  "noseason.team": "Did not play",
+  "noseason.awards": "Awards only",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;

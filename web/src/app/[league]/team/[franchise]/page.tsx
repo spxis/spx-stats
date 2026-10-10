@@ -8,7 +8,7 @@ import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
 import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
-import { Figures } from "@/components/ui";
+import { Figures, NoSeason } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
@@ -21,6 +21,7 @@ import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
+import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
 
 // Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
@@ -105,7 +106,13 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   }
 
   const withGames = new Set(summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
-  const standings = tableOf(rows, [
+  const idle = idleYears(rows, summary.seasons, lg);
+  const gaps: StandingRow[] = [...idle].filter(([y]) => !rows.some((r) => r.year === y)).map(([y]) => ({
+    league: lg, year: y, team_id: 0, franchise_id: f, team: null, gp: null, w: null, l: null, t: null, otl: null, pts: null,
+    pf: null, pa: null, home: null, road: null, pct: null, basis: "none", source: null,
+  }));
+  const tableRows = [...rows, ...gaps].sort((a, b) => b.year - a.year);
+  const standings = tableOf(tableRows, [
     {
       key: "champ", label: say("col.champion"), hideLabel: true, cls: "cupcol", title: say("team.champSeason"), get: (r) => (won.has(r.year) ? 1 : 0),
       cell: (r) => (won.has(r.year) ? <MiniCup league={lg} /> : null),
@@ -116,7 +123,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     },
     {
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => <><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, f, r.year, r.team)}</abbr></>,
+      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, f, r.year, r.team)}</abbr></>,
     },
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,
@@ -141,7 +148,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         </>
       ),
     },
-  ], (r) => r.year);
+  ], (r) => r.year, (r) => (idle.has(r.year) ? "idlerow" : undefined));
   const nameTable = tableOf(names, [
     { key: "name", label: say("col.name"), cls: "team", get: (n) => n.name },
     { key: "from", label: say("col.from"), get: (n) => n.from, cell: (n) => n.from || "" },
@@ -180,12 +187,12 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         </div>
       ) : null}
       {rows.length ? (
-        <TeamCharts lg={lg} f={f} rows={rows} titles={t.titles} seasons={t.seasons} />
+        <TeamCharts lg={lg} f={f} rows={rows} titles={t.titles} seasons={t.seasons} idle={[...idle]} />
       ) : (
         <section className="section">
           <h2>{say("team.winTitle")}</h2>
           <p className="note">{say("team.winNote")}</p>
-          <WinLine seasons={t.seasons} titles={t.titles} lg={lg} />
+          <WinLine seasons={t.seasons} titles={t.titles} lg={lg} idle={[...idle]} />
         </section>
       )}
       {rows.length ? (
