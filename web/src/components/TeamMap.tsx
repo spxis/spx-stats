@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import type { Locale } from "@/lib/locale";
+import { useSpeaker } from "./i18n/LocaleProvider";
 
 /* Team maps, drawn with Chizu (MIT, https://github.com/johnmorrisdotca/chizu) from Natural Earth
    outlines (public domain). A small map on a team page marks its home; pressing it opens a large
@@ -45,7 +47,7 @@ function frame(pts: [number, number][], aspect: number, minW: number) {
 const NS = "http://www.w3.org/2000/svg";
 
 /** Draws a map of the pins into `host`; returns false when nothing could be placed. */
-async function drawTeamMap(host: HTMLElement, teams: Pin[], opts: { big?: boolean; title?: string }): Promise<boolean> {
+async function drawTeamMap(host: HTMLElement, teams: Pin[], opts: { big?: boolean; title: string; locale: Locale }): Promise<boolean> {
   const big = !!opts.big;
   const { WORLD, drawChizu, projectPoint } = await chizu();
   const placed = teams
@@ -55,10 +57,10 @@ async function drawTeamMap(host: HTMLElement, teams: Pin[], opts: { big?: boolea
   const focus = big ? placed : placed.filter((t) => t.me);
   const box = frame((focus.length ? focus : placed).map((t) => t.p), big ? 1.7 : 1.4, big ? 60 : 90);
   host.className = "teammap" + (big ? " big" : "");
-  host.innerHTML = drawChizu(WORLD, { box, tones: { US: "faint", CA: "faint", MX: "faint" }, language: "en", style: true });
+  host.innerHTML = drawChizu(WORLD, { box, tones: { US: "faint", CA: "faint", MX: "faint" }, language: opts.locale === "ja" ? "ja" : "en", style: true });
   const svg = host.querySelector("svg");
   if (!svg) return false;
-  svg.setAttribute("aria-label", opts.title || "Map of team locations");
+  svg.setAttribute("aria-label", opts.title);
   const r = box.width / (big ? 140 : 40);
   const g = document.createElementNS(NS, "g");
   g.setAttribute("class", "pins");
@@ -132,11 +134,12 @@ function abbreviationLabels(g: SVGGElement, pins: (Pin & { p: [number, number] }
 
 export function MapHost({ pins, big, title, onEmpty }: { pins: Pin[]; big?: boolean; title: string; onEmpty?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
+  const { locale } = useSpeaker();
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     let live = true;
-    drawTeamMap(el, pins, { big, title }).then((ok) => { if (live && !ok) onEmpty?.(); }).catch(() => { if (live) onEmpty?.(); });
+    drawTeamMap(el, pins, { big, title, locale }).then((ok) => { if (live && !ok) onEmpty?.(); }).catch(() => { if (live) onEmpty?.(); });
     return () => { live = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- drawn once per mount
   }, []);
@@ -151,17 +154,18 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
   me: Pin; others: Pin[]; clubCount: number; seasonLabel: string; leagueShort: string; name: string;
 }) {
   const router = useRouter();
+  const { say } = useSpeaker();
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
   const dlg = useRef<HTMLDialogElement>(null);
-  const label = `${leagueShort} teams, ${seasonLabel}`;
+  const label = say("map.label", { league: leagueShort, season: seasonLabel });
   useEffect(() => { if (open) dlg.current?.showModal(); }, [open]);
   if (hidden) return null;
   const all = others.length ? others : [me];
   return (
     <>
-      <button type="button" className="mapbtn" aria-label={`Map of every ${leagueShort} team in ${seasonLabel}`} onClick={() => setOpen(true)}>
-        <MapHost pins={[me]} title={`Where the ${name} play`} onEmpty={() => setHidden(true)} />
+      <button type="button" className="mapbtn" aria-label={say("map.open", { league: leagueShort, season: seasonLabel })} onClick={() => setOpen(true)}>
+        <MapHost pins={[me]} title={say("map.where", { name })} onEmpty={() => setHidden(true)} />
       </button>
       {open ? (
         <dialog ref={dlg} className="mapdlg" aria-label={label} onClose={() => setOpen(false)}
@@ -172,10 +176,10 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
           }}>
           <div className="dlghead">
             <h2>{label}</h2>
-            <button type="button" className="theme" onClick={() => dlg.current?.close()}>Close</button>
+            <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
           <MapHost pins={all} big title={label} />
-          <p className="note">{others.length} of {clubCount} teams placed. Press a dot to open that team. Map: Chizu, from Natural Earth.</p>
+          <p className="note">{say("map.note", { placed: others.length, total: clubCount })}</p>
         </dialog>
       ) : null}
     </>

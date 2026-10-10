@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import { formatSort, parseSort, sortRows, type SortColumn, type SortKey, type SortRow } from "@/lib/sort";
 import { hrefWith, replaceQuery } from "@/lib/urlQuery";
 
@@ -34,6 +35,7 @@ interface Props {
  */
 export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups }: Props) {
   const router = useRouter();
+  const { say } = useSpeaker();
   const known = useMemo(() => columns.map((c) => c.key), [columns]);
   const [pending, startTransition] = useTransition();
   const defSpec = useMemo(() => parseSort(def, known), [def, known]);
@@ -79,7 +81,7 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
             const next = on ? (first.dir === "desc" ? "ascending" : "descending") : c.num ? "descending" : "ascending";
             return (
               <th key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined} aria-sort={state} scope="col">
-                <button type="button" className="sortbtn" title={c.title} aria-label={`${c.label}, sort ${next}`} onClick={() => press(c)}>
+                <button type="button" className="sortbtn" title={c.title} aria-label={say(next === "ascending" ? "table.sortAsc" : "table.sortDesc", { label: c.label })} onClick={() => press(c)}>
                   <span className={c.hideLabel ? "sr-only" : undefined}>{c.label}</span>
                   <span className="arrow" aria-hidden="true">{on ? (first.dir === "desc" ? "▼" : "▲") : "↕"}</span>
                 </button>

@@ -3,6 +3,7 @@
 import { useSyncExternalStore } from "react";
 import { LOCS, parseLoc, type Loc } from "@/lib/loc";
 import { replaceQuery } from "@/lib/urlQuery";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import "./team.css";
 
 const listeners = new Set<() => void>();
@@ -25,9 +26,10 @@ export function useLocParam(): [Loc, (loc: Loc) => void] {
 
 /** The Home / Road / All switch: a segmented control, one button pressed. */
 export function LocSwitch({ value, onChange }: { value: Loc; onChange: (loc: Loc) => void }) {
+  const { say } = useSpeaker();
   return (
-    <div className="seg" role="group" aria-label="Home or road">
-      {LOCS.map(([k, label]) => <button key={k} type="button" aria-pressed={k === value} onClick={() => onChange(k)}>{label}</button>)}
+    <div className="seg" role="group" aria-label={say("loc.aria")}>
+      {LOCS.map(([k, label]) => <button key={k} type="button" aria-pressed={k === value} onClick={() => onChange(k)}>{say(label)}</button>)}
     </div>
   );
 }

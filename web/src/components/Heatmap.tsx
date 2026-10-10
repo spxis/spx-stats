@@ -2,8 +2,8 @@
 
 import { max, min, range } from "d3";
 import { useRouter } from "next/navigation";
-import { fmt } from "@/lib/format";
 import { LG } from "@/lib/leagues";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
 
@@ -16,6 +16,7 @@ const shareColor = (s: number) => (s <= 0 ? "transparent" : `color-mix(in srgb, 
 /** Each square is a season, shaded by how many of its games have a result. */
 export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: string[] }) {
   const router = useRouter();
+  const { say, fmt } = useSpeaker();
   const [ref, W] = useChartWidth(1180, 640);
   const tip = useTooltip(ref);
   const y0 = min(seasons, (s) => s.year) ?? 0, y1 = max(seasons, (s) => s.year) ?? 0;
@@ -27,7 +28,7 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
   const H = top + rowH * leagues.length + 4;
   return (
     <div className="chart scroll" ref={ref}>
-      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label="Share of games with a result, by league and season">
+      <svg viewBox={`0 0 ${W} ${H}`} role="img" aria-label={say("heatmap.aria")}>
         <g>{decades.map((y) => <text key={y} x={x(y)} y={11}>{y}</text>)}</g>
         <g>{decades.map((y) => <line key={y} x1={x(y)} x2={x(y)} y1={top - 3} y2={top + rowH * leagues.length} stroke="var(--rule)" />)}</g>
         {leagues.map((lg, i) => (
@@ -38,8 +39,8 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
                 fill={shareColor(s.share)} stroke={s.share > 0 ? "none" : "var(--rule)"} strokeWidth={0.5} style={{ cursor: "pointer" }}
                 onClick={() => router.push(`/${lg}/${s.year}`)}
                 onMouseMove={(ev) => tip.show(ev, <TipLines title={`${LG[lg as keyof typeof LG]} ${s.label}`} lines={[
-                  s.games ? `${fmt(s.finals)} of ${fmt(s.games)} regular-season games with a result` : "No games held yet",
-                  s.champion ? `Champion: ${s.champion}` : null]} />)}
+                  s.games ? say("heatmap.share", { finals: fmt(s.finals), games: fmt(s.games) }) : say("heatmap.none"),
+                  s.champion ? say("tip.champion", { team: s.champion }) : null]} />)}
                 onMouseLeave={tip.hide} />
             ))}
           </g>

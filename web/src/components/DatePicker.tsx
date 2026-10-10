@@ -1,20 +1,18 @@
 "use client";
 
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { atUtc, utc } from "@/lib/format";
+import { atUtc, isoDay } from "@/lib/format";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import "./datepicker.css";
 
-const WEEKDAYS = ["S", "M", "T", "W", "T", "F", "S"];
-const WEEKDAY_NAMES = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-
-const addDays = (iso: string, n: number): string => { const d = atUtc(iso); d.setUTCDate(d.getUTCDate() + n); return utc.iso(d); };
+const addDays = (iso: string, n: number): string => { const d = atUtc(iso); d.setUTCDate(d.getUTCDate() + n); return isoDay(d); };
 const addMonths = (iso: string, n: number): string => {
   const d = atUtc(iso);
   const day = d.getUTCDate();
   d.setUTCDate(1); d.setUTCMonth(d.getUTCMonth() + n);
   const last = new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0)).getUTCDate();
   d.setUTCDate(Math.min(day, last));
-  return utc.iso(d);
+  return isoDay(d);
 };
 const clamp = (iso: string, min: string, max: string): string => (iso < min ? min : iso > max ? max : iso);
 
@@ -29,11 +27,11 @@ interface Props {
   /** Days to mark with a dot (the days with games). */
   marked?: ReadonlySet<string>;
   onChange: (iso: string) => void;
-  /** What the button says when nothing is chosen. */
+  /** What the button says when nothing is chosen (a phrase of its own by default). */
   placeholder?: string;
   /** The pop-up hangs from the button's right edge instead of its left. */
   alignEnd?: boolean;
-  /** What a day with a mark is called to a screen reader ("games played"). */
+  /** What a day with a mark is called to a screen reader (by default "games played"). */
   markedWord?: string;
 }
 
@@ -43,7 +41,9 @@ interface Props {
  * Home and End to the start and end of the week, Enter or Space chooses; Escape closes it and returns to the button, and
  * so does a press anywhere outside. On a phone the pop-up is a sheet along the foot of the screen.
  */
-export function DatePicker({ label, value, min, max, marked, onChange, placeholder = "Pick a date", alignEnd = false, markedWord = "games played" }: Props) {
+export function DatePicker({ label, value, min, max, marked, onChange, placeholder, alignEnd = false, markedWord }: Props) {
+  const { say, dt } = useSpeaker();
+  const markWord = markedWord ?? say("picker.gamesPlayed");
   const [open, setOpen] = useState(false);
   const [focus, setFocus] = useState("");
   const root = useRef<HTMLDivElement>(null);
@@ -94,19 +94,19 @@ export function DatePicker({ label, value, min, max, marked, onChange, placehold
     if (!month) return [];
     const first = atUtc(`${month}-01`);
     const cells: (string | null)[] = Array.from({ length: first.getUTCDay() }, () => null);
-    for (const d = new Date(first); d.getUTCMonth() === first.getUTCMonth(); d.setUTCDate(d.getUTCDate() + 1)) cells.push(utc.iso(d));
+    for (const d = new Date(first); d.getUTCMonth() === first.getUTCMonth(); d.setUTCDate(d.getUTCDate() + 1)) cells.push(isoDay(d));
     return cells;
   }, [month]);
 
   const firstOfMonth = `${month}-01`;
   const canPrev = !!month && addDays(firstOfMonth, -1) >= min;
   const canNext = !!month && addMonths(firstOfMonth, 1) <= max;
-  const text = value ? utc.short(atUtc(value)) : placeholder;
+  const text = value ? dt.short(atUtc(value)) : (placeholder ?? say("filter.pickDate"));
 
   return (
     <div className="dp" ref={root}>
       <button ref={trigger} type="button" className="dp-btn" aria-haspopup="dialog" aria-expanded={open} aria-controls={open ? id : undefined}
-        aria-label={value ? `${label}: ${utc.full(atUtc(value))}` : label} onClick={() => (open ? close(false) : show())}>
+        aria-label={value ? `${label}: ${dt.full(atUtc(value))}` : label} onClick={() => (open ? close(false) : show())}>
         <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true" focusable="false">
           <rect x="2" y="3" width="12" height="11" rx="1" fill="none" stroke="currentColor" strokeWidth="1.4" />
           <path d="M2 6.5h12M5.5 1.8v2.6M10.5 1.8v2.6" stroke="currentColor" strokeWidth="1.4" fill="none" />
@@ -116,13 +116,13 @@ export function DatePicker({ label, value, min, max, marked, onChange, placehold
       {open ? (
         <div id={id} ref={pop} className={"dp-pop" + (alignEnd ? " end" : "")} role="dialog" aria-label={label} onKeyDown={onKey}>
           <div className="dp-head">
-            <button type="button" className="dp-nav" aria-label="Previous month" disabled={!canPrev} onClick={() => move(addMonths(focus, -1))}>‹</button>
-            <span className="dp-month" aria-live="polite">{utc.monthYear(atUtc(firstOfMonth))}</span>
-            <button type="button" className="dp-nav" aria-label="Next month" disabled={!canNext} onClick={() => move(addMonths(focus, 1))}>›</button>
+            <button type="button" className="dp-nav" aria-label={say("cal.prev")} disabled={!canPrev} onClick={() => move(addMonths(focus, -1))}>‹</button>
+            <span className="dp-month" aria-live="polite">{dt.monthYear(atUtc(firstOfMonth))}</span>
+            <button type="button" className="dp-nav" aria-label={say("cal.next")} disabled={!canNext} onClick={() => move(addMonths(focus, 1))}>›</button>
           </div>
-          <div className="dp-grid" role="grid" aria-label={utc.monthYear(atUtc(firstOfMonth))}>
+          <div className="dp-grid" role="grid" aria-label={dt.monthYear(atUtc(firstOfMonth))}>
             <div className="dp-row" role="row">
-              {WEEKDAYS.map((w, i) => <span key={i} className="dp-wd" role="columnheader" aria-label={WEEKDAY_NAMES[i]}>{w}</span>)}
+              {dt.weekdays.map((w, i) => <span key={i} className="dp-wd" role="columnheader" aria-label={dt.weekdaysLong[i]}>{w.slice(0, 1).toUpperCase()}</span>)}
             </div>
             {Array.from({ length: Math.ceil(days.length / 7) }, (_, r) => (
               <div className="dp-row" role="row" key={r}>
@@ -133,7 +133,7 @@ export function DatePicker({ label, value, min, max, marked, onChange, placehold
                     <span key={d} role="gridcell" aria-selected={d === value}>
                       <button type="button" data-day={d} className={"dp-day" + (d === value ? " on" : "") + (mk ? " mk" : "")}
                         disabled={off} tabIndex={d === focus ? 0 : -1}
-                        aria-label={`${utc.full(atUtc(d))}${mk ? `, ${markedWord}` : ""}`}
+                        aria-label={`${dt.full(atUtc(d))}${mk ? `, ${markWord}` : ""}`}
                         onClick={() => { onChange(d); close(true); }}>
                         {Number(d.slice(8))}
                       </button>
@@ -144,8 +144,8 @@ export function DatePicker({ label, value, min, max, marked, onChange, placehold
             ))}
           </div>
           <div className="dp-foot">
-            <span className="dp-key"><i aria-hidden="true" />{markedWord}</span>
-            {value ? <button type="button" className="dp-clear" onClick={() => { onChange(""); close(true); }}>Clear</button> : null}
+            <span className="dp-key"><i aria-hidden="true" />{markWord}</span>
+            {value ? <button type="button" className="dp-clear" onClick={() => { onChange(""); close(true); }}>{say("picker.clear")}</button> : null}
           </div>
         </div>
       ) : null}

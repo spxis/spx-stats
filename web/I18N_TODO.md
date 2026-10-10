@@ -1,0 +1,30 @@
+# Languages: EN, FR, JA
+
+The French (Canada) and Japanese text is machine-drafted. English is the source: `src/lib/i18n/phrases.constants.ts`.
+French is `src/lib/i18n/dictionaries/fr.constants.ts`, Japanese is `ja.constants.ts`. A key a dictionary lacks falls back to English,
+so a string added in English alone still shows.
+
+## Choices I was unsure of
+
+- **Hockey and sports terms.** FR "Séries éliminatoires" (playoffs), "Défaite en prolongation" (shown "DP"), "Visiteur" for road/away,
+  "matchs nuls"; JA "延敗" for an overtime loss, "ビジター" for road, "前年王者" for defending champion, "現王者" for reigning champions.
+  Column abbreviations (FR PJ/V/D/N/DP/PP/PC, JA 試合/勝/敗/分) are my best guess at what each league's own tables use.
+- **"Winning share".** FR "Pourcentage de victoires" and JA "勝率" for the table column; "Taux de victoire" in the donut.
+- **Plurals.** French counts use "match(s)" and "titre(s)" for "game" and "championship"; Japanese counters (試合, シーズン, 回, 件) are one form for every number.
+- **Legal and licensing text** (logos page, footer, "fair use / fair dealing" wording) is a plain translation, not reviewed as legal copy.
+- **Japanese `@`** stands for "at" between away and home team in game rows and tooltips, because Japanese has no short "at".
+- **Country names** on a team's flag (Canada, United States, Mexico) are translated as ordinary words; the flag drawings themselves have no text.
+- **Season labels** read "2010-11年シーズン" in Japanese and "Saison 2010-11" in French.
+
+## Left as the data gives it (not translated on purpose)
+
+- Team, player, venue and league names; league codes (NHL, NBA, MLB, NFL, CFL); official award names (Stanley Cup, Grey Cup, Hart Trophy ...).
+- Text that comes from the database rather than the site: a champion's "final" note, an award's note, a source's licence/attribution/notes
+  (Sources page), and the issue and resolution text on the Data quality page. These are English until the data itself is translated.
+- The SPX row of the Sources page (licence and notes) *is* the site's own text and is translated; its credit line "SPX (SportsInteractive.com), 1997–2013" is a name and stays.
+- Percentages and winning shares keep sports style (0.530, 12.3%).
+
+## Formats
+
+Numbers and dates use `Intl` with en-CA, fr-CA and ja-JP (`src/lib/i18n/formats.ts`). Month and weekday names come from the browser/Node ICU,
+so a very old browser may spell an abbreviation differently from the server.

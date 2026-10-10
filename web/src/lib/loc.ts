@@ -13,7 +13,7 @@ const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 export const locSchema = z.preprocess(first, z.enum(["all", "home", "road"])).catch("all");
 export const parseLoc = (raw: unknown): Loc => locSchema.parse(raw);
 
-export const LOCS: [Loc, string][] = [["all", "All games"], ["home", "Home"], ["road", "Road"]];
+export const LOCS = [["all", "loc.all"], ["home", "loc.home"], ["road", "loc.road"]] as const;
 
 export interface Rec { w: number; l: number; t: number; otl: number }
 export const EMPTY: Rec = { w: 0, l: 0, t: 0, otl: 0 };

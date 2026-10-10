@@ -20,11 +20,19 @@ export function seasonLabel(lg: string, y: number): string {
   return lg === "nhl" || lg === "nba" ? `${y}-${String(y + 1).slice(2)}` : String(y);
 }
 
-/** Display names of the sources the archive draws on. */
+/** Display names of the sources the archive draws on (proper names; `srcName` adds the two that are words). */
 export const SRC: Record<string, string> = {
   spx: "SPX", spx_database: "SPX", spxn_database: "SPX", spx_files: "SPX", retrosheet: "Retrosheet", nflverse: "nflverse",
-  wikidata: "Wikidata", nhl_api: "NHL", spx_stats_derived: "From results", editorial: "Editorial",
+  wikidata: "Wikidata", nhl_api: "NHL",
 };
+
+/** A source's name in the reader's language: the proper names as they are, "From results" and "Editorial" translated. */
+export function srcName(say: (key: "source.derived" | "source.editorial") => string, code: string | null | undefined): string {
+  if (!code) return "";
+  if (code === "spx_stats_derived") return say("source.derived");
+  if (code === "editorial") return say("source.editorial");
+  return SRC[code] || code;
+}
 
 /** SPX's own databases, scraper store and published files are one source: SPX. */
 export const isSpx = (s: string | null | undefined): boolean => !!s && s.startsWith("spx") && s !== "spx_stats_derived";

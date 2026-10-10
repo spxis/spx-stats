@@ -11,8 +11,9 @@ import { abbrFor } from "@/lib/abbr";
 import { brandFor } from "@/lib/brand";
 import { titleHolders } from "@/lib/champions";
 import { getBrands, getSeason, getSummary } from "@/lib/data";
-import { fmt, fmt3 } from "@/lib/format";
-import { isLeague, isSpx, LG, seasonLabel, SRC } from "@/lib/leagues";
+import { fmt3 } from "@/lib/format";
+import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
@@ -27,16 +28,18 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]">
   const { seasons } = await getSummary();
   const s = seasons.find((x) => x.league === league && x.year === y);
   if (!s) return {};
-  const parts = [`${s.label} ${LG[league]} season: standings, scores and awards`];
-  if (s.champion) parts.push(`Champion: ${s.champion}`);
-  if (s.games) parts.push(`${fmt(s.games)} regular-season games, ${fmt(s.finals)} with a result`);
-  return pageMeta({ title: `${s.label} ${LG[league]} season`, description: `${parts.join(". ")}.`, path: `/${league}/${y}` });
+  const { say, plural, fmt, locale } = await currentSpeaker();
+  const parts = [say("season.metaLead", { label: s.label, league: LG[league] })];
+  if (s.champion) parts.push(say("tip.champion", { team: s.champion }));
+  if (s.games) parts.push(say("season.metaGames", { games: plural("count.regularGames", s.games), finals: fmt(s.finals) }));
+  return pageMeta({ title: say("season.metaTitle", { label: s.label, league: LG[league] }), description: `${parts.join(say("sentence.sep"))}${say("sentence.end")}`, path: `/${league}/${y}`, locale });
 }
 
 export default async function SeasonPage({ params, searchParams }: PageProps<"/[league]/[year]">) {
   const { league: lg, year } = await params;
   const y = yearOf(year);
   if (!isLeague(lg) || y == null) notFound();
+  const { say, plural, fmt } = await currentSpeaker();
   const [d, brands, summary] = await Promise.all([getSeason(lg, y), getBrands(), getSummary()]);
   if (!d) notFound();
   const holders = titleHolders(summary.seasons, lg);
@@ -48,7 +51,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const awards = d.awards.filter((x) => x.kind !== "championship");
   const st = d.standings;
   const pub = st.find((r) => r.basis === "published");
-  const basis = pub ? "As " + (isSpx(pub.source) ? "SPX" : "the " + (SRC[pub.source ?? ""] || pub.source)) + " published them" : "Worked out from the final scores";
+  const basis = pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
   const regular = d.games.filter((g) => g[5] === "r");
   const maxPct = Math.max(0, ...st.map((r) => r.pct ?? 0)) || 1;
   const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
@@ -56,33 +59,33 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const played = new Set(d.games.flatMap((g) => [g[1], g[4]]));
   const cols: ColumnSpec<StandingRow>[] = [
     {
-      key: "team", label: "Team", cls: "team", get: (r) => r.team,
+      key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
       cell: (r) => (
         <>
           <TeamLogo url={brandFor(brands, r.franchise_id, y)?.logo_url} />
           <Link href={played.has(r.team_id) ? `/${lg}/${y}/team/${r.franchise_id}` : `/${lg}/team/${r.franchise_id}`} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, r.franchise_id, y, r.team)}</abbr></Link>
           {defending != null && r.franchise_id === defending ? (
-            <span className="defending" title={`Won the ${seasonLabel(lg, y - 1)} title`}>Defending champion</span>
+            <span className="defending" title={say("season.wonTitle", { season: seasonLabel(lg, y - 1) })}>{say("season.defending")}</span>
           ) : null}
         </>
       ),
     },
     {
-      key: "gp", label: "GP", num: true, title: "Games played; opens the team's whole season", get: (r) => r.gp,
+      key: "gp", label: say("col.gp"), num: true, title: say("col.gpTeamTitle"), get: (r) => r.gp,
       cell: (r) => (r.gp != null && played.has(r.team_id) ? (
-        <Link href={`/${lg}/${y}/team/${r.franchise_id}`} prefetch={false} title={`Every ${r.team} game of ${d.label}`}>{r.gp}</Link>
+        <Link href={`/${lg}/${y}/team/${r.franchise_id}`} prefetch={false} title={say("season.teamGames", { team: r.team ?? "", label: d.label })}>{r.gp}</Link>
       ) : r.gp ?? ""),
     },
-    { key: "w", label: "W", num: true, get: (r) => r.w }, { key: "l", label: "L", num: true, get: (r) => r.l },
-    ...(showT ? [{ key: "t", label: "T", num: true, get: (r: StandingRow) => r.t }] : []),
-    ...(showO ? [{ key: "otl", label: "OTL", num: true, get: (r: StandingRow) => r.otl }] : []),
-    ...(showP ? [{ key: "pts", label: "Pts", num: true, get: (r: StandingRow) => r.pts }] : []),
-    { key: "pf", label: "For", num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
-    { key: "pa", label: "Against", num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
-    { key: "home", label: "Home", get: (r) => recShare(r.home), cell: (r) => r.home || "" },
-    { key: "road", label: "Road", get: (r) => recShare(r.road), cell: (r) => r.road || "" },
+    { key: "w", label: say("col.w"), num: true, get: (r) => r.w }, { key: "l", label: say("col.l"), num: true, get: (r) => r.l },
+    ...(showT ? [{ key: "t", label: say("col.t"), num: true, get: (r: StandingRow) => r.t }] : []),
+    ...(showO ? [{ key: "otl", label: say("col.otl"), num: true, get: (r: StandingRow) => r.otl }] : []),
+    ...(showP ? [{ key: "pts", label: say("col.pts"), num: true, get: (r: StandingRow) => r.pts }] : []),
+    { key: "pf", label: say("col.for"), num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
+    { key: "pa", label: say("col.against"), num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
+    { key: "home", label: say("col.home"), get: (r) => recShare(r.home), cell: (r) => r.home || "" },
+    { key: "road", label: say("col.road"), get: (r) => recShare(r.road), cell: (r) => r.road || "" },
     {
-      key: "pct", label: "Pct", num: true, get: (r) => r.pct,
+      key: "pct", label: say("col.pct"), num: true, get: (r) => r.pct,
       cell: (r) => (
         <>
           {r.pct != null ? fmt3(r.pct) : ""}
@@ -97,13 +100,13 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
     <>
       <AccentStyle league={lg} />
       <section className="head fade">
-        <nav className="seasonnav" aria-label="Other seasons">
+        <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
           <Link href={`/${lg}/${y - 1}`} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link>
           <Link href={`/${lg}/${y + 1}`} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link>
         </nav>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
-        <h1>{`${d.label} season`}</h1>
-        <p className="lede">{`${fmt(regular.length)} regular-season games, ${fmt(regular.filter((g) => g[6] === "f").length)} with a result.`}</p>
+        <h1>{say("season.title", { label: d.label })}</h1>
+        <p className="lede">{say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}</p>
       </section>
       {champ ? (
         <section className="banner">
@@ -115,14 +118,14 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       ) : null}
       {st.length ? (
         <section className="section">
-          <h2>Standings</h2>
-          <p className="note">{basis + ". Press a column to sort. Games played opens that team's whole season."}</p>
+          <h2>{say("season.standings")}</h2>
+          <p className="note">{say("season.standingsNote", { basis })}</p>
           <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} /></div>
         </section>
       ) : null}
       {awards.length ? (
         <section className="section">
-          <h2>Awards</h2>
+          <h2>{say("season.awards")}</h2>
           <div className="awards">
             {awards.map((a, i) => (
               <div className="award" key={i}>
@@ -136,8 +139,9 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       ) : null}
       {d.games.length ? (
         <section className="section">
-          <h2>Games</h2>
+          <h2>{say("season.games")}</h2>
           <SeasonGames lg={lg} year={y} games={d.games} teams={d.teams} initial={selection} />
+
         </section>
       ) : null}
     </>

@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { abbrFor } from "@/lib/abbr";
-import { atUtc, fmt, utc } from "@/lib/format";
-import { SRC } from "@/lib/leagues";
+import { atUtc } from "@/lib/format";
+import { RESULT_KEY } from "@/lib/i18n/keys";
+import { srcName } from "@/lib/leagues";
 import type { Loc } from "@/lib/loc";
 import { recordParts, type RecordPart } from "@/lib/record";
 import { resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
@@ -14,6 +15,7 @@ import { replaceQuery } from "@/lib/urlQuery";
 import { Donut } from "./Donut";
 import { GameCalendar } from "./GameCalendar";
 import { verdictOf } from "./HomeRoadBars";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import { LocSwitch } from "./LocSwitch";
 import { MonthFilter } from "./MonthFilter";
 import { PhaseSwitch } from "./PhaseSwitch";
@@ -41,13 +43,14 @@ interface Props {
   initialLoc: Loc;
 }
 
-const PHASE_NAME = { p: "Playoffs", s: "Preseason", a: "All-Star" } as const;
+const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allStar" } as const;
 
 /**
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
 export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc }: Props) {
+  const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const [want, setWant] = useState<Selection>(initial);
   const [loc, setLoc] = useState<Loc>(initialLoc);
@@ -67,39 +70,39 @@ export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList,
   }, [phase, loc, filterMonth, day]);
 
   const set = (patch: Partial<Selection>) => setWant({ ...want, ...patch });
-  const extra = lg === "mlb" ? "Extras" : "OT";
+  const extra = say(lg === "mlb" ? "col.extras" : "col.ot");
 
   const specs = useMemo((): ColumnSpec<TeamGame>[] => [
     {
-      key: "date", label: "Date", rest: "game_date", cls: "seasoncell", get: (g) => g.date,
+      key: "date", label: say("col.date"), rest: "game_date", cls: "seasoncell", get: (g) => g.date,
       cell: (g) => (
         <>
           <Link href={`/${lg}/${year}?month=${g.date.slice(0, 7)}&day=${g.date}${g.ph !== "r" ? `&phase=${g.ph}` : ""}`} prefetch={false}
-            title={`Every ${lg.toUpperCase()} game on ${utc.short(atUtc(g.date))}`}>{utc.dayName(atUtc(g.date))}</Link>
-          {g.ph !== "r" ? <span className="badge tag">{PHASE_NAME[g.ph]}</span> : null}
+            title={say("tseason.dayGames", { league: lg.toUpperCase(), date: dt.short(atUtc(g.date)) })}>{dt.dayName(atUtc(g.date))}</Link>
+          {g.ph !== "r" ? <span className="badge tag">{say(PHASE_NAME[g.ph])}</span> : null}
         </>
       ),
     },
-    { key: "loc", label: "H/A", title: "Home or away", get: (g) => g.loc },
-    { key: "opp", label: "Opponent", cls: "team", get: (g) => g.oppName, cell: (g) => <TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(lg, g.oppF, year, g.oppName)} /> },
-    { key: "score", label: "Score", num: true, title: "This team first. Sorted by margin.", get: (g) => g.margin, cell: (g) => (g.res ? `${g.mine}–${g.theirs}` : "") },
+    { key: "loc", label: say("col.ha"), title: say("col.haTitle"), get: (g) => g.loc, cell: (g) => say(g.loc === "Home" ? "loc.home" : "loc.away") },
+    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(lg, g.oppF, year, g.oppName)} /> },
+    { key: "score", label: say("col.score"), num: true, title: say("col.scoreTitle"), get: (g) => g.margin, cell: (g) => (g.res ? `${g.mine}–${g.theirs}` : "") },
     {
-      key: "res", label: lg === "nhl" ? "W/L/T" : "Result", get: (g) => g.res || null,
-      cell: (g) => (g.res ? <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{g.res}</span> : <span className="note">no result</span>),
+      key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
+      cell: (g) => (g.res ? <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> : <span className="note">{say("game.noResult")}</span>),
     },
-    { key: "ot", label: extra, title: lg === "mlb" ? "Went to extra innings" : "Went to overtime", get: (g) => (g.ot ? 1 : 0), cell: (g) => (g.ot ? extra : "") },
-    { key: "rec", label: "Record", num: true, title: "Record after the game, within its part of the season", get: (g) => g.recPct, cell: (g) => g.rec },
+    { key: "ot", label: extra, title: say(lg === "mlb" ? "col.extrasTitle" : "col.otTitle"), get: (g) => (g.ot ? 1 : 0), cell: (g) => (g.ot ? extra : "") },
+    { key: "rec", label: say("col.record"), num: true, title: say("col.recordTitle"), get: (g) => g.recPct, cell: (g) => g.rec },
     {
-      key: "src", label: "Source", get: (g) => SRC[g.src] || g.src,
+      key: "src", label: say("col.source"), get: (g) => srcName(say, g.src),
       cell: (g) => (
         <>
           <Badge src={g.src} />
-          {g.v === 1 ? <span className="ok tag" title="Confirmed by a second source">✓</span> : null}
-          {g.v === -1 ? <span className="bad tag" title="A second source disagrees">≠</span> : null}
+          {g.v === 1 ? <span className="ok tag" title={say("game.confirmedTitle")}>✓</span> : null}
+          {g.v === -1 ? <span className="bad tag" title={say("game.disputedTitle")}>≠</span> : null}
         </>
       ),
     },
-  ], [lg, year, extra]);
+  ], [lg, year, extra, say, dt]);
   const table = useMemo(() => tableOf(rows, specs, (g) => g.id), [rows, specs]);
 
   const done = rows.filter((g) => g.res);
@@ -110,44 +113,44 @@ export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList,
   });
   const parts: RecordPart[] = recordParts(loc === "all" ? record : counted(locRows.filter((g) => g.ph === "r")));
   const side = (l: "Home" | "Away") => { const r = counted(phaseRows.filter((g) => g.loc === l)); const n = r.w + r.l + r.t + r.otl; return n ? (r.w + r.t / 2) / n : null; };
-  const verdict = verdictOf(side("Home"), side("Away"));
-  const word = loc === "home" ? " at home" : loc === "road" ? " on the road" : "";
+  const verdict = verdictOf(side("Home"), side("Away"), say);
+  const recordKey = loc === "home" ? "glance.recordHome" : loc === "road" ? "glance.recordRoad" : "glance.record";
   return (
     <>
       <section className="section">
-        <h2>The season at a glance</h2>
+        <h2>{say("glance.title")}</h2>
         <div className="controls"><LocSwitch value={loc} onChange={setLoc} /></div>
         <div className="chartrow">
-          <Donut title={`${season} record${word}`} sub="Regular season" parts={parts} />
+          <Donut title={say(recordKey, { season })} sub={say("phase.regular")} parts={parts} />
           <div className="donutbox">
-            <h3>Home and road</h3>
-            <p className="note">Every game with a result in the part of the season chosen under Games, home and road side by side.</p>
+            <h3>{say("glance.homeRoad")}</h3>
+            <p className="note">{say("glance.homeRoadNote")}</p>
             <SplitBars games={phaseRows} />
             {verdict ? <div className="verdict"><b>{verdict.head}</b><span>{verdict.sub}</span></div> : null}
           </div>
         </div>
-        <h3>Wins minus losses, game by game</h3>
+        <h3>{say("glance.running")}</h3>
         <RunningLine games={locRows} />
       </section>
       <section className="section">
-        <h2>Games</h2>
+        <h2>{say("teamgames.title")}</h2>
         <div className="controls">
           <PhaseSwitch phase={phase} onChange={(k) => set({ phase: k })} />
           <LocSwitch value={loc} onChange={setLoc} />
         </div>
         <MonthFilter months={months} month={filterMonth} days={gameDays} day={day}
           onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ month: d.slice(0, 7), day: d })} />
-        <p className="note">{`${fmt(rows.length)} game${rows.length === 1 ? "" : "s"}, ${fmt(done.length)} with a result. Press a column to sort.`}</p>
+        <p className="note">{say("teamgames.note", { games: plural("count.games", rows.length), finals: fmt(done.length) })}</p>
         <div className="tablebox"><SortTable {...table} def="date.asc" initial={initialSort} remote /></div>
       </section>
       <section className="section">
-        <h2>Calendar</h2>
-        <p className="note">Green days are wins, red days losses. Pick a day to see its game.</p>
+        <h2>{say("teamcal.title")}</h2>
+        <p className="note">{say("teamcal.note")}</p>
         {months.length ? (
           <GameCalendar lg={lg} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={String(meId)} dayOnly
             onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ day: d })}
             onJump={(d) => set({ month: d.slice(0, 7), day: d })} />
-        ) : <div className="daylist"><p className="note">No games for this choice.</p></div>}
+        ) : <div className="daylist"><p className="note">{say("games.none")}</p></div>}
       </section>
     </>
   );

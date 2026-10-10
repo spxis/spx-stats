@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { useSpeaker } from "./i18n/LocaleProvider";
 
 const subscribe = (notify: () => void) => {
   const mq = matchMedia("(prefers-color-scheme: dark)");
@@ -19,6 +20,7 @@ const isDark = () => {
 
 /** Light/dark switch. The choice is saved in localStorage; an inline script in <head> applies it before paint. */
 export function ThemeToggle() {
+  const { say } = useSpeaker();
   const dark = useSyncExternalStore(subscribe, isDark, () => false);
   const toggle = () => {
     const next = isDark() ? "light" : "dark";
@@ -27,8 +29,8 @@ export function ThemeToggle() {
     window.dispatchEvent(new Event("spxn-theme"));
   };
   return (
-    <button className="theme" id="theme" type="button" aria-label="Switch light or dark mode" aria-pressed={dark} onClick={toggle}>
-      {dark ? "Light" : "Dark"}
+    <button className="theme" id="theme" type="button" aria-label={say("theme.switch")} aria-pressed={dark} onClick={toggle}>
+      {dark ? say("theme.light") : say("theme.dark")}
     </button>
   );
 }

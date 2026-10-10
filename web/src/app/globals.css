@@ -146,6 +146,10 @@
 
   .foot { max-width: 1180px; margin-inline: auto; border-top: 2px solid var(--ink); padding-block: 18px 32px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 14px; }
   .foot .retro { color: var(--ink); }
+  .langpick { margin-top: 6px; font-size: 15px; }
+  .langpick button { font: inherit; color: var(--accent); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
+  .langpick button:disabled { opacity: .6; cursor: default; }
+  .langpick .here { color: var(--ink); font-weight: 600; }
 
   .trophies { display: flex; align-items: center; gap: 14px; color: var(--accent); }
   .trophies b { font: 700 clamp(88px, 14vw, 140px)/0.85 var(--display); font-variant-numeric: tabular-nums; }

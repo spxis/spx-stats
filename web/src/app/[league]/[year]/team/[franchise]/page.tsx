@@ -12,7 +12,8 @@ import { brandFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
 import { getBrands, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
-import { fmt, fmt3 } from "@/lib/format";
+import { fmt3 } from "@/lib/format";
+import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { parseLoc } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
@@ -40,12 +41,14 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/t
   if (!isLeague(league) || y == null || f == null) return {};
   const d = await load(league, y, f, "asc");
   if (!d.raw.length) return { robots: { index: false } };
+  const { say, locale } = await currentSpeaker();
   const season = seasonLabel(league, y);
   const rec = seasonRecord(deriveTeamGames(d.raw, f, d.st), d.st);
   return pageMeta({
     title: `${d.name} ${season} · ${LG[league]}`,
-    description: `Every game of the ${d.name} ${season} ${LG[league]} season: ${d.raw.length} games, ${recordText(rec)}, with scores, running record and a calendar of wins and losses.`,
+    description: say("tseason.metaDesc", { name: d.name, season, league: LG[league], games: d.raw.length, record: recordText(rec) }),
     path: `/${league}/${y}/team/${f}`,
+    locale,
   });
 }
 
@@ -53,6 +56,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
   const { league: lg, year, franchise } = await params;
   const y = yearOf(year), f = idOf(franchise);
   if (!isLeague(lg) || y == null || f == null) notFound();
+  const { say, fmt } = await currentSpeaker();
   const sp = await searchParams;
   const sort = parseSort(sp.sort, TEAM_GAME_SORT_KEYS, "date.asc");
   const dateSort = sort.find((s) => s.key === "date");
@@ -61,8 +65,8 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
     return (
       <>
         <AccentStyle league={lg} />
-        <p className="note">No games for that team in that season.</p>
-        <p><Link href={`/${lg}/${y}`}>Back to the season</Link></p>
+        <p className="note">{say("tseason.none")}</p>
+        <p><Link href={`/${lg}/${y}`}>{say("tseason.back")}</Link></p>
       </>
     );
   }
@@ -76,12 +80,12 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
   const text = recordText(rec);
   const decisions = rec.w + rec.l + rec.t + rec.otl;
 
-  const figs: [string, number | string][] = [["Record", text]];
-  if (st?.pts != null) figs.push(["Points", st.pts]);
-  figs.push(["Winning share", decisions ? fmt3((rec.w + rec.t / 2) / decisions) : "—"]);
-  if (st?.pf != null && st.pa != null) figs.push(["Points for", fmt(st.pf)], ["Points against", fmt(st.pa)]);
-  if (st?.home) figs.push(["Home", st.home]);
-  if (st?.road) figs.push(["Road", st.road]);
+  const figs: [string, number | string][] = [[say("fig.record"), text]];
+  if (st?.pts != null) figs.push([say("fig.points"), st.pts]);
+  figs.push([say("fig.share"), decisions ? fmt3((rec.w + rec.t / 2) / decisions) : "—"]);
+  if (st?.pf != null && st.pa != null) figs.push([say("fig.pointsFor"), fmt(st.pf)], [say("fig.pointsAgainst"), fmt(st.pa)]);
+  if (st?.home) figs.push([say("col.home"), st.home]);
+  if (st?.road) figs.push([say("col.road"), st.road]);
 
   const selection = parseSelection(sp);
   return (
@@ -92,18 +96,18 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       ) : null}
       <section className="head fade">
         {prev != null || next != null ? (
-          <nav className="seasonnav" aria-label="Other seasons of this team">
+          <nav className="seasonnav" aria-label={say("tseason.otherSeasons")}>
             {prev != null ? <Link href={`/${lg}/${prev}/team/${f}`} rel="prev" prefetch={false}>{"← " + seasonLabel(lg, prev)}</Link> : null}
             {next != null ? <Link href={`/${lg}/${next}/team/${f}`} rel="next" prefetch={false}>{seasonLabel(lg, next) + " →"}</Link> : null}
           </nav>
         ) : null}
-        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{`${season} season`}</Link></span>
+        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{say("season.title", { label: season })}</Link></span>
         <h1 className="teamname"><TeamLogo url={b?.logo_url} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
-        {isChamp ? <span className="reigning"><BadgeCup league={lg} />{`${season} champions`}</span> : null}
+        {isChamp ? <span className="reigning"><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
         <p className="lede">
-          {`Every game of the ${season} season: ${text}. `}
-          <Link href={`/${lg}/team/${f}`}>All seasons of the franchise</Link>{" · "}
-          <Link href={`/${lg}/${y}?team=${me?.id}`}>{`The whole ${LG[lg]} season`}</Link>
+          {say("tseason.lede", { season, record: text }) + " "}
+          <Link href={`/${lg}/team/${f}`}>{say("tseason.allSeasons")}</Link>{" · "}
+          <Link href={`/${lg}/${y}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>
         </p>
       </section>
       <Figures items={figs} />

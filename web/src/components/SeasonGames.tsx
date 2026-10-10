@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { resolveSelection, type ClubTeam, type GameTuple, type Selection } from "@/lib/season";
 import { replaceQuery } from "@/lib/urlQuery";
 import { GameCalendar } from "./GameCalendar";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import { PhaseSwitch } from "./PhaseSwitch";
 
 /**
@@ -12,6 +13,7 @@ import { PhaseSwitch } from "./PhaseSwitch";
  * The selection lives in the address (?phase=&team=&month=&day=), so a reload or shared link keeps it.
  */
 export function SeasonGames({ lg, year, games, teams: teamList, initial }: { lg: string; year?: number; games: GameTuple[]; teams: ClubTeam[]; initial: Selection }) {
+  const { say } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const [want, setWant] = useState<Selection>(initial);
   const { byDay, months, month, day } = useMemo(() => resolveSelection(games, want), [games, want]);
@@ -27,8 +29,8 @@ export function SeasonGames({ lg, year, games, teams: teamList, initial }: { lg:
   const controls = (
     <div className="controls">
       <PhaseSwitch phase={phase} onChange={(k) => set({ phase: k })} />
-      <select aria-label="Team" value={team} onChange={(e) => set({ team: e.target.value })}>
-        <option value="">All teams</option>
+      <select aria-label={say("games.team")} value={team} onChange={(e) => set({ team: e.target.value })}>
+        <option value="">{say("games.allTeams")}</option>
         {teamList.map((t) => <option key={t.id} value={String(t.id)}>{t.name}</option>)}
       </select>
     </div>
@@ -38,7 +40,7 @@ export function SeasonGames({ lg, year, games, teams: teamList, initial }: { lg:
     return (
       <>
         {controls}
-        <div className="daylist"><p className="note">No games for this choice.</p></div>
+        <div className="daylist"><p className="note">{say("games.none")}</p></div>
       </>
     );
   }

@@ -1,16 +1,7 @@
 import { format, utcFormat } from "d3";
 
-export const fmt = format(",");
+/** Winning shares are written the sports way (.650 is 0.650 here) in every language. */
 export const fmt3 = format(".3f");
-export const utc = {
-  monthDay: utcFormat("%B %-d"),
-  dayName: utcFormat("%a %b %-d"),
-  monthDayShort: utcFormat("%b %-d"),
-  monthYear: utcFormat("%B %Y"),
-  full: utcFormat("%A, %B %-d, %Y"),
-  short: utcFormat("%a %b %-d, %Y"),
-  iso: utcFormat("%Y-%m-%d"),
-  mon: utcFormat("%b"),
-  monYear: utcFormat("%b %y"),
-};
+/** A calendar day as the machine-readable key the data and the address use. */
+export const isoDay = utcFormat("%Y-%m-%d");
 export const atUtc = (ymd: string): Date => new Date(`${ymd}T00:00:00Z`);

@@ -1,4 +1,7 @@
+"use client";
+
 import { trophySvg } from "@/lib/trophies";
+import { useSpeaker } from "./i18n/LocaleProvider";
 
 /** A league's trophy as inline SVG (static markup from lib/trophies.ts, never user input). */
 export function Trophy({ league, className }: { league: string; className: string }) {
@@ -6,7 +9,8 @@ export function Trophy({ league, className }: { league: string; className: strin
 }
 
 export function MiniCup({ league }: { league: string }) {
-  return <span className="minicup" title="Champion" role="img" aria-label="Champion" dangerouslySetInnerHTML={{ __html: trophySvg(league) }} />;
+  const { say } = useSpeaker();
+  return <span className="minicup" title={say("trophy.champion")} role="img" aria-label={say("trophy.champion")} dangerouslySetInnerHTML={{ __html: trophySvg(league) }} />;
 }
 
 /** The small decorative cup in the "Reigning champions" badge. */

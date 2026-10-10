@@ -17,14 +17,13 @@ import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { titleHolders } from "@/lib/champions";
 import { getBrands, getClubs, getSummary, getTeam, getTeamStandings } from "@/lib/data";
-import { fmt, fmt3 } from "@/lib/format";
+import { fmt3 } from "@/lib/format";
+import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { recShare, tableOf } from "@/lib/sort";
 
-export const revalidate = 3600;
-export const dynamicParams = true;
-export const generateStaticParams = () => [];
+// Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
 
 const idOf = (v: string) => (/^\d{1,9}$/.test(v) ? Number(v) : null);
 
@@ -34,12 +33,14 @@ export async function generateMetadata({ params }: PageProps<"/[league]/team/[fr
   if (!isLeague(league) || f == null) return {};
   const t = await getTeam(league, f);
   if (!t) return {};
-  const name = t.names.at(-1)?.name || `Team ${f}`;
+  const { say, plural, locale } = await currentSpeaker();
+  const name = t.names.at(-1)?.name || say("team.fallback", { id: f });
   const n = t.titles.length;
   return pageMeta({
     title: `${name} · ${LG[league]}`,
-    description: `${name} all-time record, standings by season and names over time: ${t.seasons.length} seasons of results${n ? `, ${n} championship${n === 1 ? "" : "s"}` : ""}.`,
+    description: say("team.metaDesc", { name, seasons: plural("count.seasons", t.seasons.length), titles: n ? say("team.titlesSuffix", { titles: plural("count.championships", n) }) : "" }),
     path: `/${league}/team/${f}`,
+    locale,
   });
 }
 
@@ -47,18 +48,19 @@ function sum(rows: StandingRow[], k: "w" | "l" | "t" | "otl" | "gp") {
   return rows.reduce((a, r) => a + (r[k] || 0), 0);
 }
 
-function Lifetime({ lg, rows }: { lg: string; rows: StandingRow[] }) {
+async function Lifetime({ lg, rows }: { lg: string; rows: StandingRow[] }) {
+  const { say } = await currentSpeaker();
   const w = sum(rows, "w"), l = sum(rows, "l"), t = sum(rows, "t"), o = sum(rows, "otl"), gp = sum(rows, "gp");
   const pct = w + l + t + o ? (w + t / 2) / (w + l + t + o) : null;
-  const figs: [string, number | string][] = [["Seasons", rows.length], ["Games", gp], ["Wins", w], ["Losses", l]];
-  if (t) figs.push(["Ties", t]);
-  if (o) figs.push([lg === "nhl" ? "OT losses" : "OT", o]);
-  figs.push(["Winning share", pct == null ? "—" : fmt3(pct)]);
+  const figs: [string, number | string][] = [[say("fig.seasons"), rows.length], [say("fig.games"), gp], [say("fig.wins"), w], [say("fig.losses"), l]];
+  if (t) figs.push([say("fig.ties"), t]);
+  if (o) figs.push([say(lg === "nhl" ? "fig.otLosses" : "fig.ot"), o]);
+  figs.push([say("fig.share"), pct == null ? "—" : fmt3(pct)]);
   return (
     <section className="section">
-      <h2>All-time record</h2>
+      <h2>{say("team.allTime")}</h2>
       <Figures items={figs} />
-      <p className="note">Regular seasons only. Winning share counts a tie as half a win and an overtime loss as a loss.</p>
+      <p className="note">{say("team.allTimeNote")}</p>
     </section>
   );
 }
@@ -76,10 +78,11 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   const { league: lg, franchise } = await params;
   const f = idOf(franchise);
   if (!isLeague(lg) || f == null) notFound();
+  const { say, plural, fmt } = await currentSpeaker();
   const [t, rows, brands, summary] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getSummary()]);
   if (!t) notFound();
   const names = t.names;
-  const now = names.at(-1)?.name || `Team ${f}`;
+  const now = names.at(-1)?.name || say("team.fallback", { id: f });
   const b = brandFor(brands, f);
   const reigning = titleHolders(summary.seasons, lg).reigning;
   const won = new Set(t.titles);
@@ -104,33 +107,33 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   const withGames = new Set(summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
   const standings = tableOf(rows, [
     {
-      key: "champ", label: "Champion", hideLabel: true, cls: "cupcol", title: "Championship season", get: (r) => (won.has(r.year) ? 1 : 0),
+      key: "champ", label: say("col.champion"), hideLabel: true, cls: "cupcol", title: say("team.champSeason"), get: (r) => (won.has(r.year) ? 1 : 0),
       cell: (r) => (won.has(r.year) ? <MiniCup league={lg} /> : null),
     },
     {
-      key: "season", label: "Season", num: true, cls: "seasoncell", get: (r) => r.year,
+      key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (r) => r.year,
       cell: (r) => <Link href={`/${lg}/${r.year}`} prefetch={false}>{seasonLabel(lg, r.year)}</Link>,
     },
     {
-      key: "team", label: "Team", cls: "team", get: (r) => r.team,
+      key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
       cell: (r) => <><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, f, r.year, r.team)}</abbr></>,
     },
     {
-      key: "gp", label: "GP", num: true, title: "Games played; opens that season's every game", get: (r) => r.gp,
+      key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,
       cell: (r) => (r.gp != null && withGames.has(r.year) ? (
-        <Link href={`/${lg}/${r.year}/team/${f}`} prefetch={false} title={`Every game of ${seasonLabel(lg, r.year)}`}>{r.gp}</Link>
+        <Link href={`/${lg}/${r.year}/team/${f}`} prefetch={false} title={say("team.everyGame", { season: seasonLabel(lg, r.year) })}>{r.gp}</Link>
       ) : r.gp ?? ""),
     },
-    { key: "w", label: "W", num: true, get: (r) => r.w }, { key: "l", label: "L", num: true, get: (r) => r.l },
-    ...(showT ? [{ key: "t", label: "T", num: true, get: (r: StandingRow) => r.t }] : []),
-    ...(showO ? [{ key: "otl", label: "OTL", num: true, get: (r: StandingRow) => r.otl }] : []),
-    ...(showP ? [{ key: "pts", label: "Pts", num: true, get: (r: StandingRow) => r.pts }] : []),
-    { key: "pf", label: "PF", num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
-    { key: "pa", label: "PA", num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
-    { key: "home", label: "Home", get: (r) => recShare(r.home), cell: (r) => r.home || "" },
-    { key: "road", label: "Road", get: (r) => recShare(r.road), cell: (r) => r.road || "" },
+    { key: "w", label: say("col.w"), num: true, get: (r) => r.w }, { key: "l", label: say("col.l"), num: true, get: (r) => r.l },
+    ...(showT ? [{ key: "t", label: say("col.t"), num: true, get: (r: StandingRow) => r.t }] : []),
+    ...(showO ? [{ key: "otl", label: say("col.otl"), num: true, get: (r: StandingRow) => r.otl }] : []),
+    ...(showP ? [{ key: "pts", label: say("col.pts"), num: true, get: (r: StandingRow) => r.pts }] : []),
+    { key: "pf", label: say("col.pf"), num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
+    { key: "pa", label: say("col.pa"), num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
+    { key: "home", label: say("col.home"), get: (r) => recShare(r.home), cell: (r) => r.home || "" },
+    { key: "road", label: say("col.road"), get: (r) => recShare(r.road), cell: (r) => r.road || "" },
     {
-      key: "pct", label: "Pct", num: true, get: (r) => r.pct,
+      key: "pct", label: say("col.pct"), num: true, get: (r) => r.pct,
       cell: (r) => (
         <>
           {r.pct != null ? fmt3(r.pct) : ""}
@@ -140,9 +143,9 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     },
   ], (r) => r.year);
   const nameTable = tableOf(names, [
-    { key: "name", label: "Name", cls: "team", get: (n) => n.name },
-    { key: "from", label: "From", get: (n) => n.from, cell: (n) => n.from || "" },
-    { key: "until", label: "Until", get: (n) => n.to || "9999", cell: (n) => n.to || "today" },
+    { key: "name", label: say("col.name"), cls: "team", get: (n) => n.name },
+    { key: "from", label: say("col.from"), get: (n) => n.from, cell: (n) => n.from || "" },
+    { key: "until", label: say("col.until"), get: (n) => n.to || "9999", cell: (n) => n.to || say("team.today") },
   ], (n, i) => `${i}|${n.name}`);
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
@@ -159,17 +162,17 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={`/${lg}/${reigning.year}`}>
             <BadgeCup league={lg} />
-            {`Reigning champions · ${reigning.label}`}
+            {say("team.reigning", { season: reigning.label })}
           </Link>
         ) : null}
-        <p className="lede">{`${t.seasons.length} seasons of results${t.titles.length ? `, ${t.titles.length} championship${t.titles.length === 1 ? "" : "s"}` : ""}.`}</p>
+        <p className="lede">{say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "" })}</p>
       </section>
       {rows.length ? <Lifetime lg={lg} rows={rows} /> : null}
       {t.titles.length ? (
         <div className="trophyrow fade">
           <div className="trophies"><b>{t.titles.length}</b><Trophy league={lg} className="cup" /></div>
           <div className="champs">
-            <h2>Championships</h2>
+            <h2>{say("team.championships")}</h2>
             <div className="seasonlist">
               {t.titles.map((y) => <Link key={y} className="full" href={`/${lg}/${y}`}>{seasonLabel(lg, y)}</Link>)}
             </div>
@@ -180,21 +183,21 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         <TeamCharts lg={lg} f={f} rows={rows} titles={t.titles} seasons={t.seasons} />
       ) : (
         <section className="section">
-          <h2>Winning share by season</h2>
-          <p className="note">Filled dots are championship seasons. Click a season to open it.</p>
+          <h2>{say("team.winTitle")}</h2>
+          <p className="note">{say("team.winNote")}</p>
           <WinLine seasons={t.seasons} titles={t.titles} lg={lg} />
         </section>
       )}
       {rows.length ? (
         <section className="section">
-          <h2>Standings by season</h2>
-          <p className="note">{`${rows.length} season${rows.length === 1 ? "" : "s"}, newest first. The trophy marks a championship season.`}</p>
+          <h2>{say("team.standings")}</h2>
+          <p className="note">{say("team.standingsNote", { seasons: plural("count.seasons", rows.length) })}</p>
           <div className="tablebox"><SortTable {...standings} def="season.desc" /></div>
         </section>
       ) : null}
       {names.length ? (
         <section className="section">
-          <h2>Names over time</h2>
+          <h2>{say("team.names")}</h2>
           <SortTable {...nameTable} param="sort_names" />
         </section>
       ) : null}

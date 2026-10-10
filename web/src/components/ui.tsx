@@ -1,14 +1,17 @@
+"use client";
+
 import Link from "next/link";
-import { fmt } from "@/lib/format";
-import { isSpx, SRC } from "@/lib/leagues";
+import { isSpx, srcName } from "@/lib/leagues";
+import { useSpeaker } from "./i18n/LocaleProvider";
 import "./team.css";
 
 /** A source's short name in a bordered tag; SPX's own is drawn in the page colour. */
 export function Badge({ src }: { src: string | null | undefined }) {
+  const { say } = useSpeaker();
   if (!src) return null;
   return (
     <span className={"badge" + (isSpx(src) ? " spx" : "")} title={src}>
-      {SRC[src] || src}
+      {srcName(say, src)}
     </span>
   );
 }
@@ -29,6 +32,7 @@ export function TeamLink({ lg, f, name, className, year, abbr }: {
 }
 
 export function Figures({ items }: { items: [string, number | string][] }) {
+  const { fmt } = useSpeaker();
   return (
     <section className="figures">
       {items.map(([k, v]) => (

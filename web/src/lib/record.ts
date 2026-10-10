@@ -1,13 +1,13 @@
 export type RecordKey = "w" | "l" | "t" | "o";
-export interface RecordPart { k: RecordKey; label: string; n: number }
+export interface RecordPart { k: RecordKey; n: number }
 
 /** Wins, losses, ties and overtime losses of a record, in the order the donut draws them. */
 export function recordParts(r: { w?: number | null; l?: number | null; t?: number | null; otl?: number | null }): RecordPart[] {
   return [
-    { k: "w", label: "Wins", n: r.w || 0 },
-    { k: "l", label: "Losses", n: r.l || 0 },
-    { k: "t", label: "Ties", n: r.t || 0 },
-    { k: "o", label: "OT losses", n: r.otl || 0 },
+    { k: "w", n: r.w || 0 },
+    { k: "l", n: r.l || 0 },
+    { k: "t", n: r.t || 0 },
+    { k: "o", n: r.otl || 0 },
   ];
 }
 
