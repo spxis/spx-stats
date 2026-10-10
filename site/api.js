@@ -22,7 +22,13 @@ window.SPX_API = (() => {
   const SPX = { name: 'SPX (SportsInteractive.com)', licence: 'Owned by SPX', attribution: 'SPX (SportsInteractive.com), 1997–2013',
                 url: null, notes: "SPX's own databases, scraper store and published files." };
   const PH = { regular: 'r', playoffs: 'p', preseason: 's', all_star: 'a' };
+  const num = (v) => { const n = Number(v); if (!Number.isInteger(n)) throw new Error('bad id'); return n; };
   return {
+    // Every game a franchise played in a season, in the order asked for (a PostgREST order= value).
+    async teamGames(lg, year, f, order = 'game_date,game_id') {
+      if (!LEAGUES.some((l) => l.code === lg) || !/^[a-z_,.]+$/.test(order)) throw new Error('bad request');
+      return rows('games', `league=eq.${lg}&year=eq.${num(year)}&or=(away_f.eq.${num(f)},home_f.eq.${num(f)})&select=*&order=${order}`);
+    },
     async load(path) {
       if (path === 'summary.json') {
         const [seasons, totals] = await Promise.all([rows('season_summary', 'select=*&order=league,year'), rows('totals', 'select=*')]);
