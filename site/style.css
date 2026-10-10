@@ -167,3 +167,17 @@ h1.teamname .logo { margin: 0; vertical-align: middle; }
 .prose { max-width: 70ch; }
 .prose h2 { margin-top: 10px; }
 .tablebox td.team { white-space: nowrap; }
+
+.head { position: relative; }
+.mapbtn { position: absolute; top: 0; right: 0; width: 180px; padding: 0; border: 1px solid var(--rule); background: var(--panel); cursor: pointer; }
+.mapbtn:hover { border-color: var(--accent); }
+.teammap svg { display: block; width: 100%; height: auto; }
+.teammap .pin { fill: var(--accent); stroke: var(--paper); stroke-width: 0.6; }
+.teammap .pin.me { fill: var(--ink); stroke: var(--accent); stroke-width: 1.2; }
+.teammap.big .pin { stroke-width: 0.4; }
+.teammap.big a:hover .pin { fill: var(--ink); }
+.teammap { --cz-sea: color-mix(in srgb, var(--soft) 70%, #9fc3d6); --cz-land: var(--panel); --cz-faint: color-mix(in srgb, var(--soft) 60%, var(--panel)); --cz-line: var(--rule); }
+.mapdlg { width: min(1100px, 96vw); max-height: 92vh; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); padding: 16px; }
+.mapdlg::backdrop { background: rgba(0,0,0,.55); }
+.dlghead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
+@media (max-width: 640px) { .mapbtn { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; } }

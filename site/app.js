@@ -310,6 +310,29 @@
 
   // One row per season of a franchise's standings, newest first.
   // The franchise's all-time regular-season record, summed over every season shown.
+  // A small map of the team's home (top right of its page); pressing it opens every team that season.
+  async function teamMapCorner(lg, f, year, name) {
+    const me = brandFor(f, year);
+    if (!me || me.latitude == null) return null;
+    const { drawTeamMap } = await import('./teammap.js');
+    const small = await drawTeamMap([{ f, name, lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }], { title: `Where the ${name} play` });
+    if (!small) return null;
+    const btn = el('button', { type: 'button', class: 'mapbtn', 'aria-label': `Map of every ${LG[lg]} team in ${seasonLabel(lg, year)}` }, small);
+    btn.addEventListener('click', async () => {
+      const clubs = await get(`${lg}/${year}/clubs.json`).catch(() => []);
+      const teams = clubs.map((c) => { const b = brandFor(c.franchise_id, year); return b && b.latitude != null ? { f: c.franchise_id, name: c.team, lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: `#/${lg}/team/${c.franchise_id}`, me: String(c.franchise_id) === String(f) } : null; }).filter(Boolean);
+      const big = await drawTeamMap(teams.length ? teams : [{ f, name, lat: me.latitude, lon: me.longitude, me: true }], { big: true, title: `${LG[lg]} teams, ${seasonLabel(lg, year)}` });
+      const dlg = el('dialog', { class: 'mapdlg', 'aria-label': `${LG[lg]} teams, ${seasonLabel(lg, year)}` },
+        el('div', { class: 'dlghead' }, el('h2', {}, `${LG[lg]} teams, ${seasonLabel(lg, year)}`), el('button', { type: 'button', class: 'theme', onclick: () => dlg.close() }, 'Close')),
+        big || el('p', { class: 'note' }, 'No locations for this season yet.'),
+        el('p', { class: 'note' }, `${teams.length} of ${clubs.length} teams placed. Press a dot to open that team. Map: Chizu, from Natural Earth.`));
+      dlg.addEventListener('close', () => dlg.remove());
+      dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.close(); });
+      document.body.append(dlg); dlg.showModal();
+    });
+    return btn;
+  }
+
   function lifetime(lg, rows) {
     const sum = (k) => d3.sum(rows, (r) => r[k] || 0);
     const w = sum('w'), l = sum('l'), t = sum('t'), o = sum('otl'), gp = sum('gp');
@@ -370,6 +393,8 @@
       names.length ? el('section', { class: 'section' }, el('h2', {}, 'Names over time'), el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Name'), el('th', {}, 'From'), el('th', {}, 'Until'))),
         el('tbody', {}, names.map((n) => el('tr', {}, el('td', { class: 'team' }, n.name), el('td', {}, n.from || ''), el('td', {}, n.to || 'today')))))) : null,);
     winLine(box, t, lg); onResize = () => winLine(box, t, lg);
+    const lastYear = stRows.length ? d3.max(stRows, (r) => r.year) : null;
+    if (lastYear != null) teamMapCorner(lg, f, lastYear, now).then((m) => { const head = document.querySelector('#app .head'); if (m && head && head.isConnected) head.prepend(m); }).catch(() => {});
   }
 
   async function sources() {
