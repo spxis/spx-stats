@@ -54,8 +54,8 @@ select g.*, h.franchise_id home_f, a.franchise_id away_f,
        case g.game_type when 'REG' then 'regular' else 'playoffs' end::core.season_phase as phase
 from legacy_nflverse.game g join fr h on h.code = g.home_team join fr a on a.code = g.away_team;
 
-insert into core.season (league_code, start_year, end_year, label, games_per_team, notes)
-select 'nfl', season, season + 1, season::text, case when season >= 2021 then 17 else 16 end, 'Season row created from nflverse.'
+insert into core.season (league_code, start_year, end_year, label, games_per_team, source_id)
+select 'nfl', season, season + 1, season::text, case when season >= 2021 then 17 else 16 end, (select source_id from src)
 from ng group by season on conflict (league_code, start_year) do nothing;
 
 insert into core.team_season (franchise_id, season_id, source_id)

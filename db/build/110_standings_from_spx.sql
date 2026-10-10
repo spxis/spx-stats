@@ -53,11 +53,11 @@ join fmap m on m.team_id = ss.team_id
 where ss.ts is not null and (s.league_code is null or s.league_code = m.league_code)
 order by m.league_code, ss.team_id, s.start_year, s.phase, ss.ts::date, ss.gp desc nulls last, ss.ts desc;
 
-insert into core.season (league_code, start_year, end_year, label, notes)
+insert into core.season (league_code, start_year, end_year, label, source_id)
 select distinct st.league_code, st.start_year,
        case when st.league_code in ('mlb', 'cfl') then st.start_year else st.start_year + 1 end,
        case when st.league_code in ('nhl', 'nba') then st.start_year || '-' || right((st.start_year + 1)::text, 2) else st.start_year::text end,
-       'Season row created from SPX standings; no SPX games are held for it.'
+       (select source_id from meta.source where code = 'spx_database')
 from spx_st st join fmap using (team_id)
 on conflict (league_code, start_year) do nothing;
 

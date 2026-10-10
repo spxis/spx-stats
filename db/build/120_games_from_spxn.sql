@@ -27,10 +27,10 @@ create temp table tmap as
 select st.league_code, st.city, e.entity_id as franchise_id
 from spxn_team st join core.external_id e on e.entity_kind = 'franchise' and e.external_key = 'team:' || st.spx_team_id;
 
-insert into core.season (league_code, start_year, end_year, label, games_per_team, notes)
+insert into core.season (league_code, start_year, end_year, label, games_per_team, source_id)
 select distinct sport, left(season, 4)::smallint, left(season, 4)::smallint + 1,
        left(season, 4) || '-' || right(season, 2), case sport when 'nhl' then 48 else 82 end,
-       'Season row created from the spxn games.'
+       (select source_id from meta.source where code = 'spxn_database')
 from legacy_mongo.game
 on conflict (league_code, start_year) do nothing;
 

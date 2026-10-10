@@ -34,8 +34,8 @@ create temp table fmap as
 select substring(external_key from 'team:(\d+)')::int as team_id, entity_id as franchise_id
 from core.external_id where entity_kind = 'franchise' and external_key like 'team:%';
 
-insert into core.season (league_code, start_year, end_year, label, games_per_team, notes)
-select distinct league, start_year, start_year + 1, season, 82, 'Season row created from an SPX schedule file.'
+insert into core.season (league_code, start_year, end_year, label, games_per_team, source_id)
+select distinct league, start_year, start_year + 1, season, 82, (select source_id from meta.source where code = 'spx_files')
 from sg on conflict (league_code, start_year) do nothing;
 
 insert into core.team_season (franchise_id, season_id, source_id)

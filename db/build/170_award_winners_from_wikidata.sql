@@ -30,11 +30,11 @@ select wd.*, case when league_code in ('nhl', 'nba') then yr - 1 else yr end as 
 where ((kind = 'person_award' and is_human) or (kind <> 'person_award' and not is_human))
   and yr <= extract(year from current_date);
 
-insert into core.season (league_code, start_year, end_year, label, notes)
+insert into core.season (league_code, start_year, end_year, label, source_id)
 select distinct league_code, start_year,
        case when league_code in ('mlb', 'cfl') then start_year else start_year + 1 end,
        case when league_code in ('nhl', 'nba') then start_year || '-' || right((start_year + 1)::text, 2) else start_year::text end,
-       'Season row created for its award winners; no games are held for it yet.'
+       (select source_id from meta.source where code = 'wikidata')
 from wds on conflict (league_code, start_year) do nothing;
 
 insert into core.award_winner (award_id, season_id, winner_name, note, source_id, source_key)

@@ -92,8 +92,8 @@ insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resoluti
 select (select source_id from src), 'game', key, 'Team id not matched to a franchise: ' || home || ' / ' || visitor, 'Game left out'
 from rg where home_f is null or away_f is null;
 
-insert into core.season (league_code, start_year, end_year, label, games_per_team, notes)
-select 'mlb', yr, yr, yr::text, null, 'Season row created from Retrosheet.' from rg group by yr
+insert into core.season (league_code, start_year, end_year, label, games_per_team, source_id)
+select 'mlb', yr, yr, yr::text, null, (select source_id from src) from rg group by yr
 on conflict (league_code, start_year) do nothing;
 
 insert into core.team_season (franchise_id, season_id, source_id)

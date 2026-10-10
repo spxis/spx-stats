@@ -90,7 +90,7 @@ select (select source_id from meta.source where code = 'spx_database'), 'game', 
 from spx_game g join spx_league l on l.league_code = g.league_code
 where g.league_id is distinct from l.spx_league_id;
 
-insert into core.season (league_code, start_year, end_year, label, games_per_team, notes)
+insert into core.season (league_code, start_year, end_year, label, games_per_team, source_id)
 select distinct g.league_code, g.start_year,
        case when g.league_code in ('mlb', 'cfl') then g.start_year else g.start_year + 1 end,
        case when g.league_code in ('nhl', 'nba') then g.start_year || '-' || right((g.start_year + 1)::text, 2)
@@ -99,7 +99,7 @@ select distinct g.league_code, g.start_year,
          when 'nhl' then case g.start_year when 2012 then 48 else 82 end
          when 'nba' then case g.start_year when 2011 then 66 when 1998 then 50 else 82 end
          when 'mlb' then 162 when 'nfl' then 16 when 'cfl' then 18 end,
-       'Season rows created from the SPX games; games_per_team is editorial.'
+       (select source_id from meta.source where code = 'spx_database')
 from spx_game g;
 
 insert into core.franchise (sport_code, source_id, source_key)
