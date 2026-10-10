@@ -1,9 +1,9 @@
-"""SPX's saved NHL.com season tables (NHL<endyear><Regular|Playoff><Table>.csv)
--> CSV rows for legacy_nhlcom.player_season_table.
-Usage: season_tables_to_csv.py <folder> <out.csv> <tag>"""
+"""SPX's saved league season stat tables (<LEAGUE><endyear><Regular|Playoff><Table>.csv)
+-> CSV rows for legacy_files.player_season_table.
+Usage: player_tables_to_csv.py <folder> <out.csv> <tag>"""
 import csv, json, os, re, sys
 root, out, tag = sys.argv[1:4]
-NAME = re.compile(r"^NHL(\d{4})(Regular|Playoff)(.+)\.csv$", re.I)
+NAME = re.compile(r"^(NHL|NBA)(\d{4})(Regular|Playoff)(.+)\.csv$", re.I)
 POS = {"C", "L", "R", "D", "G", "F", "LW", "RW"}
 
 IDENT = {"PLAYERID": "PlayerID", "PLAYER NAME": "Player", "TEAM": "Team", "POSITION": "Pos"}
@@ -11,7 +11,7 @@ IDENT = {"PLAYERID": "PlayerID", "PLAYER NAME": "Player", "TEAM": "Team", "POSIT
 def code(h):
     """A column's key: the identity columns by their label (codes vary by
     season, and P means POSITION in one table and points in the next), the
-    rest by the code NHL.com printed."""
+    rest by the code the table printed."""
     h = h.strip()
     m = re.match(r"^\[(.*?):(.*)\]$", h)
     if m:
@@ -26,7 +26,7 @@ with open(out, "w", newline="") as f:
             m = NAME.match(fn)
             if not m:
                 continue
-            end = int(m.group(1)); season = f"{end - 1}-{str(end)[2:]}"
+            league = m.group(1).lower(); end = int(m.group(2)); season = f"{end - 1}-{str(end)[2:]}"
             rows = [r for r in csv.reader(open(os.path.join(dp, fn), encoding="latin-1")) if any(c.strip() for c in r)]
             if len(rows) < 2:
                 continue
@@ -43,12 +43,12 @@ with open(out, "w", newline="") as f:
                     continue
                 d.pop("RK", None)
                 team, pos = d.pop("Team", ""), d.pop("Pos", None)
-                if team in POS and (pos or "") not in POS:  # NHL.com swapped the two columns on some pages
+                if team in POS and (pos or "") not in POS:  # the source swapped the two columns on some pages
                     team, pos = pos or "", team
                 name = d.pop("Player", None)
                 stats = {k: (v if v != "" else None) for k, v in d.items()}
                 key = (pid, team)
-                seen[key] = [season, m.group(2).lower(), m.group(3), pid, name, team, pos if pos is not None else "\\N",
+                seen[key] = [league, season, m.group(3).lower(), m.group(4), pid, name, team, pos if pos is not None else "\\N",
                              json.dumps(stats), title or "\\N", fn, "{" + tag + "}"]
             for row in seen.values():
                 w.writerow(row)
