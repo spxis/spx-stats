@@ -36,6 +36,13 @@
   const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
   const logo = (b, size = 20) => (b && b.logo_url ? el('img', { class: 'logo', src: b.logo_url, alt: '', width: size, height: size, loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', onerror: (e) => e.target.remove() }) : null);
   const badge = (src) => el('span', { class: 'badge' + (isSpx(src) ? ' spx' : ''), title: src }, SRC[src] || src);
+  // Who holds each league's title: the latest season with a champion, and every season's champion.
+  const titleHolders = async (lg) => {
+    const s = await get('summary.json').catch(() => ({ seasons: [] }));
+    const list = (s.seasons || []).filter((x) => x.league === lg && x.champion_franchise != null).sort((a, b) => a.year - b.year);
+    return { reigning: list.at(-1) || null, byYear: new Map(list.map((x) => [x.year, x])) };
+  };
+  const cupIcon = (lg, cls) => { const c = el('span', { class: cls, 'aria-hidden': 'true' }); c.innerHTML = window.SPX_TROPHY(lg); return c; };
   const go = (href) => { if (href !== location.pathname + location.search) history.pushState(null, '', href); route(); };
   const seasonLabel = (lg, y) => (lg === 'nhl' || lg === 'nba') ? `${y}-${String(y + 1).slice(2)}` : String(y);
 
@@ -199,7 +206,8 @@
 
   async function season(lg, y) {
     accent(lg);
-    const [d] = await Promise.all([get(`${lg}/${y}.json`), brands()]);
+    const [d, holders] = await Promise.all([get(`${lg}/${y}.json`), titleHolders(lg), brands()]);
+    const defending = holders.byYear.get(y - 1)?.champion_franchise;
     const teams = new Map((d.teams || []).map((t) => [t.id, t]));
     const nm = (id) => teams.get(id)?.name || '—';
     const games = (d.games || []).map(([date, a, as, hs, h, ph, st, src, ot, v]) => ({ date, a, as, hs, h, ph, st, src, ot, v }));
@@ -288,14 +296,14 @@
     const maxPct = d3.max(st, (r) => r.pct) || 1;
     const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
     show(
-      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `/${lg}` }, LG[lg])), el('h1', {}, `${d.label} season`),
+      el('section', { class: 'head fade' }, el('nav', { class: 'seasonnav', 'aria-label': 'Other seasons' }, el('a', { href: `/${lg}/${y - 1}`, rel: 'prev' }, '← ' + seasonLabel(lg, y - 1)), el('a', { href: `/${lg}/${y + 1}`, rel: 'next' }, seasonLabel(lg, y + 1) + ' →')), el('span', { class: 'eyebrow' }, el('a', { href: `/${lg}` }, LG[lg])), el('h1', {}, `${d.label} season`),
         el('p', { class: 'lede' }, `${fmt(games.filter((g) => g.ph === 'r').length)} regular-season games, ${fmt(games.filter((g) => g.ph === 'r' && g.st === 'f').length)} with a result.`)),
       champ ? el('section', { class: 'banner' }, el('span', { class: 'cup' }, champ.award), badge(champ.source), el('span', { class: 'who' }, tlink(lg, champ.franchise_id, champ.winner)), el('span', { class: 'how' }, champ.note || '')) : null,
       st.length ? el('section', { class: 'section' }, el('h2', {}, 'Standings'), el('p', { class: 'note' }, basis + '. Sorted by share of games won.'),
         el('div', { class: 'scroll' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Team'), el('th', { class: 'num' }, 'GP'), el('th', { class: 'num' }, 'W'), el('th', { class: 'num' }, 'L'),
           showT ? el('th', { class: 'num' }, 'T') : null, showO ? el('th', { class: 'num' }, 'OTL') : null, showP ? el('th', { class: 'num' }, 'Pts') : null,
           el('th', { class: 'num' }, 'For'), el('th', { class: 'num' }, 'Against'), el('th', {}, 'Home'), el('th', {}, 'Road'), el('th', {}, 'Pct'))),
-          el('tbody', {}, st.map((r) => el('tr', {}, el('td', { class: 'team' }, logo(brandFor(teams.get(r.id)?.f, y)), el('a', { href: `/${lg}/team/${teams.get(r.id)?.f}` }, r.name)),
+          el('tbody', {}, st.map((r) => el('tr', {}, el('td', { class: 'team' }, logo(brandFor(teams.get(r.id)?.f, y)), el('a', { href: `/${lg}/team/${teams.get(r.id)?.f}` }, r.name), defending != null && String(teams.get(r.id)?.f) === String(defending) ? el('span', { class: 'defending', title: `Won the ${seasonLabel(lg, y - 1)} title` }, 'Defending champion') : null),
             el('td', { class: 'num' }, r.gp ?? ''), el('td', { class: 'num' }, r.w ?? ''), el('td', { class: 'num' }, r.l ?? ''),
             showT ? el('td', { class: 'num' }, r.t ?? '') : null, showO ? el('td', { class: 'num' }, r.otl ?? '') : null, showP ? el('td', { class: 'num' }, r.pts ?? '') : null,
             el('td', { class: 'num' }, r.pf != null ? fmt(r.pf) : ''), el('td', { class: 'num' }, r.pa != null ? fmt(r.pa) : ''),
@@ -304,8 +312,7 @@
       awards.length ? el('section', { class: 'section' }, el('h2', {}, 'Awards'), el('div', { class: 'awards' },
         awards.map((a) => el('div', { class: 'award' }, el('span', { class: 'name' }, a.award), el('span', { class: 'winner' }, tlink(lg, a.franchise_id, a.winner)),
           el('span', { class: 'note' }, a.note || '', ' ', badge(a.source)))))) : null,
-      games.length ? el('section', { class: 'section' }, el('h2', {}, 'Games'), el('div', { class: 'controls' }, seg, pick), cal, gamesBox) : null,
-      el('p', { class: 'note' }, el('a', { href: `/${lg}/${y - 1}` }, '← ' + seasonLabel(lg, y - 1)), ' · ', el('a', { href: `/${lg}/${y + 1}` }, seasonLabel(lg, y + 1) + ' →')));
+      games.length ? el('section', { class: 'section' }, el('h2', {}, 'Games'), el('div', { class: 'controls' }, seg, pick), cal, gamesBox) : null);
     if (games.length) drawGames();
   }
 
@@ -378,7 +385,7 @@
 
   async function teamPage(lg, f) {
     accent(lg);
-    const [all, stRows] = await Promise.all([get(`${lg}/teams.json`), get(`${lg}/team/${f}/standings.json`).catch(() => [])]);
+    const [all, stRows, holders] = await Promise.all([get(`${lg}/teams.json`), get(`${lg}/team/${f}/standings.json`).catch(() => []), titleHolders(lg)]);
     const t = all.find((x) => String(x.f) === String(f));
     if (!t) { show(el('p', {}, 'No such team.')); return; }
     const names = t.names || [];
@@ -394,7 +401,7 @@
     }
     show(
       b && b.primary_hex ? el('div', { class: 'teamband', style: `--tp:#${b.primary_hex};--ts:#${b.secondary_hex || b.primary_hex}` }) : null,
-      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `/${lg}` }, LG[lg])), el('h1', { class: 'teamname' }, logo(b, 56), now),
+      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `/${lg}` }, LG[lg])), el('h1', { class: 'teamname' }, logo(b, 56), now), holders.reigning && String(holders.reigning.champion_franchise) === String(f) ? el('a', { class: 'reigning', href: `/${lg}/${holders.reigning.year}` }, cupIcon(lg, 'rcup'), `Reigning champions · ${holders.reigning.label}`) : null,
         el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championship${t.titles.length === 1 ? '' : 's'}` : ''}.`)),
       stRows.length ? lifetime(lg, stRows) : null,
       (t.titles || []).length ? trophies(lg, t.titles.length, t.titles) : null,

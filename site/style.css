@@ -181,3 +181,13 @@ h1.teamname .logo { margin: 0; vertical-align: middle; }
 .mapdlg::backdrop { background: rgba(0,0,0,.55); }
 .dlghead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
 @media (max-width: 640px) { .mapbtn { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; } }
+
+.seasonnav { position: absolute; top: 0; right: 0; display: flex; gap: 6px; }
+.seasonnav a { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
+.seasonnav a:hover { border-color: var(--accent); color: var(--accent); }
+@media (max-width: 640px) { .seasonnav { position: static; order: -1; } }
+
+.reigning { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font: 700 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; padding: 7px 12px; background: var(--accent); color: var(--paper); text-decoration: none; }
+.reigning .rcup { display: inline-block; width: 14px; height: 22px; }
+.reigning .rcup svg { width: 100%; height: 100%; }
+.defending { margin-left: 8px; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border: 1px solid var(--accent); color: var(--accent); vertical-align: 1px; white-space: nowrap; }
