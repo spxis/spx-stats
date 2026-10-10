@@ -106,6 +106,23 @@ def load_table(ref, token, table, replace):
     return sent
 
 
+def preflight(ref, token, tables):
+    """Refuse before writing anything if Supabase lacks a table or column the local
+    database has: --replace empties a table (and, by cascade, its children) before
+    the insert that would fail, which left production empty on 2026-10-10."""
+    remote = {}
+    for r in api(ref, token, "select table_schema || '.' || table_name as t, quote_ident(column_name) as c "
+                             "from information_schema.columns where table_schema not in ('pg_catalog', 'information_schema')"):
+        remote.setdefault(r["t"], set()).add(r["c"])
+    missing = []
+    for t in tables:
+        if t not in remote:
+            missing.append(f"{t} (table)"); continue
+        missing += [f"{t}.{c}" for c in insertable_columns(t) if c not in remote[t]]
+    if missing:
+        raise SystemExit("Supabase is missing, nothing was written; apply the migrations first:\n  " + "\n  ".join(missing))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--ref", default="njpvfrceahkvnrduerkk")
@@ -123,8 +140,10 @@ def main():
             print("applied 002_legacy_spx.sql")
         api(a.ref, token, "create table if not exists legacy_spx._superseded (table_name text not null, row_key jsonb not null, "
                           "old_row jsonb not null, seen_in text not null, primary key (table_name, row_key, seen_in))")
+    tables = tables_in_order(a.schemas.split(","))
+    preflight(a.ref, token, tables)
     total = 0
-    for t in tables_in_order(a.schemas.split(",")):
+    for t in tables:
         total += load_table(a.ref, token, t, a.replace)
     print(f"done: {total} rows")
 
