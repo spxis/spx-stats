@@ -208,6 +208,46 @@
   .reigning .rcup svg { width: 100%; height: 100%; }
   .defending { margin-left: 8px; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border: 1px solid var(--accent); color: var(--accent); vertical-align: 1px; white-space: nowrap; }
 
+  /* Sortable tables: the header is a button inside the th. */
+  th { padding: 0; }
+  th .sortbtn { all: unset; box-sizing: border-box; display: inline-flex; align-items: center; gap: 5px; width: 100%; padding: 8px 10px; cursor: pointer; font: inherit; letter-spacing: inherit; text-transform: inherit; color: inherit; white-space: nowrap; }
+  th.num .sortbtn { justify-content: flex-end; }
+  th .sortbtn:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  th .arrow { font-size: 10px; opacity: .35; }
+  th .sortbtn:hover .arrow { opacity: .8; }
+  th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--ink); }
+  th[aria-sort="ascending"] .arrow, th[aria-sort="descending"] .arrow { opacity: 1; color: var(--accent); }
+  table[aria-busy="true"] { opacity: .6; }
+  td a { text-underline-offset: 3px; }
+
+  /* Team charts: the accent is the team's colour; motion only when the reader allows it. */
+  .chartrow { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 24px; }
+  .donutbox { display: flex; flex-direction: column; align-items: center; gap: 8px; min-width: 0; }
+  .donutbox > h3 { align-self: flex-start; }
+  .donutbox > .chart:not(.donut) { align-self: stretch; }
+  .donutbox > .legend { justify-content: center; }
+  .donut { width: min(100%, 230px); }
+  .donut text.big { fill: var(--ink); font: 700 30px var(--display); text-anchor: middle; }
+  .donut text.sub { fill: var(--muted); font: 600 11px var(--display); letter-spacing: .1em; text-transform: uppercase; text-anchor: middle; }
+  .donut path { stroke: var(--paper); stroke-width: 1.5; cursor: default; }
+  .seg-w { fill: var(--accent); } .seg-l { fill: color-mix(in srgb, var(--ink) 55%, var(--paper)); }
+  .seg-t { fill: color-mix(in srgb, var(--accent) 35%, var(--paper)); } .seg-o { fill: color-mix(in srgb, var(--ink) 25%, var(--paper)); }
+  .legend i.seg-w { background: var(--accent); } .legend i.seg-l { background: color-mix(in srgb, var(--ink) 55%, var(--paper)); }
+  .legend i.seg-t { background: color-mix(in srgb, var(--accent) 35%, var(--paper)); } .legend i.seg-o { background: color-mix(in srgb, var(--ink) 25%, var(--paper)); }
+  .chart .zero { stroke: var(--muted); stroke-dasharray: 4 3; }
+  .cell .mk.W { color: var(--ok); } .cell .mk.L { color: var(--bad); }
+  .tag { margin-left: 6px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .donut .arcs { transform-origin: 100px 100px; animation: donut-in .8s cubic-bezier(.22, 1, .36, 1) both; }
+    .bar-grow { animation: bar-grow .7s cubic-bezier(.22, 1, .36, 1) both; }
+    .bar-wide { animation: bar-wide .7s cubic-bezier(.22, 1, .36, 1) both; }
+    .line-draw { stroke-dasharray: 1; animation: line-draw 1.1s cubic-bezier(.22, 1, .36, 1) both; }
+    @keyframes donut-in { from { opacity: 0; transform: rotate(-70deg) scale(.9); } }
+    @keyframes bar-grow { from { transform: scaleY(0); } }
+    @keyframes bar-wide { from { transform: scaleX(0); } }
+    @keyframes line-draw { from { stroke-dashoffset: 1; } to { stroke-dashoffset: 0; } }
+  }
+
   @media (prefers-reduced-motion: no-preference) {
     .fade { animation: fade .35s ease-out both; }
     @keyframes fade { from { opacity: .4; transform: translateY(4px); } }

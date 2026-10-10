@@ -1,7 +1,9 @@
 import { rollups } from "d3";
+import { SortTable } from "@/components/SortTable";
 import { getBrands } from "@/lib/data";
 import { fmt } from "@/lib/format";
 import { pageMeta } from "@/lib/meta";
+import { tableOf } from "@/lib/sort";
 
 export const revalidate = 3600;
 export const metadata = pageMeta({
@@ -14,6 +16,10 @@ export default async function LogosPage() {
   const brands = await getBrands();
   const list = Object.values(brands).flat().filter((b) => b.logo_url);
   const kinds = rollups(list, (v) => v.length, (b) => b.logo_licence || "Not recorded").sort((a, b) => b[1] - a[1]);
+  const table = tableOf(kinds, [
+    { key: "licence", label: "Licence given by the file page", get: (k) => k[0] },
+    { key: "logos", label: "Logos", num: true, get: (k) => k[1], cell: (k) => fmt(k[1]) },
+  ], (k) => k[0]);
   return (
     <>
       <section className="head fade">
@@ -30,10 +36,7 @@ export default async function LogosPage() {
         <h2>Where they come from</h2>
         <p>Logos are taken from Wikimedia Commons, through each team’s Wikidata entry, and shown from Commons’ own servers. Each logo keeps the licence its file page gives it. Some simple text logos are in the public domain for copyright, but remain trademarks.</p>
         {kinds.length ? (
-          <table>
-            <thead><tr><th>Licence given by the file page</th><th className="num">Logos</th></tr></thead>
-            <tbody>{kinds.map(([k, n]) => <tr key={k}><td>{k}</td><td className="num">{fmt(n)}</td></tr>)}</tbody>
-          </table>
+          <SortTable {...table} />
         ) : <p className="note">No logos are loaded yet.</p>}
         <h2>Team colours</h2>
         <p>Team pages take the team’s colours. Colours are facts, not anyone’s property; ours come from Wikidata (CC0).</p>

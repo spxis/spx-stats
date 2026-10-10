@@ -6,7 +6,7 @@ import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
   seasonSummarySchema, sourceSchema, standingSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
 } from "./api/schemas";
-import type { AwardRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
+import type { AwardRow, GameRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
 import { groupBrands, type BrandMap } from "./brand";
 import { isSpx } from "./leagues";
 import type { ClubTeam, GameTuple, Phase } from "./season";
@@ -107,6 +107,17 @@ export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | n
 
 export const getTeamStandings = cache(async (lg: string, f: number): Promise<StandingRow[]> =>
   rows("standings", `franchise_id=eq.${f}&league=eq.${lg}&select=*&order=year.desc`, standingSchema).catch(() => []));
+
+/**
+ * Every game a franchise played in a season, in the order asked for: `game_date.asc|desc` (then the game id the same way).
+ * The order is built from two fixed words, never from the request, so nothing else reaches the API.
+ */
+export const getTeamGames = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc" = "asc"): Promise<GameRow[]> =>
+  rows("games", `league=eq.${lg}&year=eq.${y}&or=(away_f.eq.${f},home_f.eq.${f})&select=*&order=game_date.${dir},game_id.${dir}`, gameSchema));
+
+/** Every (league, year, franchise) with a record, for the sitemap's team-season pages. */
+export const getTeamSeasonIndex = cache(async () =>
+  rows("team_seasons", "select=league,year,franchise_id,w&order=league,year,franchise_id", z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), w: z.number().nullable() })));
 
 /** Every (league, franchise) with a page, for the sitemap (franchise_names is far cheaper to page than team_seasons). */
 export const getTeamIndex = cache(async (): Promise<{ league: string; franchise_id: number }[]> => {

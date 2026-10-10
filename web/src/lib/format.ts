@@ -4,6 +4,8 @@ export const fmt = format(",");
 export const fmt3 = format(".3f");
 export const utc = {
   monthDay: utcFormat("%B %-d"),
+  dayName: utcFormat("%a %b %-d"),
+  monthDayShort: utcFormat("%b %-d"),
   monthYear: utcFormat("%B %Y"),
   full: utcFormat("%A, %B %-d, %Y"),
   short: utcFormat("%a %b %-d, %Y"),

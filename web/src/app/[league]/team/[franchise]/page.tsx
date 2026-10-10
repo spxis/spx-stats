@@ -2,6 +2,9 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
+import { Donut } from "@/components/Donut";
+import { MarginBars } from "@/components/MarginBars";
+import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
 import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
@@ -14,6 +17,8 @@ import { getBrands, getClubs, getSummary, getTeam, getTeamStandings } from "@/li
 import { fmt, fmt3 } from "@/lib/format";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
+import { recordParts } from "@/lib/record";
+import { recShare, tableOf } from "@/lib/sort";
 
 export const revalidate = 3600;
 export const dynamicParams = true;
@@ -94,6 +99,45 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     );
   }
 
+  const withGames = new Set(summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
+  const standings = tableOf(rows, [
+    {
+      key: "season", label: "Season", num: true, cls: "seasoncell", get: (r) => r.year,
+      cell: (r) => <><Link href={`/${lg}/${r.year}`} prefetch={false}>{seasonLabel(lg, r.year)}</Link>{won.has(r.year) ? <MiniCup league={lg} /> : null}</>,
+    },
+    { key: "team", label: "Team", cls: "team", get: (r) => r.team, cell: (r) => r.team || "" },
+    {
+      key: "gp", label: "GP", num: true, title: "Games played; opens that season's every game", get: (r) => r.gp,
+      cell: (r) => (r.gp != null && withGames.has(r.year) ? (
+        <Link href={`/${lg}/${r.year}/team/${f}`} prefetch={false} title={`Every game of ${seasonLabel(lg, r.year)}`}>{r.gp}</Link>
+      ) : r.gp ?? ""),
+    },
+    { key: "w", label: "W", num: true, get: (r) => r.w }, { key: "l", label: "L", num: true, get: (r) => r.l },
+    ...(showT ? [{ key: "t", label: "T", num: true, get: (r: StandingRow) => r.t }] : []),
+    ...(showO ? [{ key: "otl", label: "OTL", num: true, get: (r: StandingRow) => r.otl }] : []),
+    ...(showP ? [{ key: "pts", label: "Pts", num: true, get: (r: StandingRow) => r.pts }] : []),
+    { key: "pf", label: "PF", num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
+    { key: "pa", label: "PA", num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
+    { key: "home", label: "Home", get: (r) => recShare(r.home), cell: (r) => r.home || "" },
+    { key: "road", label: "Road", get: (r) => recShare(r.road), cell: (r) => r.road || "" },
+    {
+      key: "pct", label: "Pct", num: true, get: (r) => r.pct,
+      cell: (r) => (
+        <>
+          {r.pct != null ? fmt3(r.pct) : ""}
+          {r.pct != null ? <span className="pctbar" style={{ width: `${Math.round((60 * r.pct) / maxPct)}px` }} /> : null}
+        </>
+      ),
+    },
+  ], (r) => r.year);
+  const nameTable = tableOf(names, [
+    { key: "name", label: "Name", cls: "team", get: (n) => n.name },
+    { key: "from", label: "From", get: (n) => n.from, cell: (n) => n.from || "" },
+    { key: "until", label: "Until", get: (n) => n.to || "9999", cell: (n) => n.to || "today" },
+  ], (n, i) => `${i}|${n.name}`);
+  const latestRows = rows.filter((r) => r.w != null).sort((a, c) => c.year - a.year);
+  const latest = latestRows[0];
+  const total = { w: sum(rows, "w"), l: sum(rows, "l"), t: sum(rows, "t"), otl: sum(rows, "otl") };
   return (
     <>
       <AccentStyle league={lg} team={b?.primary_hex ? teamAccent(b) : undefined} />
@@ -113,6 +157,18 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         <p className="lede">{`${t.seasons.length} seasons of results${t.titles.length ? `, ${t.titles.length} championship${t.titles.length === 1 ? "" : "s"}` : ""}.`}</p>
       </section>
       {rows.length ? <Lifetime lg={lg} rows={rows} /> : null}
+      {rows.length ? (
+        <section className="section">
+          <h2>Record at a glance</h2>
+          <div className="chartrow">
+            <Donut title="All-time record" sub={`${rows.length} regular seasons`} parts={recordParts(total)} />
+            {latest ? <Donut title={`${seasonLabel(lg, latest.year)} record`} sub="Most recent season with results" parts={recordParts(latest)} /> : null}
+          </div>
+          <h3>Scoring margin per game, by season</h3>
+          <p className="note">Points for minus points against, divided by games played. Click a season to open every game of it.</p>
+          <MarginBars lg={lg} f={f} rows={rows.flatMap((r) => (r.pf != null && r.pa != null && r.gp ? [{ year: r.year, gp: r.gp, pf: r.pf, pa: r.pa }] : []))} />
+        </section>
+      ) : null}
       {t.titles.length ? (
         <div className="trophyrow fade">
           <div className="trophies"><b>{t.titles.length}</b><Trophy league={lg} className="cup" /></div>
@@ -133,44 +189,13 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         <section className="section">
           <h2>Standings by season</h2>
           <p className="note">{`${rows.length} season${rows.length === 1 ? "" : "s"}, newest first. The trophy marks a championship season.`}</p>
-          <div className="tablebox">
-            <table>
-              <thead>
-                <tr>
-                  <th>Season</th><th>Team</th><th className="num">GP</th><th className="num">W</th><th className="num">L</th>
-                  {showT ? <th className="num">T</th> : null}{showO ? <th className="num">OTL</th> : null}{showP ? <th className="num">Pts</th> : null}
-                  <th className="num">PF</th><th className="num">PA</th><th>Home</th><th>Road</th><th>Pct</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.year}>
-                    <td className="seasoncell"><Link href={`/${lg}/${r.year}`}>{seasonLabel(lg, r.year)}</Link>{won.has(r.year) ? <MiniCup league={lg} /> : null}</td>
-                    <td className="team">{r.team || ""}</td>
-                    <td className="num">{r.gp ?? ""}</td><td className="num">{r.w ?? ""}</td><td className="num">{r.l ?? ""}</td>
-                    {showT ? <td className="num">{r.t ?? ""}</td> : null}{showO ? <td className="num">{r.otl ?? ""}</td> : null}{showP ? <td className="num">{r.pts ?? ""}</td> : null}
-                    <td className="num">{r.pf != null ? fmt(r.pf) : ""}</td><td className="num">{r.pa != null ? fmt(r.pa) : ""}</td>
-                    <td>{r.home || ""}</td><td>{r.road || ""}</td>
-                    <td>
-                      {r.pct != null ? fmt3(r.pct) : ""}
-                      {r.pct != null ? <span className="pctbar" style={{ width: `${Math.round((60 * r.pct) / maxPct)}px` }} /> : null}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <div className="tablebox"><SortTable {...standings} def="season.desc" /></div>
         </section>
       ) : null}
       {names.length ? (
         <section className="section">
           <h2>Names over time</h2>
-          <table>
-            <thead><tr><th>Name</th><th>From</th><th>Until</th></tr></thead>
-            <tbody>
-              {names.map((n, i) => <tr key={i}><td className="team">{n.name}</td><td>{n.from || ""}</td><td>{n.to || "today"}</td></tr>)}
-            </tbody>
-          </table>
+          <SortTable {...nameTable} param="sort_names" />
         </section>
       ) : null}
     </>

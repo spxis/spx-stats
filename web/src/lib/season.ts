@@ -71,15 +71,4 @@ export function resolveSelection(games: GameTuple[], want: Selection) {
   return { sel, byDay, months, month: months.length ? month : "", day: months.length ? day : "" };
 }
 
-/** The query string that keeps a selection in the address ("" when everything is default). */
-export function selectionQuery(s: Selection): string {
-  const n = new URLSearchParams();
-  if (s.phase !== "r") n.set("phase", s.phase);
-  if (s.team) n.set("team", s.team);
-  if (s.month) n.set("month", s.month);
-  if (s.day) n.set("day", s.day);
-  const str = n.toString();
-  return str ? `?${str}` : "";
-}
-
 export const isLeagueCode = (c: string): c is LeagueCode => (LEAGUE_CODES as readonly string[]).includes(c);

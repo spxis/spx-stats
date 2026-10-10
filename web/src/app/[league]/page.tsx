@@ -2,13 +2,15 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SeasonBars } from "@/components/SeasonBars";
+import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
 import { Badge, TeamLink } from "@/components/ui";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
 import { fmt } from "@/lib/format";
-import { isLeague, LEAGUE_CODES, LEAGUES } from "@/lib/leagues";
+import { isLeague, LEAGUE_CODES, LEAGUES, SRC } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
+import { tableOf } from "@/lib/sort";
 
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -36,6 +38,12 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
   const list = withCoverage(s.seasons).filter((x) => x.league === lg).sort((a, b) => a.year - b.year);
   const withGames = list.filter((x) => x.games > 0);
   const champs = list.filter((x) => x.champion).reverse();
+  const champions = tableOf(champs, [
+    { key: "season", label: "Season", num: true, cls: "seasoncell", get: (c) => c.year, cell: (c) => <Link href={`/${lg}/${c.year}`} prefetch={false}>{c.label}</Link> },
+    { key: "champion", label: "Champion", cls: "team", get: (c) => c.champion, cell: (c) => <TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /> },
+    { key: "final", label: "Final", cls: "note", get: (c) => c.champion_note, cell: (c) => c.champion_note || "" },
+    { key: "source", label: "Source", get: (c) => SRC[c.champion_source ?? ""] || c.champion_source, cell: (c) => <Badge src={c.champion_source} /> },
+  ], (c) => c.year);
   return (
     <>
       <AccentStyle league={lg} />
@@ -68,21 +76,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
       <section className="section">
         <h2>Champions</h2>
         {champs.length ? (
-          <div className="tablebox">
-            <table>
-              <thead><tr><th>Season</th><th>Champion</th><th>Final</th><th>Source</th></tr></thead>
-              <tbody>
-                {champs.map((c) => (
-                  <tr key={c.year}>
-                    <td><Link href={`/${lg}/${c.year}`}>{c.label}</Link></td>
-                    <td className="team"><TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /></td>
-                    <td className="note">{c.champion_note || ""}</td>
-                    <td><Badge src={c.champion_source} /></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <div className="tablebox"><SortTable {...champions} def="season.desc" /></div>
         ) : <p className="note">No champions recorded yet.</p>}
       </section>
     </>

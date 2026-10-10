@@ -44,10 +44,11 @@ They are read on the server at run time, never sent to the browser.
 
 ## URLs
 
-`/`, `/{nhl|nba|mlb|nfl|cfl}`, `/{league}/{year}`, `/{league}/team/{franchise}`, `/sources`, `/quality`, `/logos`,
+`/`, `/{nhl|nba|mlb|nfl|cfl}`, `/{league}/{year}`, `/{league}/team/{franchise}`, `/{league}/{year}/team/{franchise}` (every game of a team's season), `/sources`, `/quality`, `/logos`,
 plus `/sitemap.xml` and `/robots.txt` (`public/robots.txt`, identical to the old site's).
 The season page keeps its selection in the address: `?phase=` (`r`, `p`, empty for all), `?team=` (a team id),
 `?month=YYYY-MM`, `?day=YYYY-MM-DD`. Values that do not validate fall back to the defaults.
+Every table is the one `SortTable`: header buttons with `aria-sort`, the sort in the address as `?sort=column.asc|desc` (`sort_<name>` for a second table), validated with Zod (`src/lib/sort.ts`). The team-season games table asks the API for date order (`order=game_date.dir,game_id.dir`).
 
 ## Styling
 
