@@ -4,7 +4,12 @@
 -- row covers that identity's years, open at the franchise's first and last
 -- identity, and split where the team's dated home venues (P115) change. A team with
 -- no colour, no Commons logo and no venue coordinate gets no row.
+--
+-- Colours also come from Wikipedia's colour modules (legacy_team_brand.wikipedia_colour,
+-- CC BY-SA 4.0, source 'wikipedia'): see the last statement. Those rows carry the
+-- colours for the years the module dates them, one row per colour period of an identity.
 delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikidata');
+delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikipedia');
 
 create or replace function pg_temp.norm(t text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;
@@ -64,4 +69,69 @@ insert into core.franchise_brand (franchise_id, valid_during, primary_hex, secon
 select franchise_id, rng, p, s, thumb_url, licence, page_url, venue, latitude, longitude,
        (select source_id from meta.source where code = 'wikidata'), qid
 from cand
+on conflict (franchise_id, valid_during, source_id) do nothing;
+
+-- Team colours from Wikipedia's Lua colour modules. An identity (a name and its years)
+-- takes the entries of its league whose name matches: an undated entry fills the years no
+-- dated entry of that identity covers (slivers under 180 days are dropped when dated entries
+-- exist), a dated entry ('Name XXXXthruYYYY', calendar years inclusive) covers its years, the
+-- later start winning an overlap. An entry that only points at another (Phoenix Coyotes ->
+-- Arizona Coyotes) carries the colours it points at; a dated one matches the name it points at
+-- too, because the modules write history in both directions.
+with ident as (
+  select i.franchise_id fid, fl.league_code, pg_temp.norm(i.full_name) n, i.valid_during vd
+  from core.franchise_identity i
+  join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id)
+), entry as (
+  select w.*, pg_temp.norm(team_name) n_key, pg_temp.norm(resolved_name) n_res,
+         case when start_year is not null
+              then daterange(make_date(start_year, 1, 1), make_date(coalesce(end_year, start_year) + 1, 1, 1)) end as yr
+  from legacy_team_brand.wikipedia_colour w where primary_hex is not null
+), m as (
+  select i.fid, i.vd, e.module_page, e.seq, e.entry_key, e.start_year, e.alias_of, e.primary_hex, e.secondary_hex,
+         e.yr is not null as dated, coalesce(e.yr * i.vd, i.vd) as rng0
+  from ident i
+  join entry e on e.league_code = i.league_code
+              and (e.n_key = i.n or (e.yr is not null and e.n_res = i.n))
+  where e.yr is null or not isempty(e.yr * i.vd)
+), ranged as (
+  select * from m where dated
+), ranged_cut as (
+  select r.fid, r.vd, r.entry_key, r.primary_hex, r.secondary_hex,
+         unnest(datemultirange(r.rng0) - coalesce(
+           (select range_agg(o.rng0) from ranged o
+             where o.fid = r.fid and o.vd = r.vd and (o.start_year, o.seq) > (r.start_year, r.seq)),
+           '{}'::datemultirange)) as rng
+  from ranged r
+), sliver as (   -- what dated entries leave of an identity, when under 180 days (a season starts in April, a year in January)
+  select d.fid, d.vd, unnest(datemultirange(d.vd) - (select range_agg(o.rng0) from ranged o where o.fid = d.fid and o.vd = d.vd)) as rng
+  from (select distinct fid, vd from ranged) d
+), ranged_piece as (   -- a sliver touching a dated piece joins it
+  select c.fid, c.vd, c.entry_key, c.primary_hex, c.secondary_hex,
+         daterange(
+           coalesce((select min(lower(s.rng)) from sliver s where s.fid = c.fid and s.vd = c.vd
+                      and upper(s.rng) = lower(c.rng) and upper(s.rng) - lower(s.rng) < 180), lower(c.rng)),
+           case when upper(c.rng) is null then null else
+             coalesce((select max(upper(s.rng)) from sliver s where s.fid = c.fid and s.vd = c.vd
+                        and lower(s.rng) = upper(c.rng) and upper(s.rng) - lower(s.rng) < 180), upper(c.rng)) end) as rng
+  from ranged_cut c
+), base as (
+  select distinct on (fid, vd) * from m where not dated
+  order by fid, vd, (alias_of is null) desc, seq
+), base_piece as (
+  select b.fid, b.vd, b.entry_key, b.primary_hex, b.secondary_hex,
+         unnest(datemultirange(b.vd) - coalesce(
+           (select range_agg(o.rng0) from ranged o where o.fid = b.fid and o.vd = b.vd),
+           '{}'::datemultirange)) as rng,
+         exists (select 1 from ranged o where o.fid = b.fid and o.vd = b.vd) as has_dated
+  from base b
+), piece as (
+  select fid, entry_key, primary_hex, secondary_hex, rng from ranged_piece where not isempty(rng)
+  union all
+  select fid, entry_key, primary_hex, secondary_hex, rng from base_piece
+   where not isempty(rng) and not (has_dated and coalesce(upper(rng) - lower(rng), 9999) < 180)
+)
+insert into core.franchise_brand (franchise_id, valid_during, primary_hex, secondary_hex, source_id, source_key)
+select fid, rng, primary_hex, secondary_hex, (select source_id from meta.source where code = 'wikipedia'), entry_key
+from piece
 on conflict (franchise_id, valid_during, source_id) do nothing;
