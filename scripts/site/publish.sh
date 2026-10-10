@@ -9,8 +9,8 @@ cp "$R"/site/* "$B/"
 touch "$B/.nojekyll"
 cd "$B"
 git init -q -b gh-pages
-git -c user.name="John Morris" -c user.email=john@spxis.com add -A
-git -c user.name="John Morris" -c user.email=john@spxis.com commit -q -m "site: $(git -C "$R" rev-parse --short HEAD) with data of $(date -u +%Y-%m-%d)"
+git -c user.name="$(git -C "$R" config user.name)" -c user.email="$(git -C "$R" config user.email)" add -A
+git -c user.name="$(git -C "$R" config user.name)" -c user.email="$(git -C "$R" config user.email)" commit -q -m "site: $(git -C "$R" rev-parse --short HEAD) with data of $(date -u +%Y-%m-%d)"
 git push -q -f "$(git -C "$R" remote get-url origin)" gh-pages
 echo "pushed gh-pages ($(du -sh "$B" | cut -f1))"
 rm -rf "$B"
