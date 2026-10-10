@@ -24,6 +24,17 @@
   };
   const show = (...kids) => app.replaceChildren(...kids.flat().filter((k) => k != null && k !== false));
   const accent = (lg) => document.documentElement.style.setProperty('--accent', lg ? `var(--${lg})` : 'var(--ink)');
+  // Team colours and logos (see the Logos page). A brand era covers a date range; pick the one for a year.
+  let BRAND = null;
+  const brands = async () => (BRAND = BRAND || await get('brand.json').catch(() => ({})));
+  const brandFor = (f, year) => {
+    const list = (BRAND || {})[f] || []; if (!list.length) return null;
+    const y = year ? `${year}-12-31` : null;
+    return (y && list.find((b) => (!b.brand_from || b.brand_from <= y) && (!b.brand_to || b.brand_to > y))) || list.find((b) => !b.brand_to) || list.at(-1);
+  };
+  const lum = (hex) => { const c = [0, 2, 4].map((i) => parseInt(hex.slice(i, i + 2), 16) / 255).map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4)); return 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2]; };
+  const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
+  const logo = (b, size = 20) => (b && b.logo_url ? el('img', { class: 'logo', src: b.logo_url, alt: '', width: size, height: size, loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', onerror: (e) => e.target.remove() }) : null);
   const badge = (src) => el('span', { class: 'badge' + (isSpx(src) ? ' spx' : ''), title: src }, SRC[src] || src);
   const seasonLabel = (lg, y) => (lg === 'nhl' || lg === 'nba') ? `${y}-${String(y + 1).slice(2)}` : String(y);
 
@@ -187,7 +198,7 @@
 
   async function season(lg, y) {
     accent(lg);
-    const d = await get(`${lg}/${y}.json`);
+    const [d] = await Promise.all([get(`${lg}/${y}.json`), brands()]);
     const teams = new Map((d.teams || []).map((t) => [t.id, t]));
     const nm = (id) => teams.get(id)?.name || '—';
     const games = (d.games || []).map(([date, a, as, hs, h, ph, st, src, ot, v]) => ({ date, a, as, hs, h, ph, st, src, ot, v }));
@@ -274,7 +285,7 @@
         el('div', { class: 'scroll' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Team'), el('th', { class: 'num' }, 'GP'), el('th', { class: 'num' }, 'W'), el('th', { class: 'num' }, 'L'),
           showT ? el('th', { class: 'num' }, 'T') : null, showO ? el('th', { class: 'num' }, 'OTL') : null, showP ? el('th', { class: 'num' }, 'Pts') : null,
           el('th', { class: 'num' }, 'For'), el('th', { class: 'num' }, 'Against'), el('th', {}, 'Home'), el('th', {}, 'Road'), el('th', {}, 'Pct'))),
-          el('tbody', {}, st.map((r) => el('tr', {}, el('td', { class: 'team' }, el('a', { href: `#/${lg}/team/${teams.get(r.id)?.f}` }, r.name)),
+          el('tbody', {}, st.map((r) => el('tr', {}, el('td', { class: 'team' }, logo(brandFor(teams.get(r.id)?.f, y)), el('a', { href: `#/${lg}/team/${teams.get(r.id)?.f}` }, r.name)),
             el('td', { class: 'num' }, r.gp ?? ''), el('td', { class: 'num' }, r.w ?? ''), el('td', { class: 'num' }, r.l ?? ''),
             showT ? el('td', { class: 'num' }, r.t ?? '') : null, showO ? el('td', { class: 'num' }, r.otl ?? '') : null, showP ? el('td', { class: 'num' }, r.pts ?? '') : null,
             el('td', { class: 'num' }, r.pf != null ? fmt(r.pf) : ''), el('td', { class: 'num' }, r.pa != null ? fmt(r.pa) : ''),
@@ -302,8 +313,17 @@
     const names = t.names || [];
     const box = el('div', { class: 'chart' });
     const now = names.at(-1)?.name || `Team ${f}`;
+    await brands();
+    const b = brandFor(f);
+    if (b && b.primary_hex) {
+      // The page takes the team's colours; the accent is whichever team colour reads on the page background.
+      const paper = getComputedStyle(document.body).backgroundColor.match(/\d+/g).slice(0, 3).map((n) => Number(n).toString(16).padStart(2, '0')).join('');
+      const pick = [b.primary_hex, b.secondary_hex].filter(Boolean).find((h) => contrast(h, paper) >= 3);
+      if (pick) document.documentElement.style.setProperty('--accent', '#' + pick);
+    }
     show(
-      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', {}, now),
+      b && b.primary_hex ? el('div', { class: 'teamband', style: `--tp:#${b.primary_hex};--ts:#${b.secondary_hex || b.primary_hex}` }) : null,
+      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', { class: 'teamname' }, logo(b, 56), now),
         el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championship${t.titles.length === 1 ? '' : 's'}` : ''}.`)),
       (t.titles || []).length ? trophies(lg, t.titles.length) : null,
       el('section', { class: 'section' }, el('h2', {}, 'Winning share by season'), el('p', { class: 'note' }, 'Filled dots are championship seasons. Click a season to open it.'), box),
@@ -343,6 +363,31 @@
 
   // ---------- routing
   let onResize = null;
+  // Why the site shows team logos, and on what basis.
+  async function logosPage() {
+    accent(null);
+    await brands();
+    const list = Object.values(BRAND || {}).flat().filter((b) => b.logo_url);
+    const kinds = d3.rollups(list, (v) => v.length, (b) => b.logo_licence || 'Not recorded').sort((a, b) => b[1] - a[1]);
+    show(
+      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, 'About the logos'), el('h1', {}, 'Team logos'),
+        el('p', { class: 'lede' }, 'Why this site shows team logos, where they come from, and how to ask for one to be removed.')),
+      el('section', { class: 'section prose' },
+        el('h2', {}, 'They belong to their owners'),
+        el('p', {}, 'Every team and league logo shown here is a trademark, and often a copyrighted work, of its team or league. SPXN is not affiliated with, sponsored by or endorsed by any team or league, and claims no rights in their logos.'),
+        el('h2', {}, 'Why we show them'),
+        el('p', {}, 'SPXN is a historical record of five leagues: scores, standings, champions and awards back to the 1870s. A small logo beside a name lets a reader recognize a team at a glance, the way a logo appears in a newspaper standings table. We use them for that alone: to identify the team being described, in a reference work about the sport’s history.'),
+        el('p', {}, 'We believe this is fair use (in Canada, fair dealing for research, education and reporting): the logos are shown small and unaltered, only beside the team they name, never to sell anything, never in a way that suggests a team endorses this site, and they do not replace any market for the logos themselves. Sports reference sites have used logos on the same basis for many years.'),
+        el('h2', {}, 'Where they come from'),
+        el('p', {}, 'Logos are taken from Wikimedia Commons, through each team’s Wikidata entry, and shown from Commons’ own servers. Each logo keeps the licence its file page gives it. Some simple text logos are in the public domain for copyright, but remain trademarks.'),
+        kinds.length ? el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Licence given by the file page'), el('th', { class: 'num' }, 'Logos'))),
+          el('tbody', {}, kinds.map(([k, n]) => el('tr', {}, el('td', {}, k), el('td', { class: 'num' }, fmt(n)))))) : el('p', { class: 'note' }, 'No logos are loaded yet.'),
+        el('h2', {}, 'Team colours'),
+        el('p', {}, 'Team pages take the team’s colours. Colours are facts, not anyone’s property; ours come from Wikidata (CC0).'),
+        el('h2', {}, 'Asking for removal'),
+        el('p', {}, 'If you own a logo shown here and want it removed, tell us and it will be taken down promptly, no questions asked: ', el('a', { href: 'https://github.com/spxis/spx-stats/issues' }, 'open an issue'), '.')));
+  }
+
   async function route() {
     onResize = null;
     const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
@@ -351,6 +396,7 @@
       if (!parts.length) await home();
       else if (parts[0] === 'sources') await sources();
       else if (parts[0] === 'quality') await quality();
+      else if (parts[0] === 'logos') await logosPage();
       else if (LG[parts[0]] && parts[1] === 'team') await teamPage(parts[0], parts[2]);
       else if (LG[parts[0]] && parts[1]) await season(parts[0], Number(parts[1]));
       else if (LG[parts[0]]) await league(parts[0]);

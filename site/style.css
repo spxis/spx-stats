@@ -154,3 +154,10 @@ main:focus { outline: none; }
 .daylist { display: flex; flex-direction: column; gap: 8px; }
 .linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 @media (max-width: 640px) { .cell { min-height: 46px; padding: 3px 4px; } .cell .ct { font-size: 16px; } .cell .mk { font-size: 10px; } }
+
+.logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; }
+h1.teamname { display: flex; align-items: center; gap: 14px; }
+h1.teamname .logo { margin: 0; vertical-align: middle; }
+.teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
+.prose { max-width: 70ch; }
+.prose h2 { margin-top: 10px; }

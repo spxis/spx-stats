@@ -28,6 +28,13 @@ window.SPX_API = (() => {
         const [seasons, totals] = await Promise.all([rows('season_summary', 'select=*&order=league,year'), rows('totals', 'select=*')]);
         return { leagues: LEAGUES, seasons, totals: totals[0] };
       }
+      if (path === 'brand.json') {
+        // One row per franchise: the era that is current (or the latest), plus every era for seasons.
+        const all = await rows('team_brand', 'select=*&order=franchise_id,brand_from.nullsfirst').catch(() => []);
+        const by = {};
+        for (const b of all) (by[b.franchise_id] = by[b.franchise_id] || []).push(b);
+        return by;
+      }
       if (path === 'sources.json') {
         const [src, by, aw] = await Promise.all([rows('sources', 'select=*'), rows('games_by_source', 'select=*'), rows('awards', 'select=source')]);
         const games = (c) => by.filter((b) => one(b.source) === c).reduce((a, b) => a + b.games, 0);
