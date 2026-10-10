@@ -1,0 +1,104 @@
+/* Playoff series: the bracket on a season page and the showdown page. Team colours arrive as --ca/--cb (lines),
+   --ba/--bb (blocks) and --ia/--ib (text on the blocks), set per page by SeriesStyle. */
+
+/* ---- bracket and series cards ---- */
+.bracket { display: grid; grid-template-columns: repeat(var(--rounds, 1), minmax(0, 1fr)); gap: 14px; align-items: stretch; }
+.bracket.mine { grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); align-items: start; }
+.round { display: flex; flex-direction: column; gap: 10px; justify-content: space-around; min-width: 0; }
+.round > h3 { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.sercard { display: flex; flex-direction: column; gap: 3px; padding: 8px 10px 7px; background: var(--panel); border: 1px solid var(--rule); border-left: 4px solid var(--rule); text-decoration: none; color: var(--ink); min-width: 0; }
+.sercard:hover { border-color: var(--accent); }
+.serrow { display: flex; align-items: center; gap: 7px; min-width: 0; font-size: 15px; line-height: 1.25; color: var(--muted); }
+.serrow .logo { margin: 0; vertical-align: middle; flex: none; }
+.serrow .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.serrow b { font: 700 20px/1 var(--display); font-variant-numeric: tabular-nums; }
+.serrow.won { color: var(--ink); }
+.serrow.won .nm { font-weight: 700; }
+.sercard:has(.serrow.won) { border-left-color: var(--accent); }
+.sermeta { font-size: 12px; color: var(--muted); }
+@media (max-width: 900px) { .bracket { grid-template-columns: 1fr; } .round { justify-content: flex-start; } }
+
+/* ---- the showdown ---- */
+.showdown { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: stretch; background: var(--panel); border: 1px solid var(--rule); overflow: hidden; }
+.sdside { display: flex; flex-direction: column; justify-content: center; gap: 9px; min-width: 0; padding: 26px 56px 26px 26px; }
+.sdside.a { background: var(--ba); color: var(--ia); clip-path: polygon(0 0, 100% 0, calc(100% - 38px) 100%, 0 100%); }
+.sdside.b { background: var(--bb); color: var(--ib); clip-path: polygon(38px 0, 100% 0, 100% 100%, 0 100%); align-items: flex-end; text-align: right; padding: 26px 26px 26px 56px; }
+.sdside.lost { filter: saturate(.55); }
+.sdside a { color: inherit; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
+.crest { width: 88px; height: 88px; border-radius: 50%; background: var(--paper); display: grid; place-items: center; flex: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ia) 30%, transparent); }
+.sdside.b .crest { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ib) 30%, transparent); }
+.crest .logo { margin: 0; vertical-align: middle; max-width: 64px; max-height: 64px; width: auto; height: auto; }
+.crest .mono { font: 700 28px/1 var(--display); letter-spacing: .02em; color: var(--ink); }
+h2.sdname { font: 700 clamp(28px, 4vw, 46px)/1 var(--display); text-transform: uppercase; text-wrap: balance; }
+.wintag { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; font: 700 13px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; padding: 6px 9px; border: 2px solid currentColor; }
+.sdside.b .wintag { align-self: flex-end; }
+.wintag .rcup { display: inline-block; width: 10px; height: 16px; }
+.wintag .rcup svg { width: 100%; height: 100%; display: block; }
+.sdmeta { font-size: 15px; opacity: .92; }
+.sdlinks { display: flex; flex-wrap: wrap; gap: 4px 16px; font: 600 14px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; }
+.sdmid { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; padding: 18px 8px; min-width: min(30vw, 280px); }
+.bigscore { display: flex; align-items: center; justify-content: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.bigscore .n { font: 700 clamp(76px, 11vw, 132px)/.85 var(--display); opacity: .55; }
+.bigscore .n.a { color: var(--ca); }
+.bigscore .n.b { color: var(--cb); }
+.bigscore .n.w { opacity: 1; }
+.bigscore .dash { font: 500 clamp(40px, 6vw, 72px)/1 var(--display); color: var(--muted); }
+.verdict { font: 700 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .08em; text-align: center; }
+.sdnote { font-size: 14px; color: var(--muted); text-align: center; }
+@media (max-width: 760px) {
+  .showdown { grid-template-columns: 1fr; }
+  .sdside, .sdside.b { clip-path: none; align-items: flex-start; text-align: left; padding: 20px 16px; flex-direction: row; flex-wrap: wrap; align-content: center; gap: 8px 14px; }
+  .sdside .crest { width: 64px; height: 64px; }
+  .crest .logo { max-width: 46px; max-height: 46px; }
+  .sdside.b .wintag { align-self: flex-start; }
+  h2.sdname { flex: 1 1 200px; font-size: 30px; }
+  .sdside > .sdmeta, .sdside > .sdlinks, .sdside > .wintag { flex-basis: 100%; }
+  .sdmid { order: 0; padding: 14px 8px; }
+  .bigscore .n { font-size: 84px; }
+}
+
+/* ---- the game strip ---- */
+.gamestrip { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 170px), 1fr)); gap: 10px; }
+.gtile { display: flex; flex-direction: column; gap: 5px; padding: 9px 12px 10px; background: var(--panel); border: 1px solid var(--rule); border-top: 5px solid var(--tc, var(--rule)); min-width: 0; }
+.ghead { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.ghead b { font: 700 15px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); }
+.ghead a { margin-left: auto; white-space: nowrap; }
+.grow { display: flex; align-items: center; gap: 7px; min-width: 0; color: var(--muted); }
+.grow .pip { width: 9px; height: 9px; flex: none; }
+.grow .nm { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grow b { font: 700 28px/1 var(--display); font-variant-numeric: tabular-nums; }
+.grow.won { color: var(--ink); }
+.grow.won .nm { font-weight: 700; }
+.gnote { display: flex; flex-direction: column; gap: 1px; font-size: 12px; color: var(--muted); border-top: 1px solid var(--rule); padding-top: 5px; margin-top: 2px; }
+.gnote .run { font-weight: 600; color: var(--ink); }
+
+/* ---- charts ---- */
+.serlegend { gap: 6px 22px; font-size: 15px; }
+.serchart { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 380px), 1fr)); gap: 28px; }
+.serchart > div { min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+
+/* ---- side-by-side comparison ---- */
+.cmp { display: flex; flex-direction: column; border-top: 2px solid var(--ink); }
+.cmphead { display: grid; grid-template-columns: 1fr minmax(96px, 150px) 1fr; padding: 8px 0 4px; font: 700 22px/1 var(--display); text-transform: uppercase; letter-spacing: .04em; }
+.cmphead b:last-child { text-align: right; }
+.cmprow { display: grid; grid-template-columns: 1fr minmax(96px, 150px) 1fr; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--rule); }
+.cmprow .lab { text-align: center; font: 600 13px/1.15 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.cmprow .half { display: flex; align-items: center; gap: 10px; min-width: 0; }
+.cmprow .half.a { flex-direction: row; justify-content: flex-end; }
+.cmprow .half.b { flex-direction: row-reverse; justify-content: flex-end; }
+.cmprow .val { font: 600 20px/1 var(--display); font-variant-numeric: tabular-nums; white-space: nowrap; display: flex; flex-direction: column; align-items: flex-end; gap: 2px; color: var(--muted); }
+.cmprow .half.b .val { align-items: flex-start; }
+.cmprow .val small { font: 400 12px/1 var(--body); }
+.cmprow .half.best .val { color: var(--ink); }
+.cmprow .track { flex: 1; min-width: 0; height: 12px; display: flex; background: color-mix(in srgb, var(--rule) 55%, transparent); }
+.cmprow .half.a .track { justify-content: flex-end; }
+.cmprow .track i { display: block; height: 100%; opacity: .55; }
+.cmprow .half.best .track i { opacity: 1; }
+@media (max-width: 560px) { .cmphead, .cmprow { grid-template-columns: 1fr 78px 1fr; gap: 6px; } .cmprow .val { font-size: 17px; } .cmprow .track { height: 9px; } }
+
+/* ---- head to head, the road ---- */
+td .won { font-weight: 700; }
+.roads { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 24px; }
+.road { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.road h3 { font: 700 26px/1 var(--display); text-transform: uppercase; }
+.road .rn { display: block; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 4px; }

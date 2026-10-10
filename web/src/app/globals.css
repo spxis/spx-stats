@@ -56,8 +56,8 @@
   h2 { font-size: 24px; text-transform: uppercase; letter-spacing: .04em; }
   h3 { font-size: 19px; }
   p { margin: 0; max-width: 70ch; }
-  table { border-collapse: collapse; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
-  th { text-align: left; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; position: sticky; top: 0; background: var(--paper); }
+  table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
+  th { text-align: left; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; position: sticky; top: 0; z-index: 2; background: var(--paper); }
   td { padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
   select, input[type="search"] { font: inherit; font-size: 15px; padding: 6px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); min-width: 0; border-radius: 0; }
   button:not(:disabled) { cursor: pointer; }

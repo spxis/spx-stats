@@ -5,6 +5,7 @@ import { cache } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
+import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
@@ -112,6 +113,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
         </p>
       </section>
       <Figures items={figs} />
+      <TeamPlayoffSeries lg={lg} year={y} f={f} />
       <TeamSeasonView lg={lg} season={season} year={y} initialLoc={parseLoc(sp.loc)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} />
     </>

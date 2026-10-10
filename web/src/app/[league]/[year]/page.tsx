@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
+import { ChampionNote } from "@/components/ChampionNote";
+import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -133,7 +135,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
           <span className="cup">{champ.award}</span>
           <Badge src={champ.source} />
           <span className="who"><TeamLink lg={lg} f={champ.franchise_id} name={champ.winner} year={d.teams.some((t) => t.f === champ.franchise_id && played.has(t.id)) ? y : undefined} /></span>
-          <span className="how">{champ.note || ""}</span>
+          <span className="how"><ChampionNote lg={lg} year={y} champ={champ.franchise_id} note={champ.note} /></span>
         </section>
       ) : null}
       {st.length ? (
@@ -143,6 +145,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
           <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} /></div>
         </section>
       ) : null}
+      <SeasonPlayoffs lg={lg} year={y} />
       {awards.length ? (
         <section className="section">
           <h2>{say("season.awards")}</h2>

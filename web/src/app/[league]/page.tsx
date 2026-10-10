@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SeasonBars } from "@/components/SeasonBars";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
+import { ChampionNote } from "@/components/ChampionNote";
 import { Badge, NoSeason, TeamLink } from "@/components/ui";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
@@ -45,7 +46,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
   const champions = tableOf(champs, [
     { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (c) => c.year, cell: (c) => <Link href={`/${lg}/${c.year}`} prefetch={false}>{c.label}</Link> },
     { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.champion, cell: (c) => <TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /> },
-    { key: "final", label: say("col.final"), cls: "note", get: (c) => c.champion_note, cell: (c) => c.champion_note || "" },
+    { key: "final", label: say("col.final"), cls: "note", get: (c) => c.champion_note, cell: (c) => <ChampionNote lg={lg} year={c.year} champ={c.champion_franchise} note={c.champion_note} /> },
     { key: "source", label: say("col.source"), get: (c) => srcName(say, c.champion_source), cell: (c) => <Badge src={c.champion_source} /> },
   ], (c) => c.year);
   return (
