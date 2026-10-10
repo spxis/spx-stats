@@ -45,6 +45,10 @@ mongo_games as (
 mongo_box as (
   select sport as league, left(season, 4)::int as start_year, count(*) as spxn_player_game_lines from legacy_mongo.player_game_stat group by 1, 2
 ),
+nhlcom as (
+  select 'nhl'::text as league, left(season, 4)::int as start_year, count(distinct (nhl_player_id, team, season_type)) as nhlcom_players
+  from legacy_nhlcom.player_season_table group by 1, 2
+),
 mongo_season as (
   select sport as league, season_year as start_year, count(*) as spxstats_player_season_lines from legacy_mongo.player_season_stat group by 1, 2
 )
@@ -52,12 +56,14 @@ select league, start_year,
        coalesce(g.games, 0) games, coalesce(g.finals, 0) finals, coalesce(g.games_with_lines, 0) with_lines,
        coalesce(b.spx_team_standings, 0) standings, coalesce(b.spx_standings_history, 0) standings_hist,
        coalesce(b.spx_player_season_lines, 0) + coalesce(ms.spxstats_player_season_lines, 0) player_season_lines,
+       coalesce(n.nhlcom_players, 0) nhlcom_player_seasons,
        coalesce(mb.spxn_player_game_lines, 0) player_game_lines, coalesce(mg.spxn_games, 0) spxn_games
 from by_season b
 full join games g using (league, start_year)
 full join mongo_games mg using (league, start_year)
 full join mongo_box mb using (league, start_year)
 full join mongo_season ms using (league, start_year)
-where coalesce(g.games, 0) + coalesce(b.spx_team_standings, 0) + coalesce(b.spx_player_season_lines, 0) + coalesce(mg.spxn_games, 0)
+full join nhlcom n using (league, start_year)
+where coalesce(n.nhlcom_players, 0) + coalesce(g.games, 0) + coalesce(b.spx_team_standings, 0) + coalesce(b.spx_player_season_lines, 0) + coalesce(mg.spxn_games, 0)
       + coalesce(mb.spxn_player_game_lines, 0) + coalesce(ms.spxstats_player_season_lines, 0) + coalesce(b.spx_standings_history, 0) > 0
 order by league, start_year;
