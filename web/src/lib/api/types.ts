@@ -100,6 +100,8 @@ export interface AwardRow {
   note: string | null;
   source: string;
   franchise_id: number | null;
+  /** The person who won it, once the people views are loaded (absent before). */
+  person_id?: number | null;
 }
 
 export interface TeamSeasonRow {

@@ -9,6 +9,8 @@ export interface DateFormats {
   monthDayShort: (d: Date) => string;
   monthYear: (d: Date) => string;
   full: (d: Date) => string;
+  /** June 3, 1990 */
+  ymd: (d: Date) => string;
   short: (d: Date) => string;
   mon: (d: Date) => string;
   monYear: (d: Date) => string;
@@ -40,6 +42,7 @@ function build(locale: Locale): Formats {
       monthDayShort: dateFmt(tag, { month: "short", day: "numeric" }),
       monthYear: dateFmt(tag, { month: "long", year: "numeric" }),
       full: dateFmt(tag, { weekday: "long", year: "numeric", month: "long", day: "numeric" }),
+      ymd: dateFmt(tag, { year: "numeric", month: "long", day: "numeric" }),
       short: dateFmt(tag, { weekday: "short", year: "numeric", month: "short", day: "numeric" }),
       mon: dateFmt(tag, { month: "short" }),
       monYear: dateFmt(tag, { month: "short", year: "2-digit" }),

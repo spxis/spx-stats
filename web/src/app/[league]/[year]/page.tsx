@@ -153,7 +153,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
             {awards.map((a, i) => (
               <div className="award" key={i}>
                 <span className="name">{a.award}</span>
-                <span className="winner"><TeamLink lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} /></span>
+                <span className="winner">{a.person_id != null ? <Link href={`/players/${a.person_id}`} prefetch={false}>{a.winner}</Link> : <TeamLink lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} />}</span>
                 <span className="note">{a.note || ""} <Badge src={a.source} /></span>
               </div>
             ))}

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { SeasonBars } from "@/components/SeasonBars";
+import { LeagueAwards } from "@/components/LeagueAwards";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
 import { ChampionNote } from "@/components/ChampionNote";
@@ -84,6 +85,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
           <div className="tablebox"><SortTable {...champions} def="season.desc" /></div>
         ) : <p className="note">{say("league.noChampions")}</p>}
       </section>
+      <LeagueAwards lg={lg} />
     </>
   );
 }

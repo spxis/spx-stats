@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { SortTable } from "@/components/SortTable";
+import { TeamAwards } from "@/components/TeamAwards";
 import { TeamCharts } from "@/components/TeamCharts";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -202,6 +203,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
           <div className="tablebox"><SortTable {...standings} def="season.desc" /></div>
         </section>
       ) : null}
+      <TeamAwards lg={lg} f={f} />
       {names.length ? (
         <section className="section">
           <h2>{say("team.names")}</h2>

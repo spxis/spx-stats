@@ -1,0 +1,17 @@
+/* The player page and the awards tables of team and league pages. Tokens come from globals.css. */
+.pfacts { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 0 28px; margin: 0; padding: 0; }
+.pfact { padding: 9px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.pfact dt { font: 600 13px/1.2 var(--font-display, var(--display)); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.pfact dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
+.pflag { display: inline-block; vertical-align: -2px; height: var(--fh, 16px); margin-inline: 2px; }
+.pflag svg { display: block; height: 100%; width: auto; max-width: 28px; border-radius: 2px; box-shadow: 0 0 0 1px var(--rule); }
+.pmap { position: absolute; top: 0; right: 0; width: 220px; display: flex; flex-direction: column; gap: 4px; }
+.pmap .teammap { border: 1px solid var(--rule); background: var(--panel); }
+.pmap .note { font-size: 13px; }
+@media (max-width: 640px) { .pmap { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; } }
+.awardsgrid td.wincell { min-width: 140px; }
+.awardsgrid td.wincell div { white-space: nowrap; }
+.awardsgrid th:first-child, .awardsgrid td:first-child { position: sticky; left: 0; background: var(--paper); z-index: 1; }
+.awardsgrid th:first-child { z-index: 2; }
+.head:has(.pmap) { min-height: 205px; }
+@media (max-width: 640px) { .head:has(.pmap) { min-height: 0; } }

@@ -52,7 +52,7 @@ export const standingSchema = z.object({
 
 export const awardSchema = z.object({
   league: str, year: int, award_code: str, award: str, kind: str, winner: strN, note: strN,
-  source: str, franchise_id: intN,
+  source: str, franchise_id: intN, person_id: z.number().nullish(),
 }) satisfies z.ZodType<AwardRow>;
 
 export const teamSeasonSchema = z.object({
