@@ -300,14 +300,52 @@
   }
 
   // The big count of titles with the league's trophy beside it.
-  function trophies(lg, n) {
+  function trophies(lg, n, titles = []) {
     const cup = el('span', { class: 'cup' }); cup.innerHTML = window.SPX_TROPHY(lg);
-    return el('div', { class: 'trophies fade' }, el('b', {}, String(n)), cup);
+    return el('div', { class: 'trophyrow fade' },
+      el('div', { class: 'trophies' }, el('b', {}, String(n)), cup),
+      titles.length ? el('div', { class: 'champs' }, el('h2', {}, 'Championships'), el('div', { class: 'seasonlist' },
+        titles.map((y) => el('a', { class: 'full', href: `#/${lg}/${y}` }, seasonLabel(lg, y))))) : null);
+  }
+
+  // One row per season of a franchise's standings, newest first.
+  // The franchise's all-time regular-season record, summed over every season shown.
+  function lifetime(lg, rows) {
+    const sum = (k) => d3.sum(rows, (r) => r[k] || 0);
+    const w = sum('w'), l = sum('l'), t = sum('t'), o = sum('otl'), gp = sum('gp');
+    const pct = w + l + t + o ? (w + t / 2) / (w + l + t + o) : null;
+    const figs = [['Seasons', rows.length], ['Games', gp], ['Wins', w], ['Losses', l]];
+    if (t) figs.push(['Ties', t]);
+    if (o) figs.push([lg === 'nhl' ? 'OT losses' : 'OT', o]);
+    figs.push(['Winning share', pct == null ? '—' : d3.format('.3f')(pct)]);
+    return el('section', { class: 'section' }, el('h2', {}, 'All-time record'),
+      el('div', { class: 'figures' }, figs.map(([k, v]) => el('div', { class: 'figure' }, el('b', {}, typeof v === 'number' ? fmt(v) : v), el('span', {}, k)))),
+      el('p', { class: 'note' }, 'Regular seasons only. Winning share counts a tie as half a win and an overtime loss as a loss.'));
+  }
+
+  function teamStandings(lg, rows, titles) {
+    const won = new Set((titles || []).map(Number));
+    const showT = rows.some((r) => r.t), showO = rows.some((r) => r.otl), showP = rows.some((r) => r.pts != null);
+    const maxPct = d3.max(rows, (r) => r.pct) || 1;
+    const cupIcon = () => { const c = el('span', { class: 'minicup', title: 'Champion', role: 'img', 'aria-label': 'Champion' }); c.innerHTML = window.SPX_TROPHY(lg); return c; };
+    return el('section', { class: 'section' }, el('h2', {}, 'Standings by season'),
+      el('p', { class: 'note' }, `${rows.length} season${rows.length === 1 ? '' : 's'}, newest first. The trophy marks a championship season.`),
+      el('div', { class: 'tablebox' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Season'), el('th', {}, 'Team'), el('th', { class: 'num' }, 'GP'), el('th', { class: 'num' }, 'W'), el('th', { class: 'num' }, 'L'),
+        showT ? el('th', { class: 'num' }, 'T') : null, showO ? el('th', { class: 'num' }, 'OTL') : null, showP ? el('th', { class: 'num' }, 'Pts') : null,
+        el('th', { class: 'num' }, 'PF'), el('th', { class: 'num' }, 'PA'), el('th', {}, 'Home'), el('th', {}, 'Road'), el('th', {}, 'Pct'))),
+        el('tbody', {}, rows.map((r) => el('tr', {},
+          el('td', { class: 'seasoncell' }, el('a', { href: `#/${lg}/${r.year}` }, seasonLabel(lg, r.year)), won.has(r.year) ? cupIcon() : null),
+          el('td', { class: 'team' }, r.team || ''),
+          el('td', { class: 'num' }, r.gp ?? ''), el('td', { class: 'num' }, r.w ?? ''), el('td', { class: 'num' }, r.l ?? ''),
+          showT ? el('td', { class: 'num' }, r.t ?? '') : null, showO ? el('td', { class: 'num' }, r.otl ?? '') : null, showP ? el('td', { class: 'num' }, r.pts ?? '') : null,
+          el('td', { class: 'num' }, r.pf != null ? fmt(r.pf) : ''), el('td', { class: 'num' }, r.pa != null ? fmt(r.pa) : ''),
+          el('td', {}, r.home || ''), el('td', {}, r.road || ''),
+          el('td', {}, r.pct != null ? d3.format('.3f')(r.pct) : '', r.pct != null ? el('span', { class: 'pctbar', style: `width:${Math.round(60 * r.pct / maxPct)}px` }) : null)))))));
   }
 
   async function teamPage(lg, f) {
     accent(lg);
-    const all = await get(`${lg}/teams.json`);
+    const [all, stRows] = await Promise.all([get(`${lg}/teams.json`), get(`${lg}/team/${f}/standings.json`).catch(() => [])]);
     const t = all.find((x) => String(x.f) === String(f));
     if (!t) { show(el('p', {}, 'No such team.')); return; }
     const names = t.names || [];
@@ -325,12 +363,12 @@
       b && b.primary_hex ? el('div', { class: 'teamband', style: `--tp:#${b.primary_hex};--ts:#${b.secondary_hex || b.primary_hex}` }) : null,
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', { class: 'teamname' }, logo(b, 56), now),
         el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championship${t.titles.length === 1 ? '' : 's'}` : ''}.`)),
-      (t.titles || []).length ? trophies(lg, t.titles.length) : null,
+      stRows.length ? lifetime(lg, stRows) : null,
+      (t.titles || []).length ? trophies(lg, t.titles.length, t.titles) : null,
       el('section', { class: 'section' }, el('h2', {}, 'Winning share by season'), el('p', { class: 'note' }, 'Filled dots are championship seasons. Click a season to open it.'), box),
+      stRows.length ? teamStandings(lg, stRows, t.titles) : null,
       names.length ? el('section', { class: 'section' }, el('h2', {}, 'Names over time'), el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Name'), el('th', {}, 'From'), el('th', {}, 'Until'))),
-        el('tbody', {}, names.map((n) => el('tr', {}, el('td', { class: 'team' }, n.name), el('td', {}, n.from || ''), el('td', {}, n.to || 'today')))))) : null,
-      (t.titles || []).length ? el('section', { class: 'section' }, el('h2', {}, 'Championships'), el('div', { class: 'seasonlist' },
-        t.titles.map((y) => el('a', { class: 'full', href: `#/${lg}/${y}` }, seasonLabel(lg, y))))) : null);
+        el('tbody', {}, names.map((n) => el('tr', {}, el('td', { class: 'team' }, n.name), el('td', {}, n.from || ''), el('td', {}, n.to || 'today')))))) : null,);
     winLine(box, t, lg); onResize = () => winLine(box, t, lg);
   }
 

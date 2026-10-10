@@ -63,6 +63,8 @@ window.SPX_API = (() => {
         for (const x of by.values()) if (!x.names.length && x.last) x.names.push({ name: x.last, from: null, to: null });
         return [...by.values()];
       }
+      m = path.match(/^(\w+)\/team\/(\d+)\/standings\.json$/);
+      if (m) return rows('standings', 'franchise_id=eq.' + m[2] + '&league=eq.' + m[1] + '&select=*&order=year.desc');
       m = path.match(/^(\w+)\/(\d+)\.json$/);
       if (m) {
         const [lg, y] = [m[1], Number(m[2])], q = 'league=eq.' + lg + '&year=eq.' + y;

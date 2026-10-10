@@ -128,6 +128,11 @@ select, input[type="search"] { font: inherit; font-size: 15px; padding: 6px 10px
 .trophies b { font: 700 clamp(88px, 14vw, 140px)/0.85 var(--display); font-variant-numeric: tabular-nums; }
 .trophies .cup { display: block; width: clamp(56px, 8vw, 84px); }
 .trophies .cup svg { display: block; width: 100%; height: auto; }
+.trophyrow { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 40px; }
+.trophyrow .champs { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.seasoncell { white-space: nowrap; }
+.minicup { display: inline-block; width: 11px; margin-left: 7px; vertical-align: -2px; color: var(--accent); }
+.minicup svg { display: block; width: 100%; height: auto; }
 main:focus { outline: none; }
 
 .cal { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
@@ -161,3 +166,4 @@ h1.teamname .logo { margin: 0; vertical-align: middle; }
 .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
 .prose { max-width: 70ch; }
 .prose h2 { margin-top: 10px; }
+.tablebox td.team { white-space: nowrap; }
