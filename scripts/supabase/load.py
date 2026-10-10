@@ -95,11 +95,12 @@ def load_table(ref, token, table, replace):
     flush()
     if proc.wait() != 0:
         raise SystemExit(f"{table}: local read failed")
-    api(ref, token, f"""do $$ declare s text; begin
-      for s in select pg_get_serial_sequence('{table}', column_name) from information_schema.columns
-               where table_schema || '.' || table_name = '{table}' and is_identity = 'YES' loop
-        execute format('select setval(%L, coalesce((select max(%I) from {table}), 0) + 1, false)', s,
-                       (select column_name from information_schema.columns where pg_get_serial_sequence('{table}', column_name) = s));
+    s_, t_ = table.split(".")
+    api(ref, token, f"""do $$ declare c text; begin
+      for c in select column_name from information_schema.columns
+               where table_schema = '{s_}' and table_name = '{t_}' and is_identity = 'YES' loop
+        execute format('select setval(%L, coalesce((select max(%I) from {table}), 0) + 1, false)',
+                       pg_get_serial_sequence('{table}', c), c);
       end loop; end $$""")
     print(f"{table}: {sent} rows")
     return sent
