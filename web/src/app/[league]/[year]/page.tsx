@@ -15,6 +15,7 @@ import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
+import { isGapYear } from "@/lib/coverage";
 import { leagueSat } from "@/lib/noSeason";
 import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
@@ -42,7 +43,23 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   if (!isLeague(lg) || y == null) notFound();
   const { say, plural, fmt } = await currentSpeaker();
   const [d, brands, summary] = await Promise.all([getSeason(lg, y), getBrands(), getSummary()]);
-  if (!d) notFound();
+  if (!d) {
+    if (!isGapYear(summary.seasons, lg, y)) notFound();
+    return (
+      <>
+        <AccentStyle league={lg} />
+        <section className="head fade">
+          <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
+            <Link href={`/${lg}/${y - 1}`} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link>
+            <Link href={`/${lg}/${y + 1}`} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link>
+          </nav>
+          <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
+          <h1>{say("season.title", { label: seasonLabel(lg, y) })}</h1>
+          <p><NoSeason /></p>
+        </section>
+      </>
+    );
+  }
   const holders = titleHolders(summary.seasons, lg);
   const defending = holders.byYear.get(y - 1)?.champion_franchise;
   const sp = await searchParams;
