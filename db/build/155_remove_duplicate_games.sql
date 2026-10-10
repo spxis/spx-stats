@@ -3,7 +3,7 @@
 -- score. Keep the copy with a result (or the first one), move any betting
 -- lines to it, drop the others, and log each removal. In MLB two finals on one
 -- day are a doubleheader, so only a copy with no result is removed there.
--- Runs after every other build step.
+-- Runs after the game steps (100-150), before champions are worked out (165).
 begin;
 
 create temp table pair as

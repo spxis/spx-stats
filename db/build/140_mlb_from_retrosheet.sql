@@ -2,7 +2,7 @@
 -- 1871, and every game. Where the SPX database holds a season (2002-2011),
 -- SPX stays the base: Retrosheet fills a result SPX never entered, confirms a
 -- result that agrees (meta.verification) and flags one that does not. Every
--- other season comes from Retrosheet alone. Runs after 100-130, before 190.
+-- other season comes from Retrosheet alone. Runs after 100-130, before 155.
 -- Retrosheet's notice: "The information used here was obtained free of charge
 -- from and is copyrighted by Retrosheet. Interested parties may contact
 -- Retrosheet at www.retrosheet.org."
