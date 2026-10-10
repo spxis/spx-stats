@@ -10,6 +10,8 @@ import { useEffect, useRef, useState } from "react";
 export interface Pin {
   f: number;
   name: string;
+  /** The official abbreviation in use that season. */
+  abbr?: string;
   lat: number;
   lon: number;
   venue?: string | null;
@@ -60,21 +62,75 @@ async function drawTeamMap(host: HTMLElement, teams: Pin[], opts: { big?: boolea
   const r = box.width / (big ? 140 : 40);
   const g = document.createElementNS(NS, "g");
   g.setAttribute("class", "pins");
-  for (const t of placed.sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0))) {
+  const sorted = placed.sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
+  const tip = big ? document.createElement("div") : null;
+  if (tip) { tip.className = "pinlabel"; tip.hidden = true; tip.setAttribute("aria-hidden", "true"); host.append(tip); }
+  const label = (t: Pin) => `${t.abbr ? `${t.abbr} · ` : ""}${t.name}${t.venue ? ` · ${t.venue}` : ""}`;
+  const showTip = (t: Pin & { p: [number, number] }) => {
+    if (!tip) return;
+    const sr = svg.getBoundingClientRect(), hr = host.getBoundingClientRect();
+    tip.innerHTML = "";
+    if (t.abbr) { const b = document.createElement("b"); b.textContent = t.abbr; tip.append(b); }
+    tip.append(document.createTextNode(t.name + (t.venue ? ` · ${t.venue}` : "")));
+    tip.hidden = false;
+    const px = sr.left - hr.left + ((t.p[0] - box.x) / box.width) * sr.width, py = sr.top - hr.top + ((t.p[1] - box.y) / box.height) * sr.height;
+    const half = tip.offsetWidth / 2;
+    tip.style.left = `${Math.min(Math.max(px, half + 4), hr.width - half - 4)}px`;
+    tip.style.top = `${py}px`;
+  };
+  for (const t of sorted) {
     const a = document.createElementNS(NS, "a");
     if (big && t.href) a.setAttribute("href", t.href);
+    a.setAttribute("aria-label", label(t));
     const c = document.createElementNS(NS, "circle");
     c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1])); c.setAttribute("r", String(t.me ? r * 1.6 : r));
     c.setAttribute("class", t.me ? "pin me" : "pin");
-    const ti = document.createElementNS(NS, "title");
-    ti.textContent = t.name + (t.venue ? ` · ${t.venue}` : "");
-    c.append(ti); a.append(c); g.append(a);
+    if (!big) { const ti = document.createElementNS(NS, "title"); ti.textContent = label(t); c.append(ti); }
+    if (tip) {
+      a.addEventListener("pointerenter", () => showTip(t));
+      a.addEventListener("focus", () => showTip(t));
+      a.addEventListener("pointerleave", () => { tip.hidden = true; });
+      a.addEventListener("blur", () => { tip.hidden = true; });
+    }
+    a.append(c); g.append(a);
   }
   svg.append(g);
+  if (big) abbreviationLabels(g, sorted, r, box);
   return true;
 }
 
-function MapHost({ pins, big, title, onEmpty }: { pins: Pin[]; big?: boolean; title: string; onEmpty?: () => void }) {
+type Rect = [number, number, number, number];
+const meets = (a: Rect, b: Rect) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
+
+/** Small abbreviation labels beside the dots, where they fit: beside, then above or below; one that would cover a dot or another label is left off. */
+function abbreviationLabels(g: SVGGElement, pins: (Pin & { p: [number, number] })[], r: number, box: { x: number; y: number; width: number; height: number }) {
+  const fs = r * 1.7;
+  const dots: Rect[] = pins.map((t) => { const rr = t.me ? r * 1.6 : r; return [t.p[0] - rr, t.p[1] - rr, t.p[0] + rr, t.p[1] + rr]; });
+  const taken: Rect[] = [];
+  const order = [...pins].sort((a, b) => (b.me ? 1 : 0) - (a.me ? 1 : 0));
+  for (const t of order) {
+    if (!t.abbr) continue;
+    const w = t.abbr.length * fs * 0.66, h = fs * 0.85, rr = (t.me ? r * 1.6 : r) + fs * 0.2;
+    const [x, y] = t.p;
+    const spots: { rect: Rect; anchor: "start" | "end" | "middle"; tx: number; ty: number }[] = [
+      { rect: [x + rr, y - h / 2, x + rr + w, y + h / 2], anchor: "start", tx: x + rr, ty: y + h * 0.36 },
+      { rect: [x - rr - w, y - h / 2, x - rr, y + h / 2], anchor: "end", tx: x - rr, ty: y + h * 0.36 },
+      { rect: [x - w / 2, y - rr - h, x + w / 2, y - rr], anchor: "middle", tx: x, ty: y - rr - h * 0.12 },
+      { rect: [x - w / 2, y + rr, x + w / 2, y + rr + h], anchor: "middle", tx: x, ty: y + rr + h * 0.88 },
+    ];
+    const ok = spots.find((s) => s.rect[0] >= box.x && s.rect[2] <= box.x + box.width && s.rect[1] >= box.y && s.rect[3] <= box.y + box.height
+      && !dots.some((d) => meets(d, s.rect)) && !taken.some((d) => meets(d, s.rect)));
+    if (!ok) continue;
+    taken.push(ok.rect);
+    const text = document.createElementNS(NS, "text");
+    text.setAttribute("x", String(ok.tx)); text.setAttribute("y", String(ok.ty)); text.setAttribute("text-anchor", ok.anchor);
+    text.setAttribute("class", "pinab"); text.setAttribute("style", `--fs:${fs}px`); text.setAttribute("font-size", String(fs));
+    text.textContent = t.abbr;
+    g.append(text);
+  }
+}
+
+export function MapHost({ pins, big, title, onEmpty }: { pins: Pin[]; big?: boolean; title: string; onEmpty?: () => void }) {
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const el = ref.current;

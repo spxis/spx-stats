@@ -3,19 +3,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
+import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Figures } from "@/components/ui";
 import { brandFor, teamAccent } from "@/lib/brand";
+import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
 import { getBrands, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
 import { fmt, fmt3 } from "@/lib/format";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { parseLoc } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
 import { parseSelection } from "@/lib/season";
 import { parseSort } from "@/lib/sort";
+import { placeFor } from "@/lib/venue";
 import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 
 const idOf = (v: string) => (/^\d{1,9}$/.test(v) ? Number(v) : null);
@@ -27,7 +31,7 @@ const load = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc")
   const st = stAll.find((r) => r.year === y) ?? null;
   const first = raw.find((g) => g.home_f === f) ?? raw[0];
   const mine = first ? (first.home_f === f ? { id: first.home_id, name: first.home } : { id: first.away_id, name: first.away }) : null;
-  return { raw, st, brand: brandFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
+  return { raw, st, brand: brandFor(brands, f, y), place: placeFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
 });
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/team/[franchise]">): Promise<Metadata> {
@@ -62,7 +66,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       </>
     );
   }
-  const { raw, st, brand: b, me, name } = d;
+  const { raw, st, brand: b, place, me, name } = d;
   const games = deriveTeamGames(raw, f, st);
   const rec = seasonRecord(games, st);
   const season = seasonLabel(lg, y);
@@ -94,7 +98,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
           </nav>
         ) : null}
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{`${season} season`}</Link></span>
-        <h1 className="teamname"><TeamLogo url={b?.logo_url} size={56} />{name}</h1>
+        <h1 className="teamname"><TeamLogo url={b?.logo_url} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
         {isChamp ? <span className="reigning"><BadgeCup league={lg} />{`${season} champions`}</span> : null}
         <p className="lede">
           {`Every game of the ${season} season: ${text}. `}
@@ -103,7 +107,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
         </p>
       </section>
       <Figures items={figs} />
-      <TeamSeasonView lg={lg} season={season} meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
+      <TeamSeasonView lg={lg} season={season} year={y} initialLoc={parseLoc(sp.loc)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} />
     </>
   );

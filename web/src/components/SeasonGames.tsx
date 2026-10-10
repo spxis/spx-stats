@@ -11,7 +11,7 @@ import { PhaseSwitch } from "./PhaseSwitch";
  * (or by the team's result on its days), and the games of the chosen day or month.
  * The selection lives in the address (?phase=&team=&month=&day=), so a reload or shared link keeps it.
  */
-export function SeasonGames({ lg, games, teams: teamList, initial }: { lg: string; games: GameTuple[]; teams: ClubTeam[]; initial: Selection }) {
+export function SeasonGames({ lg, year, games, teams: teamList, initial }: { lg: string; year?: number; games: GameTuple[]; teams: ClubTeam[]; initial: Selection }) {
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const [want, setWant] = useState<Selection>(initial);
   const { byDay, months, month, day } = useMemo(() => resolveSelection(games, want), [games, want]);
@@ -46,8 +46,9 @@ export function SeasonGames({ lg, games, teams: teamList, initial }: { lg: strin
   return (
     <>
       {controls}
-      <GameCalendar lg={lg} teams={teams} byDay={byDay} months={months} month={month} day={day} team={team}
-        onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ day: d })} />
+      <GameCalendar lg={lg} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={team}
+        onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ day: d })}
+        onJump={(d) => set({ month: d.slice(0, 7), day: d })} />
     </>
   );
 }

@@ -7,6 +7,7 @@ import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge, TeamLink } from "@/components/ui";
 import type { StandingRow } from "@/lib/api/types";
+import { abbrFor } from "@/lib/abbr";
 import { brandFor } from "@/lib/brand";
 import { titleHolders } from "@/lib/champions";
 import { getBrands, getSeason, getSummary } from "@/lib/data";
@@ -59,7 +60,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       cell: (r) => (
         <>
           <TeamLogo url={brandFor(brands, r.franchise_id, y)?.logo_url} />
-          <Link href={`/${lg}/team/${r.franchise_id}`} prefetch={false}>{r.team}</Link>
+          <Link href={played.has(r.team_id) ? `/${lg}/${y}/team/${r.franchise_id}` : `/${lg}/team/${r.franchise_id}`} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, r.franchise_id, y, r.team)}</abbr></Link>
           {defending != null && r.franchise_id === defending ? (
             <span className="defending" title={`Won the ${seasonLabel(lg, y - 1)} title`}>Defending champion</span>
           ) : null}
@@ -108,7 +109,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
         <section className="banner">
           <span className="cup">{champ.award}</span>
           <Badge src={champ.source} />
-          <span className="who"><TeamLink lg={lg} f={champ.franchise_id} name={champ.winner} /></span>
+          <span className="who"><TeamLink lg={lg} f={champ.franchise_id} name={champ.winner} year={d.teams.some((t) => t.f === champ.franchise_id && played.has(t.id)) ? y : undefined} /></span>
           <span className="how">{champ.note || ""}</span>
         </section>
       ) : null}
@@ -126,7 +127,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
             {awards.map((a, i) => (
               <div className="award" key={i}>
                 <span className="name">{a.award}</span>
-                <span className="winner"><TeamLink lg={lg} f={a.franchise_id} name={a.winner} /></span>
+                <span className="winner"><TeamLink lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} /></span>
                 <span className="note">{a.note || ""} <Badge src={a.source} /></span>
               </div>
             ))}
@@ -136,7 +137,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       {d.games.length ? (
         <section className="section">
           <h2>Games</h2>
-          <SeasonGames lg={lg} games={d.games} teams={d.teams} initial={selection} />
+          <SeasonGames lg={lg} year={y} games={d.games} teams={d.teams} initial={selection} />
         </section>
       ) : null}
     </>

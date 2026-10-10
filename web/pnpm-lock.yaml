@@ -11,6 +11,9 @@ importers:
       '@johnmorrisdotca/chizu':
         specifier: 1.4.0
         version: 1.4.0
+      '@johnmorrisdotca/hata':
+        specifier: 1.5.0
+        version: 1.5.0
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -359,6 +362,10 @@ packages:
   '@johnmorrisdotca/chizu@1.4.0':
     resolution: {integrity: sha512-tlfHQ9bL0Sim3SNuDRw7YNAjdnlrmWDzFZve9DIF9SNngHN3KQQj7r+zsSI0xAAzQ+dyOiZSbHHZ1jM15ZkoDA==}
     engines: {node: '>=22'}
+
+  '@johnmorrisdotca/hata@1.5.0':
+    resolution: {integrity: sha512-CAzssK6RXy0rRlCP+v5XLNSr1A+RK7dESqyzB/hz/VRNUySlESSiNsAO+6r5DAQ2oi7iII5ruI79BqJA7X5wCA==}
+    engines: {node: '>=24'}
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2542,6 +2549,8 @@ snapshots:
     optional: true
 
   '@johnmorrisdotca/chizu@1.4.0': {}
+
+  '@johnmorrisdotca/hata@1.5.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

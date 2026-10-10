@@ -13,7 +13,7 @@ const csp = [
   `script-src 'self' 'unsafe-inline'${dev ? " 'unsafe-eval'" : ""}`,
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
-  "img-src 'self' data: https://upload.wikimedia.org",
+  "img-src 'self' data: https://upload.wikimedia.org https://thumb.wikimedia.org",
   "connect-src 'self'",
   "frame-ancestors 'none'",
   "base-uri 'self'",

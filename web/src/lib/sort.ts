@@ -44,6 +44,8 @@ export interface SortColumn {
   title?: string;
   cls?: string;
   rest?: string;
+  /** The label is for screen readers only (a column of icons); the header still sorts. */
+  hideLabel?: boolean;
 }
 
 /** One row: what each cell draws, and the value each column sorts by (a column without one sorts as blank). */
@@ -52,6 +54,8 @@ export interface SortRow {
   cells: Record<string, ReactNode>;
   sort: Record<string, SortValue>;
   className?: string;
+  /** The section it sits in, when the table is drawn in groups (SortTable `groups`). */
+  group?: string;
 }
 
 const collator = new Intl.Collator("en", { numeric: true, sensitivity: "base" });

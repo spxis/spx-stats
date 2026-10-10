@@ -22,6 +22,8 @@ interface Props {
   /** Sorting by a column with a `rest` field asks the server to reload the rows in that order (it passes order= to the API) instead of sorting what the page holds. */
   remote?: boolean;
   label?: string;
+  /** Draws the rows in sections, each under a heading row, in this order; a row falls in the section its `group` names. One sort serves them all. */
+  groups?: { id: string; title: string; sub?: string }[];
 }
 
 /**
@@ -30,7 +32,7 @@ interface Props {
  * and blanks come last whichever way the sort runs. The rows arrive already drawn (the page makes the links), so the
  * table is server-rendered and crawlable.
  */
-export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label }: Props) {
+export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups }: Props) {
   const router = useRouter();
   const known = useMemo(() => columns.map((c) => c.key), [columns]);
   const [pending, startTransition] = useTransition();
@@ -59,6 +61,14 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
     else replaceQuery({ [param]: formatSort(next) });
   }
 
+  const row = (r: SortRow) => (
+    <tr key={r.id} className={r.className}>
+      {columns.map((c) => (
+        <td key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined}>{r.cells[c.key]}</td>
+      ))}
+    </tr>
+  );
+
   return (
     <table aria-busy={pending || undefined} aria-label={label}>
       <thead>
@@ -70,7 +80,7 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
             return (
               <th key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined} aria-sort={state} scope="col">
                 <button type="button" className="sortbtn" title={c.title} aria-label={`${c.label}, sort ${next}`} onClick={() => press(c)}>
-                  <span>{c.label}</span>
+                  <span className={c.hideLabel ? "sr-only" : undefined}>{c.label}</span>
                   <span className="arrow" aria-hidden="true">{on ? (first.dir === "desc" ? "▼" : "▲") : "↕"}</span>
                 </button>
               </th>
@@ -78,15 +88,19 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
           })}
         </tr>
       </thead>
-      <tbody>
-        {shown.map((r) => (
-          <tr key={r.id} className={r.className}>
-            {columns.map((c) => (
-              <td key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined}>{r.cells[c.key]}</td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
+      {groups ? groups.map((g) => {
+        const inGroup = shown.filter((r) => r.group === g.id);
+        return inGroup.length ? (
+          <tbody key={g.id}>
+            {g.title ? (
+              <tr className="grouphead">
+                <th scope="colgroup" colSpan={columns.length}>{g.title}{g.sub ? <span className="sub">{g.sub}</span> : null}</th>
+              </tr>
+            ) : null}
+            {inGroup.map(row)}
+          </tbody>
+        ) : null;
+      }) : <tbody>{shown.map(row)}</tbody>}
     </table>
   );
 }

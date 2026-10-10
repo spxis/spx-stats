@@ -1,0 +1,35 @@
+/* Team and team-season additions: flag, filters, calendar pop-up, abbreviations, championship column. Tokens come from globals.css. */
+.tflag { display: inline-block; height: 18px; margin-left: 4px; opacity: .85; flex: none; align-self: center; }
+.tflag svg { display: block; height: 100%; width: auto; max-width: 30px; border-radius: 2px; box-shadow: 0 0 0 1px var(--rule); }
+
+.tn-short { display: none; text-decoration: none; }
+@media (max-width: 640px) {
+  .tn-short { display: inline; }
+  .tn-long { display: none; }
+}
+
+.cupcol { width: 1.6rem; min-width: 1.6rem; padding-inline: 4px !important; text-align: center; }
+.cupcol .minicup { margin-left: 0; }
+
+.filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.monthchips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; max-width: 100%; }
+.monthchips button { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.monthchips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+
+.cal .opab, .cell .opab { font: 600 10px/1 var(--mono); color: var(--muted); letter-spacing: 0; }
+.cell .celltop { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; }
+
+.verdict { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--rule); border-left: 5px solid var(--accent); background: var(--panel); }
+.verdict b { font: 700 20px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; }
+.verdict span { color: var(--muted); font-size: 14px; }
+
+.hrbars .pair { fill-opacity: 1; }
+.hr-home { fill: var(--accent); }
+.hr-road { fill: color-mix(in srgb, var(--ink) 50%, var(--paper)); }
+.legend i.hr-home { background: var(--accent); } .legend i.hr-road { background: color-mix(in srgb, var(--ink) 50%, var(--paper)); }
+
+.pinlabel { position: absolute; z-index: 6; pointer-events: none; transform: translate(-50%, -100%); margin-top: -12px; background: var(--ink); color: var(--paper); font: 600 13px/1.25 var(--body); padding: 5px 9px; white-space: nowrap; box-shadow: 0 4px 14px rgba(0,0,0,.25); max-width: 92vw; overflow: hidden; text-overflow: ellipsis; }
+.pinlabel b { font: 700 14px/1 var(--display); letter-spacing: .06em; margin-right: 6px; }
+.teammap { position: relative; }
+.teammap .pinab { font: 700 var(--fs, 6px) var(--body); fill: var(--ink); paint-order: stroke; stroke: var(--paper); stroke-width: calc(var(--fs, 6px) * .22); stroke-linejoin: round; pointer-events: none; }
+.cupcol .sortbtn::before { content: "★"; color: var(--accent); }
