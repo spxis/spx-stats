@@ -18,7 +18,7 @@ begin;
 delete from meta.data_issue where source_id in (select source_id from meta.source where code = 'spx_database');
 delete from core.external_id where source_id in (select source_id from meta.source where code = 'spx_database');
 delete from core.award_winner;  -- rebuilt by 165 and 170
-delete from core.standing where source_id in (select source_id from meta.source where code = 'spx_database');
+delete from core.standing;  -- rebuilt by 110 and 145
 delete from core.betting_line; delete from core.game; delete from core.team_season;
 delete from core.franchise_identity; delete from core.franchise_league; delete from core.franchise;
 delete from core.season;
