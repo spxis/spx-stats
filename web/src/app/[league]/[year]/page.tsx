@@ -4,16 +4,20 @@ import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { ChampionNote } from "@/components/ChampionNote";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
+import { SeasonBar } from "@/components/SeasonBar";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge, NoSeason, TeamLink } from "@/components/ui";
+import { queryHref, ViewTabs } from "@/components/ViewTabs";
+import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
+import { getStandingsAsOf } from "@/lib/alignmentData";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
 import { brandFor } from "@/lib/brand";
 import { titleHolders } from "@/lib/champions";
 import { getBrands, getSeason, getSummary } from "@/lib/data";
-import { fmt3 } from "@/lib/format";
+import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
@@ -43,7 +47,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const { league: lg, year } = await params;
   const y = yearOf(year);
   if (!isLeague(lg) || y == null) notFound();
-  const { say, plural, fmt } = await currentSpeaker();
+  const { say, plural, fmt, dt } = await currentSpeaker();
   const [d, brands, summary] = await Promise.all([getSeason(lg, y), getBrands(), getSummary()]);
   if (!d) {
     if (!isGapYear(summary.seasons, lg, y)) notFound();
@@ -69,9 +73,26 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
 
   const champ = d.awards.find((x) => x.kind === "championship");
   const awards = d.awards.filter((x) => x.kind !== "championship");
-  const st = d.standings;
-  const pub = st.find((r) => r.basis === "published");
-  const basis = pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
+  // The table as it stood after a day's games (?date=), when that day is before the season's last game day.
+  const days = [...new Set(d.games.filter((g) => g[5] === "r" && g[6] === "f").map((g) => g[0]))].sort();
+  const dateWanted = dateSchema.parse(sp.date);
+  const dateAsked = dateWanted && days.length && dateWanted < days[days.length - 1] ? dateWanted : "";
+  const asOfRows = dateAsked ? await getStandingsAsOf(lg, y, dateAsked) : null;
+  const asOf = asOfRows?.length ? asOfRows : null;
+  const asOfDate = asOf ? dateAsked : "";
+  const st = asOf ? [...asOf].sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || (b.w ?? 0) - (a.w ?? 0)) : d.standings;
+  const views = availableViews(lg, y, st);
+  const wantedView = viewSchema.parse(sp.view);
+  const view = views.includes(wantedView) ? wantedView : "league";
+  const grouped = groupStandings(say, st, view);
+  const pub = d.standings.find((r) => r.basis === "published");
+  const basis = asOf ? say("season.basisAsOf") : pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
+  const standingsNote = [
+    say("season.standingsNote", { basis }),
+    dateWanted && !dateAsked ? say("season.dateLate") : "",
+    dateAsked && !asOf ? say("season.dateMissing") : "",
+    view === "wildcard" ? say("season.wildCardNote") : "",
+  ].filter(Boolean).join(say("sentence.gap"));
   const regular = d.games.filter((g) => g[5] === "r");
   const maxPct = Math.max(0, ...st.map((r) => r.pct ?? 0)) || 1;
   const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
@@ -115,6 +136,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
     },
   ];
   const standings = tableOf(st, cols, (r) => r.team_id);
+  if (view !== "league") standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
   const sort = parseSort(sp.sort, cols.map((c) => c.key), "pct.desc");
   return (
     <>
@@ -129,6 +151,9 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
         {d.games.length === 0 && !champ && summary.seasons.some((s) => s.league === lg && s.year === y && leagueSat(s))
           ? <p><NoSeason /></p>
           : <p className="lede">{say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}</p>}
+        <SeasonBar lg={lg} year={y}
+          seasons={summary.seasons.filter((x) => x.league === lg).sort((a, b) => b.year - a.year).map((x) => ({ year: x.year, label: x.label }))}
+          days={days} date={asOfDate} />
       </section>
       {champ ? (
         <section className="banner">
@@ -141,8 +166,15 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       {st.length ? (
         <section className="section">
           <h2>{say("season.standings")}</h2>
-          <p className="note">{say("season.standingsNote", { basis })}</p>
-          <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} /></div>
+          {asOfDate ? (
+            <div className="asof">
+              <b>{say("season.asOf", { date: dt.full(atUtc(asOfDate)) })}</b>
+              <Link href={queryHref(`/${lg}/${y}`, sp, { date: null })} prefetch={false} scroll={false}>{say("season.backFinal")}</Link>
+            </div>
+          ) : null}
+          <ViewTabs lg={lg} path={`/${lg}/${y}`} sp={sp} view={view} views={views} rows={st} />
+          <p className="note">{standingsNote}</p>
+          <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={view === "league" ? undefined : grouped.groups} /></div>
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} />

@@ -88,6 +88,11 @@ export interface StandingRow {
   pct: number | null;
   basis: "published" | "scores" | (string & {});
   source: string | null;
+  /** Where the club sat that season (db/migrations/028); absent from a database that has not got the columns yet. */
+  conference?: string | null;
+  conference_short?: string | null;
+  division?: string | null;
+  division_short?: string | null;
 }
 
 export interface AwardRow {

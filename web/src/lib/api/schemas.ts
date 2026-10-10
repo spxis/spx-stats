@@ -48,6 +48,7 @@ export const standingSchema = z.object({
   league: str, year: int, team_id: int, franchise_id: int, team: strN,
   gp: intN, w: intN, l: intN, t: intN, otl: intN, pts: intN, pf: intN, pa: intN,
   home: strN, road: strN, pct: intN, basis: str, source: strN,
+  conference: strN.optional(), conference_short: strN.optional(), division: strN.optional(), division_short: strN.optional(),
 }) satisfies z.ZodType<StandingRow>;
 
 export const awardSchema = z.object({

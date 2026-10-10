@@ -57,6 +57,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
         <span className="eyebrow">{info.short}</span>
         <h1>{info.name}</h1>
         <p className="lede">{say("league.lede", { seasons: plural("count.seasons", list.filter((x) => !leagueSat(x)).length), withGames: withGames.length, champions: plural("count.champions", champs.length) })}</p>
+        <p className="note"><Link href={`/${lg}/alignment`}>{say("league.alignmentLink")}</Link></p>
       </section>
       <section className="section">
         <h2>{say("league.seasons")}</h2>
