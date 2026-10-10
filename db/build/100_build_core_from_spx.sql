@@ -102,14 +102,15 @@ select distinct g.league_code, g.start_year,
        'Season rows created from the SPX games; games_per_team is editorial.'
 from spx_game g;
 
-insert into core.franchise (sport_code, source_id, notes)
-select distinct on (t.franchise_key) s.sport_code, src.source_id, 'spx team ' || t.franchise_key
+insert into core.franchise (sport_code, source_id, source_key)
+select distinct on (t.franchise_key) s.sport_code, src.source_id, t.franchise_key::text
 from spx_team t join ref.league s using (league_code)
 cross join (select source_id from meta.source where code = 'spx_database') src
 order by t.franchise_key;
 
 create temp table fmap as
-select f.franchise_id, substring(f.notes from 'spx team (\d+)')::integer as franchise_key from core.franchise f;
+select f.franchise_id, f.source_key::integer as franchise_key from core.franchise f
+where f.source_id = (select source_id from meta.source where code = 'spx_database');
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'franchise', m.franchise_id, (select source_id from meta.source where code = 'spx_database'), 'team:' || t.team_id

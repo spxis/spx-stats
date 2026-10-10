@@ -34,11 +34,11 @@ from rmap r join core.external_id e on e.entity_kind = 'franchise' and e.externa
 create temp table defunct as
 select distinct t.team_id from (select home team_id from legacy_retrosheet.game_log union select visitor from legacy_retrosheet.game_log) t
 where t.team_id not in (select team_id from legacy_retrosheet.current_name);
-delete from core.team_season where franchise_id in (select franchise_id from core.franchise where notes like 'retrosheet team %');
-delete from core.franchise where notes like 'retrosheet team %';
-insert into core.franchise (sport_code, source_id, notes)
-select 'baseball', (select source_id from src), 'retrosheet team ' || team_id from defunct;
-insert into fr select substring(f.notes from 'retrosheet team (.*)'), f.franchise_id from core.franchise f where f.notes like 'retrosheet team %';
+delete from core.team_season where franchise_id in (select franchise_id from core.franchise where source_id = (select source_id from src));
+delete from core.franchise where source_id = (select source_id from src);
+insert into core.franchise (sport_code, source_id, source_key)
+select 'baseball', (select source_id from src), team_id from defunct;
+insert into fr select f.source_key, f.franchise_id from core.franchise f where f.source_id = (select source_id from src);
 
 -- Which franchise each Retrosheet team id was, by date.
 create temp table team_era as
