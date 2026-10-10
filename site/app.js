@@ -243,6 +243,12 @@
     if (games.length) drawGames();
   }
 
+  // The big count of titles with the league's trophy beside it.
+  function trophies(lg, n) {
+    const cup = el('span', { class: 'cup' }); cup.innerHTML = window.SPX_TROPHY(lg);
+    return el('div', { class: 'trophies fade' }, el('b', {}, String(n)), cup);
+  }
+
   async function teamPage(lg, f) {
     accent(lg);
     const all = await get(`${lg}/teams.json`);
@@ -253,7 +259,8 @@
     const now = names.at(-1)?.name || `Team ${f}`;
     show(
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', {}, now),
-        el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championships` : ''}.`)),
+        el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championship${t.titles.length === 1 ? '' : 's'}` : ''}.`)),
+      (t.titles || []).length ? trophies(lg, t.titles.length) : null,
       el('section', { class: 'section' }, el('h2', {}, 'Winning share by season'), el('p', { class: 'note' }, 'Filled dots are championship seasons. Click a season to open it.'), box),
       names.length ? el('section', { class: 'section' }, el('h2', {}, 'Names over time'), el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Name'), el('th', {}, 'From'), el('th', {}, 'Until'))),
         el('tbody', {}, names.map((n) => el('tr', {}, el('td', { class: 'team' }, n.name), el('td', {}, n.from || ''), el('td', {}, n.to || 'today')))))) : null,

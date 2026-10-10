@@ -123,3 +123,9 @@ select, input[type="search"] { font: inherit; font-size: 15px; padding: 6px 10px
 .foot .retro { color: var(--ink); }
 @media (prefers-reduced-motion: no-preference) { .fade { animation: fade .35s ease-out both; } @keyframes fade { from { opacity: .4; transform: translateY(4px); } } }
 @media (max-width: 640px) { .aux { margin-left: 0; } .figure b { font-size: 30px; } }
+
+.trophies { display: flex; align-items: center; gap: 14px; color: var(--accent); }
+.trophies b { font: 700 clamp(88px, 14vw, 140px)/0.85 var(--display); font-variant-numeric: tabular-nums; }
+.trophies .cup { display: block; width: clamp(56px, 8vw, 84px); }
+.trophies .cup svg { display: block; width: 100%; height: auto; }
+main:focus { outline: none; }
