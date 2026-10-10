@@ -1,9 +1,9 @@
-/* SPX Stats Archive: a browser over the archive's public API (see api.js). */
+/* SPXN, the SPX Stats Network: a browser over the archive's public API (see api.js). */
 (() => {
   const app = document.getElementById('app');
   const LG = { nhl: 'NHL', nba: 'NBA', mlb: 'MLB', nfl: 'NFL', cfl: 'CFL' };
   const SRC = { spx_database: 'SPX', spxn_database: 'SPX', spx_files: 'SPX', retrosheet: 'Retrosheet', nflverse: 'nflverse',
-                wikidata: 'Wikidata', spx_stats_derived: 'From results', editorial: 'Editorial' };
+                wikidata: 'Wikidata', nhl_api: 'NHL', spx_stats_derived: 'From results', editorial: 'Editorial' };
   const isSpx = (s) => s && s.startsWith('spx') && s !== 'spx_stats_derived';
   const fmt = d3.format(',');
   const cache = new Map();
@@ -193,7 +193,8 @@
     const champ = (d.awards || []).find((x) => x.kind === 'championship');
     const awards = (d.awards || []).filter((x) => x.kind !== 'championship');
     const st = d.standings || [];
-    const basis = st.some((r) => r.basis === 'published') ? 'As SPX published them' : 'Worked out from the final scores';
+    const pub = st.find((r) => r.basis === 'published');
+    const basis = pub ? 'As ' + (isSpx(pub.source) ? 'SPX' : 'the ' + (SRC[pub.source] || pub.source)) + ' published them' : 'Worked out from the final scores';
     let phase = 'r', team = '';
     const gamesBox = el('div', { class: 'games' });
     const pick = el('select', { 'aria-label': 'Team', onchange: (e) => { team = e.target.value; drawGames(); } },
