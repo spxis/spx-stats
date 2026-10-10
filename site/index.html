@@ -9,12 +9,13 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Source+Sans+3:wght@400;600&family=JetBrains+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="style.css">
+<script>try { const t = localStorage.getItem('spxn-theme'); if (t) document.documentElement.dataset.theme = t; } catch (e) {}</script>
 </head>
 <body>
 <header class="top">
   <a class="brand" href="#/"><span class="brand-mark">SPXN</span><span class="brand-name">SPX Stats Network</span></a>
   <nav class="leagues" id="league-nav" aria-label="Leagues"></nav>
-  <nav class="aux" aria-label="About the data"><a href="#/sources">Sources</a><a href="#/quality">Data quality</a></nav>
+  <nav class="aux" aria-label="About the data"><a href="#/sources">Sources</a><a href="#/quality">Data quality</a><button class="theme" id="theme" type="button" aria-label="Switch light or dark mode"></button></nav>
 </header>
 <main id="app" tabindex="-1"><p class="loading">Loading…</p></main>
 <footer class="foot">
@@ -25,5 +26,14 @@
 <script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script>
 <script src="api.js"></script>
 <script src="app.js"></script>
+<script>
+(() => {
+  const b = document.getElementById('theme'), root = document.documentElement;
+  const dark = () => root.dataset.theme ? root.dataset.theme === 'dark' : matchMedia('(prefers-color-scheme: dark)').matches;
+  const show = () => { b.textContent = dark() ? 'Light' : 'Dark'; b.setAttribute('aria-pressed', String(dark())); };
+  b.addEventListener('click', () => { root.dataset.theme = dark() ? 'light' : 'dark'; try { localStorage.setItem('spxn-theme', root.dataset.theme); } catch (e) {} show(); });
+  matchMedia('(prefers-color-scheme: dark)').addEventListener('change', show); show();
+})();
+</script>
 </body>
 </html>

@@ -38,6 +38,8 @@ a:hover { text-decoration-color: currentColor; }
 .leagues a[aria-current="page"] { border-bottom-color: var(--accent); }
 .aux { margin-left: auto; }
 .aux a { color: var(--muted); }
+.theme { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+.theme:hover { border-color: var(--ink); }
 
 main { max-width: 1180px; margin-inline: auto; padding-block: 28px 40px; display: flex; flex-direction: column; gap: 32px; min-height: 60vh; }
 .loading { color: var(--muted); }
