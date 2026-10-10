@@ -1,4 +1,4 @@
-/* SPX Stats Archive: a static browser over data/*.json (written by scripts/site/export.py). */
+/* SPX Stats Archive: a browser over the archive's public API (see api.js). */
 (() => {
   const app = document.getElementById('app');
   const LG = { nhl: 'NHL', nba: 'NBA', mlb: 'MLB', nfl: 'NFL', cfl: 'CFL' };
@@ -8,7 +8,7 @@
   const fmt = d3.format(',');
   const cache = new Map();
   const get = (path) => {
-    if (!cache.has(path)) cache.set(path, fetch('data/' + path).then((r) => { if (!r.ok) throw new Error(path); return r.json(); }));
+    if (!cache.has(path)) cache.set(path, window.SPX_API.load(path));
     return cache.get(path);
   };
   const el = (tag, attrs = {}, ...kids) => {
@@ -21,6 +21,7 @@
     for (const k of kids.flat()) if (k != null && k !== false) n.append(k instanceof Node ? k : document.createTextNode(String(k)));
     return n;
   };
+  const show = (...kids) => app.replaceChildren(...kids.flat().filter((k) => k != null && k !== false));
   const accent = (lg) => document.documentElement.style.setProperty('--accent', lg ? `var(--${lg})` : 'var(--ink)');
   const badge = (src) => el('span', { class: 'badge' + (isSpx(src) ? ' spx' : ''), title: src }, SRC[src] || src);
   const seasonLabel = (lg, y) => (lg === 'nhl' || lg === 'nba') ? `${y}-${String(y + 1).slice(2)}` : String(y);
@@ -141,7 +142,7 @@
     const leagues = s.leagues.map((l) => l.code);
     const t = s.totals;
     const box = el('div', { class: 'chart scroll' });
-    app.replaceChildren(
+    show(
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, 'NHL · NBA · MLB · NFL · CFL'), el('h1', {}, 'Every game, every champion'),
         el('p', { class: 'lede' }, 'Scores, standings, champions and awards of five leagues, built from the SPX archive of 1997–2013 and filled out from open sources. Every result says where it came from.')),
       el('section', { class: 'figures' },
@@ -168,7 +169,7 @@
     const withGames = list.filter((x) => x.games > 0);
     const box = el('div', { class: 'chart' });
     const champs = list.filter((x) => x.champion).reverse();
-    app.replaceChildren(
+    show(
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, info.short), el('h1', {}, info.name),
         el('p', { class: 'lede' }, `${list.length} seasons held, ${withGames.length} with games. ${champs.length} champions on record.`)),
       el('section', { class: 'section' }, el('h2', {}, 'Seasons'), el('div', { class: 'seasonlist' },
@@ -219,7 +220,7 @@
     }
     const maxPct = d3.max(st, (r) => r.pct) || 1;
     const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
-    app.replaceChildren(
+    show(
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', {}, `${d.label} season`),
         el('p', { class: 'lede' }, `${fmt(games.filter((g) => g.ph === 'r').length)} regular-season games, ${fmt(games.filter((g) => g.ph === 'r' && g.st === 'f').length)} with a result.`)),
       champ ? el('section', { class: 'banner' }, el('span', { class: 'cup' }, champ.award), badge(champ.source), el('span', { class: 'who' }, champ.winner), el('span', { class: 'how' }, champ.note || '')) : null,
@@ -245,11 +246,11 @@
     accent(lg);
     const all = await get(`${lg}/teams.json`);
     const t = all.find((x) => String(x.f) === String(f));
-    if (!t) { app.replaceChildren(el('p', {}, 'No such team.')); return; }
+    if (!t) { show(el('p', {}, 'No such team.')); return; }
     const names = t.names || [];
     const box = el('div', { class: 'chart' });
     const now = names.at(-1)?.name || `Team ${f}`;
-    app.replaceChildren(
+    show(
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', {}, now),
         el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championships` : ''}.`)),
       el('section', { class: 'section' }, el('h2', {}, 'Winning share by season'), el('p', { class: 'note' }, 'Filled dots are championship seasons. Click a season to open it.'), box),
@@ -263,7 +264,7 @@
   async function sources() {
     accent(null);
     const s = await get('sources.json');
-    app.replaceChildren(
+    show(
       el('section', { class: 'head fade' }, el('h1', {}, 'Sources'), el('p', { class: 'lede' }, 'SPX\'s own data is the base wherever SPX holds it. Open sources fill what SPX never had and check what it did.')),
       el('section', { class: 'section' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Source'), el('th', {}, 'Licence and credit'), el('th', { class: 'num' }, 'Games'), el('th', { class: 'num' }, 'Award winners'))),
         el('tbody', {}, s.filter((x) => x.games || x.award_winners).map((x) => el('tr', {},
@@ -277,7 +278,7 @@
     const q = await get('quality.json');
     const checks = q.checks || [], issues = q.issues || [];
     const conf = d3.sum(checks.filter((c) => c.status === 'confirmed'), (c) => c.n), disp = d3.sum(checks.filter((c) => c.status === 'disputed'), (c) => c.n);
-    app.replaceChildren(
+    show(
       el('section', { class: 'head fade' }, el('h1', {}, 'Data quality'), el('p', { class: 'lede' }, 'Every change to what a source said is logged, and every value a second source checks gets a mark.')),
       el('section', { class: 'figures' }, [['Confirmed by a second source', conf], ['Disputed', disp], ['Logged issues', d3.sum(issues, (i) => i.n)]]
         .map(([k, v]) => el('div', { class: 'figure' }, el('b', {}, fmt(v)), el('span', {}, k)))),
@@ -302,7 +303,7 @@
       else if (LG[parts[0]]) await league(parts[0]);
       else await home();
     } catch (e) {
-      app.replaceChildren(el('p', { class: 'note' }, 'This page has no data yet.'), el('p', {}, el('a', { href: '#/' }, 'Back to the start')));
+      show(el('p', { class: 'note' }, 'This page has no data yet.'), el('p', {}, el('a', { href: '#/' }, 'Back to the start')));
     }
     window.scrollTo(0, 0);
   }
