@@ -4,7 +4,7 @@
   const LG = { nhl: 'NHL', nba: 'NBA', mlb: 'MLB', nfl: 'NFL', cfl: 'CFL' };
   const SRC = { spx: 'SPX', spx_database: 'SPX', spxn_database: 'SPX', spx_files: 'SPX', retrosheet: 'Retrosheet', nflverse: 'nflverse',
                 wikidata: 'Wikidata', nhl_api: 'NHL', spx_stats_derived: 'From results', editorial: 'Editorial' };
-  const tlink = (lg, f, name, cls) => (f != null ? el('a', { class: cls || null, href: `#/${lg}/team/${f}` }, name) : el('span', { class: cls || null }, name));
+  const tlink = (lg, f, name, cls) => (f != null ? el('a', { class: cls || null, href: `/${lg}/team/${f}` }, name) : el('span', { class: cls || null }, name));
   const isSpx = (s) => s && s.startsWith('spx') && s !== 'spx_stats_derived';
   const fmt = d3.format(',');
   const cache = new Map();
@@ -36,6 +36,7 @@
   const contrast = (a, b) => { const [x, y] = [lum(a), lum(b)].sort((m, n) => n - m); return (x + 0.05) / (y + 0.05); };
   const logo = (b, size = 20) => (b && b.logo_url ? el('img', { class: 'logo', src: b.logo_url, alt: '', width: size, height: size, loading: 'lazy', decoding: 'async', referrerpolicy: 'no-referrer', onerror: (e) => e.target.remove() }) : null);
   const badge = (src) => el('span', { class: 'badge' + (isSpx(src) ? ' spx' : ''), title: src }, SRC[src] || src);
+  const go = (href) => { if (href !== location.pathname + location.search) history.pushState(null, '', href); route(); };
   const seasonLabel = (lg, y) => (lg === 'nhl' || lg === 'nba') ? `${y}-${String(y + 1).slice(2)}` : String(y);
 
   // Tooltip helper: one per chart box.
@@ -90,7 +91,7 @@
         .attr('x', (s) => x(s.year) + 0.5).attr('y', 3).attr('width', Math.max(1, cw - 1)).attr('height', rowH - 6)
         .attr('fill', (s) => shareColor(s.share)).attr('stroke', (s) => s.share > 0 ? 'none' : 'var(--rule)').attr('stroke-width', 0.5)
         .style('cursor', 'pointer')
-        .on('click', (ev, s) => { location.hash = `#/${lg}/${s.year}`; })
+        .on('click', (ev, s) => { go(`/${lg}/${s.year}`); })
         .on('mousemove', (ev, s) => T.show(ev, lines(`${LG[lg]} ${s.label}`,
           s.games ? `${fmt(s.finals)} of ${fmt(s.games)} regular-season games with a result` : 'No games held yet',
           s.champion ? `Champion: ${s.champion}` : null)))
@@ -111,7 +112,7 @@
       .attr('x', (s) => x(s.year) + x.bandwidth() / 2).attr('y', H - 6).attr('text-anchor', 'middle').text((s) => s.year);
     const T = tip(box);
     const g = svg.append('g').selectAll('g').data(list).join('g').style('cursor', 'pointer')
-      .on('click', (ev, s) => { location.hash = `#/${lg}/${s.year}`; })
+      .on('click', (ev, s) => { go(`/${lg}/${s.year}`); })
       .on('mousemove', (ev, s) => T.show(ev, lines(s.label, `${fmt(s.games)} games, ${fmt(s.finals)} with a result`, s.champion ? `Champion: ${s.champion}` : null)))
       .on('mouseleave', T.hide);
     g.append('rect').attr('x', (s) => x(s.year)).attr('width', x.bandwidth()).attr('y', (s) => y(s.games)).attr('height', (s) => y(0) - y(s.games))
@@ -141,7 +142,7 @@
     svg.append('g').selectAll('circle').data(pts).join('circle').attr('cx', (p) => x(p.y)).attr('cy', (p) => y(p.pct))
       .attr('r', (p) => titles.has(p.y) ? 6 : 2.5).attr('fill', (p) => titles.has(p.y) ? 'var(--accent)' : 'var(--panel)')
       .attr('stroke', 'var(--accent)').attr('stroke-width', 1.5).style('cursor', 'pointer')
-      .on('click', (ev, p) => { location.hash = `#/${lg}/${p.y}`; })
+      .on('click', (ev, p) => { go(`/${lg}/${p.y}`); })
       .on('mousemove', (ev, p) => T.show(ev, lines(seasonLabel(lg, p.y), `${p.w}-${p.l}${p.t ? '-' + p.t : ''}${p.o ? '-' + p.o : ''}`,
         `Win share ${d3.format('.3f')(p.pct)}`, titles.has(p.y) ? 'Won the championship' : null)))
       .on('mouseleave', T.hide);
@@ -165,7 +166,7 @@
       el('section', { class: 'cards' }, s.leagues.map((l) => {
         const list = s.seasons.filter((x) => x.league === l.code && x.games > 0);
         const last = s.seasons.filter((x) => x.league === l.code && x.champion).at(-1);
-        return el('a', { class: 'card', href: `#/${l.code}`, style: `--lg: var(--${l.code})` }, el('h3', {}, l.short),
+        return el('a', { class: 'card', href: `/${l.code}`, style: `--lg: var(--${l.code})` }, el('h3', {}, l.short),
           el('span', {}, l.name), el('span', { class: 'span' }, list.length ? `${list[0].year}–${list.at(-1).year} · ${list.length} seasons` : 'No games yet'),
           last ? el('span', { class: 'note' }, `${last.label} champion: ${last.champion}`) : null);
       })));
@@ -185,12 +186,12 @@
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, info.short), el('h1', {}, info.name),
         el('p', { class: 'lede' }, `${list.length} seasons held, ${withGames.length} with games. ${champs.length} champions on record.`)),
       el('section', { class: 'section' }, el('h2', {}, 'Seasons'), el('div', { class: 'seasonlist' },
-        list.map((x) => el('a', { href: `#/${lg}/${x.year}`, class: x.share >= 0.98 ? 'full' : null, title: x.games ? `${fmt(x.finals)} of ${fmt(x.games)} with a result` : 'Awards only' }, x.label)))),
+        list.map((x) => el('a', { href: `/${lg}/${x.year}`, class: x.share >= 0.98 ? 'full' : null, title: x.games ? `${fmt(x.finals)} of ${fmt(x.games)} with a result` : 'Awards only' }, x.label)))),
       withGames.length ? el('section', { class: 'section' }, el('h2', {}, 'Games and results by season'),
         el('div', { class: 'legend' }, el('span', {}, el('i', { style: 'background: var(--accent)' }), 'With a result'), el('span', {}, el('i', { style: 'background: var(--accent); opacity: .22' }), 'Held, no result')), box) : null,
       el('section', { class: 'section' }, el('h2', {}, 'Champions'),
         champs.length ? el('div', { class: 'tablebox' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Season'), el('th', {}, 'Champion'), el('th', {}, 'Final'), el('th', {}, 'Source'))),
-          el('tbody', {}, champs.map((c) => el('tr', {}, el('td', {}, el('a', { href: `#/${lg}/${c.year}` }, c.label)), el('td', { class: 'team' }, tlink(lg, c.champion_franchise, c.champion)),
+          el('tbody', {}, champs.map((c) => el('tr', {}, el('td', {}, el('a', { href: `/${lg}/${c.year}` }, c.label)), el('td', { class: 'team' }, tlink(lg, c.champion_franchise, c.champion)),
             el('td', { class: 'note' }, c.champion_note || ''), el('td', {}, badge(c.champion_source)))))))
           : el('p', { class: 'note' }, 'No champions recorded yet.')));
     if (withGames.length) { barsBySeason(box, withGames, lg); onResize = () => barsBySeason(box, withGames, lg); }
@@ -207,14 +208,22 @@
     const st = d.standings || [];
     const pub = st.find((r) => r.basis === 'published');
     const basis = pub ? 'As ' + (isSpx(pub.source) ? 'SPX' : 'the ' + (SRC[pub.source] || pub.source)) + ' published them' : 'Worked out from the final scores';
-    let phase = 'r', team = '';
+    // Selections live in the address (?phase=&team=&month=&day=), so a reload or a shared link keeps them.
+    const q = new URLSearchParams(location.search);
+    let phase = q.has('phase') ? q.get('phase') : 'r', team = q.get('team') || '';
+    const keep = () => {
+      const n = new URLSearchParams();
+      if (phase !== 'r') n.set('phase', phase); if (team) n.set('team', team); if (month) n.set('month', month); if (day) n.set('day', day);
+      const href = location.pathname + (n.toString() ? '?' + n : '');
+      if (href !== location.pathname + location.search) history.replaceState(null, '', href);
+    };
     const gamesBox = el('div', { class: 'daylist' });
     const pick = el('select', { 'aria-label': 'Team', onchange: (e) => { team = e.target.value; drawGames(); } },
-      el('option', { value: '' }, 'All teams'), [...teams.values()].map((t) => el('option', { value: t.id }, t.name)));
+      el('option', { value: '' }, 'All teams'), [...teams.values()].map((t) => el('option', { value: t.id, selected: String(t.id) === team ? '' : null }, t.name)));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Part of season' },
       [['r', 'Regular season'], ['p', 'Playoffs'], ['', 'All']].map(([k, label]) => el('button', { type: 'button', 'data-k': k, onclick: () => { phase = k; drawGames(); } }, label)));
     // A month calendar: each day shaded by how many games it held; a team's result on its days.
-    let month = '', day = '';
+    let month = q.get('month') || '', day = q.get('day') || '';
     const cal = el('div', { class: 'cal' });
     const iso = d3.utcFormat('%Y-%m-%d'), ym = (d) => d.slice(0, 7);
     function gameRow(g) {
@@ -245,6 +254,7 @@
       if (!months.length) { cal.replaceChildren(); gamesBox.replaceChildren(el('p', { class: 'note' }, 'No games for this choice.')); return; }
       if (!months.includes(month)) { month = months.at(-1); day = ''; }
       if (day && !byDay.has(day)) day = '';
+      keep();
       const most = d3.max(byDay.values(), (l) => l.length) || 1;
       const first = new Date(month + '-01T00:00:00Z');
       const cells = [];
@@ -278,14 +288,14 @@
     const maxPct = d3.max(st, (r) => r.pct) || 1;
     const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
     show(
-      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', {}, `${d.label} season`),
+      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `/${lg}` }, LG[lg])), el('h1', {}, `${d.label} season`),
         el('p', { class: 'lede' }, `${fmt(games.filter((g) => g.ph === 'r').length)} regular-season games, ${fmt(games.filter((g) => g.ph === 'r' && g.st === 'f').length)} with a result.`)),
       champ ? el('section', { class: 'banner' }, el('span', { class: 'cup' }, champ.award), badge(champ.source), el('span', { class: 'who' }, tlink(lg, champ.franchise_id, champ.winner)), el('span', { class: 'how' }, champ.note || '')) : null,
       st.length ? el('section', { class: 'section' }, el('h2', {}, 'Standings'), el('p', { class: 'note' }, basis + '. Sorted by share of games won.'),
         el('div', { class: 'scroll' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Team'), el('th', { class: 'num' }, 'GP'), el('th', { class: 'num' }, 'W'), el('th', { class: 'num' }, 'L'),
           showT ? el('th', { class: 'num' }, 'T') : null, showO ? el('th', { class: 'num' }, 'OTL') : null, showP ? el('th', { class: 'num' }, 'Pts') : null,
           el('th', { class: 'num' }, 'For'), el('th', { class: 'num' }, 'Against'), el('th', {}, 'Home'), el('th', {}, 'Road'), el('th', {}, 'Pct'))),
-          el('tbody', {}, st.map((r) => el('tr', {}, el('td', { class: 'team' }, logo(brandFor(teams.get(r.id)?.f, y)), el('a', { href: `#/${lg}/team/${teams.get(r.id)?.f}` }, r.name)),
+          el('tbody', {}, st.map((r) => el('tr', {}, el('td', { class: 'team' }, logo(brandFor(teams.get(r.id)?.f, y)), el('a', { href: `/${lg}/team/${teams.get(r.id)?.f}` }, r.name)),
             el('td', { class: 'num' }, r.gp ?? ''), el('td', { class: 'num' }, r.w ?? ''), el('td', { class: 'num' }, r.l ?? ''),
             showT ? el('td', { class: 'num' }, r.t ?? '') : null, showO ? el('td', { class: 'num' }, r.otl ?? '') : null, showP ? el('td', { class: 'num' }, r.pts ?? '') : null,
             el('td', { class: 'num' }, r.pf != null ? fmt(r.pf) : ''), el('td', { class: 'num' }, r.pa != null ? fmt(r.pa) : ''),
@@ -295,7 +305,7 @@
         awards.map((a) => el('div', { class: 'award' }, el('span', { class: 'name' }, a.award), el('span', { class: 'winner' }, tlink(lg, a.franchise_id, a.winner)),
           el('span', { class: 'note' }, a.note || '', ' ', badge(a.source)))))) : null,
       games.length ? el('section', { class: 'section' }, el('h2', {}, 'Games'), el('div', { class: 'controls' }, seg, pick), cal, gamesBox) : null,
-      el('p', { class: 'note' }, el('a', { href: `#/${lg}/${y - 1}` }, '← ' + seasonLabel(lg, y - 1)), ' · ', el('a', { href: `#/${lg}/${y + 1}` }, seasonLabel(lg, y + 1) + ' →')));
+      el('p', { class: 'note' }, el('a', { href: `/${lg}/${y - 1}` }, '← ' + seasonLabel(lg, y - 1)), ' · ', el('a', { href: `/${lg}/${y + 1}` }, seasonLabel(lg, y + 1) + ' →')));
     if (games.length) drawGames();
   }
 
@@ -305,7 +315,7 @@
     return el('div', { class: 'trophyrow fade' },
       el('div', { class: 'trophies' }, el('b', {}, String(n)), cup),
       titles.length ? el('div', { class: 'champs' }, el('h2', {}, 'Championships'), el('div', { class: 'seasonlist' },
-        titles.map((y) => el('a', { class: 'full', href: `#/${lg}/${y}` }, seasonLabel(lg, y))))) : null);
+        titles.map((y) => el('a', { class: 'full', href: `/${lg}/${y}` }, seasonLabel(lg, y))))) : null);
   }
 
   // One row per season of a franchise's standings, newest first.
@@ -314,13 +324,13 @@
   async function teamMapCorner(lg, f, year, name) {
     const me = brandFor(f, year);
     if (!me || me.latitude == null) return null;
-    const { drawTeamMap } = await import('./teammap.js');
+    const { drawTeamMap } = await import('/teammap.js');
     const small = await drawTeamMap([{ f, name, lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }], { title: `Where the ${name} play` });
     if (!small) return null;
     const btn = el('button', { type: 'button', class: 'mapbtn', 'aria-label': `Map of every ${LG[lg]} team in ${seasonLabel(lg, year)}` }, small);
     btn.addEventListener('click', async () => {
       const clubs = await get(`${lg}/${year}/clubs.json`).catch(() => []);
-      const teams = clubs.map((c) => { const b = brandFor(c.franchise_id, year); return b && b.latitude != null ? { f: c.franchise_id, name: c.team, lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: `#/${lg}/team/${c.franchise_id}`, me: String(c.franchise_id) === String(f) } : null; }).filter(Boolean);
+      const teams = clubs.map((c) => { const b = brandFor(c.franchise_id, year); return b && b.latitude != null ? { f: c.franchise_id, name: c.team, lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: `/${lg}/team/${c.franchise_id}`, me: String(c.franchise_id) === String(f) } : null; }).filter(Boolean);
       const big = await drawTeamMap(teams.length ? teams : [{ f, name, lat: me.latitude, lon: me.longitude, me: true }], { big: true, title: `${LG[lg]} teams, ${seasonLabel(lg, year)}` });
       const dlg = el('dialog', { class: 'mapdlg', 'aria-label': `${LG[lg]} teams, ${seasonLabel(lg, year)}` },
         el('div', { class: 'dlghead' }, el('h2', {}, `${LG[lg]} teams, ${seasonLabel(lg, year)}`), el('button', { type: 'button', class: 'theme', onclick: () => dlg.close() }, 'Close')),
@@ -357,7 +367,7 @@
         showT ? el('th', { class: 'num' }, 'T') : null, showO ? el('th', { class: 'num' }, 'OTL') : null, showP ? el('th', { class: 'num' }, 'Pts') : null,
         el('th', { class: 'num' }, 'PF'), el('th', { class: 'num' }, 'PA'), el('th', {}, 'Home'), el('th', {}, 'Road'), el('th', {}, 'Pct'))),
         el('tbody', {}, rows.map((r) => el('tr', {},
-          el('td', { class: 'seasoncell' }, el('a', { href: `#/${lg}/${r.year}` }, seasonLabel(lg, r.year)), won.has(r.year) ? cupIcon() : null),
+          el('td', { class: 'seasoncell' }, el('a', { href: `/${lg}/${r.year}` }, seasonLabel(lg, r.year)), won.has(r.year) ? cupIcon() : null),
           el('td', { class: 'team' }, r.team || ''),
           el('td', { class: 'num' }, r.gp ?? ''), el('td', { class: 'num' }, r.w ?? ''), el('td', { class: 'num' }, r.l ?? ''),
           showT ? el('td', { class: 'num' }, r.t ?? '') : null, showO ? el('td', { class: 'num' }, r.otl ?? '') : null, showP ? el('td', { class: 'num' }, r.pts ?? '') : null,
@@ -384,7 +394,7 @@
     }
     show(
       b && b.primary_hex ? el('div', { class: 'teamband', style: `--tp:#${b.primary_hex};--ts:#${b.secondary_hex || b.primary_hex}` }) : null,
-      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', { class: 'teamname' }, logo(b, 56), now),
+      el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `/${lg}` }, LG[lg])), el('h1', { class: 'teamname' }, logo(b, 56), now),
         el('p', { class: 'lede' }, `${(t.seasons || []).length} seasons of results${(t.titles || []).length ? `, ${t.titles.length} championship${t.titles.length === 1 ? '' : 's'}` : ''}.`)),
       stRows.length ? lifetime(lg, stRows) : null,
       (t.titles || []).length ? trophies(lg, t.titles.length, t.titles) : null,
@@ -451,9 +461,9 @@
         el('p', {}, 'If you own a logo shown here and want it removed, tell us and it will be taken down promptly, no questions asked: ', el('a', { href: 'https://github.com/spxis/spx-stats/issues' }, 'open an issue'), '.')));
   }
 
-  async function route() {
+  async function route(keepScroll) {
     onResize = null;
-    const parts = location.hash.replace(/^#\/?/, '').split('/').filter(Boolean);
+    const parts = location.pathname.split('/').filter(Boolean);
     document.querySelectorAll('#league-nav a').forEach((a) => a.setAttribute('aria-current', a.dataset.lg === parts[0] ? 'page' : 'false'));
     try {
       if (!parts.length) await home();
@@ -465,12 +475,18 @@
       else if (LG[parts[0]]) await league(parts[0]);
       else await home();
     } catch (e) {
-      show(el('p', { class: 'note' }, 'This page has no data yet.'), el('p', {}, el('a', { href: '#/' }, 'Back to the start')));
+      show(el('p', { class: 'note' }, 'This page has no data yet.'), el('p', {}, el('a', { href: '/' }, 'Back to the start')));
     }
-    window.scrollTo(0, 0);
+    if (!keepScroll) window.scrollTo(0, 0);
   }
-  document.getElementById('league-nav').append(...Object.entries(LG).map(([k, v]) => el('a', { href: `#/${k}`, 'data-lg': k }, v)));
-  window.addEventListener('hashchange', route);
+  document.getElementById('league-nav').append(...Object.entries(LG).map(([k, v]) => el('a', { href: `/${k}`, 'data-lg': k }, v)));
+  window.addEventListener('popstate', () => route(true));
+  // Links inside the site change the address without reloading the page.
+  document.addEventListener('click', (e) => {
+    const a = e.target.closest && e.target.closest('a[href^="/"]');
+    if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || a.target) return;
+    e.preventDefault(); go(a.getAttribute('href'));
+  });
   let rt; window.addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => onResize && onResize(), 150); });
   route();
 })();
