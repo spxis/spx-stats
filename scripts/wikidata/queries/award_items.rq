@@ -1,0 +1,16 @@
+SELECT ?label ?item ?desc WHERE {
+  VALUES ?label { "Stanley Cup"@en "Hart Memorial Trophy"@en "Vezina Trophy"@en "James Norris Memorial Trophy"@en "Calder Memorial Trophy"@en
+    "Conn Smythe Trophy"@en "Art Ross Trophy"@en "Lady Byng Memorial Trophy"@en "Frank J. Selke Trophy"@en "Jack Adams Award"@en
+    "Ted Lindsay Award"@en "Maurice \"Rocket\" Richard Trophy"@en "Presidents' Trophy"@en "Bill Masterton Memorial Trophy"@en "King Clancy Memorial Trophy"@en
+    "William M. Jennings Trophy"@en "Larry O'Brien Championship Trophy"@en "NBA Most Valuable Player Award"@en "Bill Russell NBA Finals Most Valuable Player Award"@en
+    "NBA Rookie of the Year Award"@en "NBA Defensive Player of the Year Award"@en "NBA Sixth Man of the Year Award"@en "NBA Most Improved Player Award"@en
+    "NBA Coach of the Year Award"@en "Commissioner's Trophy"@en "World Series"@en "Major League Baseball Most Valuable Player Award"@en "Cy Young Award"@en
+    "Major League Baseball Rookie of the Year Award"@en "World Series Most Valuable Player Award"@en "Major League Baseball Manager of the Year Award"@en
+    "Vince Lombardi Trophy"@en "Super Bowl"@en "AP NFL Most Valuable Player"@en "Super Bowl Most Valuable Player Award"@en "AP NFL Offensive Player of the Year"@en
+    "AP NFL Defensive Player of the Year"@en "AP NFL Offensive Rookie of the Year"@en "AP NFL Defensive Rookie of the Year"@en "AP NFL Coach of the Year"@en
+    "AP NFL Comeback Player of the Year"@en "Grey Cup"@en "CFL's Most Outstanding Player Award"@en "CFL's Most Outstanding Canadian Award"@en
+    "CFL's Most Outstanding Defensive Player Award"@en "CFL's Most Outstanding Lineman Award"@en "CFL's Most Outstanding Rookie Award"@en
+    "CFL's Most Outstanding Special Teams Award"@en "Annis Stukus Trophy"@en "Grey Cup Most Valuable Player"@en }
+  ?item rdfs:label ?label .
+  OPTIONAL { ?item schema:description ?desc FILTER(lang(?desc) = "en") }
+}

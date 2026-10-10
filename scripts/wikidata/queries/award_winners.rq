@@ -1,0 +1,8 @@
+SELECT ?award ?winner ?winnerLabel ?time ?team ?teamLabel ?isHuman WHERE {
+  VALUES ?award { wd:Q211872 wd:Q250246 wd:Q678383 wd:Q832447 wd:Q705707 wd:Q826079 wd:Q221401 wd:Q752423 wd:Q726480 wd:Q176834 wd:Q785207 wd:Q516636 wd:Q795029 wd:Q250753 wd:Q508631 wd:Q757037 wd:Q1572029 wd:Q31736 wd:Q222047 wd:Q739499 wd:Q644357 wd:Q845884 wd:Q844517 wd:Q1125399 wd:Q918054 wd:Q265538 wd:Q1514249 wd:Q634857 wd:Q594227 wd:Q1372040 wd:Q800048 wd:Q1518478 wd:Q1366948 wd:Q120649 wd:Q843859 wd:Q32096 wd:Q28455235 wd:Q1079382 wd:Q119677 wd:Q835765 wd:Q171408 wd:Q5010666 wd:Q5010663 wd:Q5010662 wd:Q5010664 wd:Q5010667 wd:Q6218316 wd:Q4769521 wd:Q5608144 }
+  ?winner p:P166 ?st . ?st ps:P166 ?award .
+  OPTIONAL { ?st pq:P585 ?time }
+  OPTIONAL { ?st pq:P54 ?team }
+  BIND(EXISTS { ?winner wdt:P31 wd:Q5 } AS ?isHuman)
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}

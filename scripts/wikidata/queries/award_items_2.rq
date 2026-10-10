@@ -1,0 +1,11 @@
+SELECT ?label ?item ?desc WHERE {
+  VALUES ?label { "Stanley Cup Final"@en "Stanley Cup Finals"@en "NBA Finals"@en "AP NFL Most Valuable Player Award"@en "National Football League Most Valuable Player Award"@en
+    "NFL Most Valuable Player Award"@en "AP NFL Offensive Player of the Year Award"@en "AP NFL Defensive Player of the Year Award"@en
+    "AP NFL Offensive Rookie of the Year Award"@en "AP NFL Defensive Rookie of the Year Award"@en "AP NFL Coach of the Year Award"@en
+    "AP NFL Comeback Player of the Year Award"@en "NFL Offensive Player of the Year Award"@en "NFL Defensive Player of the Year Award"@en
+    "NFL Offensive Rookie of the Year Award"@en "NFL Defensive Rookie of the Year Award"@en "NFL Coach of the Year Award"@en "NFL Comeback Player of the Year Award"@en
+    "John Agro Special Teams Award"@en "CFL's Most Outstanding Special Teams Award"@en "Silver Slugger Award"@en "Rawlings Gold Glove Award"@en "Gold Glove Award"@en
+    "Hank Aaron Award"@en "Rolaids Relief Man Award"@en "Lou Marsh Trophy"@en "NHL General Manager of the Year Award"@en }
+  ?item rdfs:label ?label .
+  OPTIONAL { ?item schema:description ?desc FILTER(lang(?desc) = "en") }
+}

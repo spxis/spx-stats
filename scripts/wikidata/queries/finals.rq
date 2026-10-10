@@ -1,0 +1,9 @@
+SELECT ?class ?event ?eventLabel ?winner ?winnerLabel ?date ?start ?season ?seasonLabel WHERE {
+  VALUES ?class { wd:Q7599548 wd:Q842375 wd:Q265538 wd:Q32096 wd:Q171408 }
+  ?event wdt:P31 ?class .
+  OPTIONAL { ?event wdt:P1346 ?winner }
+  OPTIONAL { ?event wdt:P585 ?date }
+  OPTIONAL { ?event wdt:P580 ?start }
+  OPTIONAL { ?event wdt:P3450 ?season }
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}
