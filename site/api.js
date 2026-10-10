@@ -17,6 +17,10 @@ window.SPX_API = (() => {
       if (part.length < 1000) return out;
     }
   }
+  // SPX's own databases, scraper store and published files are one source: SPX.
+  const one = (c) => (c && c.startsWith('spx') && c !== 'spx_stats_derived' ? 'spx' : c);
+  const SPX = { name: 'SPX (SportsInteractive.com)', licence: 'Owned by SPX', attribution: 'SPX (SportsInteractive.com), 1997–2013',
+                url: null, notes: "SPX's own databases, scraper store and published files." };
   const PH = { regular: 'r', playoffs: 'p', preseason: 's', all_star: 'a' };
   return {
     async load(path) {
@@ -25,14 +29,22 @@ window.SPX_API = (() => {
         return { leagues: LEAGUES, seasons, totals: totals[0] };
       }
       if (path === 'sources.json') {
-        const [src, by] = await Promise.all([rows('sources', 'select=*'), rows('games_by_source', 'select=*')]);
-        return src.map((s) => ({ ...s, games: by.filter((b) => b.source === s.code).reduce((a, b) => a + b.games, 0), award_winners: null }));
+        const [src, by, aw] = await Promise.all([rows('sources', 'select=*'), rows('games_by_source', 'select=*'), rows('awards', 'select=source')]);
+        const games = (c) => by.filter((b) => one(b.source) === c).reduce((a, b) => a + b.games, 0);
+        const winners = (c) => aw.filter((w) => one(w.source) === c).length;
+        const out = src.filter((s) => one(s.code) !== 'spx');
+        out.unshift({ ...SPX, code: 'spx' });
+        return out.map((s) => ({ ...s, games: games(s.code), award_winners: winners(s.code) }));
       }
       if (path === 'quality.json') {
         const [q, by] = await Promise.all([rows('quality', 'select=*&order=n.desc'), rows('games_by_source', 'select=*&order=league,games.desc')]);
-        return { checks: q.filter((x) => x.kind === 'check').map((x) => ({ source: x.source, kind: x.entity, status: x.what, n: x.n })),
-                 issues: q.filter((x) => x.kind === 'issue').slice(0, 60).map((x) => ({ source: x.source, kind: x.entity, issue: x.what, resolution: x.resolution, n: x.n })),
-                 games_by_source: by.map((b) => ({ league: b.league, source: b.source, n: b.games })) };
+        const sum = (list, key) => { const m = new Map(); for (const x of list) { const k = key(x); m.set(k, m.has(k) ? { ...m.get(k), n: m.get(k).n + x.n } : x); } return [...m.values()]; };
+        const checks = sum(q.filter((x) => x.kind === 'check').map((x) => ({ source: one(x.source), kind: x.entity, status: x.what, n: x.n })), (x) => [x.source, x.kind, x.status].join('|'));
+        const issues = sum(q.filter((x) => x.kind === 'issue').map((x) => ({ source: one(x.source), kind: x.entity, issue: x.what, resolution: (x.resolution || '').replace(/\d+/g, '#'), n: x.n })), (x) => [x.source, x.kind, x.issue, x.resolution].join('|'));
+        const games = sum(by.map((b) => ({ league: b.league, source: one(b.source), n: b.games })), (x) => x.league + '|' + x.source);
+        const desc = (a, b) => b.n - a.n;
+        return { checks: checks.sort(desc), issues: issues.sort(desc).slice(0, 60),
+                 games_by_source: games.sort((a, b) => a.league.localeCompare(b.league) || b.n - a.n) };
       }
       let m = path.match(/^(\w+)\/teams\.json$/);
       if (m) {

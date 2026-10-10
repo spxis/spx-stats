@@ -2,7 +2,7 @@
 (() => {
   const app = document.getElementById('app');
   const LG = { nhl: 'NHL', nba: 'NBA', mlb: 'MLB', nfl: 'NFL', cfl: 'CFL' };
-  const SRC = { spx_database: 'SPX', spxn_database: 'SPX', spx_files: 'SPX', retrosheet: 'Retrosheet', nflverse: 'nflverse',
+  const SRC = { spx: 'SPX', spx_database: 'SPX', spxn_database: 'SPX', spx_files: 'SPX', retrosheet: 'Retrosheet', nflverse: 'nflverse',
                 wikidata: 'Wikidata', nhl_api: 'NHL', spx_stats_derived: 'From results', editorial: 'Editorial' };
   const isSpx = (s) => s && s.startsWith('spx') && s !== 'spx_stats_derived';
   const fmt = d3.format(',');
