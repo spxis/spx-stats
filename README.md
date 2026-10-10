@@ -4,7 +4,7 @@ Scores, schedules, standings, champions and awards of the NHL, NBA, MLB, NFL
 and CFL. The base is the SPX (SportsInteractive.com) archive of 1997–2013;
 open sources fill the seasons SPX never held and check the ones it did.
 
-Browse it at the project's GitHub Pages site.
+Browse it at [spxn.com](https://spxn.com).
 
 ## Where the data comes from
 
