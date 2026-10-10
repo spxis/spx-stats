@@ -3,8 +3,11 @@
 -- Rules (each one logged in meta.data_issue where it changes what SPX said):
 --   * a game belongs to the league both of its teams play in, not the league
 --     it was filed under (SPX filed 270 games under the wrong league);
---   * a game is final only when SPX marked its score final; an unmarked 0-0
---     is a result that was never entered, so the game is left scheduled;
+--   * a game is final when SPX marked its score final, or when a score was
+--     entered with no mark at all (no status, neither final nor not final):
+--     before 2004 SPX did not mark results, so thousands of played games carry
+--     a score and nothing else. Each such game is logged in meta.data_issue.
+--     A score SPX marked not final (a lineup, a game in progress) is not a result;
 --   * team names are as SPX last recorded them; SPX renamed teams in place
 --     (the Expos' games read Washington), so identities here are provisional
 --     until the identity history is loaded from a reference source;
@@ -14,6 +17,7 @@ begin;
 
 delete from meta.data_issue where source_id in (select source_id from meta.source where code = 'spx_database');
 delete from core.external_id where source_id in (select source_id from meta.source where code = 'spx_database');
+delete from core.standing where source_id in (select source_id from meta.source where code = 'spx_database');
 delete from core.betting_line; delete from core.game; delete from core.team_season;
 delete from core.franchise_identity; delete from core.franchise_league; delete from core.franchise;
 delete from core.season;
@@ -136,9 +140,16 @@ left join core.franchise_identity i on i.franchise_id = m.franchise_id and i.val
 order by m.franchise_id, s.season_id, x.game_date desc;
 
 create temp table spx_final as
-select distinct on (game_id) game_id, score_home, score_away, score_status
-from legacy_spx.tbl_game_scores where score_is_final
-order by game_id, score_type_id nulls last, score_id;
+select distinct on (game_id) game_id, score_home, score_away, score_status, score_is_final is null as unmarked
+from legacy_spx.tbl_game_scores
+where score_is_final
+   or (score_is_final is null and score_status is null and score_home is not null and score_away is not null)
+order by game_id, score_is_final desc nulls last, score_type_id nulls last, score_id;
+
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'spx_database'), 'game', 'spx:game:' || f.game_id,
+       'Score entered with no final mark', 'Taken as the final score'
+from spx_final f join spx_game g using (game_id) where f.unmarked;
 
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from meta.source where code = 'spx_database'), 'game', 'spx:game:' || f.game_id,

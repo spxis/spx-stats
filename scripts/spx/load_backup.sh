@@ -26,8 +26,11 @@ while IFS=$'\t' read -r src tgt srccols tgtcols pks; do
   sel=(); ins=()
   IFS='|' read -ra sc <<<"$srccols"; IFS='|' read -ra tc <<<"$tgtcols"
   for i in "${!sc[@]}"; do
-    if grep -qx "${sc[$i]}" <<<"$have"; then sel+=("[${sc[$i]}]"); ins+=("\"${tc[$i]}\""); fi
+    if grep -qix "${sc[$i]}" <<<"$have"; then sel+=("[${sc[$i]}]"); ins+=("\"${tc[$i]}\""); fi
   done
+  missing_key=""
+  for k in ${pks//,/ }; do grep -qx "$k" <<<"$(printf '%s\n' "${ins[@]}")" || missing_key="$k"; done
+  if [ -n "$missing_key" ]; then echo "skip $src (this copy has no $missing_key, part of its key)"; continue; fi
   q="SELECT $(IFS=,; echo "${sel[*]}") FROM [$src]"
   if [ -n "${SPX_RAW:-}" ]; then cp "$SPX_RAW/$src.raw" "$W/$tgt.raw"; else
   docker exec spxsql /opt/mssql-tools18/bin/bcp "$q" queryout "/var/opt/mssql/x.tsv" -d "$DB" -S localhost -U sa -P "$PW" -C 65001 -c -t '~^~' -r '~#~\n' -u >/dev/null

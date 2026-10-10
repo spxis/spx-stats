@@ -10,6 +10,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import pages as P
 
 EPOCH = datetime.datetime(1900, 1, 1)
+UNREADABLE = collections.Counter()
 
 
 def catalog(pagelist):
@@ -79,7 +80,11 @@ def value(c, fixed, var, nulls):
     if t == 58:                        # smalldatetime: minutes since midnight, then days since 1900
         mins, days = struct.unpack('<HH', b[:4])
         return (EPOCH + datetime.timedelta(days=days, minutes=mins)).isoformat(sep=' ')
-    if t in (175, 167): return b.decode('cp1252', 'replace')      # char keeps its padding, as SQL Server returns it
+    if t in (175, 167):                # char keeps its padding, as SQL Server returns it
+        if any(x < 0x20 and x not in (9, 10, 13) for x in b):
+            UNREADABLE[c["name"]] += 1  # an older stored form (a pointer, not text): left null
+            return None
+        return b.decode('cp1252', 'replace')
     if t in (239, 231): return b.decode('utf-16-le', 'replace')
     if t == 36:
         import uuid; return str(uuid.UUID(bytes_le=bytes(b[:16])))
@@ -237,6 +242,9 @@ def write_raw(a, pl, users, cols):
                     f.write("~^~".join(vals) + "~#~\n"); n += 1
         with open(os.path.join(a.raw, src + ".cols"), "w") as f:
             f.write("\n".join(c["name"] for c in cs) + "\n")
+        if UNREADABLE:
+            print(f"{src}\tunreadable text left null: " + ", ".join(f"{k} {v}" for k, v in UNREADABLE.items()), file=sys.stderr)
+            UNREADABLE.clear()
         exp = expected.get(oid)
         note = "" if exp is None or exp == n else f"\tSQL Server counted {exp}"
         print(f"{src}\t{n}" + (f"\t{bad} undecodable" if bad else "") + note)
