@@ -63,7 +63,7 @@ window.SPX_API = (() => {
           rows('standings', q + '&select=*'), rows('awards', q + '&select=*')]);
         if (!summary.length) throw new Error('no season');
         const teams = new Map();
-        for (const g of games) { teams.set(g.home_id, { id: g.home_id, name: g.home }); teams.set(g.away_id, { id: g.away_id, name: g.away }); }
+        for (const g of games) { teams.set(g.home_id, { id: g.home_id, f: g.home_f, name: g.home }); teams.set(g.away_id, { id: g.away_id, f: g.away_f, name: g.away }); }
         for (const s of st) teams.set(s.team_id, { id: s.team_id, f: s.franchise_id, name: s.team });
         return { league: lg, year: y, label: summary[0].label,
           teams: [...teams.values()].sort((a, b) => (a.name || '').localeCompare(b.name || '')),

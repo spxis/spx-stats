@@ -129,3 +129,28 @@ select, input[type="search"] { font: inherit; font-size: 15px; padding: 6px 10px
 .trophies .cup { display: block; width: clamp(56px, 8vw, 84px); }
 .trophies .cup svg { display: block; width: 100%; height: auto; }
 main:focus { outline: none; }
+
+.cal { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
+.calhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.calhead .nav { font: 600 22px/1 var(--display); width: 36px; height: 36px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; flex: none; }
+.calhead .nav:disabled { opacity: .35; cursor: default; }
+.months { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; flex: 1; min-width: 0; }
+.months .mo { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.months .mo[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+.grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
+.grid .wd { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: center; padding-bottom: 4px; }
+.cell { position: relative; min-height: 58px; border: 1px solid var(--rule); background: var(--panel); display: flex; flex-direction: column; justify-content: space-between; padding: 5px 6px; text-align: left; font: inherit; color: var(--muted); }
+.cell.blank { border-color: transparent; background: none; }
+.cell.has { background: color-mix(in srgb, var(--accent) var(--heat), var(--panel)); color: var(--ink); cursor: pointer; border-color: color-mix(in srgb, var(--accent) 40%, var(--rule)); }
+.cell.has:hover { outline: 2px solid var(--accent); outline-offset: -2px; }
+.cell.on { outline: 3px solid var(--ink); outline-offset: -3px; }
+.cell .dn { font: 600 13px/1 var(--mono); }
+.cell .ct { font: 700 20px/1 var(--display); align-self: flex-end; }
+.cell .mk { font: 600 12px/1.1 var(--mono); align-self: flex-end; white-space: nowrap; }
+.cell.res { background: var(--panel); }
+.cell.res.W { background: color-mix(in srgb, var(--ok) 26%, var(--panel)); border-color: color-mix(in srgb, var(--ok) 55%, var(--rule)); }
+.cell.res.L { background: color-mix(in srgb, var(--bad) 22%, var(--panel)); border-color: color-mix(in srgb, var(--bad) 50%, var(--rule)); }
+.cell .mk { color: var(--ink); }
+.daylist { display: flex; flex-direction: column; gap: 8px; }
+.linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+@media (max-width: 640px) { .cell { min-height: 46px; padding: 3px 4px; } .cell .ct { font-size: 16px; } .cell .mk { font-size: 10px; } }

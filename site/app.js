@@ -4,6 +4,7 @@
   const LG = { nhl: 'NHL', nba: 'NBA', mlb: 'MLB', nfl: 'NFL', cfl: 'CFL' };
   const SRC = { spx: 'SPX', spx_database: 'SPX', spxn_database: 'SPX', spx_files: 'SPX', retrosheet: 'Retrosheet', nflverse: 'nflverse',
                 wikidata: 'Wikidata', nhl_api: 'NHL', spx_stats_derived: 'From results', editorial: 'Editorial' };
+  const tlink = (lg, f, name, cls) => (f != null ? el('a', { class: cls || null, href: `#/${lg}/team/${f}` }, name) : el('span', { class: cls || null }, name));
   const isSpx = (s) => s && s.startsWith('spx') && s !== 'spx_stats_derived';
   const fmt = d3.format(',');
   const cache = new Map();
@@ -178,7 +179,7 @@
         el('div', { class: 'legend' }, el('span', {}, el('i', { style: 'background: var(--accent)' }), 'With a result'), el('span', {}, el('i', { style: 'background: var(--accent); opacity: .22' }), 'Held, no result')), box) : null,
       el('section', { class: 'section' }, el('h2', {}, 'Champions'),
         champs.length ? el('div', { class: 'tablebox' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Season'), el('th', {}, 'Champion'), el('th', {}, 'Final'), el('th', {}, 'Source'))),
-          el('tbody', {}, champs.map((c) => el('tr', {}, el('td', {}, el('a', { href: `#/${lg}/${c.year}` }, c.label)), el('td', { class: 'team' }, c.champion),
+          el('tbody', {}, champs.map((c) => el('tr', {}, el('td', {}, el('a', { href: `#/${lg}/${c.year}` }, c.label)), el('td', { class: 'team' }, tlink(lg, c.champion_franchise, c.champion)),
             el('td', { class: 'note' }, c.champion_note || ''), el('td', {}, badge(c.champion_source)))))))
           : el('p', { class: 'note' }, 'No champions recorded yet.')));
     if (withGames.length) { barsBySeason(box, withGames, lg); onResize = () => barsBySeason(box, withGames, lg); }
@@ -196,35 +197,79 @@
     const pub = st.find((r) => r.basis === 'published');
     const basis = pub ? 'As ' + (isSpx(pub.source) ? 'SPX' : 'the ' + (SRC[pub.source] || pub.source)) + ' published them' : 'Worked out from the final scores';
     let phase = 'r', team = '';
-    const gamesBox = el('div', { class: 'games' });
+    const gamesBox = el('div', { class: 'daylist' });
     const pick = el('select', { 'aria-label': 'Team', onchange: (e) => { team = e.target.value; drawGames(); } },
       el('option', { value: '' }, 'All teams'), [...teams.values()].map((t) => el('option', { value: t.id }, t.name)));
     const seg = el('div', { class: 'seg', role: 'group', 'aria-label': 'Part of season' },
       [['r', 'Regular season'], ['p', 'Playoffs'], ['', 'All']].map(([k, label]) => el('button', { type: 'button', 'data-k': k, onclick: () => { phase = k; drawGames(); } }, label)));
+    // A month calendar: each day shaded by how many games it held; a team's result on its days.
+    let month = '', day = '';
+    const cal = el('div', { class: 'cal' });
+    const iso = d3.utcFormat('%Y-%m-%d'), ym = (d) => d.slice(0, 7);
+    function gameRow(g) {
+      const fin = g.st === 'f';
+      const aw = fin && g.as > g.hs, hw = fin && g.hs > g.as;
+      return el('div', { class: 'game' },
+        el('span', {}, tlink(lg, teams.get(g.a)?.f, nm(g.a), aw ? 'won' : null), ' at ', tlink(lg, teams.get(g.h)?.f, nm(g.h), hw ? 'won' : null)),
+        el('span', { class: 'score' }, fin ? `${g.as}–${g.hs}${g.ot ? (lg === 'mlb' ? ' extras' : ' OT') : ''}` : 'no result'),
+        el('span', { class: 'meta' }, badge(g.src), g.v === 1 ? el('span', { class: 'ok', title: 'Confirmed by a second source' }, '✓ confirmed') : null,
+          g.v === -1 ? el('span', { class: 'bad', title: 'A second source disagrees' }, '≠ disputed') : null));
+    }
+    function teamRes(list) {
+      const g = list[0]; if (!g || g.st !== 'f') return 'N';
+      const mine = String(g.h) === team ? g.hs : g.as, theirs = String(g.h) === team ? g.as : g.hs;
+      return mine > theirs ? 'W' : mine < theirs ? 'L' : 'T';
+    }
+    function teamMark(list) {
+      const g = list[0]; if (!g || g.st !== 'f') return el('span', { class: 'mk' }, '·');
+      const mine = String(g.h) === team ? g.hs : g.as, theirs = String(g.h) === team ? g.as : g.hs;
+      const r = mine > theirs ? 'W' : mine < theirs ? 'L' : 'T';
+      return el('span', { class: 'mk ' + r }, `${r} ${mine}–${theirs}`);
+    }
     function drawGames() {
       seg.querySelectorAll('button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.k === phase)));
       const sel = games.filter((g) => (!phase || g.ph === phase) && (!team || String(g.a) === team || String(g.h) === team));
-      const days = d3.groups(sel, (g) => g.date);
-      gamesBox.replaceChildren(...days.slice(-400).reverse().map(([date, list]) => el('div', { class: 'day' },
-        el('h3', {}, d3.utcFormat('%a %b %-d, %Y')(new Date(date))),
-        list.map((g) => {
-          const fin = g.st === 'f';
-          const aw = fin && g.as > g.hs, hw = fin && g.hs > g.as;
-          return el('div', { class: 'game' },
-            el('span', {}, el('span', { class: aw ? 'won' : null }, nm(g.a)), ' at ', el('span', { class: hw ? 'won' : null }, nm(g.h))),
-            el('span', { class: 'score' }, fin ? `${g.as}–${g.hs}${g.ot ? ' OT' : ''}` : 'no result'),
-            el('span', { class: 'meta' }, badge(g.src), g.v === 1 ? el('span', { class: 'ok', title: 'Confirmed by a second source' }, '✓ confirmed') : null,
-              g.v === -1 ? el('span', { class: 'bad', title: 'A second source disagrees' }, '≠ disputed') : null));
-        }))));
-      if (!days.length) gamesBox.append(el('p', { class: 'note' }, 'No games for this choice.'));
-      else if (days.length > 400) gamesBox.append(el('p', { class: 'note' }, `Showing the last 400 of ${days.length} days. Pick a team to see all of its games.`));
+      const byDay = d3.group(sel, (g) => g.date);
+      const months = [...new Set(sel.map((g) => ym(g.date)))].sort();
+      if (!months.length) { cal.replaceChildren(); gamesBox.replaceChildren(el('p', { class: 'note' }, 'No games for this choice.')); return; }
+      if (!months.includes(month)) { month = months.at(-1); day = ''; }
+      if (day && !byDay.has(day)) day = '';
+      const most = d3.max(byDay.values(), (l) => l.length) || 1;
+      const first = new Date(month + '-01T00:00:00Z');
+      const cells = [];
+      for (let i = 0; i < first.getUTCDay(); i++) cells.push(el('span', { class: 'cell blank' }));
+      for (let d = new Date(first); d.getUTCMonth() === first.getUTCMonth(); d.setUTCDate(d.getUTCDate() + 1)) {
+        const key = iso(d), list = byDay.get(key) || [];
+        cells.push(list.length
+          ? el('button', { type: 'button', class: 'cell has' + (team ? ' res ' + teamRes(list) : '') + (key === day ? ' on' : ''), style: `--heat:${Math.round(18 + 62 * list.length / most)}%`,
+              'aria-label': `${d3.utcFormat('%B %-d')(d)}: ${list.length} game${list.length === 1 ? '' : 's'}`, 'aria-pressed': String(key === day),
+              onclick: () => { day = key === day ? '' : key; drawGames(); } },
+              el('span', { class: 'dn' }, d.getUTCDate()), team ? teamMark(list) : el('span', { class: 'ct' }, list.length))
+          : el('span', { class: 'cell' }, el('span', { class: 'dn' }, d.getUTCDate())));
+      }
+      const mi = months.indexOf(month);
+      const go = (k) => { month = months[k]; day = ''; drawGames(); };
+      cal.replaceChildren(
+        el('div', { class: 'calhead' },
+          el('button', { type: 'button', class: 'nav', disabled: mi === 0 ? '' : null, 'aria-label': 'Previous month', onclick: () => go(mi - 1) }, '‹'),
+          el('div', { class: 'months' }, months.map((m, k) => el('button', { type: 'button', class: 'mo', 'aria-pressed': String(m === month), onclick: () => go(k) },
+            d3.utcFormat(months.length > 12 ? '%b %y' : '%b')(new Date(m + '-01T00:00:00Z'))))),
+          el('button', { type: 'button', class: 'nav', disabled: mi === months.length - 1 ? '' : null, 'aria-label': 'Next month', onclick: () => go(mi + 1) }, '›')),
+        el('div', { class: 'grid' }, ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((w) => el('span', { class: 'wd' }, w)), cells));
+      const shown = day ? [[day, byDay.get(day)]] : [...byDay].filter(([k]) => ym(k) === month).sort((a, b) => a[0].localeCompare(b[0]));
+      const n = d3.sum(shown, ([, l]) => l.length);
+      gamesBox.replaceChildren(
+        el('p', { class: 'note' }, day ? `${d3.utcFormat('%A, %B %-d, %Y')(new Date(day + 'T00:00:00Z'))}: ${n} game${n === 1 ? '' : 's'}. ` : `${d3.utcFormat('%B %Y')(first)}: ${n} games. Pick a day to see just that day. `,
+          day ? el('button', { type: 'button', class: 'linkish', onclick: () => { day = ''; drawGames(); } }, 'Show the whole month') : null),
+        el('div', { class: 'games' }, shown.map(([date, list]) => el('div', { class: 'day' },
+          el('h3', {}, d3.utcFormat('%a %b %-d, %Y')(new Date(date + 'T00:00:00Z'))), list.map(gameRow)))));
     }
     const maxPct = d3.max(st, (r) => r.pct) || 1;
     const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
     show(
       el('section', { class: 'head fade' }, el('span', { class: 'eyebrow' }, el('a', { href: `#/${lg}` }, LG[lg])), el('h1', {}, `${d.label} season`),
         el('p', { class: 'lede' }, `${fmt(games.filter((g) => g.ph === 'r').length)} regular-season games, ${fmt(games.filter((g) => g.ph === 'r' && g.st === 'f').length)} with a result.`)),
-      champ ? el('section', { class: 'banner' }, el('span', { class: 'cup' }, champ.award), badge(champ.source), el('span', { class: 'who' }, champ.winner), el('span', { class: 'how' }, champ.note || '')) : null,
+      champ ? el('section', { class: 'banner' }, el('span', { class: 'cup' }, champ.award), badge(champ.source), el('span', { class: 'who' }, tlink(lg, champ.franchise_id, champ.winner)), el('span', { class: 'how' }, champ.note || '')) : null,
       st.length ? el('section', { class: 'section' }, el('h2', {}, 'Standings'), el('p', { class: 'note' }, basis + '. Sorted by share of games won.'),
         el('div', { class: 'scroll' }, el('table', {}, el('thead', {}, el('tr', {}, el('th', {}, 'Team'), el('th', { class: 'num' }, 'GP'), el('th', { class: 'num' }, 'W'), el('th', { class: 'num' }, 'L'),
           showT ? el('th', { class: 'num' }, 'T') : null, showO ? el('th', { class: 'num' }, 'OTL') : null, showP ? el('th', { class: 'num' }, 'Pts') : null,
@@ -236,9 +281,9 @@
             el('td', {}, r.home || ''), el('td', {}, r.road || ''),
             el('td', {}, r.pct != null ? d3.format('.3f')(r.pct) : '', r.pct != null ? el('span', { class: 'pctbar', style: `width:${Math.round(60 * r.pct / maxPct)}px` }) : null))))))) : null,
       awards.length ? el('section', { class: 'section' }, el('h2', {}, 'Awards'), el('div', { class: 'awards' },
-        awards.map((a) => el('div', { class: 'award' }, el('span', { class: 'name' }, a.award), el('span', { class: 'winner' }, a.winner),
+        awards.map((a) => el('div', { class: 'award' }, el('span', { class: 'name' }, a.award), el('span', { class: 'winner' }, tlink(lg, a.franchise_id, a.winner)),
           el('span', { class: 'note' }, a.note || '', ' ', badge(a.source)))))) : null,
-      games.length ? el('section', { class: 'section' }, el('h2', {}, 'Games'), el('div', { class: 'controls' }, seg, pick), gamesBox) : null,
+      games.length ? el('section', { class: 'section' }, el('h2', {}, 'Games'), el('div', { class: 'controls' }, seg, pick), cal, gamesBox) : null,
       el('p', { class: 'note' }, el('a', { href: `#/${lg}/${y - 1}` }, '← ' + seasonLabel(lg, y - 1)), ' · ', el('a', { href: `#/${lg}/${y + 1}` }, seasonLabel(lg, y + 1) + ' →')));
     if (games.length) drawGames();
   }

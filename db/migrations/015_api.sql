@@ -23,12 +23,13 @@ with g as (
          count(distinct home_team_season_id) as teams
   from core.game group by season_id),
 c as (
-  select distinct on (w.season_id) w.season_id, w.winner_name, w.note, src.code as source
+  select distinct on (w.season_id) w.season_id, w.winner_name, w.note, src.code as source, ts.franchise_id
   from core.award_winner w join core.award a using (award_id) join meta.source src on src.source_id = w.source_id
+  left join core.team_season ts on ts.team_season_id = w.team_season_id
   where a.kind = 'championship' order by w.season_id, (src.code = 'spx_stats_derived') desc)
 select s.league_code as league, s.start_year as year, s.label, coalesce(g.games, 0) as games, coalesce(g.finals, 0) as finals,
        coalesce(g.playoff_finals, 0) as playoff_finals, coalesce(g.teams, 0) as teams,
-       c.winner_name as champion, c.note as champion_note, c.source as champion_source
+       c.winner_name as champion, c.note as champion_note, c.source as champion_source, c.franchise_id as champion_franchise
 from core.season s left join g using (season_id) left join c using (season_id);
 create unique index on api.season_summary (league, year);
 
@@ -64,7 +65,9 @@ select s.league_code as league, s.start_year as year, g.game_id, g.game_date, g.
        g.home_team_season_id as home_id, api.team_name(g.home_team_season_id) as home, g.home_score,
        g.went_to_overtime as overtime, src.code as source,
        (select max(case v.status when 'confirmed' then 1 when 'disputed' then -1 end) from meta.verification v
-         where v.entity_kind = 'game' and v.entity_id = g.game_id) as checked
+         where v.entity_kind = 'game' and v.entity_id = g.game_id) as checked,
+       (select franchise_id from core.team_season where team_season_id = g.away_team_season_id) as away_f,
+       (select franchise_id from core.team_season where team_season_id = g.home_team_season_id) as home_f
 from core.game g join core.season s using (season_id) join meta.source src on src.source_id = g.source_id
 where g.status <> 'cancelled';
 
@@ -85,7 +88,8 @@ where p.team_season_id is not null or c.team_season_id is not null;
 
 create or replace view api.awards as
 select s.league_code as league, s.start_year as year, a.code as award_code, a.name as award, a.kind::text as kind,
-       w.winner_name as winner, w.note, src.code as source
+       w.winner_name as winner, w.note, src.code as source,
+       (select franchise_id from core.team_season where team_season_id = w.team_season_id) as franchise_id
 from core.award_winner w join core.award a using (award_id) join core.season s using (season_id) join meta.source src on src.source_id = w.source_id;
 
 create or replace view api.award_list as
