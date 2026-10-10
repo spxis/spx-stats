@@ -1,0 +1,9 @@
+{
+  "name": "spx-stats-franchise-info",
+  "private": true,
+  "type": "module",
+  "description": "Street-address normalisation for the franchise venue step.",
+  "dependencies": {
+    "@johnmorrisdotca/address-plus": "1.1.0"
+  }
+}
