@@ -220,8 +220,14 @@ No `.env` is needed: the defaults point at the live Supabase project's public re
 On a fresh checkout `tsc` fails with "Cannot find name 'PageProps'" until `next typegen` (or a build or dev run) has
 generated the route types. That is not a bug in your change.
 
-**Release.** There is **no version, changelog or timeline file**. A release is a commit on `main` that is deployed;
-nothing to stamp. What you pass to `pnpm task done --version` is the short commit sha.
+**Release.** A release is a commit on `main` that is deployed. What you pass to `pnpm task done --version` is the short
+commit sha. The site version is `version` in `web/package.json` (semantic versioning, starting from 0.47.0); the site
+footer shows it with the short commit sha. There is no changelog file.
+
+- **Major:** a breaking change to the site or its data contract.
+- **Minor:** each feature a reader sees, including a new league or a new source of data shown on the site.
+- **Patch:** fixes and data-only corrections.
+- Tooling, docs and ops work (board, Dropbox, Mac setup, agent instructions): patch, or no bump when the site is unchanged.
 
 **Commit and push.** Keep each change small, one feature to a commit.
 
