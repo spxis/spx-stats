@@ -15,6 +15,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: url("/"), lastModified },
     ...LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
     ...LEAGUES.map((l) => ({ url: url(`/${l.code}/alignment`), lastModified })),
+    ...LEAGUES.map((l) => ({ url: url(`/${l.code}/all-time`), lastModified })),
     ...seasons.map((s) => ({ url: url(seasonPath(s.league, s.year)), lastModified })),
     ...teams.map((t) => ({ url: url(paths.team(t.league, t.franchise_id)), lastModified })),
     // A team's season page exists wherever the season holds games and the team has a record.

@@ -7,7 +7,8 @@ import { useSpeaker } from "./i18n/LocaleProvider";
 
 export function LeagueNav() {
   const { say } = useSpeaker();
-  const current = usePathname().split("/")[1];
+  const parts = usePathname().split("/");
+  const current = parts[1];
   return (
     <nav className="leagues" id="league-nav" aria-label={say("nav.leagues")}>
       {LEAGUES.map((l) => (
@@ -15,6 +16,9 @@ export function LeagueNav() {
           {l.short}
         </Link>
       ))}
+      {LEAGUES.some((l) => l.code === current) ? (
+        <Link className="sub" href={`/${current}/all-time`} aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
+      ) : null}
     </nav>
   );
 }

@@ -42,3 +42,5 @@ so a very old browser may spell an abbreviation differently from the server.
 
 - **Playoff bracket and earlier meetings.** FR "Tournoi à la ronde" and JA "ラウンドロビン" for the 2019-20 NHL seeding round robin; FR "ronde" / JA "ラウンド" for a playoff round; FR "duels" for matchups.
   The earlier-meetings sentences ("lead their earlier playoff series 3-2", "In games: ...") are my best guess at natural phrasing.
+
+- **All-time records.** FR "Dossier historique" (page) and "Historique" (nav link), JA "通算成績" and "通算". FR "concession" for franchise, JA "球団". Column heads: FR "Pourc." (win share) and "Séries" (playoff appearances); JA "勝率", "PO" (playoff appearances) and "得失差" (goal, run or point difference). FR "Points (courses)" for MLB runs is a stopgap.
