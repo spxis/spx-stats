@@ -21,6 +21,7 @@ import { LocSwitch } from "./LocSwitch";
 import { MonthFilter } from "./MonthFilter";
 import { PhaseSwitch } from "./PhaseSwitch";
 import { ResultSwitch } from "./ResultSwitch";
+import { createRowLink } from "./rowLink";
 import { RunningLine } from "./RunningLine";
 import { SortTable } from "./SortTable";
 import { SplitBars } from "./SplitBars";
@@ -59,6 +60,7 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
 export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
+  const [link] = useState(createRowLink);
   const [want, setWant] = useState<Selection>(initial);
   const [loc, setLoc] = useState<Loc>(initialLoc);
   const [wantResult, setResult] = useState<ResultFilter>(initialResult);
@@ -144,7 +146,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
           </div>
         </div>
         <h3>{say("glance.running")}</h3>
-        <RunningLine games={locRows} />
+        <RunningLine games={locRows} link={link} />
       </section>
       <section className="section">
         <h2>{say("teamgames.title")}</h2>
@@ -156,7 +158,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         <MonthFilter months={months} month={filterMonth} days={gameDays} day={day}
           onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ month: d.slice(0, 7), day: d })} />
         <p className="note">{say("teamgames.note", { games: plural("count.games", rows.length), finals: fmt(done.length) })}</p>
-        <div className="tablebox"><SortTable {...table} def="date.asc" initial={initialSort} remote /></div>
+        <div className="tablebox"><SortTable {...table} def="date.asc" initial={initialSort} remote link={link} /></div>
       </section>
       <section className="section">
         <h2>{say("teamcal.title")}</h2>

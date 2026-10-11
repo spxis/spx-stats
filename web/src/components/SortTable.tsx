@@ -1,15 +1,43 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useMemo, useState, useSyncExternalStore, useTransition } from "react";
+import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { formatSort, parseSort, sortRows, type SortColumn, type SortKey, type SortRow } from "@/lib/sort";
 import { hrefWith, replaceQuery } from "@/lib/urlQuery";
+import { idleLink, type RowLink } from "./rowLink";
 
 const subscribe = (notify: () => void) => {
   window.addEventListener("popstate", notify);
   return () => window.removeEventListener("popstate", notify);
 };
+
+/** One row. It listens only to whether its own id is marked on the linked chart, so a chart hover redraws one or two rows, not the table. */
+const Row = memo(function Row({ r, columns, link }: { r: SortRow; columns: SortColumn[]; link?: RowLink }) {
+  const l = link ?? idleLink;
+  const mark = useSyncExternalStore(l.subscribe, () => { const s = l.get(); return s.pin === r.id ? "pin" : s.chart === r.id ? "chart" : ""; }, () => "");
+  const stamp = useSyncExternalStore(l.subscribe, () => { const s = l.get(); return s.pin === r.id ? s.stamp : 0; }, () => 0);
+  const ref = useRef<HTMLTableRowElement>(null);
+  const seen = useRef(stamp);
+  useEffect(() => {
+    if (stamp && stamp !== seen.current) ref.current?.scrollIntoView({ block: "center", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+    seen.current = stamp;
+  }, [stamp]);
+  const className = [r.className, link && "rowlink", mark && "linked", mark === "pin" && "pinned"].filter(Boolean).join(" ") || undefined;
+  const events = link ? {
+    onPointerEnter: (ev: React.PointerEvent) => { if (ev.pointerType !== "touch") link.set({ table: r.id }); },
+    onPointerLeave: (ev: React.PointerEvent) => { if (ev.pointerType !== "touch") link.set({ table: null }); },
+    onFocus: () => link.set({ table: r.id }),
+    onBlur: (ev: React.FocusEvent<HTMLTableRowElement>) => { if (!ev.currentTarget.contains(ev.relatedTarget)) link.set({ table: null }); },
+  } : undefined;
+  return (
+    <tr ref={ref} className={className} aria-current={mark === "pin" ? "true" : undefined} {...events}>
+      {columns.map((c) => (
+        <td key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined}>{r.cells[c.key]}</td>
+      ))}
+    </tr>
+  );
+});
 
 interface Props {
   columns: SortColumn[];
@@ -25,6 +53,8 @@ interface Props {
   label?: string;
   /** Draws the rows in sections, each under a heading row, in this order; a row falls in the section its `group` names. One sort serves them all. */
   groups?: { id: string; title: string; sub?: string }[];
+  /** Ties each row to a mark on a chart by row id: the row under the pointer or focus is announced to the chart, and the point the chart marks lights its row. */
+  link?: RowLink;
 }
 
 /**
@@ -33,7 +63,7 @@ interface Props {
  * and blanks come last whichever way the sort runs. The rows arrive already drawn (the page makes the links), so the
  * table is server-rendered and crawlable.
  */
-export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups }: Props) {
+export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link }: Props) {
   const router = useRouter();
   const { say } = useSpeaker();
   const known = useMemo(() => columns.map((c) => c.key), [columns]);
@@ -63,13 +93,7 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
     else replaceQuery({ [param]: formatSort(next) });
   }
 
-  const row = (r: SortRow) => (
-    <tr key={r.id} className={r.className}>
-      {columns.map((c) => (
-        <td key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined}>{r.cells[c.key]}</td>
-      ))}
-    </tr>
-  );
+  const row = (r: SortRow) => <Row key={r.id} r={r} columns={columns} link={link} />;
 
   return (
     <table aria-busy={pending || undefined} aria-label={label}>
