@@ -877,6 +877,29 @@ export const PHRASES = {
   "terms.ownerTitle": "Owner",
   "terms.owner": "SPXN is owned by John Morris.",
   "terms.notLegal": "This page is a plain-language summary, not legal advice.",
+
+  // privacy
+  "privacy.eyebrow": "SPX Stats Network",
+  "privacy.title": "Privacy",
+  "privacy.metaDesc": "What SPXN stores on your device, what it does not collect, and who else sees your visit.",
+  "privacy.lede": "In short: SPXN has no accounts, no ads and no tracking. This page says exactly what the site does.",
+  "privacy.accountsTitle": "No accounts",
+  "privacy.accounts": "You never sign in, and the site asks you for no name, email address or other details. It does not collect member data (accounts, wagers, forums or surveys), and it does not collect or show sensitive personal data such as ethnicity, religion, health, family or politics.",
+  "privacy.cookiesTitle": "Cookies and saved choices",
+  "privacy.cookie": "One cookie, spxn-locale. It remembers your language (EN, FR or 日本語) for one year. It is set only when you pick a language at the bottom of a page, and it holds nothing but the language code.",
+  "privacy.theme": "Your light or dark choice is saved in your browser's local storage (spxn-theme) when you use the Light/Dark switch. It stays on your device and is never sent to the site.",
+  "privacy.browserLanguage": "If you have not picked a language, the page uses your browser's language setting. Nothing is stored for that.",
+  "privacy.trackingTitle": "No ads or tracking",
+  "privacy.tracking": "SPXN has no advertising, no analytics and no tracking cookies or scripts. The pages load their scripts, fonts, maps and flags from the site itself.",
+  "privacy.logosTitle": "Team logos",
+  "privacy.logos": "Team logos are loaded straight from Wikimedia Commons. When a logo loads, Wikimedia can see your IP address and browser details, as any website you visit would. It cannot see which SPXN page you are on, because the site sends no referrer for logos.",
+  "privacy.hostTitle": "Hosting and data",
+  "privacy.host": "SPXN is hosted on Vercel. Like most web hosts, Vercel keeps standard server logs, such as your IP address, the page asked for, the time and your browser type. See {link}.",
+  "privacy.hostLink": "Vercel's privacy policy",
+  "privacy.database": "The games, standings and awards are kept in a database on Supabase. The SPXN server reads it with a read-only key, and it holds sports records only. Your browser never connects to it, and nothing about you is sent to it.",
+  "privacy.questionsTitle": "Questions",
+  "privacy.questions": "Ask by opening an issue on GitHub: {link}. If this page changes, the date below changes.",
+  "privacy.notLegal": "This page is a plain-language description, not legal advice.",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;
