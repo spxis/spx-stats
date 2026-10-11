@@ -207,6 +207,7 @@
   .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
   .prose { max-width: 70ch; }
   .prose h2 { margin-top: 10px; }
+  .prose ul { padding-left: 1.2em; list-style: disc; display: flex; flex-direction: column; gap: 6px; }
   .tablebox td.team { white-space: nowrap; }
 
   .mapbtn { position: absolute; top: 0; right: 0; width: 180px; padding: 0; border: 1px solid var(--rule); background: var(--panel); cursor: pointer; }

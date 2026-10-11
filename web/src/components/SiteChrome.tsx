@@ -17,6 +17,7 @@ export async function SiteHeader() {
       </Link>
       <LeagueNav />
       <nav className="aux" aria-label={say("nav.about")}>
+        <Link href="/about">{say("nav.aboutPage")}</Link>
         <ThemeToggle />
       </nav>
     </header>
@@ -44,6 +45,7 @@ export async function SiteFooter() {
         <nav className="foot-col" aria-label={say("footer.colData")}>
           <b>{say("footer.colData")}</b>
           <div className="foot-links">
+            <Link href="/about">{say("nav.aboutPage")}</Link>
             <Link href="/sources">{say("nav.sources")}</Link>
             <Link href="/quality">{say("nav.quality")}</Link>
             <Link href="/logos">{say("nav.logos")}</Link>

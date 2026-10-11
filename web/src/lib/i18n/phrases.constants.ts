@@ -833,6 +833,27 @@ export const PHRASES = {
   "leaders.gapsNote": "Some teams’ full-season records are missing for this season, so its leaders are not ranked against other seasons.",
   "count.teams.one": "{count} team",
   "count.teams.other": "{count} teams",
+
+  // about
+  "nav.aboutPage": "About",
+  "legal.updated": "Last updated: {date}",
+  "about.eyebrow": "SPX Stats Network",
+  "about.title": "About SPXN",
+  "about.metaDesc": "What SPXN is, where its data comes from, and who runs it.",
+  "about.lede": "SPXN is the historical record of the NHL, NBA, MLB, NFL and CFL: scores, standings, champions and awards.",
+  "about.whatTitle": "What it is",
+  "about.what": "SPXN (SPX Stats Network) lets you browse the history of five leagues by season, team, game and player. It has no accounts and no sign-up.",
+  "about.dataTitle": "Where the data comes from",
+  "about.base": "The base is the SPX archive (SportsInteractive.com, 1997–2013). Where SPX holds a value, SPX's value wins.",
+  "about.gaps": "Gaps are filled from open sources that allow it, growing outward from SPX's seasons: Retrosheet, Lahman, nflverse, the NHL, Wikipedia and Wikidata. Logos come from Wikimedia Commons.",
+  "about.checks": "When a second source agrees with SPX, the value is marked as confirmed. When it disagrees, the difference is logged and SPX's value is kept.",
+  "about.holes": "Some games and seasons are missing. Where the data has a hole, the site leaves it empty instead of guessing.",
+  "about.more": "See {sources} for the licence and credit of each one, {quality} for the checks and known problems, and {logos} for why team logos are shown.",
+  "about.ownerTitle": "Who runs it",
+  "about.owner": "SPXN is owned by John Morris. It is not affiliated with any team or league.",
+  "about.contactTitle": "Found a mistake?",
+  "about.contact": "Tell us by opening an issue on GitHub: {link}. The site's code is public there.",
+  "about.contactLink": "github.com/spxis/spx-stats",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;
