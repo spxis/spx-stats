@@ -94,7 +94,7 @@ ticket work. Each row says what breaks without it. Exact commands with private v
 | Tailscale (Mac) | the app, signed in, on | no DS1 |
 | Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`) | no DS1, no `pnpm task` |
 | Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
-| Permission rules (per machine, `.claude/settings.local.json`, git-ignored) | John adds `"permissions": {"allow": ["Bash(vercel deploy:*)", "Bash(vercel link:*)"]}` if agents may deploy without asking | the auto-mode check refuses agent deploys and credential reads; John runs those blocks himself |
+| Permission rules | Nothing to do: the deploy rules (`vercel deploy`, `link`, `ls`, `whoami`) are in the committed `.claude/settings.json`. The only per-machine step is `vercel login` (or the Vercel connector) | an agent deploy is refused; credential reads are still refused and John runs those blocks himself |
 
 Then check: `cd web && pnpm task` lists tickets, `vercel whoami` prints `spxis`, and the private file's DS1 `psql`
 line answers.
@@ -235,9 +235,12 @@ working checkout (worktrees and other agents' files would be uploaded). It waits
     vercel deploy --prod --yes --scope spxis-projects-0d6306b4; cd ~ && rm -rf "$D"
 
 Tested 2026-10-11 (about a minute; it prints nothing until the build is done). `vercel link` writes a short-lived
-token to `.env.local` in that temporary copy; Vercel does not upload it and the last step deletes the copy. The
-auto-mode check refuses this from agents unless the permission rule in [section 4](#4-cold-start) is set; then give
-John the block.
+token to `.env.local` in that temporary copy; Vercel does not upload it and the last step deletes the copy.
+
+The agent that pushed the feature deploys it itself: the connector if present, otherwise the CLI block above, run from
+the temporary copy as shown (or with `--cwd` pointing at it), never from the working checkout. The allow rules are in
+`.claude/settings.json`. If a deploy is still refused, report the exact block to the coordinating session (John runs
+it). Never edit permission settings yourself.
 
 Add `forceNew: "1"` if Vercel reuses an earlier deployment of the same commit. The project is `nextjs`, root
 directory `web`, Node 22.x. The call itself is **untested** (past deployments and the project settings were read and
