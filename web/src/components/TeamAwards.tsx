@@ -8,7 +8,7 @@ import { tableOf } from "@/lib/sort";
 /** The awards a franchise won and its players won while on it, newest first; nothing at all when there are none. */
 export async function TeamAwards({ lg, f }: { lg: string; f: number }) {
   const list = await getTeamAwards(lg, f);
-  if (!list.length) return null;
+  if (!list?.length) return null;
   const { say, plural } = await currentSpeaker();
   const badge = (kind: string) => (kind === "person_award" ? say("awards.badgePlayer") : say("awards.badgeTeam"));
   const t = tableOf(list, [

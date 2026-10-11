@@ -251,6 +251,7 @@ export const FR: Dictionary = {
   "fig.ties": "Matchs nuls",
   "fig.otLosses": "Défaites en prol.",
   "fig.ot": "Prol.",
+  "fig.awards": "Récompenses",
   "fig.share": "Pourcentage de victoires",
   "fig.record": "Fiche",
   "fig.points": "Points",

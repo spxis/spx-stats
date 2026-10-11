@@ -24,10 +24,10 @@ export const getPerson = cache(async (id: number): Promise<PersonData | null> =>
   return people[0] ? { person: people[0], awards, teams } : null;
 });
 
-/** Awards a franchise and its players won, newest first. A page does not fail because this view is empty or missing. */
-export const getTeamAwards = cache(async (lg: string, f: number): Promise<TeamAwardRow[]> => {
+/** Awards a franchise and its players won, newest first. A page does not fail because this view is empty or missing; null means the fetch failed. */
+export const getTeamAwards = cache(async (lg: string, f: number): Promise<TeamAwardRow[] | null> => {
   if (!isLeague(lg)) return [];
-  return rows("team_awards", `league=eq.${lg}&franchise_id=eq.${f}&select=*&order=year.desc,award_code`, teamAwardSchema).catch(() => []);
+  return rows("team_awards", `league=eq.${lg}&franchise_id=eq.${f}&select=*&order=year.desc,award_code`, teamAwardSchema).catch(() => null);
 });
 
 /** Every award of a league that is not the championship, for the awards-by-season table. */

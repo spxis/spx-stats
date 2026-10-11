@@ -23,6 +23,7 @@ import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
+import { getTeamAwards } from "@/lib/people";
 import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
 
@@ -51,13 +52,15 @@ function sum(rows: StandingRow[], k: "w" | "l" | "t" | "otl" | "gp") {
   return rows.reduce((a, r) => a + (r[k] || 0), 0);
 }
 
-async function Lifetime({ lg, rows }: { lg: string; rows: StandingRow[] }) {
+async function Lifetime({ lg, f, rows }: { lg: string; f: number; rows: StandingRow[] }) {
   const { say } = await currentSpeaker();
+  const awards = await getTeamAwards(lg, f);
   const w = sum(rows, "w"), l = sum(rows, "l"), t = sum(rows, "t"), o = sum(rows, "otl"), gp = sum(rows, "gp");
   const pct = w + l + t + o ? (w + t / 2) / (w + l + t + o) : null;
   const figs: [string, number | string][] = [[say("fig.seasons"), rows.length], [say("fig.games"), gp], [say("fig.wins"), w], [say("fig.losses"), l]];
   if (t) figs.push([say("fig.ties"), t]);
   if (o) figs.push([say(lg === "nhl" ? "fig.otLosses" : "fig.ot"), o]);
+  if (awards) figs.push([say("fig.awards"), awards.length]);
   figs.push([say("fig.share"), pct == null ? "—" : fmt3(pct)]);
   return (
     <section className="section">
@@ -176,7 +179,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         ) : null}
         <p className="lede">{say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "" })}</p>
       </section>
-      {rows.length ? <Lifetime lg={lg} rows={rows} /> : null}
+      {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
       {t.titles.length ? (
         <div className="trophyrow fade">
           <div className="trophies"><b>{t.titles.length}</b><Trophy league={lg} className="cup" /></div>

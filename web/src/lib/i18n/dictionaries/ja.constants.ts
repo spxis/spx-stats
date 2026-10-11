@@ -251,6 +251,7 @@ export const JA: Dictionary = {
   "fig.ties": "引き分け",
   "fig.otLosses": "延長負け",
   "fig.ot": "延長",
+  "fig.awards": "表彰",
   "fig.share": "勝率",
   "fig.record": "成績",
   "fig.points": "勝点",

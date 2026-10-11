@@ -256,6 +256,7 @@ export const PHRASES = {
   "fig.ties": "Ties",
   "fig.otLosses": "OT losses",
   "fig.ot": "OT",
+  "fig.awards": "Awards",
   "fig.share": "Winning share",
   "fig.record": "Record",
   "fig.points": "Points",

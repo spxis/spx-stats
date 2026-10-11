@@ -22,6 +22,8 @@ so a string added in English alone still shows.
 - **Short-season notes.** FR "lock-out" and "grève des joueurs", JA "ロックアウト" and "選手会のストライキ" (players' union strike); the JA team-count
   sentence puts the count first ("…届かなかったのは2チームです"). Source link text is "Source : Wikipédia" / "出典：Wikipedia".
 
+- **Awards stat.** The short label "Awards" reuses the section heading wording: FR "Récompenses", JA "表彰" (same as awards.title).
+
 ## Left as the data gives it (not translated on purpose)
 
 - Team, player, venue and league names; league codes (NHL, NBA, MLB, NFL, CFL); official award names (Stanley Cup, Grey Cup, Hart Trophy ...).
