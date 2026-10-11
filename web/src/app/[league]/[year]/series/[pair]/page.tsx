@@ -21,9 +21,10 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { LOCALE_TAG } from "@/lib/locale";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
-import { datePath, describeRounds, deriveSeries, nickname, pairSchema, rankIn, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
+import { datePath, describeRounds, deriveSeries, nickname, pairSchema, rankIn, roundPath, roundTitle as nameOfRound, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
 import { SERIES_COPY, sayFor, type Say } from "@/lib/seriesCopy";
 import { seriesLooks } from "@/lib/seriesLooks";
+import { loadPastMeetings, type PastMeeting } from "@/lib/playoffs";
 import { getPairGames, getPlayoffGames, getSeasonStandings } from "@/lib/seriesData";
 import { recShare, tableOf } from "@/lib/sort";
 import "@/components/series.css";
@@ -41,10 +42,10 @@ const load = cache(async (lg: string, y: number, a: number, b: number, meeting: 
   return { all, series, regular, standings, brands, abbrs };
 });
 
-function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say) {
+function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say, robin: string) {
   const { round, names } = describeRounds(lg, y, all, say);
   const i = all.indexOf(s);
-  return { title: names[round[i] - 1] ?? say("page.playoffs"), number: round[i], rounds: names.length };
+  return { title: nameOfRound(names, round[i], robin) || say("page.playoffs"), number: round[i], rounds: names.length };
 }
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/series/[pair]">): Promise<Metadata> {
@@ -55,7 +56,7 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/s
   if (!d.series) return { robots: { index: false } };
   const say = sayFor(sp);
   const s = d.series, [a, b] = s.sides;
-  const round = roundOf(league, y, d.all, s, say).title;
+  const round = roundOf(league, y, d.all, s, say, sp.say("playoffs.robin")).title;
   const season = seasonLabel(league, y);
   return pageMeta({
     title: say("page.metaTitle", { a: a.name, b: b.name, season, league: LG[league], round }),
@@ -127,8 +128,8 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
   if (seriesPath(lg, y, s) !== `/${lg}/${y}/series/${pair}`) permanentRedirect(seriesPath(lg, y, s));
 
   const say = sayFor(sp), { fmt, dt } = sp;
-  const { title: roundTitle, number, rounds } = roundOf(lg, y, d.all, s, say);
-  const lastRound = d.all.filter((x) => roundOf(lg, y, d.all, x, say).number === rounds).length;
+  const { title: roundTitle, number, rounds } = roundOf(lg, y, d.all, s, say, sp.say("playoffs.robin"));
+  const lastRound = d.all.filter((x) => roundOf(lg, y, d.all, x, say, "").number === rounds).length;
   const [A, B] = s.sides;
   const na = nickname(A.name), nb = nickname(B.name);
   const season = seasonLabel(lg, y);
@@ -174,8 +175,19 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
 
   // Each team's other series of the playoffs, in the order played.
   const desc = describeRounds(lg, y, d.all, say);
-  const road = (f: number) => d.all.filter((x) => x !== s && x.sides.some((t) => t.f === f)).map((x) => ({ x, name: desc.names[desc.round[d.all.indexOf(x)] - 1] }));
+  const road = (f: number) => d.all.filter((x) => x !== s && x.sides.some((t) => t.f === f)).map((x) => ({ x, name: nameOfRound(desc.names, desc.round[d.all.indexOf(x)], sp.say("playoffs.robin")) }));
 
+  const past = await loadPastMeetings(lg, A.f, B.f, y, say, sp.say("playoffs.robin")).catch(() => null);
+  const pastWon = (f: number) => (past ?? []).filter((m) => m.s.winner != null && m.s.sides[0].f === f).length;
+  const pastGames = (f: number) => (past ?? []).reduce((n, m) => n + (m.s.sides.find((t) => t.f === f)?.wins ?? 0), 0);
+  const lastMeet = past?.[0];
+  const lastWinner = lastMeet?.s.winner != null ? lastMeet.s.sides[0] : null;
+  const pastTable = tableOf(past ?? [], [
+    { key: "season", label: sp.say("past.season"), cls: "seasoncell", get: (m: PastMeeting) => m.year, cell: (m: PastMeeting) => <Link href={seriesPath(lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
+    { key: "round", label: sp.say("past.round"), cls: "team", get: (m: PastMeeting) => m.n, cell: (m: PastMeeting) => <Link href={roundPath(lg, m.year, m.n)} prefetch={false}>{m.round}</Link> },
+    { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? "–" : <span className="won">{m.s.sides[0].name}</span>) },
+    { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
+  ], (m) => `${m.year}-${m.s.meeting}`);
   const mets = metrics(say, unit, ra, rb);
   const side = (i: 0 | 1) => {
     const t = s.sides[i], r = i === 0 ? ra : rb, rk = rankText(t.f);
@@ -260,6 +272,22 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
           <SeriesCharts games={chartGames} names={[na, nb]} unit={unit} words={chartWords()} />
         </section>
       ) : null}
+
+      <section className="section">
+        <h2>{sp.say("past.title")}</h2>
+        {past == null ? <p className="note">{sp.say("load.failed")}</p> : past.length ? (
+          <>
+            <p className="note">
+              {pastWon(A.f) === pastWon(B.f)
+                ? sp.say("past.tied", { a: na, b: nb, x: fmt(pastWon(A.f)), y: fmt(pastWon(B.f)) })
+                : sp.say("past.lead", { team: pastWon(A.f) > pastWon(B.f) ? na : nb, x: fmt(Math.max(pastWon(A.f), pastWon(B.f))), y: fmt(Math.min(pastWon(A.f), pastWon(B.f))) })}
+              {" "}{sp.say("past.games", { a: na, b: nb, x: fmt(pastGames(A.f)), y: fmt(pastGames(B.f)) })}
+              {" "}{lastMeet && lastWinner ? sp.say("past.last", { team: nickname(lastWinner.name), season: seasonLabel(lg, lastMeet.year) }) : lastMeet ? sp.say("past.lastOpen", { season: seasonLabel(lg, lastMeet.year) }) : null}
+            </p>
+            <div className="tablebox"><SortTable {...pastTable} param="sort_past" def="season.desc" /></div>
+          </>
+        ) : <p className="note">{sp.say("past.none", { a: na, b: nb, season })}</p>}
+      </section>
 
       {mets.length ? (
         <section className="section">

@@ -1,0 +1,84 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { AccentStyle } from "@/components/AccentStyle";
+import { SeriesCard } from "@/components/SeasonPlayoffs";
+import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { pageMeta } from "@/lib/meta";
+import { loadPlayoffs } from "@/lib/playoffs";
+import { roundPath, roundTitle } from "@/lib/series";
+import { sayFor } from "@/lib/seriesCopy";
+import "@/components/series.css";
+
+// Rendered per request, like the other pages that speak the reader's language; its data comes from the hour-long cache.
+
+const yearOf = (v: string) => (/^\d{4}$/.test(v) ? Number(v) : null);
+const roundOfParam = (v: string) => (/^\d{1,2}$/.test(v) ? Number(v) : null);
+
+export async function generateMetadata({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">): Promise<Metadata> {
+  const { league, year, n } = await params;
+  const y = yearOf(year), r = roundOfParam(n);
+  if (!isLeague(league) || y == null || r == null) return {};
+  const sp = await currentSpeaker();
+  const d = await loadPlayoffs(league, y, sayFor(sp));
+  const list = d.series.filter((_, i) => d.round[i] === r);
+  if (!list.length) return { robots: { index: false } };
+  const round = roundTitle(d.names, r, sp.say("playoffs.robin"));
+  const season = seasonLabel(league, y);
+  return pageMeta({
+    title: sp.say("playoffs.round.metaTitle", { round, season, league: LG[league] }),
+    description: sp.say("playoffs.round.metaDesc", { count: sp.fmt(list.length), round, season, league: LG[league] }),
+    path: roundPath(league, y, r),
+    locale: sp.locale,
+  });
+}
+
+export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">) {
+  const { league: lg, year, n } = await params;
+  const y = yearOf(year), r = roundOfParam(n);
+  if (!isLeague(lg) || y == null || r == null) notFound();
+  const sp = await currentSpeaker();
+  const say = sayFor(sp);
+  const d = await loadPlayoffs(lg, y, say);
+  const members = d.series.map((_, i) => i).filter((i) => d.round[i] === r);
+  if (!members.length) notFound();
+
+  const season = seasonLabel(lg, y);
+  const robin = sp.say("playoffs.robin");
+  const name = roundTitle(d.names, r, robin);
+  const hasRobin = d.bracket.robin.length > 0;
+  const prev = r > 0 ? (r === 1 ? (hasRobin ? 0 : null) : r - 1) : null;
+  const next = r === 0 ? (d.names.length ? 1 : null) : r < d.names.length ? r + 1 : null;
+  const labelOf = (key: string) => d.bracket.sides.find((s) => s.key === key)?.label ?? null;
+  const groups = (["l", "f", "r", "o"] as const)
+    .map((key) => ({ key, label: key === "l" || key === "r" ? labelOf(key) : null, list: members.filter((i) => d.bracket.place.get(i) === key) }))
+    .filter((g) => g.list.length);
+  const titled = groups.some((g) => g.label);
+
+  return (
+    <>
+      <AccentStyle league={lg} />
+      <section className="head fade">
+        <span className="eyebrow">
+          <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`/${lg}/${y}#playoffs`}>{say("page.playoffs")}</Link>
+        </span>
+        <h1>{name}</h1>
+        <p className="lede">{sp.say("playoffs.round.lede", { count: sp.fmt(members.length), round: name, season, league: LG[lg] })}</p>
+        <p className="note">
+          {prev != null ? <><Link href={roundPath(lg, y, prev)} prefetch={false} rel="prev">{"← " + roundTitle(d.names, prev, robin)}</Link>{" · "}</> : null}
+          <Link href={`/${lg}/${y}#playoffs`}>{sp.say("playoffs.round.bracket")}</Link>
+          {next != null ? <>{" · "}<Link href={roundPath(lg, y, next)} prefetch={false} rel="next">{roundTitle(d.names, next, robin) + " →"}</Link></> : null}
+        </p>
+      </section>
+      {groups.map((g) => (
+        <section key={g.key} className="section">
+          {titled ? <h2>{g.label ?? (g.key === "o" ? sp.say("playoffs.other") : name)}</h2> : null}
+          <div className="bracket mine">
+            {g.list.map((i) => <SeriesCard key={`${d.series[i].sides[0].f}-${d.series[i].sides[1].f}-${d.series[i].meeting}`} lg={lg} s={d.series[i]} brands={d.brands} year={y} say={say} />)}
+          </div>
+        </section>
+      ))}
+    </>
+  );
+}

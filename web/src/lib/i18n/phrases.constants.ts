@@ -559,6 +559,27 @@ export const PHRASES = {
   "resume.playoffs": "Playoff seasons",
   "resume.titles": "Championships",
   "resume.playoffsNote": "Seasons in which the player’s club reached the playoffs, or in which we hold playoff statistics. Seasons with a title are outlined.",
+  // playoff bracket, round pages, earlier meetings
+  "playoffs.note": "{count} series, worked out from the playoff games. Press a round to see all its matchups, or a box for the series, game by game.",
+  "playoffs.robin": "Round robin",
+  "playoffs.robinLink": "Seeding round robin: {count} games",
+  "playoffs.other": "Other series",
+  "playoffs.round.title": "All {round} matchups",
+  "playoffs.round.bracket": "Full bracket",
+  "playoffs.round.lede": "All {count} series of the {season} {league} playoffs: {round}.",
+  "playoffs.round.metaTitle": "{round}, {season} {league} playoffs",
+  "playoffs.round.metaDesc": "Every {round} matchup of the {season} {league} playoffs ({count} series), with the winner of each.",
+  "past.title": "Earlier playoff meetings",
+  "past.season": "Season",
+  "past.round": "Round",
+  "past.winner": "Winner",
+  "past.result": "Result",
+  "past.lead": "{team} lead their earlier playoff series {x}–{y}.",
+  "past.tied": "{a} and {b} split their earlier playoff series {x}–{y}.",
+  "past.games": "In games: {a} {x}, {b} {y}.",
+  "past.last": "Last meeting: {team} won in {season}.",
+  "past.lastOpen": "Last meeting: {season}, not settled by the games on record.",
+  "past.none": "{a} and {b} had not met in the playoffs before {season}.",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;

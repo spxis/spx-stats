@@ -151,14 +151,20 @@ export function deriveSeries(league: string, year: number, games: readonly Playo
   return out.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.end < b.end ? -1 : a.end > b.end ? 1 : a.sides[0].f - b.sides[0].f));
 }
 
-/** The round of each series: one more than the number of series either side had already played (a bye lets a side start later). */
-export function assignRounds(list: readonly Series[]): number[] {
+/** The 2019-20 NHL restart seeded each conference with a round robin of single games; they are not part of the bracket (round 0). */
+export const isRobin = (league: string, year: number, s: Series): boolean => league === "nhl" && year === 2019 && s.games.length === 1;
+
+/** The round of each series: one more than the number of series either side had already played (a bye lets a side start later). Round-robin games are round 0. */
+export function assignRounds(list: readonly Series[], robin: (s: Series) => boolean = () => false): number[] {
   const sorted = list.map((s, i) => ({ s, i })).sort((x, y) => (x.s.start < y.s.start ? -1 : x.s.start > y.s.start ? 1 : x.s.end < y.s.end ? -1 : x.s.end > y.s.end ? 1 : x.i - y.i));
   const played = new Map<number, number>();
   const round: number[] = new Array(list.length).fill(1);
   for (const { s, i } of sorted) {
+    if (robin(s)) { round[i] = 0; continue; }
     const [a, b] = s.sides;
     round[i] = Math.max(played.get(a.f) ?? 0, played.get(b.f) ?? 0) + 1;
+    // Two clubs that both had a bye start a round later than the single games (wild cards) already finished before them.
+    if (round[i] === 1 && s.games.length > 1) for (const x of sorted) if (x.i !== i && round[x.i] > 0 && x.s.games.length === 1 && x.s.end < s.start) round[i] = Math.max(round[i], round[x.i] + 1);
     played.set(a.f, round[i]);
     played.set(b.f, round[i]);
   }
@@ -189,14 +195,20 @@ export function roundName(lg: string, year: number, round: number, rounds: numbe
   return say("round.n", { n: round });
 }
 
-/** Every series with its round, and the names of the rounds (the last is the final only when it holds one series). */
+/** Every series with its round (0 for a round robin), and the names of the rounds 1..n (the last is the final only when it holds one series). */
 export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[] } {
-  const round = assignRounds(list);
+  const round = assignRounds(list, (s) => isRobin(lg, year, s));
   const count = Math.max(0, ...round);
   const finals = round.filter((r) => r === count).length;
   const names = Array.from({ length: count }, (_, i) => (finals === 1 ? roundName(lg, year, i + 1, count, say) : say("round.n", { n: i + 1 })));
   return { round, names };
 }
+
+/** The name of a round; round 0 is the round robin, named by the caller. */
+export const roundTitle = (names: readonly string[], round: number, robin: string): string => (round === 0 ? robin : names[round - 1] ?? "");
+
+/** A round's address: /nhl/2023/playoffs/round/2 */
+export const roundPath = (lg: string, year: number, round: number): string => `/${lg}/${year}/playoffs/round/${round}`;
 
 /** The headline score of a series: "4–3", the single game's score, or the total score of a total-goals series. */
 export function scoreText(s: Series): string {

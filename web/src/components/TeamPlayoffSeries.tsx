@@ -1,7 +1,7 @@
 import { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { sayFor } from "@/lib/seriesCopy";
-import { describeRounds, deriveSeries } from "@/lib/series";
+import { describeRounds, deriveSeries, roundTitle } from "@/lib/series";
 import { getPlayoffGames } from "@/lib/seriesData";
 import { SeriesCard } from "./SeasonPlayoffs";
 import "./series.css";
@@ -12,7 +12,7 @@ export async function TeamPlayoffSeries({ lg, year, f }: { lg: string; year: num
   const say = sayFor(sp);
   const all = deriveSeries(lg, year, games);
   const { round, names } = describeRounds(lg, year, all, say);
-  const mine = all.map((s, i) => ({ s, name: names[round[i] - 1] })).filter((x) => x.s.sides.some((t) => t.f === f));
+  const mine = all.map((s, i) => ({ s, name: roundTitle(names, round[i], sp.say("playoffs.robin")) })).filter((x) => x.s.sides.some((t) => t.f === f));
   if (!mine.length) return null;
   return (
     <section className="section">

@@ -18,6 +18,10 @@ export const getAlignment = cache(async (lg: string): Promise<AlignmentRow[]> =>
 export const getAlignmentChanges = cache(async (lg: string): Promise<AlignmentChangeRow[]> =>
   rows("alignment_changes", `league=eq.${lg}&select=*&order=year,team`, alignmentChangeSchema));
 
+/** One season's alignment, or none when the view is missing: the playoff bracket then has no conferences to show. */
+export const getSeasonAlignment = cache(async (lg: string, year: number): Promise<AlignmentRow[]> =>
+  rows("alignment", `league=eq.${lg}&year=eq.${year}&select=*`, alignmentSchema).catch(() => []));
+
 /** One club's places, season by season. */
 export const getTeamAlignment = cache(async (lg: string, f: number): Promise<AlignmentRow[]> =>
   rows("alignment", `league=eq.${lg}&franchise_id=eq.${f}&select=*&order=year`, alignmentSchema));

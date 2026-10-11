@@ -34,3 +34,6 @@ so a string added in English alone still shows.
 
 Numbers and dates use `Intl` with en-CA, fr-CA and ja-JP (`src/lib/i18n/formats.ts`). Month and weekday names come from the browser/Node ICU,
 so a very old browser may spell an abbreviation differently from the server.
+
+- **Playoff bracket and earlier meetings.** FR "Tournoi à la ronde" and JA "ラウンドロビン" for the 2019-20 NHL seeding round robin; FR "ronde" / JA "ラウンド" for a playoff round; FR "duels" for matchups.
+  The earlier-meetings sentences ("lead their earlier playoff series 3-2", "In games: ...") are my best guess at natural phrasing.

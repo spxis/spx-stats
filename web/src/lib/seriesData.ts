@@ -15,6 +15,14 @@ const pairFilter = (a: number, b: number) => `or=(and(away_f.eq.${a},home_f.eq.$
 export const getPairGames = cache(async (lg: string, y: number, a: number, b: number, phase: "playoffs" | "regular"): Promise<GameRow[]> =>
   rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.${phase}&${pairFilter(a, b)}&select=*&order=game_date,game_id`, gameSchema));
 
+const yearsSchema = z.object({ year: z.number() });
+
+/** The seasons in which two franchises played each other in the playoffs, newest first. a and b are validated integers. */
+export const getPairPlayoffYears = cache(async (lg: string, a: number, b: number): Promise<number[]> => {
+  const list = await rows("games", `league=eq.${lg}&phase=eq.playoffs&${pairFilter(a, b)}&select=year&order=year.desc`, yearsSchema);
+  return [...new Set(list.map((g) => g.year))];
+});
+
 /** A season's standings, for the records of the two teams and where each stood. */
 export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
   rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
