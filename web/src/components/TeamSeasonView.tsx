@@ -15,6 +15,7 @@ import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeaso
 import { replaceQuery } from "@/lib/urlQuery";
 import { Donut } from "./Donut";
 import { GameCalendar } from "./GameCalendar";
+import { H2hLink } from "./H2hLink";
 import { verdictOf } from "./HomeRoadBars";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { LocSwitch } from "./LocSwitch";
@@ -100,7 +101,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
       ),
     },
     { key: "loc", label: say("col.ha"), title: say("col.haTitle"), get: (g) => g.loc, cell: (g) => say(g.loc === "Home" ? "loc.home" : "loc.away") },
-    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(abbrs, g.oppF, year, g.oppName)} /> },
+    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <><TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(abbrs, g.oppF, year, g.oppName)} /><H2hLink lg={lg} year={year} a={teams.get(meId)?.f} b={g.oppF} /></> },
     { key: "score", label: say("col.score"), num: true, title: say("col.scoreTitle"), get: (g) => g.margin, cell: (g) => (g.res ? `${g.mine}–${g.theirs}` : "") },
     {
       key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
@@ -118,7 +119,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         </>
       ),
     },
-  ], [lg, abbrs, year, extra, numbers, say, dt]);
+  ], [lg, abbrs, year, extra, numbers, say, dt, teams, meId]);
   const table = useMemo(() => tableOf(rows, specs, (g) => g.id), [rows, specs]);
 
   const done = rows.filter((g) => g.res);
