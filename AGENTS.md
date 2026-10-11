@@ -124,6 +124,12 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 - When you are waiting on him, say so first, plainly, with the one thing he needs to do.
 - He reads on his phone, which can't change permission settings.
 - He wants features published as they are finished, and work done by Sonnet agents.
+- **Work out the command before asking him for a step.** Before telling John to click through a website or log in to a
+  machine, check whether an agent or MCP tool can do it, and whether the value is already on his Mac (keychain, .env
+  files) or in the private notes. Then give him ONE copy-paste command that fetches or builds it without printing any
+  secret. Only then ask for a UI step, and say exactly where to click.
+- Record any command that worked in the private notes in Dropbox `/Backups/spx-stats/notes/` (`credentials-how-to.md`
+  and `board-key-and-lessons.md`) so the next session doesn't ask again.
 
 ## Tickets
 
@@ -133,10 +139,13 @@ board UmaKuma and Itsutsu use, under project key `spx-stats`. Drive it with
 `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` come from the environment and
 are never written to a file, a log or a commit.
 
-spx-stats needs its own key on the board: a `BOARD_TOKENS_JSON` entry named `spx-stats`, and those two variables in
-the environment. Until it exists, don't try to file tickets; write them down for the pending list at Dropbox
-`/Backups/spx-stats/tickets-pending-2026-10-11.md` and tell the coordinating session (the Dropbox rule above
-applies to the write).
+The spx-stats key was created on 2026-10-11: it is a `BOARD_TOKENS_JSON` entry named `spx-stats`, and the cloud
+environment has `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` (not yet tested against the real board). Sumilabu's
+`BOARD_TOKENS_JSON` is write-only, so saving a new value replaces the whole map: rebuild it with every existing key
+in it, never just the new one. The fetch and rebuild commands are in the private notes (Dropbox
+`/Backups/spx-stats/notes/board-key-and-lessons.md`). If `pnpm task` is refused, write the ticket down for the pending
+list at Dropbox `/Backups/spx-stats/tickets-pending-2026-10-11.md` and tell the coordinating session (the Dropbox
+rule above applies to the write).
 
 - File a ticket before starting work: `pnpm task add "<title>" --detail "<what and why>" --by "<who>"`.
 - Claim it with the whole id the board prints, never a prefix: `pnpm task claim <id> "<who>"`. A hold lasts six hours; a live hold is not taken over.
