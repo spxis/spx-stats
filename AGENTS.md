@@ -37,6 +37,8 @@ end. **manual** = a person or the coordinating session has to do it.
 - The repository is public: no dumps, member data, secrets, private notes or internal reviews.
 - File a ticket before starting work. Archive raw data before loading it. Never write to production without
   reading [section 8](#8-data-work).
+- **First step of every session:** read the hook's `[spx-check]` lines and check your connector tools
+  ([section 4](#4-cold-start)); report anything MISSING.
 - Short answers. When you need something from John, start with `NEED FROM YOU:` and a copy-paste block.
 
 ## 2. Talking to John
@@ -83,6 +85,18 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 
 ## 4. Cold start
 
+**Session start: do this first, every session.**
+
+1. Read the `[spx-check]` lines the SessionStart hook printed (Mac: `bash scripts/mac/spx-check.sh` re-runs them;
+   cloud: the hook ends with the same kind of lines). Each is `ok` or `MISSING: <the one fix>`.
+2. Check your own tool list for the four claude.ai connectors (a script cannot see them): tools named like
+   `mcp__*Supabase*`, `*Vercel*`, `*Dropbox*`, `*GitHub*` (use ToolSearch if tools are deferred). For a missing one the
+   fix is "claude.ai > Settings > Connectors > <name> > Connect". Without Supabase: no production migrations or loads.
+   Without Vercel: deploy with the CLI block in [section 7](#7-deploying).
+3. Report everything MISSING to John as `NEED FROM YOU:` with the one fix, then carry on with what works.
+
+Turso: a supplementary database exists, unused by the code and the site; there is no check for it.
+
 **New machine or instance: connect everything first.** Do this once per Mac or cloud environment, before any
 ticket work. Each row says what breaks without it. Exact commands with private values are in the private file.
 
@@ -93,6 +107,8 @@ ticket work. Each row says what breaks without it. Exact commands with private v
 | GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
 | Tailscale (Mac) | the app, signed in, on | no DS1 |
 | Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`) | no DS1, no `pnpm task` |
+| DS1 Postgres (Mac) | with Tailscale on and the keychain password, `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok` | no DS1 copy |
+| Production Supabase, read-only | nothing to set up: the public URL and key the site uses; `spx-check.sh` and the cloud hook both test it | no way to compare counts against production |
 | Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
 | Permission rules | Nothing to do: the deploy rules (`vercel deploy`, `link`, `ls`, `whoami`) are in the committed `.claude/settings.json`. The only per-machine step is `vercel login` (or the Vercel connector) | an agent deploy is refused; credential reads are still refused and John runs those blocks himself |
 

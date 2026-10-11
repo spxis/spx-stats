@@ -9,6 +9,8 @@
 # The clipboard gets ready-to-paste NAME=value lines for the "spx-stats env" note.
 set -eu
 
+. "${0:A:h}/spx-checks.sh"
+
 kc_save() { security add-generic-password -U -a "$USER" -s "$1" -w "$2" >/dev/null; }
 
 case "${1:-}" in
@@ -45,10 +47,6 @@ setup)
     [ -f "$f" ] || { echo "Not found: $f (is Dropbox installed and synced?)"; exit 1; }
   done
   path+=(/opt/homebrew/opt/libpq/bin)
-  board="https://api.sumilabu.com/api/v1/projects/spx-stats/tickets"
-  kc_get() { security find-generic-password -s "$1" -w 2>/dev/null || true; }
-  board_ok() { [ -n "$1" ] && [ "$(curl -s -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" "$board")" = 200 ]; }
-  ds1_ok() { [ -n "$1" ] && PGPASSWORD="$1" PGCONNECT_TIMEOUT=8 psql -h "$SPX_DS1_HOST" -p 55440 -U postgres -d spx_stats -Atc 'select 1' >/dev/null 2>&1; }
 
   if ! command -v psql >/dev/null; then echo "DS1: FAIL, no psql (run: brew install libpq)"
   elif ! nc -z -G 5 "$SPX_DS1_HOST" 55440 2>/dev/null; then echo "DS1: FAIL, not reachable (turn Tailscale on)"
@@ -68,8 +66,7 @@ setup)
     [ $saved = 1 ] && echo "board: ok (saved from Dropbox)" || echo "board: FAIL, no key in SPX_BOARD_KEY_FILE was accepted"
   fi
 
-  node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=18)?0:1)' 2>/dev/null \
-    && echo "node: ok" || echo "node: FAIL, need 22.18 or newer"
+  node_ok && echo "node: ok" || echo "node: FAIL, need 22.18 or newer"
   command -v pnpm >/dev/null && echo "pnpm: ok" || echo "pnpm: FAIL (run: npm i -g pnpm)"
   gh auth status >/dev/null 2>&1 && echo "gh: ok" || echo "gh: FAIL (run: unset GH_TOKEN; gh auth login)"
   ;;

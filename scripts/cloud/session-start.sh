@@ -5,11 +5,15 @@
 # Env (cloud environment settings; see AGENTS.md): TS_AUTHKEY, SPX_DS1_DB_PASSWORD
 set -euo pipefail
 
-[ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || [ "${DRY_RUN:-}" = "1" ] || exit 0
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ] && [ "${DRY_RUN:-}" != "1" ]; then
+  # Not a cloud session: on a Mac, print the connection check so it lands in the agent's context.
+  if [ "$(uname)" = "Darwin" ]; then bash "$HERE/../mac/spx-check.sh" || true; fi
+  exit 0
+fi
 echo '{"async": true, "asyncTimeout": 1800000}'
 
 DRY="${DRY_RUN:-0}"
-HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK=/home/user/spxwork
 TS_DIR="$WORK/ts"
 PGDATA="$WORK/pg17"
@@ -29,6 +33,23 @@ db_ready() {
   [ -x "$PGBIN/psql" ] && "$PGBIN/psql" -h /tmp -p "$PGPORT_LOCAL" -U postgres -d spx_stats -Atc \
     "select count(*) from core.game" 2>/dev/null | grep -qE '^[1-9]'
 }
+
+# One-line summary on stdout at every exit, in the same style as scripts/mac/spx-check.sh.
+report() {
+  local prod=MISSING db=MISSING ds1="MISSING: set TS_AUTHKEY and SPX_DS1_DB_PASSWORD in the cloud environment (AGENTS.md section 12)"
+  [ "$(curl -s -m 8 -o /dev/null -w '%{http_code}' -H "apikey: sb_publishable_FmeiL6oX9_Mrb8psQZFSQg_YO_O4afC" \
+    -H "Accept-Profile: api" "https://njpvfrceahkvnrduerkk.supabase.co/rest/v1/season_summary?select=league&limit=1" 2>/dev/null)" = 200 ] && prod=ok
+  db_ready && db=ok
+  [ -S "$SOCK" ] && "$TS" --socket="$SOCK" status >/dev/null 2>&1 && ds1="ok (Tailscale up)"
+  [ "$db" = ok ] && [ "$ds1" != "ok (Tailscale up)" ] && ds1="not needed, local database is loaded"
+  echo "[spx-check] production Supabase (read): $prod"
+  echo "[spx-check] local database spx_stats: $db"
+  echo "[spx-check] DS1 over Tailscale: $ds1"
+  if [ -n "${SUMILABU_BOARD_TOKEN:-}" ]; then echo "[spx-check] board key: set"
+  else echo "[spx-check] board key: MISSING: set SUMILABU_BOARD_TOKEN in the cloud environment"; fi
+  return 0
+}
+[ "$DRY" = "1" ] || trap report EXIT
 
 # Fast skip: the database is already there with data.
 if [ "$DRY" != "1" ] && db_ready; then
