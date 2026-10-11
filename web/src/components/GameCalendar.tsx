@@ -1,7 +1,8 @@
 "use client";
 
+import { useSyncExternalStore } from "react";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
-import { atUtc, isoDay } from "@/lib/format";
+import { atUtc, isoDay, localToday } from "@/lib/format";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { ClubTeam, GameTuple } from "@/lib/season";
@@ -74,6 +75,7 @@ interface Props {
  */
 export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day, team = "", dayOnly = false, onMonth, onDay, onJump }: Props) {
   const { say, plural, dt } = useSpeaker();
+  const today = useSyncExternalStore(() => () => {}, localToday, () => "");
   const first = atUtc(`${month}-01`);
   const most = Math.max(1, ...[...byDay.values()].map((l) => l.length));
   const cells = [];
@@ -101,13 +103,15 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
     : [...byDay].filter(([k]) => k.slice(0, 7) === month).sort((a, b) => a[0].localeCompare(b[0]));
   const n = shown.reduce((a, [, l]) => a + l.length, 0);
   const monthFmt = months.length > 12 ? dt.monYear : dt.mon;
+  const dayKeys = [...byDay.keys()].sort(), dayMin = dayKeys[0], dayMax = dayKeys.at(-1) ?? "";
 
   return (
     <>
       {onJump && byDay.size ? (
         <div className="calpick">
-          <DatePicker label={say("cal.jump")} value={day} min={[...byDay.keys()].sort()[0]} max={[...byDay.keys()].sort().at(-1) as string}
+          <DatePicker label={say("cal.jump")} value={day} min={dayMin} max={dayMax}
             marked={new Set(byDay.keys())} placeholder={say("cal.jumpPlaceholder")} onChange={(d) => { if (d) onJump(d); else onDay(""); }} />
+          <button type="button" className="todaybtn" disabled={!today || today < dayMin || today > dayMax} onClick={() => onJump(today)}>{say("picker.today")}</button>
         </div>
       ) : null}
       <div className="cal">

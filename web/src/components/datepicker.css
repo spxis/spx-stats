@@ -29,4 +29,7 @@
 .dp-clear { border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; padding: 2px 4px; }
 @media (max-width: 480px) { .dp-day { height: 40px; } }
 
-.calpick { margin-bottom: 10px; }
+.calpick { margin-bottom: 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.todaybtn { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 12px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); }
+.todaybtn:disabled { opacity: .35; }
+.todaybtn:not(:disabled):hover { border-color: var(--ink); }
