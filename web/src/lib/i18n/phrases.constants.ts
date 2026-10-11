@@ -451,6 +451,7 @@ export const PHRASES = {
   "filter.pickDate": "Pick a date",
   "picker.gamesPlayed": "games played",
   "picker.clear": "Clear",
+  "picker.today": "Today",
   "cal.vsOpp": ", vs {opp}",
   "cal.atOpp": ", at {opp}",
   "cal.oppFallback": "opponent",

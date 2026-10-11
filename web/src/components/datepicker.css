@@ -22,6 +22,10 @@
 .dp-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; border-top: 1px solid var(--rule); padding-top: 8px; font-size: 13px; color: var(--muted); }
 .dp-key { display: inline-flex; align-items: center; gap: 6px; }
 .dp-key i { width: 5px; height: 5px; border-radius: 50%; background: var(--accent); display: inline-block; }
+.dp-acts { display: inline-flex; align-items: center; gap: 8px; }
+.dp-today { border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; }
+.dp-today:disabled { opacity: .35; }
+.dp-today:not(:disabled):hover { border-color: var(--ink); }
 .dp-clear { border: 0; background: none; color: var(--ink); font: inherit; text-decoration: underline; padding: 2px 4px; }
 @media (max-width: 480px) { .dp-day { height: 40px; } }
 

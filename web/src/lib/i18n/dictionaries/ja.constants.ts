@@ -445,6 +445,7 @@ export const JA: Dictionary = {
   "filter.pickDate": "日付を選ぶ",
   "picker.gamesPlayed": "試合のあった日",
   "picker.clear": "クリア",
+  "picker.today": "今日",
   "cal.vsOpp": "、対 {opp}",
   "cal.atOpp": "、@ {opp}",
   "cal.oppFallback": "対戦相手",

@@ -445,6 +445,7 @@ export const FR: Dictionary = {
   "filter.pickDate": "Choisir une date",
   "picker.gamesPlayed": "matchs disputés",
   "picker.clear": "Effacer",
+  "picker.today": "Aujourd'hui",
   "cal.vsOpp": ", contre {opp}",
   "cal.atOpp": ", à {opp}",
   "cal.oppFallback": "l’adversaire",

@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useId, useLayoutEffect, useMemo, useRef, useState } from "react";
-import { atUtc, isoDay } from "@/lib/format";
+import { atUtc, isoDay, localToday } from "@/lib/format";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./datepicker.css";
 
@@ -46,12 +46,13 @@ export function DatePicker({ label, value, min, max, marked, onChange, placehold
   const markWord = markedWord ?? say("picker.gamesPlayed");
   const [open, setOpen] = useState(false);
   const [focus, setFocus] = useState("");
+  const [today, setToday] = useState("");
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   const id = useId();
   const month = focus.slice(0, 7);
 
-  const show = useCallback(() => { setFocus(clamp(value || max, min, max)); setOpen(true); }, [value, min, max]);
+  const show = useCallback(() => { setFocus(clamp(value || max, min, max)); setToday(localToday()); setOpen(true); }, [value, min, max]);
   const close = useCallback((back: boolean) => { setOpen(false); if (back) trigger.current?.focus(); }, []);
 
   // A press outside the picker closes it.
@@ -145,7 +146,10 @@ export function DatePicker({ label, value, min, max, marked, onChange, placehold
           </div>
           <div className="dp-foot">
             <span className="dp-key"><i aria-hidden="true" />{markWord}</span>
-            {value ? <button type="button" className="dp-clear" onClick={() => { onChange(""); close(true); }}>{say("picker.clear")}</button> : null}
+            <span className="dp-acts">
+              <button type="button" className="dp-today" disabled={!today || today < min || today > max} onClick={() => { onChange(today); close(true); }}>{say("picker.today")}</button>
+              {value ? <button type="button" className="dp-clear" onClick={() => { onChange(""); close(true); }}>{say("picker.clear")}</button> : null}
+            </span>
           </div>
         </div>
       ) : null}
