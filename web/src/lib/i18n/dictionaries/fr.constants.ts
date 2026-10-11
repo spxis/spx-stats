@@ -137,7 +137,7 @@ export const FR: Dictionary = {
   "sched.fewer": "Les équipes avaient {games} matchs au calendrier au lieu des {usual} habituels.",
   "sched.teamPlayed": "{team} a disputé {played} de ses {games} matchs.",
   "sched.teamUsual": "{team} a disputé {played} des {games} matchs habituels.",
-  "sched.range": "Les équipes ont disputé de {min} à {max} des {games} matchs.",
+  "sched.range": "Les équipes ont disputé de {min} à {max} matchs; la saison en comptait {games} au calendrier.",
   "sched.fewTeams.one": "{count} équipe a disputé moins que les {usual} matchs habituels (au moins {min}).",
   "sched.fewTeams.other": "{count} équipes ont disputé moins que les {usual} matchs habituels (aussi peu que {min}).",
   "sched.source": "Source : Wikipédia",

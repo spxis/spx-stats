@@ -136,7 +136,7 @@ export const JA: Dictionary = {
   "sched.fewer": "各チームの予定試合数は、通常の{usual}試合ではなく{games}試合でした。",
   "sched.teamPlayed": "{team}は{games}試合中{played}試合を行いました。",
   "sched.teamUsual": "{team}は通常の{games}試合中{played}試合を行いました。",
-  "sched.range": "各チームは{games}試合中{min}〜{max}試合を行いました。",
+  "sched.range": "各チームは{min}〜{max}試合を行いました。シーズンの予定は{games}試合でした。",
   "sched.fewTeams.one": "通常の{usual}試合に届かなかったのは{count}チームです（最少{min}試合）。",
   "sched.fewTeams.other": "通常の{usual}試合に届かなかったのは{count}チームです（最少{min}試合）。",
   "sched.source": "出典：Wikipedia",

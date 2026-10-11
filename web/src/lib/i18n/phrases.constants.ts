@@ -142,7 +142,7 @@ export const PHRASES = {
   "sched.fewer": "Teams were scheduled for {games} games instead of the usual {usual}.",
   "sched.teamPlayed": "{team} played {played} of {games} games.",
   "sched.teamUsual": "{team} played {played} of the usual {games} games.",
-  "sched.range": "Teams played {min} to {max} of {games} games.",
+  "sched.range": "Teams played {min} to {max} games; the season was scheduled for {games}.",
   "sched.fewTeams.one": "{count} team played fewer than the usual {usual} games (as few as {min}).",
   "sched.fewTeams.other": "{count} teams played fewer than the usual {usual} games (as few as {min}).",
   "sched.source": "Source: Wikipedia",
