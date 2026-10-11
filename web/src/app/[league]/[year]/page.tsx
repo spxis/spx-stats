@@ -22,6 +22,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { isGapYear } from "@/lib/coverage";
+import { leadersPath } from "@/lib/leaderStats";
 import { leagueSat } from "@/lib/noSeason";
 import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
@@ -150,6 +151,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       <section className="head fade">
         <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
           <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link>
+          <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
           <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link>
         </nav>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
