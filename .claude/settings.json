@@ -1,4 +1,12 @@
 {
+  "permissions": {
+    "allow": [
+      "Bash(vercel deploy:*)",
+      "Bash(vercel link:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel whoami)"
+    ]
+  },
   "hooks": {
     "SessionStart": [
       {
