@@ -3,6 +3,9 @@
 The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://spxn.com
 ("SPXN · SPX Stats Network"). The owner is John Morris. Read this whole file before working.
 
+**New here? Start with [docs/AGENT_START_HERE.md](docs/AGENT_START_HERE.md):** the cold-start checklist with the exact
+commands for the board, the work, deploying, data and secrets. This file holds the rules; that one holds the commands.
+
 ## Who does the work
 
 - The coordinating session only starts Sonnet agents and relays between them and John. It does no feature work.
@@ -29,10 +32,13 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 
 1. **Archive first.** Every raw download goes into `legacy_files.raw_archive` (name, saved_on, sha256, data
    bytea) before it is loaded, and right after that it is saved to Dropbox with
-   `python3 scripts/dropbox_put.py <file> <source> [<date>]` (any size, create only, never overwrites, hash
-   verified). `dropbox_put.py --from-archive` uploads archived rows Dropbox does not hold yet. It needs
-   `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` and `DROPBOX_REFRESH_TOKEN` in the environment
-   (`docs/NEW_AGENT_SETUP.md`). If they are missing, say so and keep going; the archive row is still the record.
+   `python3 scripts/dropbox_put.py <file> <source> [<date>]` (any size, binary included, create only, never
+   overwrites, hash verified) to `/Backups/spx-stats/raw/<source>/<date>/`. `dropbox_put.py --from-archive` uploads
+   archived rows Dropbox does not hold yet. It needs `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` and
+   `DROPBOX_REFRESH_TOKEN` in the environment (`docs/NEW_AGENT_SETUP.md`); if they are missing, say so and keep going,
+   because the archive row is still the record. The Dropbox MCP is not an alternative for data: it takes inline text
+   only (no binary, no big files; a truncated upload has happened), and a write through it needs John's own
+   confirmation in chat, not a relayed one. The old "files of 100 KB or less" rule described that MCP limit and is gone.
 2. **Load season by season** (or award by award), so the database shows progress as it goes.
 3. **Raw is kept as it came** in a `legacy_<source>` schema. `core` is built from it by rerunnable steps in
    `db/build/NNN_*.sql`, matched by stable keys.
@@ -71,8 +77,11 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
     don't see his messages. If one is refused, stop and report the exact command; the coordinating session runs it
     once John approves.
   - **Schema changes** go through the Supabase MCP `apply_migration`.
-- **DS1** (John's Synology NAS, over Tailscale) keeps a full copy of everything, including `legacy_*`. Refresh it
-  after big loads.
+- **DS1** (John's Synology NAS, over Tailscale) keeps a full copy of everything, including `legacy_*`. **Refreshing it
+  is manual and not scripted**; it can be a day or more behind the local database, and the session-start hook restores
+  a fresh container from it. Refresh it after big loads by pushing from the cloud container (connections into the
+  container do not work), into a new database, never over the old one without John. Steps: `docs/AGENT_START_HERE.md`
+  section 5.
 
 ## The website
 
@@ -98,9 +107,17 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
   - `NoSeason` (grey box, compact "–") for years with no games.
   - `DatePicker` for date choices.
 - **Logos** are shown small, under fair use, explained on `/logos`.
-- **Checks before every push,** in `web/`: `pnpm lint`, `pnpm exec tsc --noEmit`, `pnpm build`.
-- **Deploying:** a push to `main` does not deploy. Deploy production through Vercel (project `spx-stats`, root
-  `web`, from GitHub `spxis/spx-stats` `main`), then check a few pages once each.
+- **Checks before every push,** in `web/` (after `pnpm install --frozen-lockfile`): `pnpm lint`,
+  `pnpm exec next typegen`, `pnpm exec tsc --noEmit`, `pnpm build`. On a fresh checkout `tsc` fails with "Cannot find
+  name 'PageProps'" until `next typegen` (or a build) has generated the route types.
+- **There is no version, changelog or timeline file.** A release is a commit on `main` that is deployed; nothing to
+  stamp. Pass the short commit sha to `pnpm task done --version`.
+- **Deploying:** a push to `main` does not deploy. The agent that pushed a finished feature deploys it, with the
+  Vercel MCP `create_deployment`: `teamId team_3B0yHsuwmVZw2RDT0ar7k07l`, `requestBody` `{name: "spx-stats", project:
+  "prj_MfgGl5vzVccEhmtSyvgze6hhgXJg", target: "production", gitSource: {type: "github", org: "spxis", repo:
+  "spx-stats", ref: "main", sha: <full sha>}}`. Confirm READY with `get_deployment` or `list_deployments`, then check a
+  few pages once each on https://spxn.com (the `*.vercel.app` URLs need a Vercel login). Roll back with
+  `request_rollback`. Details: `docs/AGENT_START_HERE.md` section 4.
 
 ## Git
 
@@ -122,16 +139,19 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 
 ## Talking to John
 
-- Keep it short.
-- When you are waiting on him, say so first, plainly, with the one thing he needs to do.
-- He reads on his phone, which can't change permission settings.
-- He wants features published as they are finished, and work done by Sonnet agents.
+John reads on his phone with little attention to spare, and the phone cannot change permission settings.
+
+- **Short bullets, no background paragraphs** unless he asks.
+- **When you need something from him, lead with `NEED FROM YOU:`**, then at most 3 bullets, each one action or one
+  copy-paste command. Nothing before it. If you are blocked (a permission refusal, a missing key), that is the first line.
 - **Work out the command before asking him for a step.** Before telling John to click through a website or log in to a
   machine, check whether an agent or MCP tool can do it, and whether the value is already on his Mac (keychain, .env
   files) or in the private notes. Then give him ONE copy-paste command that fetches or builds it without printing any
   secret. Only then ask for a UI step, and say exactly where to click.
+- He wants features published as they are finished, and work done by Sonnet agents.
 - Record any command that worked in the private notes in Dropbox `/Backups/spx-stats/notes/` (`credentials-how-to.md`
-  and `board-key-and-lessons.md`) so the next session doesn't ask again.
+  and `board-key-and-lessons.md`) so the next session doesn't ask again. Dropbox writes follow the rule under Data
+  rules, item 1.
 
 ## Tickets
 
@@ -141,13 +161,15 @@ board UmaKuma and Itsutsu use, under project key `spx-stats`. Drive it with
 `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` come from the environment and
 are never written to a file, a log or a commit.
 
-The spx-stats key was created on 2026-10-11: it is a `BOARD_TOKENS_JSON` entry named `spx-stats`, and the cloud
-environment has `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` (not yet tested against the real board). Sumilabu's
-`BOARD_TOKENS_JSON` is write-only, so saving a new value replaces the whole map: rebuild it with every existing key
-in it, never just the new one. The fetch and rebuild commands are in the private notes (Dropbox
-`/Backups/spx-stats/notes/board-key-and-lessons.md`). If `pnpm task` is refused, write the ticket down for the pending
-list at Dropbox `/Backups/spx-stats/tickets-pending-2026-10-11.md` and tell the coordinating session (the Dropbox
-rule above applies to the write).
+The spx-stats key was created on 2026-10-11 and the cloud environment has `SUMILABU_BOARD_URL` and
+`SUMILABU_BOARD_TOKEN`. **Not yet working against the real board:** when an agent ran `pnpm task` on 2026-10-11 the
+board answered `401 unauthorized`, so the client is untested end to end. Sumilabu's `BOARD_TOKENS_JSON` is write-only,
+so saving a new value replaces the whole map: rebuild it with every existing key in it, never just the new one, and
+redeploy Sumilabu. The fetch and rebuild commands are in the private notes (Dropbox
+`/Backups/spx-stats/notes/board-key-and-lessons.md`). If `pnpm task` is refused, do not retry in a loop: write the
+ticket into a new create-only Dropbox file `/Backups/spx-stats/tickets-pending-<date>-<letter>.md` and tell the
+coordinating session. Seven tickets already wait in `tickets-pending-2026-10-11.md` and `...-b.md`; file them with
+`pnpm task add` once the board answers.
 
 - File a ticket before starting work: `pnpm task add "<title>" --detail "<what and why>" --by "<who>"`.
 - Claim it with the whole id the board prints, never a prefix: `pnpm task claim <id> "<who>"`. A hold lasts six hours; a live hold is not taken over.
