@@ -1,10 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, JetBrains_Mono, Source_Sans_3 } from "next/font/google";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
+import { SlugProvider } from "@/components/SlugProvider";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { currentLocale, currentSpeaker } from "@/lib/i18n/currentLocale";
 import { SITE_URL } from "@/lib/leagues";
 import { LOCALE_OG } from "@/lib/locale";
+import { tableOf } from "@/lib/slug";
+import { getSlugs } from "@/lib/teamSlugs";
 import "./globals.css";
 
 const barlow = Barlow_Condensed({ subsets: ["latin"], weight: ["500", "600", "700"], variable: "--font-barlow", display: "swap" });
@@ -29,7 +32,7 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, view
 const themeScript = `try { const t = localStorage.getItem('spxn-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}`;
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const locale = await currentLocale();
+  const [locale, slugs] = await Promise.all([currentLocale(), getSlugs().catch(() => null)]);
   return (
     <html lang={locale} className={`${barlow.variable} ${source.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
@@ -37,11 +40,13 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       </head>
       <body>
         <LocaleProvider locale={locale}>
-          <SiteHeader />
-          <main id="app" tabIndex={-1} className="page">
-            {children}
-          </main>
-          <SiteFooter />
+          <SlugProvider table={slugs ? tableOf(slugs) : {}}>
+            <SiteHeader />
+            <main id="app" tabIndex={-1} className="page">
+              {children}
+            </main>
+            <SiteFooter />
+          </SlugProvider>
         </LocaleProvider>
       </body>
     </html>

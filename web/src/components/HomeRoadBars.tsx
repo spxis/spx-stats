@@ -2,6 +2,7 @@
 
 import { scaleBand, scaleLinear } from "d3";
 import { useRouter } from "next/navigation";
+import { usePaths } from "./SlugProvider";
 import { fmt3 } from "@/lib/format";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { seasonLabel } from "@/lib/leagues";
@@ -25,6 +26,7 @@ export function verdictOf(home: number | null, road: number | null, say: Speaker
 /** Win share at home and on the road for each season, as paired bars, with the all-time answer above them. */
 export function HomeRoadBars({ rows, lg, f, idle = [] }: { rows: StandingRow[]; lg: string; f: number; idle?: [number, NoSeasonKind][] }) {
   const router = useRouter();
+  const paths = usePaths();
   const { say } = useSpeaker();
   const [ref, W] = useChartWidth(1180, 300);
   const tip = useTooltip(ref);
@@ -55,7 +57,7 @@ export function HomeRoadBars({ rows, lg, f, idle = [] }: { rows: StandingRow[]; 
               onMouseMove={(ev) => tip.show(ev, <TipLines title={seasonLabel(lg, v)} lines={[say(NO_SEASON_KEY[kinds.get(v)!])]} />)} onMouseLeave={tip.hide} />
           ))}</g>
           <g>{list.map((s, i) => (
-            <g key={s.year} style={{ cursor: "pointer" }} onClick={() => router.push(`/${lg}/${s.year}/team/${f}`)}
+            <g key={s.year} style={{ cursor: "pointer" }} onClick={() => router.push(paths.teamSeason(lg, f, s.year))}
               onMouseMove={(ev) => tip.show(ev, <TipLines title={seasonLabel(lg, s.year)} lines={[say("hr.tipHome", { v: fmt3(s.home) }), say("hr.tipRoad", { v: fmt3(s.road) }), say(s.home === s.road ? "hr.same" : s.home > s.road ? "hr.betterHome" : "hr.betterRoad")]} />)}
               onMouseLeave={tip.hide}>
               <rect className="hr-home bar-grow" x={x(s.year)} width={half} y={y(s.home)} height={y(0) - y(s.home)} style={{ transformOrigin: `0px ${y(0)}px`, animationDelay: `${Math.min(i * 4, 400)}ms` }} />

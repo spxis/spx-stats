@@ -8,6 +8,7 @@ import { useSpeaker } from "./i18n/LocaleProvider";
 import { NO_SEASON_KEY, type NoSeasonKind } from "./ui";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
+import { seasonPath } from "@/lib/slug";
 
 /** [year, wins, losses, ties, overtime losses] */
 export type WinSeason = [number, number, number | null, number | null, number | null];
@@ -43,7 +44,7 @@ export function WinLine({ seasons, titles, lg, idle = [] }: { seasons: WinSeason
         <path d={path ?? undefined} fill="none" stroke="var(--accent)" strokeWidth={2} strokeLinejoin="round" />
         <g>{pts.map((p) => (
           <circle key={p.y} cx={x(p.y)} cy={y(p.pct)} r={won.has(p.y) ? 6 : 2.5} fill={won.has(p.y) ? "var(--accent)" : "var(--panel)"}
-            stroke="var(--accent)" strokeWidth={1.5} style={{ cursor: "pointer" }} onClick={() => router.push(`/${lg}/${p.y}`)}
+            stroke="var(--accent)" strokeWidth={1.5} style={{ cursor: "pointer" }} onClick={() => router.push(seasonPath(lg, p.y))}
             onMouseMove={(ev) => tip.show(ev, <TipLines title={seasonLabel(lg, p.y)} lines={[`${p.w}-${p.l}${p.t ? `-${p.t}` : ""}${p.o ? `-${p.o}` : ""}`, say("winline.share", { share: fmt3(p.pct) }), won.has(p.y) ? say("winline.won") : null]} />)}
             onMouseLeave={tip.hide} />
         ))}</g>

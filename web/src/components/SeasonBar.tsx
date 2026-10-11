@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useMemo } from "react";
+import { seasonPath } from "@/lib/slug";
 import { hrefWith } from "@/lib/urlQuery";
 import { DatePicker } from "./DatePicker";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -32,7 +33,7 @@ export function SeasonBar({ lg, year, seasons, days, date }: Props) {
           const q = new URLSearchParams(location.search);
           for (const k of ["date", "team", "month", "day", "phase"]) q.delete(k);
           const s = q.toString();
-          router.push(`/${lg}/${e.target.value}${s ? `?${s}` : ""}`);
+          router.push(`${seasonPath(lg, Number(e.target.value))}${s ? `?${s}` : ""}`);
         }}>
           {seasons.map((s) => <option key={s.year} value={s.year}>{s.label}</option>)}
         </select>

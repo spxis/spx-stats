@@ -21,17 +21,18 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { LOCALE_TAG } from "@/lib/locale";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
-import { datePath, describeRounds, deriveSeries, nickname, pairSchema, rankIn, roundPath, roundTitle as nameOfRound, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
+import { datePath, describeRounds, deriveSeries, nickname, rankIn, roundPath, roundTitle as nameOfRound, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
 import { SERIES_COPY, sayFor, type Say } from "@/lib/seriesCopy";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { loadPastMeetings, type PastMeeting } from "@/lib/playoffs";
 import { getPairGames, getPlayoffGames, getSeasonStandings } from "@/lib/seriesData";
+import { parseSeasonSeg, seasonPath } from "@/lib/slug";
 import { recShare, tableOf } from "@/lib/sort";
+import { getPaths, pairOf } from "@/lib/teamSlugs";
 import "@/components/series.css";
 
 // Rendered per request, like the other pages that speak the reader's language; its data comes from the hour-long cache.
 
-const yearOf = (v: string) => (/^\d{4}$/.test(v) ? Number(v) : null);
 const unitKey = (lg: string) => (lg === "nhl" ? "unit.nhl" : lg === "mlb" ? "unit.mlb" : "unit.other");
 
 /** The season's series, the one asked for, and what the page puts beside it. */
@@ -50,9 +51,12 @@ function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say, robi
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/series/[pair]">): Promise<Metadata> {
   const { league, year, pair } = await params;
-  const y = yearOf(year), p = pairSchema.safeParse(pair);
-  if (!isLeague(league) || y == null || !p.success) return {};
-  const [d, sp] = await Promise.all([load(league, y, p.data.a, p.data.b, p.data.meeting), currentSpeaker()]);
+  const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
+  if (!isLeague(league) || !ys) return {};
+  const y = ys.y;
+  const p = await pairOf(league, y, pair);
+  if (!p) return {};
+  const [d, sp, paths] = await Promise.all([load(league, y, p.a, p.b, p.meeting), currentSpeaker(), getPaths()]);
   if (!d.series) return { robots: { index: false } };
   const say = sayFor(sp);
   const s = d.series, [a, b] = s.sides;
@@ -63,7 +67,7 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/s
     description: s.winner == null
       ? say("page.metaMet", { a: a.name, b: b.name, season, round })
       : say("page.metaBeat", { a: a.name, b: b.name, score: scoreWords(s, say), season, round }),
-    path: seriesPath(league, y, s),
+    path: seriesPath(paths, league, y, s),
     locale: sp.locale,
   });
 }
@@ -119,13 +123,16 @@ const chartWords = (): ChartWords => ({
 
 export default async function SeriesPage({ params }: PageProps<"/[league]/[year]/series/[pair]">) {
   const { league: lg, year, pair } = await params;
-  const y = yearOf(year), p = pairSchema.safeParse(pair);
-  if (!isLeague(lg) || y == null || !p.success) notFound();
-  const [d, summary, sp] = await Promise.all([load(lg, y, p.data.a, p.data.b, p.data.meeting), getSummary(), currentSpeaker()]);
+  const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
+  if (!isLeague(lg) || !ys) notFound();
+  const y = ys.y;
+  const p = await pairOf(lg, y, pair);
+  if (!p) notFound();
+  const [d, summary, sp, paths] = await Promise.all([load(lg, y, p.a, p.b, p.meeting), getSummary(), currentSpeaker(), getPaths()]);
   if (!d.series) notFound();
   const s = d.series;
-  // One address per series: the winner first.
-  if (seriesPath(lg, y, s) !== `/${lg}/${y}/series/${pair}`) permanentRedirect(seriesPath(lg, y, s));
+  // One address per series: the winner first, the teams by that season's names.
+  if (seriesPath(paths, lg, y, s) !== `/${lg}/${year}/series/${pair}`) permanentRedirect(seriesPath(paths, lg, y, s));
 
   const say = sayFor(sp), { fmt, dt } = sp;
   const { title: roundTitle, number, rounds } = roundOf(lg, y, d.all, s, say, sp.say("playoffs.robin"));
@@ -183,10 +190,10 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
   const lastMeet = past?.[0];
   const lastWinner = lastMeet?.s.winner != null ? lastMeet.s.sides[0] : null;
   const pastTable = tableOf(past ?? [], [
-    { key: "season", label: sp.say("past.season"), cls: "seasoncell", get: (m: PastMeeting) => m.year, cell: (m: PastMeeting) => <Link href={seriesPath(lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
+    { key: "season", label: sp.say("past.season"), cls: "seasoncell", get: (m: PastMeeting) => m.year, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
     { key: "round", label: sp.say("past.round"), cls: "team", get: (m: PastMeeting) => m.n, cell: (m: PastMeeting) => <Link href={roundPath(lg, m.year, m.n)} prefetch={false}>{m.round}</Link> },
     { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? "–" : <span className="won">{m.s.sides[0].name}</span>) },
-    { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
+    { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
   ], (m) => `${m.year}-${m.s.meeting}`);
   const mets = metrics(say, unit, ra, rb);
   const side = (i: 0 | 1) => {
@@ -196,11 +203,11 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
     return (
       <div className={`sdside ${i === 0 ? "a" : "b"}${s.winner != null && !won ? " lost" : ""}`}>
         <span className="crest">{logo ? <TeamLogo url={logo} size={64} /> : <span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span>}</span>
-        <h2 className="sdname"><Link href={`/${lg}/${y}/team/${t.f}`} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link></h2>
+        <h2 className="sdname"><Link href={paths.teamSeason(lg, t.f, y)} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link></h2>
         {won ? <span className="wintag">{crowned ? <><BadgeCup league={lg} />{say("side.champions", { season })}</> : say("side.won")}</span> : null}
         <span className="sdmeta">{r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : d.standings == null ? sp.say("load.failed") : say("side.noRecord")}</span>
         {rk ? <span className="sdmeta">{rk}</span> : null}
-        <span className="sdlinks"><Link href={`/${lg}/${y}/team/${t.f}`} prefetch={false}>{say("side.games", { season })}</Link><Link href={`/${lg}/team/${t.f}`} prefetch={false}>{say("side.allSeasons")}</Link></span>
+        <span className="sdlinks"><Link href={paths.teamSeason(lg, t.f, y)} prefetch={false}>{say("side.games", { season })}</Link><Link href={paths.team(lg, t.f)} prefetch={false}>{say("side.allSeasons")}</Link></span>
       </div>
     );
   };
@@ -211,7 +218,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
       <SeriesStyle a={la} b={lb} />
       <section className="head fade">
         <span className="eyebrow">
-          <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`/${lg}/${y}#playoffs`}>{say("page.playoffs")}</Link>
+          <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={seasonPath(lg, y)}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`${seasonPath(lg, y)}#playoffs`}>{say("page.playoffs")}</Link>
         </span>
         <h1>{roundTitle}</h1>
         <p className="lede">{lede}</p>
@@ -324,7 +331,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
                 <div key={i} className="road">
                   <h3 style={{ color: i === 0 ? "var(--ca)" : "var(--cb)" }}>{i === 0 ? na : nb}</h3>
                   {list.map(({ x, name }) => (
-                    <div key={`${x.sides[0].f}-${x.sides[1].f}-${x.meeting}`}><span className="rn">{name}</span><SeriesCard lg={lg} s={x} brands={d.brands} year={y} say={say} /></div>
+                    <div key={`${x.sides[0].f}-${x.sides[1].f}-${x.meeting}`}><span className="rn">{name}</span><SeriesCard paths={paths} lg={lg} s={x} brands={d.brands} year={y} say={say} /></div>
                   ))}
                 </div>
               ) : null;

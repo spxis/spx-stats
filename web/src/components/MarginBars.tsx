@@ -2,6 +2,7 @@
 
 import { format, max, scaleBand, scaleLinear } from "d3";
 import { useRouter } from "next/navigation";
+import { usePaths } from "./SlugProvider";
 import { seasonLabel } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
@@ -12,6 +13,7 @@ export interface MarginSeason { year: number; gp: number; pf: number; pa: number
 /** Scoring margin per game for each season: bars up in the team colour when it outscored its opponents. A bar opens that season's games. */
 export function MarginBars({ rows, lg, f }: { rows: MarginSeason[]; lg: string; f: number }) {
   const router = useRouter();
+  const paths = usePaths();
   const { say, fmt } = useSpeaker();
   const [ref, W] = useChartWidth(1180, 300);
   const tip = useTooltip(ref);
@@ -36,7 +38,7 @@ export function MarginBars({ rows, lg, f }: { rows: MarginSeason[]; lg: string; 
           <rect key={s.year} className="bar-grow" x={x(s.year)} width={x.bandwidth()} y={Math.min(y(s.d), y(0))} height={Math.abs(y(s.d) - y(0))}
             fill={s.d >= 0 ? "var(--accent)" : "color-mix(in srgb, var(--ink) 55%, var(--paper))"}
             style={{ cursor: "pointer", transformOrigin: `0px ${y(0)}px`, animationDelay: `${Math.min(i * 4, 400)}ms` }}
-            onClick={() => router.push(`/${lg}/${s.year}/team/${f}`)}
+            onClick={() => router.push(paths.teamSeason(lg, f, s.year))}
             onMouseMove={(ev) => tip.show(ev, <TipLines title={seasonLabel(lg, s.year)} lines={[say("margin.perGame", { value: (s.d >= 0 ? "+" : "") + g1(s.d) }), say("margin.detail", { pf: fmt(s.pf), pa: fmt(s.pa), gp: s.gp })]} />)}
             onMouseLeave={tip.hide} />
         ))}</g>

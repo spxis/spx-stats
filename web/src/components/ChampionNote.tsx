@@ -1,5 +1,7 @@
 import Link from "next/link";
-import { findFinal, pairSlug, parseChampionNote } from "@/lib/series";
+import { findFinal, parseChampionNote, pairSegment } from "@/lib/series";
+import { seasonPath } from "@/lib/slug";
+import { getPaths } from "@/lib/teamSlugs";
 import { getLeaguePlayoffTeams } from "@/lib/seriesData";
 
 /**
@@ -11,16 +13,17 @@ export async function ChampionNote({ lg, year, champ, note }: { lg: string; year
   const text = note ?? "";
   const p = parseChampionNote(text);
   if (!p || champ == null) return <>{text}</>;
-  const games = (await getLeaguePlayoffTeams(lg)).filter((g) => g.year === year);
+  const [all, paths] = await Promise.all([getLeaguePlayoffTeams(lg), getPaths()]);
+  const games = all.filter((g) => g.year === year);
   const found = findFinal(games, champ, p.opp);
   if (!found) return <>{text}</>;
   const score = p.score.replace(/\s*-\s*/, "–");
   return (
     <>
       {p.lead}
-      <Link href={`/${lg}/${year}/series/${pairSlug(champ, found.opp, found.meeting)}`} prefetch={false} title="The whole series, game by game">{score}</Link>
+      <Link href={`${seasonPath(lg, year)}/series/${pairSegment(paths, lg, year, champ, found.opp, found.meeting)}`} prefetch={false} title="The whole series, game by game">{score}</Link>
       {p.mid}
-      <Link href={`/${lg}/${year}/team/${found.opp}`} prefetch={false}>{p.opp}</Link>
+      <Link href={paths.teamSeason(lg, found.opp, year)} prefetch={false}>{p.opp}</Link>
     </>
   );
 }

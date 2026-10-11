@@ -6,6 +6,7 @@ import { LG } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
+import { seasonPath } from "@/lib/slug";
 
 export interface HeatSeason {
   league: string; year: number; label: string; games: number; finals: number; share: number; champion: string | null;
@@ -37,7 +38,7 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
             {seasons.filter((s) => s.league === lg).map((s) => (
               <rect key={s.year} x={x(s.year) + 0.5} y={3} width={Math.max(1, cw - 1)} height={rowH - 6}
                 fill={s.games === 0 && !s.champion ? "var(--soft)" : shareColor(s.share)} stroke={s.share > 0 ? "none" : "var(--rule)"} strokeWidth={0.5} style={{ cursor: "pointer" }}
-                onClick={() => router.push(`/${lg}/${s.year}`)}
+                onClick={() => router.push(seasonPath(lg, s.year))}
                 onMouseMove={(ev) => tip.show(ev, <TipLines title={`${LG[lg as keyof typeof LG]} ${s.label}`} lines={[
                   s.games ? say("heatmap.share", { finals: fmt(s.finals), games: fmt(s.games) }) : s.champion ? say("noseason.awards") : say("noseason.league"),
                   s.champion ? say("tip.champion", { team: s.champion }) : null]} />)}

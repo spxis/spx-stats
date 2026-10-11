@@ -14,6 +14,7 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { showStat, STAT_GROUP_ORDER, STAT_GROUPS, type StatCol } from "@/lib/playerStats";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
 import type { PersonStatRow, PersonTotalRow, StatNumbers } from "@/lib/api/player";
+import { seasonPath } from "@/lib/slug";
 
 export type PlayerPhase = "regular" | "playoffs";
 type Query = Record<string, string | string[] | undefined>;
@@ -40,7 +41,7 @@ export async function PlayerSeasons({ name, record, brands, seasonsHeld }: { nam
   const gapNote = (r: Row) => (seasonsHeld.has(`${r.league}|${r.year}`) ? <NoSeason kind="team" compact /> : <NoSeason kind="league" compact />);
   const specs: ColumnSpec<Row>[] = [
     { key: "season", label: say("col.season"), num: true, get: (r) => r.year * 10 + (r.gap ? 0 : 1),
-      cell: (r) => <Link href={`/${r.league}/${r.year}`} prefetch={false}>{many ? `${leagueName(r.league)} ${r.label}` : r.label}</Link> },
+      cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{many ? `${leagueName(r.league)} ${r.label}` : r.label}</Link> },
     { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
       cell: (r) => (r.gap ? gapNote(r) : <><TeamLogo url={brandFor(brands, r.f, r.year)?.logo_url} /><TeamLink lg={r.league} f={r.f} name={r.team ?? say("team.fallback", { id: r.f ?? 0 })} year={r.year} /></>) },
     { key: "reg", label: say("phase.regular"), get: (r) => (r.reg ? 1 : 0), cell: (r) => (r.reg ? "✓" : "") },
@@ -87,7 +88,7 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
       </nav>
       {blocks.length ? blocks.map(({ g, seasons, totals }) => {
         const seasonCol: ColumnSpec<PersonStatRow> = { key: "season", label: say("col.season"), num: true, get: (r) => r.year,
-          cell: (r) => <Link href={`/${r.league}/${r.year}`} prefetch={false}>{many ? `${leagueName(r.league)} ${seasonLabel(r.league, r.year)}` : seasonLabel(r.league, r.year)}</Link> };
+          cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{many ? `${leagueName(r.league)} ${seasonLabel(r.league, r.year)}` : seasonLabel(r.league, r.year)}</Link> };
         const teamCol: ColumnSpec<PersonStatRow> = { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
           cell: (r) => <><TeamLogo url={brandFor(brands, r.franchise_id, r.year)?.logo_url} /><TeamLink lg={r.league} f={r.franchise_id} name={r.team ?? say("team.fallback", { id: r.franchise_id })} year={r.year} /></> };
         const seasonTable = tableOf(seasons, statSpecs([...g.cols], say, fmt, [seasonCol, teamCol]), (r) => `${r.league}|${r.year}|${r.team_season_id}|${r.phase}`);

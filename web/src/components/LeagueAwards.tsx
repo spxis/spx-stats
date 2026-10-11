@@ -6,13 +6,15 @@ import { seasonLabel } from "@/lib/leagues";
 import { getLeagueAwards } from "@/lib/people";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
+import { seasonPath } from "@/lib/slug";
+import { getPaths } from "@/lib/teamSlugs";
 
 interface Season { year: number; by: Map<string, LeagueAwardRow[]> }
 const MANY = 4;
 
 /** Every award by season: a row a season, a column an award, a cell its winners (or how many, where there are many). */
 export async function LeagueAwards({ lg }: { lg: string }) {
-  const list = await getLeagueAwards(lg);
+  const [list, paths] = await Promise.all([getLeagueAwards(lg), getPaths()]);
   if (!list.length) return null;
   const { say, plural } = await currentSpeaker();
   const cols = new Map<string, { code: string; name: string; kind: string; n: number }>();
@@ -26,17 +28,17 @@ export async function LeagueAwards({ lg }: { lg: string }) {
   }
   const order = [...cols.values()].sort((a, b) => (a.kind === b.kind ? b.n - a.n : a.kind === "person_award" ? -1 : 1));
   const t = tableOf([...seasons.values()].sort((a, b) => b.year - a.year), [
-    { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (s) => s.year, cell: (s) => <Link href={`/${lg}/${s.year}`} prefetch={false}>{seasonLabel(lg, s.year)}</Link> },
+    { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (s) => s.year, cell: (s) => <Link href={seasonPath(lg, s.year)} prefetch={false}>{seasonLabel(lg, s.year)}</Link> },
     ...order.map((c) => ({
       key: c.code, label: c.name, cls: "wincell",
       get: (s: Season) => { const w = s.by.get(c.code); return w ? (w.length > MANY ? `~${w.length}` : w[0].winner) : null; },
       cell: (s: Season) => {
         const w = s.by.get(c.code) ?? [];
-        if (w.length > MANY) return <Link href={`/${lg}/${s.year}`} prefetch={false} title={say("awards.openSeason")}>{plural("count.winners", w.length)}</Link>;
+        if (w.length > MANY) return <Link href={seasonPath(lg, s.year)} prefetch={false} title={say("awards.openSeason")}>{plural("count.winners", w.length)}</Link>;
         return w.map((x, i) => (
           <div key={i}>
             {x.person_id != null ? <Link href={`/players/${x.person_id}`} prefetch={false}>{x.winner}</Link>
-              : x.franchise_id != null ? <Link href={`/${lg}/team/${x.franchise_id}`} prefetch={false}>{x.winner}</Link> : x.winner}
+              : x.franchise_id != null ? <Link href={paths.team(lg, x.franchise_id)} prefetch={false}>{x.winner}</Link> : x.winner}
           </div>
         ));
       },

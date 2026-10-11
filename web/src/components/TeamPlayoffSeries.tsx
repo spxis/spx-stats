@@ -2,13 +2,14 @@ import { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { sayFor } from "@/lib/seriesCopy";
 import { describeRounds, deriveSeries, roundTitle } from "@/lib/series";
+import { getPaths } from "@/lib/teamSlugs";
 import { getPlayoffGames } from "@/lib/seriesData";
 import { SeriesCard } from "./SeasonPlayoffs";
 import "./series.css";
 
 /** The playoff series one franchise played in a season, each linking to its series page. Draws nothing when it played none. */
 export async function TeamPlayoffSeries({ lg, year, f }: { lg: string; year: number; f: number }) {
-  const [games, brands, sp] = await Promise.all([getPlayoffGames(lg, year), getBrands(), currentSpeaker()]);
+  const [games, brands, sp, paths] = await Promise.all([getPlayoffGames(lg, year), getBrands(), currentSpeaker(), getPaths()]);
   const say = sayFor(sp);
   const all = deriveSeries(lg, year, games);
   const { round, names } = describeRounds(lg, year, all, say);
@@ -21,7 +22,7 @@ export async function TeamPlayoffSeries({ lg, year, f }: { lg: string; year: num
         {mine.map(({ s, name }) => (
           <div className="round" key={`${s.sides[0].f}-${s.sides[1].f}-${s.meeting}`}>
             <h3>{name}</h3>
-            <SeriesCard lg={lg} s={s} brands={brands} year={year} say={say} />
+            <SeriesCard paths={paths} lg={lg} s={s} brands={brands} year={year} say={say} />
           </div>
         ))}
       </div>

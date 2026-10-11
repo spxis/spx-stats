@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
@@ -24,17 +24,19 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
+import { seasonPath, type TeamPaths } from "@/lib/slug";
+import { getPaths, teamOf } from "@/lib/teamSlugs";
 import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
 
 // Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
 
-const idOf = (v: string) => (/^\d{1,9}$/.test(v) ? Number(v) : null);
-
 export async function generateMetadata({ params }: PageProps<"/[league]/team/[franchise]">): Promise<Metadata> {
   const { league, franchise } = await params;
-  const f = idOf(franchise);
-  if (!isLeague(league) || f == null) return {};
+  if (!isLeague(league)) return {};
+  const at = await teamOf(league, franchise);
+  if (!at) return {};
+  const f = at.f;
   const t = await getTeam(league, f);
   if (!t) return {};
   const { say, plural, locale } = await currentSpeaker();
@@ -43,7 +45,7 @@ export async function generateMetadata({ params }: PageProps<"/[league]/team/[fr
   return pageMeta({
     title: `${name} · ${LG[league]}`,
     description: say("team.metaDesc", { name, seasons: plural("count.seasons", t.seasons.length), titles: n ? say("team.titlesSuffix", { titles: plural("count.championships", n) }) : "" }),
-    path: `/${league}/team/${f}`,
+    path: at.path,
     locale,
   });
 }
@@ -71,19 +73,23 @@ async function Lifetime({ lg, f, rows }: { lg: string; f: number; rows: Standing
   );
 }
 
-function pins(lg: string, abbrs: AbbrMap, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number): Pin[] {
+function pins(paths: TeamPaths, lg: string, abbrs: AbbrMap, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number): Pin[] {
   return clubs.flatMap((c) => {
     const b = placeFor(brands, c.franchise_id, year);
     return b && b.latitude != null && b.longitude != null
-      ? [{ f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(abbrs, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: `/${lg}/team/${c.franchise_id}`, me: c.franchise_id === f }]
+      ? [{ f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(abbrs, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: paths.team(lg, c.franchise_id), me: c.franchise_id === f }]
       : [];
   });
 }
 
 export default async function TeamPage({ params }: PageProps<"/[league]/team/[franchise]">) {
   const { league: lg, franchise } = await params;
-  const f = idOf(franchise);
-  if (!isLeague(lg) || f == null) notFound();
+  if (!isLeague(lg)) notFound();
+  const at = await teamOf(lg, franchise);
+  if (!at) notFound();
+  if (at.path !== `/${lg}/team/${franchise}`) permanentRedirect(at.path);
+  const f = at.f;
+  const paths = await getPaths();
   const { say, plural, fmt } = await currentSpeaker();
   const [t, rows, brands, abbrs, summary] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getAbbrs(lg), getSummary()]);
   if (!t) notFound();
@@ -104,7 +110,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     map = (
       <TeamMapCorner
         me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }}
-        others={pins(lg, abbrs, clubs, brands, lastYear, f)} clubCount={clubs.length}
+        others={pins(paths, lg, abbrs, clubs, brands, lastYear, f)} clubCount={clubs.length}
         seasonLabel={seasonLabel(lg, lastYear)} leagueShort={LG[lg]} name={now}
       />
     );
@@ -124,7 +130,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     },
     {
       key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (r) => r.year,
-      cell: (r) => <Link href={`/${lg}/${r.year}`} prefetch={false}>{seasonLabel(lg, r.year)}</Link>,
+      cell: (r) => <Link href={seasonPath(lg, r.year)} prefetch={false}>{seasonLabel(lg, r.year)}</Link>,
     },
     {
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
@@ -133,7 +139,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,
       cell: (r) => (r.gp != null && withGames.has(r.year) ? (
-        <Link href={`/${lg}/${r.year}/team/${f}`} prefetch={false} title={say("team.everyGame", { season: seasonLabel(lg, r.year) })}>{r.gp}</Link>
+        <Link href={paths.teamSeason(lg, f, r.year)} prefetch={false} title={say("team.everyGame", { season: seasonLabel(lg, r.year) })}>{r.gp}</Link>
       ) : r.gp ?? ""),
     },
     { key: "w", label: say("col.w"), num: true, get: (r) => r.w }, { key: "l", label: say("col.l"), num: true, get: (r) => r.l },
@@ -172,7 +178,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<TeamFlag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (
-          <Link className="reigning" href={`/${lg}/${reigning.year}`}>
+          <Link className="reigning" href={seasonPath(lg, reigning.year)}>
             <BadgeCup league={lg} />
             {say("team.reigning", { season: reigning.label })}
           </Link>
@@ -186,7 +192,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
           <div className="champs">
             <h2>{say("team.championships")}</h2>
             <div className="seasonlist">
-              {t.titles.map((y) => <Link key={y} className="full" href={`/${lg}/${y}`}>{seasonLabel(lg, y)}</Link>)}
+              {t.titles.map((y) => <Link key={y} className="full" href={seasonPath(lg, y)}>{seasonLabel(lg, y)}</Link>)}
             </div>
           </div>
         </div>

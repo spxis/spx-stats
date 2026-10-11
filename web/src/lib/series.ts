@@ -3,9 +3,9 @@
  * franchises played in a season; the wins of each side, the running score and the winner are counted here.
  * Pure (no server-only imports) so the pages, the charts and the checks all use the same counting.
  */
-import { z } from "zod";
 import type { GameRow } from "./api/types";
 import type { Say } from "./seriesCopy";
+import { seasonPath, type TeamPaths } from "./slug";
 
 /** The columns of a game a series needs. */
 export type PlayoffGame = Pick<GameRow, "game_id" | "game_date" | "status" | "away_id" | "away" | "away_score" | "home_id" | "home" | "home_score" | "overtime" | "source" | "away_f" | "home_f" | "checked">;
@@ -58,14 +58,11 @@ export interface Series {
 }
 
 export const pairSlug = (a: number, b: number, meeting = 1): string => `${a}-vs-${b}${meeting > 1 ? `-${meeting}` : ""}`;
-export const seriesPath = (lg: string, year: number, s: Pick<Series, "sides" | "meeting">): string => `/${lg}/${year}/series/${pairSlug(s.sides[0].f, s.sides[1].f, s.meeting)}`;
-
-/** The address segment of a series page: two franchise ids, `1420-vs-1429` (and `-2` for their second series of the year). */
-export const pairSchema = z.string().regex(/^\d{1,9}-vs-\d{1,9}(-[2-9])?$/).transform((v) => {
-  const [a, rest] = v.split("-vs-");
-  const [b, n] = rest.split("-");
-  return { a: Number(a), b: Number(b), meeting: n ? Number(n) : 1 };
-}).refine((p) => p.a !== p.b);
+/** The address segment of a series: the two teams as they were called that season, `boston-bruins-vs-florida-panthers` (and `-2` for their second series of the year). */
+export const pairSegment = (paths: TeamPaths, lg: string, year: number, a: number, b: number, meeting = 1): string =>
+  `${paths.season(lg, a, year)}-vs-${paths.season(lg, b, year)}${meeting > 1 ? `-${meeting}` : ""}`;
+export const seriesPath = (paths: TeamPaths, lg: string, year: number, s: Pick<Series, "sides" | "meeting">): string =>
+  `${seasonPath(lg, year)}/series/${pairSegment(paths, lg, year, s.sides[0].f, s.sides[1].f, s.meeting)}`;
 
 /** Days apart at which one pair's games stop being the same series. */
 const SERIES_GAP_DAYS = 12;
@@ -207,8 +204,8 @@ export function describeRounds(lg: string, year: number, list: readonly Series[]
 /** The name of a round; round 0 is the round robin, named by the caller. */
 export const roundTitle = (names: readonly string[], round: number, robin: string): string => (round === 0 ? robin : names[round - 1] ?? "");
 
-/** A round's address: /nhl/2023/playoffs/round/2 */
-export const roundPath = (lg: string, year: number, round: number): string => `/${lg}/${year}/playoffs/round/${round}`;
+/** A round's address: /nhl/2023-24/playoffs/round/2 */
+export const roundPath = (lg: string, year: number, round: number): string => `${seasonPath(lg, year)}/playoffs/round/${round}`;
 
 /** The headline score of a series: "4–3", the single game's score, or the total score of a total-goals series. */
 export function scoreText(s: Series): string {
@@ -267,7 +264,7 @@ export function findFinal(games: readonly Pick<GameRow, "game_date" | "away_f" |
 
 /** The season page showing one day's games (the date page): ?phase= keeps the playoffs or the regular season, ?day= picks the day. */
 export const datePath = (lg: string, year: number, date: string, phase: "playoffs" | "regular"): string =>
-  `/${lg}/${year}?${phase === "playoffs" ? "phase=p&" : ""}month=${date.slice(0, 7)}&day=${date}`;
+  `${seasonPath(lg, year)}?${phase === "playoffs" ? "phase=p&" : ""}month=${date.slice(0, 7)}&day=${date}`;
 
 /** Where a team's winning share stood among a group of standings rows, or null when there is no share to rank. */
 export function rankIn(rows: readonly { franchise_id: number; pct: number | null }[], f: number): { place: number; of: number } | null {

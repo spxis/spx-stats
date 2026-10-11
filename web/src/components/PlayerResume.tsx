@@ -4,6 +4,7 @@ import type { PersonResumeRow, PersonSeasonTeamRow } from "@/lib/api/player";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { seasonPath } from "@/lib/slug";
 
 type Entry = { year: number | null; end: number | null; kind: "education" | "club" | "draft" | "league"; body: React.ReactNode };
 
@@ -73,7 +74,7 @@ export async function PlayerResume({ resume, seasons }: { resume: PersonResumeRo
       {playoffYears.size ? (
         <div className="seasonlist" aria-label={say("resume.playoffs")}>
           {chips(playoffYears).map((s) => (
-            <Link key={`${s.league}${s.year}`} href={`/${s.league}/${s.year}`} prefetch={false} className={titleYears.has(`${s.league}|${s.year}`) ? "full" : undefined}>
+            <Link key={`${s.league}${s.year}`} href={seasonPath(s.league, s.year)} prefetch={false} className={titleYears.has(`${s.league}|${s.year}`) ? "full" : undefined}>
               {`${isLeague(s.league) ? LG[s.league] : s.league} ${s.season_label}`}
             </Link>
           ))}

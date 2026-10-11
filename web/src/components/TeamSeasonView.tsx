@@ -24,6 +24,7 @@ import { SortTable } from "./SortTable";
 import { SplitBars } from "./SplitBars";
 import { Badge, TeamLink } from "./ui";
 import "./team.css";
+import { seasonPath } from "@/lib/slug";
 
 interface Props {
   lg: string;
@@ -82,7 +83,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
       key: "date", label: say("col.date"), rest: "game_date", cls: "seasoncell", get: (g) => g.date,
       cell: (g) => (
         <>
-          <Link href={`/${lg}/${year}?month=${g.date.slice(0, 7)}&day=${g.date}${g.ph !== "r" ? `&phase=${g.ph}` : ""}`} prefetch={false}
+          <Link href={`${seasonPath(lg, year)}?month=${g.date.slice(0, 7)}&day=${g.date}${g.ph !== "r" ? `&phase=${g.ph}` : ""}`} prefetch={false}
             title={say("tseason.dayGames", { league: lg.toUpperCase(), date: dt.short(atUtc(g.date)) })}>{dt.dayName(atUtc(g.date))}</Link>
           {g.ph !== "r" ? <span className="badge tag">{say(PHASE_NAME[g.ph])}</span> : null}
         </>

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { SeriesCard } from "@/components/SeasonPlayoffs";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -8,18 +8,21 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { roundPath, roundTitle } from "@/lib/series";
+import { parseSeasonSeg, seasonPath } from "@/lib/slug";
+import { getPaths } from "@/lib/teamSlugs";
 import { sayFor } from "@/lib/seriesCopy";
 import "@/components/series.css";
 
 // Rendered per request, like the other pages that speak the reader's language; its data comes from the hour-long cache.
 
-const yearOf = (v: string) => (/^\d{4}$/.test(v) ? Number(v) : null);
 const roundOfParam = (v: string) => (/^\d{1,2}$/.test(v) ? Number(v) : null);
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">): Promise<Metadata> {
   const { league, year, n } = await params;
-  const y = yearOf(year), r = roundOfParam(n);
-  if (!isLeague(league) || y == null || r == null) return {};
+  const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
+  const r = roundOfParam(n);
+  if (!isLeague(league) || !ys || r == null) return {};
+  const y = ys.y;
   const sp = await currentSpeaker();
   const d = await loadPlayoffs(league, y, sayFor(sp));
   const list = d.series.filter((_, i) => d.round[i] === r);
@@ -36,8 +39,12 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/p
 
 export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">) {
   const { league: lg, year, n } = await params;
-  const y = yearOf(year), r = roundOfParam(n);
-  if (!isLeague(lg) || y == null || r == null) notFound();
+  const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
+  const r = roundOfParam(n);
+  if (!isLeague(lg) || !ys || r == null) notFound();
+  const y = ys.y;
+  if (!ys.canonical) permanentRedirect(roundPath(lg, y, r));
+  const paths = await getPaths();
   const sp = await currentSpeaker();
   const say = sayFor(sp);
   const d = await loadPlayoffs(lg, y, say);
@@ -61,13 +68,13 @@ export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/
       <AccentStyle league={lg} />
       <section className="head fade">
         <span className="eyebrow">
-          <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`/${lg}/${y}#playoffs`}>{say("page.playoffs")}</Link>
+          <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={seasonPath(lg, y)}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`${seasonPath(lg, y)}#playoffs`}>{say("page.playoffs")}</Link>
         </span>
         <h1>{name}</h1>
         <p className="lede">{sp.say("playoffs.round.lede", { count: sp.fmt(members.length), round: name, season, league: LG[lg] })}</p>
         <p className="note">
           {prev != null ? <><Link href={roundPath(lg, y, prev)} prefetch={false} rel="prev">{"← " + roundTitle(d.names, prev, robin)}</Link>{" · "}</> : null}
-          <Link href={`/${lg}/${y}#playoffs`}>{sp.say("playoffs.round.bracket")}</Link>
+          <Link href={`${seasonPath(lg, y)}#playoffs`}>{sp.say("playoffs.round.bracket")}</Link>
           {next != null ? <>{" · "}<Link href={roundPath(lg, y, next)} prefetch={false} rel="next">{roundTitle(d.names, next, robin) + " →"}</Link></> : null}
         </p>
       </section>
@@ -75,7 +82,7 @@ export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/
         <section key={g.key} className="section">
           {titled ? <h2>{g.label ?? (g.key === "o" ? sp.say("playoffs.other") : name)}</h2> : null}
           <div className="bracket mine">
-            {g.list.map((i) => <SeriesCard key={`${d.series[i].sides[0].f}-${d.series[i].sides[1].f}-${d.series[i].meeting}`} lg={lg} s={d.series[i]} brands={d.brands} year={y} say={say} />)}
+            {g.list.map((i) => <SeriesCard paths={paths} key={`${d.series[i].sides[0].f}-${d.series[i].sides[1].f}-${d.series[i].meeting}`} lg={lg} s={d.series[i]} brands={d.brands} year={y} say={say} />)}
           </div>
         </section>
       ))}

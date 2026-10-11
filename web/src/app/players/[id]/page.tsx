@@ -21,6 +21,7 @@ import { getPerson, getPlayerRecord } from "@/lib/people";
 import { ageOn, capFirst, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
+import { seasonPath } from "@/lib/slug";
 
 // Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
 
@@ -98,14 +99,14 @@ export default async function PlayerPage({ params, searchParams }: PageProps<"/p
   if (p.award_count) facts.push(<Fact key="aw" label={say("player.factAwards")}>{p.award_count}</Fact>);
 
   const awardTable = tableOf(awards, [
-    { key: "season", label: say("col.season"), num: true, get: (r) => r.year, cell: (r) => <Link href={`/${r.league}/${r.year}`} prefetch={false}>{`${leagueName(r.league)} ${seasonLabel(r.league, r.year)}`}</Link> },
+    { key: "season", label: say("col.season"), num: true, get: (r) => r.year, cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{`${leagueName(r.league)} ${seasonLabel(r.league, r.year)}`}</Link> },
     { key: "award", label: say("col.award"), cls: "team", get: (r) => r.award },
     { key: "team", label: say("col.team"), get: (r) => r.team, cell: (r) => (r.team ? <TeamLink lg={r.league} f={r.franchise_id} name={r.team} /> : "") },
     { key: "note", label: say("col.note"), cls: "note", get: (r) => r.note, cell: (r) => r.note || "" },
   ], (r, i) => `${r.award_code}|${r.year}|${i}`);
   const teamTable = tableOf(teams, [
-    { key: "from", label: say("col.from"), num: true, get: (t) => t.from_year, cell: (t) => <Link href={`/${t.league}/${t.from_year}`} prefetch={false}>{seasonLabel(t.league, t.from_year)}</Link> },
-    { key: "to", label: say("col.to"), num: true, get: (t) => t.to_year, cell: (t) => (t.to_year === t.from_year ? "" : <Link href={`/${t.league}/${t.to_year}`} prefetch={false}>{seasonLabel(t.league, t.to_year)}</Link>) },
+    { key: "from", label: say("col.from"), num: true, get: (t) => t.from_year, cell: (t) => <Link href={seasonPath(t.league, t.from_year)} prefetch={false}>{seasonLabel(t.league, t.from_year)}</Link> },
+    { key: "to", label: say("col.to"), num: true, get: (t) => t.to_year, cell: (t) => (t.to_year === t.from_year ? "" : <Link href={seasonPath(t.league, t.to_year)} prefetch={false}>{seasonLabel(t.league, t.to_year)}</Link>) },
     { key: "team", label: say("col.team"), cls: "team", get: (t) => t.team, cell: (t) => <><TeamLogo url={brandFor(brands, t.franchise_id, t.to_year)?.logo_url} /><TeamLink lg={t.league} f={t.franchise_id} name={t.team || say("team.fallback", { id: t.franchise_id })} /></> },
     { key: "league", label: say("col.league"), get: (t) => leagueName(t.league) },
   ], (t) => `${t.league}|${t.franchise_id}|${t.from_year}`);
@@ -125,7 +126,7 @@ export default async function PlayerPage({ params, searchParams }: PageProps<"/p
           <h2>{say("player.titles", { count: fmt(titles.length) })}</h2>
           <div className="seasonlist">
             {titles.map((t) => (
-              <Link key={`${t.league}${t.year}`} className="full" href={`/${t.league}/${t.year}`} prefetch={false} title={say("player.titleTip", { team: t.team ?? "", league: leagueName(t.league) })}>
+              <Link key={`${t.league}${t.year}`} className="full" href={seasonPath(t.league, t.year)} prefetch={false} title={say("player.titleTip", { team: t.team ?? "", league: leagueName(t.league) })}>
                 {`${leagueName(t.league)} ${seasonLabel(t.league, t.year)}`}
               </Link>
             ))}

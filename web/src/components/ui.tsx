@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { isSpx, srcName } from "@/lib/leagues";
+import { usePaths } from "./SlugProvider";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./team.css";
 
@@ -23,9 +24,10 @@ export function Badge({ src }: { src: string | null | undefined }) {
 export function TeamLink({ lg, f, name, className, year, abbr }: {
   lg: string; f: number | null | undefined; name: string | null | undefined; className?: string; year?: number; abbr?: string;
 }) {
+  const paths = usePaths();
   const text = abbr ? <><span className="tn-long">{name}</span><abbr className="tn-short" title={name ?? undefined}>{abbr}</abbr></> : name;
   return f != null ? (
-    <Link className={className} href={year != null ? `/${lg}/${year}/team/${f}` : `/${lg}/team/${f}`} prefetch={false}>{text}</Link>
+    <Link className={className} href={year != null ? paths.teamSeason(lg, f, year) : paths.team(lg, f)} prefetch={false}>{text}</Link>
   ) : (
     <span className={className}>{text}</span>
   );

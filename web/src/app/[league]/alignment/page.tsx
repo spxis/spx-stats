@@ -12,6 +12,8 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { pageMeta } from "@/lib/meta";
+import { seasonPath } from "@/lib/slug";
+import { getPaths } from "@/lib/teamSlugs";
 
 type Say = Speaker["say"];
 
@@ -57,7 +59,7 @@ export default async function AlignmentPage({ params, searchParams }: PageProps<
   if (!isLeague(lg)) notFound();
   const sp = await searchParams;
   const { say } = await currentSpeaker();
-  const [rows, changes, summary] = await Promise.all([getAlignment(lg), getAlignmentChanges(lg), getSummary()]);
+  const [rows, changes, summary, paths] = await Promise.all([getAlignment(lg), getAlignmentChanges(lg), getSummary(), getPaths()]);
   const head = (
     <section className="head fade">
       <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
@@ -123,7 +125,7 @@ export default async function AlignmentPage({ params, searchParams }: PageProps<
           <h2>{say("season.title", { label: labelOf.get(selected) ?? seasonLabel(lg, selected) })}</h2>
           <AlignmentSeasonSelect value={selected}
             seasons={[...years].reverse().map((y) => ({ year: y, label: labelOf.get(y) ?? seasonLabel(lg, y) }))} />
-          <Link href={`/${lg}/${selected}?view=${here.some((r) => r.division) ? "division" : "conference"}`} prefetch={false}>{say("align.standingsThat")}</Link>
+          <Link href={`${seasonPath(lg, selected)}?view=${here.some((r) => r.division) ? "division" : "conference"}`} prefetch={false}>{say("align.standingsThat")}</Link>
         </div>
         <div className="aligngrid">
           {groups.map((c) => (
@@ -137,7 +139,7 @@ export default async function AlignmentPage({ params, searchParams }: PageProps<
                       const m = movedTo.get(r.franchise_id);
                       return (
                         <li key={r.team_id}>
-                          <Link href={`/${lg}/team/${r.franchise_id}`} prefetch={false}>{r.team}</Link>
+                          <Link href={paths.team(lg, r.franchise_id)} prefetch={false}>{r.team}</Link>
                           {m ? <span className="moved">{moveText(say, m)}</span> : null}
                         </li>
                       );
@@ -157,7 +159,7 @@ export default async function AlignmentPage({ params, searchParams }: PageProps<
               <div className="change" key={c.franchise_id}>
                 <b>{c.from_year != null ? seasonLabel(lg, c.year) : ""}</b>
                 <span className="what">
-                  <Link href={`/${lg}/team/${c.franchise_id}`} prefetch={false}>{c.team}</Link>{" "}{moveText(say, c)}
+                  <Link href={paths.team(lg, c.franchise_id)} prefetch={false}>{c.team}</Link>{" "}{moveText(say, c)}
                   {c.from_year != null && c.from_year !== c.year - 1 ? <span className="meta">{say("align.lastPlaced", { season: seasonLabel(lg, c.from_year) })}</span> : null}
                 </span>
               </div>

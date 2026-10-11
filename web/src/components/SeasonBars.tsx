@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
+import { seasonPath } from "@/lib/slug";
 
 export interface BarSeason { year: number; label: string; games: number; finals: number; champion: string | null; none?: boolean }
 
@@ -28,7 +29,7 @@ export function SeasonBars({ list, lg }: { list: BarSeason[]; lg: string }) {
           <text key={s.year} x={(x(s.year) ?? 0) + x.bandwidth() / 2} y={H - 6} textAnchor="middle">{s.year}</text>
         ))}</g>
         <g>{list.map((s) => (
-          <g key={s.year} style={{ cursor: "pointer" }} onClick={() => router.push(`/${lg}/${s.year}`)}
+          <g key={s.year} style={{ cursor: "pointer" }} onClick={() => router.push(seasonPath(lg, s.year))}
             onMouseMove={(ev) => tip.show(ev, <TipLines title={s.label} lines={s.none ? [say("noseason.league")] : [say("bars.tip", { games: fmt(s.games), finals: fmt(s.finals) }), s.champion ? say("tip.champion", { team: s.champion }) : null]} />)}
             onMouseLeave={tip.hide}>
             {s.none ? <rect x={x(s.year)} width={x.bandwidth()} y={y(ticks[ticks.length - 1])} height={y(0) - y(ticks[ticks.length - 1])} fill="var(--soft)" stroke="var(--rule)" strokeDasharray="3 2" rx={2} /> : null}
