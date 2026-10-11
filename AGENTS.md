@@ -112,3 +112,20 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 - When you are waiting on him, say so first, plainly, with the one thing he needs to do.
 - He reads on his phone, which can't change permission settings.
 - He wants features published as they are finished, and work done by Sonnet agents.
+
+## Tickets
+
+The queue is the spx-stats board on Sumilabu (`api.sumilabu.com`), the same
+board UmaKuma and Itsutsu use, under project key `spx-stats`. Drive it with
+`pnpm task` from `web/` (`pnpm task add|claim|release|done|drop|reopen|grade`).
+`SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` come from the environment and
+are never written to a file, a log or a commit.
+
+- File a ticket before starting work: `pnpm task add "<title>" --detail "<what and why>" --by "<who>"`.
+- Claim it with the whole id the board prints, never a prefix: `pnpm task claim <id> "<who>"`. A hold lasts six hours; a live hold is not taken over.
+- Mark it done once it is shipped: `pnpm task done <id> --by "<who>" --version "<deploy or commit>"`.
+- If you stop, release it: `pnpm task release <id> --by "<who>"`.
+
+`/tickets` on the site is a read-only view of the board. It answers 404 unless
+`TICKETS_PAGE=1` is set, which it must never be in production (the board has
+no read-only key and tickets may hold internal notes).

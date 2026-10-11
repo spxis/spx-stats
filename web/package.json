@@ -12,7 +12,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "task": "node scripts/task.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/chizu": "1.4.0",
