@@ -19,7 +19,7 @@ import { titleHolders } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
+import { isLeague, isSpx, LEAGUES, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { isGapYear } from "@/lib/coverage";
 import { leadersPath } from "@/lib/leaderStats";
@@ -91,7 +91,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const views = availableViews(lg, y, st);
   const wantedView = viewSchema.parse(sp.view);
   const view = views.includes(wantedView) ? wantedView : "league";
-  const grouped = groupStandings(say, st, view);
+  const grouped = groupStandings(say, st, view, LEAGUES.find((l) => l.code === lg)?.name);
   const pub = d.standings.find((r) => r.basis === "published");
   const basis = asOf ? say("season.basisAsOf") : pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
   const standingsNote = [
@@ -143,7 +143,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
     },
   ];
   const standings = tableOf(st, cols, (r) => r.team_id);
-  if (view !== "league") standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
+  standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
   const sort = parseSort(sp.sort, cols.map((c) => c.key), "pct.desc");
   return (
     <>
@@ -182,7 +182,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
           ) : null}
           <ViewTabs lg={lg} path={seasonPath(lg, y)} sp={sp} view={view} views={views} rows={st} />
           <p className="note">{standingsNote}</p>
-          <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={view === "league" ? undefined : grouped.groups} /></div>
+          <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} />

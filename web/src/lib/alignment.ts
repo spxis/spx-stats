@@ -123,8 +123,8 @@ const byRank = (a: Ranked, b: Ranked) =>
  * The groups of a view, in the order they are drawn, and the group each row falls in (by index into `rows`).
  * A club the season gives no place to (a source that had no alignment for it) is gathered last under "Not placed".
  */
-export function groupStandings<T extends Ranked>(say: Say, rows: readonly T[], view: ViewId): { groups: Group[]; of: string[] } {
-  if (view === "league") return { groups: [{ id: "all", title: "" }], of: rows.map(() => "all") };
+export function groupStandings<T extends Ranked>(say: Say, rows: readonly T[], view: ViewId, leagueName = ""): { groups: Group[]; of: string[] } {
+  if (view === "league") return { groups: [{ id: "all", title: leagueName }], of: rows.map(() => "all") };
   const confName = (r: Placed) => r.conference ?? "";
   const divKey = (r: Placed) => `${confName(r)}|${r.division ?? ""}`;
   const groups = new Map<string, Group>();
