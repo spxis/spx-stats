@@ -31,6 +31,12 @@ export const PHRASES = {
   "footer.sources": "NFL data from {nflverse} (CC BY 4.0). NHL results and standings outside SPX's seasons from the NHL. Award names and winners from {wikidata} (CC0).",
   "footer.logos": "Team logos are trademarks of their owners, shown only to identify each team; SPXN is not affiliated with any team or league. {link}.",
   "footer.aboutLogos": "About the logos",
+  "footer.colLeagues": "Leagues",
+  "footer.colData": "About SPXN",
+  "footer.colLegal": "Legal",
+  "footer.version": "Version {version}",
+  "nav.privacy": "Privacy",
+  "nav.terms": "Terms",
 
   // not found
   "notFound.title": "Page not found",

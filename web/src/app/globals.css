@@ -153,6 +153,12 @@
 
   .foot { max-width: 1180px; margin-inline: auto; border-top: 2px solid var(--ink); padding-block: 18px 32px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 14px; }
   .foot .retro { color: var(--ink); }
+  .foot-cols { display: flex; flex-wrap: wrap; gap: 14px 40px; margin-bottom: 8px; }
+  .foot-col { display: flex; flex-direction: column; gap: 2px; }
+  .foot-col b { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--ink); }
+  .foot-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
+  .foot-links a { padding-block: 6px; }
+  .foot .ver { font: 400 13px/1.4 var(--mono); margin: 4px 0 0; }
   .langpick { margin-top: 6px; font-size: 15px; }
   .langpick button { font: inherit; color: var(--accent); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
   .langpick button:disabled { opacity: .6; cursor: default; }
