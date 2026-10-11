@@ -731,6 +731,8 @@ export const PHRASES = {
   "playoffs.robin": "Round robin",
   "playoffs.robinLink": "Seeding round robin: {count} games",
   "playoffs.other": "Other series",
+  "playoffs.sideAria": "Show one side of the bracket",
+  "playoffs.sideAll": "All",
   "playoffs.round.title": "All {round} matchups",
   "playoffs.round.bracket": "Full bracket",
   "playoffs.round.lede": "All {count} series of the {season} {league} playoffs: {round}.",

@@ -5,10 +5,12 @@ import { sayFor, type Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
 import type { Bracket, Box } from "@/lib/bracket";
 import { loadPlayoffs } from "@/lib/playoffs";
-import type { TeamPaths } from "@/lib/slug";
+import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { nickname, roundPath, scoreWords, seriesPath, type Series } from "@/lib/series";
 import { TeamLogo } from "./TeamLogo";
+import { queryHref } from "./ViewTabs";
+import "./alignment.css";
 import "./series.css";
 
 /** One series as a card: both teams, the winner in bold, the score; the card opens the series page. */
@@ -54,7 +56,7 @@ function BracketBox({ paths, lg, year, s, brands, say, pos, top }: { paths: Team
 }
 
 /** The playoff bracket of a season: one half down each side (the conferences where the alignment data splits them), the final in the middle. Draws nothing when there are no playoff games. */
-export async function SeasonPlayoffs({ lg, year }: { lg: string; year: number }) {
+export async function SeasonPlayoffs({ lg, year, conf, sp: query }: { lg: string; year: number; conf: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
   const say = sayFor(sp);
   const [{ series, names, bracket, brands }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
@@ -65,7 +67,11 @@ export async function SeasonPlayoffs({ lg, year }: { lg: string; year: number })
   const labelled = b.sides.some((s) => s.label);
   const heading = (r: number, name: string) => <h4><Link href={roundPath(lg, year, r)} prefetch={false} title={sp.say("playoffs.round.title", { round: name })}>{name}</Link></h4>;
   const extra = b.other;
-  const left = b.sides.find((s) => s.key === "l"), right = b.sides.find((s) => s.key === "r");
+  const slug = (label: string | null) => (label ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+  const choices = b.sides.length === 2 && b.sides.every((s) => s.label) ? b.sides.map((s) => ({ key: slug(s.label), label: s.label! })) : [];
+  const only = choices.find((c) => c.key === conf)?.key ?? "";
+  const shown = (s: Bracket["sides"][number]) => !only || slug(s.label) === only;
+  const left = b.sides.find((s) => s.key === "l" && shown(s)), right = b.sides.find((s) => s.key === "r" && shown(s));
   const sideEl = (side: Bracket["sides"][number]) => (
     <div key={side.key} className={`bkside ${side.key}`} style={{ "--n": b.columns.length } as React.CSSProperties}>
       {labelled ? <h3 className="bkconf">{side.label ?? "\u00a0"}</h3> : null}
@@ -88,6 +94,13 @@ export async function SeasonPlayoffs({ lg, year }: { lg: string; year: number })
       <h2>{say("bracket.title")}</h2>
       <p className="note">{sp.say("playoffs.note", { count: sp.fmt(series.length) })}</p>
       {b.robin.length ? <p className="note"><Link href={roundPath(lg, year, 0)} prefetch={false}>{sp.say("playoffs.robinLink", { count: sp.fmt(b.robin.length) })}</Link></p> : null}
+      {choices.length ? (
+        <nav className="seg views" aria-label={sp.say("playoffs.sideAria")}>
+          {[{ key: "", label: sp.say("playoffs.sideAll") }, ...choices].map((c) => (
+            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { conf: c.key || null })}#playoffs`} prefetch={false} aria-current={c.key === only ? "page" : undefined}>{c.label}</Link>
+          ))}
+        </nav>
+      ) : null}
       <div className="bkwrap">
         <div className={`bk${fin ? "" : " solo"}`} style={{ "--row": "56px", "--n": b.columns.length } as React.CSSProperties}>
           {left ? sideEl(left) : null}
