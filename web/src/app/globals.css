@@ -194,6 +194,10 @@
   .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; }
   h1.teamname { display: flex; align-items: center; gap: 14px; }
   h1.teamname .logo { margin: 0; vertical-align: middle; }
+  .namerow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 24px; }
+  .namerow h1 { min-width: 0; }
+  .seasonlabel { font: 700 clamp(24px, 3.4vw, 40px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; color: var(--accent); text-decoration: none; }
+  .seasonlabel:hover { text-decoration: underline; }
   .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
   .prose { max-width: 70ch; }
   .prose h2 { margin-top: 10px; }

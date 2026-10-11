@@ -116,8 +116,11 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
             {next != null ? <Link href={paths.teamSeason(lg, f, next)} rel="next" prefetch={false}>{seasonLabel(lg, next) + " →"}</Link> : null}
           </nav>
         ) : null}
-        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link></span>
-        <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
+        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
+        <div className="namerow">
+          <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
+          <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link>
+        </div>
         {isChamp ? <span className="reigning"><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
         <p className="lede">
           {say("tseason.lede", { season, record: text }) + " "}
