@@ -16,6 +16,7 @@ import { titleHolders } from "@/lib/champions";
 import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { abbrFor } from "@/lib/abbr";
 import { atUtc, fmt3 } from "@/lib/format";
+import { pairPath, pairSeasonPath } from "@/lib/h2h";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { LOCALE_TAG } from "@/lib/locale";
@@ -282,6 +283,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
 
       <section className="section">
         <h2>{sp.say("past.title")}</h2>
+        <p className="note"><Link href={pairSeasonPath(pairPath(paths, lg, A.f, B.f).path, season)} prefetch={false}>{sp.say("h2h.seriesLink", { a: na, b: nb })}</Link></p>
         {past == null ? <p className="note">{sp.say("load.failed")}</p> : past.length ? (
           <>
             <p className="note">

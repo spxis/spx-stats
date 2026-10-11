@@ -1,0 +1,32 @@
+/* Head to head: the row link on a team's games, the page's controls and facts. Team colours arrive as --ca/--cb (SeriesStyle). Tokens come from globals.css. */
+
+/* The link in a game row: unseen until the row is hovered or focused, always shown where there is no hover (touch). */
+.h2hlink { margin-left: 10px; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px 2px; border: 1px solid var(--rule); color: var(--muted); background: var(--panel); text-decoration: none; white-space: nowrap; vertical-align: 1px; opacity: 0; transition: opacity .12s; }
+tr:hover .h2hlink, tr:focus-within .h2hlink, .h2hlink:focus-visible { opacity: 1; }
+.h2hlink:hover { border-color: var(--accent); color: var(--accent); }
+.h2hlink abbr { text-decoration: none; }
+@media (hover: none) { .h2hlink { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .h2hlink { transition: none; } }
+
+/* The page */
+.h2hcontrols { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.h2hcontrols .seg a { white-space: nowrap; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 12px; text-decoration: none; background: var(--panel); color: var(--muted); }
+.h2hcontrols .seg a[aria-current="page"] { background: var(--ink); color: var(--paper); }
+.h2hcontrols .seg a:not([aria-current="page"]):hover { color: var(--ink); }
+.h2hcontrols label { display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+.h2hfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.h2hfact { display: flex; flex-direction: column; gap: 4px; min-width: 0; background: var(--panel); border: 1px solid var(--rule); border-top: 5px solid var(--tc, var(--rule)); padding: 12px 14px; text-decoration: none; color: var(--ink); }
+a.h2hfact:hover { border-color: var(--tc, var(--accent)); }
+.h2hfact .k { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.h2hfact b { font: 700 28px/1.05 var(--display); font-variant-numeric: tabular-nums; }
+.h2hfact .sub { color: var(--muted); font-size: 13px; }
+
+@media (max-width: 760px) { .showdown .sdside.a { clip-path: none; } }
+.h2hchart .legend { margin-bottom: 6px; }
+.h2hnever { display: flex; flex-direction: column; gap: 10px; padding: 18px 20px; background: var(--panel); border: 1px solid var(--rule); border-left: 6px solid var(--accent); }
+tr.selrow td { background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+.tablebox .up { color: var(--ok); }
+.tablebox .down { color: var(--bad); }
+td.h2hscore { white-space: nowrap; }
+td.h2hscore .ot { margin-left: 6px; }

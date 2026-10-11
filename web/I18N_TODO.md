@@ -27,6 +27,10 @@ so a string added in English alone still shows.
 - **Result filter on a team's games.** FR "Victoires / Défaites / Matchs nuls / Défaites en prolongation"; JA "勝ち / 負け / 引き分け / 延長負け"
   (the table cells keep the short 勝/敗/分/延敗).
 
+- **Head-to-head page.** The word for the link and page: EN "Head-to-head" (short "H2H"), FR "Face-à-face" (short "F-à-F", the abbreviation is a guess),
+  JA "対戦成績" (short "対戦"). FR "{a} c. {b}" for "vs" (hockey/Quebec press style); JA "{a} 対 {b}". "{team} mène" / "{team}がリード" for "lead".
+  JA "{n}勝リード" in the chart tooltip counts wins.
+
 ## Left as the data gives it (not translated on purpose)
 
 - Team, player, venue and league names; league codes (NHL, NBA, MLB, NFL, CFL); official award names (Stanley Cup, Grey Cup, Hart Trophy ...).
