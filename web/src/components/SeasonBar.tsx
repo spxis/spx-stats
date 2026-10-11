@@ -31,7 +31,7 @@ export function SeasonBar({ lg, year, seasons, days, date }: Props) {
       <label className="seasonpick">
         <select aria-label={say("col.season")} value={year} onChange={(e) => {
           const q = new URLSearchParams(location.search);
-          for (const k of ["date", "team", "month", "day", "phase"]) q.delete(k);
+          for (const k of ["date", "all", "team", "month", "day", "phase"]) q.delete(k);
           const s = q.toString();
           router.push(`${seasonPath(lg, Number(e.target.value))}${s ? `?${s}` : ""}`);
         }}>

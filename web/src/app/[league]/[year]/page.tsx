@@ -91,7 +91,9 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const asOfRows = dateAsked ? await getStandingsAsOf(lg, y, dateAsked) : null;
   const asOf = asOfRows?.length ? asOfRows : null;
   const asOfDate = asOf ? dateAsked : "";
-  const st = asOf ? [...asOf].sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || (b.w ?? 0) - (a.w ?? 0)) : d.standings;
+  const withUnplayed = !!asOf && sp.all === "1";
+  const unplayed = withUnplayed ? d.standings.filter((r) => !asOf.some((a) => a.team_id === r.team_id)).map((r) => ({ ...r, gp: 0, w: 0, l: 0, t: null, otl: null, pts: null, pf: null, pa: null, home: null, road: null, pct: null })) : [];
+  const st = asOf ? [...asOf, ...unplayed].sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || (b.w ?? 0) - (a.w ?? 0)) : d.standings;
   const views = availableViews(lg, y, st);
   const wantedView = viewSchema.parse(sp.view);
   const view = views.includes(wantedView) ? wantedView : "league";
@@ -182,7 +184,8 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
           {asOfDate ? (
             <div className="asof">
               <b>{say("season.asOf", { date: dt.full(atUtc(asOfDate)) })}</b>
-              <Link href={queryHref(seasonPath(lg, y), sp, { date: null })} prefetch={false} scroll={false}>{say("season.backFinal")}</Link>
+              <Link href={queryHref(seasonPath(lg, y), sp, { date: null, all: null })} prefetch={false} scroll={false}>{say("season.backFinal")}</Link>
+              <Link href={queryHref(seasonPath(lg, y), sp, { all: withUnplayed ? null : "1" })} prefetch={false} scroll={false}>{say(withUnplayed ? "season.hideUnplayed" : "season.showUnplayed")}</Link>
             </div>
           ) : null}
           <ViewTabs lg={lg} path={seasonPath(lg, y)} sp={sp} view={view} views={views} rows={st} />

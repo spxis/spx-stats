@@ -623,6 +623,8 @@ export const PHRASES = {
   "league.alignmentLink": "Conferences and divisions through the years",
   "season.asOf": "As of {date}",
   "season.backFinal": "Back to the final standings",
+  "season.showUnplayed": "Show teams that have not played yet",
+  "season.hideUnplayed": "Hide teams that have not played yet",
   "season.basisAsOf": "Worked out from the final scores up to that day",
   "season.dateLate": "That date is on or after the last game day, so these are the final standings.",
   "season.dateMissing": "Standings by date are not available yet, so these are the final standings.",
