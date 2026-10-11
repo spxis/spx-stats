@@ -364,5 +364,8 @@ prints a secret; both put the `NAME=value` lines on the clipboard:
 cloud environment's settings and start the session; then in the session run `echo ${SUMILABU_BOARD_TOKEN:+ok}`,
 `pg_isready -h /tmp -p 55432`, `psql -h /tmp -p 55432 -U postgres -d spx_stats -c 'select 1'`, and `cd web && pnpm task`.
 Raw downloads: `python3 scripts/dropbox_put.py <file> <source>`; the backlog:
-`python3 scripts/dropbox_put.py --from-archive`. The Mac export script `scripts/mac/spx-raw-export.sh` has not landed in
-the repository, so `--from-archive` is the way.
+`python3 scripts/dropbox_put.py --from-archive`. On John's Mac,
+`~/bin/spx-raw-export.sh` (`scripts/mac/spx-raw-export.sh`; `--check` first, `--install-schedule` for an hourly run) copies
+every `legacy_files.raw_archive` row from DS1 into `~/Library/CloudStorage/Dropbox/Backups/spx-stats/raw/<name>`: it finds
+DS1 on the home network or Tailscale, skips files already there with the same sha256, never overwrites a different one,
+and reports problems. Its stub tests are `scripts/mac/test/spx-raw-export-test.sh` (run them after any change to it).
