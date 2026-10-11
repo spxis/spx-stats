@@ -19,6 +19,9 @@ so a string added in English alone still shows.
 - **Player statistics.** Column abbreviations (FR PJ/B/A/V/D/N/DP/MBC/%A/BL for hockey; AB/CS/CC/PP/BV/MAB/MPB/MP/MJ/MPM for baseball; JA 試合/勝/敗/打率/防御率 and so on)
   are my best guess at what each league's own French and Japanese tables use. Slugging is "PUIS" (moyenne de puissance) so it does not clash with "MP" (minutes de pénalité). "Parcours sportif" for the sports résumé, "Repêchage" for the draft.
 
+- **Short-season notes.** FR "lock-out" and "grève des joueurs", JA "ロックアウト" and "選手会のストライキ" (players' union strike); the JA team-count
+  sentence puts the count first ("…届かなかったのは2チームです"). Source link text is "Source : Wikipédia" / "出典：Wikipedia".
+
 ## Left as the data gives it (not translated on purpose)
 
 - Team, player, venue and league names; league codes (NHL, NBA, MLB, NFL, CFL); official award names (Stanley Cup, Grey Cup, Hart Trophy ...).

@@ -23,6 +23,7 @@ import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { isGapYear } from "@/lib/coverage";
 import { leagueSat } from "@/lib/noSeason";
+import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
 
@@ -66,6 +67,8 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       </>
     );
   }
+  const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
+  const note = scheduleNote(say, plural, lg, y, d.standings, complete);
   const holders = titleHolders(summary.seasons, lg);
   const defending = holders.byYear.get(y - 1)?.champion_franchise;
   const sp = await searchParams;
@@ -195,6 +198,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       {d.games.length ? (
         <section className="section">
           <h2>{say("season.games")}</h2>
+          {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
           <SeasonGames lg={lg} abbrs={abbrs} year={y} games={d.games} teams={d.teams} initial={selection} />
 
         </section>

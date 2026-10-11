@@ -84,6 +84,10 @@ export const getClubs = cache(async (lg: string, y: number) => {
   return st.map((s) => ({ franchise_id: s.franchise_id, team: s.team }));
 });
 
+/** Every standings row of a league's season (the same request as getClubs, so one cached fetch). */
+export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
+  rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
+
 /* ---------- a team --------------------------------------------------------------------- */
 
 export interface TeamData {
