@@ -92,20 +92,21 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 2. Check your own tool list for the four claude.ai connectors (a script cannot see them): tools named like
    `mcp__*Supabase*`, `*Vercel*`, `*Dropbox*`, `*GitHub*` (use ToolSearch if tools are deferred). For a missing one the
    fix is "claude.ai > Settings > Connectors > <name> > Connect". Without Supabase: no production migrations or loads.
-   Without Vercel: deploy with the CLI block in [section 7](#7-deploying). Neon and Turso are not needed for the
-   current code; report them missing all the same.
+   Without Vercel: deploy with the CLI block in [section 7](#7-deploying). Turso is not needed today.
 3. Report everything MISSING to John as `NEED FROM YOU:` with the one fix, then carry on with what works.
 
-Turso: database `spx-stats`, supplementary only (one `health` table), not used by the code or the site; its URL is
-private. Neon: connect it; role not yet recorded. `spx-check.sh` reports the optional `turso` and `neonctl` CLIs.
+Turso: planned second database (Supabase is production now). Today database `spx-stats` holds one supplementary
+`health` table, not used by the code or the site; its URL is private. Connect the Turso connector (or `turso auth login`)
+when Turso work starts; not required today. `spx-check.sh` reports the optional `turso` CLI as info.
+Neon: not used by this project; don't ask John to connect it.
 
 **New machine or instance: connect everything first.** Do this once per Mac or cloud environment, before any
 ticket work. Each row says what breaks without it. Exact commands with private values are in the private file.
 
 | Connect | How | Without it |
 |---|---|---|
-| claude.ai connectors: Dropbox, Vercel, Supabase, GitHub, Neon, Turso | claude.ai, Settings, Connectors: connect each one (a browser click each). They then appear in every Claude session on that account, cloud or Mac. | no private file over MCP, no MCP deploys, no production reads |
-| Turso and Neon CLIs (Mac, optional) | `turso auth login`; `neonctl auth` (install: `brew install tursodatabase/tap/turso`, `npm i -g neonctl`) | nothing breaks; the connectors are the main route |
+| claude.ai connectors: Dropbox, Vercel, Supabase, GitHub | claude.ai, Settings, Connectors: connect each one (a browser click each). They then appear in every Claude session on that account, cloud or Mac. | no private file over MCP, no MCP deploys, no production reads |
+| Turso CLI (Mac, optional, later) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks today |
 | Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
 | GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
 | Tailscale (Mac) | the app, signed in, on | no DS1 |
