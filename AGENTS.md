@@ -232,10 +232,12 @@ working checkout (worktrees and other agents' files would be uploaded). It waits
 
     D=$(mktemp -d) && git archive <sha> | tar -x -C "$D" && cd "$D" && \
     vercel link --yes --project spx-stats --scope spxis-projects-0d6306b4 >/dev/null && \
-    vercel deploy --prod --yes --scope spxis-projects-0d6306b4
+    vercel deploy --prod --yes --scope spxis-projects-0d6306b4; cd ~ && rm -rf "$D"
 
-The auto-mode check refuses this from agents unless the permission rule in [section 4](#4-cold-start) is set; then
-give John the block. **Untested** until John's first run.
+Tested 2026-10-11 (about a minute; it prints nothing until the build is done). `vercel link` writes a short-lived
+token to `.env.local` in that temporary copy; Vercel does not upload it and the last step deletes the copy. The
+auto-mode check refuses this from agents unless the permission rule in [section 4](#4-cold-start) is set; then give
+John the block.
 
 Add `forceNew: "1"` if Vercel reuses an earlier deployment of the same commit. The project is `nextjs`, root
 directory `web`, Node 22.x. The call itself is **untested** (past deployments and the project settings were read and
