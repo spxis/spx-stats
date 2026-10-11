@@ -38,3 +38,6 @@
 .noseason { display: inline-block; font: 500 12px/1 var(--mono); letter-spacing: .02em; padding: 4px 7px; color: var(--muted); background: var(--soft); border: 1px dashed var(--rule); white-space: nowrap; cursor: default; }
 .noseason.compact { font-size: 13px; padding: 6px 7px; text-align: center; }
 .idlerow td { color: var(--muted); }
+
+.sechead { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; }
+.sechead .seasonnav { position: static; order: 0; }

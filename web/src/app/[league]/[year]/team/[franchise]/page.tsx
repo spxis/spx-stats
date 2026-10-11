@@ -105,6 +105,12 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
   const selection = parseSelection(sp);
+  const seasonNav = prev != null || next != null ? (
+    <nav className="seasonnav" aria-label={say("tseason.otherSeasons")}>
+      {prev != null ? <Link href={paths.teamSeason(lg, f, prev)} rel="prev" prefetch={false}>{"← " + seasonLabel(lg, prev)}</Link> : null}
+      {next != null ? <Link href={paths.teamSeason(lg, f, next)} rel="next" prefetch={false}>{seasonLabel(lg, next) + " →"}</Link> : null}
+    </nav>
+  ) : null;
   return (
     <>
       <AccentStyle league={lg} team={b?.primary_hex ? teamAccent(b) : undefined} />
@@ -112,12 +118,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
         <div className="teamband" style={{ "--tp": `#${b.primary_hex}`, "--ts": `#${b.secondary_hex || b.primary_hex}` } as React.CSSProperties} />
       ) : null}
       <section className="head fade">
-        {prev != null || next != null ? (
-          <nav className="seasonnav" aria-label={say("tseason.otherSeasons")}>
-            {prev != null ? <Link href={paths.teamSeason(lg, f, prev)} rel="prev" prefetch={false}>{"← " + seasonLabel(lg, prev)}</Link> : null}
-            {next != null ? <Link href={paths.teamSeason(lg, f, next)} rel="next" prefetch={false}>{seasonLabel(lg, next) + " →"}</Link> : null}
-          </nav>
-        ) : null}
+        {seasonNav}
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <div className="namerow">
           <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
@@ -136,7 +137,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
       <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
-        initial={{ ...selection, team: "" }} initialSort={sort} />
+        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} />
     </>
   );
 }

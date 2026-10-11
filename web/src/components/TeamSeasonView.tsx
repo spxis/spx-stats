@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc } from "@/lib/format";
 import { RESULT_KEY } from "@/lib/i18n/keys";
@@ -51,6 +51,8 @@ interface Props {
   initialLoc: Loc;
   /** ?result= : win, loss, tie, otl or all. It narrows the games table only. */
   initialResult: ResultFilter;
+  /** The previous and next season links, shown again beside the games and the calendar. */
+  seasonNav?: ReactNode;
 }
 
 const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allStar" } as const;
@@ -59,7 +61,7 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
-export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult }: Props) {
+export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const logos = useMemo(() => new Map(teamList.map((t) => [t.f, t.logo])), [teamList]);
@@ -152,7 +154,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         <RunningLine games={locRows} link={link} />
       </section>
       <section className="section">
-        <h2>{say("teamgames.title")}</h2>
+        <div className="sechead"><h2>{say("teamgames.title")}</h2>{seasonNav}</div>
         <div className="controls">
           <PhaseSwitch phase={phase} onChange={(k) => set({ phase: k })} />
           <LocSwitch value={loc} onChange={setLoc} />
@@ -164,7 +166,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         <div className="tablebox"><SortTable {...table} def="date.asc" initial={initialSort} remote link={link} /></div>
       </section>
       <section className="section">
-        <h2>{say("teamcal.title")}</h2>
+        <div className="sechead"><h2>{say("teamcal.title")}</h2>{seasonNav}</div>
         <p className="note">{say("teamcal.note")}</p>
         {months.length ? (
           <GameCalendar lg={lg} abbrs={abbrs} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={String(meId)} dayOnly
