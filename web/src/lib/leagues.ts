@@ -23,7 +23,7 @@ export function seasonLabel(lg: string, y: number): string {
 /** Display names of the sources the archive draws on (proper names; `srcName` adds the two that are words). */
 export const SRC: Record<string, string> = {
   spx: "SPX", spx_database: "SPX", spxn_database: "SPX", spx_files: "SPX", retrosheet: "Retrosheet", nflverse: "nflverse",
-  wikidata: "Wikidata", nhl_api: "NHL",
+  wikidata: "Wikidata", nhl_api: "NHL", lahman: "Lahman",
 };
 
 /** A source's name in the reader's language: the proper names as they are, "From results" and "Editorial" translated. */

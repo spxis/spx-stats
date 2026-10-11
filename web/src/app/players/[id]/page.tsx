@@ -15,7 +15,9 @@ import { atUtc } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
-import { getPerson } from "@/lib/people";
+import { PlayerResume } from "@/components/PlayerResume";
+import { parsePhase, PlayerSeasons, PlayerStatistics } from "@/components/PlayerStats";
+import { getPerson, getPlayerRecord } from "@/lib/people";
 import { ageOn, capFirst, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
@@ -41,12 +43,12 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   return <div className="pfact"><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
-export default async function PlayerPage({ params }: PageProps<"/players/[id]">) {
-  const { id } = await params;
+export default async function PlayerPage({ params, searchParams }: PageProps<"/players/[id]">) {
+  const [{ id }, sp] = await Promise.all([params, searchParams]);
   const n = idOf(id);
   if (n == null) notFound();
   const { say, locale, dt, fmt } = await currentSpeaker();
-  const [d, brands, summary] = await Promise.all([getPerson(n).catch(() => null), getBrands(), getSummary()]);
+  const [d, brands, summary, record] = await Promise.all([getPerson(n).catch(() => null), getBrands(), getSummary(), getPlayerRecord(n)]);
   if (!d) notFound();
   const { person: p, awards, teams } = d;
   const lgs = (p.leagues ?? []).filter(isLeague);
@@ -59,7 +61,11 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
   const champ = new Map(summary.seasons.filter((s) => s.champion_franchise != null).map((s) => [`${s.league}|${s.year}`, s.champion_franchise]));
   const titles: { league: string; year: number; team: string | null }[] = [];
   for (const t of teams) for (let y = t.from_year; y <= t.to_year; y++) if (champ.get(`${t.league}|${y}`) === t.franchise_id) titles.push({ league: t.league, year: y, team: t.team });
+  // Seasons known from statistics rather than rosters carry the title on the club-season itself.
+  for (const s of record.seasonTeams) if (s.team_champion && !titles.some((t) => t.league === s.league && t.year === s.year)) titles.push({ league: s.league, year: s.year, team: s.team });
   titles.sort((a, b) => b.year - a.year);
+  const seasonsHeld = new Set(summary.seasons.map((s) => `${s.league}|${s.year}`));
+  const phase = parsePhase(sp.phase);
 
   const facts: ReactNode[] = [];
   if (p.birth_date || p.birth_place || p.birth_country_code) {
@@ -127,6 +133,9 @@ export default async function PlayerPage({ params }: PageProps<"/players/[id]">)
           <p className="note">{say("player.titlesNote")}</p>
         </section>
       ) : null}
+      {record.seasonTeams.length ? <PlayerSeasons name={p.name} record={record} brands={brands} seasonsHeld={seasonsHeld} /> : null}
+      {record.stats.length ? <PlayerStatistics record={record} phase={phase} path={`/players/${p.person_id}`} sp={sp} brands={brands} /> : null}
+      <PlayerResume resume={record.resume} seasons={record.seasonTeams} />
       {awards.length ? (
         <section className="section">
           <h2>{say("player.awards")}</h2>

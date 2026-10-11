@@ -2,6 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { rows } from "./api/client";
 import { leagueAwardSchema, personAwardSchema, personSchema, personTeamSchema, teamAwardSchema } from "./api/people";
+import { personResumeSchema, personSeasonTeamSchema, personStatSchema, personTotalSchema } from "./api/player";
+import type { PersonResumeRow, PersonSeasonTeamRow, PersonStatRow, PersonTotalRow } from "./api/player";
 import type { LeagueAwardRow, PersonAwardRow, PersonRow, PersonTeamRow, TeamAwardRow } from "./api/people";
 import { isLeague } from "./leagues";
 
@@ -32,4 +34,23 @@ export const getTeamAwards = cache(async (lg: string, f: number): Promise<TeamAw
 export const getLeagueAwards = cache(async (lg: string): Promise<LeagueAwardRow[]> => {
   if (!isLeague(lg)) return [];
   return rows("awards", `league=eq.${lg}&kind=neq.championship&select=year,award_code,award,kind,winner,person_id,franchise_id&order=year.desc,award_code,winner`, leagueAwardSchema).catch(() => []);
+});
+
+export interface PlayerRecord {
+  seasonTeams: PersonSeasonTeamRow[];
+  stats: PersonStatRow[];
+  totals: PersonTotalRow[];
+  resume: PersonResumeRow[];
+}
+
+/** A player's seasons, stats, career totals and resume. A page does not fail because these views are empty or not loaded yet. */
+export const getPlayerRecord = cache(async (id: number): Promise<PlayerRecord> => {
+  const q = `person_id=eq.${id}`;
+  const [seasonTeams, stats, totals, resume] = await Promise.all([
+    rows("person_season_teams", `${q}&select=*&order=year,league`, personSeasonTeamSchema).catch(() => []),
+    rows("person_stats", `${q}&select=*&order=year,league,stat_group`, personStatSchema).catch(() => []),
+    rows("person_career_totals", `${q}&select=*`, personTotalSchema).catch(() => []),
+    rows("person_resume", `${q}&select=*&order=start_year.nullslast,name`, personResumeSchema).catch(() => []),
+  ]);
+  return { seasonTeams, stats, totals, resume };
 });
