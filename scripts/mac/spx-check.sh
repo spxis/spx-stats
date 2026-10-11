@@ -1,7 +1,7 @@
 #!/bin/bash
 # Startup check on John's Mac: one line per connection, "ok" or "MISSING: <the one fix>". Read-only, no values printed.
 # Run it any time: bash scripts/mac/spx-check.sh. The session-start hook runs it too. Always exits 0.
-# claude.ai connectors (Supabase, Vercel, Dropbox, GitHub) cannot be seen from a script: the agent checks its tool list.
+# claude.ai connectors (Supabase, Vercel, Dropbox, GitHub, Neon, Turso) cannot be seen from a script: the agent checks its tool list.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 . "$HERE/spx-checks.sh"
 export PATH="/opt/homebrew/bin:/opt/homebrew/opt/libpq/bin:/usr/local/bin:$PATH"
@@ -48,13 +48,23 @@ check_tools() {
   command -v pnpm >/dev/null || bad="${bad:+$bad, }pnpm (npm i -g pnpm)"
   if [ -z "$bad" ]; then line 7 "node >= 22.18, pnpm: ok"; else line 7 "node/pnpm: MISSING: install $bad"; fi
 }
+check_turso() {
+  if ! command -v turso >/dev/null; then line 8 "Turso CLI: not installed (optional: brew install tursodatabase/tap/turso)"
+  elif limited 8 turso auth whoami >/dev/null 2>&1; then line 8 "Turso CLI: ok"
+  else line 8 "Turso CLI: installed, not logged in (optional: turso auth login)"; fi
+}
+check_neon() {
+  if ! command -v neonctl >/dev/null; then line 9 "Neon CLI: not installed (optional: npm i -g neonctl)"
+  elif limited 8 neonctl me >/dev/null 2>&1; then line 9 "Neon CLI: ok"
+  else line 9 "Neon CLI: installed, not logged in (optional: neonctl auth)"; fi
+}
 
-for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools; do "$c" & done
+for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_neon; do "$c" & done
 wait
 
 echo "[spx-check] connections on this Mac (claude.ai connectors: the agent checks its own tool list)"
 n=0
-for i in 1 2 3 4 5 6 7; do
+for i in 1 2 3 4 5 6 7 8 9; do
   l=$(cat "$OUT/$i" 2>/dev/null || echo "check $i: MISSING: check did not finish")
   echo "[spx-check] $l"
   case "$l" in *MISSING*) n=$((n + 1));; esac
