@@ -2,7 +2,7 @@
 
 import { useSpeaker } from "./i18n/LocaleProvider";
 
-const PHASES = [["r", "phase.regular"], ["p", "phase.playoffs"], ["", "phase.all"]] as const;
+const PHASES = [["", "phase.all"], ["r", "phase.regular"], ["p", "phase.playoffs"]] as const;
 
 /** The Regular season / Playoffs / All switch of the season page and a team's season. "" is every part. */
 export function PhaseSwitch({ phase, onChange }: { phase: string; onChange: (phase: string) => void }) {
