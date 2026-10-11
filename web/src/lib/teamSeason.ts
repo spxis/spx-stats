@@ -80,5 +80,10 @@ export function seasonRecord(games: TeamGame[], standing: StandingRow | null): R
   return { w: n("W"), l: n("L"), t: n("T"), otl: n("OTL") };
 }
 
+/** The games with a result in the order played: the order the running line and the game numbers count them. */
+export function playedInOrder(games: TeamGame[]): TeamGame[] {
+  return games.filter((g) => g.res !== "").sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+}
+
 /** The columns of the games table, in order: the keys a ?sort= may name. */
-export const TEAM_GAME_SORT_KEYS = ["date", "loc", "opp", "score", "res", "ot", "rec", "src"] as const;
+export const TEAM_GAME_SORT_KEYS = ["n", "date", "loc", "opp", "score", "res", "ot", "rec", "src"] as const;

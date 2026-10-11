@@ -211,6 +211,8 @@ export const PHRASES = {
   "col.name": "Name",
   "col.from": "From",
   "col.until": "Until",
+  "col.gameNo": "#",
+  "col.gameNoTitle": "Game number, as on the wins minus losses chart",
   "col.date": "Date",
   "col.ha": "H/A",
   "col.haTitle": "Home or away",

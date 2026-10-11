@@ -4,7 +4,7 @@ import { area, bisector, curveStepAfter, extent, line, pointer, scaleLinear } fr
 import { useState } from "react";
 import { fmt3, atUtc } from "@/lib/format";
 import { RESULT_KEY } from "@/lib/i18n/keys";
-import type { TeamGame } from "@/lib/teamSeason";
+import { playedInOrder, type TeamGame } from "@/lib/teamSeason";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
@@ -17,7 +17,7 @@ export function RunningLine({ games }: { games: TeamGame[] }) {
   const [ref, W] = useChartWidth(300, 300);
   const tip = useTooltip(ref);
   const [at, setAt] = useState<number | null>(null);
-  const played = [...games].filter((g) => g.res !== "").sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+  const played = playedInOrder(games);
   const pts: Point[] = [];
   let diff = 0, w = 0;
   played.forEach((g, i) => {

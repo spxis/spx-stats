@@ -10,7 +10,7 @@ import type { Loc } from "@/lib/loc";
 import { recordParts, type RecordPart } from "@/lib/record";
 import { resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
 import { tableOf, type ColumnSpec, type SortKey } from "@/lib/sort";
-import type { RecordTotals, TeamGame } from "@/lib/teamSeason";
+import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeason";
 import { replaceQuery } from "@/lib/urlQuery";
 import { Donut } from "./Donut";
 import { GameCalendar } from "./GameCalendar";
@@ -74,7 +74,10 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
   const set = (patch: Partial<Selection>) => setWant({ ...want, ...patch });
   const extra = say(lg === "mlb" ? "col.extras" : "col.ot");
 
+  const numbers = useMemo(() => new Map(playedInOrder(locRows).map((g, i) => [g.id, i + 1])), [locRows]);
+
   const specs = useMemo((): ColumnSpec<TeamGame>[] => [
+    { key: "n", label: say("col.gameNo"), num: true, title: say("col.gameNoTitle"), get: (g) => numbers.get(g.id) ?? null, cell: (g) => numbers.get(g.id) ?? "" },
     {
       key: "date", label: say("col.date"), rest: "game_date", cls: "seasoncell", get: (g) => g.date,
       cell: (g) => (
@@ -104,7 +107,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         </>
       ),
     },
-  ], [lg, abbrs, year, extra, say, dt]);
+  ], [lg, abbrs, year, extra, numbers, say, dt]);
   const table = useMemo(() => tableOf(rows, specs, (g) => g.id), [rows, specs]);
 
   const done = rows.filter((g) => g.res);

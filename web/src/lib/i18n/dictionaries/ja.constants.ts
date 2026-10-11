@@ -206,6 +206,8 @@ export const JA: Dictionary = {
   "col.name": "名称",
   "col.from": "開始",
   "col.until": "終了",
+  "col.gameNo": "#",
+  "col.gameNoTitle": "試合番号（勝ち数マイナス負け数のグラフと同じ）",
   "col.date": "日付",
   "col.ha": "H/A",
   "col.haTitle": "ホームかビジターか",

@@ -206,6 +206,8 @@ export const FR: Dictionary = {
   "col.name": "Nom",
   "col.from": "De",
   "col.until": "Jusqu’à",
+  "col.gameNo": "N°",
+  "col.gameNoTitle": "Numéro du match, comme sur le graphique victoires moins défaites",
   "col.date": "Date",
   "col.ha": "D/V",
   "col.haTitle": "À domicile ou à l’extérieur",
