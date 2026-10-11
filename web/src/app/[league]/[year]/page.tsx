@@ -56,6 +56,8 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   if (!ys.canonical) permanentRedirect(withQuery(seasonPath(lg, y), sp));
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
   const [d, brands, abbrs, summary, notes, paths] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths()]);
+  const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
+  const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
   if (!d) {
     if (!isGapYear(summary.seasons, lg, y)) notFound();
     return (
@@ -63,8 +65,8 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
         <AccentStyle league={lg} />
         <section className="head fade">
           <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
-            <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link>
-            <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link>
+            {y > lo ? <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link> : null}
+            {y < hi ? <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link> : null}
           </nav>
           <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
           <h1>{say("season.title", { label: seasonLabel(lg, y) })}</h1>
@@ -152,10 +154,10 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       <AccentStyle league={lg} />
       <section className="head fade">
         <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
-          <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link>
+          {y > lo ? <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link> : null}
           <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
           {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
-          <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link>
+          {y < hi ? <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link> : null}
         </nav>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1>{say("season.title", { label: d.label })}</h1>
