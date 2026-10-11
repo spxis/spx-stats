@@ -22,6 +22,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...teams.map((t) => ({ url: url(paths.team(t.league, t.franchise_id)), lastModified })),
     // A team's season page exists wherever the season holds games and the team has a record.
     ...teamSeasons.filter((t) => t.w != null && held.has(`${t.league}|${t.year}`)).map((t) => ({ url: url(paths.teamSeason(t.league, t.franchise_id, t.year)), lastModified })),
-    ...["/about", "/sources", "/quality", "/logos"].map((p) => ({ url: url(p), lastModified })),
+    ...["/about", "/terms", "/sources", "/quality", "/logos"].map((p) => ({ url: url(p), lastModified })),
   ];
 }

@@ -64,13 +64,7 @@ export async function SiteFooter() {
         <Rich text={say("footer.retro")} parts={{ link: <a href="https://www.retrosheet.org">www.retrosheet.org</a> }} />
       </p>
       <p>
-        <Rich text={say("footer.sources")} parts={{
-          nflverse: <a href="https://github.com/nflverse">nflverse</a>,
-          wikidata: <a href="https://www.wikidata.org">Wikidata</a>,
-        }} />
-      </p>
-      <p>
-        <Rich text={say("footer.logos")} parts={{ link: <Link href="/logos">{say("footer.aboutLogos")}</Link> }} />
+        <Rich text={say("footer.credits")} parts={{ link: <Link href="/terms">{say("terms.title")}</Link> }} />
       </p>
       <LanguagePicker />
       <p className="ver">{say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}</p>

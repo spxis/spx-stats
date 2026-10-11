@@ -854,6 +854,29 @@ export const PHRASES = {
   "about.contactTitle": "Found a mistake?",
   "about.contact": "Tell us by opening an issue on GitHub: {link}. The site's code is public there.",
   "about.contactLink": "github.com/spxis/spx-stats",
+
+  // terms
+  "footer.credits": "Data credits, licences and the logo notice are on {link}.",
+  "terms.eyebrow": "SPX Stats Network",
+  "terms.title": "Terms and licence",
+  "terms.metaDesc": "The plain rules for using SPXN, and the licence and credit of the data behind it.",
+  "terms.lede": "The plain rules for using SPXN, and the credits and licences of the data behind it.",
+  "terms.useTitle": "Using the site",
+  "terms.use": "SPXN is free to read. You may link to it and quote small parts of it, with credit to SPXN. To copy more than that, such as whole tables or seasons, or to use it in a product, ask first by opening an issue (see below).",
+  "terms.outside": "Data that came from another source keeps that source's licence. If you reuse it, follow that licence and credit the original source, not only SPXN.",
+  "terms.bots": "Search engines are welcome. The site's robots.txt asks AI training crawlers and bulk scrapers to stay out. Please do not copy the site in bulk with automated tools.",
+  "terms.asisTitle": "As is, no warranty",
+  "terms.asis": "SPXN is provided as is, with no promise that it is complete, correct or up to date. Old records have gaps, sources sometimes disagree, and mistakes can slip in. Known problems are logged on {quality}. Use it at your own risk. As far as the law allows, the owner is not responsible for losses that come from using it.",
+  "terms.errors": "To report a mistake, ask to reuse content, or ask for a logo to be removed, open an issue on GitHub: {link}.",
+  "terms.creditsTitle": "Data sources and credits",
+  "terms.lahman": "Baseball data also draws on the Lahman Baseball Database. Its licence and credit are listed on {sources}.",
+  "terms.wikipedia": "Notes about shortened seasons are adapted from Wikipedia (CC BY-SA 4.0). Each note links to its Wikipedia article.",
+  "terms.fullList": "The full list of sources, with the licence and credit of each, is on {sources}.",
+  "terms.logosTitle": "Logos and names",
+  "terms.logosRemoval": "If you own a logo shown here and want it removed, open an issue and it will be taken down promptly: {link}.",
+  "terms.ownerTitle": "Owner",
+  "terms.owner": "SPXN is owned by John Morris.",
+  "terms.notLegal": "This page is a plain-language summary, not legal advice.",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;
