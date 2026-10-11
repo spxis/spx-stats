@@ -43,6 +43,8 @@ export interface TeamPaths {
   teamSeason: (lg: string, f: number, y: number) => string;
   /** Just the slug a team goes by in a season (as in a series address). */
   season: (lg: string, f: number, y: number) => string;
+  /** A franchise's own slug (the last part of its team address), as in a head-to-head address. */
+  slug: (lg: string, f: number) => string;
 }
 
 /** Address builders over a table; a franchise missing from it gets its numeric address, which redirects to the right one. */
@@ -51,10 +53,12 @@ export function makePaths(table: SlugTable): TeamPaths {
     const e = table[lg]?.[f];
     return e ? seasonSlug(e, y) : String(f);
   };
+  const slug = (lg: string, f: number) => table[lg]?.[f]?.s ?? String(f);
   return {
-    team: (lg, f) => `/${lg}/team/${table[lg]?.[f]?.s ?? f}`,
+    team: (lg, f) => `/${lg}/team/${slug(lg, f)}`,
     teamSeason: (lg, f, y) => `/${lg}/${seasonSeg(lg, y)}/team/${season(lg, f, y)}`,
     season,
+    slug,
   };
 }
 

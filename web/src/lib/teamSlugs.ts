@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
+import { pairPath, parseH2hSegment } from "./h2h";
 import { buildSlugs, makePaths, parsePair, resolveFranchise, resolveTeamSeason, tableOf } from "./slug";
 
 const nameRow = z.object({ league: z.string(), franchise_id: z.number(), name: z.string(), name_from: z.string().nullable(), name_to: z.string().nullable() });
@@ -40,4 +41,14 @@ export async function pairOf(lg: string, y: number, seg: string): Promise<{ a: n
   const L = (await getSlugs()).leagues[lg];
   const a = resolveTeamSeason(L, y, p.a), b = resolveTeamSeason(L, y, p.b);
   return a == null || b == null || a === b ? null : { a, b, meeting: p.meeting };
+}
+
+/** The two franchises of a head-to-head address (in alphabetical order) and the address that pair should have; null when either is unknown. */
+export async function h2hOf(lg: string, seg: string): Promise<{ a: number; b: number; path: string } | null> {
+  const p = parseH2hSegment(seg);
+  if (!p) return null;
+  const [slugs, paths] = await Promise.all([getSlugs(), getPaths()]);
+  const L = slugs.leagues[lg];
+  const x = resolveFranchise(L, p.a), y = resolveFranchise(L, p.b);
+  return x == null || y == null || x === y ? null : pairPath(paths, lg, x, y);
 }
