@@ -44,3 +44,6 @@ so a very old browser may spell an abbreviation differently from the server.
   The earlier-meetings sentences ("lead their earlier playoff series 3-2", "In games: ...") are my best guess at natural phrasing.
 
 - **All-time records.** FR "Dossier historique" (page) and "Historique" (nav link), JA "通算成績" and "通算". FR "concession" for franchise, JA "球団". Column heads: FR "Pourc." (win share) and "Séries" (playoff appearances); JA "勝率", "PO" (playoff appearances) and "得失差" (goal, run or point difference). FR "Points (courses)" for MLB runs is a stopgap.
+
+- **Season leaders.** FR "meneurs" (leaders), "Pourcentage de victoires" for win share, "n° 2 sur 105 saisons" for "#2 of 105 seasons", "Tous temps" for the all-time column, "Buts pour / contre" and "Différentiel";
+  JA "リーダー", "勝率" for win share, "得失点差" for differential, "歴代" for all-time, "開催中" for a season in progress. The long explanatory notes under the charts are plain machine drafts.

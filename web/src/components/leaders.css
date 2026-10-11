@@ -1,0 +1,113 @@
+/* Season leaders: stat cards with a sparkline, the leader hero, the trend chart and the bar tables. Tokens come from globals.css. */
+.lcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 236px), 1fr)); gap: 12px; }
+.lgroup { display: flex; flex-direction: column; gap: 10px; }
+.lgroup > h3 { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+
+.lcard { position: relative; display: flex; flex-direction: column; gap: 5px; min-width: 0; padding: 12px 14px 10px; background: var(--panel); border: 1px solid var(--rule); border-top: 4px solid var(--rule); text-decoration: none; color: inherit; transition: border-color .15s, transform .15s, box-shadow .15s; }
+.lcard:hover { border-color: var(--accent); border-top-color: var(--accent); }
+.lcard[aria-current="page"] { border-color: var(--accent); border-top: 4px solid var(--accent); background: color-mix(in srgb, var(--accent) 9%, var(--panel)); box-shadow: 0 0 0 1px var(--accent); }
+.lcard .lname { font: 600 13px/1.1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); display: flex; justify-content: space-between; gap: 8px; }
+.lcard[aria-current="page"] .lname { color: var(--accent); }
+.lcard .lbig { font: 700 44px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.lcard .lwho { display: flex; align-items: center; gap: 2px; min-width: 0; font-weight: 600; font-size: 15px; line-height: 1.25; }
+.lcard .lwho .logo { flex: none; margin-right: 6px; vertical-align: 0; }
+.lcard .lwho span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.lcard .lmore { color: var(--muted); font-size: 13px; }
+.lchips { display: flex; flex-wrap: wrap; gap: 4px 6px; min-height: 22px; }
+.lchip { display: inline-block; font: 600 12px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 6px 3px; border: 1px solid var(--rule); color: var(--muted); background: var(--paper); white-space: nowrap; }
+.lchip.top { color: var(--accent); border-color: var(--accent); }
+.lchip.pending { color: transparent; border-color: var(--rule); background: var(--soft); min-width: 74px; animation: lpulse 1.4s ease-in-out infinite; }
+@keyframes lpulse { 50% { opacity: .45; } }
+@media (prefers-reduced-motion: reduce) { .lchip.pending { animation: none; } }
+.ltop { list-style: none; margin: 2px 0 0; padding: 0; display: flex; flex-direction: column; gap: 0; font-size: 13px; color: var(--muted); }
+.ltop li { display: grid; grid-template-columns: 1.4em minmax(0, 1fr) auto; gap: 4px; padding: 3px 0; border-top: 1px solid var(--rule); }
+.ltop li span:nth-child(2) { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ltop li b { font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.lspark { display: block; width: 100%; height: auto; margin-top: 2px; overflow: visible; }
+.lspark .sline { fill: none; stroke: var(--muted); stroke-width: 1.4; stroke-linejoin: round; opacity: .75; }
+.lspark .sarea { fill: var(--muted); opacity: .1; }
+.lspark .sguide { stroke: var(--accent); stroke-width: 1; stroke-dasharray: 2 2; opacity: .7; }
+.lspark .sdot { fill: var(--accent); stroke: var(--panel); stroke-width: 2; }
+.lspark .srec { fill: none; stroke: var(--muted); stroke-width: 1.2; }
+.lcard .lmini { display: flex; justify-content: space-between; color: var(--muted); font: 500 11px/1 var(--mono); }
+
+.lhero { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(0, 1fr); gap: 0; background: var(--panel); border: 1px solid var(--rule); border-left: 8px solid var(--accent); }
+.lhero .who { padding: 18px 22px; display: flex; flex-direction: column; gap: 6px; min-width: 0; justify-content: center; }
+.lhero .who .kicker { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+.lhero .who .num { font: 700 clamp(64px, 11vw, 104px)/.9 var(--display); font-variant-numeric: tabular-nums; }
+.lhero .who .num small { font: 600 20px/1 var(--display); letter-spacing: .08em; color: var(--muted); margin-left: 8px; text-transform: uppercase; }
+.lhero .who .name { font: 700 clamp(24px, 4vw, 34px)/1.05 var(--display); text-transform: uppercase; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 4px; min-width: 0; }
+.lhero .who .name .logo { margin-right: 4px; vertical-align: 0; }
+.lhero .who .sub { color: var(--muted); font-size: 14px; }
+.lfacts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border-left: 1px solid var(--rule); align-content: stretch; }
+.lfact { padding: 14px 18px; display: flex; flex-direction: column; justify-content: center; gap: 3px; border-top: 1px solid var(--rule); min-width: 0; }
+.lfact:nth-child(-n+2) { border-top: 0; }
+.lfact:nth-child(even) { border-left: 1px solid var(--rule); }
+.lfact.wide { grid-column: 1 / -1; border-left: 0 !important; }
+.lfact.wide + .lfact.wide { border-top: 1px solid var(--rule); }
+.lfact b { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; }
+.lfact b small { font: 600 15px/1 var(--display); letter-spacing: .06em; color: var(--muted); margin-left: 5px; text-transform: uppercase; }
+.lfact span { color: var(--muted); font-size: 13px; line-height: 1.3; }
+.lfact.top b { color: var(--accent); }
+.lfact a { color: inherit; }
+@media (max-width: 640px) {
+  .lcards { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+  .lcard { padding: 10px 10px 8px; }
+  .lcard .lbig { font-size: 32px; }
+  .lcard .lname { font-size: 12px; letter-spacing: .06em; }
+  .lcard .lwho { font-size: 14px; }
+  .lchip { font-size: 11px; letter-spacing: .03em; padding: 3px 5px 2px; }
+}
+@media (max-width: 760px) {
+  .lhero { grid-template-columns: minmax(0, 1fr); }
+  .lfacts { border-left: 0; border-top: 1px solid var(--rule); }
+  .lcard .lbig { font-size: 38px; }
+  .lfact { padding: 12px 14px; }
+  .lfact b { font-size: 28px; }
+}
+
+.ltrend .band { fill: var(--accent); opacity: .12; }
+.ltrend .mean { fill: none; stroke: var(--muted); stroke-width: 1.3; stroke-dasharray: 5 4; }
+.ltrend .lead { fill: none; stroke: var(--accent); stroke-width: 2.2; stroke-linejoin: round; }
+.ltrend .pt { fill: var(--panel); stroke: var(--accent); stroke-width: 1.4; }
+.ltrend .guide { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 3 3; opacity: .55; }
+.ltrend .sel { fill: var(--accent); stroke: var(--panel); stroke-width: 3; }
+.ltrend .hov { fill: var(--ink); stroke: var(--panel); stroke-width: 2; }
+.ltrend .rec { fill: var(--panel); stroke: var(--ink); stroke-width: 1.6; }
+.ltrend text.tag { fill: var(--ink); font: 700 14px var(--display); letter-spacing: .04em; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.ltrend text.tag2 { fill: var(--muted); font: 600 11px var(--display); letter-spacing: .1em; text-transform: uppercase; paint-order: stroke; stroke: var(--panel); stroke-width: 4px; stroke-linejoin: round; }
+.ltrend .idle { fill: var(--soft); stroke: var(--rule); stroke-dasharray: 3 2; }
+.ltrend .hit { fill: transparent; cursor: pointer; touch-action: pan-y; }
+.ltrend .tip { white-space: nowrap; }
+.ltrend .tip b { display: block; }
+.ltrend-legend { display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+.ltrend-legend i { display: inline-block; vertical-align: middle; margin-right: 6px; }
+.ltrend-legend .k-lead { width: 18px; height: 3px; background: var(--accent); }
+.ltrend-legend .k-mean { width: 18px; height: 0; border-top: 2px dashed var(--muted); }
+.ltrend-legend .k-band { width: 18px; height: 10px; background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.ltrend-legend .k-sel { width: 11px; height: 11px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 0 2px var(--panel), 0 0 0 3px var(--accent); }
+.ltrend-legend .k-rec { width: 9px; height: 9px; transform: rotate(45deg); background: var(--panel); border: 1.6px solid var(--ink); }
+
+.lpanel { display: flex; flex-direction: column; gap: 10px; background: var(--panel); border: 1px solid var(--rule); padding: 14px 16px 12px; min-width: 0; }
+.lpanel > h3 { font-size: 22px; text-transform: uppercase; letter-spacing: .03em; }
+
+.lval { display: inline-flex; align-items: center; justify-content: flex-end; gap: 10px; width: 100%; }
+.lval .lbar { flex: 1 1 auto; max-width: 150px; min-width: 40px; height: 8px; background: var(--soft); position: relative; }
+.lval .lbar i { position: absolute; inset: 0 auto 0 0; background: var(--accent); opacity: .85; }
+.lval b { font-weight: 600; min-width: 3.4em; text-align: right; }
+tr.leadrow td { background: color-mix(in srgb, var(--accent) 8%, var(--panel)); font-weight: 600; }
+tr.leadrow td:first-child { box-shadow: inset 4px 0 0 var(--accent); }
+td.rk, th.rk { width: 3em; color: var(--muted); }
+td .dim { color: var(--muted); font-weight: 400; }
+@media (max-width: 640px) {
+  .lval .lbar { max-width: 56px; min-width: 24px; }
+  .lval { gap: 6px; }
+}
+
+.ltable { max-height: none; }
+.ltable td { white-space: nowrap; }
+.lnote { color: var(--muted); font-size: 14px; max-width: 78ch; }
+.lnotes { display: flex; flex-direction: column; gap: 6px; }
+.lviews { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
+.lback { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+.lunavail { background: var(--panel); border: 1px dashed var(--rule); padding: 12px 16px; color: var(--muted); max-width: 78ch; }
