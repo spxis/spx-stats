@@ -7,7 +7,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { loadPlayoffs } from "@/lib/playoffs";
-import { roundPath, roundTitle } from "@/lib/series";
+import { datedRound, playedYear, roundPath, roundTitle } from "@/lib/series";
 import { parseSeasonSeg, seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { sayFor } from "@/lib/seriesCopy";
@@ -54,6 +54,7 @@ export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/
   const season = seasonLabel(lg, y);
   const robin = sp.say("playoffs.robin");
   const name = roundTitle(d.names, r, robin);
+  const dated = (rr: number) => datedRound(lg, y, Math.max(...d.series.filter((_, i) => d.round[i] === rr).map(playedYear)), roundTitle(d.names, rr, robin), rr === d.final, say);
   const hasRobin = d.bracket.robin.length > 0;
   const prev = r > 0 ? (r === 1 ? (hasRobin ? 0 : null) : r - 1) : null;
   const next = r === 0 ? (d.names.length ? 1 : null) : r < d.names.length ? r + 1 : null;
@@ -70,12 +71,12 @@ export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/
         <span className="eyebrow">
           <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={seasonPath(lg, y)}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`${seasonPath(lg, y)}#playoffs`}>{say("page.playoffs")}</Link>
         </span>
-        <h1>{name}</h1>
+        <h1>{dated(r)}</h1>
         <p className="lede">{sp.say("playoffs.round.lede", { count: sp.fmt(members.length), round: name, season, league: LG[lg] })}</p>
         <p className="note">
-          {prev != null ? <><Link href={roundPath(lg, y, prev)} prefetch={false} rel="prev">{"← " + roundTitle(d.names, prev, robin)}</Link>{" · "}</> : null}
+          {prev != null ? <><Link href={roundPath(lg, y, prev)} prefetch={false} rel="prev">{"← " + dated(prev)}</Link>{" · "}</> : null}
           <Link href={`${seasonPath(lg, y)}#playoffs`}>{sp.say("playoffs.round.bracket")}</Link>
-          {next != null ? <>{" · "}<Link href={roundPath(lg, y, next)} prefetch={false} rel="next">{roundTitle(d.names, next, robin) + " →"}</Link></> : null}
+          {next != null ? <>{" · "}<Link href={roundPath(lg, y, next)} prefetch={false} rel="next">{dated(next) + " →"}</Link></> : null}
         </p>
       </section>
       {groups.map((g) => (

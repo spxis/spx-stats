@@ -18,6 +18,9 @@ export const SERIES_COPY = {
   "final.nflOld": "NFL Championship",
   "final.cfl": "Grey Cup",
   "final.other": "Final",
+  "final.nflDated": "Super Bowl {numeral} ({year})",
+  "round.dated": "{year} {name}",
+  "round.datedLeague": "{year} {league} {name}",
 
   // the bracket and the cards
   "bracket.title": "Playoffs",
@@ -33,7 +36,7 @@ export const SERIES_COPY = {
   "page.playoffs": "Playoffs",
   "page.seasonLink": "{season} season",
   "page.aria": "{a} against {b}",
-  "page.metaTitle": "{a} vs {b}, {season} {league} {round}",
+  "page.metaTitle": "{a} vs {b}, {round}",
   "page.metaBeat": "{a} beat {b} {score} in the {season} {round}: every game with its score, running series score and charts.",
   "page.metaMet": "{a} and {b} met in the {season} {round}: every game with its score and charts.",
   "page.ledeUnsettled": "{a} and {b} met in the {season} {round}, but the games on record do not settle it.",

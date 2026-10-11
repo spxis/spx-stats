@@ -4,6 +4,7 @@
  * Pure (no server-only imports) so the pages, the charts and the checks all use the same counting.
  */
 import type { GameRow } from "./api/types";
+import { LG, type LeagueCode } from "./leagues";
 import type { Say } from "./seriesCopy";
 import { seasonPath, type TeamPaths } from "./slug";
 
@@ -192,13 +193,22 @@ export function roundName(lg: string, year: number, round: number, rounds: numbe
   return say("round.n", { n: round });
 }
 
-/** Every series with its round (0 for a round robin), and the names of the rounds 1..n (the last is the final only when it holds one series). */
-export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[] } {
+/** Every series with its round (0 for a round robin), the names of the rounds 1..n (the last is the final only when it holds one series), and the number of the final (0 when the last round holds more than one series). */
+export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[]; final: number } {
   const round = assignRounds(list, (s) => isRobin(lg, year, s));
   const count = Math.max(0, ...round);
   const finals = round.filter((r) => r === count).length;
   const names = Array.from({ length: count }, (_, i) => (finals === 1 ? roundName(lg, year, i + 1, count, say) : say("round.n", { n: i + 1 })));
-  return { round, names };
+  return { round, names, final: finals === 1 ? count : 0 };
+}
+
+/** The calendar year a series was played in: its last game's (a Super Bowl or a spring final of a split-year season falls in the second year). */
+export const playedYear = (s: Pick<Series, "end">): number => Number(s.end.slice(0, 4));
+
+/** A round's name with the year it was played: "2023 Stanley Cup Final", "Super Bowl LIII (2019)", "2023 NHL Semifinals". */
+export function datedRound(lg: string, year: number, played: number, name: string, isFinal: boolean, say: Say): string {
+  if (isFinal && lg === "nfl" && year >= 1966) return say("final.nflDated", { numeral: roman(year - 1965), year: played });
+  return isFinal ? say("round.dated", { year: played, name }) : say("round.datedLeague", { year: played, league: LG[lg as LeagueCode] ?? lg.toUpperCase(), name });
 }
 
 /** The name of a round; round 0 is the round robin, named by the caller. */

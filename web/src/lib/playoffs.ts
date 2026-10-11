@@ -10,10 +10,10 @@ import { getPairPlayoffYears, getPlayoffGames } from "./seriesData";
 export async function loadPlayoffs(lg: string, year: number, say: Say) {
   const [games, brands, align] = await Promise.all([getPlayoffGames(lg, year), getBrands(), getSeasonAlignment(lg, year)]);
   const series = deriveSeries(lg, year, games);
-  const { round, names } = describeRounds(lg, year, series, say);
+  const { round, names, final } = describeRounds(lg, year, series, say);
   const conf = new Map(align.filter((a) => a.conference).map((a) => [a.franchise_id, { name: a.conference!, short: a.conference_short }]));
   const bracket = buildBracket(series, round, (f) => conf.get(f) ?? null);
-  return { series, round, names, bracket, brands };
+  return { series, round, names, final, bracket, brands };
 }
 
 export interface PastMeeting { year: number; s: Series; round: string; n: number }

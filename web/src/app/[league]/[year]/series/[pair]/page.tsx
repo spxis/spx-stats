@@ -22,7 +22,7 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { LOCALE_TAG } from "@/lib/locale";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
-import { datePath, describeRounds, deriveSeries, nickname, rankIn, roundPath, roundTitle as nameOfRound, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
+import { datedRound, datePath, describeRounds, deriveSeries, nickname, playedYear, rankIn, roundPath, roundTitle as nameOfRound, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
 import { SERIES_COPY, sayFor, type Say } from "@/lib/seriesCopy";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { loadPastMeetings, type PastMeeting } from "@/lib/playoffs";
@@ -45,9 +45,10 @@ const load = cache(async (lg: string, y: number, a: number, b: number, meeting: 
 });
 
 function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say, robin: string) {
-  const { round, names } = describeRounds(lg, y, all, say);
+  const { round, names, final } = describeRounds(lg, y, all, say);
   const i = all.indexOf(s);
-  return { title: nameOfRound(names, round[i], robin) || say("page.playoffs"), number: round[i], rounds: names.length };
+  const name = nameOfRound(names, round[i], robin);
+  return { title: name || say("page.playoffs"), dated: name ? datedRound(lg, y, playedYear(s), name, round[i] === final, say) : say("page.playoffs"), number: round[i], rounds: names.length };
 }
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/series/[pair]">): Promise<Metadata> {
@@ -61,10 +62,10 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/s
   if (!d.series) return { robots: { index: false } };
   const say = sayFor(sp);
   const s = d.series, [a, b] = s.sides;
-  const round = roundOf(league, y, d.all, s, say, sp.say("playoffs.robin")).title;
+  const { title: round, dated } = roundOf(league, y, d.all, s, say, sp.say("playoffs.robin"));
   const season = seasonLabel(league, y);
   return pageMeta({
-    title: say("page.metaTitle", { a: a.name, b: b.name, season, league: LG[league], round }),
+    title: say("page.metaTitle", { a: a.name, b: b.name, round: dated }),
     description: s.winner == null
       ? say("page.metaMet", { a: a.name, b: b.name, season, round })
       : say("page.metaBeat", { a: a.name, b: b.name, score: scoreWords(s, say), season, round }),
@@ -136,7 +137,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
   if (seriesPath(paths, lg, y, s) !== `/${lg}/${year}/series/${pair}`) permanentRedirect(seriesPath(paths, lg, y, s));
 
   const say = sayFor(sp), { fmt, dt } = sp;
-  const { title: roundTitle, number, rounds } = roundOf(lg, y, d.all, s, say, sp.say("playoffs.robin"));
+  const { title: roundTitle, dated: roundDated, number, rounds } = roundOf(lg, y, d.all, s, say, sp.say("playoffs.robin"));
   const lastRound = d.all.filter((x) => roundOf(lg, y, d.all, x, say, "").number === rounds).length;
   const [A, B] = s.sides;
   const na = nickname(A.name), nb = nickname(B.name);
@@ -183,7 +184,10 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
 
   // Each team's other series of the playoffs, in the order played.
   const desc = describeRounds(lg, y, d.all, say);
-  const road = (f: number) => d.all.filter((x) => x !== s && x.sides.some((t) => t.f === f)).map((x) => ({ x, name: nameOfRound(desc.names, desc.round[d.all.indexOf(x)], sp.say("playoffs.robin")) }));
+  const road = (f: number) => d.all.filter((x) => x !== s && x.sides.some((t) => t.f === f)).map((x) => {
+    const r = desc.round[d.all.indexOf(x)], name = nameOfRound(desc.names, r, sp.say("playoffs.robin"));
+    return { x, name: datedRound(lg, y, playedYear(x), name, r === desc.final, say) };
+  });
 
   const past = await loadPastMeetings(lg, A.f, B.f, y, say, sp.say("playoffs.robin")).catch(() => null);
   const pastWon = (f: number) => (past ?? []).filter((m) => m.s.winner != null && m.s.sides[0].f === f).length;
@@ -221,7 +225,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
         <span className="eyebrow">
           <Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={seasonPath(lg, y)}>{say("page.seasonLink", { season })}</Link>{" · "}<Link href={`${seasonPath(lg, y)}#playoffs`}>{say("page.playoffs")}</Link>
         </span>
-        <h1>{roundTitle}</h1>
+        <h1>{roundDated}</h1>
         <p className="lede">{lede}</p>
       </section>
 
