@@ -83,6 +83,22 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 
 ## 4. Cold start
 
+**New machine or instance: connect everything first.** Do this once per Mac or cloud environment, before any
+ticket work. Each row says what breaks without it. Exact commands with private values are in the private file.
+
+| Connect | How | Without it |
+|---|---|---|
+| claude.ai connectors: Dropbox, Vercel, Supabase, GitHub | claude.ai, Settings, Connectors: connect each one (a browser click each). They then appear in every Claude session on that account, cloud or Mac. | no private file over MCP, no MCP deploys, no production reads |
+| Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
+| GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
+| Tailscale (Mac) | the app, signed in, on | no DS1 |
+| Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`) | no DS1, no `pnpm task` |
+| Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
+| Permission rules (per machine, `.claude/settings.local.json`, git-ignored) | John adds `"permissions": {"allow": ["Bash(vercel deploy:*)", "Bash(vercel link:*)"]}` if agents may deploy without asking | the auto-mode check refuses agent deploys and credential reads; John runs those blocks himself |
+
+Then check: `cd web && pnpm task` lists tickets, `vercel whoami` prints `spxis`, and the private file's DS1 `psql`
+line answers.
+
 **Environment.** A cloud session should have these variable names set. Check with `echo ${NAME:+set}`, which never
 prints the value. If one is missing, say which and carry on with what does not need it. Full list: [section 12](#12-secrets-and-the-environment).
 
@@ -210,6 +226,16 @@ your commit.
       project: "prj_MfgGl5vzVccEhmtSyvgze6hhgXJg"
       target: "production"
       gitSource: { type: "github", org: "spxis", repo: "spx-stats", ref: "main", sha: "<full commit sha>" }
+
+**Without the Vercel connector** (on a Mac with `vercel login` done), deploy a clean copy of the commit, never the
+working checkout (worktrees and other agents' files would be uploaded). It waits until the deployment is ready:
+
+    D=$(mktemp -d) && git archive <sha> | tar -x -C "$D" && cd "$D" && \
+    vercel link --yes --project spx-stats --scope spxis-projects-0d6306b4 >/dev/null && \
+    vercel deploy --prod --yes --scope spxis-projects-0d6306b4
+
+The auto-mode check refuses this from agents unless the permission rule in [section 4](#4-cold-start) is set; then
+give John the block. **Untested** until John's first run.
 
 Add `forceNew: "1"` if Vercel reuses an earlier deployment of the same commit. The project is `nextjs`, root
 directory `web`, Node 22.x. The call itself is **untested** (past deployments and the project settings were read and
