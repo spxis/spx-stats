@@ -3,6 +3,7 @@
 # Usage: scripts/build_core.sh [psql connection args]; default the local working copy.
 set -euo pipefail
 D=$(cd "$(dirname "$0")/.." && pwd)
+cd "$D"
 if [ $# -eq 0 ]; then set -- -h /tmp -p 55432 -U postgres -d spx_stats; fi
 PSQL=(psql -v ON_ERROR_STOP=1 -q -At "$@")
 for f in "$D"/db/build/[0-9]*.sql; do
