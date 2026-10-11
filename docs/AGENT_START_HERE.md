@@ -13,9 +13,11 @@ written down but nobody has run it end to end; **manual** means a person or the 
   characters or less, no AI attribution of any kind, add files by name, never `git add -A`.
 - The repository is public: no dumps, member data, secrets, private notes or internal reviews.
 - Never write to production without reading section 5. Never touch another agent's files.
-- Talking to John: short bullets, no background. When you need something from him, the message leads with
-  `NEED FROM YOU:` and has at most 3 bullets, each one action or one copy-paste command. Work out the command
-  yourself before asking him for any step. See "Talking to John" in AGENTS.md.
+- Talking to John: short bullets, no background. When you need something from him, start with `NEED FROM YOU:`
+  and then one fenced copy-paste block for Terminal per ask (not a list of steps) that does the work, prints a short
+  result he can paste back, and waits and checks by itself. No guessed paths; say what is untested. Work out the
+  command yourself before asking him for any step. See "Talking to John" in AGENTS.md; the private rule file is
+  Dropbox `/Backups/spx-stats/notes/how-john-wants-to-be-asked.md`.
 
 ## 1. Start
 

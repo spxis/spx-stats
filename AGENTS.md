@@ -142,8 +142,12 @@ commands for the board, the work, deploying, data and secrets. This file holds t
 John reads on his phone with little attention to spare, and the phone cannot change permission settings.
 
 - **Short bullets, no background paragraphs** unless he asks.
-- **When you need something from him, lead with `NEED FROM YOU:`**, then at most 3 bullets, each one action or one
-  copy-paste command. Nothing before it. If you are blocked (a permission refusal, a missing key), that is the first line.
+- **When you need something from him, start with `NEED FROM YOU:`, then give a copy-paste block**: a fenced code
+  block for Terminal, not a list of steps. One self-contained block per ask. It does the work, prints a short result he
+  can paste back, and waits and checks by itself (for example `gh run watch …; curl …`) so he does not have to come
+  back. No wildcard or guessed paths: look every name up first, and say what is untested. If you are blocked (a
+  permission refusal, a missing key), that is the first line. The private rule file is Dropbox
+  `/Backups/spx-stats/notes/how-john-wants-to-be-asked.md`.
 - **Work out the command before asking him for a step.** Before telling John to click through a website or log in to a
   machine, check whether an agent or MCP tool can do it, and whether the value is already on his Mac (keychain, .env
   files) or in the private notes. Then give him ONE copy-paste command that fetches or builds it without printing any
