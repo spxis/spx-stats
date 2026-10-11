@@ -17,7 +17,10 @@ export function LeagueNav() {
         </Link>
       ))}
       {LEAGUES.some((l) => l.code === current) ? (
-        <Link className="sub" href={`/${current}/all-time`} aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
+        <>
+          <Link className="sub" href={`/${current}/scores`} aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>
+          <Link className="sub" href={`/${current}/all-time`} aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
+        </>
       ) : null}
     </nav>
   );

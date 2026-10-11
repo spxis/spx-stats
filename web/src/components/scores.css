@@ -1,0 +1,35 @@
+/* The scoreboard: controls, the strip of days around the chosen one, and a card per game. Tokens come from globals.css. */
+.scoresbar { gap: 10px 12px; }
+.scoresbar .daynav { display: inline-flex; gap: 6px; }
+.dayarrow { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-decoration: none; white-space: nowrap; }
+a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
+.dayarrow.off { opacity: .35; }
+
+.daystrip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-block: 16px 22px; }
+.daystrip a { display: flex; flex-direction: column; align-items: center; gap: 3px; padding: 8px 2px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); text-decoration: none; min-width: 0; }
+.daystrip a:hover { border-color: var(--accent); color: var(--ink); }
+.daystrip a.has { color: var(--ink); }
+.daystrip .wd { font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
+.daystrip .md { font: 600 13px/1 var(--display); white-space: nowrap; }
+.daystrip .ct { font: 500 12px/1 var(--mono); color: var(--muted); }
+.daystrip a[aria-current="date"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.daystrip a[aria-current="date"] .ct { color: inherit; }
+
+.scoreboard { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.sgame { border: 1px solid var(--rule); background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.srow { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 30px; }
+.srow .slogo { flex: none; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; }
+.srow .logo { margin: 0; vertical-align: middle; }
+.srow .sname { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.srow .sname a { text-decoration: none; }
+.srow .sname a:hover { text-decoration: underline; }
+.srow .sscore { font: 600 20px/1 var(--mono); min-width: 2ch; text-align: right; color: var(--muted); }
+.srow.won .sname, .srow.won .sscore { font-weight: 700; }
+.srow.won .sscore { color: var(--ink); }
+.sinfo { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; margin-top: 4px; padding-top: 6px; border-top: 1px solid var(--rule); font-size: 12px; color: var(--muted); }
+.sinfo .tag { margin-left: 0; }
+.sstate { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); margin-right: 4px; }
+.sstate.pending { color: var(--muted); }
+
+.noday { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px dashed var(--rule); }
+.nearest { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }

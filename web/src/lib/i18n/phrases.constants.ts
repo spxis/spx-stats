@@ -900,6 +900,25 @@ export const PHRASES = {
   "privacy.questionsTitle": "Questions",
   "privacy.questions": "Ask by opening an issue on GitHub: {link}. If this page changes, the date below changes.",
   "privacy.notLegal": "This page is a plain-language description, not legal advice.",
+
+  // scores by date
+  "nav.scores": "Scores",
+  "scores.title": "Scores",
+  "scores.link": "Scores by date",
+  "scores.metaTitle": "{league} scores, {date}",
+  "scores.metaDesc": "Every {league} game on {date}: {games}, with scores, teams and results.",
+  "scores.dateLabel": "Scores date",
+  "scores.daysAria": "Days around this one",
+  "scores.final": "Final",
+  "scores.finalExtra": "Final / {extra}",
+  "scores.scheduled": "Scheduled",
+  "scores.noResult": "No result",
+  "scores.none": "No {league} games on {date}.",
+  "scores.nearest": "The nearest days with games:",
+  "scores.earlier": "Earlier: {date}",
+  "scores.later": "Later: {date}",
+  "scores.beforeData": "The {league} archive starts on {date}.",
+  "scores.afterData": "The last {league} game day in the archive is {date}.",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;

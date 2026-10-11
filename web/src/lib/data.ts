@@ -130,6 +130,40 @@ export const getTeamStandings = cache(async (lg: string, f: number): Promise<Sta
 export const getTeamGames = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc" = "asc"): Promise<GameRow[]> =>
   rows("games", `league=eq.${lg}&year=eq.${y}&or=(away_f.eq.${f},home_f.eq.${f})&select=*&order=game_date.${dir},game_id.${dir}`, gameSchema));
 
+/* ---------- scores by date ------------------------------------------------------------- */
+
+const gameDaySchema = z.object({ game_date: z.string(), year: z.number() });
+type GameDay = z.infer<typeof gameDaySchema>;
+
+/** Every game of a league between two days (both included), for the scoreboard and the days around it. */
+export const getGamesBetween = cache(async (lg: string, first: string, last: string): Promise<GameRow[]> =>
+  rows("games", `league=eq.${lg}&game_date=gte.${first}&game_date=lte.${last}&select=*&order=game_date,game_id`, gameSchema));
+
+/** The league's game day nearest a day on one side of it (strictly before or after), or null. */
+export const getGameDay = cache(async (lg: string, day: string, side: "before" | "after"): Promise<GameDay | null> => {
+  const [r] = await rows("games", `league=eq.${lg}&game_date=${side === "before" ? "lt" : "gt"}.${day}&select=game_date,year&order=game_date.${side === "before" ? "desc" : "asc"}&limit=1`, gameDaySchema);
+  return r ?? null;
+});
+
+/** A league's first and last game day. */
+export const getGameBounds = cache(async (lg: string): Promise<{ first: GameDay; last: GameDay } | null> => {
+  const [[first], [last]] = await Promise.all([
+    rows("games", `league=eq.${lg}&select=game_date,year&order=game_date.asc&limit=1`, gameDaySchema),
+    rows("games", `league=eq.${lg}&select=game_date,year&order=game_date.desc&limit=1`, gameDaySchema),
+  ]);
+  return first && last ? { first, last } : null;
+});
+
+/** The last game day of a league's season, or null when it has no games. */
+export const getSeasonLastDay = cache(async (lg: string, y: number): Promise<string | null> =>
+  (await rows("games", `league=eq.${lg}&year=eq.${y}&select=game_date,year&order=game_date.desc&limit=1`, gameDaySchema))[0]?.game_date ?? null);
+
+/** Every day a league's season has a game, ascending (the date picker puts a dot on each). */
+export const getSeasonDays = cache(async (lg: string, y: number): Promise<string[]> => {
+  const all = await rows("games", `league=eq.${lg}&year=eq.${y}&select=game_date,year&order=game_date`, gameDaySchema);
+  return [...new Set(all.map((g) => g.game_date))];
+});
+
 /** Every (league, year, franchise) with a record, for the sitemap's team-season pages. */
 export const getTeamSeasonIndex = cache(async () =>
   rows("team_seasons", "select=league,year,franchise_id,w&order=league,year,franchise_id", z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), w: z.number().nullable() })));

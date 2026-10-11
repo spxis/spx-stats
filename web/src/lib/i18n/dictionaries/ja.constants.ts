@@ -268,6 +268,7 @@ export const JA: Dictionary = {
 
   // all-time records
   "nav.allTime": "通算",
+  "nav.scores": "スコア",
   "count.franchises.one": "{count}球団",
   "count.franchises.other": "{count}球団",
   "col.years": "期間",

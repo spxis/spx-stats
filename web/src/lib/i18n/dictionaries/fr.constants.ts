@@ -268,6 +268,7 @@ export const FR: Dictionary = {
 
   // all-time records
   "nav.allTime": "Historique",
+  "nav.scores": "Pointages",
   "count.franchises.one": "{count} concession",
   "count.franchises.other": "{count} concessions",
   "col.years": "Années",

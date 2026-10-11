@@ -27,6 +27,7 @@ import { leagueSat } from "@/lib/noSeason";
 import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
+import { scoresPath } from "@/lib/scores";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 
@@ -153,6 +154,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
         <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
           <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link>
           <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
+          {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
           <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link>
         </nav>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
