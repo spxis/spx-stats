@@ -1,0 +1,88 @@
+/* All-time pages: team colour as --c in both themes, ranked bars, highlight cards, the sticky-column table, the season grid. Tokens come from globals.css. */
+.at-c { --c: var(--tl, var(--accent)); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .at-c { --c: var(--td, var(--accent)); } }
+:root[data-theme="dark"] .at-c { --c: var(--td, var(--accent)); }
+
+.atcontrols { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
+.atcontrols .seg.views a { white-space: nowrap; }
+
+.athl { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
+.athl a { display: flex; flex-direction: column; gap: 4px; min-width: 0; background: var(--panel); border: 1px solid var(--rule); border-top: 5px solid var(--c); padding: 12px 14px; text-decoration: none; }
+.athl a:hover { border-color: var(--c); }
+.athl .k { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.athl .who { display: flex; align-items: center; gap: 8px; font: 700 21px/1.15 var(--display); text-transform: uppercase; letter-spacing: .02em; min-width: 0; }
+.athl .who .logo { margin: 0; flex: none; }
+.athl .who span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.athl b { font: 700 34px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--c); }
+.athl .sub { color: var(--muted); font-size: 13px; }
+
+.rank { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.rank li { display: grid; grid-template-columns: minmax(0, 15rem) minmax(0, 1fr) 4.4rem; align-items: center; gap: 10px; min-height: 26px; }
+.rank .rk-name { display: flex; align-items: center; gap: 8px; min-width: 0; overflow: hidden; white-space: nowrap; font-weight: 600; text-decoration: none; }
+.rank .rk-name:hover { text-decoration: underline; }
+.rank .rk-name .logo { margin: 0; flex: none; }
+.rank .rk-name .tn-long { overflow: hidden; text-overflow: ellipsis; }
+.rank .rk-gone { color: var(--muted); font-weight: 500; }
+.rank .rk-track { position: relative; height: 16px; background: var(--soft); border-radius: 2px; }
+.rank .rk-bar { position: absolute; top: 0; bottom: 0; background: var(--c); border-radius: 2px; transform-origin: left center; }
+.rank .rk-bar.below { opacity: .5; transform-origin: right center; }
+.rank .rk-mid { position: absolute; top: -3px; bottom: -3px; left: 50%; width: 1px; background: var(--muted); }
+.rank .rk-val { text-align: right; font: 600 16px/1 var(--display); font-variant-numeric: tabular-nums; }
+.rank-more { margin-top: 6px; }
+.rank-more summary { cursor: pointer; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--accent); padding: 6px 0; }
+.rank-more[open] summary { margin-bottom: 4px; }
+@media (prefers-reduced-motion: no-preference) {
+  .rank .rk-bar { animation: rk-grow .7s cubic-bezier(.22, 1, .36, 1) both; }
+  @keyframes rk-grow { from { transform: scaleX(0); } }
+}
+
+.attable td { vertical-align: middle; }
+.attable td.num { white-space: nowrap; }
+.attable td.years { white-space: nowrap; color: var(--muted); }
+.attable .former { display: block; font-weight: 400; font-size: 12px; color: var(--muted); white-space: normal; min-width: 11rem; max-width: 18rem; line-height: 1.3; }
+.attable td.team { white-space: nowrap; }
+.attable td.team .logo { margin-right: 8px; }
+.attable td.team > .at-c { display: flex; align-items: flex-start; gap: 0; }
+.attable td.team .nm { display: block; }
+.attable tr.gone td.num, .attable tr.gone td.years { color: var(--muted); }
+.attable .sub { color: var(--muted); font-size: 12px; margin-left: 6px; }
+.attable .up { color: var(--ok); } .attable .down { color: var(--bad); }
+.attable td.spark { padding-block: 3px; }
+.attable th:first-child, .attable td:first-child { position: sticky; left: 0; background: var(--paper); box-shadow: 1px 0 0 var(--rule); }
+.attable td:first-child { z-index: 1; }
+.attable th:first-child { z-index: 3; }
+.attable tr:hover td:first-child { background: var(--soft); }
+.tablebox.attable { max-height: 75vh; }
+.spark svg { display: block; overflow: visible; }
+.spark .mid { stroke: var(--rule); stroke-dasharray: 2 2; }
+.spark .ln { fill: none; stroke: var(--c); stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
+.spark .dot { fill: var(--c); }
+
+.atcharts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 480px), 1fr)); gap: 28px 36px; }
+.atcharts > div { min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+
+.atscatter circle { stroke: var(--paper); stroke-width: 1.5; cursor: pointer; fill: var(--c); fill-opacity: .85; }
+.atscatter circle.gone { fill: var(--panel); stroke: var(--c); stroke-width: 2; fill-opacity: 1; }
+.atscatter circle:hover, .atscatter circle:focus-visible { fill-opacity: 1; stroke: var(--ink); outline: none; }
+.atscatter text.pt { fill: var(--ink); font: 600 11px var(--display); letter-spacing: .04em; pointer-events: none; paint-order: stroke; stroke: var(--paper); stroke-width: 3px; stroke-linejoin: round; }
+.atscatter .axis { fill: var(--muted); font-size: 12px; }
+.atscatter .diag { stroke: var(--muted); stroke-dasharray: 5 4; fill: none; }
+.legend i.dotted { border-radius: 50%; }
+.legend i.hollow { border-radius: 50%; background: var(--panel); border: 2px solid var(--muted); width: 12px; height: 12px; box-sizing: border-box; }
+
+.atgrid text.rowlab { fill: var(--ink); font: 600 11px var(--display); letter-spacing: .03em; }
+.atgrid text.rowlab.gone { fill: var(--muted); font-weight: 500; }
+.atgrid .champ { fill: var(--warn); stroke: var(--paper); stroke-width: 1; pointer-events: none; }
+.atgrid .rowhit { fill: transparent; cursor: pointer; }
+.atgrid .rowhit:hover { fill: color-mix(in srgb, var(--ink) 7%, transparent); }
+.legend i.champ { background: var(--warn); border-radius: 50%; }
+.legend i.cool { background: color-mix(in srgb, var(--ink) 60%, var(--soft)); }
+.legend i.warm { background: color-mix(in srgb, var(--accent) 90%, var(--soft)); }
+.legend i.mid { background: var(--soft); border: 1px solid var(--rule); box-sizing: border-box; }
+
+@media (max-width: 640px) {
+  .rank li { grid-template-columns: minmax(0, 5.6rem) minmax(0, 1fr) 3.8rem; gap: 8px; }
+  .athl .who { font-size: 19px; }
+  .athl b { font-size: 30px; }
+  .attable .former { display: none; }
+}
