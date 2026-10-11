@@ -14,9 +14,9 @@ import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/al
 import { getStandingsAsOf } from "@/lib/alignmentData";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
-import { brandFor } from "@/lib/brand";
+import { logoFor } from "@/lib/brand";
 import { titleHolders } from "@/lib/champions";
-import { getBrands, getSeason, getSummary } from "@/lib/data";
+import { getAbbrs, getBrands, getSeason, getSummary } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
@@ -48,7 +48,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const y = yearOf(year);
   if (!isLeague(lg) || y == null) notFound();
   const { say, plural, fmt, dt } = await currentSpeaker();
-  const [d, brands, summary] = await Promise.all([getSeason(lg, y), getBrands(), getSummary()]);
+  const [d, brands, abbrs, summary] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary()]);
   if (!d) {
     if (!isGapYear(summary.seasons, lg, y)) notFound();
     return (
@@ -103,8 +103,8 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
       cell: (r) => (
         <>
-          <TeamLogo url={brandFor(brands, r.franchise_id, y)?.logo_url} />
-          <Link href={played.has(r.team_id) ? `/${lg}/${y}/team/${r.franchise_id}` : `/${lg}/team/${r.franchise_id}`} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, r.franchise_id, y, r.team)}</abbr></Link>
+          <TeamLogo url={logoFor(brands, r.franchise_id, y)} />
+          <Link href={played.has(r.team_id) ? `/${lg}/${y}/team/${r.franchise_id}` : `/${lg}/team/${r.franchise_id}`} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, r.franchise_id, y, r.team)}</abbr></Link>
           {defending != null && r.franchise_id === defending ? (
             <span className="defending" title={say("season.wonTitle", { season: seasonLabel(lg, y - 1) })}>{say("season.defending")}</span>
           ) : null}
@@ -195,7 +195,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       {d.games.length ? (
         <section className="section">
           <h2>{say("season.games")}</h2>
-          <SeasonGames lg={lg} year={y} games={d.games} teams={d.teams} initial={selection} />
+          <SeasonGames lg={lg} abbrs={abbrs} year={y} games={d.games} teams={d.teams} initial={selection} />
 
         </section>
       ) : null}

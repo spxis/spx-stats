@@ -8,6 +8,7 @@ import type {
   SeasonSummaryRow,
   SourceRow,
   StandingRow,
+  TeamAbbrRow,
   TeamBrandRow,
   TeamSeasonRow,
   TotalsRow,
@@ -73,6 +74,10 @@ export const sourceSchema = z.object({
 // colour or an https URL is dropped to null rather than trusted.
 const hex = z.string().regex(/^[0-9A-Fa-f]{6}$/).nullable().catch(null);
 const httpsUrl = z.string().refine((u) => u.startsWith("https://")).nullable().catch(null);
+
+export const teamAbbrSchema = z.object({
+  league: str, franchise_id: int, valid_from: strN, valid_to: strN, abbreviation: str,
+}) satisfies z.ZodType<TeamAbbrRow>;
 
 export const teamBrandSchema = z.object({
   league: str, franchise_id: int, brand_from: strN, brand_to: strN,

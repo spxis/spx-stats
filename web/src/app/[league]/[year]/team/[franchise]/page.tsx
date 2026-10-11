@@ -9,10 +9,10 @@ import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
-import { brandFor, teamAccent } from "@/lib/brand";
+import { brandFor, logoFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
-import { getBrands, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
+import { getAbbrs, getBrands, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -30,11 +30,11 @@ const yearOf = (v: string) => (/^\d{4}$/.test(v) ? Number(v) : null);
 
 /** The team's season: its games (in date order, or the reverse), its standings row for the year and its brand for the year. */
 const load = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc") => {
-  const [raw, stAll, brands] = await Promise.all([getTeamGames(lg, y, f, dir), getTeamStandings(lg, f), getBrands()]);
+  const [raw, stAll, brands, abbrs] = await Promise.all([getTeamGames(lg, y, f, dir), getTeamStandings(lg, f), getBrands(), getAbbrs(lg)]);
   const st = stAll.find((r) => r.year === y) ?? null;
   const first = raw.find((g) => g.home_f === f) ?? raw[0];
   const mine = first ? (first.home_f === f ? { id: first.home_id, name: first.home } : { id: first.away_id, name: first.away }) : null;
-  return { raw, st, brand: brandFor(brands, f, y), place: placeFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
+  return { abbrs, raw, st, brand: brandFor(brands, f, y), logo: logoFor(brands, f, y), place: placeFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
 });
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/team/[franchise]">): Promise<Metadata> {
@@ -72,7 +72,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       </>
     );
   }
-  const { raw, st, brand: b, place, me, name } = d;
+  const { abbrs, raw, st, brand: b, logo, place, me, name } = d;
   const games = deriveTeamGames(raw, f, st);
   const rec = seasonRecord(games, st);
   const season = seasonLabel(lg, y);
@@ -104,7 +104,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
           </nav>
         ) : null}
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}<Link href={`/${lg}/${y}`}>{say("season.title", { label: season })}</Link></span>
-        <h1 className="teamname"><TeamLogo url={b?.logo_url} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
+        <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
         {isChamp ? <span className="reigning"><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
         <p className="lede">
           {say("tseason.lede", { season, record: text }) + " "}
@@ -114,7 +114,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       </section>
       <Figures items={figs} />
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
-      <TeamSeasonView lg={lg} season={season} year={y} initialLoc={parseLoc(sp.loc)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
+      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} />
     </>
   );

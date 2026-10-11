@@ -13,12 +13,12 @@ import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
 import type { StandingRow } from "@/lib/api/types";
-import { abbrFor } from "@/lib/abbr";
-import { brandFor, teamAccent, type BrandMap } from "@/lib/brand";
+import { abbrFor, type AbbrMap } from "@/lib/abbr";
+import { brandFor, logoFor, teamAccent, type BrandMap } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { titleHolders } from "@/lib/champions";
-import { getBrands, getClubs, getSummary, getTeam, getTeamStandings } from "@/lib/data";
+import { getAbbrs, getBrands, getClubs, getSummary, getTeam, getTeamStandings } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -68,11 +68,11 @@ async function Lifetime({ lg, rows }: { lg: string; rows: StandingRow[] }) {
   );
 }
 
-function pins(lg: string, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number): Pin[] {
+function pins(lg: string, abbrs: AbbrMap, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number): Pin[] {
   return clubs.flatMap((c) => {
     const b = placeFor(brands, c.franchise_id, year);
     return b && b.latitude != null && b.longitude != null
-      ? [{ f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(lg, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: `/${lg}/team/${c.franchise_id}`, me: c.franchise_id === f }]
+      ? [{ f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(abbrs, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: `/${lg}/team/${c.franchise_id}`, me: c.franchise_id === f }]
       : [];
   });
 }
@@ -82,7 +82,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   const f = idOf(franchise);
   if (!isLeague(lg) || f == null) notFound();
   const { say, plural, fmt } = await currentSpeaker();
-  const [t, rows, brands, summary] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getSummary()]);
+  const [t, rows, brands, abbrs, summary] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getAbbrs(lg), getSummary()]);
   if (!t) notFound();
   const names = t.names;
   const now = names.at(-1)?.name || say("team.fallback", { id: f });
@@ -100,8 +100,8 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     const clubs = await getClubs(lg, lastYear);
     map = (
       <TeamMapCorner
-        me={{ f, name: now, abbr: abbrFor(lg, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }}
-        others={pins(lg, clubs, brands, lastYear, f)} clubCount={clubs.length}
+        me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }}
+        others={pins(lg, abbrs, clubs, brands, lastYear, f)} clubCount={clubs.length}
         seasonLabel={seasonLabel(lg, lastYear)} leagueShort={LG[lg]} name={now}
       />
     );
@@ -125,7 +125,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     },
     {
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(lg, f, r.year, r.team)}</abbr></>,
+      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, f, r.year, r.team)}</abbr></>,
     },
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,
@@ -167,7 +167,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
       <section className="head fade">
         {map}
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
-        <h1 className="teamname"><TeamLogo url={b?.logo_url} size={56} />{now}<TeamFlag code={country} /></h1>
+        <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<TeamFlag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={`/${lg}/${reigning.year}`}>
             <BadgeCup league={lg} />

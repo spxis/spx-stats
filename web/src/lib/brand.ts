@@ -23,6 +23,26 @@ export function brandFor(brands: BrandMap, f: number | null | undefined, year?: 
   );
 }
 
+/**
+ * The logo a franchise wore in a year: the era covering it when that era has one, else the nearest era that does
+ * (brand eras overlap and many carry no logo, so the first era covering a year can have none while another does).
+ */
+export function logoFor(brands: BrandMap, f: number | null | undefined, year?: number): string | null {
+  if (f == null) return null;
+  const logos = (brands[f] ?? []).filter((b) => b.logo_url);
+  if (!logos.length) return null;
+  const day = year ? `${year}-12-31` : null;
+  if (!day) return (logos.find((b) => !b.brand_to) ?? logos.at(-1))!.logo_url;
+  const covering = logos.filter((b) => (!b.brand_from || b.brand_from <= day) && (!b.brand_to || b.brand_to > day));
+  if (covering.length) return covering.at(-1)!.logo_url;
+  const t = Date.parse(day);
+  const gap = (b: TeamBrandRow) => Math.min(
+    b.brand_from ? Math.abs(Date.parse(b.brand_from) - t) : Infinity,
+    b.brand_to ? Math.abs(Date.parse(b.brand_to) - t) : Infinity,
+  );
+  return [...logos].sort((a, b) => gap(a) - gap(b))[0].logo_url;
+}
+
 const lum = (hex: string): number => {
   const c = [0, 2, 4]
     .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)

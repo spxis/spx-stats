@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { abbrFor } from "@/lib/abbr";
+import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc } from "@/lib/format";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import { srcName } from "@/lib/leagues";
@@ -27,6 +27,8 @@ import "./team.css";
 
 interface Props {
   lg: string;
+  /** The league's team abbreviations from the database. */
+  abbrs: AbbrMap;
   /** Label of the season: 2025, or 2005-06. */
   season: string;
   /** The season's year (2009 for 2009-10): the season page and the opponents' season pages are under it. */
@@ -49,7 +51,7 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
-export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc }: Props) {
+export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const [want, setWant] = useState<Selection>(initial);
@@ -84,7 +86,7 @@ export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList,
       ),
     },
     { key: "loc", label: say("col.ha"), title: say("col.haTitle"), get: (g) => g.loc, cell: (g) => say(g.loc === "Home" ? "loc.home" : "loc.away") },
-    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(lg, g.oppF, year, g.oppName)} /> },
+    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(abbrs, g.oppF, year, g.oppName)} /> },
     { key: "score", label: say("col.score"), num: true, title: say("col.scoreTitle"), get: (g) => g.margin, cell: (g) => (g.res ? `${g.mine}–${g.theirs}` : "") },
     {
       key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
@@ -102,7 +104,7 @@ export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList,
         </>
       ),
     },
-  ], [lg, year, extra, say, dt]);
+  ], [lg, abbrs, year, extra, say, dt]);
   const table = useMemo(() => tableOf(rows, specs, (g) => g.id), [rows, specs]);
 
   const done = rows.filter((g) => g.res);
@@ -147,7 +149,7 @@ export function TeamSeasonView({ lg, season, year, meId, games, teams: teamList,
         <h2>{say("teamcal.title")}</h2>
         <p className="note">{say("teamcal.note")}</p>
         {months.length ? (
-          <GameCalendar lg={lg} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={String(meId)} dayOnly
+          <GameCalendar lg={lg} abbrs={abbrs} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={String(meId)} dayOnly
             onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ day: d })}
             onJump={(d) => set({ month: d.slice(0, 7), day: d })} />
         ) : <div className="daylist"><p className="note">{say("games.none")}</p></div>}

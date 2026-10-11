@@ -138,6 +138,14 @@ export interface SourceRow {
   notes: string | null;
 }
 
+export interface TeamAbbrRow {
+  league: string;
+  franchise_id: number;
+  valid_from: string | null;
+  valid_to: string | null;
+  abbreviation: string;
+}
+
 export interface TeamBrandRow {
   league: string;
   franchise_id: number;

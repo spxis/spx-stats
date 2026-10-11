@@ -2,7 +2,7 @@ import Link from "next/link";
 import { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { sayFor, type Say } from "@/lib/seriesCopy";
-import { brandFor } from "@/lib/brand";
+import { logoFor } from "@/lib/brand";
 import { describeRounds, deriveSeries, seriesPath, type Series } from "@/lib/series";
 import { getPlayoffGames } from "@/lib/seriesData";
 import { TeamLogo } from "./TeamLogo";
@@ -17,7 +17,7 @@ export function SeriesCard({ lg, s, brands, year, say }: { lg: string; s: Series
     <Link href={seriesPath(lg, year, s)} prefetch={false} className="sercard" title={say("card.title", { a: s.sides[0].name, b: s.sides[1].name })}>
       {([0, 1] as const).map((i) => (
         <span key={i} className={`serrow${s.winner === i ? " won" : ""}`}>
-          <TeamLogo url={brandFor(brands, s.sides[i].f, year)?.logo_url} size={18} />
+          <TeamLogo url={logoFor(brands, s.sides[i].f, year)} size={18} />
           <span className="nm">{s.sides[i].name}</span>
           <b>{num(i)}</b>
         </span>

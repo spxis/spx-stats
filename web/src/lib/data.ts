@@ -4,9 +4,10 @@ import { z } from "zod";
 import { rows } from "./api/client";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
-  seasonSummarySchema, sourceSchema, standingSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
+  seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
 } from "./api/schemas";
 import type { AwardRow, GameRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
+import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { isSpx } from "./leagues";
 import type { ClubTeam, GameTuple, Phase } from "./season";
@@ -23,6 +24,12 @@ export const getSummary = cache(async (): Promise<{ seasons: SeasonSummaryRow[];
 });
 
 /** Every brand era of every franchise. A missing or empty view just means no logos or colours yet. */
+/** A league's team abbreviations, era by era (the database's own: core.franchise_identity.abbreviation). */
+export const getAbbrs = cache(async (lg: string): Promise<AbbrMap> => {
+  const all = await rows("team_abbr", `league=eq.${lg}&select=*&order=franchise_id,valid_from.nullsfirst`, teamAbbrSchema).catch(() => []);
+  return groupAbbrs(all);
+});
+
 export const getBrands = cache(async (): Promise<BrandMap> => {
   const all = await rows("team_brand", "select=*&order=franchise_id,brand_from.nullsfirst", teamBrandSchema).catch(() => []);
   return groupBrands(all);

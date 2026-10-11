@@ -11,9 +11,10 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Badge } from "@/components/ui";
 import type { GameRow, StandingRow } from "@/lib/api/types";
-import { brandFor } from "@/lib/brand";
+import { brandFor, logoFor } from "@/lib/brand";
 import { titleHolders } from "@/lib/champions";
-import { getBrands, getSummary } from "@/lib/data";
+import { getAbbrs, getBrands, getSummary } from "@/lib/data";
+import { abbrFor } from "@/lib/abbr";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -34,10 +35,10 @@ const unitKey = (lg: string) => (lg === "nhl" ? "unit.nhl" : lg === "mlb" ? "uni
 
 /** The season's series, the one asked for, and what the page puts beside it. */
 const load = cache(async (lg: string, y: number, a: number, b: number, meeting: number) => {
-  const [playoffs, regular, standings, brands] = await Promise.all([getPlayoffGames(lg, y), getPairGames(lg, y, a, b, "regular"), getSeasonStandings(lg, y), getBrands()]);
+  const [playoffs, regular, standings, brands, abbrs] = await Promise.all([getPlayoffGames(lg, y), getPairGames(lg, y, a, b, "regular"), getSeasonStandings(lg, y), getBrands(), getAbbrs(lg)]);
   const all = deriveSeries(lg, y, playoffs);
   const series = all.find((s) => s.meeting === meeting && s.sides.some((t) => t.f === a) && s.sides.some((t) => t.f === b)) ?? null;
-  return { all, series, regular, standings, brands };
+  return { all, series, regular, standings, brands, abbrs };
 });
 
 function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say) {
@@ -106,8 +107,6 @@ function CompareRow({ m }: { m: Metric }) {
     </div>
   );
 }
-
-const monogram = (name: string) => name.split(/\s+/).map((w) => w[0]).join("").slice(0, 3).toUpperCase();
 
 /** The chart words a client component needs, still holding their {placeholders}. */
 const chartWords = (): ChartWords => ({
@@ -179,11 +178,11 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
   const mets = metrics(say, unit, ra, rb);
   const side = (i: 0 | 1) => {
     const t = s.sides[i], r = i === 0 ? ra : rb, rk = rankText(t.f);
-    const logo = brandFor(d.brands, t.f, y)?.logo_url;
+    const logo = logoFor(d.brands, t.f, y);
     const won = s.winner === i;
     return (
       <div className={`sdside ${i === 0 ? "a" : "b"}${s.winner != null && !won ? " lost" : ""}`}>
-        <span className="crest">{logo ? <TeamLogo url={logo} size={64} /> : <span className="mono">{monogram(t.name)}</span>}</span>
+        <span className="crest">{logo ? <TeamLogo url={logo} size={64} /> : <span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span>}</span>
         <h2 className="sdname"><Link href={`/${lg}/${y}/team/${t.f}`} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link></h2>
         {won ? <span className="wintag">{crowned ? <><BadgeCup league={lg} />{say("side.champions", { season })}</> : say("side.won")}</span> : null}
         <span className="sdmeta">{r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : say("side.noRecord")}</span>

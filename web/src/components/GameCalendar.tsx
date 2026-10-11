@@ -1,6 +1,6 @@
 "use client";
 
-import { abbrFor } from "@/lib/abbr";
+import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc, isoDay } from "@/lib/format";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { RESULT_KEY } from "@/lib/i18n/keys";
@@ -11,13 +11,13 @@ import { Rich } from "./i18n/Rich";
 import { Badge, TeamLink } from "./ui";
 import "./team.css";
 
-function GameRow({ lg, g, teams, year }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number }) {
+function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number; abbrs: AbbrMap }) {
   const { say } = useSpeaker();
   const [, a, as, hs, h, , st, src, ot, v] = g;
   const fin = st === "f";
   const aw = fin && (as ?? 0) > (hs ?? 0), hw = fin && (hs ?? 0) > (as ?? 0);
   const nm = (id: number) => teams.get(id)?.name || "—";
-  const ab = (id: number) => abbrFor(lg, teams.get(id)?.f, year, teams.get(id)?.name);
+  const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
   return (
     <div className="game">
       <span>
@@ -48,6 +48,8 @@ function result(list: GameTuple[], team: string, say: Speaker["say"]): { r: "W" 
 
 interface Props {
   lg: string;
+  /** The league's team abbreviations from the database. */
+  abbrs: AbbrMap;
   /** The season's year: team links open that team's season, and abbreviations are the ones in use that year. */
   year?: number;
   teams: Map<number, ClubTeam>;
@@ -70,7 +72,7 @@ interface Props {
  * The month calendar shared by the season page and a team's season: each day shaded by how many games it held,
  * or by the team's result on its days, with the games of the chosen day or month beneath it.
  */
-export function GameCalendar({ lg, year, teams, byDay, months, month, day, team = "", dayOnly = false, onMonth, onDay, onJump }: Props) {
+export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day, team = "", dayOnly = false, onMonth, onDay, onJump }: Props) {
   const { say, plural, dt } = useSpeaker();
   const first = atUtc(`${month}-01`);
   const most = Math.max(1, ...[...byDay.values()].map((l) => l.length));
@@ -81,7 +83,7 @@ export function GameCalendar({ lg, year, teams, byDay, months, month, day, team 
     const dn = <span className="dn">{d.getUTCDate()}</span>;
     if (!list.length) { cells.push(<span key={key} className="cell">{dn}</span>); continue; }
     const res = team ? result(list, team, say) : null;
-    const opp = res ? `${res.home ? "" : "@"}${abbrFor(lg, teams.get(res.opp)?.f, year, teams.get(res.opp)?.name)}` : "";
+    const opp = res ? `${res.home ? "" : "@"}${abbrFor(abbrs, teams.get(res.opp)?.f, year, teams.get(res.opp)?.name)}` : "";
     cells.push(
       <button key={key} type="button" className={"cell has" + (res ? ` res ${res.r}` : "") + (key === day ? " on" : "")}
         style={{ "--heat": `${Math.round(18 + (62 * list.length) / most)}%` } as React.CSSProperties}
@@ -136,7 +138,7 @@ export function GameCalendar({ lg, year, teams, byDay, months, month, day, team 
               {shown.map(([date, list]) => (
                 <div className="day" key={date}>
                   <h3>{dt.short(atUtc(date))}</h3>
-                  {list.map((g, i) => <GameRow key={i} lg={lg} g={g} teams={teams} year={year} />)}
+                  {list.map((g, i) => <GameRow key={i} lg={lg} g={g} teams={teams} year={year} abbrs={abbrs} />)}
                 </div>
               ))}
             </div>
