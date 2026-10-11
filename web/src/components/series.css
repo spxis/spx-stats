@@ -82,6 +82,8 @@ h2.sdname { font: 700 clamp(28px, 4vw, 46px)/1 var(--display); text-transform: u
 .bigscore .n.w { opacity: 1; }
 .bigscore .dash { font: 500 clamp(40px, 6vw, 72px)/1 var(--display); color: var(--muted); }
 .verdict { font: 700 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .08em; text-align: center; }
+.sdmid .verdict { flex-direction: row; align-items: center; justify-content: center; gap: 10px; }
+.verdict .logo { margin: 0; flex: none; }
 .sdnote { font-size: 14px; color: var(--muted); text-align: center; }
 @media (max-width: 760px) {
   .showdown { grid-template-columns: 1fr; }

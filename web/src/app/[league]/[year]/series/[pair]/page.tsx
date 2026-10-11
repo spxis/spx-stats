@@ -176,9 +176,9 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
   const forIn = (f: number) => meets.reduce((t, g) => t + (g.home_f === f ? g.home_score! : g.away_f === f ? g.away_score! : 0), 0);
   const meetTable = tableOf(meets, [
     { key: "date", label: say("h2h.date"), cls: "seasoncell", get: (g: GameRow) => g.game_date, cell: (g: GameRow) => <Link href={datePath(lg, y, g.game_date, "regular")} prefetch={false}>{dt.dayName(atUtc(g.game_date))}</Link> },
-    { key: "away", label: say("h2h.away"), cls: "team", get: (g: GameRow) => g.away, cell: (g: GameRow) => <span className={g.away_score! > g.home_score! ? "won" : undefined}>{g.away}</span> },
+    { key: "away", label: say("h2h.away"), cls: "team", get: (g: GameRow) => g.away, cell: (g: GameRow) => <span className={g.away_score! > g.home_score! ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.away_f, y)} />{g.away}</span> },
     { key: "score", label: say("h2h.score"), num: true, get: (g: GameRow) => g.away_score! - g.home_score!, cell: (g: GameRow) => `${g.away_score}–${g.home_score}${g.overtime ? ` ${extra}` : ""}` },
-    { key: "home", label: say("h2h.home"), cls: "team", get: (g: GameRow) => g.home, cell: (g: GameRow) => <span className={g.home_score! > g.away_score! ? "won" : undefined}>{g.home}</span> },
+    { key: "home", label: say("h2h.home"), cls: "team", get: (g: GameRow) => g.home, cell: (g: GameRow) => <span className={g.home_score! > g.away_score! ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.home_f, y)} />{g.home}</span> },
   ], (g) => g.game_id);
 
   // Each team's other series of the playoffs, in the order played.
@@ -233,7 +233,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
             <span className="dash" aria-hidden="true">–</span>
             <b className={`n b${s.winner === 1 ? " w" : ""}`}>{single ? s.games[0].score[1] ?? "–" : s.basis === "goals" ? B.scored : B.wins}</b>
           </div>
-          <span className="verdict">{verdict}</span>
+          <span className="verdict">{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={32} /> : null}{verdict}</span>
           <span className="sdnote">{s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })}</span>
         </div>
         {side(1)}
