@@ -15,7 +15,7 @@ import { getStandingsAsOf } from "@/lib/alignmentData";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
-import { titleHolders } from "@/lib/champions";
+import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -76,6 +76,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, d.standings, complete);
   const holders = titleHolders(summary.seasons, lg);
   const defending = holders.byYear.get(y - 1)?.champion_franchise;
+  const streak = defending != null ? titleStreak(holders.byYear, defending, y - 1) : 0;
   const selection = parseSelection(sp);
 
   const champ = d.awards.find((x) => x.kind === "championship");
@@ -113,7 +114,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
           <TeamLogo url={logoFor(brands, r.franchise_id, y)} />
           <Link href={played.has(r.team_id) ? paths.teamSeason(lg, r.franchise_id, y) : paths.team(lg, r.franchise_id)} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, r.franchise_id, y, r.team)}</abbr></Link>
           {defending != null && r.franchise_id === defending ? (
-            <span className="defending" title={say("season.wonTitle", { season: seasonLabel(lg, y - 1) })}>{say("season.defending")}</span>
+            <span className="defending" title={say("season.wonTitle", { season: seasonLabel(lg, y - 1) })}>{streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}</span>
           ) : null}
         </>
       ),

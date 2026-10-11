@@ -17,7 +17,7 @@ import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { brandFor, logoFor, teamAccent, type BrandMap } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
-import { titleHolders } from "@/lib/champions";
+import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getClubs, getSummary, getTeam, getTeamStandings } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -96,7 +96,9 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   const names = t.names;
   const now = names.at(-1)?.name || say("team.fallback", { id: f });
   const b = brandFor(brands, f);
-  const reigning = titleHolders(summary.seasons, lg).reigning;
+  const holders = titleHolders(summary.seasons, lg);
+  const reigning = holders.reigning;
+  const streak = reigning && reigning.champion_franchise === f ? titleStreak(holders.byYear, f, reigning.year) : 0;
   const won = new Set(t.titles);
   const showT = rows.some((r) => r.t), showO = rows.some((r) => r.otl), showP = rows.some((r) => r.pts != null);
   const maxPct = Math.max(0, ...rows.map((r) => r.pct ?? 0)) || 1;
@@ -180,7 +182,7 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={seasonPath(lg, reigning.year)}>
             <BadgeCup league={lg} />
-            {say("team.reigning", { season: reigning.label })}
+            {streak > 1 ? say("team.reigningMany", { n: fmt(streak), season: reigning.label }) : say("team.reigning", { season: reigning.label })}
           </Link>
         ) : null}
         <p className="lede">{say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "" })}</p>
