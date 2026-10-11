@@ -6,7 +6,7 @@ import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { TeamCharts } from "@/components/TeamCharts";
-import { TeamFlag } from "@/components/TeamFlag";
+import { COUNTRY_KEY, TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
 import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
@@ -167,6 +167,23 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
     { key: "from", label: say("col.from"), get: (n) => n.from, cell: (n) => n.from || "" },
     { key: "until", label: say("col.until"), get: (n) => n.to || "9999", cell: (n) => n.to || say("team.today") },
   ], (n, i) => `${i}|${n.name}`);
+  const venues = (brands[f] ?? [])
+    .filter((v, i, all) => v.home_venue && all.findIndex((w) => w.home_venue === v.home_venue && w.brand_from === v.brand_from) === i)
+    .sort((a, c) => (a.brand_from ?? "").localeCompare(c.brand_from ?? ""));
+  const venueTable = tableOf(venues, [
+    { key: "venue", label: say("col.venue"), cls: "team", get: (v) => v.home_venue },
+    { key: "from", label: say("col.from"), cls: "seasoncell", get: (v) => v.brand_from, cell: (v) => v.brand_from || "" },
+    { key: "until", label: say("col.until"), cls: "seasoncell", get: (v) => v.brand_to || "9999", cell: (v) => v.brand_to || say("team.today") },
+    {
+      key: "location", label: say("col.location"), get: (v) => v.latitude,
+      cell: (v) => {
+        if (v.latitude == null || v.longitude == null) return "";
+        const code = countryAt(v.latitude, v.longitude);
+        const key = code ? COUNTRY_KEY[code] : undefined;
+        return <>{key ? <>{say(key)}<br /></> : null}<span className="seasoncell">{`${Math.abs(v.latitude).toFixed(2)}°${v.latitude < 0 ? "S" : "N"} ${Math.abs(v.longitude).toFixed(2)}°${v.longitude < 0 ? "W" : "E"}`}</span></>;
+      },
+    },
+  ], (v, i) => `${i}|${v.home_venue}`);
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
   return (
@@ -221,6 +238,12 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
         <section className="section">
           <h2>{say("team.names")}</h2>
           <SortTable {...nameTable} param="sort_names" />
+        </section>
+      ) : null}
+      {venues.length ? (
+        <section className="section">
+          <h2>{say("team.venues")}</h2>
+          <SortTable {...venueTable} param="sort_venues" />
         </section>
       ) : null}
     </>

@@ -2,7 +2,7 @@ import { flag } from "@johnmorrisdotca/hata/load";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import "./team.css";
 
-const COUNTRY_KEY: Record<string, "country.ca" | "country.us" | "country.mx"> = { CA: "country.ca", US: "country.us", MX: "country.mx" };
+export const COUNTRY_KEY: Record<string, "country.ca" | "country.us" | "country.mx"> = { CA: "country.ca", US: "country.us", MX: "country.mx" };
 
 /**
  * A small, quiet flag of the country a team plays in, from Hata (MIT; the drawings are from Wikimedia Commons),

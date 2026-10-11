@@ -55,3 +55,5 @@ so a very old browser may spell an abbreviation differently from the server.
 - **Repeat champions.** FR "Champion en titre (3×)" and JA "前年王者（3連覇）" for a defending champion with three titles in a row; "連覇" (consecutive titles) is my best guess at the natural counter. The team-page badge reads FR "Champions en titre (2×)" and JA "現王者（2連覇）".
 
 - **Current season link.** FR "Voir la saison en cours", JA "現在のシーズンを見る".
+
+- **Home venues.** FR "Enceintes à domicile" / "Enceinte" / "Lieu" and "Domicile : {venue}"; JA "本拠地" (home ground), "会場" (venue), "所在地" (location). The API has no city field, so the location column shows the country and the venue's coordinates.

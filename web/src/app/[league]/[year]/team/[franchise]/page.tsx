@@ -130,6 +130,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>
           {current != null ? <>{" · "}<Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link></> : null}
         </p>
+        {place?.home_venue ? <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p> : null}
       </section>
       <Figures items={figs} />
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
