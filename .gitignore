@@ -1,4 +1,5 @@
 site/data/
 raw/
 __pycache__/
-.claude/
+.claude/*
+!.claude/settings.json

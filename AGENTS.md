@@ -28,9 +28,11 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 ## Data rules
 
 1. **Archive first.** Every raw download goes into `legacy_files.raw_archive` (name, saved_on, sha256, data
-   bytea) before it is loaded. Files of 100 KB or less also go to Dropbox
-   `/Backups/spx-stats/raw/<source>/<date>/`, create only, never overwrite. Bigger files reach Dropbox through
-   John's Mac. An agent's Dropbox write needs John's own confirmation in chat; a relayed one doesn't count.
+   bytea) before it is loaded, and right after that it is saved to Dropbox with
+   `python3 scripts/dropbox_put.py <file> <source> [<date>]` (any size, create only, never overwrites, hash
+   verified). `dropbox_put.py --from-archive` uploads archived rows Dropbox does not hold yet. It needs
+   `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET` and `DROPBOX_REFRESH_TOKEN` in the environment
+   (`docs/NEW_AGENT_SETUP.md`). If they are missing, say so and keep going; the archive row is still the record.
 2. **Load season by season** (or award by award), so the database shows progress as it goes.
 3. **Raw is kept as it came** in a `legacy_<source>` schema. `core` is built from it by rerunnable steps in
    `db/build/NNN_*.sql`, matched by stable keys.
