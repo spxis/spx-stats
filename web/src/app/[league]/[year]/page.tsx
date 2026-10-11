@@ -16,7 +16,7 @@ import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
 import { titleHolders } from "@/lib/champions";
-import { getAbbrs, getBrands, getSeason, getSummary } from "@/lib/data";
+import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LG, seasonLabel, srcName } from "@/lib/leagues";
@@ -48,8 +48,8 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
   const { league: lg, year } = await params;
   const y = yearOf(year);
   if (!isLeague(lg) || y == null) notFound();
-  const { say, plural, fmt, dt } = await currentSpeaker();
-  const [d, brands, abbrs, summary] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary()]);
+  const { say, plural, fmt, dt, locale } = await currentSpeaker();
+  const [d, brands, abbrs, summary, notes] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y)]);
   if (!d) {
     if (!isGapYear(summary.seasons, lg, y)) notFound();
     return (
@@ -68,7 +68,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
     );
   }
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
-  const note = scheduleNote(say, plural, lg, y, d.standings, complete);
+  const note = scheduleNote({ say, plural, locale }, notes, lg, y, d.standings, complete);
   const holders = titleHolders(summary.seasons, lg);
   const defending = holders.byYear.get(y - 1)?.champion_franchise;
   const sp = await searchParams;

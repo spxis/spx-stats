@@ -8,6 +8,7 @@ import type {
   SeasonSummaryRow,
   SourceRow,
   StandingRow,
+  SeasonNoteRow,
   TeamAbbrRow,
   TeamBrandRow,
   TeamSeasonRow,
@@ -78,6 +79,11 @@ const httpsUrl = z.string().refine((u) => u.startsWith("https://")).nullable().c
 export const teamAbbrSchema = z.object({
   league: str, franchise_id: int, valid_from: strN, valid_to: strN, abbreviation: str,
 }) satisfies z.ZodType<TeamAbbrRow>;
+
+export const seasonNoteSchema = z.object({
+  league: str, year: int, franchise_id: intN, kind: str, games_planned: intN, games_usual: intN,
+  note_en: str, note_fr: strN, note_ja: strN, source: str, source_url: httpsUrl,
+}) satisfies z.ZodType<SeasonNoteRow>;
 
 export const teamBrandSchema = z.object({
   league: str, franchise_id: int, brand_from: strN, brand_to: strN,

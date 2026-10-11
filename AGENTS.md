@@ -328,7 +328,14 @@ materialised ones).
    - Never run a full load while agents are changing the local schema.
 6. **After every load:** `select api.refresh();`, compare counts local against production for what you loaded, and
    look at one affected page on spxn.com.
-7. **DS1** (John's Synology NAS, on Tailscale; addresses in the private file) keeps a full copy including `legacy_*`.
+7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
+   read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
+   empty for the whole league, else `<source code>:<source key>`; EN required, FR and JA when known; `source` is a
+   `meta.source` code, `source_url` the page), run `scripts/build_core.sh` or just `psql -f db/build/183_season_notes.sql`
+   from the repo root, then load production: `python3 scripts/season_notes/to_sql.py` prints insert-only SQL
+   (`on conflict do nothing`; add `--update` to replace the text of notes already there), run it with the Supabase MCP
+   `execute_sql`. Check one page on spxn.com (pages cache for an hour). Migration `033` creates the table.
+8. **DS1** (John's Synology NAS, on Tailscale; addresses in the private file) keeps a full copy including `legacy_*`.
    **Refreshing it is manual and not scripted** (**untested**), and the session-start hook restores a fresh container
    from it. Direction is cloud to DS1 only: connections into the cloud container do not work, and the Mac cannot pull
    from it. With Tailscale up and the `scripts/cloud/fwd.py` forwarder running (the session-start hook shows the paths),

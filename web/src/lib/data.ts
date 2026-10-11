@@ -4,9 +4,9 @@ import { z } from "zod";
 import { rows } from "./api/client";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
-  seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
+  seasonNoteSchema, seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
 } from "./api/schemas";
-import type { AwardRow, GameRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
+import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { isSpx } from "./leagues";
@@ -87,6 +87,10 @@ export const getClubs = cache(async (lg: string, y: number) => {
 /** Every standings row of a league's season (the same request as getClubs, so one cached fetch). */
 export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
   rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
+
+/** The database's notes on a league's season (why it was short, and so on). A missing view or a failed fetch just means no notes. */
+export const getSeasonNotes = cache(async (lg: string, y: number): Promise<SeasonNoteRow[]> =>
+  rows("season_note", `league=eq.${lg}&year=eq.${y}&select=*`, seasonNoteSchema).catch(() => []));
 
 /* ---------- a team --------------------------------------------------------------------- */
 

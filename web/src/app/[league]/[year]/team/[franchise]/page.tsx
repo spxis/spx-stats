@@ -12,7 +12,7 @@ import { Figures, NoSeason } from "@/components/ui";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
-import { getAbbrs, getBrands, getSeasonStandings, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
+import { getAbbrs, getBrands, getSeasonNotes, getSeasonStandings, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -59,11 +59,11 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
   const { league: lg, year, franchise } = await params;
   const y = yearOf(year), f = idOf(franchise);
   if (!isLeague(lg) || y == null || f == null) notFound();
-  const { say, plural, fmt } = await currentSpeaker();
+  const { say, plural, fmt, locale } = await currentSpeaker();
   const sp = await searchParams;
   const sort = parseSort(sp.sort, TEAM_GAME_SORT_KEYS, "date.asc");
   const dateSort = sort.find((s) => s.key === "date");
-  const [d, t, summary, leagueSt] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y)]);
+  const [d, t, summary, leagueSt, notes] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y)]);
   if (!d.raw.length) {
     return (
       <>
@@ -91,7 +91,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
   if (st?.road) figs.push([say("col.road"), st.road]);
 
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
-  const note = scheduleNote(say, plural, lg, y, leagueSt, complete, { name, played: st?.gp ?? null });
+  const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
   const selection = parseSelection(sp);
   return (
     <>

@@ -146,6 +146,20 @@ export interface TeamAbbrRow {
   abbreviation: string;
 }
 
+export interface SeasonNoteRow {
+  league: string;
+  year: number;
+  franchise_id: number | null;
+  kind: string;
+  games_planned: number | null;
+  games_usual: number | null;
+  note_en: string;
+  note_fr: string | null;
+  note_ja: string | null;
+  source: string;
+  source_url: string | null;
+}
+
 export interface TeamBrandRow {
   league: string;
   franchise_id: number;
