@@ -20,6 +20,7 @@ import { parseLoc } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { leagueSat } from "@/lib/noSeason";
 import { recordText } from "@/lib/record";
+import { parseResult } from "@/lib/resultFilter";
 import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
 import { parseSort } from "@/lib/sort";
@@ -127,7 +128,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       <Figures items={figs} />
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
-      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
+      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} />
     </>
   );

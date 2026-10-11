@@ -8,6 +8,7 @@ import { RESULT_KEY } from "@/lib/i18n/keys";
 import { srcName } from "@/lib/leagues";
 import type { Loc } from "@/lib/loc";
 import { recordParts, type RecordPart } from "@/lib/record";
+import { matchesResult, resultOptions, type ResultFilter } from "@/lib/resultFilter";
 import { resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
 import { tableOf, type ColumnSpec, type SortKey } from "@/lib/sort";
 import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeason";
@@ -19,6 +20,7 @@ import { useSpeaker } from "./i18n/LocaleProvider";
 import { LocSwitch } from "./LocSwitch";
 import { MonthFilter } from "./MonthFilter";
 import { PhaseSwitch } from "./PhaseSwitch";
+import { ResultSwitch } from "./ResultSwitch";
 import { RunningLine } from "./RunningLine";
 import { SortTable } from "./SortTable";
 import { SplitBars } from "./SplitBars";
@@ -44,6 +46,8 @@ interface Props {
   initialSort: SortKey[];
   /** ?loc= : home, road or all. */
   initialLoc: Loc;
+  /** ?result= : win, loss, tie, otl or all. It narrows the games table only. */
+  initialResult: ResultFilter;
 }
 
 const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allStar" } as const;
@@ -52,12 +56,15 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
-export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc }: Props) {
+export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const [want, setWant] = useState<Selection>(initial);
   const [loc, setLoc] = useState<Loc>(initialLoc);
+  const [wantResult, setResult] = useState<ResultFilter>(initialResult);
   const { phase } = want;
+  const resultChoices = useMemo(() => resultOptions(games), [games]);
+  const result = resultChoices.includes(wantResult) ? wantResult : "all";
   // The part of the season chosen, both sides of the ball; the home and road split is always drawn from these.
   const phaseRows = useMemo(() => games.filter((g) => !phase || g.ph === phase), [games, phase]);
   // The Home / Road / All choice on top of it: what every chart, the table and the calendar below show.
@@ -65,12 +72,13 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
   const { byDay, months, month, day } = useMemo(() => resolveSelection(locRows.map((g) => g.tuple), want), [locRows, want]);
   // The Month filter is only what was asked for; the calendar falls back to the last month with games.
   const filterMonth = months.includes(want.month) ? want.month : "";
-  const rows = useMemo(() => (filterMonth ? locRows.filter((g) => g.date.startsWith(filterMonth)) : locRows), [locRows, filterMonth]);
+  // The Result choice only narrows the table: the charts, the calendar and the game numbers keep counting every game of the selection above.
+  const rows = useMemo(() => locRows.filter((g) => (!filterMonth || g.date.startsWith(filterMonth)) && matchesResult(g, result)), [locRows, filterMonth, result]);
   const gameDays = useMemo(() => new Set(locRows.map((g) => g.date)), [locRows]);
 
   useEffect(() => {
-    replaceQuery({ phase: phase !== "r" ? phase : null, loc: loc !== "all" ? loc : null, month: filterMonth || null, day: day || null });
-  }, [phase, loc, filterMonth, day]);
+    replaceQuery({ phase: phase !== "r" ? phase : null, loc: loc !== "all" ? loc : null, result: result !== "all" ? result : null, month: filterMonth || null, day: day || null });
+  }, [phase, loc, result, filterMonth, day]);
 
   const set = (patch: Partial<Selection>) => setWant({ ...want, ...patch });
   const extra = say(lg === "mlb" ? "col.extras" : "col.ot");
@@ -143,6 +151,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         <div className="controls">
           <PhaseSwitch phase={phase} onChange={(k) => set({ phase: k })} />
           <LocSwitch value={loc} onChange={setLoc} />
+          <ResultSwitch value={result} options={resultChoices} onChange={setResult} />
         </div>
         <MonthFilter months={months} month={filterMonth} days={gameDays} day={day}
           onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ month: d.slice(0, 7), day: d })} />

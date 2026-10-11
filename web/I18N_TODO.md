@@ -24,6 +24,9 @@ so a string added in English alone still shows.
 
 - **Awards stat.** The short label "Awards" reuses the section heading wording: FR "Récompenses", JA "表彰" (same as awards.title).
 
+- **Result filter on a team's games.** FR "Victoires / Défaites / Matchs nuls / Défaites en prolongation"; JA "勝ち / 負け / 引き分け / 延長負け"
+  (the table cells keep the short 勝/敗/分/延敗).
+
 ## Left as the data gives it (not translated on purpose)
 
 - Team, player, venue and league names; league codes (NHL, NBA, MLB, NFL, CFL); official award names (Stanley Cup, Grey Cup, Hart Trophy ...).
