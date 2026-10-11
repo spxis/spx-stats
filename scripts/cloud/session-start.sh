@@ -2,7 +2,7 @@
 # SessionStart hook for spx-stats cloud sessions. No secret values in this file.
 # Idempotent; skips fast when the database already has data. Never drops or overwrites anything.
 #   DRY_RUN=1 prints what it would do and changes nothing.
-# Env (cloud environment settings; see docs/NEW_AGENT_SETUP.md): TS_AUTHKEY, SPX_DS1_DB_PASSWORD
+# Env (cloud environment settings; see AGENTS.md): TS_AUTHKEY, SPX_DS1_DB_PASSWORD
 set -euo pipefail
 
 [ "${CLAUDE_CODE_REMOTE:-}" = "true" ] || [ "${DRY_RUN:-}" = "1" ] || exit 0
@@ -56,7 +56,7 @@ fi
 
 # 2. Tailscale in userspace mode.
 if [ -z "${TS_AUTHKEY:-}" ] && [ "$DRY" != "1" ]; then
-  say "TS_AUTHKEY is not set, so DS1 is out of reach. Add it to the environment settings (docs/NEW_AGENT_SETUP.md)."
+  say "TS_AUTHKEY is not set, so DS1 is out of reach. Add it to the environment settings (AGENTS.md)."
   exit 0
 fi
 if [ ! -x "$TS" ]; then

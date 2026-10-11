@@ -40,7 +40,7 @@ _token = {"value": None, "expires": 0.0}
 def need(name):
     v = os.environ.get(name)
     if not v:
-        sys.exit(f"missing env var {name} (see docs/NEW_AGENT_SETUP.md)")
+        sys.exit(f"missing env var {name} (see AGENTS.md)")
     return v
 
 
