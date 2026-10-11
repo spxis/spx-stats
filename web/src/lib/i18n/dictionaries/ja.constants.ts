@@ -144,6 +144,7 @@ export const JA: Dictionary = {
   "sched.source": "出典：Wikipedia",
   "tseason.wholeSeason": "{league}のシーズン全体",
   "glance.title": "シーズンの概要",
+  "tseason.current": "現在のシーズンを見る",
   "glance.record": "{season}の成績",
   "glance.homeRoad": "ホームとビジター",
   "glance.homeRoadNote": "「試合」で選んだシーズン区分の、結果のあるすべての試合を、ホームとビジターに分けて並べています。",

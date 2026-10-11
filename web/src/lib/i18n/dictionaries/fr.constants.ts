@@ -137,6 +137,7 @@ export const FR: Dictionary = {
   "tseason.allSeasons": "Toutes les saisons de la concession",
   "tseason.wholeSeason": "Toute la saison de la {league}",
   "sched.fewer": "Les équipes avaient {games} matchs au calendrier au lieu des {usual} habituels.",
+  "tseason.current": "Voir la saison en cours",
   "sched.teamPlayed": "{team} a disputé {played} de ses {games} matchs.",
   "sched.teamUsual": "{team} a disputé {played} des {games} matchs habituels.",
   "sched.range": "Les équipes ont disputé de {min} à {max} matchs; la saison en comptait {games} au calendrier.",

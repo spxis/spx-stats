@@ -53,3 +53,5 @@ so a very old browser may spell an abbreviation differently from the server.
   JA "リーダー", "勝率" for win share, "得失点差" for differential, "歴代" for all-time, "開催中" for a season in progress. The long explanatory notes under the charts are plain machine drafts.
 
 - **Repeat champions.** FR "Champion en titre (3×)" and JA "前年王者（3連覇）" for a defending champion with three titles in a row; "連覇" (consecutive titles) is my best guess at the natural counter. The team-page badge reads FR "Champions en titre (2×)" and JA "現王者（2連覇）".
+
+- **Current season link.** FR "Voir la saison en cours", JA "現在のシーズンを見る".

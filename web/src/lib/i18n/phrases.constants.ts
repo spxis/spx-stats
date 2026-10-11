@@ -142,6 +142,7 @@ export const PHRASES = {
   "tseason.allSeasons": "All seasons of the franchise",
   "tseason.wholeSeason": "The whole {league} season",
   "sched.fewer": "Teams were scheduled for {games} games instead of the usual {usual}.",
+  "tseason.current": "View current season",
   "sched.teamPlayed": "{team} played {played} of {games} games.",
   "sched.teamUsual": "{team} played {played} of the usual {games} games.",
   "sched.range": "Teams played {min} to {max} games; the season was scheduled for {games}.",

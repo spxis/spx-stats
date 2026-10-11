@@ -89,6 +89,8 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
   const season = seasonLabel(lg, y);
   const years = (t?.seasons ?? []).map((s) => s[0]).sort((a, c) => a - c);
   const prev = years.filter((v) => v < y).at(-1), next = years.find((v) => v > y);
+  const latest = Math.max(...summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
+  const current = years.at(-1) === latest && y !== latest ? latest : null;
   const isChamp = titleHolders(summary.seasons, lg).byYear.get(y)?.champion_franchise === f;
   const text = recordText(rec);
   const decisions = rec.w + rec.l + rec.t + rec.otl;
@@ -126,6 +128,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>
+          {current != null ? <>{" · "}<Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link></> : null}
         </p>
       </section>
       <Figures items={figs} />
