@@ -26,10 +26,16 @@ with ident as (
   select qid, (array_agg(hex order by ordinal))[1] p, (array_agg(hex order by ordinal))[2] s
   from legacy_team_brand.team_colour where hex is not null and rank <> 'deprecated' group by qid
 ), logo as (
-  select distinct on (qid) qid, thumb_url, page_url,
-         licence || case when restrictions ilike '%trademark%' then ' (trademark)' else '' end as licence
-  from legacy_team_brand.team_logo where thumb_url is not null
-  order by qid, (rank = 'preferred') desc, ends_on is null desc, starts_on desc nulls last, file
+  select distinct on (qid) qid, thumb_url, page_url, licence, fallback from (
+    select qid, thumb_url, page_url,
+           licence || case when restrictions ilike '%trademark%' then ' (trademark)' else '' end as licence,
+           false as fallback, (rank = 'preferred') as pref, ends_on, starts_on, file
+    from legacy_team_brand.team_logo where thumb_url is not null
+    union all   -- a team Wikidata has no logo for: the picture in its English Wikipedia article (the current logo)
+    select qid, thumb_url, page_url, licence, true, false, null, null, file
+    from legacy_team_brand.wikipedia_logo
+  ) x
+  order by qid, fallback, pref desc, ends_on is null desc, starts_on desc nulls last, file
 ), pl as (
   select p.*, (latitude is not null) as has_xy,
          (starts_on is not null or ends_on is not null) as dated
@@ -60,7 +66,7 @@ with ident as (
   left join pick v on v.qid = t.qid and not isempty(x.vd * v.vr)
   cross join lateral (select case when v.qid is null then x.vd else x.vd * v.vr end as rng) r
   left join colours c on c.qid = t.qid
-  left join logo l on l.qid = t.qid
+  left join logo l on l.qid = t.qid and (not l.fallback or i.is_last)
   where c.p is not null or l.thumb_url is not null or v.latitude is not null
   order by i.franchise_id, rng, (c.p is not null) desc, (l.thumb_url is not null) desc, (v.latitude is not null) desc, t.qid
 )

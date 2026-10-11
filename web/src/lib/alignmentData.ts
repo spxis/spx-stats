@@ -12,15 +12,15 @@ import { alignmentChangeSchema, alignmentSchema, type AlignmentChangeRow, type A
 
 /** Every club of a league with the conference and division it sat in, each season it had any. */
 export const getAlignment = cache(async (lg: string): Promise<AlignmentRow[]> =>
-  rows("alignment", `league=eq.${lg}&select=*&order=year,conference,division,team`, alignmentSchema).catch(() => []));
+  rows("alignment", `league=eq.${lg}&select=*&order=year,conference,division,team`, alignmentSchema));
 
 /** The seasons in which a club's conference or division differs from its season before. */
 export const getAlignmentChanges = cache(async (lg: string): Promise<AlignmentChangeRow[]> =>
-  rows("alignment_changes", `league=eq.${lg}&select=*&order=year,team`, alignmentChangeSchema).catch(() => []));
+  rows("alignment_changes", `league=eq.${lg}&select=*&order=year,team`, alignmentChangeSchema));
 
 /** One club's places, season by season. */
 export const getTeamAlignment = cache(async (lg: string, f: number): Promise<AlignmentRow[]> =>
-  rows("alignment", `league=eq.${lg}&franchise_id=eq.${f}&select=*&order=year`, alignmentSchema).catch(() => []));
+  rows("alignment", `league=eq.${lg}&franchise_id=eq.${f}&select=*&order=year`, alignmentSchema));
 
 /**
  * A season's table as it stood after the games of a date (api.standings_as_of, worked out from the final scores).

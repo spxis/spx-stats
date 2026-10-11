@@ -35,7 +35,7 @@ const unitKey = (lg: string) => (lg === "nhl" ? "unit.nhl" : lg === "mlb" ? "uni
 
 /** The season's series, the one asked for, and what the page puts beside it. */
 const load = cache(async (lg: string, y: number, a: number, b: number, meeting: number) => {
-  const [playoffs, regular, standings, brands, abbrs] = await Promise.all([getPlayoffGames(lg, y), getPairGames(lg, y, a, b, "regular"), getSeasonStandings(lg, y), getBrands(), getAbbrs(lg)]);
+  const [playoffs, regular, standings, brands, abbrs] = await Promise.all([getPlayoffGames(lg, y), getPairGames(lg, y, a, b, "regular"), getSeasonStandings(lg, y).catch(() => null), getBrands(), getAbbrs(lg)]);
   const all = deriveSeries(lg, y, playoffs);
   const series = all.find((s) => s.meeting === meeting && s.sides.some((t) => t.f === a) && s.sides.some((t) => t.f === b)) ?? null;
   return { all, series, regular, standings, brands, abbrs };
@@ -137,9 +137,10 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
   const single = s.games.length === 1;
   const champion = titleHolders(summary.seasons, lg).byYear.get(y)?.champion_franchise;
   const crowned = number === rounds && lastRound === 1 && s.winner === 0 && champion === A.f;
-  const ra = d.standings.find((r) => r.franchise_id === A.f), rb = d.standings.find((r) => r.franchise_id === B.f);
+  const standings = d.standings ?? [];
+  const ra = standings.find((r) => r.franchise_id === A.f), rb = standings.find((r) => r.franchise_id === B.f);
   const rankText = (f: number) => {
-    const r = rankIn(d.standings, f);
+    const r = rankIn(standings, f);
     return r ? say("side.rank", { place: fmt(r.place), total: fmt(r.of), league: LG[lg] }) : null;
   };
 
@@ -185,7 +186,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
         <span className="crest">{logo ? <TeamLogo url={logo} size={64} /> : <span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span>}</span>
         <h2 className="sdname"><Link href={`/${lg}/${y}/team/${t.f}`} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link></h2>
         {won ? <span className="wintag">{crowned ? <><BadgeCup league={lg} />{say("side.champions", { season })}</> : say("side.won")}</span> : null}
-        <span className="sdmeta">{r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : say("side.noRecord")}</span>
+        <span className="sdmeta">{r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : d.standings == null ? sp.say("load.failed") : say("side.noRecord")}</span>
         {rk ? <span className="sdmeta">{rk}</span> : null}
         <span className="sdlinks"><Link href={`/${lg}/${y}/team/${t.f}`} prefetch={false}>{say("side.games", { season })}</Link><Link href={`/${lg}/team/${t.f}`} prefetch={false}>{say("side.allSeasons")}</Link></span>
       </div>

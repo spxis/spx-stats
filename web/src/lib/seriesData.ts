@@ -17,10 +17,10 @@ export const getPairGames = cache(async (lg: string, y: number, a: number, b: nu
 
 /** A season's standings, for the records of the two teams and where each stood. */
 export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
-  rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema).catch(() => []));
+  rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
 
 const finalsSchema = z.object({ year: z.number(), game_date: z.string(), away: z.string().nullable(), away_f: z.number().nullable(), home: z.string().nullable(), home_f: z.number().nullable() });
 
 /** Just the teams of every playoff game of a league, to find who a champion beat in its final (the league page's Final column). */
 export const getLeaguePlayoffTeams = cache(async (lg: string) =>
-  rows("games", `league=eq.${lg}&phase=eq.playoffs&select=year,game_date,away,away_f,home,home_f&order=year,game_date,game_id`, finalsSchema).catch(() => []));
+  rows("games", `league=eq.${lg}&phase=eq.playoffs&select=year,game_date,away,away_f,home,home_f&order=year,game_date,game_id`, finalsSchema));

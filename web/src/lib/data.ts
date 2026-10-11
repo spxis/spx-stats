@@ -80,7 +80,7 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
 
 /** Every team of a league's season with the franchise it belongs to, for the map of that season. */
 export const getClubs = cache(async (lg: string, y: number) => {
-  const st = await rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema).catch(() => []);
+  const st = await rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema);
   return st.map((s) => ({ franchise_id: s.franchise_id, team: s.team }));
 });
 
@@ -113,7 +113,7 @@ export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | n
 });
 
 export const getTeamStandings = cache(async (lg: string, f: number): Promise<StandingRow[]> =>
-  rows("standings", `franchise_id=eq.${f}&league=eq.${lg}&select=*&order=year.desc`, standingSchema).catch(() => []));
+  rows("standings", `franchise_id=eq.${f}&league=eq.${lg}&select=*&order=year.desc`, standingSchema));
 
 /**
  * Every game a franchise played in a season, in the order asked for: `game_date.asc|desc` (then the game id the same way).

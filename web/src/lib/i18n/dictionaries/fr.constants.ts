@@ -285,6 +285,7 @@ export const FR: Dictionary = {
   "cal.vsOpp": ", contre {opp}",
   "cal.atOpp": ", à {opp}",
   "cal.oppFallback": "l’adversaire",
+  "load.failed": "Impossible de charger ceci pour le moment — réessayez",
   "cal.jump": "Aller à un jour",
   "cal.jumpPlaceholder": "Aller à un jour…",
   "flag.of": "Drapeau : {name}",
