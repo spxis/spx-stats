@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { TeamLogo } from "@/components/TeamLogo";
+import { logoFor } from "@/lib/brand";
+import { getBrands } from "@/lib/data";
 import { findFinal, parseChampionNote, pairSegment } from "@/lib/series";
 import { seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
@@ -13,7 +16,7 @@ export async function ChampionNote({ lg, year, champ, note }: { lg: string; year
   const text = note ?? "";
   const p = parseChampionNote(text);
   if (!p || champ == null) return <>{text}</>;
-  const [all, paths] = await Promise.all([getLeaguePlayoffTeams(lg), getPaths()]);
+  const [all, paths, brands] = await Promise.all([getLeaguePlayoffTeams(lg), getPaths(), getBrands()]);
   const games = all.filter((g) => g.year === year);
   const found = findFinal(games, champ, p.opp);
   if (!found) return <>{text}</>;
@@ -23,6 +26,7 @@ export async function ChampionNote({ lg, year, champ, note }: { lg: string; year
       {p.lead}
       <Link href={`${seasonPath(lg, year)}/series/${pairSegment(paths, lg, year, champ, found.opp, found.meeting)}`} prefetch={false} title="The whole series, game by game">{score}</Link>
       {p.mid}
+      <TeamLogo url={logoFor(brands, found.opp, year)} />
       <Link href={paths.teamSeason(lg, found.opp, year)} prefetch={false}>{p.opp}</Link>
     </>
   );

@@ -198,6 +198,7 @@
   .linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 
   .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; }
+  td.note .logo, .banner .how .logo { vertical-align: middle; margin: 0 6px 0 2px; }
   h1.teamname { display: flex; align-items: center; gap: 14px; }
   h1.teamname .logo { margin: 0; vertical-align: middle; }
   .namerow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 24px; }

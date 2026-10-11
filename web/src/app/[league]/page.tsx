@@ -5,11 +5,13 @@ import { SeasonBars } from "@/components/SeasonBars";
 import { LeagueAwards } from "@/components/LeagueAwards";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
+import { TeamLogo } from "@/components/TeamLogo";
 import { ChampionNote } from "@/components/ChampionNote";
 import { Badge, NoSeason, TeamLink } from "@/components/ui";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
-import { getSummary } from "@/lib/data";
+import { logoFor } from "@/lib/brand";
+import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LEAGUE_CODES, LEAGUES, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
@@ -41,13 +43,13 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
   if (!isLeague(lg)) notFound();
   const info = LEAGUES.find((l) => l.code === lg)!;
   const { say, plural, fmt } = await currentSpeaker();
-  const s = await getSummary();
+  const [s, brands] = await Promise.all([getSummary(), getBrands()]);
   const list = withCoverage(s.seasons).filter((x) => x.league === lg).sort((a, b) => a.year - b.year);
   const withGames = list.filter((x) => x.games > 0);
   const champs = list.filter((x) => x.champion).reverse();
   const champions = tableOf(champs, [
     { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (c) => c.year, cell: (c) => <Link href={seasonPath(lg, c.year)} prefetch={false}>{c.label}</Link> },
-    { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.champion, cell: (c) => <TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /> },
+    { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.champion, cell: (c) => <><TeamLogo url={logoFor(brands, c.champion_franchise, c.year)} /><TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /></> },
     { key: "final", label: say("col.final"), cls: "note", get: (c) => c.champion_note, cell: (c) => <ChampionNote lg={lg} year={c.year} champ={c.champion_franchise} note={c.champion_note} /> },
     { key: "source", label: say("col.source"), get: (c) => srcName(say, c.champion_source), cell: (c) => <Badge src={c.champion_source} /> },
   ], (c) => c.year);
