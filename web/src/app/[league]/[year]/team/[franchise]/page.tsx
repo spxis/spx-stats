@@ -35,7 +35,7 @@ const load = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc")
   const st = stAll.find((r) => r.year === y) ?? null;
   const first = raw.find((g) => g.home_f === f) ?? raw[0];
   const mine = first ? (first.home_f === f ? { id: first.home_id, name: first.home } : { id: first.away_id, name: first.away }) : null;
-  return { abbrs, raw, st, brand: brandFor(brands, f, y), logo: logoFor(brands, f, y), place: placeFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
+  return { abbrs, brands, raw, st, brand: brandFor(brands, f, y), logo: logoFor(brands, f, y), place: placeFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
 });
 
 export async function generateMetadata({ params }: PageProps<"/[league]/[year]/team/[franchise]">): Promise<Metadata> {
@@ -83,7 +83,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       </>
     );
   }
-  const { abbrs, raw, st, brand: b, logo, place, me, name } = d;
+  const { abbrs, brands, raw, st, brand: b, logo, place, me, name } = d;
   const games = deriveTeamGames(raw, f, st);
   const rec = seasonRecord(games, st);
   const season = seasonLabel(lg, y);
@@ -131,7 +131,7 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
       <Figures items={figs} />
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
-      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw)} record={rec}
+      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} />
     </>
   );

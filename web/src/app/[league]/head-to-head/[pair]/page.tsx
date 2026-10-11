@@ -317,7 +317,7 @@ export default async function HeadToHeadPage({ params, searchParams }: PageProps
     },
     {
       key: "away", label: say("h2h.col.away"), cls: "team", get: (g: H2hGame) => g.awayName,
-      cell: (g: H2hGame) => <span className={g.awayScore > g.homeScore ? "won" : undefined}><Link href={paths.teamSeason(lg, g.aHome ? b : a, g.year)} prefetch={false}>{g.awayName}</Link></span>,
+      cell: (g: H2hGame) => <span className={g.awayScore > g.homeScore ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.aHome ? b : a, g.year)} /><Link href={paths.teamSeason(lg, g.aHome ? b : a, g.year)} prefetch={false}>{g.awayName}</Link></span>,
     },
     {
       key: "score", label: say("col.score"), num: true, title: say("h2h.col.scoreTitle"), cls: "h2hscore", get: (g: H2hGame) => g.awayScore - g.homeScore,
@@ -325,7 +325,7 @@ export default async function HeadToHeadPage({ params, searchParams }: PageProps
     },
     {
       key: "home", label: say("h2h.col.home"), cls: "team", get: (g: H2hGame) => g.homeName,
-      cell: (g: H2hGame) => <span className={g.homeScore > g.awayScore ? "won" : undefined}><Link href={paths.teamSeason(lg, g.aHome ? a : b, g.year)} prefetch={false}>{g.homeName}</Link></span>,
+      cell: (g: H2hGame) => <span className={g.homeScore > g.awayScore ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.aHome ? a : b, g.year)} /><Link href={paths.teamSeason(lg, g.aHome ? a : b, g.year)} prefetch={false}>{g.homeName}</Link></span>,
     },
     { key: "res", label: say("h2h.col.result", { team: na }), get: (g: H2hGame) => g.res, cell: (g: H2hGame) => <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> },
     { key: "src", label: say("col.source"), get: (g: H2hGame) => g.src, cell: (g: H2hGame) => <Badge src={g.src} /> },

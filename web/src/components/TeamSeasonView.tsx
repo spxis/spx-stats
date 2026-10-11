@@ -26,6 +26,7 @@ import { createRowLink } from "./rowLink";
 import { RunningLine } from "./RunningLine";
 import { SortTable } from "./SortTable";
 import { SplitBars } from "./SplitBars";
+import { TeamLogo } from "./TeamLogo";
 import { Badge, TeamLink } from "./ui";
 import "./team.css";
 import { seasonPath } from "@/lib/slug";
@@ -61,6 +62,7 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
 export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
+  const logos = useMemo(() => new Map(teamList.map((t) => [t.f, t.logo])), [teamList]);
   const [link] = useState(createRowLink);
   const [want, setWant] = useState<Selection>(initial);
   const [loc, setLoc] = useState<Loc>(initialLoc);
@@ -101,7 +103,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
       ),
     },
     { key: "loc", label: say("col.ha"), title: say("col.haTitle"), get: (g) => g.loc, cell: (g) => say(g.loc === "Home" ? "loc.home" : "loc.away") },
-    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <><TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(abbrs, g.oppF, year, g.oppName)} /><H2hLink lg={lg} year={year} a={teams.get(meId)?.f} b={g.oppF} /></> },
+    { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <><TeamLogo url={logos.get(g.oppF)} /><TeamLink lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(abbrs, g.oppF, year, g.oppName)} /><H2hLink lg={lg} year={year} a={teams.get(meId)?.f} b={g.oppF} /></> },
     { key: "score", label: say("col.score"), num: true, title: say("col.scoreTitle"), get: (g) => g.margin, cell: (g) => (g.res ? `${g.mine}–${g.theirs}` : "") },
     {
       key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
@@ -119,7 +121,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
         </>
       ),
     },
-  ], [lg, abbrs, year, extra, numbers, say, dt, teams, meId]);
+  ], [lg, abbrs, year, extra, numbers, say, dt, teams, meId, logos]);
   const table = useMemo(() => tableOf(rows, specs, (g) => g.id), [rows, specs]);
 
   const done = rows.filter((g) => g.res);

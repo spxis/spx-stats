@@ -9,6 +9,7 @@ import type { ClubTeam, GameTuple } from "@/lib/season";
 import { DatePicker } from "./DatePicker";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { Rich } from "./i18n/Rich";
+import { TeamLogo } from "./TeamLogo";
 import { Badge, TeamLink } from "./ui";
 import "./team.css";
 
@@ -23,8 +24,8 @@ function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; team
     <div className="game">
       <span>
         <Rich text={say("game.at")} parts={{
-          away: <TeamLink lg={lg} f={teams.get(a)?.f} name={nm(a)} year={year} abbr={ab(a)} className={aw ? "won" : undefined} />,
-          home: <TeamLink lg={lg} f={teams.get(h)?.f} name={nm(h)} year={year} abbr={ab(h)} className={hw ? "won" : undefined} />,
+          away: <><TeamLogo url={teams.get(a)?.logo} /><TeamLink lg={lg} f={teams.get(a)?.f} name={nm(a)} year={year} abbr={ab(a)} className={aw ? "won" : undefined} /></>,
+          home: <><TeamLogo url={teams.get(h)?.logo} /><TeamLink lg={lg} f={teams.get(h)?.f} name={nm(h)} year={year} abbr={ab(h)} className={hw ? "won" : undefined} /></>,
         }} />
       </span>
       <span className="score">{fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : say("game.noResult")}</span>

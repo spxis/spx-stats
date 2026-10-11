@@ -11,6 +11,8 @@ export interface ClubTeam {
   id: number;
   f: number | null;
   name: string | null;
+  /** The logo the club wore that season, when it has one. */
+  logo?: string | null;
 }
 
 /** [date, awayId, awayScore, homeScore, homeId, phase, status initial, source, overtime 0|1, checked]. */
