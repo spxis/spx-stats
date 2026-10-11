@@ -593,6 +593,7 @@ export const PHRASES = {
   "align.noConference": "No conference",
   "align.timelineAria": "When each {league} conference and division existed, {from} to {to}",
   "align.span": "{from} to {to}",
+  "align.spanCount": "{span} ({seasons})",
   "count.clubs.one": "{count} club",
   "count.clubs.other": "{count} clubs",
   "align.seasonClubs": "{season}: {clubs}",

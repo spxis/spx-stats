@@ -15,7 +15,10 @@ export async function TeamAlignment({ lg, f }: { lg: string; f: number }) {
   const seasons = summary.seasons.filter((s) => s.league === lg).map((s) => s.year).sort((a, b) => a - b);
   const runs = runsOf(rows, seasons).reverse();
   const moves = runs.length - 1;
-  const span = (from: number, to: number) => (from === to ? seasonLabel(lg, from) : say("align.span", { from: seasonLabel(lg, from), to: seasonLabel(lg, to) }));
+  const span = (from: number, to: number) => (from === to ? seasonLabel(lg, from) : say("align.spanCount", {
+    span: say("align.span", { from: seasonLabel(lg, from), to: seasonLabel(lg, to) }),
+    seasons: plural("count.seasons", seasons.filter((y) => y >= from && y <= to).length),
+  }));
   return (
     <section className="section">
       <h2>{say("align.teamTitle")}</h2>
