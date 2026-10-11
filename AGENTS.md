@@ -57,7 +57,7 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 - Never ask him to paste a secret into chat. No wildcard or guessed paths: look every name up first. Test scripts
   before handing them over and say what is untested.
 - He is at his Mac Studio (Terminal) most of the time with Tailscale off, because it breaks his Dropbox sync. Do not
-  make him turn it on.
+  make him turn it on there. His MacBook runs with Tailscale on and Dropbox still syncs; there DS1 is reached directly.
 - He wants features published as they are finished, and work done by Sonnet agents.
 - When a command works, add it to the private file so the next session does not ask again.
 
@@ -117,6 +117,14 @@ message. With no `TS_AUTHKEY` it stops after starting Postgres, leaving no `spx_
 `DRY_RUN=1 bash scripts/cloud/session-start.sh` (tested). The real run is **untested**. DS1's copy is refreshed by hand
 and can be a day or more behind the last cloud database, so a fresh container can lack recent legacy data: the private
 file says how far behind.
+
+**On one of John's Macs** (new or existing; no cloud container, no local database). One command sets it up:
+`zsh scripts/mac/spx-credentials.sh setup` with the three variables the private file gives (tested on the MacBook,
+keychain path; the Dropbox path is **untested** end to end). It copies the DS1 password and the board key from his
+synced Dropbox into the keychain and prints one ok/FAIL line each for DS1, board, node, pnpm and gh. After that
+`pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` while Tailscale is on.
+Agents may not read the Dropbox key files or another Mac's keychain (the permission check refuses it): give John
+the command from the private file instead.
 
 **Is it alive?** Four checks, seconds each:
 

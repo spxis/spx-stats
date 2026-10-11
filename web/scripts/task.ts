@@ -1,3 +1,4 @@
+import { execFileSync } from "node:child_process";
 import { boardCreate, boardGet, boardGrade, boardHost, boardList, boardMove, boardShip, type MoveOutcome } from "../src/lib/board/client.ts";
 import {
   BOARD_EFFORTS,
@@ -27,8 +28,21 @@ import {
  *
  * <id> is the whole cuid the board prints, never a prefix. The board is on
  * Sumilabu; SUMILABU_BOARD_URL and SUMILABU_BOARD_TOKEN come from the
- * environment (never a file in this repository).
+ * environment (never a file in this repository), or on a Mac from the
+ * keychain item "sumilabu board spx-stats".
  */
+
+if (process.platform === "darwin" && !process.env.SUMILABU_BOARD_TOKEN) {
+  try {
+    process.env.SUMILABU_BOARD_TOKEN = execFileSync("security", ["find-generic-password", "-s", "sumilabu board spx-stats", "-w"], {
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+    }).trim();
+    process.env.SUMILABU_BOARD_URL ||= "https://api.sumilabu.com";
+  } catch {
+    delete process.env.SUMILABU_BOARD_TOKEN;
+  }
+}
 
 function flag(name: string, rest: string[]): string | undefined {
   const at = rest.indexOf(`--${name}`);
