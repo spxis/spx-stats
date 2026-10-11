@@ -3,6 +3,11 @@
 The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://spxn.com
 ("SPXN · SPX Stats Network"). The owner is John Morris. Read this whole file before working.
 
+## Who does the work
+
+- The coordinating session only starts Sonnet agents and relays between them and John. It does no feature work.
+- Sonnet agents do all the work John asks for, each in its own worktree.
+
 ## What the project is
 
 - **Base:** the SPX (SportsInteractive.com) archive, 1997–2013. Where SPX holds a value, SPX's value wins.
@@ -25,7 +30,7 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 1. **Archive first.** Every raw download goes into `legacy_files.raw_archive` (name, saved_on, sha256, data
    bytea) before it is loaded. Files of 100 KB or less also go to Dropbox
    `/Backups/spx-stats/raw/<source>/<date>/`, create only, never overwrite. Bigger files reach Dropbox through
-   John's Mac.
+   John's Mac. An agent's Dropbox write needs John's own confirmation in chat; a relayed one doesn't count.
 2. **Load season by season** (or award by award), so the database shows progress as it goes.
 3. **Raw is kept as it came** in a `legacy_<source>` schema. `core` is built from it by rerunnable steps in
    `db/build/NNN_*.sql`, matched by stable keys.
@@ -43,6 +48,8 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
   - Data dir `/home/user/spxwork/pg17`, owned by the `postgres` user.
   - After a container restart, start it with:
     `su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D /home/user/spxwork/pg17 -l /tmp/pg17.log -o '-p 55432 -k /tmp -c listen_addresses=127.0.0.1' start -w"`
+  - **Only the coordinating session starts Postgres.** Worktree-isolated agents can't run `su` or `runuser`. If
+    `psql` can't connect, report it; don't try to start it. Connect with `psql -h /tmp -p 55432 -U postgres spx_stats`.
 - **Schemas:**
   - `legacy_*`: raw, one per source.
   - `core`: the curated history.
@@ -57,6 +64,11 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
   - Prefer loading only the tables you changed (`load_table`). A full `--replace` load empties each table, and by
     cascade its children, before refilling it, so the site is blank while it runs.
   - Run `select api.refresh();` after loading.
+  - **Write production loads as insert-only scripts** (`on conflict do nothing`, no truncate). The auto-mode
+    permission check often refuses production loads from agents even after John approves in chat, because agents
+    don't see his messages. If one is refused, stop and report the exact command; the coordinating session runs it
+    once John approves.
+  - **Schema changes** go through the Supabase MCP `apply_migration`.
 - **DS1** (John's Synology NAS, over Tailscale) keeps a full copy of everything, including `legacy_*`. Refresh it
   after big loads.
 
@@ -120,6 +132,11 @@ board UmaKuma and Itsutsu use, under project key `spx-stats`. Drive it with
 `pnpm task` from `web/` (`pnpm task add|claim|release|done|drop|reopen|grade`).
 `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` come from the environment and
 are never written to a file, a log or a commit.
+
+spx-stats needs its own key on the board: a `BOARD_TOKENS_JSON` entry named `spx-stats`, and those two variables in
+the environment. Until it exists, don't try to file tickets; write them down for the pending list at Dropbox
+`/Backups/spx-stats/tickets-pending-2026-10-11.md` and tell the coordinating session (the Dropbox rule above
+applies to the write).
 
 - File a ticket before starting work: `pnpm task add "<title>" --detail "<what and why>" --by "<who>"`.
 - Claim it with the whole id the board prints, never a prefix: `pnpm task claim <id> "<who>"`. A hold lasts six hours; a live hold is not taken over.
