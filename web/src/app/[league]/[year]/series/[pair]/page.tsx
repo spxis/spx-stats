@@ -333,7 +333,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
                 <div key={i} className="road">
                   <h3 style={{ color: i === 0 ? "var(--ca)" : "var(--cb)" }}>{i === 0 ? na : nb}</h3>
                   {list.map(({ x, name }) => (
-                    <div key={`${x.sides[0].f}-${x.sides[1].f}-${x.meeting}`}><span className="rn">{name}</span><SeriesCard paths={paths} lg={lg} s={x} brands={d.brands} year={y} say={say} /></div>
+                    <div key={`${x.sides[0].f}-${x.sides[1].f}-${x.meeting}`}><span className="rn">{name}{" · "}{dt.monthDayShort(atUtc(x.start))}{x.end !== x.start ? `–${dt.monthDayShort(atUtc(x.end))}` : ""}</span><SeriesCard paths={paths} lg={lg} s={x} brands={d.brands} year={y} say={say} /></div>
                   ))}
                 </div>
               ) : null;
