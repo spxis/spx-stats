@@ -167,7 +167,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
         <section className="banner">
           <span className="cup">{champ.award}</span>
           <Badge src={champ.source} />
-          <span className="who"><TeamLink lg={lg} f={champ.franchise_id} name={champ.winner} year={d.teams.some((t) => t.f === champ.franchise_id && played.has(t.id)) ? y : undefined} /></span>
+          <span className="who"><TeamLogo url={logoFor(brands, champ.franchise_id, y)} size={32} /><TeamLink lg={lg} f={champ.franchise_id} name={champ.winner} year={d.teams.some((t) => t.f === champ.franchise_id && played.has(t.id)) ? y : undefined} /></span>
           <span className="how"><ChampionNote lg={lg} year={y} champ={champ.franchise_id} note={champ.note} /></span>
         </section>
       ) : null}

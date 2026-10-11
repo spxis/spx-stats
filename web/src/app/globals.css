@@ -120,6 +120,7 @@
   .banner .badge { justify-self: start; }
   .banner .cup { font: 700 15px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
   .banner .who { font: 700 34px/1.05 var(--display); text-transform: uppercase; grid-column: 1 / -1; }
+  .banner .who .logo { vertical-align: middle; margin-right: 12px; }
   .banner .how { color: var(--muted); grid-column: 1 / -1; }
 
   .badge { display: inline-block; font: 500 11px/1 var(--mono); padding: 3px 5px 2px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; text-transform: uppercase; letter-spacing: .03em; }
