@@ -22,6 +22,30 @@ async function get(view: string, query: string, from: number): Promise<Response>
   throw new Error(`${view}: ${last}`);
 }
 
+/** How many rows of an `api` view match a query, without reading them (PostgREST's exact count, from the Content-Range header). */
+export async function countRows(view: string, query: string): Promise<number> {
+  let last = "";
+  for (let attempt = 0; attempt < 3; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, 400 * attempt));
+    try {
+      const res = await fetch(`${REST_URL}${view}?${query}`, {
+        headers: { apikey: API_KEY, "Accept-Profile": "api", Range: "0-0", Prefer: "count=exact" },
+        next: { revalidate: REVALIDATE },
+      });
+      if (res.ok) {
+        const total = /\/(\d+)$/.exec(res.headers.get("content-range") ?? "")?.[1];
+        if (total == null) throw new Error(`${view}: no row count`);
+        return Number(total);
+      }
+      last = String(res.status);
+      if (res.status < 500) break;
+    } catch (e) {
+      last = e instanceof Error ? e.message : "network error";
+    }
+  }
+  throw new Error(`${view}: ${last}`);
+}
+
 /**
  * Reads every row of an `api` view, PAGE_SIZE rows per request (Range header), validating each
  * row against its Zod schema. Runs on the server only; each page of rows is kept by Next's
