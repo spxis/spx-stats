@@ -615,6 +615,7 @@ export const PHRASES = {
   "cal.oppFallback": "opponent",
   "load.failed": "Couldn’t load this right now — try again",
   "load.retry": "Try again",
+  "load.loading": "Loading…",
   "cal.jump": "Jump to a day",
   "cal.jumpPlaceholder": "Jump to a day…",
   "flag.of": "Flag of {name}",

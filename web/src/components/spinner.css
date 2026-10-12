@@ -1,0 +1,4 @@
+.pagespin { display: flex; align-items: center; justify-content: center; gap: 12px; padding: 96px 16px; color: var(--muted); font: 600 15px/1 var(--body); }
+.spinner { width: 22px; height: 22px; border-radius: 50%; border: 3px solid var(--rule); border-top-color: var(--accent); animation: spin .8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation-duration: 2.4s; } }
