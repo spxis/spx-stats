@@ -45,6 +45,10 @@ end. **manual** = a person or the coordinating session has to do it.
 - **DS1 is the permanent source of truth for data; cloud and Mac Postgres are temporary working copies.** Every
   download goes to DS1 (archive row plus `legacy_<source>` load) and to Dropbox before anything reaches production,
   and a cloud session pushes its new data to DS1 before its container is discarded.
+- **DS1 has two routes from a Mac: the home LAN and Tailscale.** Try both before saying DS1 is unreachable:
+  `bash scripts/mac/spx-check.sh` does (addresses in `scripts/mac/spx-checks.sh`). Never ask John to turn Tailscale on
+  at the Mac Studio: it is on the home LAN and DS1 answers there. DS1 is DiskStation1; DiskStation15 (DS15, 10.0.0.115)
+  is another NAS, not the database. The cloud container is not on the home LAN, so it uses Tailscale only.
 - **First step of every session:** read the hook's `[spx-check]` lines and check your connector tools
   ([section 4](#4-cold-start)); report anything MISSING.
 - Short answers. When you need something from John, start with `NEED FROM YOU:` and a copy-paste block.
@@ -67,7 +71,7 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 - Never ask him to paste a secret into chat. No wildcard or guessed paths: look every name up first. Test scripts
   before handing them over and say what is untested.
 - He is at his Mac Studio (Terminal) most of the time with Tailscale off, because it breaks his Dropbox sync. Do not
-  make him turn it on there. His MacBook runs with Tailscale on and Dropbox still syncs; there DS1 is reached directly.
+  make him turn it on there: DS1 is still reachable from it over the home LAN. His MacBook runs with Tailscale on and Dropbox still syncs; there DS1 is reached directly.
 - He wants features published as they are finished, and work done by Sonnet agents.
 - When a command works, add it to the private file so the next session does not ask again.
 
@@ -97,8 +101,12 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 
 1. Read the `[spx-check]` lines the SessionStart hook printed (Mac: `bash scripts/mac/spx-check.sh` re-runs them;
    cloud: the hook ends with the same kind of lines). Each is `ok` or `MISSING: <the one fix>`.
+   A `DS1 Postgres: MISSING` line means neither the home LAN nor Tailscale answered; an `ok (home LAN ...)` line with
+   `Tailscale: off` is healthy, so do not report Tailscale as a problem.
 2. Check your own tool list for the four claude.ai connectors (a script cannot see them): tools named like
-   `mcp__*Supabase*`, `*Vercel*`, `*Dropbox*`, `*GitHub*` (use ToolSearch if tools are deferred). For a missing one the
+   `mcp__*Supabase*`, `*Vercel*`, `*Dropbox*`, `*GitHub*` (use ToolSearch if tools are deferred). The claude.ai
+   "GitHub Integration" connector gives Claude Code no `mcp__*GitHub*` tools: GitHub is fine when the hook prints
+   `gh login: ok`, so do not report GitHub MISSING in that case. For a missing one the
    fix is "claude.ai > Settings > Connectors > <name> > Connect". Without Supabase: no production migrations or loads.
    Without Vercel: deploy with the CLI block in [section 7](#7-deploying). Turso is not needed today.
 3. Report everything MISSING to John as `NEED FROM YOU:` with the one fix, then carry on with what works.
@@ -117,9 +125,9 @@ ticket work. Each row says what breaks without it. Exact commands with private v
 | Turso CLI (Mac, optional, later) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks today |
 | Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
 | GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
-| Tailscale (Mac) | the app, signed in, on (MacBook: stays on) | no DS1 |
+| Tailscale (Mac) | the app, signed in, on (MacBook: stays on). Needed only off the home network: on the home LAN (Mac Studio) leave it off | no DS1 when away from home |
 | Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`) | no DS1, no `pnpm task` |
-| DS1 Postgres (Mac) | with Tailscale on and the keychain password, `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok` | no access to the source of truth |
+| DS1 Postgres (Mac) | on the home LAN, or with Tailscale on elsewhere, plus the keychain password: `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok (home LAN ...)` or `ok (Tailscale)` | no access to the source of truth |
 | Docker (MacBook, optional) | Docker Desktop running; then the working-copy block in [section 8](#8-data-work) | no local working copy |
 | Production Supabase, read-only | nothing to set up: the public URL and key the site uses; `spx-check.sh` and the cloud hook both test it | no way to compare counts against production |
 | Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
@@ -134,7 +142,7 @@ prints the value. If one is missing, say which and carry on with what does not n
 | Name | Used for | Needed by |
 |---|---|---|
 | `SUMILABU_BOARD_URL`, `SUMILABU_BOARD_TOKEN` | the ticket board | `pnpm task` |
-| `SPX_DS1_DB_PASSWORD`, `TS_AUTHKEY` | reaching DS1 over Tailscale | the session-start hook |
+| `SPX_DS1_DB_PASSWORD`, `TS_AUTHKEY` | reaching DS1 over Tailscale (cloud only: a Mac uses the home LAN or Tailscale itself) | the session-start hook |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN` | archive uploads | `scripts/dropbox_put.py` |
 | `SUPABASE_ACCESS_TOKEN` | bulk production loads | `scripts/supabase/load.py`, `scripts/players/prod_load.py` |
 
@@ -164,11 +172,11 @@ current as DS1, and the container is not permanent: push new data to DS1 before 
 ([section 8](#8-data-work), item 8).
 
 **On one of John's Macs** (new or existing; no cloud container). One command sets it up:
-`zsh scripts/mac/spx-credentials.sh setup` with the three variables the private file gives (tested on the MacBook,
+`zsh scripts/mac/spx-credentials.sh setup` with the variables the private file gives (tested on the MacBook,
 keychain path; the Dropbox path is **untested** end to end). It copies the DS1 password and the board key from his
 synced Dropbox into the keychain and prints one ok/FAIL line each for DS1, board, node, pnpm and gh. After that
-`pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` while Tailscale is on.
-The MacBook reaches DS1 directly over Tailscale and runs Docker; the Mac Studio is reached over ssh.
+`pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` on the home LAN or over Tailscale (the scripts try both).
+The MacBook reaches DS1 over the home LAN or Tailscale and runs Docker; the Mac Studio is reached over ssh.
 Agents may not read the Dropbox key files or another Mac's keychain (the permission check refuses it): give John
 the command from the private file instead.
 
@@ -317,7 +325,7 @@ Then fix forward on `main`, redeploy, and tell John.
 
 **Where data lives.**
 
-- **DS1** (Postgres in Docker on John's Synology NAS, reached over Tailscale; addresses in the private file) is the
+- **DS1** (Postgres in Docker on John's Synology NAS, reached on the home LAN or over Tailscale; the LAN and Tailscale addresses are in `scripts/mac/spx-checks.sh`) is the
   permanent **source of truth**: all `legacy_*` schemas, `legacy_files.raw_archive`, `core`, `meta`, `ref`, `api`.
 - **Dropbox** `/Backups/spx-stats/raw/<source>/<year or date>/` holds a hard copy of every raw download.
 - **Production** is Supabase project `njpvfrceahkvnrduerkk`: a published subset (schemas meta, ref, core and api only;
