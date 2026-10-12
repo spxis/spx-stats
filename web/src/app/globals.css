@@ -85,8 +85,6 @@
   .ticketform { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
   .ticketform label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
   .ticketform input, .ticketform textarea, .ticketform select { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
-  .page:has(.wide) { max-width: 1480px; }
-  .wide p { max-width: none; }
   .tk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .tk-chips a { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
   .tk-chips a span { font: 500 12px/1 var(--mono); color: var(--muted); }

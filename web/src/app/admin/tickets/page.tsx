@@ -123,7 +123,7 @@ export default async function AdminTicketsPage({ searchParams }: { searchParams:
 
   return (
     <>
-      <section className="head fade wide">
+      <section className="head fade">
         <h1>Tickets</h1>
         <p className="lede">The spx-stats board on Sumilabu, read fresh on every visit. <Link href="/admin/tickets/new">File a ticket</Link></p>
         <nav className="tk-chips" aria-label="Filter by status">
@@ -150,7 +150,7 @@ export default async function AdminTicketsPage({ searchParams }: { searchParams:
         </form>
         <p className="note">Showing {shown.length} of {all.length}</p>
       </section>
-      <section className="section wide">
+      <section className="section">
         {shown.length === 0 ? (
           <p className="note">No tickets match.</p>
         ) : (
