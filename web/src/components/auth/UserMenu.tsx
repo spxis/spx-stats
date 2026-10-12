@@ -19,9 +19,7 @@ export function SignInLink() {
 export function UserMenu({ user, version }: { user: MenuUser; version: string }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
-  const path = usePathname();
 
-  useEffect(() => setOpen(false), [path]);
   useEffect(() => {
     if (!open) return;
     const away = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
@@ -47,7 +45,7 @@ export function UserMenu({ user, version }: { user: MenuUser; version: string })
         <span className="usermenu-name">{label}</span>
       </button>
       {open ? (
-        <div className="usermenu-pop" role="menu">
+        <div className="usermenu-pop" role="menu" onClick={(e) => { if ((e.target as HTMLElement).closest("a")) setOpen(false); }}>
           <div className="usermenu-who">
             <b>{user.name || user.email}</b>
             {user.name ? <span>{user.email}</span> : null}
