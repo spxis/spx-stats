@@ -1,10 +1,11 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MapBox } from "@johnmorrisdotca/chizu";
 import { regionPoint, type RegionCountry } from "@/lib/regionProject";
-import { abbreviationLabels, chizu, NS, pinText, regionsOf, type Pin } from "./mapDraw";
+import { abbreviationLabels, chizu, NS, pinText, regionsOf, selectionOf, type Pin } from "./mapDraw";
 import { COUNTRY_KEY } from "./countryKey";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./mapviewer.css";
@@ -53,13 +54,14 @@ interface View { z: number; x: number; y: number }
 
 export function MapViewer({ pins, title, total, note, onNavigate, bar, selected, onPick, zoomToSelected }: {
   pins: Pin[]; title: string; total?: number; note?: string; onNavigate?: () => void; bar?: ReactNode;
-  /** The chosen team (Pin.f), marked on the map; when given it replaces each pin's own `me`. A dot press then calls onPick instead of following its link. */
+  /** The chosen dot (Pin.f), marked on the map and described in the panel above it (team and venue as links); when given it replaces each pin's own `me`. A dot press then calls onPick instead of following its link. */
   selected?: number; onPick?: (f: number) => void;
   /** Start zoomed in on the chosen dot, and move there when the choice changes. */
   zoomToSelected?: boolean;
 }) {
   const { say, locale } = useSpeaker();
   const router = useRouter();
+  const pathname = usePathname();
   const hostRef = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
   const view = useRef<View>({ z: 1, x: 0, y: 0 });
@@ -80,6 +82,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
   }, [pins]);
   const canState = ccs.length > 0;
   const shown = useMemo(() => pins.filter((p) => (!conf || p.conf === conf) && (!div || p.div === div)), [pins, conf, div]);
+  const chosen = selected != null ? pins.find((p) => p.f === selected) : undefined;
   const country: RegionCountry | null = ccs.includes(cc) ? cc : ccs[0] ?? null;
   const stateView = mode === "state" && country != null;
 
@@ -155,7 +158,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     s.tip.hidden = true; s.tipFor = -1;
     const px = s.host.clientWidth || 600;
     const r = (box.width * Math.max(4.5, px / 140)) / px;
-    for (const d of s.dots) { d.c.setAttribute("r", String(d.t.me ? r * 1.5 : r)); d.hit.setAttribute("r", String((box.width * 13) / px)); }
+    const hitPx = window.matchMedia("(pointer: coarse)").matches ? 20 : 13;
+    for (const d of s.dots) { d.c.setAttribute("r", String(d.t.me ? r * 1.5 : r)); d.hit.setAttribute("r", String((box.width * hitPx) / px)); }
     const me = s.dots.find((d) => d.t.me);
     if (me && pick.current.selected != null) { s.halo.setAttribute("cx", String(me.t.p[0])); s.halo.setAttribute("cy", String(me.t.p[1])); s.halo.setAttribute("r", String(r * 1.5)); }
     s.labels.replaceChildren();
@@ -333,6 +337,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
           </select>
         ) : null}
       </div>
+      {chosen ? <Selection pin={chosen} here={pathname} /> : null}
       <div className="mapstage">
         <div ref={hostRef} className="teammap big viewer" style={{ minHeight: 200 }} />
         <div className="mapzoom" role="group" aria-label={say("map.zoom")}>
@@ -345,5 +350,22 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       {placedCount === 0 && filtered ? <p className="note">{say("map.noneMatch")}</p> : null}
       <p className="note">{note ?? say("map.note", { placed: placedCount ?? shown.length, total: total ?? pins.length })} {say("map.hint")}</p>
     </div>
+  );
+}
+
+/** The chosen dot in words: the team (a link to its page, unless that is this page) and the venue (a link to its English Wikipedia article, in a new tab). */
+function Selection({ pin, here }: { pin: Pin; here: string }) {
+  const { say } = useSpeaker();
+  const s = selectionOf(pin);
+  return (
+    <p className="mapcaption" aria-live="polite">
+      {s.teamHref && s.teamHref !== here ? <Link href={s.teamHref} prefetch={false}><b>{s.team}</b></Link> : <b>{s.team}</b>}
+      {s.venue ? (
+        s.wiki
+          ? <a className="ext" href={s.wiki} target="_blank" rel="noopener noreferrer" aria-label={say("map.wikiOpens", { venue: s.venue })}>{s.venue}</a>
+          : <span>{s.venue}</span>
+      ) : null}
+      {s.rest.map((t) => <span key={t}>{t}</span>)}
+    </p>
   );
 }

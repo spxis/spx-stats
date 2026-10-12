@@ -66,11 +66,12 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
   const { say } = useSpeaker();
   const [hidden, setHidden] = useState(false);
   const [open, setOpen] = useState(false);
+  const [picked, setPicked] = useState(me.f);
   const dlg = useRef<HTMLDialogElement>(null);
   const label = say("map.label", { league: leagueShort, season: seasonLabel });
   useEffect(() => { if (open) dlg.current?.showModal(); }, [open]);
   if (hidden) return null;
-  const all = others.length ? others : [me];
+  const all = others.some((p) => p.f === me.f) ? others : [...others, me];
   return (
     <>
       <button type="button" className="mapbtn" aria-label={say("map.open", { league: leagueShort, season: seasonLabel })} onClick={() => setOpen(true)}>
@@ -83,7 +84,7 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
             <h2>{label}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          <MapViewer pins={all} title={label} total={clubCount} onNavigate={() => dlg.current?.close()} />
+          <MapViewer pins={all} title={label} total={clubCount} selected={picked} onPick={setPicked} />
         </dialog>
       ) : null}
     </>

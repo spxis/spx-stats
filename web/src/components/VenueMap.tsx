@@ -21,23 +21,30 @@ export function VenueMap({ league, teams, slug, leagueShort, seasonLabel, clubCo
   const { say } = useSpeaker();
   const [tab, setTab] = useState<VenueTab>(league ? tab0 : "history");
   const [team, setTeam] = useState(teams.some((t) => t.slug === team0) ? team0 : slug);
+  const [stop, setStop] = useState<number | null>(null);
   const chosen = teams.find((t) => t.slug === team) ?? teams[0];
 
   const go = (t: VenueTab, s: string) => {
-    setTab(t); setTeam(s);
+    setTab(t); setTeam(s); setStop(null);
     replaceQuery({ map: t === "league" ? null : t, team: s === slug ? null : s });
   };
 
   const pins = useMemo<Pin[]>(() => {
-    if (tab === "league") return (league ?? []).map((p) => ({ ...p, me: p.f === chosen?.f }));
+    if (tab === "league") return league ?? [];
     const stops = chosen?.venues ?? [];
     const open = stops.findLastIndex((v) => !v.to);
     const now = open >= 0 ? open : stops.length - 1;
     return stops.map((v, i) => ({
-      f: i, name: v.venue, lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, me: i === now,
+      f: i, name: v.venue, lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, wiki: v.wiki, me: i === now, team: chosen?.name, teamHref: chosen?.href,
       venue: `${v.from?.slice(0, 4) ?? "…"}–${v.to?.slice(0, 4) ?? say("team.today")}`,
     }));
   }, [tab, league, chosen, say]);
+  const current = tab === "league" ? chosen?.f : stop ?? pins.find((p) => p.me)?.f;
+  const pick = (f: number) => {
+    if (tab === "history") { setStop(f); return; }
+    const t = teams.find((x) => x.f === f);
+    if (t) go("league", t.slug);
+  };
 
   const note = tab === "league"
     ? say("venues.leagueNote", { n: pins.length, league: leagueShort, season: seasonLabel })
@@ -60,7 +67,7 @@ export function VenueMap({ league, teams, slug, leagueShort, seasonLabel, clubCo
 
   return (
     <div className="venuemap">
-      <MapViewer pins={pins} title={say("venues.mapTitle", { league: leagueShort })} total={tab === "league" ? clubCount : pins.length} note={note} bar={bar} />
+      <MapViewer pins={pins} title={say("venues.mapTitle", { league: leagueShort })} total={tab === "league" ? clubCount : pins.length} note={note} bar={bar} selected={current} onPick={pick} />
     </div>
   );
 }

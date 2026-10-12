@@ -112,9 +112,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
     const [clubs, places] = await Promise.all([getClubs(lg, lastYear), getSeasonAlignment(lg, lastYear)]);
     leaguePins = clubPins({ year: lastYear, me: f, clubs, brands, abbrs, alignment: places, places: venuePlaces, href: (c) => paths.team(lg, c) });
     clubCount = clubs.length;
+    const mePlace = venuePlaces.get(placeKey(f, me.home_venue, me.latitude, me.longitude) ?? "");
     map = (
       <TeamMapCorner
-        me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, place: venuePlaces.get(placeKey(f, me.home_venue, me.latitude, me.longitude) ?? "")?.place, me: true }}
+        me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, place: mePlace?.place, wiki: mePlace?.wiki, href: paths.team(lg, f), me: true }}
         others={leaguePins} clubCount={clubs.length}
         seasonLabel={seasonLabel(lg, lastYear)} leagueShort={LG[lg]} name={now}
       />
@@ -178,7 +179,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       key: "venue", label: say("col.venue"), cls: "team", get: (v) => v.home_venue,
       cell: (v) => {
         const wiki = venuePlaces.get(placeKey(f, v.home_venue, v.latitude, v.longitude) ?? "")?.wiki;
-        return wiki ? <>{v.home_venue}<br /><a className="seasoncell" href={wiki} rel="noopener noreferrer">{say("venues.wikipedia")}</a></> : v.home_venue;
+        return wiki ? <>{v.home_venue}<br /><a className="seasoncell" href={wiki} target="_blank" rel="noopener noreferrer">{say("venues.wikipedia")}</a></> : v.home_venue;
       },
     },
     { key: "from", label: say("col.from"), cls: "seasoncell", get: (v) => v.brand_from, cell: (v) => v.brand_from || "" },

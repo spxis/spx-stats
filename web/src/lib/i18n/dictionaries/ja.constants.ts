@@ -492,7 +492,7 @@ export const JA: Dictionary = {
   "map.open": "{season}の{league}全チームの地図",
   "map.where": "{name}の本拠地",
   "map.close": "閉じる",
-  "map.note": "{total}チーム中{placed}チームを表示。点を押すとそのチームが開きます。地図：Chizu、Natural Earthより。",
+  "map.note": "{total}チーム中{placed}チームを表示。点を押すとそのチームと本拠地が表示されます。地図：Chizu、Natural Earthより。",
   "map.view": "地図の表示",
   "map.viewCountry": "国",
   "map.viewState": "州・省",
@@ -512,9 +512,10 @@ export const JA: Dictionary = {
   "venues.tabHistory": "過去の本拠地",
   "venues.team": "チーム",
   "venues.mapTitle": "{league}の本拠地",
-  "venues.leagueNote": "{season}の{league}の本拠地{n}か所。点を押すとそのチームが開きます。地図：Chizu、Natural Earthより。",
+  "venues.leagueNote": "{season}の{league}の本拠地{n}か所。点を押すとそのチームと本拠地が表示されます。地図：Chizu、Natural Earthより。",
   "venues.historyNote": "このチームの本拠地{n}か所と使用年。地図：Chizu、Natural Earthより。",
   "venues.wikipedia": "ウィキペディア",
+  "map.wikiOpens": "{venue}のウィキペディア（新しいタブで開きます）",
 
   // sources, data quality, logos
   "sources.title": "情報源",

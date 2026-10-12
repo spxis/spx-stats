@@ -16,7 +16,11 @@ export interface Pin {
   /** The venue's Wikipedia page and the team's address slug, for the team-season map's label and team choice. */
   wiki?: string | null;
   slug?: string;
+  /** The team's page. */
   href?: string;
+  /** For a pin that is itself a venue (`name` is the venue): the team that played there and its page. */
+  team?: string;
+  teamHref?: string;
   me?: boolean;
   /** The country of the point (US, CA, MX), for the state and province view. */
   cc?: string | null;
@@ -27,6 +31,12 @@ export interface Pin {
 
 /** The words a dot says: abbreviation, name, venue (or years) and place, as in its label and its tooltip. */
 export const pinText = (t: Pin) => [t.abbr ? `${t.abbr} · ${t.name}` : t.name, t.venue, t.place].filter(Boolean).join(" · ");
+
+/** What the selection panel shows for a dot: the team and its page, the venue and its Wikipedia article, and the rest as plain text. */
+export function selectionOf(t: Pin): { team: string; teamHref?: string; venue?: string; wiki?: string | null; rest: string[] } {
+  if (t.team) return { team: t.team, teamHref: t.teamHref, venue: t.name, wiki: t.wiki, rest: [t.venue, t.place].filter((x): x is string => !!x) };
+  return { team: t.name, teamHref: t.href, venue: t.venue ?? undefined, wiki: t.wiki, rest: t.place ? [t.place] : [] };
+}
 
 export type Chizu = {
   WORLD: typeof import("@johnmorrisdotca/chizu/world").default;

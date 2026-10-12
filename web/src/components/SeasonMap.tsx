@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Pin } from "./mapDraw";
@@ -115,11 +114,6 @@ function Dialog({ pins, me, clubCount, leagueShort, seasonLabel, mode }: DialogP
         <h2 id={heading}>{label}</h2>
         <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
       </div>
-      <p className="mapcaption" aria-live="polite">
-        {chosen.f === me ? <b>{chosen.name}</b> : <Link href={chosen.href ?? "#"} prefetch={false}><b>{chosen.name}</b></Link>}
-        {[chosen.venue, chosen.place].filter(Boolean).map((t) => <span key={t}>{t}</span>)}
-        {chosen.wiki ? <a href={chosen.wiki} target="_blank" rel="noopener noreferrer">{say("venues.wikipedia")}</a> : null}
-      </p>
       <MapViewer pins={pins} title={label} bar={bar} selected={chosen.f} zoomToSelected={mode === "venue"}
         onPick={(f) => { const p = pins.find((x) => x.f === f); if (p) chooseTeam(f === me ? null : p.slug ?? null); }}
         note={say("tmap.note", { n: pins.length, total: clubCount, season: seasonLabel })} />

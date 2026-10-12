@@ -12,9 +12,9 @@ import type { Pin } from "@/components/mapDraw";
 import type { TeamPaths } from "./slug";
 
 /** A venue a club used, with the years of the brand eras it was named in and where it stands. */
-export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null }
+export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null; wiki: string | null }
 /** A club with a venue on record: its address slug, its latest name and its venues, oldest first. */
-export interface VenueTeam { f: number; slug: string; name: string; venues: VenueStop[] }
+export interface VenueTeam { f: number; slug: string; href: string; name: string; venues: VenueStop[] }
 
 const nameRow = z.object({ franchise_id: z.number(), name: z.string(), name_from: z.string().nullable() });
 
@@ -40,13 +40,14 @@ export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPat
       const key = `${b.home_venue}|${b.latitude}|${b.longitude}`;
       const s = stops.get(key);
       if (!s) {
+        const vp = places.get(placeKey(f, b.home_venue, b.latitude, b.longitude) ?? "");
         stops.set(key, { venue: b.home_venue!, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude),
-          place: places.get(placeKey(f, b.home_venue, b.latitude, b.longitude) ?? "")?.place ?? null });
+          place: vp?.place ?? null, wiki: vp?.wiki ?? null });
       } else {
         s.to = s.to && b.brand_to ? (b.brand_to > s.to ? b.brand_to : s.to) : null;
       }
     }
-    if (stops.size) out.push({ f, slug: paths.slug(lg, f), name: names.get(f) ?? paths.slug(lg, f), venues: [...stops.values()] });
+    if (stops.size) out.push({ f, slug: paths.slug(lg, f), href: paths.team(lg, f), name: names.get(f) ?? paths.slug(lg, f), venues: [...stops.values()] });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, "en"));
 }

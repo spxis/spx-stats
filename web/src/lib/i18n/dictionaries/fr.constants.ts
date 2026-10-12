@@ -492,7 +492,7 @@ export const FR: Dictionary = {
   "map.open": "Carte de toutes les équipes de la {league} en {season}",
   "map.where": "Où joue {name}",
   "map.close": "Fermer",
-  "map.note": "{placed} équipes sur {total} placées. Appuyez sur un point pour ouvrir cette équipe. Carte : Chizu, d’après Natural Earth.",
+  "map.note": "{placed} équipes sur {total} placées. Appuyez sur un point pour voir son équipe et son enceinte. Carte : Chizu, d’après Natural Earth.",
   "map.view": "Vue de la carte",
   "map.viewCountry": "Pays",
   "map.viewState": "État / province",
@@ -512,9 +512,10 @@ export const FR: Dictionary = {
   "venues.tabHistory": "Enceintes historiques",
   "venues.team": "Équipe",
   "venues.mapTitle": "Enceintes à domicile, {league}",
-  "venues.leagueNote": "{n} enceintes de la {league}, {season}. Appuyez sur un point pour ouvrir cette équipe. Carte : Chizu, d’après Natural Earth.",
+  "venues.leagueNote": "{n} enceintes de la {league}, {season}. Appuyez sur un point pour voir son équipe et son enceinte. Carte : Chizu, d’après Natural Earth.",
   "venues.historyNote": "{n} enceintes de cette équipe, avec les années d’utilisation. Carte : Chizu, d’après Natural Earth.",
   "venues.wikipedia": "Wikipédia",
+  "map.wikiOpens": "{venue} sur Wikipédia (s’ouvre dans un nouvel onglet)",
 
   // sources, data quality, logos
   "sources.title": "Sources",
