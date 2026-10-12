@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { MiniCup } from "@/components/TrophyIcon";
 import { TeamLink } from "@/components/ui";
 import type { PersonResumeRow, PersonSeasonTeamRow } from "@/lib/api/player";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -69,7 +70,7 @@ export async function PlayerResume({ resume, seasons }: { resume: PersonResumeRo
       ) : null}
       <dl className="pfacts">
         <div className="pfact"><dt>{say("resume.playoffs")}</dt><dd>{fmt(playoffYears.size)}</dd></div>
-        <div className="pfact"><dt>{say("resume.titles")}</dt><dd>{fmt(titleYears.size)}</dd></div>
+        <div className="pfact"><dt>{say("resume.titles")}</dt><dd>{fmt(titleYears.size)}{[...titleYears.values()].slice(0, titleYears.size > 5 ? 1 : 5).map((s, i) => <MiniCup key={i} league={s.league} />)}</dd></div>
       </dl>
       {playoffYears.size ? (
         <div className="seasonlist" aria-label={say("resume.playoffs")}>

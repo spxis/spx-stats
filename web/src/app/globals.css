@@ -170,6 +170,8 @@
   .trophies { display: flex; align-items: center; gap: 14px; color: var(--accent); }
   .trophies b { font: 700 clamp(88px, 14vw, 140px)/0.85 var(--display); font-variant-numeric: tabular-nums; }
   .trophies .cup { display: block; width: clamp(56px, 8vw, 84px); }
+  .trophies .cups { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+  .trophies .cups .cup { width: clamp(32px, 4.5vw, 48px); }
   .trophies .cup svg { display: block; width: 100%; height: auto; }
   .trophyrow { display: flex; flex-wrap: wrap; align-items: center; gap: 18px 40px; }
   .trophyrow .champs { flex: 1 1 320px; min-width: 0; display: flex; flex-direction: column; gap: 10px; }

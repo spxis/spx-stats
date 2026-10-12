@@ -221,7 +221,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
       {t.titles.length ? (
         <div className="trophyrow fade">
-          <div className="trophies"><b>{t.titles.length}</b><Trophy league={lg} className="cup" /></div>
+          <div className="trophies"><b>{t.titles.length}</b>{t.titles.length > 1 && t.titles.length <= 5 ? <span className="cups">{t.titles.map((y) => <Trophy key={y} league={lg} className="cup" />)}</span> : <Trophy league={lg} className="cup" />}</div>
           <div className="champs">
             <h2>{say("team.championships")}</h2>
             <div className="seasonlist">
