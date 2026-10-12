@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { ApiError, rows } from "./api/client";
+import { standingRows, teamSeasonRows } from "./api/teamSeasons";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
   seasonNoteSchema, seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
@@ -54,7 +55,7 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
   const [summary, games, standings, awards] = await Promise.all([
     rows("season_summary", `${q}&select=*`, seasonSummarySchema),
     rows("games", `${q}&select=*&order=game_date,game_id`, gameSchema),
-    rows("standings", `${q}&select=*`, standingSchema),
+    standingRows(`${q}&select=*`, standingSchema),
     rows("awards", `${q}&select=*`, awardSchema),
   ]);
   if (!summary[0]) return null;
@@ -80,13 +81,13 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
 
 /** Every team of a league's season with the franchise it belongs to, for the map of that season. */
 export const getClubs = cache(async (lg: string, y: number) => {
-  const st = await rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema);
+  const st = await standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema);
   return st.map((s) => ({ franchise_id: s.franchise_id, team: s.team }));
 });
 
 /** Every standings row of a league's season (the same request as getClubs, so one cached fetch). */
 export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
-  rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
+  standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
 
 /** The database's notes on a league's season (why it was short, and so on). A missing view or a failed fetch just means no notes. */
 export const getSeasonNotes = cache(async (lg: string, y: number): Promise<SeasonNoteRow[]> =>
@@ -105,7 +106,7 @@ export interface TeamData {
 export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | null> => {
   const q = `league=eq.${lg}&franchise_id=eq.${f}`;
   const [ts, names] = await Promise.all([
-    rows("team_seasons", `${q}&select=*&order=year`, teamSeasonSchema),
+    teamSeasonRows(`${q}&select=*&order=year`, teamSeasonSchema),
     rows("franchise_names", `${q}&select=*&order=name_from`, franchiseNameSchema),
   ]);
   if (!ts.length && !names.length) return null;
@@ -121,7 +122,7 @@ export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | n
 });
 
 export const getTeamStandings = cache(async (lg: string, f: number): Promise<StandingRow[]> =>
-  rows("standings", `franchise_id=eq.${f}&league=eq.${lg}&select=*&order=year.desc`, standingSchema));
+  standingRows(`franchise_id=eq.${f}&league=eq.${lg}&select=*&order=year.desc`, standingSchema));
 
 /**
  * Every game a franchise played in a season, in the order asked for: `game_date.asc|desc` (then the game id the same way).
@@ -166,7 +167,7 @@ export const getSeasonDays = cache(async (lg: string, y: number): Promise<string
 
 /** Every (league, year, franchise) with a record, for the sitemap's team-season pages. */
 export const getTeamSeasonIndex = cache(async () =>
-  rows("team_seasons", "select=league,year,franchise_id,w&order=league,year,franchise_id", z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), w: z.number().nullable() })));
+  teamSeasonRows("select=league,year,franchise_id,w&order=league,year,franchise_id", z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), w: z.number().nullable() })));
 
 /** Every (league, franchise) with a page, for the sitemap (franchise_names is far cheaper to page than team_seasons). */
 export const getTeamIndex = cache(async (): Promise<{ league: string; franchise_id: number }[]> => {

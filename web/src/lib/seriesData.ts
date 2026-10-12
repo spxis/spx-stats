@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
+import { standingRows } from "./api/teamSeasons";
 import { gameSchema, standingSchema } from "./api/schemas";
 import type { GameRow, StandingRow } from "./api/types";
 
@@ -25,7 +26,7 @@ export const getPairPlayoffYears = cache(async (lg: string, a: number, b: number
 
 /** A season's standings, for the records of the two teams and where each stood. */
 export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
-  rows("standings", `league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
+  standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
 
 const finalsSchema = z.object({ year: z.number(), game_date: z.string(), away: z.string().nullable(), away_f: z.number().nullable(), home: z.string().nullable(), home_f: z.number().nullable() });
 

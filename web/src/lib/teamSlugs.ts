@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
+import { teamSeasonRows } from "./api/teamSeasons";
 import { comparePath } from "./compare";
 import { pairPath, parseH2hSegment } from "./h2h";
 import { buildSlugs, franchiseNamed, makePaths, parsePair, resolveFranchise, resolveTeamSeason, tableOf } from "./slug";
@@ -13,7 +14,7 @@ const seasonRow = z.object({ league: z.string(), year: z.number(), franchise_id:
 export const getSlugs = cache(async () => {
   const [names, seasons] = await Promise.all([
     rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from", nameRow),
-    rows("team_seasons", "select=league,year,franchise_id,team&order=league,year,franchise_id", seasonRow),
+    teamSeasonRows("select=league,year,franchise_id,team&order=league,year,franchise_id", seasonRow),
   ]);
   return buildSlugs(names, seasons);
 });

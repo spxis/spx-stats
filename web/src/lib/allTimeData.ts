@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
+import { standingRows, teamSeasonRows } from "./api/teamSeasons";
 import { franchiseNameSchema } from "./api/schemas";
 import { abbrFor } from "./abbr";
 import { buildAllTime } from "./allTime";
@@ -19,9 +20,9 @@ const champSchema = z.object({ year: int, franchise_id: int });
 export const getAllTime = cache(async (lg: string) => {
   const q = `league=eq.${lg}`;
   const [stand, games, champs, names, abbrs] = await Promise.all([
-    rows("standings", `${q}&select=year,franchise_id,team,gp,w,l,t,otl,pf,pa&order=year,franchise_id`, standSchema),
+    standingRows(`${q}&select=year,franchise_id,team,gp,w,l,t,otl,pf,pa&order=year,franchise_id`, standSchema),
     rows("games", `${q}&phase=eq.playoffs&select=year,away_f,home_f,away_score,home_score&order=game_id`, gameSchema),
-    rows("team_seasons", `${q}&champion=is.true&select=year,franchise_id&order=year`, champSchema),
+    teamSeasonRows(`${q}&champion=is.true&select=year,franchise_id&order=year`, champSchema),
     rows("franchise_names", `${q}&select=*&order=franchise_id,name_from`, franchiseNameSchema),
     getAbbrs(lg),
   ]);
