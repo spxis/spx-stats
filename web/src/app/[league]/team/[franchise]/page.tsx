@@ -224,7 +224,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           <div className="champs">
             <h2>{say("team.championships")}</h2>
             <div className="seasonlist">
-              {t.titles.map((y) => <Link key={y} className="full" href={seasonPath(lg, y)}>{seasonLabel(lg, y)}</Link>)}
+              {t.titles.map((y) => <Link key={y} className="full" href={seasonPath(lg, y)}><TeamLogo url={logoFor(brands, f, y)} size={16} />{seasonLabel(lg, y)}</Link>)}
             </div>
           </div>
         </div>

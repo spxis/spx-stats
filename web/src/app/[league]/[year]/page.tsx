@@ -29,7 +29,7 @@ import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
 import { scoresPath } from "@/lib/scores";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
-import { getPaths } from "@/lib/teamSlugs";
+import { franchiseOfName, getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 
@@ -83,7 +83,9 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const streak = defending != null ? titleStreak(holders.byYear, defending, y - 1) : 0;
   const selection = parseSelection(sp);
 
-  const champ = d.awards.find((x) => x.kind === "championship");
+  const champs = d.awards.filter((x) => x.kind === "championship");
+  const champ = champs.find((x) => x.franchise_id != null) ?? champs[0];
+  const champF = champ ? champ.franchise_id ?? await franchiseOfName(lg, champ.winner) : null;
   const awards = d.awards.filter((x) => x.kind !== "championship");
   // The table as it stood after a day's games (?date=), when that day is before the season's last game day.
   const days = [...new Set(d.games.filter((g) => g[5] === "r" && g[6] === "f").map((g) => g[0]))].sort();
@@ -175,8 +177,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         <section className="banner">
           <span className="cup">{champ.award}</span>
           <Badge src={champ.source} />
-          <span className="who"><TeamLogo url={logoFor(brands, champ.franchise_id, y)} size={40} shape="circle" /><TeamLink lg={lg} f={champ.franchise_id} name={champ.winner} year={d.teams.some((t) => t.f === champ.franchise_id && played.has(t.id)) ? y : undefined} /></span>
-          <span className="how"><ChampionNote lg={lg} year={y} champ={champ.franchise_id} note={champ.note} /></span>
+          <span className="who"><TeamLogo url={logoFor(brands, champF, y)} size={40} shape="circle" /><TeamLink lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} /></span>
+          <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} /></span>
         </section>
       ) : null}
       {st.length ? (

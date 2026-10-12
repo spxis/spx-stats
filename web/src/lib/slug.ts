@@ -228,6 +228,13 @@ export function resolveFranchise(L: LeagueSlugs | undefined, seg: string): numbe
   return list?.length ? newest(L, list) : null;
 }
 
+/** The franchise that has worn this club name in the league; null when none has. */
+export function franchiseNamed(L: LeagueSlugs | undefined, name: string | null | undefined): number | null {
+  if (!L || !name) return null;
+  for (const [f, c] of L.clubs) if (c.name === name || c.alt.includes(name)) return f;
+  return null;
+}
+
 /** The franchise a team-season segment means for a year: that season's slug, else any other name of a franchise that played then. */
 export function resolveTeamSeason(L: LeagueSlugs | undefined, y: number, seg: string): number | null {
   if (!L) return null;

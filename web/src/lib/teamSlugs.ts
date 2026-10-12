@@ -4,7 +4,7 @@ import { z } from "zod";
 import { rows } from "./api/client";
 import { comparePath } from "./compare";
 import { pairPath, parseH2hSegment } from "./h2h";
-import { buildSlugs, makePaths, parsePair, resolveFranchise, resolveTeamSeason, tableOf } from "./slug";
+import { buildSlugs, franchiseNamed, makePaths, parsePair, resolveFranchise, resolveTeamSeason, tableOf } from "./slug";
 
 const nameRow = z.object({ league: z.string(), franchise_id: z.number(), name: z.string(), name_from: z.string().nullable(), name_to: z.string().nullable() });
 const seasonRow = z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), team: z.string().nullable() });
@@ -26,6 +26,11 @@ export async function teamOf(lg: string, seg: string): Promise<{ f: number; path
   const [slugs, paths] = await Promise.all([getSlugs(), getPaths()]);
   const f = resolveFranchise(slugs.leagues[lg], seg);
   return f == null ? null : { f, path: paths.team(lg, f) };
+}
+
+/** The franchise that has worn a club name in a league (a champion the database holds by name only); null when none has. */
+export async function franchiseOfName(lg: string, name: string | null | undefined): Promise<number | null> {
+  return franchiseNamed((await getSlugs()).leagues[lg], name);
 }
 
 /** The same for a team's season: the franchise, and the address that season's name gives it. */

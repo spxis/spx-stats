@@ -19,7 +19,7 @@ import { isLeague, LEAGUE_CODES, LEAGUES, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
-import { getPaths } from "@/lib/teamSlugs";
+import { franchiseOfName, getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 export const revalidate = 3600;
@@ -50,7 +50,8 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[league]"
   const [s, brands, paths] = await Promise.all([getSummary(), getBrands(), getPaths()]);
   const list = withCoverage(s.seasons).filter((x) => x.league === lg).sort((a, b) => a.year - b.year);
   const withGames = list.filter((x) => x.games > 0);
-  const champs = list.filter((x) => x.champion).reverse();
+  const champs = await Promise.all(list.filter((x) => x.champion).reverse().map(async (x) =>
+    x.champion_franchise != null ? x : { ...x, champion_franchise: await franchiseOfName(lg, x.champion) }));
   const champions = tableOf(champs, [
     { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (c) => c.year, cell: (c) => <Link href={seasonPath(lg, c.year)} prefetch={false}>{c.label}</Link> },
     { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.champion, cell: (c) => <><TeamLogo url={logoFor(brands, c.champion_franchise, c.year)} /><TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /></> },
