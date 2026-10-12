@@ -29,7 +29,8 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
 import { seasonPath } from "@/lib/slug";
-import { getPaths, teamOf } from "@/lib/teamSlugs";
+import { getLeagueClubs, getPaths, teamOf } from "@/lib/teamSlugs";
+import { TeamSwitch } from "@/components/TeamSwitch";
 import { clubPins, getVenueTeams } from "@/lib/venueMap";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
 import { idleYears } from "@/lib/noSeason";
@@ -122,6 +123,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
     );
   }
 
+  const switchClubs = (await getLeagueClubs(lg).catch(() => [])).sort((a, c) => a.name.localeCompare(c.name, "en"));
   const withGames = new Set(summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
   const idle = idleYears(rows, summary.seasons, lg);
   const gaps: StandingRow[] = [...idle].filter(([y]) => !rows.some((r) => r.year === y)).map(([y]) => ({
@@ -206,7 +208,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         <div className="teamband" style={{ "--tp": `#${b.primary_hex}`, "--ts": `#${b.secondary_hex || b.primary_hex}` } as React.CSSProperties} />
       ) : null}
       <section className="head fade">
-        {map}
+        <div className="headcorner">
+          {map}
+          <TeamSwitch current={paths.team(lg, f)} options={switchClubs.map((c) => ({ name: c.name, href: paths.team(lg, c.f) }))} />
+        </div>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<TeamFlag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (

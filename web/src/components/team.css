@@ -69,3 +69,11 @@ h2 .gamesteam .logo { margin: 0 8px 0 0; vertical-align: -4px; }
   .ranks ul { justify-content: start; }
   .ranks p { text-align: left; }
 }
+.headcorner { position: absolute; top: 0; right: 0; width: 180px; display: flex; flex-direction: column; gap: 8px; }
+.headcorner .mapbtn { position: static; width: 100%; }
+.headcorner .teamswitch { width: 100%; }
+.head:has(.headcorner) { min-height: 200px; }
+@media (max-width: 640px) {
+  .headcorner { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
+  .head:has(.headcorner) { min-height: 0; }
+}

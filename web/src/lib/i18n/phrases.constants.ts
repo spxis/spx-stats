@@ -513,6 +513,7 @@ export const PHRASES = {
   "h2h.pick.formerly": "formerly {name}",
   "h2h.pick.since": "since {year}",
   "h2h.pick.current": "Shown now",
+  "team.switch": "Go to another team",
   "compare.button": "Compare",
   "compare.swap": "Swap teams",
   "compare.with": "Compare {team} with",
