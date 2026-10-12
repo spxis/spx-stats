@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -87,16 +87,25 @@ function Dialog({ pins, me, clubCount, leagueShort, seasonLabel, mode }: DialogP
   const heading = useId();
   const sorted = useMemo(() => [...pins].sort((a, b) => a.name.localeCompare(b.name, "en")), [pins]);
   const chosen = pins.find((p) => p.slug === team) ?? pins.find((p) => p.f === me) ?? pins[0];
+  const router = useRouter();
+  const latest = useRef(chosen);
+  useEffect(() => { latest.current = chosen; });
 
   useEffect(() => {
     const d = dlg.current;
     if (!d) return;
-    d.addEventListener("close", closeMap);
+    // Closing applies the map's choice: the page moves to the chosen club's season.
+    const onClose = () => {
+      const c = latest.current;
+      if (c.f !== me && c.href) router.replace(c.href); else closeMap();
+    };
+    d.addEventListener("close", onClose);
     if (!d.open) d.showModal();
     return () => {
-      d.removeEventListener("close", closeMap);
+      d.removeEventListener("close", onClose);
       requestAnimationFrame(() => { if (opener?.isConnected && !document.querySelector("dialog[open]")) opener.focus(); });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- set up once; the handler reads refs
   }, []);
 
   const label = say("map.label", { league: leagueShort, season: seasonLabel });

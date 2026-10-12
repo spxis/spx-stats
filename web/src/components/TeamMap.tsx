@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/locale";
 import { chizu, frame, NS, pinText, type Pin } from "./mapDraw";
@@ -68,17 +69,24 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
   const [open, setOpen] = useState(false);
   const [picked, setPicked] = useState(me.f);
   const dlg = useRef<HTMLDialogElement>(null);
+  const router = useRouter();
   const label = say("map.label", { league: leagueShort, season: seasonLabel });
   useEffect(() => { if (open) dlg.current?.showModal(); }, [open]);
   if (hidden) return null;
   const all = others.some((p) => p.f === me.f) ? others : [...others, me];
+  // Closing applies the map's choice: the page moves to the chosen club.
+  const closed = () => {
+    setOpen(false);
+    const href = picked !== me.f ? all.find((p) => p.f === picked)?.href : undefined;
+    if (href) router.push(href);
+  };
   return (
     <>
       <button type="button" className="mapbtn" aria-label={say("map.open", { league: leagueShort, season: seasonLabel })} onClick={() => setOpen(true)}>
         <MapHost pins={[me]} title={say("map.where", { name })} onEmpty={() => setHidden(true)} />
       </button>
       {open ? (
-        <dialog ref={dlg} className="mapdlg" aria-label={label} onClose={() => setOpen(false)}
+        <dialog ref={dlg} className="mapdlg" aria-label={label} onClose={closed}
           onClick={(e) => { if (e.target === dlg.current) dlg.current?.close(); }}>
           <div className="dlghead">
             <h2>{label}</h2>
