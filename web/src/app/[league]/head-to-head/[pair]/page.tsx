@@ -340,6 +340,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const figs: [string, number | string][] = [
     [say("fig.games"), t.gp],
     [say("fig.seasons"), new Set(picked.map((g) => g.year)).size],
+    [unit, `${fmt(t.af)} – ${fmt(t.bf)}`],
   ];
   if (hasPlayoffs && phase !== "regular") figs.push([say("h2h.fig.series"), meetings.length]);
   if (year == null) figs.push([say("h2h.fig.first"), seasonLabel(lg, picked[0].year)]);
