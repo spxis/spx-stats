@@ -22,8 +22,10 @@ type Query = Record<string, string | string[] | undefined>;
 const param = (v: string | string[] | undefined): string => (Array.isArray(v) ? v[0] : v) ?? "";
 
 /** The team leaders of a season: a card for each statistic, then the chosen one in full, set against every other season of the league. */
-export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbrs, idle }: {
+export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbrs, idle, champion }: {
   lg: string; year: number; all: LeaderStanding[]; mine: LeaderStanding[]; issue?: SeasonIssue; sp: Query; brands: BrandMap; abbrs: AbbrMap; idle: number[];
+  /** The franchise that won this season's title, when the season is complete. */
+  champion?: number | null;
 }) {
   const { say, fmt, plural } = await currentSpeaker();
   const path = leadersPath(lg, year);
@@ -83,7 +85,7 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
     const link = (r: LeaderStanding, short = false) => <TeamLink lg={lg} f={r.franchise_id} name={name(r)} year={year} abbr={short ? abbrFor(abbrs, r.franchise_id, year, r.team) : undefined} />;
     const cols: ColumnSpec<(typeof rows)[number]>[] = [
       { key: "rk", label: say("leaders.col.rank"), num: true, cls: "rk", get: (r) => placeIn(thisSeason, r.value) },
-      { key: "team", label: say("col.team"), cls: "team", get: (r) => r.row.team, cell: (r) => <><TeamLogo url={logoFor(brands, r.row.franchise_id, year)} />{link(r.row, true)}</> },
+      { key: "team", label: say("col.team"), cls: "team", get: (r) => r.row.team, cell: (r) => <><TeamLogo url={logoFor(brands, r.row.franchise_id, year)} />{link(r.row, true)}{champion != null && r.row.franchise_id === champion ? <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, year) })}>{say("season.winner")}</span> : null}</> },
       {
         key: "value", label: label(stat), num: true, title: perGame(stat) || undefined, get: (r) => r.value,
         cell: (r) => {

@@ -108,7 +108,7 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
       ) : view === "players" ? (
         <PlayerLeaders lg={lg} year={y} teams={thisYear} sp={sp} brands={brands} abbrs={abbrs} />
       ) : thisYear.length ? (
-        <TeamLeaders lg={lg} year={y} all={finished} mine={thisYear} issue={clean.issues.get(y)} sp={sp} brands={brands} abbrs={abbrs} idle={idle} />
+        <TeamLeaders lg={lg} year={y} all={finished} mine={thisYear} issue={clean.issues.get(y)} sp={sp} brands={brands} abbrs={abbrs} idle={idle} champion={here.champion ? here.champion_franchise : null} />
       ) : (
         <p className="lunavail">{say("leaders.noTeams")}</p>
       )}
