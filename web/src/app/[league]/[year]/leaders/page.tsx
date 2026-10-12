@@ -57,6 +57,7 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
     <>
       <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
         {y > lo ? <Link href={leadersPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link> : null}
+        <LeaderSeasonSelect lg={lg} seasons={[...mine].sort((a, b) => b.year - a.year).map((s) => ({ year: s.year, label: s.label }))} value={y} />
         {y < hi ? <Link href={leadersPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link> : null}
       </nav>
       <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
@@ -98,7 +99,6 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
               ))}
             </nav>
           ) : null}
-          <LeaderSeasonSelect lg={lg} seasons={[...mine].sort((a, b) => b.year - a.year).map((s) => ({ year: s.year, label: s.label }))} value={y} />
           <Link className="lback" href={seasonPath(lg, y)}>{say("leaders.toStandings", { label })}</Link>
         </div>
         {hasPlayers ? null : <p className="lunavail">{say("leaders.teamsOnly", { league: LG[lg] })}</p>}

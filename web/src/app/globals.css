@@ -230,6 +230,7 @@
 
   .seasonnav { position: absolute; top: 0; right: 0; display: flex; gap: 6px; }
   .seasonnav a { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
+  .seasonnav select { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 8px; border: 1px solid var(--rule); background: var(--panel); color: inherit; }
   .seasonnav a:hover { border-color: var(--accent); color: var(--accent); }
   .reigning { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font: 700 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; padding: 7px 12px; background: var(--accent); color: var(--paper); text-decoration: none; }
   .reigning .rcup { display: inline-block; width: 14px; height: 22px; }
