@@ -38,6 +38,8 @@ td.h2hscore .ot { margin-left: 6px; }
 .h2hpick .pk { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
 .h2hpick .pvs { font: 700 14px/1 var(--display); text-transform: uppercase; color: var(--muted); }
 .pickwrap { position: relative; min-width: 0; max-width: 100%; }
+.pickswap { display: inline-flex; align-items: center; justify-content: center; flex: none; width: 44px; min-height: 44px; padding: 0; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-bottom: 3px solid var(--accent); font: 700 18px/1 var(--display); cursor: pointer; }
+.pickswap:hover { border-color: var(--accent); }
 .pickbtn { display: inline-flex; align-items: center; gap: 8px; max-width: 100%; min-height: 44px; padding: 6px 12px 6px 8px; background: var(--panel); color: var(--ink); border: 1px solid var(--rule); border-bottom: 3px solid var(--accent); font: 600 16px/1.1 var(--display); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
 .pickbtn:hover, .pickbtn[aria-expanded="true"] { border-color: var(--accent); }
 .pickbtn .pn { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -65,6 +67,8 @@ td.h2hscore .ot { margin-left: 6px; }
   .h2hpick .pvs { display: none; }
   .pickwrap { flex: 1 1 100%; }
   .pickbtn { width: 100%; }
+  .pickswap { margin: 0 auto; }
+  .pickswap span { display: inline-block; transform: rotate(90deg); }
   .pickpop, .pickwrap.end .pickpop { width: 100%; left: 0; right: auto; }
 }
 

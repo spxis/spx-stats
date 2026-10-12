@@ -16,8 +16,9 @@ const plain = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerC
 
 /**
  * The two teams of a head-to-head page, each a button that opens a searchable list of the league's other clubs
- * (a combobox over a listbox). Choosing one keeps the other team and goes to the new pair's page: the pair is
+ * (a combobox over a listbox). Choosing one keeps the other team and goes to the new pair's page: a head-to-head pair is
  * addressed alphabetically, so the clubs may change sides, and ?loc= (the first club's home or road) is flipped to follow.
+ * A comparison keeps its sides in the address, and its swap button reverses them.
  */
 export function H2hPicker({ lg, clubs, a, b, names, logos, kind = "h2h" }: {
   lg: string;
@@ -87,7 +88,7 @@ export function H2hPicker({ lg, clubs, a, b, names, logos, kind = "h2h" }: {
   const choose = (c: PickClub) => {
     if (open == null || fixed == null) return;
     if (c.f === ids[open]) { close(true); return; }
-    const to = (kind === "compare" ? comparePath : pairPath)(paths, lg, fixed, c.f);
+    const to = kind === "compare" ? (open === 0 ? comparePath(paths, lg, c.f, fixed, true) : comparePath(paths, lg, fixed, c.f, true)) : pairPath(paths, lg, fixed, c.f);
     const was = new URLSearchParams(location.search);
     const q = new URLSearchParams();
     const phase = was.get("phase");
@@ -105,6 +106,11 @@ export function H2hPicker({ lg, clubs, a, b, names, logos, kind = "h2h" }: {
     const s = q.toString();
     setOpen(null);
     router.push(`${to.path}${s ? `?${s}` : ""}`);
+  };
+
+  const swap = () => {
+    const to = comparePath(paths, lg, b, a, true);
+    router.push(`${to.path}${location.search}`);
   };
 
   const onKey = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -147,7 +153,13 @@ export function H2hPicker({ lg, clubs, a, b, names, logos, kind = "h2h" }: {
         {chip(0)}
         {open === 0 ? popup() : null}
       </div>
-      <span className="pvs" aria-hidden="true">vs</span>
+      {kind === "compare" ? (
+        <button type="button" className="pickswap" aria-label={say("compare.swap")} title={say("compare.swap")} onClick={swap}>
+          <span aria-hidden="true">⇄</span>
+        </button>
+      ) : (
+        <span className="pvs" aria-hidden="true">vs</span>
+      )}
       <div className="pickwrap end">
         {chip(1)}
         {open === 1 ? popup() : null}

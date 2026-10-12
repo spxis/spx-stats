@@ -60,14 +60,14 @@ export async function h2hOf(lg: string, seg: string): Promise<{ a: number; b: nu
   return x == null || y == null || x === y ? null : pairPath(paths, lg, x, y);
 }
 
-/** The two franchises of a comparison address (in alphabetical order) and the address that comparison should have; null when either is unknown. */
+/** The two franchises of a comparison address (in the order given) and the address that comparison should have; null when either is unknown. */
 export async function compareOf(lg: string, seg: string): Promise<{ a: number; b: number; path: string } | null> {
   const p = parseH2hSegment(seg);
   if (!p) return null;
   const [slugs, paths] = await Promise.all([getSlugs(), getPaths()]);
   const L = slugs.leagues[lg];
   const x = resolveFranchise(L, p.a), y = resolveFranchise(L, p.b);
-  return x == null || y == null || x === y ? null : comparePath(paths, lg, x, y);
+  return x == null || y == null || x === y ? null : comparePath(paths, lg, x, y, true);
 }
 
 export interface Club { f: number; name: string; alt: string[]; first: number; last: number; active: boolean }

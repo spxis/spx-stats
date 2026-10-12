@@ -475,6 +475,7 @@ export const PHRASES = {
   "h2h.pick.since": "since {year}",
   "h2h.pick.current": "Shown now",
   "compare.button": "Compare",
+  "compare.swap": "Swap teams",
   "compare.with": "Compare {team} with",
   "compare.chip.aria": "Which clubs",
   "compare.chip.all": "All",

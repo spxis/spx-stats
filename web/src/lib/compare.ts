@@ -1,6 +1,6 @@
 /**
  * Two clubs compared side by side, for one season or all-time. Pure: the page fetches, this adds up.
- * Side "a" is the club whose address comes first alphabetically, as on the head-to-head page.
+ * Side "a" is the club on the left of the address.
  */
 import { z } from "zod";
 import type { StandingRow } from "./api/types";
@@ -31,9 +31,12 @@ export function parseCompareQuery(sp: Record<string, string | string[] | undefin
   return { all: false, year: ys ? ys.y : null, canonicalSeason: ys ? ys.canonical : true };
 }
 
-/** The address of a comparison: `/nhl/compare/boston-bruins-vs-florida-panthers`, the franchises in alphabetical order of their slugs. */
-export function comparePath(paths: TeamPaths, lg: string, x: number, y: number): { path: string; a: number; b: number } {
-  const [a, b] = paths.slug(lg, x) <= paths.slug(lg, y) ? [x, y] : [y, x];
+/**
+ * The address of a comparison: `/nhl/compare/boston-bruins-vs-florida-panthers`. The franchises are in alphabetical
+ * order of their slugs unless `inOrder`, which keeps x on the left (as the page does, so a comparison can be swapped).
+ */
+export function comparePath(paths: TeamPaths, lg: string, x: number, y: number, inOrder = false): { path: string; a: number; b: number } {
+  const [a, b] = inOrder || paths.slug(lg, x) <= paths.slug(lg, y) ? [x, y] : [y, x];
   return { path: `/${lg}/compare/${paths.slug(lg, a)}-vs-${paths.slug(lg, b)}`, a, b };
 }
 
