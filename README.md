@@ -6,6 +6,16 @@ open sources fill the seasons SPX never held and check the ones it did.
 
 Browse it at [spxn.com](https://spxn.com).
 
+## For AI agents
+
+Read [`AGENTS.md`](AGENTS.md) first (`CLAUDE.md` imports it), then the private
+`Dropbox /Backups/spx-stats/START-HERE.md`.
+
+**The ticket board is not here and not on GitHub.** This repository keeps its Issues and Projects
+empty on purpose; the work queue is a board on Sumilabu (project key `spx-stats`). List it with one
+command, run from `web/`: `cd web && pnpm task`. Full rules are in
+[AGENTS.md §5](AGENTS.md#5-tickets).
+
 ## Where the data comes from
 
 | Source | What it gives | Licence |

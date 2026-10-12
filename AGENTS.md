@@ -9,6 +9,12 @@ This is one of exactly two places that hold agent instructions:
 2. **Dropbox `/Backups/spx-stats/START-HERE.md`** (private): where things live, how to fetch each credential, current
    status, the ticket ids, open work, lessons. Read it right after this file with the Dropbox MCP `fetch`.
 
+> **Looking for the ticket board or the work queue?** It is **not** in this repository and **not** on GitHub
+> (this repo keeps its Issues and Projects empty on purpose). The board is on **Sumilabu**; see it in one
+> command, run from `web/`: `cd web && pnpm task`. Everything about it is in [section 5](#5-tickets).
+> Do **not** conclude "there is no board" because you found no ticket files and an empty GitHub issues
+> page — read section 5 first.
+
 Status words: **tested** = an agent ran it on 2026-10-11 and saw it work. **untested** = written down, never run end to
 end. **manual** = a person or the coordinating session has to do it.
 
@@ -179,6 +185,18 @@ The queue is the spx-stats board on Sumilabu (`api.sumilabu.com`, project key `s
 Itsutsu use. Run from `web/`. It needs Node 22.18 or newer (it runs the `.ts` file directly) and **no** `pnpm install`
 (tested). `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` come from the environment and are never written to a file, a
 log or a commit.
+
+**Where the board is — and is not.** It lives only on Sumilabu under project key `spx-stats`, reached through
+`pnpm task` (or the raw JSON read below). It is **not** a file in this repository and **not** a GitHub Issue or
+Project: this repository keeps its Issues and Projects empty on purpose, so an empty issues page is **not**
+"no board". To read the unfinished rows without the CLI, make the same request `pnpm task` makes:
+
+    curl -s -H "authorization: Bearer $SUMILABU_BOARD_TOKEN" -H "accept: application/json" \
+         "$SUMILABU_BOARD_URL/api/v1/projects/spx-stats/tickets?unfinished=1"
+
+The token comes from the environment, or on a Mac from the keychain item `sumilabu board spx-stats`
+(`security find-generic-password -s "sumilabu board spx-stats" -w`); never print it, log it or write it
+anywhere. A `200` with a `tickets` array means the board is healthy.
 
     pnpm task                                                   # list: waiting, in progress, stale holds
     pnpm task add "<title>" --detail "<what and why>" --by "<who>" [--bug|--chore]
