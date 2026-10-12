@@ -13,15 +13,18 @@ export interface PersonData {
   teams: PersonTeamRow[];
 }
 
-/** One person with their awards and teams; null when there is no such person (or the people views are not loaded yet). */
+/** One person; null when there is no such person. A failed read throws ApiError. */
+export const getPersonRow = cache(async (id: number): Promise<PersonRow | null> => (await rows("people", `person_id=eq.${id}&select=*`, personSchema))[0] ?? null);
+
+/** One person with their awards and teams; null when there is no such person. A failed read throws ApiError. */
 export const getPerson = cache(async (id: number): Promise<PersonData | null> => {
   const q = `person_id=eq.${id}`;
-  const [people, awards, teams] = await Promise.all([
-    rows("people", `${q}&select=*`, personSchema),
+  const [person, awards, teams] = await Promise.all([
+    getPersonRow(id),
     rows("person_awards", `${q}&select=*&order=year.desc,award`, personAwardSchema),
     rows("person_teams", `${q}&select=*&order=from_year`, personTeamSchema),
   ]);
-  return people[0] ? { person: people[0], awards, teams } : null;
+  return person ? { person, awards, teams } : null;
 });
 
 /** Awards a franchise and its players won, newest first. A page does not fail because this view is empty or missing; null means the fetch failed. */

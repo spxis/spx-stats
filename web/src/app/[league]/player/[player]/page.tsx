@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, permanentRedirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
 import { BirthMap } from "@/components/BirthMap";
@@ -21,37 +21,48 @@ import { getPerson, getPlayerRecord } from "@/lib/people";
 import { ageOn, capFirst, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
-import { seasonPath } from "@/lib/slug";
+import { homeLeague } from "@/lib/playerLinks";
+import { playerIdOf, playerPath } from "@/lib/playerPath";
+import { seasonPath, withQuery } from "@/lib/slug";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
 
-const idOf = (v: string) => (/^\d{1,9}$/.test(v) ? Number(v) : null);
+/** The person an address means and the address they should have; null when the league or the id is not one. */
+async function locate(league: string, seg: string) {
+  const id = playerIdOf(seg);
+  if (!isLeague(league) || id == null) return null;
+  const d = await getPerson(id);
+  if (!d) return null;
+  const home = (await homeLeague(d.person)) ?? league;
+  return { d, home, path: playerPath(home, id, d.person.name), here: `/${league}/player/${seg}` };
+}
 
-export const generateMetadata = guardMeta(async ({ params }: PageProps<"/players/[id]">): Promise<Metadata> => {
-  const { id } = await params;
-  const n = idOf(id);
-  const d = n == null ? null : await getPerson(n).catch(() => null);
-  if (!d) return {};
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/player/[player]">): Promise<Metadata> => {
+  const { league, player } = await params;
+  const at = await locate(league, player);
+  if (!at) return {};
+  const { d } = at;
   const { say, plural, locale } = await currentSpeaker();
   const p = d.person;
   const bits = [p.position ? capFirst(p.position) : null, (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") || null,
     p.award_count ? plural("count.awards", p.award_count) : null, p.championship_count ? plural("count.championships", p.championship_count) : null].filter(Boolean);
   const details = bits.length ? say("player.metaDetails", { list: bits.join(", ") }) : "";
-  return pageMeta({ title: p.name, description: say("player.metaDesc", { name: p.name, details }), path: `/players/${p.person_id}`, locale });
+  return pageMeta({ title: p.name, description: say("player.metaDesc", { name: p.name, details }), path: at.path, locale });
 });
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return <div className="pfact"><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
-export default guard(async function PlayerPage({ params, searchParams }: PageProps<"/players/[id]">) {
-  const [{ id }, sp] = await Promise.all([params, searchParams]);
-  const n = idOf(id);
-  if (n == null) notFound();
+export default guard(async function PlayerPage({ params, searchParams }: PageProps<"/[league]/player/[player]">) {
+  const [{ league, player }, sp] = await Promise.all([params, searchParams]);
+  const at = await locate(league, player);
+  if (!at) notFound();
+  if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
+  const { d, home } = at;
   const { say, locale, dt, fmt } = await currentSpeaker();
-  const [d, brands, summary, record] = await Promise.all([getPerson(n).catch(() => null), getBrands(), getSummary(), getPlayerRecord(n)]);
-  if (!d) notFound();
+  const [brands, summary, record] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id)]);
   const { person: p, awards, teams } = d;
   const lgs = (p.leagues ?? []).filter(isLeague);
   const age = ageOn(p.birth_date, p.death_date);
@@ -114,7 +125,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
 
   return (
     <>
-      <AccentStyle league={lgs[0]} />
+      {isLeague(home) ? <AccentStyle league={home} /> : null}
       <section className="head fade">
         {p.birth_lat != null && p.birth_lon != null ? <BirthMap lat={p.birth_lat} lon={p.birth_lon} name={p.name} place={p.birth_place} /> : null}
         <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say("player.eyebrow")}</span>
@@ -136,7 +147,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
         </section>
       ) : null}
       {record.seasonTeams.length ? <PlayerSeasons name={p.name} record={record} brands={brands} seasonsHeld={seasonsHeld} /> : null}
-      {record.stats.length ? <PlayerStatistics record={record} phase={phase} path={`/players/${p.person_id}`} sp={sp} brands={brands} /> : null}
+      {record.stats.length ? <PlayerStatistics record={record} phase={phase} path={at.path} sp={sp} brands={brands} /> : null}
       <PlayerResume resume={record.resume} seasons={record.seasonTeams} />
       {awards.length ? (
         <section className="section">
