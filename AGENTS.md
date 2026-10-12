@@ -336,6 +336,10 @@ Then fix forward on `main`, redeploy, and tell John.
   **working copy**. Its work counts only once it is on DS1.
 - Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,
   then production.
+- **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. After every
+  load, run `scripts/sync/compare.py` (see `scripts/sync/README.md`): it compares DS1 and production by primary key and
+  row hash, and writes insert-only SQL for what production lacks. Rows found only in production are reported to John
+  and never deleted without his OK.
 
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
@@ -376,8 +380,9 @@ core rebuild, and after player loads to production run `select api.refresh();`).
      because agents don't see his messages. If refused, stop and report the exact command; the coordinating session
      runs it once John approves. Small fixes can go through the Supabase MCP `execute_sql`.
    - Never run a full load while agents are changing the schema.
-6. **After every load:** `select api.refresh();`, compare counts on DS1 against production for what you loaded, and
-   look at one affected page on spxn.com.
+6. **After every load:** `select api.refresh();`, run `scripts/sync/compare.py` (DS1 against production, by key and row
+   hash; the coordinating session runs it, it needs `SUPABASE_ACCESS_TOKEN` and DS1), and look at one affected page on
+   spxn.com. `scripts/mac/spx-check.sh` also warns when the row counts of a few key tables differ.
 7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
    read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
    empty for the whole league, else `<source code>:<source key>`; EN required, FR and JA when known; `source` is a
@@ -394,7 +399,10 @@ core rebuild, and after player loads to production run `select api.refresh();`).
      paths), dump the changed schemas or tables and restore them into a **new** database on DS1 (or apply the
      rerunnable steps in a transaction, below); check counts, and ask John before replacing anything. The cloud
      container cannot be reached from outside, so this is always a push from the cloud.
-   - **Apply to DS1** (from a session that reaches it: the cloud forwarder, or John's Mac): one step or migration
+   - **Apply to DS1** (from a session that reaches it: the cloud forwarder, or John's Mac): the coordinating session
+     uses `bash scripts/mac/ds1-apply.sh <file.sql> [--dry-run]` (one file, one transaction, stops at the first error,
+     prints row counts before and after; it reads `SPX_DS1_HOST` or finds DS1, and the password from the keychain).
+     By hand, one step or migration
      in a single transaction, `psql -h <DS1 host> -p 55440 -U postgres -d spx_stats -1 -v ON_ERROR_STOP=1 -f <file>`.
      A full `build_core.sh` or a big load goes into a NEW database on DS1 (restore a dump of `spx_stats` into
      `spx_stats_new`, run there); compare counts, then ask John before swapping names. If your session cannot reach

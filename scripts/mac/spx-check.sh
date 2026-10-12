@@ -58,12 +58,35 @@ check_turso() {
   else line 8 "Turso CLI: installed, not logged in (optional: turso auth login)"; fi
 }
 
-for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso; do "$c" & done
+# Optional: DS1 is the truth, production a copy. Compares row counts of a few key tables; exact diffs: scripts/sync/compare.py.
+check_counts() {
+  local token host pw q p d
+  token="${SUPABASE_ACCESS_TOKEN:-$(kc_get "spx-stats SUPABASE_ACCESS_TOKEN")}"
+  if [ -z "$token" ]; then line 9 "row counts DS1 vs production: skipped (optional: no SUPABASE_ACCESS_TOKEN or keychain item 'spx-stats SUPABASE_ACCESS_TOKEN')"; return; fi
+  command -v psql >/dev/null || { line 9 "row counts DS1 vs production: skipped (no psql)"; return; }
+  host=$(ds1_host) || { line 9 "row counts DS1 vs production: skipped (DS1 not reachable)"; return; }
+  pw=$(kc_get "spx-stats-db DS1 55440")
+  [ -n "$pw" ] || { line 9 "row counts DS1 vs production: skipped (no DS1 password in the keychain)"; return; }
+  q="select string_agg(t || '=' || n, ' ' order by t) as s from (
+    select 'core.game' t, count(*) n from core.game union all select 'core.person', count(*) from core.person
+    union all select 'core.team_season', count(*) from core.team_season union all select 'core.roster_stint', count(*) from core.roster_stint
+    union all select 'core.franchise_brand', count(*) from core.franchise_brand) x"
+  d=$(PGPASSWORD="$pw" PGCONNECT_TIMEOUT=8 limited 20 psql -h "$host" -p "$SPX_DS1_PORT" -U postgres -d spx_stats -Atc "$q" 2>/dev/null)
+  p=$(printf '{"query": "%s"}' "$(echo "$q" | tr '\n' ' ')" |
+    limited 30 curl -s -m 25 -X POST "https://api.supabase.com/v1/projects/njpvfrceahkvnrduerkk/database/query" \
+      -H "Authorization: Bearer $token" -H "Content-Type: application/json" -H "User-Agent: spx-check" --data-binary @- |
+    sed -n 's/.*"s" *: *"\([^"]*\)".*/\1/p')
+  if [ -z "$d" ] || [ -z "$p" ]; then line 9 "row counts DS1 vs production: skipped (no answer from $([ -z "$d" ] && echo DS1 || echo the Management API))"
+  elif [ "$d" = "$p" ]; then line 9 "row counts DS1 vs production: ok"
+  else line 9 "row counts DS1 vs production: MISMATCH: DS1 [$d] production [$p]; run scripts/sync/compare.py (see scripts/sync/README.md); DS1 first, then production"; fi
+}
+
+for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts; do "$c" & done
 wait
 
 echo "[spx-check] connections on this Mac (claude.ai connectors: the agent checks its own tool list)"
 n=0
-for i in 1 2 3 4 5 6 7 8; do
+for i in 1 2 3 4 5 6 7 8 9; do
   l=$(cat "$OUT/$i" 2>/dev/null || echo "check $i: MISSING: check did not finish")
   echo "[spx-check] $l"
   case "$l" in *MISSING*) n=$((n + 1));; esac
