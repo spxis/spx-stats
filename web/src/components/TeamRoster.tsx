@@ -7,6 +7,8 @@ import { getPlayerPaths } from "@/lib/playerLinks";
 import { showStat, STAT_GROUPS } from "@/lib/playerStats";
 import { getRoster, type RosterGroup, type RosterPlayer } from "@/lib/roster";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
+import { countryName } from "@/lib/people-format";
+import { queryHref } from "./ViewTabs";
 
 /** The columns each kind of player shows, from lib/playerStats, and the order the table opens in. */
 const SHOW = {
@@ -22,18 +24,42 @@ const TITLE: Record<RosterGroup, PhraseKey> = {
 };
 
 /** The players with statistics for a club's season, by position group; nothing at all when there are none. */
-export async function TeamRoster({ lg, season, teamSeasonId }: { lg: string; season: string; teamSeasonId: number }) {
-  const players = await getRoster(teamSeasonId);
-  if (!players.length) return null;
-  const { say, fmt } = await currentSpeaker();
+export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
+  lg: string; season: string; teamSeasonId: number; path: string; sp: Record<string, string | string[] | undefined>;
+}) {
+  const everyone = await getRoster(teamSeasonId);
+  if (!everyone.length) return null;
+  const { say, fmt, locale } = await currentSpeaker();
   const playerPath = await getPlayerPaths();
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
+  const poss = [...new Set(everyone.map((p) => p.pos).filter((x): x is string => !!x))].sort();
+  const nats = [...new Set(everyone.map((p) => p.nat).filter((x): x is string => !!x))].sort((a, c) => countryName(a, locale).localeCompare(countryName(c, locale), locale));
+  const pos = poss.includes(first(sp.pos)) ? first(sp.pos) : "";
+  const nat = nats.includes(first(sp.nat).toUpperCase()) ? first(sp.nat).toUpperCase() : "";
+  const players = everyone.filter((p) => (!pos || p.pos === pos) && (!nat || p.nat === nat));
+  const href = (changes: Record<string, string | null>) => `${queryHref(path, sp, changes)}#roster`;
   const blocks = ORDER.flatMap((g) => {
     const mine = players.filter((p) => p.group === g);
     return mine.length ? [{ g, mine }] : [];
   });
   return (
-    <section className="section">
+    <section className="section" id="roster">
       <h2>{say("roster.title")}</h2>
+      {poss.length > 1 ? (
+        <nav className="seg views scroll" aria-label={say("roster.filterPos")}>
+          {[{ key: "", label: say("roster.allPos") }, ...poss.map((x) => ({ key: x, label: x }))].map((c) => (
+            <Link key={c.key} href={href({ pos: c.key || null })} prefetch={false} aria-current={c.key === pos ? "page" : undefined}>{c.label}</Link>
+          ))}
+        </nav>
+      ) : null}
+      {nats.length > 1 ? (
+        <nav className="seg views scroll" aria-label={say("roster.filterNat")}>
+          {[{ key: "", label: say("roster.allNat") }, ...nats.map((x) => ({ key: x, label: countryName(x, locale) }))].map((c) => (
+            <Link key={c.key} href={href({ nat: c.key || null })} prefetch={false} aria-current={c.key === nat ? "page" : undefined}>{c.key ? <Flag code={c.key} /> : null}{c.label}</Link>
+          ))}
+        </nav>
+      ) : null}
+      {!players.length ? <p className="note">{say("roster.noneMatch")}</p> : null}
       {blocks.map(({ g, mine }) => {
         const kind = mine[0].kind;
         const group = STAT_GROUPS[kind];
