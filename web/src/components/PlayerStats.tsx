@@ -72,10 +72,22 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
   const phases: [PlayerPhase, string][] = [["regular", say("phase.regular")], ["playoffs", say("phase.playoffs")]];
   const leaguesWithStats = new Set(record.stats.map((s) => s.league));
   const many = leaguesWithStats.size > 1;
+  // Clubs the player has statistics with; ?teams=<league:franchise>,... keeps only those (none chosen: all).
+  const teamKey = (r: { league: string; franchise_id: number | null }) => `${r.league}:${r.franchise_id}`;
+  const clubs = new Map<string, string>();
+  for (const r of [...record.stats].sort((a, c) => a.year - c.year)) clubs.set(teamKey(r), r.team ?? say("team.fallback", { id: r.franchise_id }));
+  const raw = Array.isArray(sp.teams) ? sp.teams[0] : sp.teams;
+  const picked = new Set((raw ?? "").split(",").filter((k) => clubs.has(k)));
+  const filtered = picked.size > 0 && picked.size < clubs.size;
+  const toggle = (key: string) => {
+    const next = new Set(picked);
+    if (!next.delete(key)) next.add(key);
+    return queryHref(path, sp, { teams: next.size && next.size < clubs.size ? [...next].join(",") : null });
+  };
   const blocks = STAT_GROUP_ORDER.flatMap((gid) => {
     const g = STAT_GROUPS[gid];
-    const seasons = record.stats.filter((s) => s.stat_group === gid && s.phase === phase);
-    const totals = record.totals.filter((t) => t.stat_group === gid && t.phase === phase);
+    const seasons = record.stats.filter((s) => s.stat_group === gid && s.phase === phase && (!filtered || picked.has(teamKey(s))));
+    const totals = filtered ? [] : record.totals.filter((t) => t.stat_group === gid && t.phase === phase);
     return seasons.length ? [{ g, seasons, totals }] : [];
   });
   return (
@@ -86,6 +98,14 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
           <Link key={k} href={queryHref(path, sp, { phase: k === "regular" ? null : "p" })} prefetch={false} scroll={false} aria-current={k === phase ? "page" : undefined}>{label}</Link>
         ))}
       </nav>
+      {clubs.size > 1 ? (
+        <nav className="seg views scroll" aria-label={say("player.teamFilter")}>
+          <Link href={queryHref(path, sp, { teams: null })} prefetch={false} scroll={false} aria-current={filtered ? undefined : "page"}>{say("player.allTeams")}</Link>
+          {[...clubs].map(([key, label]) => (
+            <Link key={key} href={toggle(key)} prefetch={false} scroll={false} aria-current={filtered && picked.has(key) ? "page" : undefined}>{label}</Link>
+          ))}
+        </nav>
+      ) : null}
       {blocks.length ? blocks.map(({ g, seasons, totals }) => {
         const seasonCol: ColumnSpec<PersonStatRow> = { key: "season", label: say("col.season"), num: true, get: (r) => r.year,
           cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{many ? `${leagueName(r.league)} ${seasonLabel(r.league, r.year)}` : seasonLabel(r.league, r.year)}</Link> };
@@ -105,8 +125,12 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
           <div key={g.id} className="section">
             <h3>{say(g.title as PhraseKey)}</h3>
             <div className="tablebox"><SortTable {...seasonTable} param={`sort_${g.id}`} def="season.asc" /></div>
-            <h4>{say("player.careerTotals")}</h4>
-            <div className="tablebox"><SortTable {...totalTable} param={`sort_${g.id}_total`} /></div>
+            {totals.length ? (
+              <>
+                <h4>{say("player.careerTotals")}</h4>
+                <div className="tablebox"><SortTable {...totalTable} param={`sort_${g.id}_total`} /></div>
+              </>
+            ) : null}
             {points.length > 1 ? <PlayerChart points={points} stat={say(g.main.label as PhraseKey)} aria={say("player.chartAria", { stat: say(g.main.title as PhraseKey) })} /> : null}
           </div>
         );
