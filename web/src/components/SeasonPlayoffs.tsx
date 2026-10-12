@@ -129,7 +129,7 @@ export async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: s
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
       <div className="bkwrap">
-        <div className={`bk${fin ? "" : " solo"}`} style={{ "--row": "56px", "--n": b.columns.length } as React.CSSProperties}>
+        <div className={`bk${fin ? "" : " solo"}${fin && !left !== !right ? " half" : ""}`} style={{ "--row": "56px", "--n": b.columns.length } as React.CSSProperties}>
           {left ? sideEl(left) : null}
           {fin && b.final ? (
             <div className="bkside bkfinal">

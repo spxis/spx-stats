@@ -52,9 +52,11 @@
   .bkside.r .bx.fed::before { right: auto; left: 100%; }
   .bkside.r .bx.out::after { left: auto; right: 100%; border-right-width: 0; border-left-width: 1px; }
   .bkfinal .bx.fed::after { left: 100%; top: 50%; height: 0; border-top-width: 1px; }
+  .bk.half .bkside:not(.bkfinal) > .bkconf { align-self: flex-start; width: calc(100% * (var(--n) + 1.25) / var(--n)); }
+  .bk.half .bkside.r > .bkconf { align-self: flex-end; }
 }
 @media (max-width: 900px) {
-  .bk { flex-direction: column; min-width: 0; gap: 18px; }
+  .bk { flex-direction: column; align-items: stretch; min-width: 0; gap: 18px; }
   .bkside { flex: none; min-width: calc(var(--n, 1) * 112px); }
   .bkfinal { order: -1; min-width: 0; width: 100%; max-width: 260px; }
   .bkfinal .bx::before, .bx.last::after { display: none; }
