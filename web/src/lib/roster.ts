@@ -7,6 +7,8 @@ import { playerIndexSchema } from "./api/people";
 
 const statSchema = z.object({ person_id: z.number(), stat_group: z.string(), games_played: z.number().nullable(), stats: z.record(z.string(), z.number()) });
 
+const natSchema = z.object({ person_id: z.number(), nationality_code: z.string().nullable(), birth_country_code: z.string().nullable() });
+
 /** The tables a team's roster is drawn in. */
 export type RosterGroup = "forwards" | "defense" | "goalies" | "skaters" | "batters" | "pitchers";
 
@@ -15,6 +17,8 @@ export interface RosterPlayer {
   name: string;
   /** The player's main position as short as it can be written, or null when the archive has none. */
   pos: string | null;
+  /** The country code of the player's nationality, else of the birthplace; null when neither is known. */
+  nat: string | null;
   group: RosterGroup;
   /** The regular-season counting stats of the group's kind (skater, goalie, batting or pitching). */
   stats: StatNumbers;
@@ -44,6 +48,8 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
     if (!stats.length) return [];
     const ids = [...new Set(stats.map((s) => s.person_id))];
     const people = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
+    const nats = new Map((await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code`, natSchema)
+      .catch((e) => { if (!(e instanceof ApiError)) throw e; return []; })).map((n) => [n.person_id, n.nationality_code ?? n.birth_country_code]));
     const out: RosterPlayer[] = [];
     for (const id of ids) {
       const mine = stats.filter((s) => s.person_id === id);
@@ -57,7 +63,7 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
       else if (sk) row = { kind: "skater", group: pos === "D" ? "defense" : pos && FORWARD.has(pos) ? "forwards" : "skaters", stats: sk.stats };
       else if (pitch && (!bat || (pitch.games_played ?? 0) >= (bat.games_played ?? 0))) row = { kind: "pitching", group: "pitchers", stats: pitch.stats };
       else if (bat) row = { kind: "batting", group: "batters", stats: bat.stats };
-      if (row) out.push({ id, name: p.name, pos, ...row });
+      if (row) out.push({ id, name: p.name, pos, nat: nats.get(id)?.toUpperCase() ?? null, ...row });
     }
     return out;
   } catch (e) {

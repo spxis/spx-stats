@@ -658,6 +658,7 @@ export const PHRASES = {
   "roster.title": "Roster",
   "roster.player": "Player",
   "roster.pos": "Pos",
+  "roster.nat": "Nat",
   "roster.forwards": "Forwards ({n})",
   "roster.defense": "Defense ({n})",
   "roster.skaters": "Skaters ({n})",

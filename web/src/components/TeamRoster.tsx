@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Flag } from "@/components/Flag";
 import { SortTable } from "@/components/SortTable";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
@@ -38,7 +39,9 @@ export async function TeamRoster({ lg, season, teamSeasonId }: { lg: string; sea
         const group = STAT_GROUPS[kind];
         const cols = SHOW[kind].keys.flatMap((k) => group.cols.filter((c) => c.key === k)).filter((c) => mine.some((p) => c.get(p.stats) != null));
         const hasPos = mine.some((p) => p.pos);
+        const hasNat = mine.some((p) => p.nat);
         const specs: ColumnSpec<RosterPlayer>[] = [
+          ...(hasNat ? [{ key: "nat", label: say("roster.nat"), get: (p) => p.nat, cell: (p) => <Flag code={p.nat} /> } satisfies ColumnSpec<RosterPlayer>] : []),
           { key: "player", label: say("roster.player"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={playerPath(p.id, p.name, lg)} prefetch={false}>{p.name}</Link> },
           ...(hasPos ? [{ key: "pos", label: say("roster.pos"), get: (p) => p.pos } satisfies ColumnSpec<RosterPlayer>] : []),
           ...cols.map((c): ColumnSpec<RosterPlayer> => ({
