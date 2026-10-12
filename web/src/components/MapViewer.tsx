@@ -203,7 +203,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     const lr = me && asLogo(me) ? r * 3.3 : r * 1.5;
     if (me && pick.current.selected != null) { s.halo.setAttribute("cx", String(me.t.p[0])); s.halo.setAttribute("cy", String(me.t.p[1])); s.halo.setAttribute("r", String(lr)); }
     s.labels.replaceChildren();
-    abbreviationLabels(s.labels, s.placed, logosOn.current && s.dots.some(asLogo) ? r * 2.6 : r, box);
+    abbreviationLabels(s.labels, s.placed, r, box, logosOn.current && s.dots.some(asLogo) ? r * 2.6 : r);
     s.host.style.touchAction = view.current.z > 1 ? "none" : "pan-y pinch-zoom";
     s.host.dataset.zoomed = view.current.z > 1 ? "1" : "0";
   }

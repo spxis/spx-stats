@@ -74,14 +74,14 @@ type Rect = [number, number, number, number];
 const meets = (a: Rect, b: Rect) => a[0] < b[2] && a[2] > b[0] && a[1] < b[3] && a[3] > b[1];
 
 /** Small abbreviation labels beside the dots, where they fit: beside, then above or below; one that would cover a dot or another label is left off. */
-export function abbreviationLabels(g: SVGGElement, pins: (Pin & { p: [number, number] })[], r: number, box: MapBox) {
+export function abbreviationLabels(g: SVGGElement, pins: (Pin & { p: [number, number] })[], r: number, box: MapBox, clear = r) {
   const fs = r * 1.7;
-  const dots: Rect[] = pins.map((t) => { const rr = t.me ? r * 1.6 : r; return [t.p[0] - rr, t.p[1] - rr, t.p[0] + rr, t.p[1] + rr]; });
+  const dots: Rect[] = pins.map((t) => { const rr = t.me ? clear * 1.6 : clear; return [t.p[0] - rr, t.p[1] - rr, t.p[0] + rr, t.p[1] + rr]; });
   const taken: Rect[] = [];
   const order = [...pins].sort((a, b) => (b.me ? 1 : 0) - (a.me ? 1 : 0));
   for (const t of order) {
     if (!t.abbr) continue;
-    const w = t.abbr.length * fs * 0.66, h = fs * 0.85, rr = (t.me ? r * 1.6 : r) + fs * 0.2;
+    const w = t.abbr.length * fs * 0.66, h = fs * 0.85, rr = (t.me ? clear * 1.6 : clear) + fs * 0.2;
     const [x, y] = t.p;
     const spots: { rect: Rect; anchor: "start" | "end" | "middle"; tx: number; ty: number }[] = [
       { rect: [x + rr, y - h / 2, x + rr + w, y + h / 2], anchor: "start", tx: x + rr, ty: y + h * 0.36 },
