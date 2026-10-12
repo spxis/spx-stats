@@ -4,6 +4,7 @@ import { playerIndexSchema, type PlayerIndexRow } from "./api/people";
 import { isLeague } from "./leagues";
 import { listQuery, orderOf, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
+import { slugify } from "./slug";
 
 export { searchWords };
 
@@ -50,6 +51,14 @@ export async function readPlayers(f: PlayerFilters, order: Order, win: { offset:
     if (!(e instanceof ApiError) || e.status !== 404) throw e;
     return run("player_index", [...base, ...f.words.map((w) => `name=ilike.${encodeURIComponent(`*${w}*`)}`)]);
   }
+}
+
+/** The players whose name makes this address segment ("shohei-ohtani"), in any league, the longest careers first. */
+export async function playersNamed(slug: string): Promise<PlayerIndexRow[]> {
+  const words = slug.split("-").filter(Boolean);
+  if (!words.length || words.length > 6) return [];
+  const { rows } = await readPlayers({ league: "", words }, playerOrder([{ key: "seasons", dir: "desc" }]), { offset: 0, limit: 50 });
+  return rows.filter((p) => slugify(p.name) === slug);
 }
 
 export interface PlayerPage { list: PlayerIndexRow[]; total: number; page: number; pages: number }

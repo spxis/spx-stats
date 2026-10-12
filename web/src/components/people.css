@@ -26,3 +26,4 @@
 @media (max-width: 640px) { .rtimeline li { grid-template-columns: 6em 1fr; } .rbody { grid-column: 1 / -1; } }
 .section h3 { margin: 6px 0 0; font: 600 16px/1.2 var(--font-display, var(--display)); text-transform: uppercase; letter-spacing: .05em; }
 .section h4 { margin: 10px 0 0; font: 600 13px/1.2 var(--font-display, var(--display)); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
+.pick { list-style: none; margin: 16px 0 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }

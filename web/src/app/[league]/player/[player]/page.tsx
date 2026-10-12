@@ -25,7 +25,8 @@ import { getPerson, getPlayerRecord } from "@/lib/people";
 import { ageOn, capFirst, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
-import { homeLeague } from "@/lib/playerLinks";
+import { getPlayerPaths, homeLeague } from "@/lib/playerLinks";
+import { playersNamed } from "@/lib/playerIndex";
 import { playerIdOf, playerPath } from "@/lib/playerPath";
 import { seasonPath, withQuery } from "@/lib/slug";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -62,7 +63,30 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
 export default guard(async function PlayerPage({ params, searchParams }: PageProps<"/[league]/player/[player]">) {
   const [{ league, player }, sp] = await Promise.all([params, searchParams]);
   const at = await locate(league, player);
-  if (!at) notFound();
+  if (!at) {
+    // An address with no id: the one player of that name, or a short list to choose from.
+    if (!isLeague(league) || playerIdOf(player) != null) notFound();
+    const found = await playersNamed(player);
+    if (!found.length) notFound();
+    const url = await getPlayerPaths();
+    if (found.length === 1) permanentRedirect(withQuery(url(found[0].person_id, found[0].name, found[0].leagues?.[0] ?? league), sp));
+    const { say } = await currentSpeaker();
+    return (
+      <section className="head fade">
+        <h1>{say("player.pickTitle", { name: found[0].name })}</h1>
+        <p className="lede">{say("player.pickNote")}</p>
+        <ul className="pick">
+          {found.map((x) => (
+            <li key={x.person_id}>
+              <Link href={url(x.person_id, x.name, x.leagues?.[0] ?? league)} prefetch={false}>{x.name}</Link>
+              {" · "}{[(x.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", "), x.position ? capFirst(x.position) : null,
+                x.first_season != null ? (x.last_season != null && x.last_season !== x.first_season ? `${x.first_season}–${x.last_season}` : String(x.first_season)) : null].filter(Boolean).join(" · ")}
+            </li>
+          ))}
+        </ul>
+      </section>
+    );
+  }
   if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
   const { d, home } = at;
   const { say, locale, dt, fmt } = await currentSpeaker();
