@@ -144,7 +144,7 @@ export const JA: Dictionary = {
   "sched.fewTeams.other": "通常の{usual}試合に届かなかったのは{count}チームです（最少{min}試合）。",
   "sched.source": "出典：Wikipedia",
   "tseason.wholeSeason": "{league}のシーズン全体",
-  "tseason.current": "現在のシーズンを見る",
+  "tseason.current": "現在",
   "tseason.venue": "本拠地：{venue}",
   "tseason.ranksAria": "今シーズンのチームの順位",
   "tseason.rankIn": "{what} {place}",

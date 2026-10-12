@@ -137,7 +137,7 @@ export const FR: Dictionary = {
   "tseason.lede": "Tous les matchs de la saison {season} : {record}.",
   "tseason.allSeasons": "Toutes les saisons de la concession",
   "tseason.wholeSeason": "Toute la saison de la {league}",
-  "tseason.current": "Voir la saison en cours",
+  "tseason.current": "Actuelle",
   "tseason.venue": "Domicile : {venue}",
   "tseason.ranksAria": "Classement de l’équipe cette saison",
   "tseason.rankIn": "{place} : {what}",

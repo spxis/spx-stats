@@ -121,10 +121,11 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
     href: (c) => paths.teamSeason(lg, c, y), slug: (c) => paths.season(lg, c, y),
   });
   const mePin = mapPins.find((p) => p.f === f);
-  const seasonNav = prev != null || next != null ? (
+  const seasonNav = prev != null || next != null || current != null ? (
     <nav className="seasonnav" aria-label={say("tseason.otherSeasons")}>
       {prev != null ? <Link href={paths.teamSeason(lg, f, prev)} rel="prev" prefetch={false}>{"← " + seasonLabel(lg, prev)}</Link> : null}
       {next != null ? <Link href={paths.teamSeason(lg, f, next)} rel="next" prefetch={false}>{seasonLabel(lg, next) + " →"}</Link> : null}
+      {current != null ? <Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link> : null}
     </nav>
   ) : null;
   return (
@@ -147,9 +148,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
         <p className="lede">
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
-          <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>
-          {current != null ? <>{" · "}<Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link></> : null}
-        </p>
+          <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>        </p>
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
         {mePin ? <SeasonMapThumb me={mePin} leagueShort={LG[lg]} seasonLabel={season} name={name} /> : null}
         <CompareControl lg={lg} f={f} name={name} year={y} />

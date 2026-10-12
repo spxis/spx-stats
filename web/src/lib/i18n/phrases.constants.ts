@@ -192,7 +192,7 @@ export const PHRASES = {
   "tseason.lede": "Every game of the {season} season: {record}.",
   "tseason.allSeasons": "All seasons of the franchise",
   "tseason.wholeSeason": "The whole {league} season",
-  "tseason.current": "View current season",
+  "tseason.current": "Current",
   "tseason.venue": "Home venue: {venue}",
   "tseason.ranksAria": "Where the team ranks this season",
   "tseason.rankIn": "{place} in {what}",
