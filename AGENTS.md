@@ -35,8 +35,10 @@ end. **manual** = a person or the coordinating session has to do it.
 - Commit as John Morris <john@spxis.com>, Conventional Commits, subject 50 characters or less, no AI attribution,
   add files by name, never `git add -A`.
 - The repository is public: no dumps, member data, secrets, private notes or internal reviews.
-- File a ticket before starting work. Archive raw data before loading it. Never write to production without
-  reading [section 8](#8-data-work).
+- File a ticket before starting work. Never write to production without reading [section 8](#8-data-work).
+- **DS1 is the permanent source of truth for data; cloud and Mac Postgres are temporary working copies.** Every
+  download goes to DS1 (archive row plus `legacy_<source>` load) and to Dropbox before anything reaches production,
+  and a cloud session pushes its new data to DS1 before its container is discarded.
 - **First step of every session:** read the hook's `[spx-check]` lines and check your connector tools
   ([section 4](#4-cold-start)); report anything MISSING.
 - Short answers. When you need something from John, start with `NEED FROM YOU:` and a copy-paste block.
@@ -109,9 +111,10 @@ ticket work. Each row says what breaks without it. Exact commands with private v
 | Turso CLI (Mac, optional, later) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks today |
 | Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
 | GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
-| Tailscale (Mac) | the app, signed in, on | no DS1 |
+| Tailscale (Mac) | the app, signed in, on (MacBook: stays on) | no DS1 |
 | Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`) | no DS1, no `pnpm task` |
-| DS1 Postgres (Mac) | with Tailscale on and the keychain password, `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok` | no DS1 copy |
+| DS1 Postgres (Mac) | with Tailscale on and the keychain password, `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok` | no access to the source of truth |
+| Docker (MacBook, optional) | Docker Desktop running; then the working-copy block in [section 8](#8-data-work) | no local working copy |
 | Production Supabase, read-only | nothing to set up: the public URL and key the site uses; `spx-check.sh` and the cloud hook both test it | no way to compare counts against production |
 | Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
 | Permission rules | Nothing to do: the deploy rules (`vercel deploy`, `link`, `ls`, `whoami`) are in the committed `.claude/settings.json`. The only per-machine step is `vercel login` (or the Vercel connector) | an agent deploy is refused; credential reads are still refused and John runs those blocks himself |
@@ -134,8 +137,8 @@ prints the value. If one is missing, say which and carry on with what does not n
 Vercel `get_project` and `list_deployments`, Dropbox `fetch`, `list_folder` and `search`. Vercel `list_teams` returns
 nothing; pass the team id directly ([section 7](#7-deploying)).
 
-**Local database.** Postgres 17, socket `/tmp`, port 55432, database `spx_stats`, data dir
-`/home/user/spxwork/pg17` (owned by the `postgres` user). Check it:
+**Cloud working copy.** The cloud session's own Postgres 17 holds much data but is temporary, not the truth: socket
+`/tmp`, port 55432, database `spx_stats`, data dir `/home/user/spxwork/pg17` (owned by the `postgres` user). Check it:
 
     pg_isready -h /tmp -p 55432
     psql -h /tmp -p 55432 -U postgres -d spx_stats -Atc "select count(*) from core.game"   # 377384 on 2026-10-11
@@ -150,21 +153,22 @@ background). It installs and starts Postgres 17, joins Tailscale in userspace mo
 through `scripts/cloud/fwd.py`, and restores DS1's dump into a new `spx_stats`. It does nothing when `spx_stats`
 already has rows, and never drops or overwrites a database. A database that exists but is empty is left alone with a
 message. With no `TS_AUTHKEY` it stops after starting Postgres, leaving no `spx_stats`. Preview, changing nothing:
-`DRY_RUN=1 bash scripts/cloud/session-start.sh` (tested). The real run is **untested**. DS1's copy is refreshed by hand
-and can be a day or more behind the last cloud database, so a fresh container can lack recent legacy data: the private
-file says how far behind.
+`DRY_RUN=1 bash scripts/cloud/session-start.sh` (tested). The real run is **untested**. The restored copy is only as
+current as DS1, and the container is not permanent: push new data to DS1 before the session ends
+([section 8](#8-data-work), item 8).
 
-**On one of John's Macs** (new or existing; no cloud container, no local database). One command sets it up:
+**On one of John's Macs** (new or existing; no cloud container). One command sets it up:
 `zsh scripts/mac/spx-credentials.sh setup` with the three variables the private file gives (tested on the MacBook,
 keychain path; the Dropbox path is **untested** end to end). It copies the DS1 password and the board key from his
 synced Dropbox into the keychain and prints one ok/FAIL line each for DS1, board, node, pnpm and gh. After that
 `pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` while Tailscale is on.
+The MacBook reaches DS1 directly over Tailscale and runs Docker; the Mac Studio is reached over ssh.
 Agents may not read the Dropbox key files or another Mac's keychain (the permission check refuses it): give John
 the command from the private file instead.
 
 **Is it alive?** Four checks, seconds each:
 
-    pg_isready -h /tmp -p 55432
+    pg_isready -h /tmp -p 55432                                      # cloud working copy (MacBook: the Docker container)
     cd web && pnpm task                                              # board list (section 5)
     curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/       # 200
     # Supabase MCP execute_sql, project njpvfrceahkvnrduerkk: select count(*) from core.game
@@ -293,17 +297,28 @@ Then fix forward on `main`, redeploy, and tell John.
 
 ## 8. Data work
 
-**Production is Supabase project `njpvfrceahkvnrduerkk`** (schemas meta, ref, core and api only; `legacy_*` stays local
-and on DS1). It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any time with the Supabase MCP `execute_sql`
-(tested). The local database is the full truth.
+**Where data lives.**
+
+- **DS1** (Postgres in Docker on John's Synology NAS, reached over Tailscale; addresses in the private file) is the
+  permanent **source of truth**: all `legacy_*` schemas, `legacy_files.raw_archive`, `core`, `meta`, `ref`, `api`.
+- **Dropbox** `/Backups/spx-stats/raw/<source>/<year or date>/` holds a hard copy of every raw download.
+- **Production** is Supabase project `njpvfrceahkvnrduerkk`: a published subset (schemas meta, ref, core and api only;
+  no `legacy_*`), loaded last and insert-only. It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any time
+  with the Supabase MCP `execute_sql` (tested).
+- Any other Postgres (the cloud session's port 55432, the MacBook Docker container in item 8) is a temporary
+  **working copy**. Its work counts only once it is on DS1.
+- Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,
+  then production.
 
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
 materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
 core rebuild, and after player loads to production run `select api.refresh();`).
 
-1. **Archive first.** Every raw download goes into `legacy_files.raw_archive` (name, saved_on, sha256, data bytea)
-   before it is loaded, and right after that to Dropbox:
+1. **Archive first.** Every raw download goes into DS1's `legacy_files.raw_archive` (name, saved_on, sha256, data bytea)
+   before it is loaded, and a hard copy goes to Dropbox, both before anything is loaded to production. The Mac export
+   script (`scripts/mac/spx-raw-export.sh`, section 12) copies DS1's archive rows into the local Dropbox folder;
+   `scripts/dropbox_put.py` uploads directly:
    `python3 scripts/dropbox_put.py <file> <source> [<date>]` writes `/Backups/spx-stats/raw/<source>/<date>/<file>`
    (any size, binary included, create only, never overwrites, hash verified). `--from-archive` uploads archived rows
    Dropbox does not hold yet (`--dry-run` lists them; `--min-bytes 0` includes small ones). It needs the three
@@ -318,22 +333,23 @@ core rebuild, and after player loads to production run `select api.refresh();`).
      be a build step, never a one-off update.
    - Unfinished steps go in `db/build/pending/`, which the build ignores.
    - Never run `build_core.sh` while another agent is loading.
-4. **Migrations** (a new table or column): write `db/migrations/NNN_name.sql`, apply it to the local database, then to
-   production with the Supabase MCP `apply_migration` (`project_id` above, `name` in snake_case, `query` the file),
+4. **Migrations** (a new table or column): write `db/migrations/NNN_name.sql`, apply it to the working copy, then to
+   DS1 (item 8), then to production with the Supabase MCP `apply_migration` (`project_id` above, `name` in snake_case, `query` the file),
    **before** any load. `list_migrations` shows what production has. Numbers 030 and 031 are each used by two files:
    apply by file name and check `list_migrations` first.
 5. **Production loads are insert-only**: `insert … on conflict do nothing`, never `truncate`, never `load.py --replace`.
-   - The pattern is `scripts/players/prod_load.py` (reads local rows, sends batches through the Management API,
+   - The pattern is `scripts/players/prod_load.py` (reads rows from the Postgres it is pointed at, which must already
+     match DS1; sends batches through the Management API,
      resets identity sequences, has `--dry-run`). It needs `SUPABASE_ACCESS_TOKEN`, which agents don't normally have,
      so a production load is usually run by the coordinating session or John.
-   - `scripts/supabase/load.py` refuses before writing if production lacks a table or column the local database has;
+   - `scripts/supabase/load.py` refuses before writing if production lacks a table or column the source database has;
      never bypass that. A full `--replace` load once failed halfway and left the site empty (it empties each table, and
      by cascade its children, before refilling), so load only the tables you changed (`load_table`).
    - The auto-mode permission check often refuses production loads from agents even after John approves in chat,
      because agents don't see his messages. If refused, stop and report the exact command; the coordinating session
      runs it once John approves. Small fixes can go through the Supabase MCP `execute_sql`.
-   - Never run a full load while agents are changing the local schema.
-6. **After every load:** `select api.refresh();`, compare counts local against production for what you loaded, and
+   - Never run a full load while agents are changing the schema.
+6. **After every load:** `select api.refresh();`, compare counts on DS1 against production for what you loaded, and
    look at one affected page on spxn.com.
 7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
    read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
@@ -342,12 +358,37 @@ core rebuild, and after player loads to production run `select api.refresh();`).
    from the repo root, then load production: `python3 scripts/season_notes/to_sql.py` prints insert-only SQL
    (`on conflict do nothing`; add `--update` to replace the text of notes already there), run it with the Supabase MCP
    `execute_sql`. Check one page on spxn.com (pages cache for an hour). Migration `033` creates the table.
-8. **DS1** (John's Synology NAS, on Tailscale; addresses in the private file) keeps a full copy including `legacy_*`.
-   **Refreshing it is manual and not scripted** (**untested**), and the session-start hook restores a fresh container
-   from it. Direction is cloud to DS1 only: connections into the cloud container do not work, and the Mac cannot pull
-   from it. With Tailscale up and the `scripts/cloud/fwd.py` forwarder running (the session-start hook shows the paths),
-   dump the local database and restore it into a **new** database on DS1, never over the old one; check counts, and ask
-   John before replacing anything.
+8. **DS1 and working copies.** DS1 is permanent; cloud and Mac copies are temporary. Work done on a working copy
+   (the cloud agent holds a lot of it) is pushed to DS1 before the production load and before the copy is discarded.
+   Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without
+   asking John. The DS1 commands below are all **untested**.
+   - **Cloud to DS1** (the sync direction stays): a cloud session pushes its new data to DS1 before its container is
+     discarded. With Tailscale up and the `scripts/cloud/fwd.py` forwarder running (the session-start hook shows the
+     paths), dump the changed schemas or tables and restore them into a **new** database on DS1 (or apply the
+     rerunnable steps in a transaction, below); check counts, and ask John before replacing anything. The cloud
+     container cannot be reached from outside, so this is always a push from the cloud.
+   - **Apply to DS1** (from a session that reaches it: the cloud forwarder, or John's Mac): one step or migration
+     in a single transaction, `psql -h <DS1 host> -p 55440 -U postgres -d spx_stats -1 -v ON_ERROR_STOP=1 -f <file>`.
+     A full `build_core.sh` or a big load goes into a NEW database on DS1 (restore a dump of `spx_stats` into
+     `spx_stats_new`, run there); compare counts, then ask John before swapping names. If your session cannot reach
+     DS1, report the exact command as `NEED FROM YOU:`.
+   - **Compare counts** for each table you touched (`select count(*) from core.game`, and so on): working copy, DS1,
+     then production with the Supabase MCP `execute_sql`.
+   - **MacBook working copy** (Docker, **untested**: the restore is in progress and not yet confirmed done):
+
+         docker run -d --name spx-stats-local --restart unless-stopped -e POSTGRES_HOST_AUTH_METHOD=trust \
+           -e POSTGRES_DB=spx_stats -p 127.0.0.1:55432:5432 -v spx-stats-pgdata:/var/lib/postgresql/data postgres:17-alpine
+
+     `btree_gist` is included. Restore from DS1 with the dump piped from inside the container; the password comes
+     from the keychain item `spx-stats-db DS1 55440` and is never printed. Agents may not read the keychain, so John
+     runs this (the DS1 host is in the private file):
+
+         docker exec -e PGPASSWORD="$(security find-generic-password -s 'spx-stats-db DS1 55440' -w)" spx-stats-local \
+           pg_dump -h <DS1 host> -p 55440 -U postgres -d spx_stats -Fc | \
+           docker exec -i spx-stats-local pg_restore -U postgres -d spx_stats --no-owner
+
+     Connect with `psql -h 127.0.0.1 -p 55432 -U postgres -d spx_stats`. To refresh, apply any unsynced work to DS1
+     first, then remove the container and the `spx-stats-pgdata` volume and run both blocks again.
 
 Ask John before deleting or overwriting data, and before any write to production that is not a routine load.
 
@@ -408,8 +449,8 @@ Template for the note (replace each `<value>`):
     ## (1) Cloud environment settings. Set ONCE per environment; every new session in it inherits them.
     SUMILABU_BOARD_URL=https://api.sumilabu.com       # required, fixed value
     SUMILABU_BOARD_TOKEN=<value>                      # required for tickets: the spx-stats board key
-    SPX_DS1_DB_PASSWORD=<value>                       # required for the database to come up: DS1 Postgres password
-    TS_AUTHKEY=<value>                                # required for the database to come up; expires every 90 days
+    SPX_DS1_DB_PASSWORD=<value>                       # required for the working copy to come up: DS1 Postgres password
+    TS_AUTHKEY=<value>                                # required for the working copy to come up; expires every 90 days
     DROPBOX_APP_KEY=<value>                           # optional: archive uploads (scripts/dropbox_put.py)
     DROPBOX_APP_SECRET=<value>
     DROPBOX_REFRESH_TOKEN=<value>
@@ -435,7 +476,7 @@ prints a secret; both put the `NAME=value` lines on the clipboard:
 
 **Checklist for a new cloud agent:** open the `spx-stats env` note and fill any missing value; paste the lines into the
 cloud environment's settings and start the session; then in the session run `echo ${SUMILABU_BOARD_TOKEN:+ok}`,
-`pg_isready -h /tmp -p 55432`, `psql -h /tmp -p 55432 -U postgres -d spx_stats -c 'select 1'`, and `cd web && pnpm task`.
+`pg_isready -h /tmp -p 55432` (the cloud working copy), `psql -h /tmp -p 55432 -U postgres -d spx_stats -c 'select 1'`, and `cd web && pnpm task`.
 Raw downloads: `python3 scripts/dropbox_put.py <file> <source>`; the backlog:
 `python3 scripts/dropbox_put.py --from-archive`. On John's Mac,
 `~/bin/spx-raw-export.sh` (`scripts/mac/spx-raw-export.sh`; `--check` first, `--install-schedule` for an hourly run) copies
