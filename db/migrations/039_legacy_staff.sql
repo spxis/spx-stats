@@ -25,3 +25,13 @@ create table if not exists legacy_staff.wikipedia_staff (
   primary key (team_season_id, field, n)
 );
 comment on table legacy_staff.wikipedia_staff is 'One row per name in the infobox field, in page order; link_title is the wikilink target when there was one.';
+
+-- Franchise lists ("List of <club> head coaches"): who coached in which seasons, used only for seasons whose infobox gave no coach.
+create table if not exists legacy_staff.wikipedia_list (
+  list_title   text not null,
+  n            smallint not null,
+  name         text not null,
+  link_title   text,
+  years        smallint[] not null,
+  primary key (list_title, n)
+);

@@ -2,7 +2,7 @@
 --  * MLB: the manager of each side in each Retrosheet game log (fields 90-93), with the dates of the first and last game he managed.
 --  * NFL: home_coach / away_coach of each nflverse game, with dates.
 --  * NHL, NBA, CFL: the infobox of the club-season article on Wikipedia (legacy_staff.wikipedia_*, scripts/staff/); the NHL also gives
---    the captain and alternate captains. No dates there; several names in one season mean a change during it, in page order.
+--    the captain and alternate captains. Seasons without a coach there: the club's "List of ... head coaches" (CFL). MLB captains: the clubs' captains lists. No dates there; several names in one season mean a change during it, in page order.
 -- A person is found by core.external_id (retrosheet id; nflverse 'coach:<name>'; wikipedia link title or 'name:<name>'), else by Lahman's retroID
 -- or the Wikidata item of the article, else (captains) by name among that club's players of the season, else created (kind 'coach', or 'player' for a captain).
 -- Rerunnable: the stints this step wrote are deleted and written again; people it created are kept and found by their external id.
@@ -13,7 +13,7 @@ select (select source_id from src where code = 'retrosheet') as retro, (select s
        (select source_id from src where code = 'wikipedia') as wiki, (select source_id from src where code = 'lahman') as lahman,
        (select source_id from src where code = 'wikidata') as wikidata;
 
-update meta.source set attribution = attribution || ' Head coaches, captains and alternate captains of NHL, NBA and CFL club seasons from the infoboxes of the "<season> <club> season" articles on English Wikipedia, CC BY-SA 4.0; text by the articles'' editors, see each article''s history.',
+update meta.source set attribution = attribution || ' Head coaches, captains and alternate captains of NHL, NBA and CFL club seasons from the infoboxes of the "<season> <club> season" articles, CFL seasons without one from the franchises "List of ... head coaches", and MLB captains from the clubs captains lists and article sections, all on English Wikipedia, CC BY-SA 4.0; text by the articles'' editors, see each article''s history.',
        notes = notes || ' Coaches and captains: infobox fields of the club-season articles, fetched through the MediaWiki API 2026-10-12.'
 where code = 'wikipedia' and attribution not like '%Head coaches, captains%';
 
@@ -68,6 +68,32 @@ where nm is not null and nm <> '' group by 1, 2, 3, 4;
 insert into coach_raw
 select w.team_season_id, coalesce(w.link_title, 'name:' || w.name), (select wiki from sid), w.name, null, null, w.field, w.n
 from legacy_staff.wikipedia_staff w join core.team_season ts using (team_season_id);
+
+-- A season whose infobox gave no coach (no article, or none with an infobox): the coach(es) of the club's franchise list whose years include it
+create temp table list_of on commit drop as
+select * from (values ('Edmonton Eskimos', 'List of Edmonton Elks head coaches'), ('Edmonton Elks', 'List of Edmonton Elks head coaches'),
+  ('Hamilton Tiger-Cats', 'List of Hamilton Tiger-Cats head coaches'), ('Montreal Alouettes', 'List of Montreal Alouettes head coaches'),
+  ('Saskatchewan Roughriders', 'List of Saskatchewan Roughriders head coaches'), ('Winnipeg Blue Bombers', 'List of Winnipeg Blue Bombers head coaches'),
+  ('Calgary Stampeders', 'List of Calgary Stampeders head coaches'), ('BC Lions', 'List of BC Lions head coaches'), ('B.C. Lions', 'List of BC Lions head coaches'),
+  ('Toronto Argonauts', 'List of Toronto Argonauts head coaches'), ('Ottawa Rough Riders', 'List of Ottawa Football Clubs head coaches'),
+  ('Ottawa Renegades', 'List of Ottawa Football Clubs head coaches'), ('Ottawa Redblacks', 'List of Ottawa Football Clubs head coaches')) v(club, list_title);
+insert into coach_raw
+select p.team_season_id, coalesce(l.link_title, 'name:' || l.name), (select wiki from sid), l.name, null, null, 'coach', l.n
+from legacy_staff.wikipedia_page p
+join list_of m on regexp_replace(p.requested_title, '^[0-9]{4} | season$', '', 'g') = m.club
+join legacy_staff.wikipedia_list l on l.list_title = m.list_title and p.season_year = any(l.years)
+join core.team_season ts on ts.team_season_id = p.team_season_id
+where not exists (select 1 from legacy_staff.wikipedia_staff w where w.team_season_id = p.team_season_id and w.field = 'coach');
+
+-- MLB captains: the club's captains list (or Team captains section) gives the years; the club is the franchise of the 2015 team of that name
+insert into coach_raw
+select ts.team_season_id, coalesce(l.link_title, 'name:' || l.name), (select wiki from sid), l.name, null, null, 'captain', l.n
+from legacy_staff.wikipedia_list l
+join core.season s15 on s15.league_code = 'mlb' and s15.start_year = 2015
+join core.team_season t15 on t15.season_id = s15.season_id and api.team_name(t15.team_season_id) = substring(l.list_title from '^List of (.*) captains$')
+join core.team_season ts on ts.franchise_id = t15.franchise_id
+join core.season s on s.season_id = ts.season_id and s.start_year = any(l.years)
+where l.list_title like 'List of % captains';
 
 -- ---- people
 create temp table cand on commit drop as

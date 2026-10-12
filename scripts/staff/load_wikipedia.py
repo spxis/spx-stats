@@ -14,9 +14,11 @@ FIELDS = {
 NOT_A_NAME = re.compile(r"^(interim|acting|fired|resigned|'+$|vacant|none|no |rotat|n/?a$|tbd|unknown|committee|by committee|—|–|-|\?)", re.I)
 
 def infobox(text):
-    """The first template of the page head named like an infobox or a season box (Infobox NBA season, NBA season, ...)."""
+    """The first template of the page head named like an infobox or a season box (Infobox NBA season, Infobox NFL_season, NBA season, ...)
+    that carries a coach or captain field."""
     i, depth, start = 0, 0, 0
-    while i < len(text):
+    wanted = set().union(*FIELDS.values())
+    while i < min(len(text), 30000):
         if text.startswith("{{", i):
             if depth == 0: start = i
             depth += 1; i += 2
@@ -24,11 +26,10 @@ def infobox(text):
             depth -= 1; i += 2
             if depth == 0:
                 box = text[start + 2:i - 2]
-                if re.match(r"\s*(infobox|[A-Za-z ]*season)\s*(\||\n)", box, re.I): return box
+                if re.match(r"\s*(infobox\b|[\w ]*season\s*(\||\n))", box, re.I) and wanted & set(params(box)): return box
             if depth < 0: depth = 0
         else:
             i += 1
-        if depth == 0 and i > 6000: return None
     return None
 
 def params(box):
@@ -78,6 +79,89 @@ def names(value):
             if plain: out.append((plain, None, note))
     return [(n, t, nt) for n, t, nt in out if n and not NOT_A_NAME.match(n) and len(n) < 60]
 
+LISTS_OF = ["List of Edmonton Elks head coaches", "List of Hamilton Tiger-Cats head coaches", "List of Montreal Alouettes head coaches",
+            "List of Saskatchewan Roughriders head coaches", "List of Winnipeg Blue Bombers head coaches", "List of Calgary Stampeders head coaches",
+            "List of BC Lions head coaches", "List of Toronto Argonauts head coaches", "List of Ottawa Redblacks head coaches"]
+
+LATEST = 2026
+
+def years_of(cell):
+    cell = re.sub(r"<ref[^>/]*/>|<ref[^>]*>.*?</ref>", "", cell, flags=re.S)
+    cell = re.sub(r"\{\{\s*cfly\s*\|\s*(\d{4})[^{}]*\}\}", r"\1", cell)
+    out = set()
+    cell = re.sub(r"(\d{4})\s*(?:[–—-]|&ndash;|to)\s*(?:present|current|now)\b", lambda m: f"{m.group(1)}–{LATEST}", cell, flags=re.I)
+    for a, b in re.findall(r"(\d{4})(?:\s*(?:[–—-]|&ndash;|to)\s*(\d{4}|\d{2}))?", cell):
+        a = int(a)
+        if not 1850 < a < 2100: continue
+        e = a if not b else (int(b) if len(b) == 4 else a // 100 * 100 + int(b))
+        out |= set(range(a, e + 1)) if a <= e < a + 60 else {a}
+    return sorted(out)
+
+def list_rows(text):
+    """(name, link title, years) of each row of the head-coach tables of a franchise list."""
+    out = []
+    for table in re.findall(r"\{\|.*?\n\|\}", text, re.S):
+        for row in table.split("\n|-")[1:]:
+            cells = [c.strip() for line in row.split("\n") if line.startswith("|") for c in line[1:].split("||")]
+            name = link = None
+            for i, c in enumerate(cells):
+                m = re.search(r"\{\{\s*sortname\s*\|\s*([^|{}]*)\|\s*([^|{}]*)(?:\|\s*([^|{}]*))?", c, re.I)
+                if m:
+                    name, link = f"{m.group(1).strip()} {m.group(2).strip()}".strip(), (m.group(3) or "").strip() or None
+                else:
+                    m = LINK.search(c)
+                    if m:
+                        name, link = (m.group(2) or m.group(1)).strip(), m.group(1).split("#")[0].strip()
+                if name:
+                    yrs = next((y for y in (years_of(x) for x in cells[i + 1:]) if y), [])
+                    if yrs: out.append((name, link, yrs))
+                    break
+    return out
+
+MLB_CAPTAINS = ["Baltimore Orioles", "Boston Red Sox", "Chicago White Sox", "Cincinnati Reds", "Detroit Tigers", "Houston Astros", "Kansas City Royals",
+                "Los Angeles Dodgers", "Minnesota Twins", "Milwaukee Brewers", "New York Mets", "New York Yankees", "Oakland Athletics",
+                "Philadelphia Phillies", "Pittsburgh Pirates", "San Francisco Giants", "St. Louis Cardinals", "Texas Rangers"]
+
+def _who(cell):
+    m = re.search(r"\{\{\s*sortname\s*\|\s*([^|{}]*)\|\s*([^|{}]*)(?:\|\s*([^|{}]*))?", cell, re.I)
+    if m:
+        name = f"{m.group(1).strip()} {m.group(2).strip()}".strip()
+        return name, (m.group(3) or "").strip() or name
+    m = LINK.search(cell)
+    return ((m.group(2) or m.group(1)).strip(), m.group(1).split("#")[0].strip()) if m else (None, None)
+
+def captain_rows(text):
+    """(name, link title, years) of a club's captains: the tables with a tenure or "Years as captain" column and the bullet lines
+    "[[Name]], 1987-1989", in a captains list or the Team captains section of the club's article."""
+    m = re.search(r"^(=+)\s*(?:Team )?[Cc]aptains\s*\1\s*$", text, re.M)
+    if m:
+        rest = text[m.end():]
+        n = re.search(r"^={1,%d}[^=\n].*$" % len(m.group(1)), rest, re.M)
+        text = rest[:n.start()] if n else rest
+    out = []
+    for table in re.findall(r"\{\|.*?\n\|\}", text, re.S):
+        segs = table.split("\n|-")
+        hi = next((k for k, seg in enumerate(segs) if any(l.startswith("!") for l in seg.split("\n"))
+                   and not any(l[:1] == "|" and not l.startswith("|+") and not l.startswith("|}") for l in seg.split("\n"))), None)
+        if hi is None: continue
+        heads = [re.sub(r"<[^>]+>|\[\[|\]\]|'{2,3}", "", h).split("|")[-1].strip().lower() for line in segs[hi].split("\n") if line.startswith("!") for h in line[1:].split("!!")]
+        ci = next((i for i, h in enumerate(heads) if "tenure" in h or ("captain" in h and ("year" in h or "season" in h))), None)
+        if ci is None: continue
+        for row in segs[hi + 1:]:
+            cells = [c.strip() for line in row.split("\n") if line[:1] and line[:1] in "|!" and line.strip() not in ("|", "|}") for c in re.split(r"\|\||!!", line[1:])]
+            cells = [c.split("|", 1)[1].strip() if re.match(r"[\w-]+\s*=", c) and "|" in c else c for c in cells]
+            if len(cells) <= ci: continue
+            name, link = next(((n, l) for n, l in map(_who, cells) if n), (None, None))
+            yrs = years_of(cells[ci])
+            if name and yrs: out.append((name, link, yrs))
+    if not out:
+        for line in text.split("\n"):
+            if not line.startswith("*"): continue
+            name, link = _who(line)
+            yrs = years_of(re.sub(r"\[\[.*?\]\]", "", line))
+            if name and yrs: out.append((name, link, yrs))
+    return out
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default=os.path.expanduser("~/spx-raw/wikipedia_staff/2026-10-12"))
@@ -113,14 +197,26 @@ def main():
         for f, ns in got.items():
             for i, (n, t, nt) in enumerate(ns, 1): staff_rows.append([tsid, f, i, n, t, nt])
         stats[(lg, status)] = stats.get((lg, status), 0) + 1
+    list_out = []
+    for lt in LISTS_OF:
+        pg = pages.get(resolve(lt))
+        for i, (n, t, yrs) in enumerate(list_rows(pg[1]) if pg else [], 1):
+            list_out.append([resolve(lt), i, n, t, "{" + ",".join(map(str, yrs)) + "}"])
+    for club in MLB_CAPTAINS:
+        lt = f"List of {club} captains"
+        pg = pages.get(resolve(lt))
+        for i, (n, t, yrs) in enumerate(captain_rows(pg[1]) if pg else [], 1):
+            list_out.append([lt, i, n, t, "{" + ",".join(map(str, yrs)) + "}"])
+    print(len(list_out), "list rows")
     for k in sorted(stats): print(k, stats[k])
     print(len(page_rows), "pages,", len(staff_rows), "names")
     if a.dry_run: return
     def csvtext(rows):
         b = io.StringIO(); csv.writer(b, lineterminator="\n").writerows([["\\N" if c is None else c for c in r] for r in rows]); return b.getvalue()
-    sql = ("begin;\ntruncate legacy_staff.wikipedia_page, legacy_staff.wikipedia_staff;\n"
+    sql = ("begin;\ntruncate legacy_staff.wikipedia_page, legacy_staff.wikipedia_staff, legacy_staff.wikipedia_list;\n"
            "\\copy legacy_staff.wikipedia_page from stdin with (format csv, null '\\N')\n" + csvtext(page_rows) + "\\.\n"
-           "\\copy legacy_staff.wikipedia_staff from stdin with (format csv, null '\\N')\n" + csvtext(staff_rows) + "\\.\ncommit;\n")
+           "\\copy legacy_staff.wikipedia_staff from stdin with (format csv, null '\\N')\n" + csvtext(staff_rows) + "\\.\n"
+           "\\copy legacy_staff.wikipedia_list from stdin with (format csv, null '\\N')\n" + csvtext(list_out) + "\\.\ncommit;\n")
     p = subprocess.run(["psql", "-X", "-q", "-v", "ON_ERROR_STOP=1", "-f", "-"], input=sql, text=True, capture_output=True)
     if p.returncode: sys.exit(p.stderr)
 

@@ -22,7 +22,9 @@ select s.league_code, ts.team_season_id, s.start_year,
            (select case when count(*) = 1 then max(t.page_title) end from legacy_wikipedia_cfl.team_season t
             where s.league_code = 'cfl' and t.season = s.start_year and (t.team_name = api.team_name(ts.team_season_id) or t.team_name like api.team_name(ts.team_season_id) || ' %')),
            case when s.league_code = 'cfl' then s.start_year || ' ' || translate(api.team_name(ts.team_season_id), chr(233), 'e') || ' season'
-                else s.start_year || chr(8211) || lpad(((s.start_year + 1) % 100)::text, 2, '0') || ' ' || translate(api.team_name(ts.team_season_id), chr(233) || chr(232), 'ee') || ' season' end)
+                else s.start_year || chr(8211) || case when s.start_year = 1999 then '2000' else lpad(((s.start_year + 1) % 100)::text, 2, '0') end || ' '
+                     || replace(translate(api.team_name(ts.team_season_id), chr(233) || chr(232), 'ee'), case when s.league_code = 'nhl' and s.start_year < 1986 then 'Blackhawks' else '-' end,
+                                case when s.league_code = 'nhl' and s.start_year < 1986 then 'Black Hawks' else '-' end) || ' season' end)
 from core.team_season ts join core.season s using (season_id)
 where s.league_code = any(string_to_array('LEAGUES', ',')) order by 1, 3, 2
 """
@@ -52,6 +54,7 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--raw", default=os.path.expanduser("~/spx-raw/wikipedia_staff/" + datetime.date.today().isoformat()))
     ap.add_argument("--leagues", default="nhl,nba,cfl")
+    ap.add_argument("--extra", default="", help="more page titles, separated by |, fetched as well (franchise lists of head coaches)")
     a = ap.parse_args()
     os.makedirs(a.raw + "/batch", exist_ok=True)
     rows = targets(a.leagues)
@@ -61,7 +64,7 @@ def main():
         nxt = max(nxt, int(os.path.basename(f)[:4]) + 1)
         q = json.load(open(f)).get("query", {})
         have |= {p["title"] for p in q.get("pages", [])} | {r["from"] for r in q.get("normalized", []) + q.get("redirects", [])}
-    titles = sorted({r[3] for r in rows} - have)
+    titles = sorted(({r[3] for r in rows} | set(filter(None, a.extra.split("|")))) - have)
     last = 0.0
     for i in range(0, len(titles), BATCH):
         path = f"{a.raw}/batch/{nxt + i // BATCH:04d}.json"
