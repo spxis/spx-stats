@@ -48,7 +48,8 @@ end. **manual** = a person or the coordinating session has to do it.
 - **DS1 has two routes from a Mac: the home LAN and Tailscale.** Try both before saying DS1 is unreachable:
   `bash scripts/mac/spx-check.sh` does (addresses in `scripts/mac/spx-checks.sh`). Never ask John to turn Tailscale on
   at the Mac Studio: it is on the home LAN and DS1 answers there. DS1 is DiskStation1; DiskStation15 (DS15, 10.0.0.115)
-  is another NAS, not the database. The cloud container is not on the home LAN, so it uses Tailscale only.
+  is another NAS, not the database. John adds a `ds1` hosts-file name on each Mac (Mac Studio: home LAN, MacBook:
+  Tailscale); the scripts try it first. The cloud container is not on the home LAN, so it uses Tailscale only.
 - **First step of every session:** read the hook's `[spx-check]` lines and check your connector tools
   ([section 4](#4-cold-start)); report anything MISSING.
 - Short answers. When you need something from John, start with `NEED FROM YOU:` and a copy-paste block.

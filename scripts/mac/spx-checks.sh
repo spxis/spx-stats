@@ -2,9 +2,11 @@
 # Contains no secrets: the production URL and key are the public read-only ones the site ships with.
 
 # DS1 (DiskStation1) has two routes from a Mac: the home LAN (the NAS has four network ports, 10.0.0.101-104; the
-# .local name works only if DS1 advertises Bonjour) and Tailscale. Try both, never one.
+# .local name does not resolve today: DS1 answers unicast mDNS only, so macOS cannot look it up) and Tailscale.
+# Try both, never one. `ds1` is a hosts-file name John sets per Mac (Mac Studio: 10.0.0.101, MacBook: the Tailscale
+# IP); where it is not set it fails fast and is skipped.
 # 10.0.0.115 is DS15 (DiskStation15), a different NAS with no spx database: never add it here.
-SPX_DS1_LAN_HOSTS="${SPX_DS1_LAN_HOSTS:-DiskStation1.local 10.0.0.101 10.0.0.102 10.0.0.103 10.0.0.104}"
+SPX_DS1_LAN_HOSTS="${SPX_DS1_LAN_HOSTS:-ds1 DiskStation1.local 10.0.0.101 10.0.0.102 10.0.0.103 10.0.0.104}"
 SPX_DS1_TAILSCALE_HOST="100.87.30.7"
 SPX_DS1_PORT="${SPX_DS1_PORT:-55440}"
 SPX_BOARD_URL="https://api.sumilabu.com/api/v1/projects/spx-stats/tickets"
@@ -15,7 +17,7 @@ SPX_TAILSCALE_BIN="/Applications/Tailscale.app/Contents/MacOS/Tailscale"
 kc_get() { security find-generic-password -s "$1" -w 2>/dev/null || true; }
 board_ok() { [ -n "$1" ] && [ "$(curl -s -m 8 -o /dev/null -w '%{http_code}' -H "Authorization: Bearer $1" "$SPX_BOARD_URL")" = 200 ]; }
 # ds1_host: print the first DS1 address whose port answers, preferring this order: $SPX_DS1_HOST (optional override),
-# DiskStation1.local and the home LAN addresses, then Tailscale. Probes run side by side and the first answer wins
+# ds1, DiskStation1.local and the home LAN addresses, then Tailscale. Probes run side by side and the first answer wins
 # (so an unresolvable .local name, which fails only after about 5 s, never slows a good answer). Gives up after 4 s;
 # exit 1 and print nothing if none answers.
 ds1_host() {
@@ -46,7 +48,13 @@ ds1_host() {
   return 1
 }
 # ds1_route <address>: a short name for the route, e.g. "home LAN 10.0.0.101" or "Tailscale".
-ds1_route() { if [ "$1" = "$SPX_DS1_TAILSCALE_HOST" ]; then printf 'Tailscale'; else printf 'home LAN %s' "$1"; fi; }
+ds1_route() {
+  case "$1" in
+    "$SPX_DS1_TAILSCALE_HOST") printf 'Tailscale' ;;
+    ds1) printf 'hosts-file name ds1' ;;
+    *) printf 'home LAN %s' "$1" ;;
+  esac
+}
 # ds1_missing: the one fix text when neither route answers; names both routes.
 ds1_missing() { printf 'not reachable on the home LAN (%s) or Tailscale (%s); join the home network or turn Tailscale on' "${SPX_DS1_LAN_HOSTS// /, }" "$SPX_DS1_TAILSCALE_HOST"; }
 # ds1_ok <password>: a real login. Uses $SPX_DS1_FOUND when the caller already ran ds1_host.
