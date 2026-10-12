@@ -79,7 +79,7 @@
 .legend i.champ { background: var(--warn); border-radius: 50%; }
 .legend i.cool { background: color-mix(in srgb, var(--ink) 60%, var(--soft)); }
 .legend i.warm { background: color-mix(in srgb, var(--accent) 90%, var(--soft)); }
-.legend i.mid { background: var(--soft); border: 1px solid var(--rule); box-sizing: border-box; }
+.legend i.mid { background: color-mix(in srgb, var(--ink) 18%, var(--soft)); }
 
 @media (max-width: 640px) {
   .rank li { grid-template-columns: minmax(0, 5.6rem) minmax(0, 1fr) 3.8rem; gap: 8px; }

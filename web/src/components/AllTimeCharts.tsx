@@ -87,8 +87,8 @@ export function WinLossScatter({ teams }: { teams: ChartTeam[] }) {
 }
 
 const cellFill = (s: number) => (s >= 0.5
-  ? `color-mix(in srgb, var(--accent) ${Math.round(18 + 82 * Math.min(1, (s - 0.5) / 0.22))}%, var(--soft))`
-  : `color-mix(in srgb, var(--ink) ${Math.round(8 + 52 * Math.min(1, (0.5 - s) / 0.22))}%, var(--soft))`);
+  ? `color-mix(in srgb, var(--accent) ${Math.round(28 + 72 * Math.min(1, (s - 0.5) / 0.22))}%, var(--soft))`
+  : `color-mix(in srgb, var(--ink) ${Math.round(18 + 42 * Math.min(1, (0.5 - s) / 0.22))}%, var(--soft))`);
 
 /** One row a franchise, one square a season, shaded by win share (warm above .500, grey below); an amber dot marks a title. Rows run oldest to newest. */
 export function SeasonGrid({ lg, teams, first, last }: { lg: string; teams: ChartTeam[]; first: number; last: number }) {
