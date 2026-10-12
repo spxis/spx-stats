@@ -258,6 +258,15 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       const href = a.getAttribute("href") ?? d?.t.href;
       if (href?.startsWith("/") && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); onNavigate?.(); router.push(href); }
     };
+    const dbl = (e: MouseEvent) => {
+      if ((e.target as Element).closest("a, .pinab, .mapzoom") || view.current.z >= ZOOM_MAX) return;
+      const at = canvasAt(e.clientX, e.clientY);
+      if (!at) return;
+      const z = Math.min(Math.floor(view.current.z + 0.001) + 1, ZOOM_MAX);
+      view.current = { z, x: at[0], y: at[1] };
+      setZoom(z);
+      apply();
+    };
     const enter = (e: Event) => {
       const a = (e.target as Element).closest?.("a[data-i], .pinab");
       const d = a && scene.current?.dots[Number(a.getAttribute("data-i"))];
@@ -271,6 +280,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     host.addEventListener("pointercancel", up);
     host.addEventListener("wheel", wheel, { passive: false });
     host.addEventListener("click", click, true);
+    host.addEventListener("dblclick", dbl);
     host.addEventListener("pointerover", enter);
     host.addEventListener("pointerout", leave);
     host.addEventListener("focusin", enter);
@@ -282,6 +292,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       host.removeEventListener("pointercancel", up);
       host.removeEventListener("wheel", wheel);
       host.removeEventListener("click", click, true);
+      host.removeEventListener("dblclick", dbl);
       host.removeEventListener("pointerover", enter);
       host.removeEventListener("pointerout", leave);
       host.removeEventListener("focusin", enter);
