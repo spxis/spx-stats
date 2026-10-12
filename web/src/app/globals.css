@@ -82,6 +82,9 @@
   .aux a.signin-link { color: var(--paper); border-bottom-width: 1px; }
   .signin-btn { align-self: flex-start; font-size: 16px; padding: 10px 16px; }
   .signin-btn:disabled { opacity: .6; }
+  .ticketform { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
+  .ticketform label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
+  .ticketform input, .ticketform textarea, .ticketform select { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
   .usermenu { position: relative; }
   .usermenu-btn { display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 3px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 14px/1 var(--display); }
   .usermenu-btn:hover { border-color: var(--ink); }
