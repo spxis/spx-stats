@@ -6,14 +6,16 @@ import { resolveSelection, type ClubTeam, type GameTuple, type Selection } from 
 import { replaceQuery } from "@/lib/urlQuery";
 import { GameCalendar } from "./GameCalendar";
 import { useSpeaker } from "./i18n/LocaleProvider";
+import { Rich } from "./i18n/Rich";
 import { PhaseSwitch } from "./PhaseSwitch";
+import { TeamLogo } from "./TeamLogo";
 
 /**
  * The games of a season: part-of-season buttons, a team filter, a month calendar shaded by games held
  * (or by the team's result on its days), and the games of the chosen day or month.
  * The selection lives in the address (?phase=&team=&month=&day=), so a reload or shared link keeps it.
  */
-export function SeasonGames({ lg, abbrs, year, games, teams: teamList, initial }: { lg: string; abbrs: AbbrMap; year?: number; games: GameTuple[]; teams: ClubTeam[]; initial: Selection }) {
+export function SeasonGames({ lg, abbrs, year, games, teams: teamList, initial, children }: { lg: string; abbrs: AbbrMap; year?: number; games: GameTuple[]; teams: ClubTeam[]; initial: Selection; children?: React.ReactNode }) {
   const { say } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const [want, setWant] = useState<Selection>(initial);
@@ -27,6 +29,15 @@ export function SeasonGames({ lg, abbrs, year, games, teams: teamList, initial }
 
   const set = (patch: Partial<Selection>) => setWant({ phase, team, month, day, ...patch });
 
+  const chosen = teams.get(Number(team));
+  const heading = (
+    <>
+      <h2>{chosen
+        ? <Rich text={say("games.titleTeam")} parts={{ team: <span className="gamesteam"><TeamLogo url={chosen.logo} size={24} />{chosen.name}</span> }} />
+        : say("season.games")}</h2>
+      {children}
+    </>
+  );
   const controls = (
     <div className="controls">
       <PhaseSwitch phase={phase} onChange={(k) => set({ phase: k })} />
@@ -40,6 +51,7 @@ export function SeasonGames({ lg, abbrs, year, games, teams: teamList, initial }
   if (!months.length) {
     return (
       <>
+        {heading}
         {controls}
         <div className="daylist"><p className="note">{say("games.none")}</p></div>
       </>
@@ -48,6 +60,7 @@ export function SeasonGames({ lg, abbrs, year, games, teams: teamList, initial }
 
   return (
     <>
+      {heading}
       {controls}
       <GameCalendar lg={lg} abbrs={abbrs} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={team}
         onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ day: d })}

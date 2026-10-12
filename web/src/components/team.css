@@ -18,6 +18,12 @@
 
 .cal .opab, .cell .opab { font: 600 10px/1 var(--mono); color: var(--muted); letter-spacing: 0; }
 .cell .celltop { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; }
+.cell .opab { display: inline-flex; align-items: center; gap: 2px; }
+.cell .opab .logo { margin: 0; vertical-align: baseline; max-width: 20px; }
+@media (max-width: 500px) {
+  .cell .celltop { flex-direction: column; align-items: flex-start; gap: 2px; }
+}
+h2 .gamesteam .logo { margin: 0 8px 0 0; vertical-align: -4px; }
 
 .verdict { display: flex; flex-direction: column; gap: 2px; padding: 10px 14px; border: 1px solid var(--rule); border-left: 5px solid var(--accent); background: var(--panel); }
 .verdict b { font: 700 20px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; }

@@ -174,6 +174,7 @@ export const JA: Dictionary = {
   "phase.preseason": "プレシーズン",
   "phase.allStar": "オールスター",
   "games.team": "チーム",
+  "games.titleTeam": "試合 – {team}",
   "games.allTeams": "すべてのチーム",
   "games.none": "この条件に合う試合はありません。",
   "game.at": "{away} @ {home}",

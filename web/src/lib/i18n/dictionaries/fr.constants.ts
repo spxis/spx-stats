@@ -174,6 +174,7 @@ export const FR: Dictionary = {
   "phase.preseason": "Pré-saison",
   "phase.allStar": "Match des étoiles",
   "games.team": "Équipe",
+  "games.titleTeam": "Matchs – {team}",
   "games.allTeams": "Toutes les équipes",
   "games.none": "Aucun match pour ce choix.",
   "game.at": "{away} à {home}",

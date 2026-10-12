@@ -210,6 +210,7 @@ export const PHRASES = {
   "phase.preseason": "Preseason",
   "phase.allStar": "All-Star",
   "games.team": "Team",
+  "games.titleTeam": "Games – {team}",
   "games.allTeams": "All teams",
   "games.none": "No games for this choice.",
   "game.at": "{away} at {home}",

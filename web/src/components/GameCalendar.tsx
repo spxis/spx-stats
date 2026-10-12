@@ -92,7 +92,7 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
         style={{ "--heat": `${Math.round(18 + (62 * list.length) / most)}%` } as React.CSSProperties}
         aria-label={say("cal.dayAria", { date: dt.monthDay(d), games: plural("count.games", list.length) }) + (res ? say(res.home ? "cal.vsOpp" : "cal.atOpp", { opp: teams.get(res.opp)?.name ?? say("cal.oppFallback") }) : "")} aria-pressed={key === day}
         onClick={() => onDay(key === day ? "" : key)}>
-        {res ? <span className="celltop">{dn}<span className="opab" title={teams.get(res.opp)?.name ?? undefined}>{opp}</span></span> : dn}
+        {res ? <span className="celltop">{dn}<span className="opab" title={teams.get(res.opp)?.name ?? undefined}>{list.length === 1 ? <TeamLogo url={teams.get(res.opp)?.logo} size={14} /> : null}{opp}</span></span> : dn}
         {res ? <span className={"mk " + (res.r === "N" ? "" : res.r)}>{res.text}</span> : <span className="ct">{list.length}</span>}
       </button>,
     );

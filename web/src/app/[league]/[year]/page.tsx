@@ -213,9 +213,9 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       ) : null}
       {d.games.length ? (
         <section className="section">
-          <h2>{say("season.games")}</h2>
-          {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
-          <SeasonGames lg={lg} abbrs={abbrs} year={y} games={d.games} teams={d.teams.map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} initial={selection} />
+          <SeasonGames lg={lg} abbrs={abbrs} year={y} games={d.games} teams={d.teams.map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} initial={selection}>
+            {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
+          </SeasonGames>
 
         </section>
       ) : null}
