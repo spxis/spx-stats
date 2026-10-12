@@ -29,6 +29,7 @@ import { parseSelection } from "@/lib/season";
 import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
 import { scoresPath } from "@/lib/scores";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
+import { getPlayerPaths } from "@/lib/playerLinks";
 import { franchiseOfName, getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
@@ -56,7 +57,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const sp = await searchParams;
   if (!ys.canonical) permanentRedirect(withQuery(seasonPath(lg, y), sp));
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
-  const [d, brands, abbrs, summary, notes, paths] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths()]);
+  const [d, brands, abbrs, summary, notes, paths, player] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths()]);
   const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
   const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
   if (!d) {
@@ -204,7 +205,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
             {awards.map((a, i) => (
               <div className="award" key={i}>
                 <span className="name">{a.award}</span>
-                <span className="winner">{a.person_id != null ? <Link href={`/players/${a.person_id}`} prefetch={false}>{a.winner}</Link> : <TeamLink lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} />}</span>
+                <span className="winner">{a.person_id != null ? <Link href={player(a.person_id, a.winner ?? "", lg)} prefetch={false}>{a.winner}</Link> : <TeamLink lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} />}</span>
                 <span className="note">{a.note || ""} <Badge src={a.source} /></span>
               </div>
             ))}

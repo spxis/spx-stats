@@ -8,6 +8,7 @@ import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
 import { capFirst } from "@/lib/people-format";
 import { getPlayerPage, PLAYER_SORTS, searchWords } from "@/lib/playerIndex";
+import { getPlayerPaths } from "@/lib/playerLinks";
 import { formatSort, parseSort, tableOf } from "@/lib/sort";
 import "@/components/alignment.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -29,6 +30,7 @@ export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/p
 export default guard(async function PlayersPage({ searchParams }: PageProps<"/players">) {
   const sp = await searchParams;
   const { say, plural, fmt } = await currentSpeaker();
+  const player = await getPlayerPaths();
   const league = isLeague(first(sp.league)) ? first(sp.league) : "";
   const q = clean(first(sp.q));
   const sort = parseSort(sp.sort, Object.keys(PLAYER_SORTS), DEF_SORT).slice(0, 1);
@@ -39,7 +41,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/pl
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
 
   const table = data ? tableOf(data.list, [
-    { key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PlayerIndexRow) => p.name, cell: (p: PlayerIndexRow) => <Link href={`/players/${p.person_id}`} prefetch={false}>{p.name}</Link> },
+    { key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PlayerIndexRow) => p.name, cell: (p: PlayerIndexRow) => <Link href={player(p.person_id, p.name, p.leagues?.[0])} prefetch={false}>{p.name}</Link> },
     { key: "league", label: say("col.league"), rest: "leagues", get: (p: PlayerIndexRow) => (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") },
     { key: "position", label: say("player.factPosition"), rest: "position", get: (p: PlayerIndexRow) => (p.position ? capFirst(p.position) : "") },
     { key: "years", label: say("col.years"), cls: "nowrap", title: say("players.yearsTitle"), rest: "last_season", get: (p: PlayerIndexRow) => p.last_season, cell: (p: PlayerIndexRow) => (p.first_season == null ? "" : p.last_season != null && p.last_season !== p.first_season ? `${p.first_season}–${p.last_season}` : String(p.first_season)) },

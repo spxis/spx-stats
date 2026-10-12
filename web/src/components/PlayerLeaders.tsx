@@ -14,6 +14,7 @@ import {
 import { leadersPath } from "@/lib/leaderStats";
 import { getNames, getSeasonStats, getSeasonsBeating } from "@/lib/leadersData";
 import { LG } from "@/lib/leagues";
+import { getPlayerPaths } from "@/lib/playerLinks";
 import { showStat } from "@/lib/playerStats";
 import { parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import "./leaders.css";
@@ -57,12 +58,13 @@ export async function PlayerLeaders({ lg, year, teams, sp, brands, abbrs }: {
   const byGroup = new Map<string, PlayerSeason[]>(groups.map((g, i) => [g.group, aggregate(fetched[i] ?? [], g.group)]));
   const tops = new Map<string, RankedPlayer[]>(specs.map((s) => [s.id, topPlayers(byGroup.get(s.group) ?? [], s, games)]));
   const ids = [...new Set([...tops.values()].flatMap((t) => t.map((r) => r.player.id)))].sort((a, b) => a - b);
-  const names = await getNames(ids.join(",")).catch(() => null);
+  const [names, player] = await Promise.all([getNames(ids.join(",")).catch(() => null), getPlayerPaths()]);
   if (!names) return <p className="lunavail">{say("load.failed")}</p>;
 
   const path = leadersPath(lg, year);
   const wanted = param(sp.stat);
   const chosen = specs.find((s) => s.id === wanted) ?? specs[0];
+  const pathOf = (r: RankedPlayer) => (names.has(r.player.id) ? player(r.player.id, names.get(r.player.id)!, lg) : `/players/${r.player.id}`);
   const nameOf = (r: RankedPlayer) => names.get(r.player.id) ?? say("leaders.player.fallback", { id: r.player.id });
   const stat = (s: PlayerSpec) => say(s.col.title as PhraseKey);
   const show = (s: PlayerSpec, v: number) => showStat(s.col.kind, v, fmt);
@@ -120,7 +122,7 @@ export async function PlayerLeaders({ lg, year, teams, sp, brands, abbrs }: {
     const workload = (p: PlayerSeason) => p.stats.gp ?? p.stats.g ?? 0;
     const cols: ColumnSpec<RankedPlayer>[] = [
       { key: "rk", label: say("leaders.col.rank"), num: true, cls: "rk", get: (r) => r.rank },
-      { key: "player", label: say("leaders.col.player"), cls: "team", get: (r) => nameOf(r), cell: (r) => <Link href={`/players/${r.player.id}`} prefetch={false}>{nameOf(r)}</Link> },
+      { key: "player", label: say("leaders.col.player"), cls: "team", get: (r) => nameOf(r), cell: (r) => <Link href={pathOf(r)} prefetch={false}>{nameOf(r)}</Link> },
       {
         key: "team", label: say("col.team"), cls: "team", get: (r) => clubName(club(r).f),
         cell: (r) => (
@@ -150,7 +152,7 @@ export async function PlayerLeaders({ lg, year, teams, sp, brands, abbrs }: {
             <span className="num">{show(chosen, lead.value)}</span>
             <span className="name">
               <TeamLogo url={logoFor(brands, club(lead).f, year)} size={36} shape="square" />
-              <Link href={`/players/${lead.player.id}`} prefetch={false}>{nameOf(lead)}</Link>
+              <Link href={pathOf(lead)} prefetch={false}>{nameOf(lead)}</Link>
               {tied > 1 ? <span className="dim">{` +${tied - 1}`}</span> : null}
             </span>
             <span className="sub">

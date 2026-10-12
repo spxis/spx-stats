@@ -2,20 +2,21 @@ import Link from "next/link";
 import { SortTable } from "@/components/SortTable";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { getTeamAwards } from "@/lib/people";
+import { getPlayerPaths } from "@/lib/playerLinks";
 import { seasonLabel } from "@/lib/leagues";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
 
 /** The awards a franchise won and its players won while on it, newest first; nothing at all when there are none. */
 export async function TeamAwards({ lg, f }: { lg: string; f: number }) {
-  const list = await getTeamAwards(lg, f);
+  const [list, player] = await Promise.all([getTeamAwards(lg, f), getPlayerPaths()]);
   if (!list?.length) return null;
   const { say, plural } = await currentSpeaker();
   const badge = (kind: string) => (kind === "person_award" ? say("awards.badgePlayer") : say("awards.badgeTeam"));
   const t = tableOf(list, [
     { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (r) => r.year, cell: (r) => <Link href={seasonPath(lg, r.year)} prefetch={false}>{seasonLabel(lg, r.year)}</Link> },
     { key: "award", label: say("col.award"), get: (r) => r.award },
-    { key: "winner", label: say("col.wonBy"), cls: "team", get: (r) => r.winner, cell: (r) => (r.person_id != null ? <Link href={`/players/${r.person_id}`} prefetch={false}>{r.winner}</Link> : r.winner) },
+    { key: "winner", label: say("col.wonBy"), cls: "team", get: (r) => r.winner, cell: (r) => (r.person_id != null ? <Link href={player(r.person_id, r.winner ?? "", lg)} prefetch={false}>{r.winner}</Link> : r.winner) },
     { key: "kind", label: "", get: (r) => badge(r.kind), cell: (r) => <span className="badge">{badge(r.kind)}</span> },
   ], (r, i) => `${r.award_code}|${r.year}|${i}`);
   return (

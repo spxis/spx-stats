@@ -4,6 +4,7 @@ import type { LeagueAwardRow } from "@/lib/api/people";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { seasonLabel } from "@/lib/leagues";
 import { getLeagueAwards } from "@/lib/people";
+import { getPlayerPaths } from "@/lib/playerLinks";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { seasonPath } from "@/lib/slug";
@@ -15,7 +16,7 @@ const MANY = 4;
 
 /** Every award by season: a row a season, a column an award, a cell its winners (or how many, where there are many). */
 export const LeagueAwards = guard(async function LeagueAwards({ lg }: { lg: string }) {
-  const [list, paths] = await Promise.all([getLeagueAwards(lg), getPaths()]);
+  const [list, paths, player] = await Promise.all([getLeagueAwards(lg), getPaths(), getPlayerPaths()]);
   if (!list.length) return null;
   const { say, plural } = await currentSpeaker();
   const cols = new Map<string, { code: string; name: string; kind: string; n: number }>();
@@ -38,7 +39,7 @@ export const LeagueAwards = guard(async function LeagueAwards({ lg }: { lg: stri
         if (w.length > MANY) return <Link href={seasonPath(lg, s.year)} prefetch={false} title={say("awards.openSeason")}>{plural("count.winners", w.length)}</Link>;
         return w.map((x, i) => (
           <div key={i}>
-            {x.person_id != null ? <Link href={`/players/${x.person_id}`} prefetch={false}>{x.winner}</Link>
+            {x.person_id != null ? <Link href={player(x.person_id, x.winner ?? "", lg)} prefetch={false}>{x.winner}</Link>
               : x.franchise_id != null ? <Link href={paths.team(lg, x.franchise_id)} prefetch={false}>{x.winner}</Link> : x.winner}
           </div>
         ));
