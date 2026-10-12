@@ -179,17 +179,25 @@
   .seasonlist a { font: 500 13px/1 var(--mono); padding: 6px 7px; background: var(--panel); border: 1px solid var(--rule); text-decoration: none; }
   .seasonlist a.full { border-color: var(--accent); }
 
-  .foot { max-width: 1180px; margin-inline: auto; border-top: 2px solid var(--ink); padding-block: 18px 32px; display: flex; flex-direction: column; gap: 6px; color: var(--muted); font-size: 14px; }
+  .foot { max-width: 1180px; margin-inline: auto; border-top: 2px solid var(--ink); padding-block: 14px 24px; display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 14px; }
+  .foot p { margin: 0; }
   .foot .retro { color: var(--ink); }
-  .foot-cols { display: flex; flex-wrap: wrap; gap: 14px 40px; margin-bottom: 8px; }
-  .foot-col { display: flex; flex-direction: column; gap: 2px; }
+  .foot-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-bottom: 6px; }
+  .foot-col { display: flex; flex-direction: column; gap: 0; min-width: 0; }
   .foot-col b { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--ink); }
+  .foot-fine { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 32px; }
+  .foot-base { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 24px; }
+  .foot-base .langpick { margin-top: 0; }
+  @media (min-width: 760px) {
+    .foot-cols { grid-template-columns: 1fr 1fr 1.8fr .8fr; gap: 8px 32px; }
+  }
   .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin-top: 12px; }
   .pager a { padding-block: 8px; }
   td.nowrap { white-space: nowrap; }
   .foot-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
   .foot-links a { padding-block: 6px; }
-  .foot .ver { font: 400 13px/1.4 var(--mono); margin: 4px 0 0; }
+  @media (min-width: 760px) { .foot-links a { padding-block: 3px; } }
+  .foot .ver { font: 400 13px/1.4 var(--mono); }
   .langpick { margin-top: 6px; font-size: 15px; }
   .langpick button { font: inherit; color: var(--accent); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
   .langpick button:disabled { opacity: .6; cursor: default; }

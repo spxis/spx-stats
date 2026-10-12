@@ -67,15 +67,19 @@ export async function SiteFooter() {
           </div>
         </nav>
       </div>
-      <p>{say("footer.archive")}</p>
-      <p className="retro">
-        <Rich text={say("footer.retro")} parts={{ link: <a href="https://www.retrosheet.org">www.retrosheet.org</a> }} />
-      </p>
-      <p>
-        <Rich text={say("footer.credits")} parts={{ link: <Link href="/terms">{say("terms.title")}</Link> }} />
-      </p>
-      {user ? null : <LanguagePicker />}
-      <p className="ver">{say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}</p>
+      <div className="foot-fine">
+        <p>{say("footer.archive")}</p>
+        <p className="retro">
+          <Rich text={say("footer.retro")} parts={{ link: <a href="https://www.retrosheet.org">www.retrosheet.org</a> }} />
+        </p>
+        <p>
+          <Rich text={say("footer.credits")} parts={{ link: <Link href="/terms">{say("terms.title")}</Link> }} />
+        </p>
+      </div>
+      <div className="foot-base">
+        {user ? <span /> : <LanguagePicker />}
+        <p className="ver">{say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}</p>
+      </div>
     </footer>
   );
 }
