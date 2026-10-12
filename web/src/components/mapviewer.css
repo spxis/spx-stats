@@ -14,6 +14,7 @@
 .teammap.viewer a { outline: none; }
 .teammap.viewer a:focus-visible .pin { stroke: var(--ink); stroke-width: 3px; }
 .teammap.viewer a[href] { cursor: pointer; }
+.teammap.viewer .pinlogo { pointer-events: none; }
 .pinlabels { pointer-events: none; }
 .teammap.viewer .pinlabels .pinab { pointer-events: auto; cursor: pointer; }
 .mapzoom { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; flex-direction: column; align-items: stretch; border: 1px solid var(--rule); background: var(--panel); }

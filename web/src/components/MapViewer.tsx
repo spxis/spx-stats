@@ -32,7 +32,7 @@ interface Scene {
   placed: Placed[];
   base: MapBox;
   bounds: MapBox;
-  dots: { t: Placed; c: SVGCircleElement; hit: SVGCircleElement }[];
+  dots: { t: Placed; c: SVGCircleElement; hit: SVGCircleElement; img?: SVGImageElement }[];
   /** A ring drawn over the dots at the chosen one, so a dot hidden under its neighbours still shows. */
   halo: SVGCircleElement;
 }
@@ -70,6 +70,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
   const [div, setDiv] = useState("");
   const [mode, setMode] = useState<"country" | "state">("country");
   const [cc, setCc] = useState<RegionCountry>("US");
+  const [logos, setLogos] = useState(false);
+  const logosOn = useRef(false);
   const [placedCount, setPlacedCount] = useState<number | null>(null);
   const pick = useRef({ selected, onPick, zoomToSelected });
   useEffect(() => { pick.current = { selected, onPick, zoomToSelected }; });
@@ -123,8 +125,17 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         hit.setAttribute("cx", String(t.p[0])); hit.setAttribute("cy", String(t.p[1]));
         const c = document.createElementNS(NS, "circle"); c.setAttribute("class", t.me ? "pin me" : "pin");
         c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1]));
-        a.append(hit, c); g.append(a);
-        return { t, c, hit };
+        a.append(hit, c);
+        let img: SVGImageElement | undefined;
+        if (t.logo) {
+          img = document.createElementNS(NS, "image");
+          img.setAttribute("href", t.logo); img.setAttribute("class", "pinlogo");
+          img.setAttribute("preserveAspectRatio", "xMidYMid meet"); img.setAttribute("referrerpolicy", "no-referrer");
+          img.addEventListener("error", () => { img!.dataset.failed = "1"; apply(); });
+          a.append(img);
+        }
+        g.append(a);
+        return { t, c, hit, img };
       });
       const halo = document.createElementNS(NS, "circle"); halo.setAttribute("class", "pin me selhalo");
       if (sel != null) svg.append(g, halo, labels); else svg.append(g, labels);
@@ -159,11 +170,22 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     const px = s.host.clientWidth || 600;
     const r = (box.width * Math.max(4.5, px / 140)) / px;
     const hitPx = window.matchMedia("(pointer: coarse)").matches ? 20 : 13;
-    for (const d of s.dots) { d.c.setAttribute("r", String(d.t.me ? r * 1.5 : r)); d.hit.setAttribute("r", String((box.width * hitPx) / px)); }
+    const asLogo = (d: Scene["dots"][number]) => logosOn.current && !!d.img && !d.img.dataset.failed;
+    for (const d of s.dots) {
+      d.c.setAttribute("r", String(d.t.me ? r * 1.5 : r)); d.hit.setAttribute("r", String((box.width * hitPx) / px));
+      if (d.img) {
+        const size = r * (d.t.me ? 6 : 4.5);
+        d.img.setAttribute("x", String(d.t.p[0] - size / 2)); d.img.setAttribute("y", String(d.t.p[1] - size / 2));
+        d.img.setAttribute("width", String(size)); d.img.setAttribute("height", String(size));
+      }
+      const logo = asLogo(d);
+      d.c.style.display = logo ? "none" : ""; if (d.img) d.img.style.display = logo ? "" : "none";
+    }
     const me = s.dots.find((d) => d.t.me);
-    if (me && pick.current.selected != null) { s.halo.setAttribute("cx", String(me.t.p[0])); s.halo.setAttribute("cy", String(me.t.p[1])); s.halo.setAttribute("r", String(r * 1.5)); }
+    const lr = me && asLogo(me) ? r * 3.3 : r * 1.5;
+    if (me && pick.current.selected != null) { s.halo.setAttribute("cx", String(me.t.p[0])); s.halo.setAttribute("cy", String(me.t.p[1])); s.halo.setAttribute("r", String(lr)); }
     s.labels.replaceChildren();
-    abbreviationLabels(s.labels, s.placed, r, box);
+    abbreviationLabels(s.labels, s.placed, logosOn.current && s.dots.some(asLogo) ? r * 2.6 : r, box);
     s.host.style.touchAction = view.current.z > 1 ? "none" : "pan-y pinch-zoom";
     s.host.dataset.zoomed = view.current.z > 1 ? "1" : "0";
   }
@@ -316,6 +338,12 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     tip.style.top = `${py}px`;
   }
 
+  useEffect(() => {
+    logosOn.current = logos;
+    apply();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- apply reads the refs
+  }, [logos]);
+  const canLogo = useMemo(() => pins.some((p) => p.logo), [pins]);
   const confChange = (c: string) => { setConf(c); setDiv(""); };
   const countryName = (c: RegionCountry) => say(COUNTRY_KEY[c]);
   const filtered = !!(conf || div);
@@ -333,6 +361,11 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         {stateView && ccs.length > 1 ? (
           <div className="seg" role="group" aria-label={say("map.pickCountry")}>
             {ccs.map((c) => <button key={c} type="button" aria-pressed={c === country} onClick={() => setCc(c)}>{countryName(c)}</button>)}
+          </div>
+        ) : null}
+        {canLogo ? (
+          <div className="seg" role="group" aria-label={say("map.logos")}>
+            <button type="button" aria-pressed={logos} onClick={() => setLogos(!logos)}>{say("map.logos")}</button>
           </div>
         ) : null}
         {confs.length > 1 ? (

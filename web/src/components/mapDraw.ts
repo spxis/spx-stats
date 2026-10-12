@@ -27,6 +27,8 @@ export interface Pin {
   /** Conference and division as their short names, for the filters. */
   conf?: string | null;
   div?: string | null;
+  /** The club's logo for that season, shown in place of the dot when asked. */
+  logo?: string | null;
 }
 
 /** The words a dot says: abbreviation, name, venue (or years) and place, as in its label and its tooltip. */

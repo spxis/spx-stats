@@ -2,7 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
-import type { BrandMap } from "./brand";
+import { logoFor, type BrandMap } from "./brand";
 import { countryAt } from "./country";
 import { abbrFor, type AbbrMap } from "./abbr";
 import type { AlignmentRow } from "./alignment";
@@ -68,7 +68,7 @@ export function clubPins(o: {
     return [{
       f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(o.abbrs, c.franchise_id, o.year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue,
       place: vp?.place, wiki: vp?.wiki, slug: o.slug?.(c.franchise_id), href: o.href(c.franchise_id), me: c.franchise_id === o.me, cc: countryAt(b.latitude, b.longitude),
-      conf: al?.conference_short ?? al?.conference, div: al?.division_short ?? al?.division,
+      conf: al?.conference_short ?? al?.conference, div: al?.division_short ?? al?.division, logo: logoFor(o.brands, c.franchise_id, o.year),
     }];
   });
 }
