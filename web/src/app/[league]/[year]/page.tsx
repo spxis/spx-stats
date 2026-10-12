@@ -81,6 +81,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, d.standings, complete);
   const holders = titleHolders(summary.seasons, lg);
   const defending = holders.byYear.get(y - 1)?.champion_franchise;
+  const winner = complete ? holders.byYear.get(y)?.champion_franchise : null;
   const streak = defending != null ? titleStreak(holders.byYear, defending, y - 1) : 0;
   const selection = parseSelection(sp);
 
@@ -122,6 +123,9 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         <>
           <TeamLogo url={logoFor(brands, r.franchise_id, y)} />
           <Link href={played.has(r.team_id) ? paths.teamSeason(lg, r.franchise_id, y) : paths.team(lg, r.franchise_id)} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, r.franchise_id, y, r.team)}</abbr></Link>
+          {winner != null && r.franchise_id === winner ? (
+            <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, y) })}>{say("season.winner")}</span>
+          ) : null}
           {defending != null && r.franchise_id === defending ? (
             <span className="defending" title={say("season.wonTitle", { season: seasonLabel(lg, y - 1) })}>{streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}</span>
           ) : null}
