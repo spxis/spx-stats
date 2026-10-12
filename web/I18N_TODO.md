@@ -57,3 +57,5 @@ so a very old browser may spell an abbreviation differently from the server.
 - **Current season link.** FR "Voir la saison en cours", JA "現在のシーズンを見る".
 
 - **Home venues.** FR "Enceintes à domicile" / "Enceinte" / "Lieu" and "Domicile : {venue}"; JA "本拠地" (home ground), "会場" (venue), "所在地" (location). The API has no city field, so the location column shows the country and the venue's coordinates.
+
+- **Team and venue maps.** FR "État / province", "Conférence", "Enceintes historiques"; JA "州・省" (state / province), "地区" (division), "過去の本拠地" (former home grounds). The zoom hint in both is a best guess.
