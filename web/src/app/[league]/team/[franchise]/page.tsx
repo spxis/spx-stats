@@ -10,6 +10,7 @@ import { COUNTRY_KEY } from "@/components/countryKey";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
+import { VenueMap } from "@/components/VenueMap";
 import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
@@ -29,6 +30,7 @@ import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths, teamOf } from "@/lib/teamSlugs";
+import { getVenueTeams } from "@/lib/venueMap";
 import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
 
@@ -90,8 +92,9 @@ function pins(paths: TeamPaths, lg: string, abbrs: AbbrMap, clubs: { franchise_i
   });
 }
 
-export default async function TeamPage({ params }: PageProps<"/[league]/team/[franchise]">) {
+export default async function TeamPage({ params, searchParams }: PageProps<"/[league]/team/[franchise]">) {
   const { league: lg, franchise } = await params;
+  const sp = await searchParams;
   if (!isLeague(lg)) notFound();
   const at = await teamOf(lg, franchise);
   if (!at) notFound();
@@ -115,12 +118,16 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   const lastYear = rows.length ? Math.max(...rows.map((r) => r.year)) : null;
   const me = lastYear != null ? placeFor(brands, f, lastYear) : null;
   let map: React.ReactNode = null;
+  let leaguePins: Pin[] | null = null;
+  let clubCount = 0;
   if (lastYear != null && me && me.latitude != null && me.longitude != null) {
     const [clubs, places] = await Promise.all([getClubs(lg, lastYear), getSeasonAlignment(lg, lastYear)]);
+    leaguePins = pins(paths, lg, abbrs, clubs, brands, lastYear, f, places);
+    clubCount = clubs.length;
     map = (
       <TeamMapCorner
         me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }}
-        others={pins(paths, lg, abbrs, clubs, brands, lastYear, f, places)} clubCount={clubs.length}
+        others={leaguePins} clubCount={clubs.length}
         seasonLabel={seasonLabel(lg, lastYear)} leagueShort={LG[lg]} name={now}
       />
     );
@@ -192,6 +199,8 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
       },
     },
   ], (v, i) => `${i}|${v.home_venue}`);
+  const venueTeams = venues.length ? await getVenueTeams(lg, brands, paths) : [];
+  const spOne = (k: string) => { const v = sp[k]; return Array.isArray(v) ? v[0] : v; };
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
   return (
@@ -251,6 +260,12 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
       {venues.length ? (
         <section className="section">
           <h2>{say("team.venues")}</h2>
+          {venueTeams.length ? (
+            <VenueMap
+              league={leaguePins} teams={venueTeams} slug={paths.slug(lg, f)} leagueShort={LG[lg]} seasonLabel={lastYear != null ? seasonLabel(lg, lastYear) : ""}
+              clubCount={clubCount} tab={spOne("map") === "history" ? "history" : "league"} team={spOne("team") ?? paths.slug(lg, f)}
+            />
+          ) : null}
           <SortTable {...venueTable} param="sort_venues" />
         </section>
       ) : null}

@@ -521,6 +521,13 @@ export const PHRASES = {
   "map.zoomReset": "Show the whole map",
   "map.noneMatch": "No teams match this filter.",
   "map.hint": "Zoom with the + and − buttons, a pinch, or Ctrl or ⌘ and scroll; drag to move once zoomed.",
+  "venues.tabs": "Venue map",
+  "venues.tabLeague": "League venues",
+  "venues.tabHistory": "Historic venues",
+  "venues.team": "Team",
+  "venues.mapTitle": "Home venues, {league}",
+  "venues.leagueNote": "{n} {league} home venues, {season}. Press a dot to open that team. Map: Chizu, from Natural Earth.",
+  "venues.historyNote": "{n} home venues of this team, with the years used. Map: Chizu, from Natural Earth.",
 
   // sources, data quality, logos
   "sources.title": "Sources",

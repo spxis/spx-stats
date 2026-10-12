@@ -20,6 +20,7 @@
 .mapzoom button:disabled { color: var(--muted); opacity: .45; cursor: default; }
 .mapzoom span { text-align: center; font: 600 12px/1 var(--mono); color: var(--muted); padding: 6px 0; }
 
+.venuemap { display: flex; flex-direction: column; gap: 10px; }
 .mapviewer .note { margin: 0; }
 @media (max-width: 640px) {
   .mapzoom { top: 6px; right: 6px; }

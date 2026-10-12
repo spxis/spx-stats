@@ -485,6 +485,13 @@ export const FR: Dictionary = {
   "map.zoomReset": "Voir toute la carte",
   "map.noneMatch": "Aucune équipe ne correspond à ce filtre.",
   "map.hint": "Zoomez avec les boutons + et −, un pincement, ou Ctrl ou ⌘ et la molette ; glissez pour déplacer la carte une fois zoomée.",
+  "venues.tabs": "Carte des enceintes",
+  "venues.tabLeague": "Enceintes de la ligue",
+  "venues.tabHistory": "Enceintes historiques",
+  "venues.team": "Équipe",
+  "venues.mapTitle": "Enceintes à domicile, {league}",
+  "venues.leagueNote": "{n} enceintes de la {league}, {season}. Appuyez sur un point pour ouvrir cette équipe. Carte : Chizu, d’après Natural Earth.",
+  "venues.historyNote": "{n} enceintes de cette équipe, avec les années d’utilisation. Carte : Chizu, d’après Natural Earth.",
 
   // sources, data quality, logos
   "sources.title": "Sources",

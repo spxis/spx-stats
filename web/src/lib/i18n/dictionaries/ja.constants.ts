@@ -485,6 +485,13 @@ export const JA: Dictionary = {
   "map.zoomReset": "地図全体を表示",
   "map.noneMatch": "この条件に合うチームはありません。",
   "map.hint": "＋と−のボタン、ピンチ、Ctrl（または⌘）とスクロールで拡大縮小。拡大後はドラッグで動かせます。",
+  "venues.tabs": "本拠地の地図",
+  "venues.tabLeague": "リーグの本拠地",
+  "venues.tabHistory": "過去の本拠地",
+  "venues.team": "チーム",
+  "venues.mapTitle": "{league}の本拠地",
+  "venues.leagueNote": "{season}の{league}の本拠地{n}か所。点を押すとそのチームが開きます。地図：Chizu、Natural Earthより。",
+  "venues.historyNote": "このチームの本拠地{n}か所と使用年。地図：Chizu、Natural Earthより。",
 
   // sources, data quality, logos
   "sources.title": "情報源",
