@@ -37,13 +37,13 @@ interface Scene {
   halo: SVGCircleElement;
 }
 /** A window that holds the points with room to spare, never past the map's edge; short enough to see on a phone and on a laptop. */
-function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, minShare: number): MapBox {
+function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, hostHeight: number, minShare: number): MapBox {
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   const minW = bounds.width * minShare;
   let w = Math.min(Math.max(x1 - x0, minW) * 1.25, bounds.width), h = Math.min(Math.max(y1 - y0, minW / 1.7) * 1.25, bounds.height);
   const natural = w / h;
-  const target = hostWidth < 560 ? Math.min(natural, 1.15) : Math.max(natural, Math.min(hostWidth / (window.innerHeight * 0.62), bounds.width / h));
+  const target = Math.max(natural, Math.min(hostWidth / Math.max(hostHeight, 1), bounds.width / h));
   if (w / h < target) w = Math.min(h * target, bounds.width); else h = Math.min(w / target, bounds.height);
   // leave the strip under the zoom buttons clear of dots
   const pad = Math.min((52 * w) / Math.max(hostWidth, 1), bounds.width - w);
@@ -104,7 +104,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       };
       const sel = pick.current.selected;
       const placed = shown.flatMap((t) => { const p = place(t); return p ? [{ ...t, p, me: sel != null ? t.f === sel : t.me }] : []; }).sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
-      const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, stateView ? 0.18 : 0.06) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
+      const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, host.clientHeight, stateView ? 0.18 : 0.06) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
       host.innerHTML = drawChizu(map, { tones: stateView ? {} : { US: "faint", CA: "faint", MX: "faint" }, language: locale === "ja" ? "ja" : "en", style: true });
       const svg = host.querySelector("svg");
       if (!svg) return;
@@ -339,7 +339,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       </div>
       {chosen ? <Selection pin={chosen} here={pathname} /> : null}
       <div className="mapstage">
-        <div ref={hostRef} className="teammap big viewer" style={{ minHeight: 200 }} />
+        <div ref={hostRef} className="teammap big viewer" />
         <div className="mapzoom" role="group" aria-label={say("map.zoom")}>
           <button type="button" aria-label={say("map.zoomIn")} disabled={zoom >= ZOOM_MAX} onClick={() => zoomAt(Math.floor(view.current.z + 0.001) + 1)}>+</button>
           <span aria-live="polite">{zoom}×</span>

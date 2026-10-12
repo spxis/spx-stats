@@ -4,6 +4,8 @@
 .mapbar select { flex: 0 1 auto; max-width: 100%; }
 .mapstage { position: relative; }
 .teammap.viewer { border: 1px solid var(--rule); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.teammap.viewer { height: clamp(280px, 60vh, 600px); overflow: hidden; }
+.teammap.viewer svg { height: 100%; }
 .teammap.viewer[data-zoomed="1"] { cursor: grab; }
 .teammap.viewer[data-zoomed="1"]:active { cursor: grabbing; }
 .teammap.viewer .pin { vector-effect: non-scaling-stroke; stroke-width: 1.5px; }
@@ -37,5 +39,5 @@
 .mapcaption b { color: var(--ink); }
 .mapcaption > * + *::before { content: "·"; display: inline-block; margin-right: 10px; }
 .teammap.viewer .selhalo { pointer-events: none; }
-.mapviewer .mapcaption { margin: 0; }
+.mapviewer .mapcaption { margin: 0; min-height: 3em; align-content: flex-start; }
 .mapcaption a.ext::after { content: "\2197"; margin-left: 3px; font-size: .85em; }
