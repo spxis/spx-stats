@@ -2,6 +2,7 @@
 
 import { Fragment, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
+import { comparePath } from "@/lib/compare";
 import { pairPath } from "@/lib/h2h";
 import { parseLoc } from "@/lib/loc";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -18,13 +19,15 @@ const plain = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerC
  * (a combobox over a listbox). Choosing one keeps the other team and goes to the new pair's page: the pair is
  * addressed alphabetically, so the clubs may change sides, and ?loc= (the first club's home or road) is flipped to follow.
  */
-export function H2hPicker({ lg, clubs, a, b, names, logos }: {
+export function H2hPicker({ lg, clubs, a, b, names, logos, kind = "h2h" }: {
   lg: string;
   clubs: PickClub[];
   a: number;
   b: number;
   names: readonly [string, string];
   logos: readonly [string | null, string | null];
+  /** The page the choice goes to: the pair's head-to-head (the default) or their comparison. */
+  kind?: "h2h" | "compare";
 }) {
   const { say, fmt } = useSpeaker();
   const router = useRouter();
@@ -84,16 +87,17 @@ export function H2hPicker({ lg, clubs, a, b, names, logos }: {
   const choose = (c: PickClub) => {
     if (open == null || fixed == null) return;
     if (c.f === ids[open]) { close(true); return; }
-    const to = pairPath(paths, lg, fixed, c.f);
+    const to = (kind === "compare" ? comparePath : pairPath)(paths, lg, fixed, c.f);
     const was = new URLSearchParams(location.search);
     const q = new URLSearchParams();
     const phase = was.get("phase");
-    if (phase) q.set("phase", phase);
+    if (phase && kind === "h2h") q.set("phase", phase);
     const label = was.get("season");
     const year = label ? Number(label.slice(0, 4)) : NaN;
-    if (label && fixedClub && year >= Math.max(c.first, fixedClub.first) && year <= Math.min(c.last, fixedClub.last)) q.set("season", label);
+    if (label === "all" && kind === "compare") q.set("season", label);
+    else if (label && fixedClub && year >= Math.max(c.first, fixedClub.first) && year <= Math.min(c.last, fixedClub.last)) q.set("season", label);
     const loc = parseLoc(was.get("loc"));
-    if (loc !== "all") {
+    if (loc !== "all" && kind === "h2h") {
       // ?loc= is the first club's home or road: when the kept club changes sides, so does the meaning.
       const flips = (to.a === fixed) !== (a === fixed);
       q.set("loc", flips ? (loc === "home" ? "road" : "home") : loc);

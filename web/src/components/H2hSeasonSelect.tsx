@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
 /** The seasons in which the pair met, newest first, and "All seasons". Choosing one reloads the page with ?season= (the other choices kept). */
-export function H2hSeasonSelect({ seasons, value, anchor = "" }: { seasons: { label: string }[]; value: string; anchor?: string }) {
+export function H2hSeasonSelect({ seasons, value, anchor = "", all = "", allLabel }: { seasons: { label: string }[]; value: string; anchor?: string; all?: string; allLabel?: string }) {
   const { say } = useSpeaker();
   const router = useRouter();
   return (
@@ -17,7 +17,7 @@ export function H2hSeasonSelect({ seasons, value, anchor = "" }: { seasons: { la
       const s = q.toString();
       router.push(`${location.pathname}${s ? `?${s}` : ""}${anchor}`, { scroll: false });
     }}>
-      <option value="">{say("h2h.allSeasons")}</option>
+      <option value={all}>{allLabel ?? say("h2h.allSeasons")}</option>
       {seasons.map((s) => <option key={s.label} value={s.label}>{s.label}</option>)}
     </select>
   );

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
+import { CompareControl } from "@/components/CompareControl";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
@@ -143,6 +144,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
         </p>
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
         {mePin ? <SeasonMapThumb me={mePin} leagueShort={LG[lg]} seasonLabel={season} name={name} /> : null}
+        <CompareControl lg={lg} f={f} name={name} year={y} />
       </section>
       {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
       <Figures items={figs} />

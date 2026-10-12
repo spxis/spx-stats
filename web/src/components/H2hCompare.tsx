@@ -4,7 +4,7 @@ export interface H2hMetric { label: string; a: number | null; b: number | null; 
 
 /** The two clubs' figures as one row of paired bars, the better one in full colour (--ca and --cb come from SeriesStyle). */
 export function H2hCompareRow({ m }: { m: H2hMetric }) {
-  const top = Math.max(m.a ?? 0, m.b ?? 0) || 1;
+  const top = Math.max(m.a ?? 0, m.b ?? 0, 0) || 1;
   const better = m.a == null || m.b == null || m.a === m.b ? null : (m.a > m.b) !== !!m.low ? 0 : 1;
   const half = (i: 0 | 1, v: number | null, t: string | null | undefined) => (
     <span className={`half ${i === 0 ? "a" : "b"}${better === i ? " best" : ""}`}>
@@ -17,6 +17,20 @@ export function H2hCompareRow({ m }: { m: H2hMetric }) {
       {half(0, m.a, m.ta)}
       <span className="lab">{m.label}</span>
       {half(1, m.b, m.tb)}
+    </div>
+  );
+}
+
+/** A row of words rather than bars (a place in the table, a streak): `best` is the side to show in full ink, if either. */
+export function CompareTextRow({ label, a, b, best }: { label: string; a: string; b: string; best?: 0 | 1 | null }) {
+  const half = (i: 0 | 1, t: string) => (
+    <span className={`half ${i === 0 ? "a" : "b"}${best === i ? " best" : ""}`}><span className="val">{t}</span></span>
+  );
+  return (
+    <div className="cmprow plain">
+      {half(0, a)}
+      <span className="lab">{label}</span>
+      {half(1, b)}
     </div>
   );
 }

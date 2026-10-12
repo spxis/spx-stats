@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
+import { CompareControl } from "@/components/CompareControl";
 import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
@@ -214,6 +215,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </Link>
         ) : null}
         <p className="lede">{say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "" })}</p>
+        <CompareControl lg={lg} f={f} name={now} />
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
       {t.titles.length ? (

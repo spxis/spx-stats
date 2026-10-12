@@ -67,3 +67,16 @@ td.h2hscore .ot { margin-left: 6px; }
   .pickbtn { width: 100%; }
   .pickpop, .pickwrap.end .pickpop { width: 100%; left: 0; right: auto; }
 }
+
+/* The Compare button of a team page and its panel: quick groups, a search box and a list of links. */
+.cmpctl { align-self: flex-start; max-width: 100%; }
+.cmpbtn { min-height: 40px; padding: 6px 12px; }
+.cmppop { width: min(420px, calc(100vw - 32px)); }
+.cmppop .cmpwith { margin: 0; padding: 10px 12px 6px; font: 600 13px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.cmppop .seg { margin: 0 12px 8px; flex-wrap: wrap; align-self: flex-start; }
+.cmppop .seg button { padding: 7px 10px; font-size: 13px; }
+.cmppop li a { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; color: var(--ink); text-decoration: none; }
+.cmppop li a:hover, .cmppop li a:focus-visible { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); outline: none; }
+.cmprow.plain .val { white-space: normal; }
+.head:has(.cmpctl) { z-index: 5; }
+@media (max-width: 560px) { .cmpctl .cmppop { width: calc(100vw - 32px); } .cmpctl .cmpbtn { width: auto; } }

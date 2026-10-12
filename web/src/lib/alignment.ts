@@ -115,7 +115,7 @@ export function viewLabel(say: Say, lg: string, view: ViewId, rows: readonly Pla
 export interface Group { id: string; title: string; sub?: string }
 
 const cmp = (a: string, b: string) => a.localeCompare(b, "en");
-const byRank = (a: Ranked, b: Ranked) =>
+export const byRank = (a: Ranked, b: Ranked) =>
   (b.pts ?? -1) - (a.pts ?? -1) || (b.pct ?? -1) - (a.pct ?? -1) || (b.w ?? 0) - (a.w ?? 0) ||
   (b.pf ?? 0) - (b.pa ?? 0) - ((a.pf ?? 0) - (a.pa ?? 0)) || cmp(a.team ?? "", b.team ?? "");
 
