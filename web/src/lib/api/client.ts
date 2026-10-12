@@ -6,6 +6,12 @@ import { API_KEY, PAGE_SIZE, REST_URL, REVALIDATE } from "./config";
 /** A failed read of the archive (a busy or slow database, a bad answer). Pages show the inline "Couldn't load" note for it, not a 404 or 500. */
 export class ApiError extends Error {
   name = "ApiError";
+  /** The HTTP status the database answered with, when it answered. */
+  status?: number;
+  constructor(message: string, status?: number) {
+    super(message);
+    this.status = status;
+  }
 }
 
 /** Seconds a request may take before it is given up on and tried again. */
@@ -34,7 +40,7 @@ const fetchPage = cache(async (view: string, query: string, from: number, size: 
       last = e instanceof Error ? e.message : "network error";
     }
   }
-  throw new ApiError(`${view}: ${last}`);
+  throw new ApiError(`${view}: ${last}`, Number(last) || undefined);
 });
 
 async function get(view: string, query: string, from: number, size = PAGE_SIZE, count = false): Promise<Response> {
@@ -67,6 +73,17 @@ export async function rows<S extends z.ZodType>(view: string, query: string, sch
     }
     if (part.length < PAGE_SIZE) return out;
   }
+}
+
+/** `size` rows of a view from row `from`, with no count (for a page that only needs to know whether there is more). */
+export async function rowsSlice<S extends z.ZodType>(view: string, query: string, from: number, size: number, schema: S): Promise<z.infer<S>[]> {
+  const part = (await (await get(view, query, from, size)).json()) as unknown;
+  if (!Array.isArray(part)) throw new ApiError(`${view}: expected a list of rows`);
+  return part.map((row) => {
+    const parsed = schema.safeParse(row);
+    if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
+    return parsed.data;
+  });
 }
 
 /**
