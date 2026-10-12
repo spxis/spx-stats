@@ -28,6 +28,7 @@ import { placeFor } from "@/lib/venue";
 import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 /** The team's season: its games (in date order, or the reverse), its standings row for the year and its brand for the year. */
 const load = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc") => {
@@ -38,7 +39,7 @@ const load = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc")
   return { abbrs, brands, raw, st, brand: brandFor(brands, f, y), logo: logoFor(brands, f, y), place: placeFor(brands, f, y), me: mine, name: st?.team || mine?.name || `Team ${f}` };
 });
 
-export async function generateMetadata({ params }: PageProps<"/[league]/[year]/team/[franchise]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/[year]/team/[franchise]">): Promise<Metadata> => {
   const { league, year, franchise } = await params;
   const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
   if (!isLeague(league) || !ys) return {};
@@ -57,9 +58,9 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/t
     path: at.path,
     locale,
   });
-}
+});
 
-export default async function TeamSeasonPage({ params, searchParams }: PageProps<"/[league]/[year]/team/[franchise]">) {
+export default guard(async function TeamSeasonPage({ params, searchParams }: PageProps<"/[league]/[year]/team/[franchise]">) {
   const { league: lg, year, franchise } = await params;
   const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
   if (!isLeague(lg) || !ys) notFound();
@@ -140,4 +141,4 @@ export default async function TeamSeasonPage({ params, searchParams }: PageProps
         initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} />
     </>
   );
-}
+});

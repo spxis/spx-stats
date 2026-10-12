@@ -470,6 +470,7 @@ export const JA: Dictionary = {
   "cal.atOpp": "、@ {opp}",
   "cal.oppFallback": "対戦相手",
   "load.failed": "今は読み込めませんでした。もう一度お試しください",
+  "load.retry": "もう一度試す",
   "cal.jump": "日を指定",
   "cal.jumpPlaceholder": "日を指定…",
   "flag.of": "国旗：{name}",

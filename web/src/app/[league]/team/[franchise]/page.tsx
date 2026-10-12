@@ -33,10 +33,11 @@ import { getPaths, teamOf } from "@/lib/teamSlugs";
 import { getVenueTeams } from "@/lib/venueMap";
 import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
 
-export async function generateMetadata({ params }: PageProps<"/[league]/team/[franchise]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/team/[franchise]">): Promise<Metadata> => {
   const { league, franchise } = await params;
   if (!isLeague(league)) return {};
   const at = await teamOf(league, franchise);
@@ -53,7 +54,7 @@ export async function generateMetadata({ params }: PageProps<"/[league]/team/[fr
     path: at.path,
     locale,
   });
-}
+});
 
 function sum(rows: StandingRow[], k: "w" | "l" | "t" | "otl" | "gp") {
   return rows.reduce((a, r) => a + (r[k] || 0), 0);
@@ -92,7 +93,7 @@ function pins(paths: TeamPaths, lg: string, abbrs: AbbrMap, clubs: { franchise_i
   });
 }
 
-export default async function TeamPage({ params, searchParams }: PageProps<"/[league]/team/[franchise]">) {
+export default guard(async function TeamPage({ params, searchParams }: PageProps<"/[league]/team/[franchise]">) {
   const { league: lg, franchise } = await params;
   const sp = await searchParams;
   if (!isLeague(lg)) notFound();
@@ -271,4 +272,4 @@ export default async function TeamPage({ params, searchParams }: PageProps<"/[le
       ) : null}
     </>
   );
-}
+});

@@ -20,12 +20,13 @@ import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 export const revalidate = 3600;
 export const dynamicParams = false;
 export const generateStaticParams = () => LEAGUE_CODES.map((league) => ({ league }));
 
-export async function generateMetadata({ params }: PageProps<"/[league]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]">): Promise<Metadata> => {
   const { league } = await params;
   const info = LEAGUES.find((l) => l.code === league);
   if (!info) return {};
@@ -39,9 +40,9 @@ export async function generateMetadata({ params }: PageProps<"/[league]">): Prom
     path: `/${league}`,
     locale,
   });
-}
+});
 
-export default async function LeaguePage({ params }: PageProps<"/[league]">) {
+export default guard(async function LeaguePage({ params }: PageProps<"/[league]">) {
   const { league: lg } = await params;
   if (!isLeague(lg)) notFound();
   const info = LEAGUES.find((l) => l.code === lg)!;
@@ -100,4 +101,4 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
       <LeagueAwards lg={lg} />
     </>
   );
-}
+});

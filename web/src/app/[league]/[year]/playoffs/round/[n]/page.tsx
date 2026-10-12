@@ -12,12 +12,13 @@ import { parseSeasonSeg, seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { sayFor } from "@/lib/seriesCopy";
 import "@/components/series.css";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Rendered per request, like the other pages that speak the reader's language; its data comes from the hour-long cache.
 
 const roundOfParam = (v: string) => (/^\d{1,2}$/.test(v) ? Number(v) : null);
 
-export async function generateMetadata({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">): Promise<Metadata> => {
   const { league, year, n } = await params;
   const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
   const r = roundOfParam(n);
@@ -35,9 +36,9 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/p
     path: roundPath(league, y, r),
     locale: sp.locale,
   });
-}
+});
 
-export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">) {
+export default guard(async function PlayoffRoundPage({ params }: PageProps<"/[league]/[year]/playoffs/round/[n]">) {
   const { league: lg, year, n } = await params;
   const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
   const r = roundOfParam(n);
@@ -89,4 +90,4 @@ export default async function PlayoffRoundPage({ params }: PageProps<"/[league]/
       ))}
     </>
   );
-}
+});

@@ -6,13 +6,14 @@ import { findFinal, parseChampionNote, pairSegment } from "@/lib/series";
 import { seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { getLeaguePlayoffTeams } from "@/lib/seriesData";
+import { guard } from "@/lib/loadGuard";
 
 /**
  * A champion's note ("Won the final 4 games to 3 against Chicago Blackhawks") with the score linked to the
  * series page and the opponent to their team-season page, wherever the playoffs hold that series. A note that
  * does not read that way, or a final the games do not hold, is drawn as plain text.
  */
-export async function ChampionNote({ lg, year, champ, note }: { lg: string; year: number; champ: number | null | undefined; note: string | null | undefined }) {
+export const ChampionNote = guard(async function ChampionNote({ lg, year, champ, note }: { lg: string; year: number; champ: number | null | undefined; note: string | null | undefined }) {
   const text = note ?? "";
   const p = parseChampionNote(text);
   if (!p || champ == null) return <>{text}</>;
@@ -30,4 +31,4 @@ export async function ChampionNote({ lg, year, champ, note }: { lg: string; year
       <Link href={paths.teamSeason(lg, found.opp, year)} prefetch={false}>{p.opp}</Link>
     </>
   );
-}
+}, ({ note }) => <>{note ?? ""}</>);

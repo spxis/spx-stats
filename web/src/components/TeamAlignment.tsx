@@ -6,9 +6,10 @@ import { getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { seasonLabel } from "@/lib/leagues";
 import "./alignment.css";
+import { guard } from "@/lib/loadGuard";
 
 /** A club's conference and division over the years, as unbroken runs of seasons. Draws nothing when none is recorded. */
-export async function TeamAlignment({ lg, f }: { lg: string; f: number }) {
+export const TeamAlignment = guard(async function TeamAlignment({ lg, f }: { lg: string; f: number }) {
   const [rows, summary] = await Promise.all([getTeamAlignment(lg, f), getSummary()]);
   if (!rows.length) return null;
   const { say, plural } = await currentSpeaker();
@@ -42,4 +43,4 @@ export async function TeamAlignment({ lg, f }: { lg: string; f: number }) {
       </div>
     </section>
   );
-}
+});

@@ -8,12 +8,13 @@ import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
+import { guard } from "@/lib/loadGuard";
 
 interface Season { year: number; by: Map<string, LeagueAwardRow[]> }
 const MANY = 4;
 
 /** Every award by season: a row a season, a column an award, a cell its winners (or how many, where there are many). */
-export async function LeagueAwards({ lg }: { lg: string }) {
+export const LeagueAwards = guard(async function LeagueAwards({ lg }: { lg: string }) {
   const [list, paths] = await Promise.all([getLeagueAwards(lg), getPaths()]);
   if (!list.length) return null;
   const { say, plural } = await currentSpeaker();
@@ -51,4 +52,4 @@ export async function LeagueAwards({ lg }: { lg: string }) {
       <div className="tablebox awardsgrid"><SortTable {...t} param="sort_awards" def="season.desc" /></div>
     </section>
   );
-}
+});

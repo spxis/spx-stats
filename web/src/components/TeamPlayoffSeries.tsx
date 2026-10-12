@@ -6,9 +6,10 @@ import { getPaths } from "@/lib/teamSlugs";
 import { getPlayoffGames } from "@/lib/seriesData";
 import { SeriesCard } from "./SeasonPlayoffs";
 import "./series.css";
+import { guard } from "@/lib/loadGuard";
 
 /** The playoff series one franchise played in a season, each linking to its series page. Draws nothing when it played none. */
-export async function TeamPlayoffSeries({ lg, year, f }: { lg: string; year: number; f: number }) {
+export const TeamPlayoffSeries = guard(async function TeamPlayoffSeries({ lg, year, f }: { lg: string; year: number; f: number }) {
   const [games, brands, sp, paths] = await Promise.all([getPlayoffGames(lg, year), getBrands(), currentSpeaker(), getPaths()]);
   const say = sayFor(sp);
   const all = deriveSeries(lg, year, games);
@@ -28,4 +29,4 @@ export async function TeamPlayoffSeries({ lg, year, f }: { lg: string; year: num
       </div>
     </section>
   );
-}
+});

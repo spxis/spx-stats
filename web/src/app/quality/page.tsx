@@ -5,6 +5,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
+import { guard } from "@/lib/loadGuard";
 
 export const revalidate = 3600;
 
@@ -13,7 +14,7 @@ export async function generateMetadata() {
   return pageMeta({ title: say("quality.title"), description: say("quality.lede"), path: "/quality", locale });
 }
 
-export default async function QualityPage() {
+export default guard(async function QualityPage() {
   const { say, fmt } = await currentSpeaker();
   const q = await getQuality();
   const total = (status: string) => q.checks.filter((c) => c.status === status).reduce((a, c) => a + c.n, 0);
@@ -47,4 +48,4 @@ export default async function QualityPage() {
       </section>
     </>
   );
-}
+});

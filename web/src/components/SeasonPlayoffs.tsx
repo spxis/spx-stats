@@ -12,6 +12,7 @@ import { TeamLogo } from "./TeamLogo";
 import { queryHref } from "./ViewTabs";
 import "./alignment.css";
 import "./series.css";
+import { guard } from "@/lib/loadGuard";
 
 /** One series as a card: both teams, the winner in bold, the score; the card opens the series page. */
 export function SeriesCard({ paths, lg, s, brands, year, say }: { paths: TeamPaths; lg: string; s: Series; brands: Awaited<ReturnType<typeof getBrands>>; year: number; say: Say }) {
@@ -56,7 +57,7 @@ function BracketBox({ paths, lg, year, s, brands, say, pos, top, dim }: { paths:
 }
 
 /** The playoff bracket of a season: one half down each side (the conferences where the alignment data splits them), the final in the middle. Draws nothing when there are no playoff games. */
-export async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
+export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
   const say = sayFor(sp);
   const [{ series, names, bracket, brands, align }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
@@ -157,4 +158,4 @@ export async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: s
       ) : null}
     </section>
   );
-}
+});

@@ -10,6 +10,7 @@ import { capFirst } from "@/lib/people-format";
 import { getPlayerPage, PLAYER_SORTS, searchWords } from "@/lib/playerIndex";
 import { formatSort, parseSort, tableOf } from "@/lib/sort";
 import "@/components/alignment.css";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn per request (the language cookie and the filters); each page of players the database sends is kept for an hour.
 
@@ -18,14 +19,14 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 const clean = (v: string) => searchWords(v).join(" ");
 const pageOf = (v: string) => (/^\d{1,4}$/.test(v) && Number(v) > 0 ? Number(v) : 1);
 
-export async function generateMetadata({ searchParams }: PageProps<"/players">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/players">): Promise<Metadata> => {
   const sp = await searchParams;
   const { say, locale } = await currentSpeaker();
   const plain = !clean(first(sp.q)) && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort);
   return { ...pageMeta({ title: say("players.title"), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
-}
+});
 
-export default async function PlayersPage({ searchParams }: PageProps<"/players">) {
+export default guard(async function PlayersPage({ searchParams }: PageProps<"/players">) {
   const sp = await searchParams;
   const { say, plural, fmt } = await currentSpeaker();
   const league = isLeague(first(sp.league)) ? first(sp.league) : "";
@@ -84,4 +85,4 @@ export default async function PlayersPage({ searchParams }: PageProps<"/players"
       </section>
     </>
   );
-}
+});

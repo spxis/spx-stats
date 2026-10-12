@@ -34,6 +34,7 @@ import { seriesLooks } from "@/lib/seriesLooks";
 import { withQuery } from "@/lib/slug";
 import { parseSort, tableOf } from "@/lib/sort";
 import { getLeagueClubs, getPaths, h2hOf } from "@/lib/teamSlugs";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn per request (the language cookie); the games behind it come from the hour-long cache (lib/api/client.ts).
 
@@ -49,7 +50,7 @@ async function load(lg: string, a: number, b: number) {
   return { history, brands, abbrs, names: [ta?.names.at(-1)?.name ?? null, tb?.names.at(-1)?.name ?? null] as const };
 }
 
-export async function generateMetadata({ params }: PageProps<"/[league]/head-to-head/[pair]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/head-to-head/[pair]">): Promise<Metadata> => {
   const { league, pair } = await params;
   if (!isLeague(league)) return {};
   const at = await h2hOf(league, pair);
@@ -69,9 +70,9 @@ export async function generateMetadata({ params }: PageProps<"/[league]/head-to-
     path: at.path,
     locale,
   });
-}
+});
 
-export default async function HeadToHeadPage({ params, searchParams }: PageProps<"/[league]/head-to-head/[pair]">) {
+export default guard(async function HeadToHeadPage({ params, searchParams }: PageProps<"/[league]/head-to-head/[pair]">) {
   const { league: lg, pair } = await params;
   if (!isLeague(lg)) notFound();
   const at = await h2hOf(lg, pair);
@@ -417,4 +418,4 @@ export default async function HeadToHeadPage({ params, searchParams }: PageProps
       </section>
     </>
   );
-}
+});

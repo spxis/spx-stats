@@ -30,9 +30,10 @@ import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
 import { scoresPath } from "@/lib/scores";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 
-export async function generateMetadata({ params }: PageProps<"/[league]/[year]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/[year]">): Promise<Metadata> => {
   const { league, year } = await params;
   const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
   if (!isLeague(league) || !ys) return {};
@@ -45,9 +46,9 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]">
   if (s.champion) parts.push(say("tip.champion", { team: s.champion }));
   if (s.games) parts.push(say("season.metaGames", { games: plural("count.regularGames", s.games), finals: fmt(s.finals) }));
   return pageMeta({ title: say("season.metaTitle", { label: s.label, league: LG[league] }), description: `${parts.join(say("sentence.sep"))}${say("sentence.end")}`, path: seasonPath(league, y), locale });
-}
+});
 
-export default async function SeasonPage({ params, searchParams }: PageProps<"/[league]/[year]">) {
+export default guard(async function SeasonPage({ params, searchParams }: PageProps<"/[league]/[year]">) {
   const { league: lg, year } = await params;
   const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
   if (!isLeague(lg) || !ys) notFound();
@@ -218,4 +219,4 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
       ) : null}
     </>
   );
-}
+});

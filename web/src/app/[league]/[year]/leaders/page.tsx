@@ -18,8 +18,9 @@ import { leagueSat } from "@/lib/noSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import "@/components/alignment.css";
 import "@/components/leaders.css";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
-export async function generateMetadata({ params }: PageProps<"/[league]/[year]/leaders">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/[year]/leaders">): Promise<Metadata> => {
   const { league, year } = await params;
   const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
   if (!isLeague(league) || !ys) return {};
@@ -33,9 +34,9 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/l
     path: leadersPath(league, ys.y),
     locale,
   });
-}
+});
 
-export default async function LeadersPage({ params, searchParams }: PageProps<"/[league]/[year]/leaders">) {
+export default guard(async function LeadersPage({ params, searchParams }: PageProps<"/[league]/[year]/leaders">) {
   const { league: lg, year } = await params;
   const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
   if (!isLeague(lg) || !ys) notFound();
@@ -113,4 +114,4 @@ export default async function LeadersPage({ params, searchParams }: PageProps<"/
       )}
     </>
   );
-}
+});

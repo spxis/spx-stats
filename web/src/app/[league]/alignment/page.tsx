@@ -14,10 +14,11 @@ import type { Speaker } from "@/lib/i18n/i18n";
 import { pageMeta } from "@/lib/meta";
 import { seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 type Say = Speaker["say"];
 
-export async function generateMetadata({ params }: PageProps<"/[league]/alignment">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/alignment">): Promise<Metadata> => {
   const { league } = await params;
   if (!isLeague(league)) return {};
   const { say, locale } = await currentSpeaker();
@@ -27,7 +28,7 @@ export async function generateMetadata({ params }: PageProps<"/[league]/alignmen
     path: `/${league}/alignment`,
     locale,
   });
-}
+});
 
 /** The conferences of one season with their divisions and clubs (a conference without divisions lists its clubs directly). */
 function season(rows: AlignmentRow[]) {
@@ -54,7 +55,7 @@ function laneLabels(say: Say, lanes: ReturnType<typeof lanesOf>) {
   });
 }
 
-export default async function AlignmentPage({ params, searchParams }: PageProps<"/[league]/alignment">) {
+export default guard(async function AlignmentPage({ params, searchParams }: PageProps<"/[league]/alignment">) {
   const { league: lg } = await params;
   if (!isLeague(lg)) notFound();
   const sp = await searchParams;
@@ -169,4 +170,4 @@ export default async function AlignmentPage({ params, searchParams }: PageProps<
       </section>
     </>
   );
-}
+});

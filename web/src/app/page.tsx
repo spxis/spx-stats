@@ -6,6 +6,7 @@ import { getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES } from "@/lib/leagues";
 import { LOCALE_OG } from "@/lib/locale";
+import { guard } from "@/lib/loadGuard";
 
 export const revalidate = 3600;
 
@@ -20,7 +21,7 @@ export async function generateMetadata() {
   };
 }
 
-export default async function Home() {
+export default guard(async function Home() {
   const { say, plural } = await currentSpeaker();
   const s = await getSummary();
   const seasons = withCoverage(s.seasons);
@@ -60,4 +61,4 @@ export default async function Home() {
       </section>
     </>
   );
-}
+});

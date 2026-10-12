@@ -31,6 +31,7 @@ import { parseSeasonSeg, seasonPath } from "@/lib/slug";
 import { recShare, tableOf } from "@/lib/sort";
 import { getPaths, pairOf } from "@/lib/teamSlugs";
 import "@/components/series.css";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Rendered per request, like the other pages that speak the reader's language; its data comes from the hour-long cache.
 
@@ -51,7 +52,7 @@ function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say, robi
   return { title: name || say("page.playoffs"), dated: name ? datedRound(lg, y, playedYear(s), name, round[i] === final, say) : say("page.playoffs"), number: round[i], rounds: names.length };
 }
 
-export async function generateMetadata({ params }: PageProps<"/[league]/[year]/series/[pair]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/[year]/series/[pair]">): Promise<Metadata> => {
   const { league, year, pair } = await params;
   const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
   if (!isLeague(league) || !ys) return {};
@@ -72,7 +73,7 @@ export async function generateMetadata({ params }: PageProps<"/[league]/[year]/s
     path: seriesPath(paths, league, y, s),
     locale: sp.locale,
   });
-}
+});
 
 const tally = (rec: StandingRow | undefined) => (rec && rec.w != null ? recordText({ w: rec.w, l: rec.l ?? 0, t: rec.t, otl: rec.otl }) : null);
 const perGame = (v: number | null | undefined, gp: number | null | undefined) => (v != null && gp ? v / gp : null);
@@ -123,7 +124,7 @@ const chartWords = (): ChartWords => ({
   by: SERIES_COPY["chart.by"], after: SERIES_COPY["chart.after"],
 });
 
-export default async function SeriesPage({ params }: PageProps<"/[league]/[year]/series/[pair]">) {
+export default guard(async function SeriesPage({ params }: PageProps<"/[league]/[year]/series/[pair]">) {
   const { league: lg, year, pair } = await params;
   const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
   if (!isLeague(lg) || !ys) notFound();
@@ -347,4 +348,4 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
       ) : null}
     </>
   );
-}
+});

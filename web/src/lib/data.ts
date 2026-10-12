@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
   seasonNoteSchema, seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
@@ -19,7 +19,7 @@ export const getSummary = cache(async (): Promise<{ seasons: SeasonSummaryRow[];
     rows("season_summary", "select=*&order=league,year", seasonSummarySchema),
     rows("totals", "select=*", totalsSchema),
   ]);
-  if (!totals[0]) throw new Error("totals: no row");
+  if (!totals[0]) throw new ApiError("totals: no row");
   return { seasons, totals: totals[0] };
 });
 

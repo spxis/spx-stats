@@ -22,12 +22,13 @@ import { ageOn, capFirst, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { seasonPath } from "@/lib/slug";
+import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn per request (the language cookie); the data behind it keeps its one-hour cache (next: { revalidate } in lib/api/client.ts).
 
 const idOf = (v: string) => (/^\d{1,9}$/.test(v) ? Number(v) : null);
 
-export async function generateMetadata({ params }: PageProps<"/players/[id]">): Promise<Metadata> {
+export const generateMetadata = guardMeta(async ({ params }: PageProps<"/players/[id]">): Promise<Metadata> => {
   const { id } = await params;
   const n = idOf(id);
   const d = n == null ? null : await getPerson(n).catch(() => null);
@@ -38,13 +39,13 @@ export async function generateMetadata({ params }: PageProps<"/players/[id]">): 
     p.award_count ? plural("count.awards", p.award_count) : null, p.championship_count ? plural("count.championships", p.championship_count) : null].filter(Boolean);
   const details = bits.length ? say("player.metaDetails", { list: bits.join(", ") }) : "";
   return pageMeta({ title: p.name, description: say("player.metaDesc", { name: p.name, details }), path: `/players/${p.person_id}`, locale });
-}
+});
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
   return <div className="pfact"><dt>{label}</dt><dd>{children}</dd></div>;
 }
 
-export default async function PlayerPage({ params, searchParams }: PageProps<"/players/[id]">) {
+export default guard(async function PlayerPage({ params, searchParams }: PageProps<"/players/[id]">) {
   const [{ id }, sp] = await Promise.all([params, searchParams]);
   const n = idOf(id);
   if (n == null) notFound();
@@ -157,4 +158,4 @@ export default async function PlayerPage({ params, searchParams }: PageProps<"/p
       </p>
     </>
   );
-}
+});

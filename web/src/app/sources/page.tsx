@@ -3,6 +3,7 @@ import { getSources } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
+import { guard } from "@/lib/loadGuard";
 
 export const revalidate = 3600;
 
@@ -11,7 +12,7 @@ export async function generateMetadata() {
   return pageMeta({ title: say("sources.title"), description: say("sources.metaDesc"), path: "/sources", locale });
 }
 
-export default async function SourcesPage() {
+export default guard(async function SourcesPage() {
   const { say, fmt } = await currentSpeaker();
   const s = await getSources();
   // SPX's own row is made by the site (lib/data.ts), so its words are the site's; the others are the sources' own.
@@ -39,4 +40,4 @@ export default async function SourcesPage() {
       </section>
     </>
   );
-}
+});

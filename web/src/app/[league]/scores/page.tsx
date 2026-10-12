@@ -5,6 +5,7 @@ import { isLeague } from "@/lib/leagues";
 import { scoresPath } from "@/lib/scores";
 import { defaultDay, scoresMeta, seasonDay } from "@/lib/scoresData";
 import { parseSeasonSeg } from "@/lib/slug";
+import { guard } from "@/lib/loadGuard";
 
 export async function generateMetadata({ params }: PageProps<"/[league]/scores">): Promise<Metadata> {
   const { league } = await params;
@@ -14,18 +15,13 @@ export async function generateMetadata({ params }: PageProps<"/[league]/scores">
 }
 
 /** /nhl/scores opens on today's games (else the latest day with games); ?season=2022-23 opens that season's last day. */
-export default async function ScoresPage({ params, searchParams }: PageProps<"/[league]/scores">) {
+export default guard(async function ScoresPage({ params, searchParams }: PageProps<"/[league]/scores">) {
   const { league: lg } = await params;
   if (!isLeague(lg)) notFound();
   const { season } = await searchParams;
   const ys = typeof season === "string" ? parseSeasonSeg(lg, season) : null;
-  let day: string | null = null;
-  try {
-    day = ys ? await seasonDay(lg, ys.y) : await defaultDay(lg);
-  } catch {
-    day = null;
-  }
+  const day = ys ? await seasonDay(lg, ys.y) : await defaultDay(lg);
   if (ys && day) redirect(scoresPath(lg, day));
   if (!day) notFound();
   return <Scoreboard lg={lg} day={day} />;
-}
+});
