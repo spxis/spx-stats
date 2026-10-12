@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { LanguagePicker } from "../i18n/LanguagePicker";
 
 export type MenuUser = { name: string | null; email: string; image: string | null; admin: boolean };
 
@@ -15,7 +16,7 @@ export function SignInLink() {
 }
 
 /** Top-right account menu: who you are, Profile, Settings, the admin section for admins, version, Sign out. */
-export function UserMenu({ user, version, children }: { user: MenuUser; version: string; children?: React.ReactNode }) {
+export function UserMenu({ user, version }: { user: MenuUser; version: string }) {
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const path = usePathname();
@@ -53,7 +54,7 @@ export function UserMenu({ user, version, children }: { user: MenuUser; version:
           </div>
           <Link role="menuitem" href="/me/profile">Profile</Link>
           <Link role="menuitem" href="/me/settings">Settings</Link>
-          {children}
+          <div className="usermenu-lang"><LanguagePicker /></div>
           {user.admin ? (
             <div className="usermenu-sec">
               <b>Admin</b>

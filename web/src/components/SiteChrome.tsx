@@ -31,7 +31,7 @@ export async function SiteHeader() {
 }
 
 export async function SiteFooter() {
-  const { say } = await currentSpeaker();
+  const [{ say }, user] = await Promise.all([currentSpeaker(), currentUser()]);
   const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
   return (
     <footer className="foot">
@@ -74,7 +74,7 @@ export async function SiteFooter() {
       <p>
         <Rich text={say("footer.credits")} parts={{ link: <Link href="/terms">{say("terms.title")}</Link> }} />
       </p>
-      <LanguagePicker />
+      {user ? null : <LanguagePicker />}
       <p className="ver">{say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}</p>
     </footer>
   );
