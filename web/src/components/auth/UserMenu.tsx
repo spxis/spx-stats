@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { LanguagePicker } from "../i18n/LanguagePicker";
+import { ThemeToggle } from "../ThemeToggle";
 
 export type MenuUser = { name: string | null; email: string; image: string | null; admin: boolean };
 
@@ -53,6 +54,7 @@ export function UserMenu({ user, version }: { user: MenuUser; version: string })
           <Link role="menuitem" href="/me/profile">Profile</Link>
           <Link role="menuitem" href="/me/settings">Settings</Link>
           <div className="usermenu-lang"><LanguagePicker /></div>
+          <div className="usermenu-lang"><ThemeToggle /></div>
           {user.admin ? (
             <div className="usermenu-sec">
               <b>Admin</b>

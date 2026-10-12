@@ -23,7 +23,7 @@ export async function SiteHeader() {
         <Link href="/teams">{say("nav.teams")}</Link>
         <Link href="/players">{say("nav.players")}</Link>
         <Link href="/about">{say("nav.aboutPage")}</Link>
-        <ThemeToggle />
+        {user ? null : <ThemeToggle />}
         {user ? <UserMenu user={user} version={pkg.version} /> : authEnabled() ? <SignInLink /> : null}
       </nav>
     </header>
