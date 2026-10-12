@@ -85,7 +85,8 @@ on conflict (franchise_id, valid_during, source_id) do nothing;
 -- Arizona Coyotes) carries the colours it points at; a dated one matches the name it points at
 -- too, because the modules write history in both directions.
 with ident as (
-  select i.franchise_id fid, fl.league_code, pg_temp.norm(i.full_name) n, i.valid_during vd
+  select i.franchise_id fid, fl.league_code, pg_temp.norm(i.full_name) n, pg_temp.norm(i.nickname) nk,
+         upper(i.valid_during) is null as is_current, i.valid_during vd
   from core.franchise_identity i
   join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id)
 ), entry as (
@@ -98,7 +99,8 @@ with ident as (
          e.yr is not null as dated, coalesce(e.yr * i.vd, i.vd) as rng0
   from ident i
   join entry e on e.league_code = i.league_code
-              and (e.n_key = i.n or (e.yr is not null and e.n_res = i.n))
+              and (e.n_key = i.n or (e.yr is not null and e.n_res = i.n)
+                   or (e.yr is null and i.is_current and e.n_key = i.nk))   -- the module's bare nickname, e.g. 'Athletics'
   where e.yr is null or not isempty(e.yr * i.vd)
 ), ranged as (
   select * from m where dated

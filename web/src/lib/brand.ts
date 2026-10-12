@@ -9,18 +9,19 @@ export function groupBrands(all: TeamBrandRow[]): BrandMap {
   return by;
 }
 
-/** The brand era covering the end of `year`; failing that the current era, failing that the latest. */
+/**
+ * The brand era covering the end of `year`; failing that the current era, failing that the latest. Eras overlap and
+ * some carry no colours, so an era with colours wins over one without.
+ */
 export function brandFor(brands: BrandMap, f: number | null | undefined, year?: number): TeamBrandRow | null {
   if (f == null) return null;
   const list = brands[f] ?? [];
   if (!list.length) return null;
   const y = year ? `${year}-12-31` : null;
-  return (
-    (y && list.find((b) => (!b.brand_from || b.brand_from <= y) && (!b.brand_to || b.brand_to > y))) ||
-    list.find((b) => !b.brand_to) ||
-    list.at(-1) ||
-    null
-  );
+  const covering = y ? list.filter((b) => (!b.brand_from || b.brand_from <= y) && (!b.brand_to || b.brand_to > y)) : [];
+  const open = list.filter((b) => !b.brand_to);
+  const pick = (rows: TeamBrandRow[]) => rows.find((b) => b.primary_hex) ?? rows[0];
+  return (covering.length ? pick(covering) : null) || (open.length ? pick(open) : null) || list.at(-1) || null;
 }
 
 /**
