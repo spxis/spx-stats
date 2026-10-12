@@ -1,7 +1,8 @@
 -- api.team_index (037) counted and dated the empty team seasons step 172 adds for pre-1999 champions (no games, no standings): the Raiders
 -- showed first season 1983 and 29 seasons. A season now counts, and dates a franchise, only when it has games or standings
 -- (w + l + t + otl > 0 in api.team_season_index, or in api.standing_index). The champion link is unchanged: the title still counts through
--- the team season's champion flag. Same columns, indexes, grants and comment as 037. Needs 036 and 037. Rerunnable.
+-- the team season's champion flag. A franchise whose only team seasons are empty (the six non-NHL Stanley Cup challengers) stays in the
+-- index with 0 seasons, no first or last season, no share, not active, and its titles counted. Same columns, indexes, grants and comment as 037. Needs 036 and 037. Rerunnable.
 
 drop materialized view if exists api.team_index;
 
@@ -11,10 +12,16 @@ with tsi as (
   where coalesce(t.w, 0) + coalesce(t.l, 0) + coalesce(t.t, 0) + coalesce(t.otl, 0) > 0
      or exists (select 1 from api.standing_index s where s.league = t.league and s.year = t.year and s.franchise_id = t.franchise_id
                 and coalesce(s.w, 0) + coalesce(s.l, 0) + coalesce(s.t, 0) + coalesce(s.otl, 0) > 0)),
+eo as (
+  select league, franchise_id from api.team_season_index
+  except
+  select league, franchise_id from tsi),
 ids as (
   select league, franchise_id from api.franchise_names
   union
-  select league, franchise_id from tsi),
+  select league, franchise_id from tsi
+  union
+  select league, franchise_id from eo),
 sp as (
   select league, franchise_id, count(distinct year)::int as seasons, min(year) as first_season, max(year) as last_season,
          sum(coalesce(w, 0))::int as w, sum(coalesce(l, 0))::int as l, sum(coalesce(t, 0))::int as t, sum(coalesce(otl, 0))::int as otl
@@ -27,16 +34,21 @@ cur as (
   select distinct on (league, franchise_id) league, franchise_id, name from nm order by league, franchise_id, name_to desc, name_from desc nulls last),
 lastname as (
   select distinct on (league, franchise_id) league, franchise_id, team as name from tsi where team is not null order by league, franchise_id, year desc),
+eoname as (
+  select distinct on (t.league, t.franchise_id) t.league, t.franchise_id, t.team as name
+  from api.team_season_index t join eo using (league, franchise_id) where t.team is not null order by t.league, t.franchise_id, t.year desc),
 every as (
   select league, franchise_id, array_agg(distinct name order by name) as names from (
     select league, franchise_id, name from nm
     union
-    select league, franchise_id, team from tsi where team is not null) u
+    select league, franchise_id, team from tsi where team is not null
+    union
+    select league, franchise_id, name from eoname) u
   group by league, franchise_id),
 latest as (select league, max(year) as year from tsi group by league)
 select i.league, i.franchise_id,
-       coalesce(c.name, ln.name, 'Team ' || i.franchise_id) as name,
-       array(select n from unnest(coalesce(e.names, '{}'::text[])) n where n is distinct from coalesce(c.name, ln.name) order by n) as former_names,
+       coalesce(c.name, ln.name, eon.name, 'Team ' || i.franchise_id) as name,
+       array(select n from unnest(coalesce(e.names, '{}'::text[])) n where n is distinct from coalesce(c.name, ln.name, eon.name) order by n) as former_names,
        core.fold_text(array_to_string(coalesce(e.names, '{}'::text[]), ' ')) as search,
        sp.first_season, sp.last_season, coalesce(sp.seasons, 0) as seasons, coalesce(ti.titles, 0) as titles,
        round((sp.w + sp.t / 2.0) / nullif(sp.w + sp.l + sp.t + sp.otl, 0), 3) as share,
@@ -44,6 +56,7 @@ select i.league, i.franchise_id,
 from ids i
 left join cur c using (league, franchise_id)
 left join lastname ln using (league, franchise_id)
+left join eoname eon using (league, franchise_id)
 left join every e using (league, franchise_id)
 left join sp using (league, franchise_id)
 left join ti using (league, franchise_id)
