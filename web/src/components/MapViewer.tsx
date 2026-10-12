@@ -32,7 +32,7 @@ interface Scene {
   placed: Placed[];
   base: MapBox;
   bounds: MapBox;
-  dots: { t: Placed; c: SVGCircleElement; hit: SVGCircleElement; img?: SVGImageElement }[];
+  dots: { t: Placed; tone?: string; c: SVGCircleElement; hit: SVGCircleElement; img?: SVGImageElement }[];
   /** A ring drawn over the dots at the chosen one, so a dot hidden under its neighbours still shows. */
   halo: SVGCircleElement;
 }
@@ -48,6 +48,21 @@ function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, host
   // leave the strip under the zoom buttons clear of dots
   const pad = Math.min((52 * w) / Math.max(hostWidth, 1), bounds.width - w);
   return { x: clamp((x0 + x1) / 2 - w / 2, 0, bounds.width - w - pad), y: clamp((y0 + y1) / 2 - h / 2, 0, bounds.height - h), width: w + pad, height: h };
+}
+
+const toneKey = (t: Pin) => `${t.conf ?? ""}|${t.div ?? ""}`;
+const HUES = [215, 25, 140, 300];
+const LIGHTS = [36, 54, 70];
+/** One colour per conference (hue) and, within it, per division (shade); empty when the pins carry no conference. */
+function toneMap(pins: Pin[]): Map<string, string> {
+  const out = new Map<string, string>();
+  const confs = [...new Set(pins.map((p) => p.conf).filter((c): c is string => !!c))].sort();
+  if (confs.length < 2) return out;
+  confs.forEach((c, ci) => {
+    const divs = [...new Set(pins.filter((p) => p.conf === c).map((p) => p.div ?? ""))].sort();
+    divs.forEach((d, di) => out.set(`${c}|${d}`, `hsl(${HUES[ci % HUES.length]} 75% ${LIGHTS[di % LIGHTS.length]}%)`));
+  });
+  return out;
 }
 
 interface View { z: number; x: number; y: number }
@@ -83,6 +98,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     return (["US", "CA"] as const).filter((c) => n(c) > 0).sort((a, b) => n(b) - n(a));
   }, [pins]);
   const canState = ccs.length > 0;
+  const tones = useMemo(() => toneMap(pins), [pins]);
   const shown = useMemo(() => pins.filter((p) => (!conf || p.conf === conf) && (!div || p.div === div)), [pins, conf, div]);
   const chosen = selected != null ? pins.find((p) => p.f === selected) : undefined;
   const country: RegionCountry | null = ccs.includes(cc) ? cc : ccs[0] ?? null;
@@ -125,6 +141,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         hit.setAttribute("cx", String(t.p[0])); hit.setAttribute("cy", String(t.p[1]));
         const c = document.createElementNS(NS, "circle"); c.setAttribute("class", t.me ? "pin me" : "pin");
         c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1]));
+        const tone = tones.get(toneKey(t));
+        if (tone && !t.me) c.style.fill = tone;
         a.append(hit, c);
         let img: SVGImageElement | undefined;
         if (t.logo) {
@@ -135,7 +153,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
           a.append(img);
         }
         g.append(a);
-        return { t, c, hit, img };
+        return { t, tone, c, hit, img };
       });
       const halo = document.createElementNS(NS, "circle"); halo.setAttribute("class", "pin me selhalo");
       if (sel != null) svg.append(g, halo, labels); else svg.append(g, labels);
@@ -149,7 +167,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     })().catch(() => { /* the map stays blank */ });
     return () => { live = false; scene.current = null; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- redrawn only when what is shown changes
-  }, [shown, stateView, country, locale]);
+  }, [shown, stateView, country, locale, tones]);
 
   /** The window for the current zoom and centre, kept on the map. */
   function windowOf(): MapBox | null {
@@ -207,7 +225,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
   useEffect(() => {
     const s = scene.current;
     if (!s || selected == null) return;
-    for (const d of s.dots) { d.t.me = d.t.f === selected; d.c.setAttribute("class", d.t.me ? "pin me" : "pin"); }
+    for (const d of s.dots) { d.t.me = d.t.f === selected; d.c.setAttribute("class", d.t.me ? "pin me" : "pin"); d.c.style.fill = d.t.me ? "" : d.tone ?? ""; }
     const me = s.dots.find((d) => d.t.me);
     if (me && zoomToSelected) { view.current.x = me.t.p[0]; view.current.y = me.t.p[1]; }
     apply();
@@ -391,6 +409,11 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
           <button type="button" aria-label={say("map.zoomReset")} disabled={zoom <= 1} onClick={() => zoomAt(1)}>⌂</button>
         </div>
       </div>
+      {tones.size ? (
+        <ul className="maplegend" aria-label={say("map.legend")}>
+          {[...tones].map(([k, color]) => <li key={k}><i style={{ background: color }} />{k.split("|").filter(Boolean).join(" · ")}</li>)}
+        </ul>
+      ) : null}
       {placedCount === 0 && filtered ? <p className="note">{say("map.noneMatch")}</p> : null}
       <p className="note">{note ?? say("map.note", { placed: placedCount ?? shown.length, total: total ?? pins.length })} {say("map.hint")}</p>
     </div>

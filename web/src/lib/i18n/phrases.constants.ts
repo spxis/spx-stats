@@ -639,6 +639,7 @@ export const PHRASES = {
   "map.zoomOut": "Zoom out",
   "map.zoomReset": "Show the whole map",
   "map.logos": "Team logos",
+  "map.legend": "Conference and division colours",
   "map.noneMatch": "No teams match this filter.",
   "map.hint": "Zoom with the + and − buttons, a pinch, or Ctrl or ⌘ and scroll; drag to move once zoomed.",
   "venues.tabs": "Venue map",
