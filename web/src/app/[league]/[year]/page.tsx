@@ -193,7 +193,7 @@ export default async function SeasonPage({ params, searchParams }: PageProps<"/[
           <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
         </section>
       ) : null}
-      <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} sp={sp} />
+      <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />
       {awards.length ? (
         <section className="section">
           <h2>{say("season.awards")}</h2>

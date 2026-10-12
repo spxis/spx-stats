@@ -35,14 +35,14 @@ export function SeriesCard({ paths, lg, s, brands, year, say }: { paths: TeamPat
 type Brands = Awaited<ReturnType<typeof getBrands>>;
 
 /** One series as a compact box: the two clubs (the winner in bold), nothing else; the box opens the series page. */
-function BracketBox({ paths, lg, year, s, brands, say, pos, top }: { paths: TeamPaths; lg: string; year: number; s: Series; brands: Brands; say: Say; pos: { y: number; to: number | null; fed: boolean; last?: boolean; final?: boolean }; top?: 0 | 1 }) {
+function BracketBox({ paths, lg, year, s, brands, say, pos, top, dim }: { paths: TeamPaths; lg: string; year: number; s: Series; brands: Brands; say: Say; pos: { y: number; to: number | null; fed: boolean; last?: boolean; final?: boolean }; top?: 0 | 1; dim?: boolean }) {
   const dy = pos.to == null ? 0 : pos.to - pos.y;
   const order = top === 1 ? ([1, 0] as const) : ([0, 1] as const);
   const title = s.winner == null ? say("card.title", { a: s.sides[0].name, b: s.sides[1].name }) : `${s.sides[0].name} ${scoreWords(s, say)} ${s.sides[1].name}`;
   return (
     <Link
       href={seriesPath(paths, lg, year, s)} prefetch={false} title={title}
-      className={`bx${pos.fed ? " fed" : ""}${pos.to != null ? (dy < 0 ? " out up" : " out") : ""}${pos.last ? " last" : ""}${pos.final ? " final" : ""}`}
+      className={`bx${pos.fed ? " fed" : ""}${pos.to != null ? (dy < 0 ? " out up" : " out") : ""}${pos.last ? " last" : ""}${pos.final ? " final" : ""}${dim ? " dim" : ""}`}
       style={{ top: `calc(var(--row) * ${pos.y} + 5px)`, "--dy": Math.abs(dy) } as React.CSSProperties}
     >
       {order.map((i) => (
@@ -56,10 +56,10 @@ function BracketBox({ paths, lg, year, s, brands, say, pos, top }: { paths: Team
 }
 
 /** The playoff bracket of a season: one half down each side (the conferences where the alignment data splits them), the final in the middle. Draws nothing when there are no playoff games. */
-export async function SeasonPlayoffs({ lg, year, conf, sp: query }: { lg: string; year: number; conf: string; sp: Record<string, string | string[] | undefined> }) {
+export async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
   const say = sayFor(sp);
-  const [{ series, names, bracket, brands }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
+  const [{ series, names, bracket, brands, align }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
   if (!series.length) return null;
   const rounds = names.length;
   const b: Bracket = bracket;
@@ -71,6 +71,25 @@ export async function SeasonPlayoffs({ lg, year, conf, sp: query }: { lg: string
   const choices = b.sides.length === 2 && b.sides.every((s) => s.label) ? b.sides.map((s) => ({ key: slug(s.label), label: s.label! })) : [];
   const only = choices.find((c) => c.key === conf)?.key ?? "";
   const shown = (s: Bracket["sides"][number]) => !only || slug(s.label) === only;
+  // Divisions the season had (two or more), within the chosen conference if one is chosen; picking one dims the series that have no club of it.
+  const divMap = new Map<string, { label: string; conference: string; short: string | null; ids: Set<number> }>();
+  for (const a of align) {
+    if (!a.division || (only && slug(a.conference) !== only)) continue;
+    const key = `${a.conference ?? ""}|${a.division}`;
+    const d = divMap.get(key) ?? { label: a.division_short ?? a.division, conference: a.conference ?? "", short: a.conference_short, ids: new Set<number>() };
+    d.ids.add(a.franchise_id);
+    divMap.set(key, d);
+  }
+  const labelCount = new Map<string, number>();
+  for (const d of divMap.values()) labelCount.set(d.label, (labelCount.get(d.label) ?? 0) + 1);
+  const divChoices = divMap.size >= 2
+    ? [...divMap.values()].sort((x, y) => x.conference.localeCompare(y.conference) || x.label.localeCompare(y.label)).map((d) => {
+      const label = (labelCount.get(d.label) ?? 0) > 1 && d.short ? `${d.short} ${d.label}` : d.label;
+      return { key: slug(label), label, ids: d.ids };
+    })
+    : [];
+  const chosen = divChoices.find((c) => c.key === div);
+  const dims = (s: Series) => !!chosen && !s.sides.some((t) => chosen.ids.has(t.f));
   const left = b.sides.find((s) => s.key === "l" && shown(s)), right = b.sides.find((s) => s.key === "r" && shown(s));
   const sideEl = (side: Bracket["sides"][number]) => (
     <div key={side.key} className={`bkside ${side.key}`} style={{ "--n": b.columns.length } as React.CSSProperties}>
@@ -81,7 +100,7 @@ export async function SeasonPlayoffs({ lg, year, conf, sp: query }: { lg: string
             {heading(r, names[r - 1])}
             <div className="bkarea" style={{ height: `calc(var(--row) * ${b.rows})` }}>
               {side.boxes.filter((x: Box) => x.round === r).map((x: Box) => (
-                <BracketBox paths={paths} key={x.i} lg={lg} year={year} s={series[x.i]} brands={brands} say={say} pos={{ y: x.y, to: x.to, fed: x.fed, last: r === b.columns.at(-1) }} />
+                <BracketBox paths={paths} key={x.i} lg={lg} year={year} s={series[x.i]} brands={brands} say={say} pos={{ y: x.y, to: x.to, fed: x.fed, last: r === b.columns.at(-1) }} dim={dims(series[x.i])} />
               ))}
             </div>
           </div>
@@ -97,10 +116,18 @@ export async function SeasonPlayoffs({ lg, year, conf, sp: query }: { lg: string
       {choices.length ? (
         <nav className="seg views" aria-label={sp.say("playoffs.sideAria")}>
           {[{ key: "", label: sp.say("playoffs.sideAll") }, ...choices].map((c) => (
-            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { conf: c.key || null })}#playoffs`} prefetch={false} aria-current={c.key === only ? "page" : undefined}>{c.label}</Link>
+            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { conf: c.key || null, div: null })}#playoffs`} prefetch={false} aria-current={c.key === only ? "page" : undefined}>{c.label}</Link>
           ))}
         </nav>
       ) : null}
+      {divChoices.length ? (
+        <nav className="seg views scroll" aria-label={sp.say("playoffs.divAria")}>
+          {[{ key: "", label: sp.say("playoffs.divAll") }, ...divChoices].map((c) => (
+            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { div: c.key || null })}#playoffs`} prefetch={false} aria-current={c.key === (chosen?.key ?? "") ? "page" : undefined}>{c.label}</Link>
+          ))}
+        </nav>
+      ) : null}
+      {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
       <div className="bkwrap">
         <div className={`bk${fin ? "" : " solo"}`} style={{ "--row": "56px", "--n": b.columns.length } as React.CSSProperties}>
           {left ? sideEl(left) : null}
