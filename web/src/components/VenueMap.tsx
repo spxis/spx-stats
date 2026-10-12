@@ -34,7 +34,7 @@ export function VenueMap({ league, teams, slug, leagueShort, seasonLabel, clubCo
     const open = stops.findLastIndex((v) => !v.to);
     const now = open >= 0 ? open : stops.length - 1;
     return stops.map((v, i) => ({
-      f: i, name: v.venue, lat: v.lat, lon: v.lon, cc: v.cc, me: i === now,
+      f: i, name: v.venue, lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, me: i === now,
       venue: `${v.from?.slice(0, 4) ?? "…"}–${v.to?.slice(0, 4) ?? say("team.today")}`,
     }));
   }, [tab, league, chosen, say]);

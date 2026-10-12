@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/locale";
-import { chizu, frame, NS, type Pin } from "./mapDraw";
+import { chizu, frame, NS, pinText, type Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { MapViewer } from "./MapViewer";
 
@@ -29,14 +29,13 @@ async function drawTeamMap(host: HTMLElement, teams: Pin[], opts: { title: strin
   const r = box.width / 40;
   const g = document.createElementNS(NS, "g");
   g.setAttribute("class", "pins");
-  const label = (t: Pin) => `${t.abbr ? `${t.abbr} · ` : ""}${t.name}${t.venue ? ` · ${t.venue}` : ""}`;
   for (const t of placed.sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0))) {
     const a = document.createElementNS(NS, "a");
-    a.setAttribute("aria-label", label(t));
+    a.setAttribute("aria-label", pinText(t));
     const c = document.createElementNS(NS, "circle");
     c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1])); c.setAttribute("r", String(t.me ? r * 1.6 : r));
     c.setAttribute("class", t.me ? "pin me" : "pin");
-    const ti = document.createElementNS(NS, "title"); ti.textContent = label(t); c.append(ti);
+    const ti = document.createElementNS(NS, "title"); ti.textContent = pinText(t); c.append(ti);
     a.append(c); g.append(a);
   }
   svg.append(g);

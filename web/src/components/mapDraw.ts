@@ -11,6 +11,8 @@ export interface Pin {
   lat: number;
   lon: number;
   venue?: string | null;
+  /** City and state or province of the venue, e.g. "Detroit, MI". */
+  place?: string | null;
   href?: string;
   me?: boolean;
   /** The country of the point (US, CA, MX), for the state and province view. */
@@ -19,6 +21,9 @@ export interface Pin {
   conf?: string | null;
   div?: string | null;
 }
+
+/** The words a dot says: abbreviation, name, venue (or years) and place, as in its label and its tooltip. */
+export const pinText = (t: Pin) => [t.abbr ? `${t.abbr} · ${t.name}` : t.name, t.venue, t.place].filter(Boolean).join(" · ");
 
 export type Chizu = {
   WORLD: typeof import("@johnmorrisdotca/chizu/world").default;

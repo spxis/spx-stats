@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { MapBox } from "@johnmorrisdotca/chizu";
 import { regionPoint, type RegionCountry } from "@/lib/regionProject";
-import { abbreviationLabels, chizu, NS, regionsOf, type Pin } from "./mapDraw";
+import { abbreviationLabels, chizu, NS, pinText, regionsOf, type Pin } from "./mapDraw";
 import { COUNTRY_KEY } from "./countryKey";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./mapviewer.css";
@@ -106,7 +106,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
         const a = document.createElementNS(NS, "a");
         if (t.href) a.setAttribute("href", t.href);
         a.setAttribute("data-i", String(i));
-        a.setAttribute("aria-label", `${t.abbr ? `${t.abbr} · ` : ""}${t.name}${t.venue ? ` · ${t.venue}` : ""}`);
+        a.setAttribute("aria-label", pinText(t));
         const hit = document.createElementNS(NS, "circle"); hit.setAttribute("class", "hit");
         hit.setAttribute("cx", String(t.p[0])); hit.setAttribute("cy", String(t.p[1]));
         const c = document.createElementNS(NS, "circle"); c.setAttribute("class", t.me ? "pin me" : "pin");
@@ -268,7 +268,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
     const sr = svg.getBoundingClientRect(), hr = host.getBoundingClientRect();
     tip.replaceChildren();
     if (t.abbr) { const b = document.createElement("b"); b.textContent = t.abbr; tip.append(b); }
-    tip.append(document.createTextNode(t.name + (t.venue ? ` · ${t.venue}` : "")));
+    tip.append(document.createTextNode([t.name, t.venue, t.place].filter(Boolean).join(" · ")));
     tip.hidden = false; s.tipFor = s.placed.indexOf(t);
     const px = sr.left - hr.left + ((t.p[0] - box.x) / box.width) * sr.width, py = sr.top - hr.top + ((t.p[1] - box.y) / box.height) * sr.height;
     const half = tip.offsetWidth / 2;

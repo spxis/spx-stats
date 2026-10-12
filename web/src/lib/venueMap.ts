@@ -4,10 +4,11 @@ import { z } from "zod";
 import { rows } from "./api/client";
 import type { BrandMap } from "./brand";
 import { countryAt } from "./country";
+import { getVenuePlaces, placeKey } from "./venuePlace";
 import type { TeamPaths } from "./slug";
 
 /** A venue a club used, with the years of the brand eras it was named in and where it stands. */
-export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null }
+export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null }
 /** A club with a venue on record: its address slug, its latest name and its venues, oldest first. */
 export interface VenueTeam { f: number; slug: string; name: string; venues: VenueStop[] }
 
@@ -19,11 +20,12 @@ const getNames = cache(async (lg: string) =>
 /**
  * Every club of a league that has a venue with coordinates, for the venue map's team choice. Brand eras that name the same
  * venue are one stop, from the first year to the last (open if any is). Locations come from the brand rows, which carry
- * only the venue name and coordinates (no city or state yet).
+ * only the venue name and coordinates; the city and state come from api.venue_place.
  */
 export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPaths): Promise<VenueTeam[]> {
   const names = new Map<number, string>();
-  for (const n of await getNames(lg)) names.set(n.franchise_id, n.name);
+  const [named, places] = await Promise.all([getNames(lg), getVenuePlaces(lg)]);
+  for (const n of named) names.set(n.franchise_id, n.name);
   const out: VenueTeam[] = [];
   for (const [id, eras] of Object.entries(brands)) {
     const f = Number(id);
@@ -34,7 +36,8 @@ export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPat
       const key = `${b.home_venue}|${b.latitude}|${b.longitude}`;
       const s = stops.get(key);
       if (!s) {
-        stops.set(key, { venue: b.home_venue!, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude) });
+        stops.set(key, { venue: b.home_venue!, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude),
+          place: places.get(placeKey(f, b.home_venue, b.latitude, b.longitude) ?? "")?.place ?? null });
       } else {
         s.to = s.to && b.brand_to ? (b.brand_to > s.to ? b.brand_to : s.to) : null;
       }
