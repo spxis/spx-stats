@@ -15,13 +15,15 @@
     "typecheck": "tsc --noEmit",
     "task": "node scripts/task.ts",
     "i18n:review": "node scripts/i18n-review.ts",
-    "test:i18n": "node --test scripts/i18n.test.ts"
+    "test:i18n": "node --test scripts/i18n.test.ts",
+    "test:auth": "node --test scripts/auth.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/chizu": "1.4.0",
     "@johnmorrisdotca/hata": "1.5.0",
     "d3": "7.9.0",
     "next": "^16.4.0",
+    "next-auth": "4.24.15",
     "react": "^19.3.0",
     "react-dom": "^19.3.0",
     "server-only": "^0.0.1",
