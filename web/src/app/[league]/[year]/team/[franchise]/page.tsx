@@ -5,10 +5,12 @@ import { cache } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
+import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
 import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
+import { getSeasonAlignment } from "@/lib/alignmentData";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
@@ -28,6 +30,8 @@ import { placeFor } from "@/lib/venue";
 import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
+import { clubPins } from "@/lib/venueMap";
+import { getVenuePlaces } from "@/lib/venuePlace";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 /** The team's season: its games (in date order, or the reverse), its standings row for the year and its brand for the year. */
@@ -74,7 +78,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const { say, plural, fmt, locale } = await currentSpeaker();
   const sort = parseSort(sp.sort, TEAM_GAME_SORT_KEYS, "date.asc");
   const dateSort = sort.find((s) => s.key === "date");
-  const [d, t, summary, leagueSt, notes] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y)]);
+  const [d, t, summary, leagueSt, notes, alignment, venuePlaces] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y), getSeasonAlignment(lg, y), getVenuePlaces(lg)]);
   if (!d.raw.length) {
     return (
       <>
@@ -106,6 +110,11 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
   const selection = parseSelection(sp);
+  const mapPins = clubPins({
+    year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces,
+    href: (c) => paths.teamSeason(lg, c, y), slug: (c) => paths.season(lg, c, y),
+  });
+  const mePin = mapPins.find((p) => p.f === f);
   const seasonNav = prev != null || next != null ? (
     <nav className="seasonnav" aria-label={say("tseason.otherSeasons")}>
       {prev != null ? <Link href={paths.teamSeason(lg, f, prev)} rel="prev" prefetch={false}>{"← " + seasonLabel(lg, prev)}</Link> : null}
@@ -132,8 +141,10 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>
           {current != null ? <>{" · "}<Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link></> : null}
         </p>
-        {place?.home_venue ? <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p> : null}
+        {place?.home_venue ? (mePin ? <SeasonVenueLine venue={place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
+        {mePin ? <SeasonMapThumb me={mePin} leagueShort={LG[lg]} seasonLabel={season} name={name} /> : null}
       </section>
+      {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
       <Figures items={figs} />
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />

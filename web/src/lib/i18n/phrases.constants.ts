@@ -546,6 +546,9 @@ export const PHRASES = {
   "venues.leagueNote": "{n} {league} home venues, {season}. Press a dot to open that team. Map: Chizu, from Natural Earth.",
   "venues.historyNote": "{n} home venues of this team, with the years used. Map: Chizu, from Natural Earth.",
   "venues.wikipedia": "Wikipedia",
+  "tmap.venueOpen": "Show {venue} on the map",
+  "tmap.note": "{n} of {total} teams placed, each at the venue it used in {season}. Press a dot, or pick a team above, to see its venue. Map: Chizu, from Natural Earth.",
+  "tmap.openPage": "Open {name}, {season}",
 
   // sources, data quality, logos
   "sources.title": "Sources",

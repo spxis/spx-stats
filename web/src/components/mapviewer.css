@@ -29,3 +29,11 @@
   .mapbar .seg button { padding: 8px 9px; font-size: 13px; }
   .mapbar select { flex: 1 1 130px; font-size: 14px; padding: 7px 8px; }
 }
+
+.mapbtn.atfoot { top: auto; bottom: 0; }
+.linkbtn { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+.linkbtn:hover { text-decoration-color: currentColor; }
+.mapcaption { margin: 0 0 10px; display: flex; flex-wrap: wrap; gap: 2px 10px; align-items: baseline; color: var(--muted); }
+.mapcaption b { color: var(--ink); }
+.mapcaption > * + *::before { content: "·"; margin-right: 10px; }
+.teammap.viewer .selhalo { pointer-events: none; }

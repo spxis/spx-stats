@@ -13,6 +13,9 @@ export interface Pin {
   venue?: string | null;
   /** City and state or province of the venue, e.g. "Detroit, MI". */
   place?: string | null;
+  /** The venue's Wikipedia page and the team's address slug, for the team-season map's label and team choice. */
+  wiki?: string | null;
+  slug?: string;
   href?: string;
   me?: boolean;
   /** The country of the point (US, CA, MX), for the state and province view. */

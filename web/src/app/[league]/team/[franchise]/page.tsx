@@ -15,10 +15,9 @@ import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
 import { getSeasonAlignment } from "@/lib/alignmentData";
-import type { AlignmentRow } from "@/lib/alignment";
 import type { StandingRow } from "@/lib/api/types";
-import { abbrFor, type AbbrMap } from "@/lib/abbr";
-import { brandFor, logoFor, teamAccent, type BrandMap } from "@/lib/brand";
+import { abbrFor } from "@/lib/abbr";
+import { brandFor, logoFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { titleHolders, titleStreak } from "@/lib/champions";
@@ -28,10 +27,10 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
-import { seasonPath, type TeamPaths } from "@/lib/slug";
+import { seasonPath } from "@/lib/slug";
 import { getPaths, teamOf } from "@/lib/teamSlugs";
-import { getVenueTeams } from "@/lib/venueMap";
-import { getVenuePlaces, placeKey, type VenuePlace } from "@/lib/venuePlace";
+import { clubPins, getVenueTeams } from "@/lib/venueMap";
+import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
 import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -80,21 +79,6 @@ async function Lifetime({ lg, f, rows }: { lg: string; f: number; rows: Standing
   );
 }
 
-function pins(paths: TeamPaths, lg: string, abbrs: AbbrMap, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number, places: AlignmentRow[], venuePlaces: Map<string, VenuePlace>): Pin[] {
-  return clubs.flatMap((c) => {
-    const b = placeFor(brands, c.franchise_id, year);
-    const al = places.find((a) => a.franchise_id === c.franchise_id);
-    return b && b.latitude != null && b.longitude != null
-      ? [{
-        f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(abbrs, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue,
-        place: venuePlaces.get(placeKey(c.franchise_id, b.home_venue, b.latitude, b.longitude) ?? "")?.place,
-        href: paths.team(lg, c.franchise_id), me: c.franchise_id === f, cc: countryAt(b.latitude, b.longitude),
-        conf: al?.conference_short ?? al?.conference, div: al?.division_short ?? al?.division,
-      }]
-      : [];
-  });
-}
-
 export default guard(async function TeamPage({ params, searchParams }: PageProps<"/[league]/team/[franchise]">) {
   const { league: lg, franchise } = await params;
   const sp = await searchParams;
@@ -125,7 +109,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   let clubCount = 0;
   if (lastYear != null && me && me.latitude != null && me.longitude != null) {
     const [clubs, places] = await Promise.all([getClubs(lg, lastYear), getSeasonAlignment(lg, lastYear)]);
-    leaguePins = pins(paths, lg, abbrs, clubs, brands, lastYear, f, places, venuePlaces);
+    leaguePins = clubPins({ year: lastYear, me: f, clubs, brands, abbrs, alignment: places, places: venuePlaces, href: (c) => paths.team(lg, c) });
     clubCount = clubs.length;
     map = (
       <TeamMapCorner

@@ -32,6 +32,8 @@ interface Scene {
   base: MapBox;
   bounds: MapBox;
   dots: { t: Placed; c: SVGCircleElement; hit: SVGCircleElement }[];
+  /** A ring drawn over the dots at the chosen one, so a dot hidden under its neighbours still shows. */
+  halo: SVGCircleElement;
 }
 /** A window that holds the points with room to spare, never past the map's edge; short enough to see on a phone and on a laptop. */
 function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, minShare: number): MapBox {
@@ -49,8 +51,12 @@ function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, minS
 
 interface View { z: number; x: number; y: number }
 
-export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
+export function MapViewer({ pins, title, total, note, onNavigate, bar, selected, onPick, zoomToSelected }: {
   pins: Pin[]; title: string; total?: number; note?: string; onNavigate?: () => void; bar?: ReactNode;
+  /** The chosen team (Pin.f), marked on the map; when given it replaces each pin's own `me`. A dot press then calls onPick instead of following its link. */
+  selected?: number; onPick?: (f: number) => void;
+  /** Start zoomed in on the chosen dot, and move there when the choice changes. */
+  zoomToSelected?: boolean;
 }) {
   const { say, locale } = useSpeaker();
   const router = useRouter();
@@ -63,6 +69,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
   const [mode, setMode] = useState<"country" | "state">("country");
   const [cc, setCc] = useState<RegionCountry>("US");
   const [placedCount, setPlacedCount] = useState<number | null>(null);
+  const pick = useRef({ selected, onPick, zoomToSelected });
+  useEffect(() => { pick.current = { selected, onPick, zoomToSelected }; });
 
   const confs = useMemo(() => [...new Set(pins.map((p) => p.conf).filter((s): s is string => !!s))].sort(), [pins]);
   const divs = useMemo(() => [...new Set(pins.filter((p) => !conf || p.conf === conf).map((p) => p.div).filter((s): s is string => !!s))].sort(), [pins, conf]);
@@ -91,7 +99,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
         const p = t.cc === country ? regionPoint(country!, Number(t.lon), Number(t.lat)) : null;
         return p && p[0] >= 0 && p[0] <= bounds.width && p[1] >= 0 && p[1] <= bounds.height ? p : null;
       };
-      const placed = shown.flatMap((t) => { const p = place(t); return p ? [{ ...t, p }] : []; }).sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
+      const sel = pick.current.selected;
+      const placed = shown.flatMap((t) => { const p = place(t); return p ? [{ ...t, p, me: sel != null ? t.f === sel : t.me }] : []; }).sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
       const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, stateView ? 0.18 : 0.06) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
       host.innerHTML = drawChizu(map, { tones: stateView ? {} : { US: "faint", CA: "faint", MX: "faint" }, language: locale === "ja" ? "ja" : "en", style: true });
       const svg = host.querySelector("svg");
@@ -114,11 +123,13 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
         a.append(hit, c); g.append(a);
         return { t, c, hit };
       });
-      svg.append(g, labels);
-      const s: Scene = { svg, host, g, labels, tip, tipFor: -1, placed, base, bounds, dots };
+      const halo = document.createElementNS(NS, "circle"); halo.setAttribute("class", "pin me selhalo");
+      if (sel != null) svg.append(g, halo, labels); else svg.append(g, labels);
+      const s: Scene = { svg, host, g, labels, tip, tipFor: -1, placed, base, bounds, dots, halo };
       scene.current = s;
-      view.current = { z: 1, x: base.x + base.width / 2, y: base.y + base.height / 2 };
-      setZoom(1);
+      const at = pick.current.zoomToSelected ? placed.find((t) => t.me) : undefined;
+      view.current = at ? { z: 3, x: at.p[0], y: at.p[1] } : { z: 1, x: base.x + base.width / 2, y: base.y + base.height / 2 };
+      setZoom(at ? 3 : 1);
       setPlacedCount(placed.length);
       apply();
     })().catch(() => { /* the map stays blank */ });
@@ -145,6 +156,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
     const px = s.host.clientWidth || 600;
     const r = (box.width * Math.max(4.5, px / 140)) / px;
     for (const d of s.dots) { d.c.setAttribute("r", String(d.t.me ? r * 1.5 : r)); d.hit.setAttribute("r", String((box.width * 13) / px)); }
+    const me = s.dots.find((d) => d.t.me);
+    if (me && pick.current.selected != null) { s.halo.setAttribute("cx", String(me.t.p[0])); s.halo.setAttribute("cy", String(me.t.p[1])); s.halo.setAttribute("r", String(r * 1.5)); }
     s.labels.replaceChildren();
     abbreviationLabels(s.labels, s.placed, r, box);
     s.host.style.touchAction = view.current.z > 1 ? "none" : "pan-y pinch-zoom";
@@ -163,6 +176,17 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
     setZoom(Math.round(nz * 10) / 10);
     apply();
   }
+
+  // A new choice: move the marked dot and the ring without drawing the map again, so the zoom stays.
+  useEffect(() => {
+    const s = scene.current;
+    if (!s || selected == null) return;
+    for (const d of s.dots) { d.t.me = d.t.f === selected; d.c.setAttribute("class", d.t.me ? "pin me" : "pin"); }
+    const me = s.dots.find((d) => d.t.me);
+    if (me && zoomToSelected) { view.current.x = me.t.p[0]; view.current.y = me.t.p[1]; }
+    apply();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- apply reads the refs
+  }, [selected]);
 
   // Pointer, wheel and click handling on the map itself.
   useEffect(() => {
@@ -225,6 +249,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar }: {
       if (!a) return;
       const s = scene.current, i = Number(a.getAttribute("data-i"));
       const d = s?.dots[i];
+      if (d && pick.current.onPick && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); pick.current.onPick(d.t.f); return; }
       if (s && d && lastType === "touch" && s.tipFor !== i) { e.preventDefault(); e.stopPropagation(); showTip(d.t); return; }
       const href = a.getAttribute("href");
       if (href?.startsWith("/") && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); onNavigate?.(); router.push(href); }
