@@ -17,13 +17,13 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 
 const DEF_SORT = "name.asc";
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
-const clean = (v: string) => searchWords(v).join(" ");
+const clean = (v: string) => v.trim().slice(0, 60);
 const pageOf = (v: string) => (/^\d{1,4}$/.test(v) && Number(v) > 0 ? Number(v) : 1);
 
 export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/players">): Promise<Metadata> => {
   const sp = await searchParams;
   const { say, locale } = await currentSpeaker();
-  const plain = !clean(first(sp.q)) && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort);
+  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort);
   return { ...pageMeta({ title: say("players.title"), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
 });
 
