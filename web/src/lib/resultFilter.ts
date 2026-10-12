@@ -1,7 +1,7 @@
 /** The Wins / Losses / Ties / OT losses filter of a team's games table: the shape of ?result= in the address. */
 import { z } from "zod";
 import type { PhraseKey } from "./i18n/phrases.constants";
-import type { Result, TeamGame } from "./teamSeason";
+import type { Result } from "./teamSeason";
 
 export type ResultFilter = "all" | "win" | "loss" | "tie" | "otl";
 
@@ -16,9 +16,9 @@ export const RESULTS: readonly (readonly [ResultFilter, Result, PhraseKey])[] = 
 ];
 
 /** The choices a team's games offer: ties and overtime losses only when the games hold one. */
-export function resultOptions(games: TeamGame[]): ResultFilter[] {
+export function resultOptions(games: readonly { res: string }[]): ResultFilter[] {
   const has = new Set(games.map((g) => g.res));
   return RESULTS.filter(([, code]) => code === "" || code === "W" || code === "L" || has.has(code)).map(([k]) => k);
 }
 
-export const matchesResult = (g: TeamGame, r: ResultFilter) => r === "all" || g.res === RESULTS.find(([k]) => k === r)![1];
+export const matchesResult = (g: { res: string }, r: ResultFilter) => r === "all" || g.res === RESULTS.find(([k]) => k === r)![1];

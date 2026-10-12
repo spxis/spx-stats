@@ -29,6 +29,7 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { share } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
+import { matchesResult, RESULTS, resultOptions } from "@/lib/resultFilter";
 import { nickname, scoreText, seriesPath } from "@/lib/series";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { withQuery } from "@/lib/slug";
@@ -103,6 +104,10 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const inPhase = all.filter((g) => phase === "all" || g.ph === phase);
   const inLoc = inPhase.filter((g) => q.loc === "all" || (q.loc === "home" ? g.aHome : !g.aHome));
   const picked = year != null ? inLoc.filter((g) => g.year === year) : inLoc;
+  // ?result= narrows the games list only; a result the pair never had (a tie in the NBA) is the same as all.
+  const resultChoices = resultOptions(all);
+  const result = resultChoices.includes(q.result) ? q.result : "all";
+  const inResult = picked.filter((g) => matchesResult(g, result));
 
   // The names the clubs wear now, or wore in the season chosen.
   const seasonNames = (y: number | null) => {
@@ -152,27 +157,35 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const first = all[0], last = all[all.length - 1];
   const t = tally(picked, lg);
 
-  const phaseLinks = hasPlayoffs && hasRegular ? (
-    <nav className="seg views" aria-label={say("phase.aria")}>
-      {([["all", "phase.all"], ["regular", "phase.regular"], ["playoffs", "phase.playoffs"]] as const).map(([k, label]) => (
-        <Link key={k} href={hrefTo({ phase: k === "all" ? null : k, list: null })} prefetch={false} scroll={false} aria-current={k === phase ? "page" : undefined}>{say(label)}</Link>
-      ))}
-    </nav>
-  ) : null;
-  const locLinks = (
-    <nav className="seg views" aria-label={say("loc.aria")}>
-      {([["all", say("loc.all")], ["home", say("h2h.locHome", { team: na })], ["road", say("h2h.locRoad", { team: na })]] as const).map(([k, label]) => (
-        <Link key={k} href={hrefTo({ loc: k === "all" ? null : k, list: null })} prefetch={false} scroll={false} aria-current={k === q.loc ? "page" : undefined}>{label}</Link>
-      ))}
-    </nav>
-  );
-  const controls = (
+  // The page-level choices (season, part of season, venue) as a row; with an anchor it is the games list's own copy of them.
+  const choices = (hash: string, withResult: boolean) => (
     <div className="h2hcontrols">
-      <label>{say("col.season")}<H2hSeasonSelect seasons={seasonOptions} value={year != null ? seasonLabel(lg, year) : ""} /></label>
-      {phaseLinks}
-      {locLinks}
+      <label>{say("col.season")}<H2hSeasonSelect seasons={seasonOptions} value={year != null ? seasonLabel(lg, year) : ""} anchor={hash} /></label>
+      {hasPlayoffs && hasRegular ? (
+        <nav className="seg views" aria-label={say("phase.aria")}>
+          {([["all", "phase.all"], ["regular", "phase.regular"], ["playoffs", "phase.playoffs"]] as const).map(([k, label]) => (
+            <Link key={k} href={`${hrefTo({ phase: k === "all" ? null : k, list: null })}${hash}`} prefetch={false} scroll={false} aria-current={k === phase ? "page" : undefined}>{say(label)}</Link>
+          ))}
+        </nav>
+      ) : null}
+      <nav className="seg views" aria-label={say("loc.aria")}>
+        {([["all", say("loc.all")], ["home", say("h2h.locHome", { team: na })], ["road", say("h2h.locRoad", { team: na })]] as const).map(([k, label]) => (
+          <Link key={k} href={`${hrefTo({ loc: k === "all" ? null : k, list: null })}${hash}`} prefetch={false} scroll={false} aria-current={k === q.loc ? "page" : undefined}>{label}</Link>
+        ))}
+      </nav>
+      {withResult ? (
+        <div className="lbl">
+          <span>{say("h2h.result.aria", { team: na })}</span>
+          <nav className="seg views" aria-label={say("h2h.result.aria", { team: na })}>
+            {RESULTS.filter(([k]) => resultChoices.includes(k)).map(([k, , label]) => (
+              <Link key={k} href={`${hrefTo({ result: k === "all" ? null : k, list: null })}${hash}`} prefetch={false} scroll={false} aria-current={k === result ? "page" : undefined}>{say(label)}</Link>
+            ))}
+          </nav>
+        </div>
+      ) : null}
     </div>
   );
+  const controls = choices("", false);
 
   const lede = (
     <p className="lede">
@@ -312,11 +325,12 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const aSeries = meetings.filter((m) => m.s.winner != null && m.s.sides[0].f === a).length, bSeries = meetings.filter((m) => m.s.winner != null && m.s.sides[0].f === b).length;
 
   // The games, newest first; a long history shows the latest ones and offers the rest.
-  const ordered = [...picked].reverse();
+  const ordered = [...inResult].reverse();
   const cut = year == null && !q.list && ordered.length > LIST_LIMIT;
   const listed = cut ? ordered.slice(0, LIST_LIMIT) : ordered;
   const extra = say(lg === "mlb" ? "col.extras" : "col.ot");
   const gameTable = tableOf(listed, [
+    { key: "season", label: say("col.season"), cls: "seasoncell", get: (g: H2hGame) => g.year, cell: (g: H2hGame) => <Link href={paths.teamSeason(lg, a, g.year)} prefetch={false} title={say("h2h.seasonTitle", { team: name[0], season: seasonLabel(lg, g.year) })}>{seasonLabel(lg, g.year)}</Link> },
     {
       key: "date", label: say("col.date"), cls: "seasoncell", get: (g: H2hGame) => g.date,
       cell: (g: H2hGame) => <>{gameLink(g, year == null ? dt.ymd(atUtc(g.date)) : dt.dayName(atUtc(g.date)))}{g.ph === "playoffs" ? <span className="badge tag">{say("phase.playoffs")}</span> : null}</>,
@@ -410,12 +424,15 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
 
       <section className="section" id="games">
         <h2>{say("h2h.games.title")}</h2>
+        {choices("#games", true)}
         <p className="note">
-          {cut ? say("h2h.games.latest", { shown: fmt(listed.length), games: plural("count.games", ordered.length) }) : plural("count.games", ordered.length)}
+          {cut ? say("h2h.games.latest", { shown: fmt(listed.length), games: plural("count.games", ordered.length) }) : result !== "all" ? say("h2h.games.of", { shown: fmt(ordered.length), games: plural("count.games", picked.length) }) : plural("count.games", ordered.length)}
           {" "}{say("h2h.games.note")}
           {cut ? <>{" "}<Link href={`${hrefTo({ list: "all" })}#games`} prefetch={false} scroll={false}>{say("h2h.games.all", { count: fmt(ordered.length) })}</Link></> : null}
         </p>
-        <div className="tablebox"><SortTable {...gameTable} param="sort_games" def="date.desc" initial={sortGames} label={say("h2h.games.title")} /></div>
+        {ordered.length ? (
+          <div className="tablebox"><SortTable {...gameTable} param="sort_games" def="date.desc" initial={sortGames} label={say("h2h.games.title")} /></div>
+        ) : <p className="note">{say("h2h.noMatch")} <Link href={`${hrefTo({ result: null, list: null })}#games`} prefetch={false} scroll={false}>{say("h2h.result.clear")}</Link></p>}
       </section>
     </>
   );

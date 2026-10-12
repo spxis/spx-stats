@@ -6,6 +6,7 @@
 import { z } from "zod";
 import type { GameRow } from "./api/types";
 import { parseLoc, type Loc, type Rec } from "./loc";
+import { resultSchema, type ResultFilter } from "./resultFilter";
 import { meetingsOf, type PlayoffGame, type Series } from "./series";
 import { parseSeasonSeg, type TeamPaths } from "./slug";
 
@@ -165,18 +166,19 @@ export function playoffMeetings(lg: string, games: readonly GameRow[], a: number
 
 const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
 
-/** ?season= (a season label, or all), ?phase=, ?loc= and ?list=all (every game, not the latest ones). Anything malformed is the default. */
+/** ?season= (a season label, or all), ?phase=, ?loc=, ?result= (the games list only) and ?list=all (every game, not the latest ones). Anything malformed is the default. */
 export const h2hQuery = z.object({
   season: z.preprocess(first, z.string().regex(/^\d{4}(-\d{2})?$/)).optional().catch(undefined),
   phase: z.preprocess(first, z.enum(["all", "regular", "playoffs"])).catch("all"),
   loc: z.unknown().transform(parseLoc),
   list: z.preprocess(first, z.enum(["all"])).optional().catch(undefined),
+  result: resultSchema,
 });
 
-export function parseH2hQuery(sp: Record<string, string | string[] | undefined>, lg: string): { phase: H2hPhase; loc: Loc; list: boolean; year: number | null; canonicalSeason: boolean } {
-  const q = h2hQuery.parse({ season: sp.season, phase: sp.phase, loc: sp.loc, list: sp.list });
+export function parseH2hQuery(sp: Record<string, string | string[] | undefined>, lg: string): { phase: H2hPhase; loc: Loc; result: ResultFilter; list: boolean; year: number | null; canonicalSeason: boolean } {
+  const q = h2hQuery.parse({ season: sp.season, phase: sp.phase, loc: sp.loc, list: sp.list, result: sp.result });
   const ys = q.season ? parseSeasonSeg(lg, q.season) : null;
-  return { phase: q.phase, loc: q.loc, list: q.list === "all", year: ys ? ys.y : null, canonicalSeason: ys ? ys.canonical : true };
+  return { phase: q.phase, loc: q.loc, result: q.result, list: q.list === "all", year: ys ? ys.y : null, canonicalSeason: ys ? ys.canonical : true };
 }
 
 /** The address of a pair: `/nhl/head-to-head/boston-bruins-vs-montreal-canadiens`, the franchises in alphabetical order of their slugs. */

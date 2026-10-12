@@ -13,7 +13,9 @@ tr:hover .h2hlink, tr:focus-within .h2hlink, .h2hlink:focus-visible { opacity: 1
 .h2hcontrols .seg a { white-space: nowrap; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 12px; text-decoration: none; background: var(--panel); color: var(--muted); }
 .h2hcontrols .seg a[aria-current="page"] { background: var(--ink); color: var(--paper); }
 .h2hcontrols .seg a:not([aria-current="page"]):hover { color: var(--ink); }
-.h2hcontrols label { display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.h2hcontrols label, .h2hcontrols .lbl { display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.h2hcontrols .lbl { flex-wrap: wrap; row-gap: 6px; }
+#games .h2hcontrols { margin-bottom: 4px; }
 
 .h2hfacts { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr)); gap: 14px; }
 .h2hfact { display: flex; flex-direction: column; gap: 4px; min-width: 0; background: var(--panel); border: 1px solid var(--rule); border-top: 5px solid var(--tc, var(--rule)); padding: 12px 14px; text-decoration: none; color: var(--ink); }
