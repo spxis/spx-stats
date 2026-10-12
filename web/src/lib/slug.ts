@@ -87,6 +87,8 @@ export interface LeagueSlugs {
   index: Map<string, number[]>;
   years: Map<number, Set<number>>;
   last: Map<number, number>;
+  /** franchise -> the name it wears now, every other name it has had, and the first and last season it played (0 when it has no season) */
+  clubs: Map<number, { name: string; alt: string[]; first: number; last: number }>;
 }
 
 export interface Clash { league: string; slug: string; kind: "franchise" | "season"; year?: number; franchises: number[]; chosen: string[] }
@@ -207,7 +209,9 @@ export function buildSlugs(names: NameRow[], seasons: SeasonNameRow[]): Slugs {
       for (const n of everyName.get(f) ?? []) addTo(index, slugify(n), f);
       entries[f] = e;
     }
-    leagues[lg] = { entries, primary, index, years, last };
+    const clubs = new Map<number, { name: string; alt: string[]; first: number; last: number }>();
+    for (const f of ids) clubs.set(f, { name: current.get(f)!, alt: [...(everyName.get(f) ?? [])].filter((n) => n !== current.get(f)), first: first.get(f) ?? 0, last: last.get(f) ?? 0 });
+    leagues[lg] = { entries, primary, index, years, last, clubs };
   }
   return { leagues, clashes };
 }

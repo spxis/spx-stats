@@ -52,3 +52,16 @@ export async function h2hOf(lg: string, seg: string): Promise<{ a: number; b: nu
   const x = resolveFranchise(L, p.a), y = resolveFranchise(L, p.b);
   return x == null || y == null || x === y ? null : pairPath(paths, lg, x, y);
 }
+
+export interface Club { f: number; name: string; alt: string[]; first: number; last: number; active: boolean }
+
+/** A league's franchises with a season on record, for the opponent picker: the clubs still playing first, then the former ones, each by name. */
+export async function getLeagueClubs(lg: string): Promise<Club[]> {
+  const L = (await getSlugs()).leagues[lg];
+  if (!L) return [];
+  const all = [...L.clubs].filter(([, c]) => c.last > 0);
+  const latest = Math.max(0, ...all.map(([, c]) => c.last));
+  return all
+    .map(([f, c]) => ({ f, ...c, active: c.last === latest }))
+    .sort((x, y) => Number(y.active) - Number(x.active) || x.name.localeCompare(y.name));
+}

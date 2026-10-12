@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { H2hChart, type H2hPoint } from "@/components/H2hChart";
 import { H2hCompareRow, type H2hMetric } from "@/components/H2hCompare";
+import { H2hPicker } from "@/components/H2hPicker";
 import { H2hSeasonSelect } from "@/components/H2hSeasonSelect";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { SortTable } from "@/components/SortTable";
@@ -32,7 +33,7 @@ import { nickname, scoreText, seriesPath } from "@/lib/series";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { withQuery } from "@/lib/slug";
 import { parseSort, tableOf } from "@/lib/sort";
-import { getPaths, h2hOf } from "@/lib/teamSlugs";
+import { getLeagueClubs, getPaths, h2hOf } from "@/lib/teamSlugs";
 
 // Drawn per request (the language cookie); the games behind it come from the hour-long cache (lib/api/client.ts).
 
@@ -86,9 +87,9 @@ export default async function HeadToHeadPage({ params, searchParams }: PageProps
   const path = at.path;
   const eyebrow = <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}{say("h2h.eyebrow")}</span>;
 
-  let d: Awaited<ReturnType<typeof load>>, paths: Awaited<ReturnType<typeof getPaths>>;
+  let d: Awaited<ReturnType<typeof load>>, paths: Awaited<ReturnType<typeof getPaths>>, clubs: Awaited<ReturnType<typeof getLeagueClubs>>;
   try {
-    [d, paths] = await Promise.all([load(lg, a, b), getPaths()]);
+    [d, paths, clubs] = await Promise.all([load(lg, a, b), getPaths(), getLeagueClubs(lg)]);
   } catch {
     return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("h2h.eyebrow")}</h1></section><p className="note">{say("load.failed")}</p></>;
   }
@@ -120,6 +121,10 @@ export default async function HeadToHeadPage({ params, searchParams }: PageProps
     <section className="head fade">
       {eyebrow}
       <h1>{say("h2h.title", { a: name[0], b: name[1] })}</h1>
+      <H2hPicker
+        lg={lg} a={a} b={b} names={name} logos={[logoFor(d.brands, a, logoYear), logoFor(d.brands, b, logoYear)]}
+        clubs={clubs.map((c) => ({ ...c, alt: c.alt.slice(0, 6), logo: logoFor(d.brands, c.f) }))}
+      />
     </section>
   );
   const sides = (
