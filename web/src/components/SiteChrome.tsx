@@ -1,14 +1,17 @@
 import Link from "next/link";
+import { SignInLink, UserMenu } from "./auth/UserMenu";
 import { Rich } from "./i18n/Rich";
 import { LanguagePicker } from "./i18n/LanguagePicker";
 import { LeagueNav } from "./LeagueNav";
 import { ThemeToggle } from "./ThemeToggle";
+import { authEnabled } from "@/lib/auth/config";
+import { currentUser } from "@/lib/auth/user";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES } from "@/lib/leagues";
 import pkg from "../../package.json";
 
 export async function SiteHeader() {
-  const { say } = await currentSpeaker();
+  const [{ say }, user] = await Promise.all([currentSpeaker(), currentUser()]);
   return (
     <header className="top">
       <Link className="brand" href="/">
@@ -21,6 +24,7 @@ export async function SiteHeader() {
         <Link href="/players">{say("nav.players")}</Link>
         <Link href="/about">{say("nav.aboutPage")}</Link>
         <ThemeToggle />
+        {user ? <UserMenu user={user} version={pkg.version} /> : authEnabled() ? <SignInLink /> : null}
       </nav>
     </header>
   );

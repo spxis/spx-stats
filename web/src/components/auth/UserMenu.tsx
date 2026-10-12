@@ -1,0 +1,73 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut } from "next-auth/react";
+import { useEffect, useRef, useState } from "react";
+
+export type MenuUser = { name: string | null; email: string; image: string | null; admin: boolean };
+
+/** The way in, shown to signed-out visitors when sign-in is configured. Returns here afterwards. */
+export function SignInLink() {
+  const path = usePathname();
+  const next = path && path !== "/login" ? `?next=${encodeURIComponent(path)}` : "";
+  return <Link className="signin-link" href={`/login${next}`}>Sign in</Link>;
+}
+
+/** Top-right account menu: who you are, Profile, Settings, the admin section for admins, version, Sign out. */
+export function UserMenu({ user, version, children }: { user: MenuUser; version: string; children?: React.ReactNode }) {
+  const [open, setOpen] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const path = usePathname();
+
+  useEffect(() => setOpen(false), [path]);
+  useEffect(() => {
+    if (!open) return;
+    const away = (e: MouseEvent) => { if (!root.current?.contains(e.target as Node)) setOpen(false); };
+    const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setOpen(false); };
+    document.addEventListener("mousedown", away);
+    document.addEventListener("keydown", esc);
+    return () => {
+      document.removeEventListener("mousedown", away);
+      document.removeEventListener("keydown", esc);
+    };
+  }, [open]);
+
+  const label = user.name || user.email;
+  return (
+    <div className="usermenu" ref={root}>
+      <button type="button" className="usermenu-btn" aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen(!open)}>
+        {user.image ? (
+          // eslint-disable-next-line @next/next/no-img-element -- a Google avatar URL, not ours to optimise
+          <img src={user.image} alt="" width={26} height={26} referrerPolicy="no-referrer" />
+        ) : (
+          <span className="usermenu-initial" aria-hidden="true">{label.slice(0, 1).toUpperCase()}</span>
+        )}
+        <span className="usermenu-name">{label}</span>
+      </button>
+      {open ? (
+        <div className="usermenu-pop" role="menu">
+          <div className="usermenu-who">
+            <b>{user.name || user.email}</b>
+            {user.name ? <span>{user.email}</span> : null}
+          </div>
+          <Link role="menuitem" href="/me/profile">Profile</Link>
+          <Link role="menuitem" href="/me/settings">Settings</Link>
+          {children}
+          {user.admin ? (
+            <div className="usermenu-sec">
+              <b>Admin</b>
+              <Link role="menuitem" href="/admin/tickets">Tickets</Link>
+              <Link role="menuitem" href="/admin/tickets/new">File a ticket</Link>
+            </div>
+          ) : null}
+          <div className="usermenu-sec">
+            <span className="note">Version {version}</span>
+            {user.admin ? <Link role="menuitem" href="/admin/tickets?status=done">What is new</Link> : null}
+          </div>
+          <button type="button" role="menuitem" onClick={() => void signOut({ callbackUrl: "/" })}>Sign out</button>
+        </div>
+      ) : null}
+    </div>
+  );
+}
