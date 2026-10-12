@@ -603,6 +603,16 @@ export const PHRASES = {
   "tmap.venueOpen": "Show {venue} on the map",
   "tmap.note": "{n} of {total} teams placed, each at the venue it used in {season}. Press a dot, or pick a team above, to see its venue. Map: Chizu, from Natural Earth.",
   "tmap.openPage": "Open {name}, {season}",
+  "roster.title": "Roster",
+  "roster.player": "Player",
+  "roster.pos": "Pos",
+  "roster.forwards": "Forwards ({n})",
+  "roster.defense": "Defense ({n})",
+  "roster.skaters": "Skaters ({n})",
+  "roster.goalies": "Goaltenders ({n})",
+  "roster.batters": "Batters ({n})",
+  "roster.pitchers": "Pitchers ({n})",
+  "roster.note": "Players with regular-season statistics for this club in {season}, under their main position. A player who changed clubs appears under each.",
 
   // sources, data quality, logos
   "sources.title": "Sources",
