@@ -16,12 +16,22 @@
 .monthchips button { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
 .monthchips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
 
-.cal .opab, .cell .opab { font: 600 10px/1 var(--mono); color: var(--muted); letter-spacing: 0; }
-.cell .celltop { display: flex; justify-content: space-between; align-items: baseline; gap: 2px; }
-.cell .opab { display: inline-flex; align-items: center; gap: 2px; }
-.cell .opab .logo { margin: 0; vertical-align: baseline; max-width: 20px; }
+.months { position: relative; }
+.cal .opab, .cell .opab { font: 600 11px/1 var(--mono); color: var(--ink); letter-spacing: 0; }
+.cell .opab { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }
+.cell .opab .logo { margin: 0; vertical-align: baseline; max-width: 34px; }
+.cell.res { display: grid; grid-template-columns: auto 1fr; grid-template-areas: "dn op" "mk mk"; align-content: space-between; align-items: center; min-height: 64px; }
+.cell.res .dn { grid-area: dn; align-self: start; }
+.cell.res .opab { grid-area: op; justify-self: end; }
+.cell.res .mk { grid-area: mk; justify-self: end; }
+.cell.res .rtop { display: none; }
 @media (max-width: 500px) {
-  .cell .celltop { flex-direction: column; align-items: flex-start; gap: 2px; }
+  .cell.res { grid-template-areas: "dn rt" "op op" "mk mk"; min-height: 66px; row-gap: 2px; }
+  .cell.res .rtop { display: inline; grid-area: rt; justify-self: end; font: 700 11px/1 var(--mono); }
+  .cell.res .rtop.W { color: var(--ok); } .cell.res .rtop.L { color: var(--bad); }
+  .cell.res .opab { justify-self: start; font-size: 10px; }
+  .cell .opab .logo { height: 16px; min-width: 0; max-width: 20px; }
+  .cell .mk .rl { display: none; }
 }
 h2 .gamesteam .logo { margin: 0 8px 0 0; vertical-align: -4px; }
 

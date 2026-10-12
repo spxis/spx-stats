@@ -160,7 +160,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} /></Suspense> : null}
       <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
-        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} />
+        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} />
     </>
   );
 });

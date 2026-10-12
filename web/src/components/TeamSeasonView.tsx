@@ -1,15 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
-import { atUtc } from "@/lib/format";
+import { atUtc, localToday } from "@/lib/format";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import { srcName } from "@/lib/leagues";
 import type { Loc } from "@/lib/loc";
 import { recordParts, type RecordPart } from "@/lib/record";
 import { matchesResult, resultOptions, type ResultFilter } from "@/lib/resultFilter";
-import { resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
+import { openMonth, resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
 import { tableOf, type ColumnSpec, type SortKey } from "@/lib/sort";
 import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeason";
 import { replaceQuery } from "@/lib/urlQuery";
@@ -53,6 +53,8 @@ interface Props {
   initialResult: ResultFilter;
   /** The previous and next season links, shown again beside the games and the calendar. */
   seasonNav?: ReactNode;
+  /** The server's date (YYYY-MM-DD): what the calendar's first month is worked out from until the reader's own clock is read. */
+  today: string;
 }
 
 const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allStar" } as const;
@@ -61,7 +63,7 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
-export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav }: Props) {
+export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav, today }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const logos = useMemo(() => new Map(teamList.map((t) => [t.f, t.logo])), [teamList]);
@@ -76,7 +78,12 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
   const phaseRows = useMemo(() => games.filter((g) => !phase || g.ph === phase), [games, phase]);
   // The Home / Road / All choice on top of it: what every chart, the table and the calendar below show.
   const locRows = useMemo(() => phaseRows.filter((g) => loc === "all" || g.loc === (loc === "home" ? "Home" : "Away")), [phaseRows, loc]);
-  const { byDay, months, month, day } = useMemo(() => resolveSelection(locRows.map((g) => g.tuple), want), [locRows, want]);
+  const resolved = useMemo(() => resolveSelection(locRows.map((g) => g.tuple), want), [locRows, want]);
+  const { byDay, months, day } = resolved;
+  // With no month asked for, the calendar opens on today's month while the season is under way. The server's date is what the
+  // page is first drawn with, so the two agree until the reader's own clock takes over.
+  const now = useSyncExternalStore(() => () => {}, localToday, () => today);
+  const month = months.includes(want.month) ? resolved.month : (openMonth(months, now) ?? resolved.month);
   // The Month filter is only what was asked for; the calendar falls back to the last month with games.
   const filterMonth = months.includes(want.month) ? want.month : "";
   // The Result choice only narrows the table: the charts, the calendar and the game numbers keep counting every game of the selection above.

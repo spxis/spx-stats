@@ -1,6 +1,6 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useRef, useSyncExternalStore } from "react";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc, isoDay, localToday } from "@/lib/format";
 import type { Speaker } from "@/lib/i18n/i18n";
@@ -38,14 +38,14 @@ function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; team
   );
 }
 
-/** A team's result on a day: W, L or T with the score; N when the game has no result. */
-function result(list: GameTuple[], team: string, say: Speaker["say"]): { r: "W" | "L" | "T" | "N"; text: string; opp: number; home: boolean } {
+/** A team's result on a day: W, L or T and the score; N when the game has no result. */
+function result(list: GameTuple[], team: string, say: Speaker["say"]): { r: "W" | "L" | "T" | "N"; letter: string; score: string; opp: number; home: boolean } {
   const g = list[0];
   const home = String(g[4]) === team, opp = home ? g[1] : g[4];
-  if (!g || g[6] !== "f") return { r: "N", text: "·", opp, home };
+  if (!g || g[6] !== "f") return { r: "N", letter: "", score: "·", opp, home };
   const mine = (home ? g[3] : g[2]) ?? 0, theirs = (home ? g[2] : g[3]) ?? 0;
   const r = mine > theirs ? "W" : mine < theirs ? "L" : "T";
-  return { r, text: `${say(RESULT_KEY[r])} ${mine}–${theirs}`, opp, home };
+  return { r, letter: say(RESULT_KEY[r]), score: `${mine}–${theirs}`, opp, home };
 }
 
 interface Props {
@@ -77,6 +77,7 @@ interface Props {
 export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day, team = "", dayOnly = false, onMonth, onDay, onJump }: Props) {
   const { say, plural, dt } = useSpeaker();
   const today = useSyncExternalStore(() => () => {}, localToday, () => "");
+  const monthsRef = useRef<HTMLDivElement>(null);
   const first = atUtc(`${month}-01`);
   const most = Math.max(1, ...[...byDay.values()].map((l) => l.length));
   const cells = [];
@@ -92,13 +93,23 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
         style={{ "--heat": `${Math.round(18 + (62 * list.length) / most)}%` } as React.CSSProperties}
         aria-label={say("cal.dayAria", { date: dt.monthDay(d), games: plural("count.games", list.length) }) + (res ? say(res.home ? "cal.vsOpp" : "cal.atOpp", { opp: teams.get(res.opp)?.name ?? say("cal.oppFallback") }) : "")} aria-pressed={key === day}
         onClick={() => onDay(key === day ? "" : key)}>
-        {res ? <span className="celltop">{dn}<span className="opab" title={teams.get(res.opp)?.name ?? undefined}>{list.length === 1 ? <TeamLogo url={teams.get(res.opp)?.logo} size={14} /> : null}{opp}</span></span> : dn}
-        {res ? <span className={"mk " + (res.r === "N" ? "" : res.r)}>{res.text}</span> : <span className="ct">{list.length}</span>}
+        {dn}
+        {res ? (
+          <>
+            <span className={"rtop " + res.r}>{res.letter}</span>
+            <span className="opab" title={teams.get(res.opp)?.name ?? undefined}>{list.length === 1 ? <TeamLogo url={teams.get(res.opp)?.logo} size={20} /> : null}{opp}</span>
+            <span className={"mk " + (res.r === "N" ? "" : res.r)}>{res.letter ? <span className="rl">{res.letter + " "}</span> : null}{res.score}</span>
+          </>
+        ) : <span className="ct">{list.length}</span>}
       </button>,
     );
   }
 
   const mi = months.indexOf(month);
+  useEffect(() => {
+    const box = monthsRef.current, chip = box?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (box && chip) box.scrollLeft = chip.offsetLeft - (box.clientWidth - chip.offsetWidth) / 2;
+  }, [month]);
   const shown = day
     ? [[day, byDay.get(day) ?? []] as const]
     : [...byDay].filter(([k]) => k.slice(0, 7) === month).sort((a, b) => a[0].localeCompare(b[0]));
@@ -118,7 +129,7 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
       <div className="cal">
         <div className="calhead">
           <button type="button" className="nav" disabled={mi === 0} aria-label={say("cal.prev")} onClick={() => onMonth(months[mi - 1])}>‹</button>
-          <div className="months">
+          <div className="months" ref={monthsRef}>
             {months.map((m) => (
               <button key={m} type="button" className="mo" aria-pressed={m === month} onClick={() => onMonth(m)}>{monthFmt(atUtc(`${m}-01`))}</button>
             ))}

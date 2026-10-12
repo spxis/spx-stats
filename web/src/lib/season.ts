@@ -73,4 +73,14 @@ export function resolveSelection(games: GameTuple[], want: Selection) {
   return { sel, byDay, months, month: months.length ? month : "", day: months.length ? day : "" };
 }
 
+/**
+ * The month a calendar opens on when none was asked for: the month of `today` while the season is under way (the latest month
+ * with games up to it), the first month when the season has not started, and null once it is over (the last month then).
+ */
+export function openMonth(months: readonly string[], today: string): string | null {
+  const now = today.slice(0, 7);
+  if (!now || !months.length || now > months[months.length - 1]) return null;
+  return months.filter((m) => m <= now).at(-1) ?? months[0];
+}
+
 export const isLeagueCode = (c: string): c is LeagueCode => (LEAGUE_CODES as readonly string[]).includes(c);
