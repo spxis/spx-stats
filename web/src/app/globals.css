@@ -6,7 +6,7 @@
    border-rule, font-display ...) are generated from them through @theme. */
 :root {
   --paper: #f5f6f2; --panel: #ffffff; --ink: #17202a; --muted: #5d6874; --rule: #dde1dc; --soft: #eceee9;
-  --ok: #2f7d4f; --warn: #b07a12; --bad: #b3372b;
+  --ok: #2f7d4f; --warn: #b07a12; --bad: #b3372b; --logo-tile: #ffffff;
   --nhl: #1f6fb2; --nba: #c8571b; --mlb: #b5283a; --nfl: #2f6b3c; --cfl: #9b2335;
   --accent: var(--ink);
   --display: var(--font-barlow), "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
@@ -17,13 +17,13 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
-    --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d;
+    --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
     --nhl: #5aa6e6; --nba: #f08a4b; --mlb: #ef5a6c; --nfl: #6fb37f; --cfl: #e06a7c; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
-  --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d;
+  --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
   --nhl: #5aa6e6; --nba: #f08a4b; --mlb: #ef5a6c; --nfl: #6fb37f; --cfl: #e06a7c; color-scheme: dark;
 }
 
@@ -197,7 +197,9 @@
   .daylist { display: flex; flex-direction: column; gap: 8px; }
   .linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 
-  .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; }
+  .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; height: var(--s, 20px); width: auto; min-width: var(--s, 20px); max-width: calc(var(--s, 20px) * 2.2); }
+  .logo.square, .logo.circle { width: var(--s, 20px); min-width: 0; max-width: none; padding: calc(var(--s, 20px) * .1); background: var(--logo-tile); border: 1px solid var(--rule); border-radius: 4px; }
+  .logo.circle { padding: calc(var(--s, 20px) * .17); border-radius: 50%; }
   td.note .logo, .banner .how .logo { vertical-align: middle; margin: 0 6px 0 2px; }
   h1.teamname { display: flex; align-items: center; gap: 14px; }
   h1.teamname .logo { margin: 0; vertical-align: middle; }
