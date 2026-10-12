@@ -58,6 +58,8 @@ export const PHRASES = {
   "teams.shareTitle": "Regular seasons: a tie counts half a win, an overtime loss is a loss",
   "teams.colFormer": "Formerly",
   "teams.now": "now",
+  "search.present": "present",
+  "search.results": "{n} suggestions",
   "theme.switch": "Switch light or dark mode",
   "theme.light": "Light",
   "theme.dark": "Dark",

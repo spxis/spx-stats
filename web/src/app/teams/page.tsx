@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
 import { queryHref } from "@/components/ViewTabs";
@@ -82,13 +83,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/team
               <Link key={s} href={href({ status: s === "all" ? null : s })} prefetch={false} aria-current={s === status ? "page" : undefined}>{say(STATUS_LABEL[s])}</Link>
             ))}
           </nav>
-          <form action="/teams" method="get" role="search" className="controls">
-            {league ? <input type="hidden" name="league" value={league} /> : null}
-            {keep.status ? <input type="hidden" name="status" value={keep.status} /> : null}
-            {keep.sort ? <input type="hidden" name="sort" value={keep.sort} /> : null}
-            <input type="search" name="q" defaultValue={q} placeholder={say("teams.search")} aria-label={say("teams.search")} maxLength={60} />
-            <button type="submit">{say("teams.searchGo")}</button>
-          </form>
+          <SearchBox kind="teams" action="/teams" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(keep.status ? { status: keep.status } : {}), ...(keep.sort ? { sort: keep.sort } : {}) }} placeholder={say("teams.search")} buttonLabel={say("teams.searchGo")} />
         </div>
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>

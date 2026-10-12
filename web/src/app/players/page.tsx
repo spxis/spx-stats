@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
 import { queryHref } from "@/components/ViewTabs";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -62,12 +63,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/pl
               <Link key={l.code} href={href({ league: l.code || null })} prefetch={false} aria-current={l.code === league ? "page" : undefined}>{l.short}</Link>
             ))}
           </nav>
-          <form action="/players" method="get" role="search" className="controls">
-            {league ? <input type="hidden" name="league" value={league} /> : null}
-            {keep.sort ? <input type="hidden" name="sort" value={keep.sort} /> : null}
-            <input type="search" name="q" defaultValue={q} placeholder={say("players.search")} aria-label={say("players.search")} maxLength={60} />
-            <button type="submit">{say("players.searchGo")}</button>
-          </form>
+          <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(keep.sort ? { sort: keep.sort } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
         </div>
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>

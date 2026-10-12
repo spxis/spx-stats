@@ -4,13 +4,10 @@
  * folded to letters and digits, sort keys must be in the view's list, and cursor values are quoted. Pure, so the pages, the route
  * handlers and a node script can all use it.
  */
+import { fold } from "./fold";
 import type { SortKey } from "./sort";
 
-const MAPPED: Record<string, string> = { ø: "o", ł: "l", đ: "d", ð: "d", ı: "i", æ: "ae", œ: "oe", ß: "ss" };
-
-/** What a search compares: no accents, lower case, no dots or apostrophes, other marks as one space. The same as core.fold_text in migration 037. */
-export const fold = (s: string): string =>
-  s.normalize("NFD").toLowerCase().replace(/[̀-ͯ.'’]/g, "").replace(/[øłđðıæœß]/g, (c) => MAPPED[c]).replace(/[^\p{L}\p{N}]+/gu, " ").trim();
+export { fold };
 
 /** The words of a search, each one a piece of a name (so "gretzky wayne" finds Wayne Gretzky); only letters and digits are left in them. */
 export const searchWords = (q: string): string[] => fold(q).split(" ").filter(Boolean).slice(0, 4).map((w) => w.slice(0, 30));
