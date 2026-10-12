@@ -97,7 +97,7 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
         {res ? (
           <>
             <span className={"rtop " + res.r}>{res.letter}</span>
-            <span className="opab" title={teams.get(res.opp)?.name ?? undefined}>{list.length === 1 ? <TeamLogo url={teams.get(res.opp)?.logo} size={20} /> : null}{opp}</span>
+            <span className="opab" title={teams.get(res.opp)?.name ?? undefined}><TeamLogo url={teams.get(res.opp)?.logo} size={20} />{opp}</span>
             <span className={"mk " + (res.r === "N" ? "" : res.r)}>{res.letter ? <span className="rl">{res.letter + " "}</span> : null}{res.score}</span>
           </>
         ) : <span className="ct">{list.length}</span>}
