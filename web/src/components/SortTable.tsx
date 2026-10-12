@@ -89,7 +89,7 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
     const dir = first && first.key === c.key ? (first.dir === "desc" ? "asc" : "desc") : c.num ? "desc" : "asc";
     const next: SortKey[] = [{ key: c.key, dir }];
     setPicked(next);
-    if (remote && c.rest) startTransition(() => router.replace(hrefWith({ [param]: formatSort(next) }), { scroll: false }));
+    if (remote && c.rest) startTransition(() => router.replace(hrefWith({ [param]: formatSort(next), page: null }), { scroll: false }));
     else replaceQuery({ [param]: formatSort(next) });
   }
 

@@ -156,6 +156,9 @@
   .foot-cols { display: flex; flex-wrap: wrap; gap: 14px 40px; margin-bottom: 8px; }
   .foot-col { display: flex; flex-direction: column; gap: 2px; }
   .foot-col b { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--ink); }
+  .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin-top: 12px; }
+  .pager a { padding-block: 8px; }
+  td.nowrap { white-space: nowrap; }
   .foot-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
   .foot-links a { padding-block: 6px; }
   .foot .ver { font: 400 13px/1.4 var(--mono); margin: 4px 0 0; }
