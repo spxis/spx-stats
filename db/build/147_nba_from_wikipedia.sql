@@ -88,12 +88,23 @@ left join core.external_id e on e.entity_kind = 'franchise' and e.external_key =
 left join core.franchise f on f.source_id = (select source_id from src) and f.source_key = 'nba:' || a.new_key;
 
 -- Every Wikipedia game and standing, with franchises.
+-- The NBA has no ties: when the home club's log gives a tie and the other club's log (named in the conflict text) gives a result, that result is kept.
 create temp table ng as
 select row_number() over (order by g.season, g.game_date, g.phase, g.home_team, g.away_team, g.game_seq) as gid,
-       g.season as yr, g.phase::core.season_phase as phase, g.game_date, g.round_name, g.home_pts, g.away_pts, g.overtime, g.neutral_site,
+       g.season as yr, g.phase::core.season_phase as phase, g.game_date, g.round_name,
+       case when o.team is null then g.home_pts when lower(o.team) = lower(g.home_team) then o.pf else o.pa end as home_pts,
+       case when o.team is null then g.away_pts when lower(o.team) = lower(g.home_team) then o.pa else o.pf end as away_pts,
+       g.overtime, g.neutral_site,
        g.views, g.conflict, g.home_team, g.away_team, h.franchise_id home_f, a.franchise_id away_f,
-       'wpnba:' || g.season || ':' || g.phase || ':' || g.game_date || ':' || g.home_team || ':' || g.away_team || ':' || g.game_seq as key
+       'wpnba:' || g.season || ':' || g.phase || ':' || g.game_date || ':' || g.home_team || ':' || g.away_team || ':' || g.game_seq as key,
+       o.team is not null as tie_fixed
 from legacy_wikipedia_nba.game g
+left join lateral (
+  select v.team, v.pf, v.pa
+  from regexp_match(g.conflict, '^score (.+) (\d+)-(\d+) vs (.+) (\d+)-(\d+)$') m,
+       lateral (values (m[1], m[2]::int, m[3]::int), (m[4], m[5]::int, m[6]::int)) v(team, pf, pa)
+  where g.home_pts = g.away_pts and v.pf <> v.pa limit 1
+) o on true
 left join am h on h.nm = lower(g.home_team) and g.season between h.y0 and h.y1
 left join am a on a.nm = lower(g.away_team) and g.season between a.y0 and a.y1;
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
@@ -273,7 +284,8 @@ join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.s
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
 where n.gid not in (select key from matched);
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
-select (select source_id from src), 'game', n.key, 'NBA: Wikipedia''s two logs disagree: ' || n.conflict, 'Kept the home club''s log'
+select (select source_id from src), 'game', n.key, 'NBA: Wikipedia''s two logs disagree: ' || n.conflict,
+       case when n.tie_fixed then 'Kept the other club''s log: the home club''s log gives a tie' else 'Kept the home club''s log' end
 from ng n where n.conflict is not null;
 -- Playoff round names for SPX's matched games that have none.
 update core.game g set round_label = n.round_name
