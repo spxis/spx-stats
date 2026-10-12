@@ -1,6 +1,6 @@
 import "server-only";
 import { getServerSession } from "next-auth";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { isAdmin } from "./admin";
 import { authEnabled, authOptions } from "./config";
 
@@ -14,6 +14,14 @@ export async function currentUser(): Promise<SessionUser | null> {
   if (!user?.email) return null;
   const image = user.image && /^https:\/\//.test(user.image) ? user.image : null;
   return { name: user.name ?? null, email: user.email, image, admin: isAdmin(user.email, user.emailVerified) };
+}
+
+/** For the /me pages: a 404 when sign-in is off, the login page when signed out. */
+export async function requireUser(path: string): Promise<SessionUser> {
+  if (!authEnabled()) notFound();
+  const user = await currentUser();
+  if (!user) redirect(`/login?next=${encodeURIComponent(path)}`);
+  return user;
 }
 
 /** For admin pages and actions: anyone else, signed in or not, gets a 404. */
