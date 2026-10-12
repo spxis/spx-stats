@@ -7,6 +7,7 @@ import { CompareControl } from "@/components/CompareControl";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamRoster } from "@/components/TeamRoster";
+import { TeamStaff } from "@/components/TeamStaff";
 import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
 import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
 import { TeamRanks } from "@/components/TeamRanks";
@@ -157,6 +158,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       <Figures items={figs} />
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
+      {st ? <Suspense fallback={null}><TeamStaff lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} />

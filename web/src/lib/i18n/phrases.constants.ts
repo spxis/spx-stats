@@ -673,6 +673,14 @@ export const PHRASES = {
   "roster.batters": "Batters ({n})",
   "roster.pitchers": "Pitchers ({n})",
   "roster.note": "Players with regular-season statistics for this club in {season}, under their main position. A player who changed clubs appears under each.",
+  "staff.headCoach": "Head coach",
+  "staff.headCoaches": "Head coaches",
+  "staff.manager": "Manager",
+  "staff.managers": "Managers",
+  "staff.captain": "Captain",
+  "staff.captains": "Captains",
+  "staff.altCaptains": "Alternate captains",
+  "staff.dates": "{from} to {to}",
 
   // sources, data quality, logos
   "sources.title": "Sources",

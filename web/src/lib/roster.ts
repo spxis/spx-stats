@@ -71,3 +71,32 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
     return [];
   }
 });
+
+const staffSchema = z.object({
+  role: z.enum(["head_coach", "captain", "alternate_captain"]), person_id: z.number(), name: z.string(), kind: z.string(),
+  first_on: z.string().nullable(), last_on: z.string().nullable(),
+});
+
+export interface StaffMember {
+  role: "head_coach" | "captain" | "alternate_captain";
+  /** Set when the person has a player page. */
+  id: number | null;
+  name: string;
+  firstOn: string | null;
+  lastOn: string | null;
+}
+
+/** The head coaches (managers in baseball), captains and alternate captains of a club's season; empty when the archive holds none or cannot be read. */
+export const getStaff = cache(async (teamSeasonId: number): Promise<StaffMember[]> => {
+  try {
+    const staff = await rows("team_season_staff", `team_season_id=eq.${teamSeasonId}&select=role,person_id,name,kind,first_on,last_on&order=ord`, staffSchema);
+    const ids = [...new Set(staff.filter((s) => s.kind === "player").map((s) => s.person_id))];
+    const known = ids.length
+      ? new Set((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => p.person_id))
+      : new Set<number>();
+    return staff.map((s) => ({ role: s.role, id: known.has(s.person_id) ? s.person_id : null, name: s.name, firstOn: s.first_on, lastOn: s.last_on }));
+  } catch (e) {
+    if (!(e instanceof ApiError)) throw e;
+    return [];
+  }
+});
