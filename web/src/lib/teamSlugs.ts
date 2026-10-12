@@ -5,6 +5,7 @@ import { rows } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { comparePath } from "./compare";
 import { pairPath, parseH2hSegment } from "./h2h";
+import { groupPath, parseGroupSegment, type GroupId } from "./h2hGroup";
 import { buildSlugs, franchiseNamed, makePaths, parsePair, resolveFranchise, resolveTeamSeason, tableOf } from "./slug";
 
 const nameRow = z.object({ league: z.string(), franchise_id: z.number(), name: z.string(), name_from: z.string().nullable(), name_to: z.string().nullable() });
@@ -58,6 +59,15 @@ export async function h2hOf(lg: string, seg: string): Promise<{ a: number; b: nu
   const L = slugs.leagues[lg];
   const x = resolveFranchise(L, p.a), y = resolveFranchise(L, p.b);
   return x == null || y == null || x === y ? null : pairPath(paths, lg, x, y);
+}
+
+/** The franchise and group of a club-against-a-group address and the address it should have; null when it is not one or the club is unknown. */
+export async function groupOf(lg: string, seg: string): Promise<{ f: number; group: GroupId; path: string } | null> {
+  const p = parseGroupSegment(seg);
+  if (!p) return null;
+  const [slugs, paths] = await Promise.all([getSlugs(), getPaths()]);
+  const f = resolveFranchise(slugs.leagues[lg], p.team);
+  return f == null ? null : { f, group: p.group, path: groupPath(paths, lg, f, p.group) };
 }
 
 /** The two franchises of a comparison address (in the order given) and the address that comparison should have; null when either is unknown. */

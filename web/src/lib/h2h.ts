@@ -67,7 +67,7 @@ export interface Tally {
 export const emptyTally = (): Tally => ({ gp: 0, a: { w: 0, l: 0, t: 0, otl: 0 }, b: { w: 0, l: 0, t: 0, otl: 0 }, af: 0, bf: 0 });
 
 /** The record of both sides over some games. An overtime loss (in the seasons that count them) is the loser's `otl`, not `l`. */
-export function tally(list: readonly H2hGame[], lg: string): Tally {
+export function tally(list: readonly Pick<H2hGame, "a" | "b" | "year" | "res" | "ot">[], lg: string): Tally {
   const t = emptyTally();
   for (const g of list) {
     t.gp++;

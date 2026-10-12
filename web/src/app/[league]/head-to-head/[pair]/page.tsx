@@ -22,6 +22,7 @@ import {
   type H2hGame, type PlayoffMeeting, type Season,
 } from "@/lib/h2h";
 import { getPairHistory } from "@/lib/h2hData";
+import { groupPath, GROUP_IDS } from "@/lib/h2hGroup";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
@@ -34,7 +35,8 @@ import { nickname, scoreText, seriesPath } from "@/lib/series";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { withQuery } from "@/lib/slug";
 import { parseSort, tableOf } from "@/lib/sort";
-import { getLeagueClubs, getPaths, h2hOf } from "@/lib/teamSlugs";
+import { getLeagueClubs, getPaths, groupOf, h2hOf } from "@/lib/teamSlugs";
+import { GroupPage, groupMeta } from "./group";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn per request (the language cookie); the games behind it come from the hour-long cache (lib/api/client.ts).
@@ -54,6 +56,8 @@ async function load(lg: string, a: number, b: number) {
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league]/head-to-head/[pair]">): Promise<Metadata> => {
   const { league, pair } = await params;
   if (!isLeague(league)) return {};
+  const grp = await groupOf(league, pair);
+  if (grp) return groupMeta(league, grp.f, grp.group, grp.path);
   const at = await h2hOf(league, pair);
   if (!at) return {};
   const [{ say, plural, locale }, d] = await Promise.all([currentSpeaker(), load(league, at.a, at.b).catch(() => null)]);
@@ -76,6 +80,12 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league
 export default guard(async function HeadToHeadPage({ params, searchParams }: PageProps<"/[league]/head-to-head/[pair]">) {
   const { league: lg, pair } = await params;
   if (!isLeague(lg)) notFound();
+  const grp = await groupOf(lg, pair);
+  if (grp) {
+    const gsp = await searchParams;
+    if (grp.path !== `/${lg}/head-to-head/${pair}`) permanentRedirect(withQuery(grp.path, gsp));
+    return <GroupPage lg={lg} f={grp.f} group={grp.group} path={grp.path} sp={gsp} />;
+  }
   const at = await h2hOf(lg, pair);
   if (!at) notFound();
   const sp = await searchParams;
@@ -131,6 +141,10 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
         lg={lg} a={a} b={b} names={name} logos={[logoFor(d.brands, a, logoYear), logoFor(d.brands, b, logoYear)]}
         clubs={clubs.map((c) => ({ ...c, alt: c.alt.slice(0, 6), logo: logoFor(d.brands, c.f) }))}
       />
+      <p className="note">
+        {say("h2h.group.links")}:{" "}
+        {([[a, na], [b, nb]] as const).map(([f, n]) => GROUP_IDS.map((g) => <span key={`${f}${g}`}><Link href={groupPath(paths, lg, f, g)} prefetch={false}>{n} · {say(`h2h.group.${g}` as PhraseKey)}</Link>{" "}</span>))}
+      </p>
     </section>
   );
   const sides = (

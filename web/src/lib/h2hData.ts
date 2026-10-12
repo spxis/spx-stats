@@ -15,3 +15,11 @@ export const getPairHistory = cache(async (lg: string, a: number, b: number): Pr
   const [x, y] = await Promise.all([side(a, b), side(b, a)]);
   return [...x, ...y];
 });
+
+/** Every regular-season and playoff game a franchise played, for its record against a group of clubs (a few dozen pages for the longest histories). */
+export const getTeamHistory = cache(async (lg: string, f: number): Promise<GameRow[]> => {
+  const side = (col: "home_f" | "away_f") =>
+    rows("games", `league=eq.${lg}&phase=in.(regular,playoffs)&${col}=eq.${f}&select=*&order=game_date,game_id`, gameSchema);
+  const [x, y] = await Promise.all([side("home_f"), side("away_f")]);
+  return [...x, ...y];
+});
