@@ -746,6 +746,8 @@ export const PHRASES = {
   "player.credit": "Biographical facts from {wikidata} (CC0). Flags: {hata} (MIT; drawings from Wikimedia Commons). Map: Chizu, from Natural Earth. Team history and championships cover the seasons we hold rosters for.",
   "player.mapTitle": "Where {name} was born",
   "player.birthplace": "Birthplace",
+  "player.mapOpen": "Map of where {name} was born and played",
+  "player.mapNote": "Birthplace and the home venue of each team played for. Press a dot to see it. Map: Chizu, from Natural Earth.",
   "col.award": "Award",
   "col.note": "Note",
   "col.to": "To",

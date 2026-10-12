@@ -4,12 +4,16 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
 import { BirthMap } from "@/components/BirthMap";
+import type { Pin } from "@/components/mapDraw";
 import { Flag } from "@/components/Flag";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamLink } from "@/components/ui";
 import { brandFor } from "@/lib/brand";
+import { countryAt } from "@/lib/country";
+import { placeFor } from "@/lib/venue";
+import { getPaths } from "@/lib/teamSlugs";
 import { getBrands, getSummary } from "@/lib/data";
 import { atUtc } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -65,6 +69,17 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   const [brands, summary, record] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id)]);
   const { person: p, awards, teams } = d;
   const lgs = (p.leagues ?? []).filter(isLeague);
+  const paths = await getPaths();
+  const homePin: Pin | null = p.birth_lat != null && p.birth_lon != null
+    ? { f: 0, name: p.birth_place || say("player.birthplace"), venue: p.birth_place ? say("player.birthplace") : null, lat: p.birth_lat, lon: p.birth_lon, cc: countryAt(p.birth_lat, p.birth_lon), me: true }
+    : null;
+  const teamPins: Pin[] = [];
+  for (const t of [...teams].reverse()) {
+    const key = `${t.league}|${t.franchise_id}`;
+    const b = placeFor(brands, t.franchise_id, t.to_year);
+    if (!b || b.latitude == null || b.longitude == null || teamPins.some((x) => x.slug === key)) continue;
+    teamPins.push({ f: teamPins.length + 1, slug: key, name: t.team || say("team.fallback", { id: t.franchise_id }), venue: b.home_venue, lat: b.latitude, lon: b.longitude, cc: countryAt(b.latitude, b.longitude), href: paths.team(t.league, t.franchise_id) });
+  }
   const age = ageOn(p.birth_date, p.death_date);
   const yr = (s: string) => s.slice(0, 4);
   const longDate = (s: string) => dt.ymd(atUtc(s));
@@ -127,7 +142,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
     <>
       {isLeague(home) ? <AccentStyle league={home} /> : null}
       <section className="head fade">
-        {p.birth_lat != null && p.birth_lon != null ? <BirthMap lat={p.birth_lat} lon={p.birth_lon} name={p.name} place={p.birth_place} /> : null}
+        {homePin ? <BirthMap home={homePin} pins={[homePin, ...teamPins]} name={p.name} /> : null}
         <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say("player.eyebrow")}</span>
         <h1>{p.name}</h1>
         {p.birth_date ? <p className="lede">{p.death_date ? say("player.lifespan", { from: yr(p.birth_date), to: yr(p.death_date) }) : say("player.bornYear", { year: yr(p.birth_date) })}</p> : null}
