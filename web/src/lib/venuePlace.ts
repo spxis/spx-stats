@@ -4,11 +4,11 @@ import { z } from "zod";
 import { rows } from "./api/client";
 
 /** Where a home venue stands and its Wikipedia article, from api.venue_place; any part can be missing. */
-export interface VenuePlace { city: string | null; region: string | null; place: string | null; wiki: string | null }
+export interface VenuePlace { city: string | null; region: string | null; place: string | null; wiki: string | null; wid: string | null }
 
 const placeRow = z.object({
   franchise_id: z.number(), home_venue: z.string(), latitude: z.number(), longitude: z.number(),
-  city: z.string().nullable(), region: z.string().nullable(), wikipedia_title: z.string().nullable(),
+  city: z.string().nullable(), region: z.string().nullable(), wikipedia_title: z.string().nullable(), wikidata_id: z.string().nullable(),
 });
 
 /** The key a brand row's venue is found by: the same name and coordinates api.team_brand gives. */
@@ -23,12 +23,12 @@ export function placeKey(f: number, venue: string | null, lat: number | null, lo
 export const getVenuePlaces = cache(async (lg: string): Promise<Map<string, VenuePlace>> => {
   const out = new Map<string, VenuePlace>();
   try {
-    for (const r of await rows("venue_place", `league=eq.${lg}&select=franchise_id,home_venue,latitude,longitude,city,region,wikipedia_title&order=franchise_id,home_venue`, placeRow)) {
+    for (const r of await rows("venue_place", `league=eq.${lg}&select=franchise_id,home_venue,latitude,longitude,city,region,wikipedia_title,wikidata_id&order=franchise_id,home_venue`, placeRow)) {
       const key = placeKey(r.franchise_id, r.home_venue, r.latitude, r.longitude);
       if (!key) continue;
       const abbr = r.region?.split("-")[1] ?? null;
       out.set(key, {
-        city: r.city, region: abbr, place: [r.city, abbr].filter(Boolean).join(", ") || null,
+        wid: r.wikidata_id, city: r.city, region: abbr, place: [r.city, abbr].filter(Boolean).join(", ") || null,
         wiki: r.wikipedia_title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(r.wikipedia_title.replace(/ /g, "_"))}` : null,
       });
     }

@@ -29,6 +29,8 @@ export interface Pin {
   div?: string | null;
   /** The club's logo for that season, shown in place of the dot when asked. */
   logo?: string | null;
+  /** Further lines for the selection panel: the venue's other names, its facts and its address. */
+  extra?: string[];
 }
 
 /** The words a dot says: abbreviation, name, venue (or years) and place, as in its label and its tooltip. */
@@ -36,8 +38,8 @@ export const pinText = (t: Pin) => [t.abbr ? `${t.abbr} · ${t.name}` : t.name, 
 
 /** What the selection panel shows for a dot: the team and its page, the venue and its Wikipedia article, and the rest as plain text. */
 export function selectionOf(t: Pin): { team: string; teamHref?: string; venue?: string; wiki?: string | null; rest: string[] } {
-  if (t.team) return { team: t.team, teamHref: t.teamHref, venue: t.name, wiki: t.wiki, rest: [t.venue, t.place].filter((x): x is string => !!x) };
-  return { team: t.name, teamHref: t.href, venue: t.venue ?? undefined, wiki: t.wiki, rest: t.place ? [t.place] : [] };
+  if (t.team) return { team: t.team, teamHref: t.teamHref, venue: t.name, wiki: t.wiki, rest: [t.venue, t.place, ...(t.extra ?? [])].filter((x): x is string => !!x) };
+  return { team: t.name, teamHref: t.href, venue: t.venue ?? undefined, wiki: t.wiki, rest: [t.place, ...(t.extra ?? [])].filter((x): x is string => !!x) };
 }
 
 export type Chizu = {

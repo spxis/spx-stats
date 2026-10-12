@@ -38,6 +38,7 @@ import { teamRanks } from "@/lib/teamRanks";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
 import { clubPins } from "@/lib/venueMap";
 import { getVenuePlaces } from "@/lib/venuePlace";
+import { getVenueFacts, getVenueNames } from "@/lib/venueName";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 /** The team's season: its games (in date order, or the reverse), its standings row for the year and its brand for the year. */
@@ -85,6 +86,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const sort = parseSort(sp.sort, TEAM_GAME_SORT_KEYS, "date.asc");
   const dateSort = sort.find((s) => s.key === "date");
   const [d, t, summary, leagueSt, notes, alignment, venuePlaces] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y), getSeasonAlignment(lg, y), getVenuePlaces(lg)]);
+  const [venueNames, venueFacts] = await Promise.all([getVenueNames(), getVenueFacts()]);
   if (!d.raw.length) {
     return (
       <>
@@ -120,7 +122,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const figureRanks = await getFigureRanks(lg, y, f);
   const selection = parseSelection(sp);
   const mapPins = clubPins({
-    year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces,
+    year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts,
     href: (c) => paths.teamSeason(lg, c, y), slug: (c) => paths.season(lg, c, y),
   });
   const mePin = mapPins.find((p) => p.f === f);
@@ -152,7 +154,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>        </p>
-        {place?.home_venue ? (mePin ? <SeasonVenueLine venue={place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
+        {place?.home_venue ? (mePin ? <SeasonVenueLine venue={mePin.venue ?? place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
         {mePin ? <SeasonMapThumb me={mePin} leagueShort={LG[lg]} seasonLabel={season} name={name} /> : null}
         <CompareControl lg={lg} f={f} name={name} year={y} />
       </section>
