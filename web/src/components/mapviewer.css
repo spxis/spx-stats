@@ -1,0 +1,30 @@
+/* The large map viewer (MapViewer.tsx) and the venue map around it. Tokens come from globals.css. */
+.mapviewer { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.mapbar { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; }
+.mapbar select { flex: 0 1 auto; max-width: 100%; }
+.mapstage { position: relative; }
+.teammap.viewer { border: 1px solid var(--rule); user-select: none; -webkit-user-select: none; -webkit-tap-highlight-color: transparent; }
+.teammap.viewer[data-zoomed="1"] { cursor: grab; }
+.teammap.viewer[data-zoomed="1"]:active { cursor: grabbing; }
+.teammap.viewer .pin { vector-effect: non-scaling-stroke; stroke-width: 1.5px; }
+.teammap.viewer .pin.me { vector-effect: non-scaling-stroke; stroke-width: 2px; }
+.teammap.viewer .hit { fill: transparent; stroke: none; pointer-events: all; }
+.teammap.viewer a { outline: none; }
+.teammap.viewer a:focus-visible .pin { stroke: var(--ink); stroke-width: 3px; }
+.teammap.viewer a[href] { cursor: pointer; }
+.pinlabels { pointer-events: none; }
+.mapzoom { position: absolute; top: 8px; right: 8px; z-index: 5; display: flex; flex-direction: column; align-items: stretch; border: 1px solid var(--rule); background: var(--panel); }
+.mapzoom button { width: 38px; height: 38px; border: 0; background: transparent; color: var(--ink); font: 700 20px/1 var(--body); cursor: pointer; padding: 0; }
+.mapzoom > * + * { border-top: 1px solid var(--rule); }
+.mapzoom button:hover:not(:disabled) { color: var(--accent); }
+.mapzoom button:disabled { color: var(--muted); opacity: .45; cursor: default; }
+.mapzoom span { text-align: center; font: 600 12px/1 var(--mono); color: var(--muted); padding: 6px 0; }
+
+.mapviewer .note { margin: 0; }
+@media (max-width: 640px) {
+  .mapzoom { top: 6px; right: 6px; }
+  .mapzoom button { width: 36px; height: 36px; }
+  .mapbar { gap: 6px 8px; }
+  .mapbar .seg button { padding: 8px 9px; font-size: 13px; }
+  .mapbar select { flex: 1 1 130px; font-size: 14px; padding: 7px 8px; }
+}

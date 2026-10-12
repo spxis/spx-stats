@@ -6,12 +6,15 @@ import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { TeamCharts } from "@/components/TeamCharts";
-import { COUNTRY_KEY, TeamFlag } from "@/components/TeamFlag";
+import { COUNTRY_KEY } from "@/components/countryKey";
+import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
 import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
+import { getSeasonAlignment } from "@/lib/alignmentData";
+import type { AlignmentRow } from "@/lib/alignment";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { brandFor, logoFor, teamAccent, type BrandMap } from "@/lib/brand";
@@ -73,11 +76,16 @@ async function Lifetime({ lg, f, rows }: { lg: string; f: number; rows: Standing
   );
 }
 
-function pins(paths: TeamPaths, lg: string, abbrs: AbbrMap, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number): Pin[] {
+function pins(paths: TeamPaths, lg: string, abbrs: AbbrMap, clubs: { franchise_id: number; team: string | null }[], brands: BrandMap, year: number, f: number, places: AlignmentRow[]): Pin[] {
   return clubs.flatMap((c) => {
     const b = placeFor(brands, c.franchise_id, year);
+    const al = places.find((a) => a.franchise_id === c.franchise_id);
     return b && b.latitude != null && b.longitude != null
-      ? [{ f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(abbrs, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue, href: paths.team(lg, c.franchise_id), me: c.franchise_id === f }]
+      ? [{
+        f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(abbrs, c.franchise_id, year, c.team), lat: b.latitude, lon: b.longitude, venue: b.home_venue,
+        href: paths.team(lg, c.franchise_id), me: c.franchise_id === f, cc: countryAt(b.latitude, b.longitude),
+        conf: al?.conference_short ?? al?.conference, div: al?.division_short ?? al?.division,
+      }]
       : [];
   });
 }
@@ -108,11 +116,11 @@ export default async function TeamPage({ params }: PageProps<"/[league]/team/[fr
   const me = lastYear != null ? placeFor(brands, f, lastYear) : null;
   let map: React.ReactNode = null;
   if (lastYear != null && me && me.latitude != null && me.longitude != null) {
-    const clubs = await getClubs(lg, lastYear);
+    const [clubs, places] = await Promise.all([getClubs(lg, lastYear), getSeasonAlignment(lg, lastYear)]);
     map = (
       <TeamMapCorner
         me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue, me: true }}
-        others={pins(paths, lg, abbrs, clubs, brands, lastYear, f)} clubCount={clubs.length}
+        others={pins(paths, lg, abbrs, clubs, brands, lastYear, f, places)} clubCount={clubs.length}
         seasonLabel={seasonLabel(lg, lastYear)} leagueShort={LG[lg]} name={now}
       />
     );
