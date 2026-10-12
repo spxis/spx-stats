@@ -186,7 +186,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
         </section>
       ) : null}
       {record.seasonTeams.length ? <PlayerSeasons name={p.name} record={record} brands={brands} seasonsHeld={seasonsHeld} /> : null}
-      {record.stats.length ? <PlayerStatistics record={record} phase={phase} path={at.path} sp={sp} brands={brands} /> : null}
+      {record.stats.length ? <PlayerStatistics name={p.name} record={record} phase={phase} path={at.path} sp={sp} brands={brands} /> : null}
       <PlayerResume resume={record.resume} seasons={record.seasonTeams} />
       {awards.length ? (
         <section className="section">

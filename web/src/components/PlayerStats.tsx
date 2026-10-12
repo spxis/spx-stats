@@ -67,7 +67,7 @@ function statSpecs<T extends { stats: StatNumbers }>(cols: StatCol[], say: (k: P
 }
 
 /** The statistics of one phase: for each stat group, the seasons and the career totals, and a chart of the main stat. */
-export async function PlayerStatistics({ record, phase, path, sp, brands }: { record: PlayerRecord; phase: PlayerPhase; path: string; sp: Query; brands: BrandMap }) {
+export async function PlayerStatistics({ name, record, phase, path, sp, brands }: { name: string; record: PlayerRecord; phase: PlayerPhase; path: string; sp: Query; brands: BrandMap }) {
   const { say, fmt, plural } = await currentSpeaker();
   const phases: [PlayerPhase, string][] = [["regular", say("phase.regular")], ["playoffs", say("phase.playoffs")]];
   const leaguesWithStats = new Set(record.stats.map((s) => s.league));
@@ -84,15 +84,19 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
     if (!next.delete(key)) next.add(key);
     return queryHref(path, sp, { teams: next.size && next.size < clubs.size ? [...next].join(",") : null });
   };
+  // ?season=<year> shows that one season of every club.
+  const rawYear = Number(Array.isArray(sp.season) ? sp.season[0] : sp.season);
+  const year = record.stats.some((s) => s.year === rawYear) ? rawYear : 0;
+  const yearLeague = year ? record.stats.find((s) => s.year === year)!.league : "";
   const blocks = STAT_GROUP_ORDER.flatMap((gid) => {
     const g = STAT_GROUPS[gid];
-    const seasons = record.stats.filter((s) => s.stat_group === gid && s.phase === phase && (!filtered || picked.has(teamKey(s))));
-    const totals = filtered ? [] : record.totals.filter((t) => t.stat_group === gid && t.phase === phase);
+    const seasons = record.stats.filter((s) => s.stat_group === gid && s.phase === phase && (!filtered || picked.has(teamKey(s))) && (!year || s.year === year));
+    const totals = filtered || year ? [] : record.totals.filter((t) => t.stat_group === gid && t.phase === phase);
     return seasons.length ? [{ g, seasons, totals }] : [];
   });
   return (
-    <section className="section">
-      <h2>{say("player.statsTitle")}</h2>
+    <section className="section" id="statistics">
+      <h2>{say("player.statsFor", { name })}</h2>
       <nav className="seg views" aria-label={say("phase.aria")}>
         {phases.map(([k, label]) => (
           <Link key={k} href={queryHref(path, sp, { phase: k === "regular" ? null : "p" })} prefetch={false} scroll={false} aria-current={k === phase ? "page" : undefined}>{label}</Link>
@@ -106,9 +110,16 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
           ))}
         </nav>
       ) : null}
+      {year ? (
+        <p className="note">
+          {say("player.statsSeason", { season: seasonLabel(yearLeague, year) })}{" "}
+          <Link href={`${queryHref(path, sp, { season: null })}#statistics`} prefetch={false} scroll={false}>{say("player.statsAllSeasons")}</Link>{" · "}
+          <Link href={seasonPath(yearLeague, year)} prefetch={false}>{say("player.statsSeasonPage", { season: seasonLabel(yearLeague, year) })}</Link>
+        </p>
+      ) : null}
       {blocks.length ? blocks.map(({ g, seasons, totals }) => {
         const seasonCol: ColumnSpec<PersonStatRow> = { key: "season", label: say("col.season"), num: true, get: (r) => r.year,
-          cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{many ? `${leagueName(r.league)} ${seasonLabel(r.league, r.year)}` : seasonLabel(r.league, r.year)}</Link> };
+          cell: (r) => <Link href={`${queryHref(path, sp, { season: String(r.year) })}#statistics`} prefetch={false} scroll={false} title={say("player.statsView", { name, season: seasonLabel(r.league, r.year) })}>{many ? `${leagueName(r.league)} ${seasonLabel(r.league, r.year)}` : seasonLabel(r.league, r.year)}</Link> };
         const teamCol: ColumnSpec<PersonStatRow> = { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
           cell: (r) => <><TeamLogo url={brandFor(brands, r.franchise_id, r.year)?.logo_url} /><TeamLink lg={r.league} f={r.franchise_id} name={r.team ?? say("team.fallback", { id: r.franchise_id })} year={r.year} /></> };
         const seasonTable = tableOf(seasons, statSpecs([...g.cols], say, fmt, [seasonCol, teamCol]), (r) => `${r.league}|${r.year}|${r.team_season_id}|${r.phase}`);
@@ -131,7 +142,7 @@ export async function PlayerStatistics({ record, phase, path, sp, brands }: { re
                 <div className="tablebox"><SortTable {...totalTable} param={`sort_${g.id}_total`} /></div>
               </>
             ) : null}
-            {points.length > 1 ? <PlayerChart points={points} stat={say(g.main.label as PhraseKey)} aria={say("player.chartAria", { stat: say(g.main.title as PhraseKey) })} /> : null}
+            {!year && points.length > 1 ? <PlayerChart points={points} stat={say(g.main.label as PhraseKey)} aria={say("player.chartAria", { stat: say(g.main.title as PhraseKey) })} /> : null}
           </div>
         );
       }) : <p className="note">{say("player.statsNone")}</p>}
