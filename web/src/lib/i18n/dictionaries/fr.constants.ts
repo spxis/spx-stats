@@ -505,6 +505,7 @@ export const FR: Dictionary = {
   "venues.mapTitle": "Enceintes à domicile, {league}",
   "venues.leagueNote": "{n} enceintes de la {league}, {season}. Appuyez sur un point pour ouvrir cette équipe. Carte : Chizu, d’après Natural Earth.",
   "venues.historyNote": "{n} enceintes de cette équipe, avec les années d’utilisation. Carte : Chizu, d’après Natural Earth.",
+  "venues.wikipedia": "Wikipédia",
 
   // sources, data quality, logos
   "sources.title": "Sources",

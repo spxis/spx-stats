@@ -505,6 +505,7 @@ export const JA: Dictionary = {
   "venues.mapTitle": "{league}の本拠地",
   "venues.leagueNote": "{season}の{league}の本拠地{n}か所。点を押すとそのチームが開きます。地図：Chizu、Natural Earthより。",
   "venues.historyNote": "このチームの本拠地{n}か所と使用年。地図：Chizu、Natural Earthより。",
+  "venues.wikipedia": "ウィキペディア",
 
   // sources, data quality, logos
   "sources.title": "情報源",

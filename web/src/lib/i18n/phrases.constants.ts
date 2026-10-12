@@ -541,6 +541,7 @@ export const PHRASES = {
   "venues.mapTitle": "Home venues, {league}",
   "venues.leagueNote": "{n} {league} home venues, {season}. Press a dot to open that team. Map: Chizu, from Natural Earth.",
   "venues.historyNote": "{n} home venues of this team, with the years used. Map: Chizu, from Natural Earth.",
+  "venues.wikipedia": "Wikipedia",
 
   // sources, data quality, logos
   "sources.title": "Sources",
