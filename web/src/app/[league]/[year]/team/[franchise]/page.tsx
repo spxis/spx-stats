@@ -9,6 +9,7 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { TeamRoster } from "@/components/TeamRoster";
 import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
 import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
+import { TeamRanks } from "@/components/TeamRanks";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
@@ -31,6 +32,7 @@ import { parseSort } from "@/lib/sort";
 import { placeFor } from "@/lib/venue";
 import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
+import { teamRanks } from "@/lib/teamRanks";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
 import { clubPins } from "@/lib/venueMap";
 import { getVenuePlaces } from "@/lib/venuePlace";
@@ -111,6 +113,8 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
 
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
+  const here = summary.seasons.find((x) => x.league === lg && x.year === y);
+  const ranks = teamRanks(leagueSt, f, !!here && here.games > 0 && here.finals < 0.9 * here.games, LG[lg]);
   const selection = parseSelection(sp);
   const mapPins = clubPins({
     year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces,
@@ -134,7 +138,10 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <div className="namerow">
           <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
-          <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link>
+          <div className="seasonside">
+            <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link>
+            {ranks ? <TeamRanks lg={lg} year={y} ranks={ranks} /> : null}
+          </div>
         </div>
         {isChamp ? <span className="reigning"><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
         <p className="lede">
