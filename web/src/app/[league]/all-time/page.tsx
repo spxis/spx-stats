@@ -174,7 +174,7 @@ export default async function AllTimePage({ params, searchParams }: PageProps<"/
   const hl = (k: PhraseKey, t: Franchise, value: string, sub: string) => (
     <Link key={k} className="at-c" style={teamVars(colours(t.f))} href={paths.team(lg, t.f)} prefetch={false}>
       <span className="k">{say(k)}</span>
-      <span className="who"><TeamLogo url={logoFor(brands, t.f)} size={28} /><span>{t.name}</span></span>
+      <span className="who"><TeamLogo url={logoFor(brands, t.f)} size={36} shape="square" /><span>{t.name}</span></span>
       <b>{value}</b>
       <span className="sub">{sub}</span>
     </Link>

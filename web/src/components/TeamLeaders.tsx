@@ -51,7 +51,7 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
             <>
               <span className="lbig">{showTeam(stat.kind, ctx.lead.value, fmt)}</span>
               <span className="lwho">
-                <TeamLogo url={logoFor(brands, ctx.lead.teams[0].franchise_id, year)} size={18} />
+                <TeamLogo url={logoFor(brands, ctx.lead.teams[0].franchise_id, year)} size={24} shape="square" />
                 <span>{name(ctx.lead.teams[0])}</span>
                 {ctx.lead.teams.length > 1 ? <span className="lmore">{`+${ctx.lead.teams.length - 1}`}</span> : null}
               </span>
@@ -115,7 +115,7 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
             <span className="num">{showTeam(stat.kind, lead.value, fmt)}{perGame(stat) ? <small>{perGame(stat)}</small> : null}</span>
             <span className="name">
               {lead.teams.slice(0, 3).map((r, i) => (
-                <span key={r.team_id}>{i > 0 ? <span className="dim">{" / "}</span> : null}<TeamLogo url={logoFor(brands, r.franchise_id, year)} size={28} />{link(r)}</span>
+                <span key={r.team_id}>{i > 0 ? <span className="dim">{" / "}</span> : null}<TeamLogo url={logoFor(brands, r.franchise_id, year)} size={36} shape="square" />{link(r)}</span>
               ))}
               {lead.teams.length > 3 ? <span className="dim">{`+${lead.teams.length - 3}`}</span> : null}
             </span>

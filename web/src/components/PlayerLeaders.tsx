@@ -84,7 +84,7 @@ export async function PlayerLeaders({ lg, year, teams, sp, brands, abbrs }: {
                 <>
                   <span className="lbig">{show(s, lead.value)}</span>
                   <span className="lwho">
-                    <TeamLogo url={logoFor(brands, club(lead).f, year)} size={18} />
+                    <TeamLogo url={logoFor(brands, club(lead).f, year)} size={24} shape="square" />
                     <span>{nameOf(lead)}</span>
                   </span>
                   <span className="lmore">{clubAbbr(lead)}{lead.player.clubs.length > 1 ? ` +${lead.player.clubs.length - 1}` : ""}</span>
@@ -149,7 +149,7 @@ export async function PlayerLeaders({ lg, year, teams, sp, brands, abbrs }: {
             <span className="kicker">{say(tied > 1 ? "leaders.heroKickerTied" : "leaders.heroKicker", { stat: stat(chosen) })}</span>
             <span className="num">{show(chosen, lead.value)}</span>
             <span className="name">
-              <TeamLogo url={logoFor(brands, club(lead).f, year)} size={28} />
+              <TeamLogo url={logoFor(brands, club(lead).f, year)} size={36} shape="square" />
               <Link href={`/players/${lead.player.id}`} prefetch={false}>{nameOf(lead)}</Link>
               {tied > 1 ? <span className="dim">{` +${tied - 1}`}</span> : null}
             </span>

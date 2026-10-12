@@ -207,7 +207,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
     const won = s.winner === i;
     return (
       <div className={`sdside ${i === 0 ? "a" : "b"}${s.winner != null && !won ? " lost" : ""}`}>
-        <span className="crest">{logo ? <TeamLogo url={logo} size={64} /> : <span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span>}</span>
+        {logo ? <TeamLogo url={logo} size={88} shape="circle" /> : <span className="crest"><span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span></span>}
         <h2 className="sdname"><Link href={paths.teamSeason(lg, t.f, y)} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link></h2>
         {won ? <span className="wintag">{crowned ? <><BadgeCup league={lg} />{say("side.champions", { season })}</> : say("side.won")}</span> : null}
         <span className="sdmeta">{r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : d.standings == null ? sp.say("load.failed") : say("side.noRecord")}</span>
@@ -237,7 +237,7 @@ export default async function SeriesPage({ params }: PageProps<"/[league]/[year]
             <span className="dash" aria-hidden="true">–</span>
             <b className={`n b${s.winner === 1 ? " w" : ""}`}>{single ? s.games[0].score[1] ?? "–" : s.basis === "goals" ? B.scored : B.wins}</b>
           </div>
-          <span className="verdict">{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={32} /> : null}{verdict}</span>
+          <span className="verdict">{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={36} shape="circle" /> : null}{verdict}</span>
           <span className="sdnote">{s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })}</span>
         </div>
         {side(1)}

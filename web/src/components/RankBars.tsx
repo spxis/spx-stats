@@ -35,7 +35,7 @@ export function RankBars({ items, centre, limit, more, label }: { items: RankIte
     return (
       <li key={i.key} className="at-c" style={teamVars(i)}>
         <Link className={`rk-name${i.gone ? " rk-gone" : ""}`} href={i.href} prefetch={false} title={i.name}>
-          <TeamLogo url={i.logo} size={20} />
+          <TeamLogo url={i.logo} size={24} shape="circle" />
           <span className="tn-long">{i.name}</span>
           <abbr className="tn-short" title={i.name}>{i.abbr}</abbr>
         </Link>

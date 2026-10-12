@@ -203,7 +203,7 @@ export default async function HeadToHeadPage({ params, searchParams }: PageProps
     const logo = logoFor(d.brands, f, logoYear);
     return (
       <div className={`sdside ${i === 0 ? "a" : "b"}`}>
-        <span className="crest">{logo ? <TeamLogo url={logo} size={64} /> : <span className="mono">{abbrFor(d.abbrs, f, year ?? last.year, name[i])}</span>}</span>
+        {logo ? <TeamLogo url={logo} size={88} shape="circle" /> : <span className="crest"><span className="mono">{abbrFor(d.abbrs, f, year ?? last.year, name[i])}</span></span>}
         <h2 className="sdname"><Link href={paths.team(lg, f)} prefetch={false}>{name[i]}</Link></h2>
         <span className="sdmeta">{say("h2h.side.record", { record: recordText(r) })}</span>
         <span className="sdmeta">{sh == null ? "" : say("h2h.side.share", { share: fmt3(sh) })} · {say("h2h.side.scored", { count: fmt(scored), unit: unit.toLowerCase() })}</span>

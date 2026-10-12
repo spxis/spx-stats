@@ -65,7 +65,8 @@
 .sdside a { color: inherit; text-decoration-color: color-mix(in srgb, currentColor 40%, transparent); }
 .crest { width: 88px; height: 88px; border-radius: 50%; background: var(--paper); display: grid; place-items: center; flex: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ia) 30%, transparent); }
 .sdside.b .crest { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ib) 30%, transparent); }
-.crest .logo { margin: 0; vertical-align: middle; max-width: 64px; max-height: 64px; width: auto; height: auto; }
+.sdside .logo.circle { margin: 0; flex: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--ia) 30%, transparent); }
+.sdside.b .logo.circle { box-shadow: 0 0 0 3px color-mix(in srgb, var(--ib) 30%, transparent); }
 .crest .mono { font: 700 28px/1 var(--display); letter-spacing: .02em; color: var(--ink); }
 h2.sdname { font: 700 clamp(28px, 4vw, 46px)/1 var(--display); text-transform: uppercase; text-wrap: balance; }
 .wintag { display: inline-flex; align-items: center; gap: 7px; align-self: flex-start; font: 700 13px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; padding: 6px 9px; border: 2px solid currentColor; }
@@ -89,7 +90,7 @@ h2.sdname { font: 700 clamp(28px, 4vw, 46px)/1 var(--display); text-transform: u
   .showdown { grid-template-columns: 1fr; }
   .sdside, .sdside.b { clip-path: none; align-items: flex-start; text-align: left; padding: 20px 16px; flex-direction: row; flex-wrap: wrap; align-content: center; gap: 8px 14px; }
   .sdside .crest { width: 64px; height: 64px; }
-  .crest .logo { max-width: 46px; max-height: 46px; }
+  .sdside .logo.circle { width: 64px; height: 64px; padding: 11px; }
   .sdside.b .wintag { align-self: flex-start; }
   h2.sdname { flex: 1 1 200px; font-size: 30px; }
   .sdside > .sdmeta, .sdside > .sdlinks, .sdside > .wintag { flex-basis: 100%; }

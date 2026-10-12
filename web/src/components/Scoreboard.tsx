@@ -26,7 +26,7 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
   const side = (id: number, f: number | null, name: string | null, score: number | null, won: boolean) => (
     <div className={"srow" + (won ? " won" : "")}>
-      <span className="slogo"><TeamLogo url={logoFor(brands, f, g.year)} size={24} /></span>
+      <span className="slogo"><TeamLogo url={logoFor(brands, f, g.year)} size={32} shape="square" /></span>
       <span className="sname"><TeamLink lg={lg} f={f} name={name || "—"} year={g.year} className={won ? "won" : undefined} /></span>
       <b className="sscore">{final ? score : ""}</b>
     </div>
