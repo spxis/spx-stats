@@ -62,7 +62,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/team
     { key: "seasons", label: say("col.seasons"), num: true, rest: "seasons", get: (t: TeamIndexRow) => t.seasons, cell: (t: TeamIndexRow) => fmt(t.seasons) },
     { key: "titles", label: say("col.titles"), num: true, rest: "titles", get: (t: TeamIndexRow) => t.titles, cell: (t: TeamIndexRow) => fmt(t.titles) },
     { key: "share", label: say("teams.colShare"), num: true, title: say("teams.shareTitle"), rest: "share", get: (t: TeamIndexRow) => t.share, cell: (t: TeamIndexRow) => (t.share == null ? "" : fmt3(t.share)) },
-    { key: "former", label: say("teams.colFormer"), get: (t: TeamIndexRow) => t.former_names.join(", ") },
+    { key: "former", label: say("teams.colFormer"), cls: "former", get: (t: TeamIndexRow) => t.former_names.join(", "), cell: (t: TeamIndexRow) => { const names = t.former_names.join(", "); return <span title={names}>{names}</span>; } },
   ], (t) => `${t.league}-${t.franchise_id}`) : null;
 
   return (
@@ -88,7 +88,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/team
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>
             <p className="note">{plural("count.teams", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
-            <div className="scroll"><SortTable {...table} def={DEF_SORT} initial={sort} remote /></div>
+            <div className="scroll teamlist"><SortTable {...table} def={DEF_SORT} initial={sort} remote /></div>
             {data.pages > 1 ? (
               <nav className="pager" aria-label={say("teams.pager")}>
                 {data.page > 1 ? <Link href={to(1)} prefetch={false}>{"« " + say("players.first")}</Link> : null}

@@ -324,5 +324,9 @@
     .cell .mk { font-size: 10px; }
     .seasonnav { position: static; order: -1; }
     .mapbtn { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
+    .scroll { background: linear-gradient(to right, var(--paper) 30%, transparent) left / 28px 100% no-repeat local, linear-gradient(to left, var(--paper) 30%, transparent) right / 28px 100% no-repeat local, linear-gradient(to right, rgba(0,0,0,.45), transparent) left / 12px 100% no-repeat scroll, linear-gradient(to left, rgba(0,0,0,.45), transparent) right / 12px 100% no-repeat scroll; }
+    .teamlist td { height: 41px; vertical-align: middle; }
+    .teamlist td.team { white-space: nowrap; }
+    .teamlist td.former { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
 }
