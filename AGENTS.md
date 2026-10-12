@@ -299,7 +299,8 @@ and on DS1). It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any t
 
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
-materialised ones).
+materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
+core rebuild, and after player loads to production run `select api.refresh();`).
 
 1. **Archive first.** Every raw download goes into `legacy_files.raw_archive` (name, saved_on, sha256, data bytea)
    before it is loaded, and right after that to Dropbox:
