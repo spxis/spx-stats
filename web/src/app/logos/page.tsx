@@ -3,6 +3,7 @@ import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
 import { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { guard } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 
@@ -13,7 +14,7 @@ export async function generateMetadata() {
   return pageMeta({ title: say("logos.title"), description: say("logos.metaDesc"), path: "/logos", locale });
 }
 
-export default async function LogosPage() {
+export default guard(async function LogosPage() {
   const { say, fmt } = await currentSpeaker();
   const brands = await getBrands();
   const list = Object.values(brands).flat().filter((b) => b.logo_url);
@@ -47,4 +48,4 @@ export default async function LogosPage() {
       </section>
     </>
   );
-}
+});
