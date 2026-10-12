@@ -32,6 +32,7 @@ import { parseSort } from "@/lib/sort";
 import { placeFor } from "@/lib/venue";
 import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
+import { getFigureRanks } from "@/lib/teamFigures";
 import { teamRanks } from "@/lib/teamRanks";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
 import { clubPins } from "@/lib/venueMap";
@@ -115,6 +116,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
   const here = summary.seasons.find((x) => x.league === lg && x.year === y);
   const ranks = teamRanks(leagueSt, f, !!here && here.games > 0 && here.finals < 0.9 * here.games, LG[lg]);
+  const figureRanks = await getFigureRanks(lg, y, f);
   const selection = parseSelection(sp);
   const mapPins = clubPins({
     year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces,
@@ -141,7 +143,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
           <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
           <div className="seasonside">
             <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link>
-            {ranks ? <TeamRanks lg={lg} year={y} ranks={ranks} /> : null}
+            {ranks || figureRanks.length ? <TeamRanks lg={lg} year={y} ranks={ranks} figures={figureRanks} /> : null}
           </div>
         </div>
         {isChamp ? <span className="reigning"><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
