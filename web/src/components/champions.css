@@ -1,0 +1,11 @@
+/* The row of champion boxes above a league's champions table. */
+.chrow { list-style: none; margin: 0 0 18px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.chbox a { height: 100%; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; text-decoration: none; color: var(--ink); background: var(--panel); border: 1px solid var(--rule); border-top: 5px solid var(--accent); padding: 12px 10px 14px; }
+.chbox.most a, .chbox.repeat a { background: var(--soft); border-top-color: var(--ink); }
+.chbox a:hover { border-color: var(--accent); }
+.chkick { font: 600 13px/1.2 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.chlogo { height: 64px; width: 100%; display: flex; align-items: center; justify-content: center; }
+.chlogo .logo { margin: 0; max-width: 100%; }
+.chname { font: 700 20px/1.1 var(--display); text-transform: uppercase; text-wrap: balance; }
+.chdetail { font-size: 14px; color: var(--muted); }
+@media (max-width: 480px) { .chrow { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; } }

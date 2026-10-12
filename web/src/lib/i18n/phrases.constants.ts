@@ -86,6 +86,12 @@ export const PHRASES = {
   "league.heldNoResult": "Held, no result",
   "league.champions": "Champions",
   "league.noChampions": "No champions recorded yet.",
+  "champs.aria": "Recent champions, most titles and latest repeat champion",
+  "champs.recent": "{season} champion",
+  "champs.most": "Most titles",
+  "champs.repeat": "Back-to-back",
+  "champs.repeatTwo": "{from} and {to}",
+  "champs.repeatRun": "{n} in a row, {from} to {to}",
   "bars.aria": "Games and results per season",
   "bars.tip": "{games} games, {finals} with a result",
 

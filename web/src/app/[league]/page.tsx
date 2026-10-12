@@ -7,16 +7,19 @@ import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
 import { TeamLogo } from "@/components/TeamLogo";
 import { ChampionNote } from "@/components/ChampionNote";
+import { ChampionRow } from "@/components/ChampionRow";
 import { Badge, NoSeason, TeamLink } from "@/components/ui";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
 import { logoFor } from "@/lib/brand";
+import { championRow } from "@/lib/champions";
 import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LEAGUE_CODES, LEAGUES, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
+import { getPaths } from "@/lib/teamSlugs";
 
 export const revalidate = 3600;
 export const dynamicParams = false;
@@ -43,7 +46,7 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
   if (!isLeague(lg)) notFound();
   const info = LEAGUES.find((l) => l.code === lg)!;
   const { say, plural, fmt } = await currentSpeaker();
-  const [s, brands] = await Promise.all([getSummary(), getBrands()]);
+  const [s, brands, paths] = await Promise.all([getSummary(), getBrands(), getPaths()]);
   const list = withCoverage(s.seasons).filter((x) => x.league === lg).sort((a, b) => a.year - b.year);
   const withGames = list.filter((x) => x.games > 0);
   const champs = list.filter((x) => x.champion).reverse();
@@ -88,8 +91,11 @@ export default async function LeaguePage({ params }: PageProps<"/[league]">) {
       <section className="section">
         <h2>{say("league.champions")}</h2>
         {champs.length ? (
-          <div className="tablebox"><SortTable {...champions} def="season.desc" /></div>
-        ) : <p className="note">{say("league.noChampions")}</p>}
+          <>
+            <ChampionRow lg={lg} boxes={championRow(list, lg)} brands={brands} paths={paths} withGames={new Set(withGames.map((x) => x.year))} />
+            <div className="tablebox"><SortTable {...champions} def="season.desc" /></div>
+          </>
+        ) :<p className="note">{say("league.noChampions")}</p>}
       </section>
       <LeagueAwards lg={lg} />
     </>
