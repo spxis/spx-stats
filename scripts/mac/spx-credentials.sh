@@ -3,8 +3,9 @@
 #   spx-credentials.sh dropbox     OAuth flow -> keychain + NAME=value lines on the clipboard
 #   spx-credentials.sh tailscale   save a Tailscale auth key -> keychain + clipboard
 #   spx-credentials.sh setup       new Mac: DS1 password and board key from Dropbox -> keychain, then test.
-#                                  Needs SPX_DS1_HOST, SPX_DS1_PASSWORD_FILE and SPX_BOARD_KEY_FILE; the private
-#                                  START-HERE file has the full command.
+#                                  Needs SPX_DS1_PASSWORD_FILE and SPX_BOARD_KEY_FILE; the private START-HERE file
+#                                  has the full command. DS1 is found on the home LAN or Tailscale by itself
+#                                  (SPX_DS1_HOST is an optional override).
 # Secrets are read with hidden prompts, saved to the login keychain and never printed.
 # The clipboard gets ready-to-paste NAME=value lines for the "spx-stats env" note.
 set -eu
@@ -42,18 +43,18 @@ tailscale)
   echo "Saved to the keychain. TS_AUTHKEY=... is on the clipboard: paste it into your note."
   ;;
 setup)
-  : "${SPX_DS1_HOST:?use the command in the private START-HERE file}" "${SPX_DS1_PASSWORD_FILE:?}" "${SPX_BOARD_KEY_FILE:?}"
+  : "${SPX_DS1_PASSWORD_FILE:?use the command in the private START-HERE file}" "${SPX_BOARD_KEY_FILE:?}"
   for f in "$SPX_DS1_PASSWORD_FILE" "$SPX_BOARD_KEY_FILE"; do
     [ -f "$f" ] || { echo "Not found: $f (is Dropbox installed and synced?)"; exit 1; }
   done
   path+=(/opt/homebrew/opt/libpq/bin)
 
   if ! command -v psql >/dev/null; then echo "DS1: FAIL, no psql (run: brew install libpq)"
-  elif ! nc -z -G 5 "$SPX_DS1_HOST" 55440 2>/dev/null; then echo "DS1: FAIL, not reachable (turn Tailscale on)"
-  elif ds1_ok "$(kc_get "spx-stats-db DS1 55440")"; then echo "DS1: ok (keychain)"
+  elif ! SPX_DS1_FOUND=$(ds1_host); then echo "DS1: FAIL, $(ds1_missing)"
+  elif ds1_ok "$(kc_get "spx-stats-db DS1 55440")"; then echo "DS1: ok (keychain, $(ds1_route "$SPX_DS1_FOUND"))"
   else
     pw=$(tr -d '\r\n' < "$SPX_DS1_PASSWORD_FILE" 2>/dev/null || true)
-    if ds1_ok "$pw"; then kc_save "spx-stats-db DS1 55440" "$pw"; echo "DS1: ok (saved from Dropbox)"
+    if ds1_ok "$pw"; then kc_save "spx-stats-db DS1 55440" "$pw"; echo "DS1: ok (saved from Dropbox, $(ds1_route "$SPX_DS1_FOUND"))"
     else echo "DS1: FAIL, the password in SPX_DS1_PASSWORD_FILE was refused"; fi
   fi
 

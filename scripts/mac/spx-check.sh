@@ -1,5 +1,6 @@
 #!/bin/bash
 # Startup check on John's Mac: one line per connection, "ok" or "MISSING: <the one fix>". Read-only, no values printed.
+# DS1 is tried on the home LAN and on Tailscale; a Mac on the home network needs no Tailscale.
 # Run it any time: bash scripts/mac/spx-check.sh. The session-start hook runs it too. Always exits 0.
 # claude.ai connectors (Supabase, Vercel, Dropbox, GitHub) cannot be seen from a script: the agent checks its tool list.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -18,11 +19,12 @@ check_prod() {
   else line 1 "production Supabase (read): MISSING: no answer from the public API (check the network, or Supabase is down)"; fi
 }
 check_ds1() {
-  local host="${SPX_DS1_HOST:-$SPX_DS1_TAILSCALE_HOST}"
-  if ! command -v psql >/dev/null; then line 2 "DS1 Postgres: MISSING: brew install libpq"
-  elif ! nc -z -G 4 "$host" "$SPX_DS1_PORT" 2>/dev/null; then line 2 "DS1 Postgres: MISSING: turn Tailscale on (or join the home network)"
-  elif ds1_ok "$(kc_get "spx-stats-db DS1 55440")"; then line 2 "DS1 Postgres: ok"
-  else line 2 "DS1 Postgres: MISSING: password not in the keychain or refused (zsh scripts/mac/spx-credentials.sh setup, command in the private file)"; fi
+  local host
+  if ! command -v psql >/dev/null; then line 2 "DS1 Postgres: MISSING: brew install libpq"; return; fi
+  host=$(ds1_host) || { line 2 "DS1 Postgres: MISSING: $(ds1_missing)"; return; }
+  SPX_DS1_FOUND="$host"
+  if ds1_ok "$(kc_get "spx-stats-db DS1 55440")"; then line 2 "DS1 Postgres: ok ($(ds1_route "$host"))"
+  else line 2 "DS1 Postgres: MISSING: $(ds1_route "$host") answers, but the password is not in the keychain or was refused (zsh scripts/mac/spx-credentials.sh setup, command in the private file)"; fi
 }
 check_board() {
   if board_ok "$(kc_get "sumilabu board spx-stats")"; then line 3 "board key: ok"
@@ -39,8 +41,10 @@ check_gh() {
   else line 5 "gh login: MISSING: unset GH_TOKEN; gh auth login"; fi
 }
 check_tailscale() {
+  local host
   if limited 5 "$SPX_TAILSCALE_BIN" status >/dev/null 2>&1; then line 6 "Tailscale: ok"
-  else line 6 "Tailscale: MISSING: open the Tailscale app and turn it on (not needed if DS1 is ok on the home network)"; fi
+  elif host=$(ds1_host); then line 6 "Tailscale: off (not needed: DS1 answers on $(ds1_route "$host"))"
+  else line 6 "Tailscale: MISSING: off, and DS1 does not answer on the home LAN either; open the Tailscale app and turn it on, or join the home network"; fi
 }
 check_tools() {
   local bad=""
