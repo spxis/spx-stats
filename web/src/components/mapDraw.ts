@@ -93,7 +93,7 @@ export function abbreviationLabels(g: SVGGElement, pins: (Pin & { p: [number, nu
     taken.push(ok.rect);
     const text = document.createElementNS(NS, "text");
     text.setAttribute("x", String(ok.tx)); text.setAttribute("y", String(ok.ty)); text.setAttribute("text-anchor", ok.anchor);
-    text.setAttribute("class", "pinab"); text.setAttribute("style", `--fs:${fs}px`); text.setAttribute("font-size", String(fs));
+    text.setAttribute("class", "pinab"); text.setAttribute("data-i", String(pins.indexOf(t))); text.setAttribute("style", `--fs:${fs}px`); text.setAttribute("font-size", String(fs));
     text.textContent = t.abbr;
     g.append(text);
   }

@@ -212,7 +212,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       if (pts.size === 1) { start = { x: e.clientX, y: e.clientY, cx: view.current.x, cy: view.current.y }; moved = false; }
       if (pts.size === 2) { const [a, b] = [...pts.values()]; pinch = { d: Math.hypot(a.x - b.x, a.y - b.y), z: view.current.z }; moved = true; }
       const s = scene.current;
-      if (s && !(e.target as Element).closest("a")) { s.tip.hidden = true; s.tipFor = -1; }
+      if (s && !(e.target as Element).closest("a, .pinab")) { s.tip.hidden = true; s.tipFor = -1; }
     };
     const move = (e: PointerEvent) => {
       const p = pts.get(e.pointerId);
@@ -248,23 +248,23 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       zoomAt(view.current.z * Math.exp(-e.deltaY * (e.ctrlKey && !e.metaKey ? 0.01 : 0.004)), at?.[0], at?.[1]);
     };
     const click = (e: MouseEvent) => {
-      const a = (e.target as Element).closest("a");
+      const a = (e.target as Element).closest("a, .pinab");
       if (moved) { moved = false; e.preventDefault(); e.stopPropagation(); return; }
       if (!a) return;
       const s = scene.current, i = Number(a.getAttribute("data-i"));
       const d = s?.dots[i];
       if (d && pick.current.onPick && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); e.stopPropagation(); pick.current.onPick(d.t.f); return; }
       if (s && d && lastType === "touch" && s.tipFor !== i) { e.preventDefault(); e.stopPropagation(); showTip(d.t); return; }
-      const href = a.getAttribute("href");
+      const href = a.getAttribute("href") ?? d?.t.href;
       if (href?.startsWith("/") && e.button === 0 && !e.metaKey && !e.ctrlKey && !e.shiftKey) { e.preventDefault(); onNavigate?.(); router.push(href); }
     };
     const enter = (e: Event) => {
-      const a = (e.target as Element).closest?.("a[data-i]");
+      const a = (e.target as Element).closest?.("a[data-i], .pinab");
       const d = a && scene.current?.dots[Number(a.getAttribute("data-i"))];
       const keyboard = e.type === "focusin" && (e.target as Element).matches(":focus-visible");
       if (d && (keyboard || (e.type === "pointerover" && (e as PointerEvent).pointerType !== "touch"))) showTip(d.t);
     };
-    const leave = (e: Event) => { const a = (e.target as Element).closest?.("a[data-i]"); if (a && scene.current && (e as PointerEvent).pointerType !== "touch") { scene.current.tip.hidden = true; scene.current.tipFor = -1; } };
+    const leave = (e: Event) => { const a = (e.target as Element).closest?.("a[data-i], .pinab"); if (a && scene.current && (e as PointerEvent).pointerType !== "touch") { scene.current.tip.hidden = true; scene.current.tipFor = -1; } };
     host.addEventListener("pointerdown", down);
     host.addEventListener("pointermove", move);
     host.addEventListener("pointerup", up);
