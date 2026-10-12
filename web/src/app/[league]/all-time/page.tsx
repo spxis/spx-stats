@@ -25,7 +25,7 @@ import { getPaths } from "@/lib/teamSlugs";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 
 const VIEWS = ["overview", "table", "charts"] as const;
-const PHASES = [["r", "phase.regular"], ["p", "phase.playoffs"], ["all", "phase.all"]] as const;
+const PHASES = [["all", "phase.all"], ["r", "phase.regular"], ["p", "phase.playoffs"]] as const;
 const query = z.object({
   view: z.enum(VIEWS).catch("overview"),
   phase: z.enum(["r", "p", "all"]).catch("r"),
