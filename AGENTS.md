@@ -343,6 +343,12 @@ Then fix forward on `main`, redeploy, and tell John.
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
 
+**For agents:** never write production by hand. Write data to your own local copy and hand the coordinating session the DS1
+steps (SQL files under `db/`). The coordinating session applies them with `bash scripts/mac/ds1-apply.sh <file> [--dry-run]`
+(only files under `db/`), then prepares a data release that John approves at `/admin/data`. A schema migration still needs
+applying to production (item 4) before the release that fills it. DS1 has the nologin roles `anon` and `authenticated`, so
+migrations with grants apply unchanged.
+
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
 materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
