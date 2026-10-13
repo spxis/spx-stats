@@ -5,7 +5,8 @@ Reads PGHOST/PGPORT/PGUSER/PGDATABASE/PGPASSWORD. With --sql-out the SQL is writ
 scripts/mac/ds1-apply.sh). Rerunnable: every venue in the raw files is deleted and loaded again.
 Names come from Wikidata P1448 (official name) and P2561 (name), with their P580/P582 start and end, and from the
 "former names" of the English Wikipedia infobox. Facts: P1083 capacity, P1619/P571 opened, P3999/P576 closed, P127 owner,
-P765 surface, P31 (retractable or domed) roof, P6375 address."""
+P765 surface, P31 (retractable or domed) roof, P6375 address, P281 postal code (as Wikidata gives it; postal_check.py then
+validates it, migration 058)."""
 import glob, html, json, os, re, subprocess, sys
 
 argv = sys.argv[1:]
@@ -189,14 +190,18 @@ for qid, e in sorted(ents.items()):
     types = " ".join(labels.get(i) or "" for i in ids(cl, "P31")).lower()
     roof = "retractable" if "retractable" in types else "dome" if "domed" in types or " dome" in " " + types else None
     adr = next((c["mainsnak"]["datavalue"]["value"]["text"] for c in live(cl, "P6375") if c["mainsnak"]["datavalue"]["value"].get("language") in ("en", None)), None)
+    pc = [c for c in live(cl, "P281") if str(c["mainsnak"]["datavalue"]["value"]).strip()]
+    pc = [c for c in pc if c["rank"] == "preferred"] or pc
+    # two different codes stay together and postal_check.py refuses them
+    postal = "; ".join(dict.fromkeys(str(c["mainsnak"]["datavalue"]["value"]).strip() for c in pc)) or None
     pg = pages.get(title) if title else None
     rev = pg["revisions"][0] if pg and pg.get("revisions") else None
     sql.append(f"delete from legacy_wikidata_venues.name where qid = {q(qid)};")
     sql.append(f"delete from legacy_wikidata_venues.venue where qid = {q(qid)};")
-    sql.append("insert into legacy_wikidata_venues.venue (qid, label, wikipedia_title, wikipedia_revid, wikipedia_on, capacity, opened_on, opened_prec, closed_on, owner, surface, roof, address, wp_surface, wp_roof, fetched_on) values "
+    sql.append("insert into legacy_wikidata_venues.venue (qid, label, wikipedia_title, wikipedia_revid, wikipedia_on, capacity, opened_on, opened_prec, closed_on, owner, surface, roof, address, wp_surface, wp_roof, fetched_on, postal_code) values "
                f"({q(qid)}, {q(label)}, {q(title)}, {n(rev['revid']) if rev else 'null'}, {q(rev['timestamp'][:10]) if rev else 'null'}, {n(cap)}, "
                f"{q(op[0]) if op else 'null'}, {n(op[1]) if op else 'null'}, {q(cl_[0]) if cl_ else 'null'}, {q(owner)}, {q(surf)}, {q(roof)}, {q(adr)}, "
-               f"{q(wp_surface(rev['slots']['main']['content'])) if rev else 'null'}, {q(wp_roof(rev['slots']['main']['content'])) if rev else 'null'}, {q(day)});")
+               f"{q(wp_surface(rev['slots']['main']['content'])) if rev else 'null'}, {q(wp_roof(rev['slots']['main']['content'])) if rev else 'null'}, {q(day)}, {q(postal)});")
     stats["venues"] += 1
     for p, kind in (("P1448", "official"), ("P2561", "name")):
         for c in live(cl, p):

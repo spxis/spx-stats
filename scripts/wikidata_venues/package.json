@@ -1,0 +1,9 @@
+{
+  "name": "spx-stats-wikidata-venues",
+  "private": true,
+  "type": "module",
+  "description": "Postal code check for the venue step.",
+  "dependencies": {
+    "@johnmorrisdotca/address-plus": "1.6.0"
+  }
+}

@@ -24,9 +24,16 @@ first if a club moved. Raw files go outside the repo. On a Mac the DS1 steps go 
     # 3. legacy load, then the core build step (both rerunnable)
     python3 -I scripts/wikidata_venues/load.py $raw $day --sql-out load.sql
     bash scripts/mac/ds1-apply.sh load.sql --dry-run && bash scripts/mac/ds1-apply.sh load.sql
+    # 3b. postal codes (P281, migration 058): check each code's shape and state or province with address-plus, after load.sql and before 193
+    python3 -I scripts/wikidata_venues/postal_check.py <scratch dir> --sql-out postal.sql   # PG* set; npm installs the pinned package in the scratch dir
+    bash scripts/mac/ds1-apply.sh postal.sql --dry-run && bash scripts/mac/ds1-apply.sh postal.sql
     bash scripts/mac/ds1-apply.sh db/build/193_venue_names.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/193_venue_names.sql
     # 4. production only through a data release (AGENTS.md section 8, item 5; John approves at /admin/data)
     python3 -I scripts/release/release.py prepare --title "Venue names and facts $day" --tables core.brand_venue_name,core.brand_venue_info
+
+Postal codes: Wikidata P281 is stored as given (`venue.postal_code`); `postal_check.py` keeps a code in `postal_checked` only when it is a US ZIP or
+Canadian postal code, matches the venue's country and belongs to its state or province; otherwise `postal_problem` says why, and the build step
+logs it in `meta.data_issue` (`entity_kind = 'venue_postal_code'`) and leaves `core.brand_venue_info.postal_code` empty. No code is ever guessed.
 
 `fetch.py` keeps files already in the folder, so a rerun the same day only fetches what is missing. `load.py` and the build step
 delete and refill their tables, so a rename that Wikidata has since removed disappears too (the release shows it as a row to remove).
