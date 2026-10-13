@@ -11,7 +11,7 @@ import type { VenueRow } from "../src/lib/venueModel.ts";
 /** Run in web/: pnpm test:venues */
 
 const row = (o: Partial<VenueRow>): VenueRow => ({
-  id: "x", slug: "x", name: "X", former: null, lat: 40, lon: -75, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
+  id: "x", key: "Q1", slug: "x", name: "X", former: null, lat: 40, lon: -75, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
   leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
 });
 

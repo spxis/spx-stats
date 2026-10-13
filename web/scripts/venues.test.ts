@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { slugify } from "../src/lib/slug.ts";
 import { packVenues, unpackVenues } from "../src/lib/venueWire.ts";
+import { venueKey } from "../src/lib/venueVisits.ts";
 import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueRow } from "../src/lib/venueModel.ts";
 
 /** Run in web/: pnpm test:venues */
@@ -10,7 +11,7 @@ const B = { min: 1900, max: 2026 };
 const LEAGUES = ["nhl", "nba", "mls"];
 
 const venue = (o: Partial<VenueRow>): VenueRow => ({
-  id: "x", slug: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
+  id: "x", key: "geo:0.00000,0.00000", slug: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
   leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
 });
 
@@ -50,8 +51,8 @@ test("the address round-trips and bad values are ignored", () => {
   assert.equal(f.cc, "CA");
   assert.deepEqual([f.from, f.to], [1970, 1990]);
   const q = filterQuery(f, B);
-  assert.deepEqual(q, { league: "nhl,mls", status: "former", nat: "CA", conf: null, div: null, from: "1970", to: "1990" });
-  assert.deepEqual(filterQuery(emptyFilter(B), B), { league: null, status: null, nat: null, conf: null, div: null, from: null, to: null });
+  assert.deepEqual(q, { league: "nhl,mls", status: "former", visited: null, nat: "CA", conf: null, div: null, from: "1970", to: "1990" });
+  assert.deepEqual(filterQuery(emptyFilter(B), B), { league: null, status: null, visited: null, nat: null, conf: null, div: null, from: null, to: null });
   const bad = readFilter("?status=x&nat=USA&from=2000&to=1990&league=", B, LEAGUES);
   assert.deepEqual(bad, emptyFilter(B));
 });
@@ -81,6 +82,7 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
     venue({ name: "Bare", clubs: [club({})] }),
   ];
   for (const r of rows) {
+    r.key = r.name === "TD Garden" ? "Q1068528" : venueKey(null, r.lat, r.lon);
     r.slug = r.name === "Old Forum" ? "old-forum-q1" : slugify(r.name);
     r.leagues = [...new Set(r.clubs.map((c) => c.lg))];
     r.current = r.clubs.some((c) => c.to == null);
@@ -98,7 +100,9 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
     assert.equal(id2, String(i));
     void id; void extra; void extra2;
   });
-  assert.deepEqual(wire.v.map((v: unknown[]) => v[17] ?? null), [null, "old-forum-q1", null, null], "a row carries its slug only when it is not the name's");
+  assert.deepEqual(wire.v.map((v: unknown[]) => v[17] || null), [null, "old-forum-q1", null, null], "a row carries its slug only when it is not the name's");
+  assert.deepEqual(wire.v.map((v: unknown[]) => v[18] || null), ["Q1068528", null, null, null], "a row carries its Wikidata id, and a venue without one has its key made from its coordinates");
+  assert.equal(back[1].key, "geo:45.49000,-73.57000");
   assert.ok(JSON.stringify(wire).length < JSON.stringify(rows).length / 2, "the packed rows are much smaller");
   const habs = wire.c.find((c: unknown[]) => c[2] === "Montreal Canadiens")[4] as string;
   assert.ok(habs.length < 80 && !habs.includes("utm_"), `a Wikimedia logo goes short (${habs})`);

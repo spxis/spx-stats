@@ -23,3 +23,4 @@
 }
 .venuetable.pending { min-height: 60vh; }
 .venueplain { margin: 0; padding-left: 18px; }
+.venuetable td.venuevisit { white-space: nowrap; min-width: 64px; }

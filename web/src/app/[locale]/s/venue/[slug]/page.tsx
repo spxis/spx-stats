@@ -9,6 +9,7 @@ import { MapViewer } from "@/components/MapViewer";
 import type { Pin } from "@/components/mapDraw";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
+import { VisitControl } from "@/components/VenueVisits";
 import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG } from "@/lib/leagues";
@@ -93,6 +94,7 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
         </span>
         <h1 className="cityname">{v.name}{v.cc ? <Flag code={v.cc} /> : null}</h1>
         <p className="lede">{say(v.place ? "venue.lede" : "venue.ledeNoPlace", { name: v.name, place: v.place ?? "", clubs: plural("count.clubs", v.clubs.length), leagues: v.leagues.map(leagueName).join(", ") })}</p>
+        <VisitControl vkey={v.key} name={v.name} always />
       </section>
 
       <Figures items={[

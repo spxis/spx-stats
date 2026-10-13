@@ -1,0 +1,34 @@
+
+/* The reader's visited list (VenueVisits.tsx): drawn in the browser only, so the slot keeps its room. Tokens come from globals.css. */
+.visitslot { min-height: 76px; margin: 8px 0 6px; }
+.visitbox { border: 1px solid var(--rule); background: var(--panel); padding: 10px 12px; }
+.visitbox > p { margin: 0 0 6px; }
+.visitsum { font-size: 17px; }
+.visitleagues { list-style: none; margin: 0 0 8px; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.visitbar { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; margin-bottom: 6px; }
+.visittools summary { cursor: pointer; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); padding: 8px 0; }
+.visittoolrow { display: flex; flex-wrap: wrap; gap: 6px; padding-bottom: 4px; }
+.visittoolrow button, .visiteditor button, .visitedit { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+.visittoolrow button:disabled { color: var(--muted); cursor: default; opacity: .6; }
+.visitwarn { color: var(--warn); }
+.visitpriv { color: var(--muted); }
+.visitbtn { display: inline-flex; align-items: center; gap: 8px; min-height: 36px; padding: 6px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; cursor: pointer; }
+.visitbtn.compact { padding: 6px; min-width: 36px; justify-content: center; }
+.visittick { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; border: 2px solid var(--muted); font-size: 15px; line-height: 1; }
+.visitbtn[aria-pressed="true"] { border-color: var(--ok); }
+.visitbtn[aria-pressed="true"] .visittick { background: var(--ok); border-color: var(--ok); color: var(--paper); }
+.visitrow { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; }
+.visitedit.icon { padding: 7px 9px; font-size: 15px; }
+.visitnote { color: var(--muted); font-size: 13px; line-height: 1.3; max-width: 220px; overflow-wrap: anywhere; }
+.visitcell { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; }
+.visiteditor { display: flex; flex-wrap: wrap; gap: 6px 8px; align-items: center; margin-top: 6px; }
+.visiteditor label { color: var(--muted); font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+.visiteditor input { font: inherit; padding: 6px 8px; border: 1px solid var(--rule); background: var(--paper); color: var(--ink); max-width: 100%; }
+.visiteditor input[type="text"] { flex: 1 1 200px; min-width: 0; }
+.visitctl { margin-top: 10px; }
+.visitctl .visitwarn, .visitctl .visitpriv { margin: 6px 0 0; }
+.mapbar .visitctl { margin-top: 0; }
+@media (max-width: 640px) {
+  .visitslot { min-height: 150px; }
+  .visitnote { max-width: none; }
+}

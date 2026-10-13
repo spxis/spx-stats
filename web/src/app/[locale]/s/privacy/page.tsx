@@ -31,6 +31,8 @@ export default async function PrivacyPage() {
         </ul>
         <h2>{say("privacy.trackingTitle")}</h2>
         <p>{say("privacy.tracking")}</p>
+        <h2>{say("privacy.visitsTitle")}</h2>
+        <p>{say("privacy.visits")}</p>
         <h2>{say("privacy.logosTitle")}</h2>
         <p>{say("privacy.logos")}</p>
         <h2>{say("privacy.hostTitle")}</h2>

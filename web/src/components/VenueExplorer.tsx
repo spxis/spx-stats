@@ -6,6 +6,8 @@ import { fold } from "@/lib/fold";
 import { tableOf } from "@/lib/sort";
 import { replaceQuery } from "@/lib/urlQuery";
 import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueFilter, type VenueRow, type VenueStatus } from "@/lib/venueModel";
+import { VisitBox, VisitCell, VisitControl } from "./VenueVisits";
+import { useVisits } from "./visitsStore";
 import { unpackVenues, type VenueWire } from "@/lib/venueWire";
 import { COUNTRY_KEY } from "./countryKey";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -23,7 +25,8 @@ const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", ret
 /**
  * The venues page: filters (league, current or former, country, conference and division, years used), a map of the venues that pass and
  * a sortable table of them. Everything is filtered in the browser from the one list the page was drawn with, so the page stays a kept,
- * static copy (the rows arrive once, packed: venueWire.ts); the choices are kept in the address (?league=&status=&nat=&conf=&div=&from=&to=) and read once the page is on screen.
+ * static copy (the rows arrive once, packed: venueWire.ts); the choices are kept in the address (?league=&status=&visited=&nat=&conf=&div=&from=&to=) and read once the page is on screen.
+ * The reader's own "visited" list (VenueVisits.tsx) lives in the browser only: the server never draws any of it, and the page reads it once it is on screen.
  *
  * Dots are coloured by league (grey for a venue several leagues used) and a venue no club plays at now is a hollow ring, so the
  * difference does not rest on colour. The leagues, and their colours, are whatever the rows carry.
@@ -39,6 +42,8 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
   const [q, setQ] = useState("");
   const [f, setF] = useState<VenueFilter>(() => emptyFilter(bounds));
   const [picked, setPicked] = useState<number | null>(null);
+  const [editing, setEditing] = useState<string | null>(null);
+  const { visits } = useVisits();
   const ready = useRef(false);
   const link = useMemo(() => createRowLink(), []);
   const wanted = useDeferredValue({ q, f });
@@ -59,10 +64,12 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
   };
 
   const search = useMemo(() => new Map(venues.map((v) => [v.id, fold([v.name, v.former, v.place, ...v.clubs.map((c) => c.name)].filter(Boolean).join(" "))])), [venues]);
+  // The list is a dependency only while the visited filter is on, so marking a venue does not redraw the map (and lose its zoom) otherwise.
+  const gate = wanted.f.visited ? visits : undefined;
   const shown = useMemo(() => {
     const words = fold(wanted.q).split(" ").filter(Boolean);
-    return venues.filter((v) => venueMatches(v, wanted.f, bounds) && words.every((w) => search.get(v.id)?.includes(w)));
-  }, [venues, wanted, bounds, search]);
+    return venues.filter((v) => venueMatches(v, wanted.f, bounds, gate) && words.every((w) => search.get(v.id)?.includes(w)));
+  }, [venues, wanted, bounds, search, gate]);
 
   const leagueName = (l: string) => labels[l] ?? l.toUpperCase();
   const countries = useMemo(() => [...new Set(venues.map((v) => v.cc).filter((c): c is string => !!c))].sort(), [venues]);
@@ -94,6 +101,10 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
   const years = (a: number | null, b: number | null) => `${a ?? "…"}–${b ?? say("team.today")}`;
 
   const table = useMemo(() => (!mounted ? null : tableOf(shown, [
+    {
+      key: "visited", label: say("visits.visited"), cls: "venuevisit", get: (v) => (visits[v.key] ? 1 : 0),
+      cell: (v) => <VisitCell v={v} vis={visits[v.key]} editing={editing === v.id} onEdit={(open) => setEditing(open ? v.id : null)} />,
+    },
     {
       key: "name", label: say("venuesPage.colVenue"), cls: "team venuename", get: (v) => v.name,
       cell: (v) => (
@@ -130,7 +141,7 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
     { key: "surface", label: say("venuesPage.colSurface"), get: (v) => v.surface, cell: (v) => v.surface ?? "" },
   ], (v) => v.id)),
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the phrases follow the language
-  [mounted, shown, say, fmt, labels, order]);
+  [mounted, shown, say, fmt, labels, order, visits, editing]);
 
   const index = useMemo(() => new Map(venues.map((v, i) => [v, i])), [venues]);
   const pins = useMemo<Pin[]>(() => shown.map((v) => {
@@ -159,6 +170,9 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
         <label htmlFor={`${uid}-q`} className="sr-only">{say("venuesPage.search")}</label>
         <input id={`${uid}-q`} type="search" value={q} placeholder={say("venuesPage.search")} maxLength={60} autoComplete="off" autoCapitalize="off" spellCheck={false} enterKeyHint="search" onChange={(e) => setQ(e.target.value)} />
         <p className="note" role="status" aria-live="polite">{plural("count.venues", shown.length)}</p>
+      </div>
+      <div className="visitslot">
+        {mounted ? <VisitBox venues={venues} leagues={leagues} labelOf={leagueName} mode={f.visited} onMode={(visited) => change({ visited })} /> : null}
       </div>
       <div className="venuefilters">
         <div className="chips" role="group" aria-label={say("venuesPage.leagues")}>
@@ -199,6 +213,7 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
       {shown.length ? (
         <>
           <MapViewer
+            bar={mounted && picked != null && venues[picked] ? <VisitControl key={venues[picked].key} vkey={venues[picked].key} name={venues[picked].name} /> : null}
             pins={pins} title={say("venuesPage.mapTitle")} total={pins.length} selected={picked != null ? picked : undefined} onPick={pick}
             note={say("venuesPage.mapNote", { n: fmt(pins.length) })}
           />

@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.81.0",
+  "version": "0.82.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -26,7 +26,7 @@
     "test:routing": "node --test scripts/routing.test.ts",
     "test:streaks": "node --test scripts/streaks.test.ts",
     "test:city": "node --test scripts/city.test.ts",
-    "test:venues": "node --test scripts/venues.test.ts scripts/venueDataset.test.ts scripts/venueSlug.test.ts scripts/venuePark.test.ts",
+    "test:venues": "node --test scripts/venues.test.ts scripts/venueDataset.test.ts scripts/venueSlug.test.ts scripts/venuePark.test.ts scripts/venueVisits.test.ts",
     "test:address": "node --test scripts/venueAddress.test.ts",
     "test:lineage": "node --test scripts/lineage.test.ts",
     "test:provenance": "node --test scripts/provenance.test.ts",

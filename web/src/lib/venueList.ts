@@ -12,6 +12,7 @@ import { getVenueTeams } from "./venueMap";
 import type { VenueDetail } from "./venueDataset";
 import type { VenueClub, VenueRow } from "./venueModel";
 import { venueSlugs } from "./venueSlug";
+import { venueKey } from "./venueVisits";
 import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
 
@@ -79,7 +80,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
           acc = {
             label: v.venue,
             row: {
-              id, slug: "", name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
+              id, key: venueKey(v.wid, v.lat, v.lon), slug: "", name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
               wiki: v.wiki, address: v.address, addressHref: v.addressHref, leagues: [], clubs: [],
               opened: f?.opened ?? null, closed: f?.closed ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
               from: null, to: null, current: false, al: [],

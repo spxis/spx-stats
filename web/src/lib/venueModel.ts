@@ -6,13 +6,16 @@
  * their own colour and filter chip).
  */
 
-/** A club that plays or played at a venue, with the years it did (to is null while it still does). */
+import { visitMatches, type Visits } from "./venueVisits.ts";
+
 /** A club that used a venue: `logo` is the one it wore when it left (its current one if it still plays there), or null if we hold none. */
 export interface VenueClub { lg: string; f: number; name: string; href: string; from: number | null; to: number | null; logo: string | null }
 
 /** One home venue, with every club that used it, as the page sends it to the browser. */
 export interface VenueRow {
   id: string;
+  /** What the visited list keeps it under: its Wikidata id, else `geo:<lat>,<lon>` (venueVisits.ts). */
+  key: string;
   /** The address of its page, /venue/<slug> (venueSlug.ts). */
   slug: string;
   /** The name now (or the last one it had). */
@@ -51,13 +54,17 @@ export interface VenueRow {
 
 export type VenueStatus = "" | "current" | "former";
 
-export interface VenueFilter { leagues: string[]; status: VenueStatus; cc: string; conf: string; div: string; from: number; to: number }
+/** The visited list's filter: only the venues the reader marked, only the others, or both. The list is the reader's own, kept in the browser. */
+export type VenueVisited = "" | "yes" | "no";
+
+export interface VenueFilter { leagues: string[]; status: VenueStatus; visited: VenueVisited; cc: string; conf: string; div: string; from: number; to: number }
 export interface YearBounds { min: number; max: number }
 
-export const emptyFilter = (b: YearBounds): VenueFilter => ({ leagues: [], status: "", cc: "", conf: "", div: "", from: b.min, to: b.max });
+export const emptyFilter = (b: YearBounds): VenueFilter => ({ leagues: [], status: "", visited: "", cc: "", conf: "", div: "", from: b.min, to: b.max });
 
-/** Whether a venue passes the filter. A range that spans the whole bounds filters nothing, so venues with no known years stay. */
-export function venueMatches(v: VenueRow, f: VenueFilter, b: YearBounds): boolean {
+/** Whether a venue passes the filter. A range that spans the whole bounds filters nothing, so venues with no known years stay. `visits` is the reader's list; left out, the visited filter filters nothing. */
+export function venueMatches(v: VenueRow, f: VenueFilter, b: YearBounds, visits?: Visits): boolean {
+  if (visits && !visitMatches(f.visited, v.key, visits)) return false;
   if (f.leagues.length && !v.leagues.some((l) => f.leagues.includes(l))) return false;
   if (f.status === "current" && !v.current) return false;
   if (f.status === "former" && v.current) return false;
@@ -80,6 +87,8 @@ export function readFilter(search: string, b: YearBounds, leagues: readonly stri
   out.leagues = (q.get("league") ?? "").split(",").map((s) => s.trim().toLowerCase()).filter((s) => leagues.includes(s));
   const st = q.get("status");
   out.status = st === "current" || st === "former" ? st : "";
+  const vis = q.get("visited");
+  out.visited = vis === "yes" || vis === "no" ? vis : "";
   out.cc = /^[A-Za-z]{2}$/.test(q.get("nat") ?? "") ? (q.get("nat") ?? "").toUpperCase() : "";
   out.conf = (q.get("conf") ?? "").slice(0, 80);
   out.div = (q.get("div") ?? "").slice(0, 120);
@@ -96,6 +105,7 @@ export function filterQuery(f: VenueFilter, b: YearBounds): Record<string, strin
   return {
     league: f.leagues.length ? f.leagues.join(",") : null,
     status: f.status || null,
+    visited: f.visited || null,
     nat: f.cc || null,
     conf: f.conf || null,
     div: f.div || null,

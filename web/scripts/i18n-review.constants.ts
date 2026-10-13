@@ -107,6 +107,10 @@ export const READBACK: Readonly<Record<string, string>> = {
   "privacy.trackingTitle": "No ads and no tracking.",
   "privacy.tracking":
     "SPXN has no ads, no access analysis, and no tracking cookies or scripts. The scripts, fonts, maps and flags that a page loads are all the site's own.",
+  "privacy.visitsTitle":
+    "Home grounds you have visited.",
+  "privacy.visits":
+    "On the home-ground list page you can put a mark on the grounds you have visited, and keep a date and a note too if you like. This list is saved only in the browser you use (localStorage); it is never sent to spxn.com or to anyone else, and we cannot see it either. If you clear this site's data in the browser, the list disappears too. If you use the export and import buttons, you can also move it between browsers yourself.",
   "privacy.logosTitle": "Team logos.",
   "privacy.logos":
     "Team logos are loaded directly from Wikimedia Commons. When a logo is loaded, your IP address and browser information are visible to Wikimedia. This is the same whichever other site you look at. We attach no referring-page information to logos, so Wikimedia cannot tell which SPXN page you are looking at.",
