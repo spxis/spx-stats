@@ -22,7 +22,7 @@ import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
 import { parsePhase, PlayerSeasons, PlayerStatistics } from "@/components/PlayerStats";
 import { getPerson, getPlayerRecord } from "@/lib/people";
-import { ageOn, capFirst, countryName, inches } from "@/lib/people-format";
+import { ageOn, countryName, inches, positionsText } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { getPlayerPaths, homeLeague } from "@/lib/playerLinks";
@@ -50,7 +50,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[league
   const { d } = at;
   const { say, plural, locale } = await currentSpeaker();
   const p = d.person;
-  const bits = [p.position ? capFirst(p.position) : null, (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") || null,
+  const bits = [positionsText(p.positions, p.position) || null, (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") || null,
     p.award_count ? plural("count.awards", p.award_count) : null, p.championship_count ? plural("count.championships", p.championship_count) : null].filter(Boolean);
   const details = bits.length ? say("player.metaDetails", { list: bits.join(", ") }) : "";
   return pageMeta({ title: p.name, description: say("player.metaDesc", { name: p.name, details }), path: at.path, locale });
@@ -79,7 +79,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           {found.map((x) => (
             <li key={x.person_id}>
               <Link href={url(x.person_id, x.name, x.leagues?.[0] ?? league)} prefetch={false}>{x.name}</Link>
-              {" · "}{[(x.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", "), x.position ? capFirst(x.position) : null,
+              {" · "}{[(x.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", "), positionsText(x.positions, x.position) || null,
                 x.first_season != null ? (x.last_season != null && x.last_season !== x.first_season ? `${x.first_season}–${x.last_season}` : String(x.first_season)) : null].filter(Boolean).join(" · ")}
             </li>
           ))}
@@ -133,7 +133,8 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (p.nationality_code && (p.nationality_code !== p.birth_country_code || !p.birth_country_code)) {
     facts.push(<Fact key="country" label={say("player.factCountry")}><Flag code={p.nationality_code} /> {countryName(p.nationality_code, locale)}</Fact>);
   }
-  if (p.position) facts.push(<Fact key="pos" label={say("player.factPosition")}>{capFirst(p.position)}</Fact>);
+  const positions = positionsText(p.positions, p.position);
+  if (positions) facts.push(<Fact key="pos" label={say("player.factPosition")}>{positions}</Fact>);
   if (p.height_cm) facts.push(<Fact key="h" label={say("player.factHeight")}>{`${p.height_cm} cm (${inches(p.height_cm)})`}</Fact>);
   if (p.hall_of_fame_year) facts.push(<Fact key="hof" label={say("player.factHof")}>{say("player.hofInducted", { year: p.hall_of_fame_year })}</Fact>);
   if (p.seasons_played && p.first_season != null && p.last_season != null) {

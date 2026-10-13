@@ -15,6 +15,8 @@ export interface PersonRow {
   nationality_code: string | null;
   height_cm: number | null;
   position: string | null;
+  /** Every position the player holds, lower case, the main one first (api.people, migration 049); absent before that migration. */
+  positions?: string[] | null;
   hall_of_fame_year: number | null;
   debut: string | null;
   final: string | null;
@@ -77,7 +79,7 @@ const strN = z.string().nullable();
 
 export const personSchema = z.object({
   person_id: int, name: str, kind: str, birth_date: strN, death_date: strN, birth_place: strN, birth_country_code: strN,
-  birth_lat: intN, birth_lon: intN, nationality_code: strN, height_cm: intN, position: strN, hall_of_fame_year: intN,
+  birth_lat: intN, birth_lon: intN, nationality_code: strN, height_cm: intN, position: strN, positions: z.array(str).nullable().optional(), hall_of_fame_year: intN,
   debut: strN, final: strN, award_count: int, championship_count: int, seasons_played: int, first_season: intN, last_season: intN,
   leagues: z.array(str).nullable(),
 }) satisfies z.ZodType<PersonRow>;
@@ -98,8 +100,8 @@ export const leagueAwardSchema = z.object({
   year: int, award_code: str, award: str, kind: str, winner: strN, person_id: intN, franchise_id: intN,
 }) satisfies z.ZodType<LeagueAwardRow>;
 
-/** One row of `api.player_index` (db/migrations/034_player_index.sql), the players list. */
+/** One row of `api.player_index` (db/migrations/034_player_index.sql, `positions` from 050), the players list. */
 export const playerIndexSchema = z.object({
-  person_id: int, name: str, position: strN, leagues: z.array(str).nullable(), first_season: intN, last_season: intN, seasons_played: int, award_count: int,
+  person_id: int, name: str, position: strN, positions: z.array(str).nullable().optional(), leagues: z.array(str).nullable(), first_season: intN, last_season: intN, seasons_played: int, award_count: int,
 });
 export type PlayerIndexRow = z.infer<typeof playerIndexSchema>;

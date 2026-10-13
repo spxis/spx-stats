@@ -9,6 +9,7 @@ import { LG, isLeague } from "./leagues";
 import { afterValues, nextCursor, parseListParams, parseSuggestParams } from "./listParams";
 import { fold, listQuery, searchWords } from "./listQuery";
 import { memo } from "./memo";
+import { positionsText } from "./people-format";
 import { playerOrder, PLAYER_SORTS, readPlayers } from "./playerIndex";
 import { getPlayerPaths } from "./playerLinks";
 import { readTeams, teamOrder, TEAM_SORTS, type TeamStatus } from "./teamIndex";
@@ -24,7 +25,7 @@ const brands = memo(HOLD, getBrands);
 export interface Page { limit: number; offset: number | null; sort: string; next: string | null; total: number | null }
 export interface Listing<T> { data: Partial<T>[]; page: Page }
 
-export const PLAYER_FIELDS = ["id", "name", "position", "leagues", "first_season", "last_season", "seasons", "awards", "url"] as const;
+export const PLAYER_FIELDS = ["id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons", "awards", "url"] as const;
 export const TEAM_FIELDS_OUT = ["id", "league", "name", "former_names", "first_season", "last_season", "seasons", "titles", "share", "active", "logo", "url"] as const;
 
 const pick = <T extends Record<string, unknown>>(o: T, fields: readonly string[] | null): Partial<T> =>
@@ -36,7 +37,7 @@ const lg = (code: string | undefined): string => (code && isLeague(code) ? LG[co
 /* ---------- players ------------------------------------------------------------------- */
 
 const playerItem = (p: PlayerIndexRow, url: (id: number, name: string, league?: string | null) => string) => ({
-  id: p.person_id, name: p.name, position: p.position, leagues: p.leagues ?? [], first_season: p.first_season, last_season: p.last_season,
+  id: p.person_id, name: p.name, position: p.position, positions: p.positions ?? (p.position ? [p.position.toLowerCase()] : []), leagues: p.leagues ?? [], first_season: p.first_season, last_season: p.last_season,
   seasons: p.seasons_played, awards: p.award_count, url: url(p.person_id, p.name, p.leagues?.[0]),
 });
 
@@ -60,7 +61,7 @@ export async function suggestPlayers(sp: URLSearchParams) {
   const base = [league ? `leagues=cs.${encodeURIComponent(`{${league}}`)}` : ""].filter(Boolean);
   const tiers = [`${q}*`, `* ${q}*`, ...(q.length >= 3 ? [`*${q}*`] : [])];
   const order = playerOrder([{ key: "seasons", dir: "desc" }, { key: "awards", dir: "desc" }]);
-  const select = ["person_id", "name", "position", "leagues", "first_season", "last_season", "seasons_played", "award_count"];
+  const select = ["person_id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons_played", "award_count"];
   const found = await Promise.all(tiers.map((t) =>
     rowsSlice("player_search", listQuery({ filters: [...base, `search=like.${encodeURIComponent(t)}`], select, order }), 0, limit, playerIndexSchema)));
   const seen = new Set<number>();
@@ -71,8 +72,8 @@ export async function suggestPlayers(sp: URLSearchParams) {
       const place = url(p.person_id, p.name, p.leagues?.[0]);
       const home = /^\/([a-z]+)\//.exec(place)?.[1] ?? p.leagues?.[0];
       return {
-        id: p.person_id, name: p.name, league: lg(home), leagues: p.leagues ?? [], position: p.position, first_season: p.first_season, last_season: p.last_season,
-        subtitle: [(p.leagues ?? []).map(lg).join("/"), p.position, years(p.first_season, p.last_season)].filter(Boolean).join(" · "), url: place,
+        id: p.person_id, name: p.name, league: lg(home), leagues: p.leagues ?? [], position: p.position, positions: p.positions ?? (p.position ? [p.position.toLowerCase()] : []), first_season: p.first_season, last_season: p.last_season,
+        subtitle: [(p.leagues ?? []).map(lg).join("/"), positionsText(p.positions, p.position), years(p.first_season, p.last_season)].filter(Boolean).join(" · "), url: place,
       };
     }),
   };

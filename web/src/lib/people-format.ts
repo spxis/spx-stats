@@ -16,6 +16,12 @@ export function countryName(code: string, locale: Locale): string {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const capFirst = cap;
 
+/** All of a person's positions, "Pitcher / Designated hitter"; the main one alone when no list is known; "" when none. */
+export function positionsText(positions: readonly string[] | null | undefined, position?: string | null): string {
+  const list = positions?.length ? positions : position ? [position] : [];
+  return [...new Set(list.map((p) => p.trim()).filter(Boolean))].map(cap).join(" / ");
+}
+
 export function inches(cm: number): string {
   const t = Math.round(cm / 2.54);
   return `${Math.floor(t / 12)} ft ${t % 12} in`;

@@ -69,7 +69,7 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
         const specs: ColumnSpec<RosterPlayer>[] = [
           ...(hasNat ? [{ key: "nat", label: say("roster.nat"), get: (p) => p.nat, cell: (p) => <Flag code={p.nat} /> } satisfies ColumnSpec<RosterPlayer>] : []),
           { key: "player", label: say("roster.player"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={playerPath(p.id, p.name, lg)} prefetch={false}>{p.name}</Link> },
-          ...(hasPos ? [{ key: "pos", label: say("roster.pos"), get: (p) => p.pos } satisfies ColumnSpec<RosterPlayer>] : []),
+          ...(hasPos ? [{ key: "pos", label: say("roster.pos"), get: (p) => p.allPos } satisfies ColumnSpec<RosterPlayer>] : []),
           ...cols.map((c): ColumnSpec<RosterPlayer> => ({
             key: c.key, label: say(c.label as PhraseKey), title: say(c.title as PhraseKey), num: true,
             get: (p) => c.get(p.stats), cell: (p) => showStat(c.kind, c.get(p.stats), fmt),

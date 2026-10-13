@@ -7,7 +7,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LEAGUES, LG } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
-import { capFirst } from "@/lib/people-format";
+import { positionsText } from "@/lib/people-format";
 import { getPlayerPage, PLAYER_SORTS, searchWords } from "@/lib/playerIndex";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { formatSort, parseSort, tableOf } from "@/lib/sort";
@@ -44,7 +44,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/pl
   const table = data ? tableOf(data.list, [
     { key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PlayerIndexRow) => p.name, cell: (p: PlayerIndexRow) => <Link href={player(p.person_id, p.name, p.leagues?.[0])} prefetch={false}>{p.name}</Link> },
     { key: "league", label: say("col.league"), rest: "leagues", get: (p: PlayerIndexRow) => (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") },
-    { key: "position", label: say("player.factPosition"), rest: "position", get: (p: PlayerIndexRow) => (p.position ? capFirst(p.position) : "") },
+    { key: "position", label: say("player.factPosition"), rest: "position", get: (p: PlayerIndexRow) => positionsText(p.positions, p.position) },
     { key: "years", label: say("col.years"), cls: "nowrap", title: say("players.yearsTitle"), rest: "last_season", get: (p: PlayerIndexRow) => p.last_season, cell: (p: PlayerIndexRow) => (p.first_season == null ? "" : p.last_season != null && p.last_season !== p.first_season ? `${p.first_season}–${p.last_season}` : String(p.first_season)) },
     { key: "seasons", label: say("players.colSeasons"), num: true, rest: "seasons_played", get: (p: PlayerIndexRow) => p.seasons_played, cell: (p: PlayerIndexRow) => fmt(p.seasons_played) },
     { key: "awards", label: say("players.colAwards"), num: true, rest: "award_count", get: (p: PlayerIndexRow) => p.award_count, cell: (p: PlayerIndexRow) => fmt(p.award_count) },

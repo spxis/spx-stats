@@ -17,6 +17,8 @@ export interface RosterPlayer {
   name: string;
   /** The player's main position as short as it can be written, or null when the archive has none. */
   pos: string | null;
+  /** Every position the player holds, each as short as it can be written, joined with "/" ("P/DH"); the main one alone when no list is known. */
+  allPos: string | null;
   /** The country code of the player's nationality, else of the birthplace; null when neither is known. */
   nat: string | null;
   group: RosterGroup;
@@ -47,7 +49,7 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
     const stats = await rows("person_stats", `team_season_id=eq.${teamSeasonId}&phase=eq.regular&select=person_id,stat_group,games_played,stats`, statSchema);
     if (!stats.length) return [];
     const ids = [...new Set(stats.map((s) => s.person_id))];
-    const people = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
+    const people = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,positions,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
     const nats = new Map((await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code`, natSchema)
       .catch((e) => { if (!(e instanceof ApiError)) throw e; return []; })).map((n) => [n.person_id, n.nationality_code ?? n.birth_country_code]));
     const out: RosterPlayer[] = [];
@@ -58,12 +60,13 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
       const by = (g: string) => mine.find((s) => s.stat_group === g);
       const pitch = by("pitching"), bat = by("batting"), sk = by("skater"), gk = by("goalie");
       const pos = short(p.position);
+      const allPos = [...new Set((p.positions?.length ? p.positions : [p.position]).map(short).filter((x): x is string => !!x))].join("/") || null;
       let row: Pick<RosterPlayer, "kind" | "group" | "stats"> | null = null;
       if (gk && (!sk || (gk.games_played ?? 0) >= (sk.games_played ?? 0))) row = { kind: "goalie", group: "goalies", stats: gk.stats };
       else if (sk) row = { kind: "skater", group: pos === "D" ? "defense" : pos && FORWARD.has(pos) ? "forwards" : "skaters", stats: sk.stats };
       else if (pitch && (!bat || (pitch.games_played ?? 0) >= (bat.games_played ?? 0))) row = { kind: "pitching", group: "pitchers", stats: pitch.stats };
       else if (bat) row = { kind: "batting", group: "batters", stats: bat.stats };
-      if (row) out.push({ id, name: p.name, pos, nat: nats.get(id)?.toUpperCase() ?? null, ...row });
+      if (row) out.push({ id, name: p.name, pos, allPos, nat: nats.get(id)?.toUpperCase() ?? null, ...row });
     }
     return out;
   } catch (e) {

@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { useRouter } from "next/navigation";
 import { fold } from "@/lib/fold";
-import { capFirst } from "@/lib/people-format";
+import { positionsText } from "@/lib/people-format";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TeamLogo } from "./TeamLogo";
 import "./search.css";
@@ -16,6 +16,7 @@ interface Suggestion {
   last_season: number | null;
   url: string;
   position?: string | null;
+  positions?: string[] | null;
   active?: boolean;
   matched?: string | null;
   logo?: string | null;
@@ -123,7 +124,7 @@ export function SearchBox({ kind, action, name = "q", defaultValue = "", league 
   const years = (s: Suggestion) =>
     s.first_season == null ? "" : s.active ? `${s.first_season}–${say("search.present")}` : s.last_season != null && s.last_season !== s.first_season ? `${s.first_season}–${s.last_season}` : String(s.first_season);
   const detail = (s: Suggestion) =>
-    [s.league, kind === "players" && s.position ? capFirst(s.position) : "", years(s), s.matched ? say("h2h.pick.formerly", { name: s.matched }) : ""].filter(Boolean).join(" · ");
+    [s.league, kind === "players" ? positionsText(s.positions, s.position) : "", years(s), s.matched ? say("h2h.pick.formerly", { name: s.matched }) : ""].filter(Boolean).join(" · ");
 
   return (
     <form action={action} method="get" role="search" className="controls sbox" ref={root}>

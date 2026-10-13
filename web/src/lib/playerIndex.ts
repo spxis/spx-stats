@@ -20,7 +20,7 @@ export const PLAYER_SORTS: Record<string, Col> = {
   awards: { field: "award_count", num: true },
 };
 export const PLAYER_TIE: Col[] = [{ field: "name" }, { field: "person_id", num: true }];
-const PLAYER_SELECT = ["person_id", "name", "position", "leagues", "first_season", "last_season", "seasons_played", "award_count"];
+const PLAYER_SELECT = ["person_id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons_played", "award_count"];
 
 export const playerOrder = (sort: readonly SortKey[]): Order => orderOf(sort, PLAYER_SORTS, PLAYER_TIE);
 
@@ -33,7 +33,8 @@ export interface PlayerFilters { league: string; words: readonly string[]; posit
 export async function readPlayers(f: PlayerFilters, order: Order, win: { offset: number; limit: number; after?: readonly Val[] | null }): Promise<{ rows: PlayerIndexRow[]; total: number | null; more: boolean }> {
   const base = [
     isLeague(f.league) ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
-    f.position ? `position=ilike.${encodeURIComponent(f.position)}` : "",
+    // a player matches by the main position or by any other they hold (positions is lower case)
+    f.position ? `or=${encodeURIComponent(`(position.ilike.${f.position},positions.cs.{${f.position.toLowerCase()}})`)}` : "",
   ].filter(Boolean);
   const run = async (view: string, filters: string[]) => {
     const query = listQuery({ filters, select: PLAYER_SELECT, order, after: win.after });

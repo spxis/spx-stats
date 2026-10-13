@@ -474,7 +474,7 @@ Ask John before deleting or overwriting data, and before any write to production
   - `@johnmorrisdotca/address-plus`: addresses.
   - `@johnmorrisdotca/kuni`: ISO codes.
 - **List APIs** (public, read-only JSON, cached an hour; the contract is the comment at the top of each route file): `GET /api/players`
-  and `GET /api/teams` take `league`, `q` (accents ignored; teams also match former names), `status=active|defunct` (teams), `position` (players),
+  and `GET /api/teams` take `league`, `q` (accents ignored; teams also match former names), `status=active|defunct` (teams), `position` (players; matches any position a player holds, rows carry `position` and `positions`),
   `sort=col.dir` (allow-list), `limit` (50, max 200), `fields`, and page either by `offset` or by `after=<page.next>` (keyset cursor, opaque; `total` only
   with offset); `GET /api/players/suggest?q=` and `/api/teams/suggest?q=` return up to 10 for autocomplete. A bad parameter is a 400 naming it. The routes
   only read `api.player_index`, `api.player_search` and `api.team_index` through `lib/api/client.ts` using `lib/listQuery.ts`, which also serves the
