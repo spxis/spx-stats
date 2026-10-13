@@ -4,8 +4,9 @@ Once a day, collect the game scores of the NHL, NBA, MLB, NFL and CFL from sourc
 collection and reuse, without asking any league. **Stage 1** fetches, parses, cross-checks and compares with DS1 (`--dry-run`,
 read-only). **Stage 2** (`--rehearse`, `--apply`) writes to **DS1 only**: the raw pages to the archive, the parsed rows to
 `legacy_wikipedia_daily`, the seasons and team seasons to `core`, and the games' results through the database function
-`ingest.report_results` ([The ingest API](#the-ingest-api-migrations-044-and-046)), never directly into `core.game`. **Production is stage 3** and needs John's separate OK:
-nothing here knows production. Ticket: "Daily scores from Wikipedia and allowed sources".
+`ingest.report_results` ([The ingest API](#the-ingest-api-migrations-044-and-046)), never directly into `core.game`. **Production** is never written by this job;
+results reach it through a data release ([Production](#production-data-releases)). It runs once a day in
+Docker on the NAS ([Stage 3](#stage-3-the-docker-job-on-the-nas), `daily/README.md`). Ticket: "Daily scores from Wikipedia and allowed sources".
 
 ## Run it
 
@@ -20,11 +21,13 @@ nothing here knows production. Ticket: "Daily scores from Wikipedia and allowed 
 
 Python 3 stdlib only, plus `psql`. DS1 is reached through `ds1.sh`: it finds the host with `ds1_host` from
 `scripts/mac/spx-checks.sh` (hosts-file name `ds1`, home LAN, then Tailscale) and reads the password from the keychain
-item `spx-stats-db DS1 55440` inside its own process; nothing is printed. Club names come from DS1 (current franchise
+item `spx-stats-db DS1 55440` inside its own process; nothing is printed. On Linux (the Docker job) there is no keychain: `ds1.sh` uses
+`PGHOST`, `PGPASSWORD` (and `PGPORT` 55440, `PGUSER` postgres, `PGDATABASE` spx_stats) from the environment. On a Mac the `PG*` variables
+are ignored on purpose, so a stray `PGHOST` for another database can never be written to. Club names come from DS1 (current franchise
 names) and are cached in `rosters.json` next to the state file, so a run still parses when DS1 is away (`--no-ds1`).
 
 State and downloads live outside the repo, in `~/Library/Caches/spx-stats-daily/` (`SPX_DAILY_CACHE`, or `--state` and
-`--raw-dir`): `state.json` holds the revision id of every page as last downloaded and the nflverse ETag; `raw/<league>/`
+`--raw-dir`; in the Docker job `/data/cache`): `state.json` holds the revision id of every page as last downloaded and the nflverse ETag; `raw/<league>/`
 holds the wikitext exactly as served.
 
 ## What a run does
@@ -122,7 +125,7 @@ transaction: 0 new observations, 0 games changed.
 ## The ingest API (migrations 044 and 046)
 
 Decision (John, 2026-10-12): history stays bulk; **daily and later live scores go through a narrow API**, not through table privileges
-with exceptions. Production gets the same function from the same migration file, so both databases apply identical rules.
+with exceptions. The function exists on DS1 only; production gets the results through data releases.
 
 **What it is.** The `ingest` schema (not exposed through PostgREST; production exposes only `api`), the append-only table
 `ingest.game_observation`, and **one** function the writer may call:
@@ -134,8 +137,8 @@ It does not run caller SQL, so AGENTS.md's "never build a public endpoint that r
 
 **Who may call it.** `ingest_writer` (migration 046), `NOLOGIN` here. It can execute that one function and nothing else: no table
 privilege, no other function, no create anywhere; `PUBLIC`, `anon`, `authenticated` and `service_role` are revoked; row level security is on
-for the table. `db/tests/run-ingest-tests.sh` proves it by running as the role. Giving it a login and a password is phase B
-(`ingest-writer-login.sh`, not run).
+for the table. `db/tests/run-ingest-tests.sh` proves it by running as the role. The daily job connects as the DS1 admin user and does `set local role ingest_writer` for the report, so it needs no login for the role;
+`ingest-writer-login.sh ds1` can still give it one (not used by the job).
 
 **Observation shape** (one element of the array; a key is the column of the same name). `game_ref` is the writer's own key for the game
 (`wpdaily:<league>:<season>:<phase>:<date>:<home>:<away>:<n>`); `league`, `season`, `phase` (regular|playoffs), `round`, `game_date`,
@@ -210,29 +213,25 @@ touched, before and after (rolled back).
 **Tests.** `bash db/tests/run-ingest-tests.sh` (SQL, one rolled-back transaction on DS1, applies 044 and 046 first): every transition, the
 terminal final, idempotency, unmatched, invalid input, the replay equivalence, and the privilege model as `ingest_writer`.
 
-## Phase B (production): prepared, not run
+## Production: data releases
 
-Main now says production changes only through approved data releases (AGENTS.md section 8, item 5; `scripts/release/README.md`). Daily
-results on DS1 (`core.game`, `meta.verification`, `meta.data_issue`) are ordinary tables in a release, so **the default path to
-production needs nothing from this work**. `ingest` is not in the release schemas (core, meta, ref) and never leaves DS1 that way. What
-follows is the second option, the same function on production, prepared so John can choose; it adds a write path beside releases and is
-**not to be run without his decision**.
+DS1 is the only place data is written, and production changes only through approved data releases (AGENTS.md section 8, item 5;
+`scripts/release/README.md`). Daily results on DS1 (`core.game`, `meta.verification`, `meta.data_issue`, and any new seasons, team seasons
+and external ids) are ordinary tables in a release. `ingest` is not in the release schemas (core, meta, ref) and never leaves DS1. The
+ingest function is **not** installed on production, there is no production login for `ingest_writer`, and the earlier "phase B"
+(reporting to production directly) is dropped.
 
-1. John's decision, then apply `db/migrations/044_ingest_report_results.sql` and `046_ingest_writer_role.sql` to production (as `ds1_step`
-   style migrations or the Supabase MCP `apply_migration`, in that order; both are rerunnable). Check `ingest` is not in the project's
-   exposed schemas (it must stay `api` only).
-2. A release brings the games, seasons, franchises and the `meta.source` row `wikipedia_daily` to production first, so the franchise keys
-   and games exist there before anything is reported.
-3. `bash scripts/daily/ingest-writer-login.sh production` (needs `SUPABASE_ACCESS_TOKEN` and `SPX_PROD_POOLER_HOST`): makes a 40-character
-   password with openssl, `alter role ingest_writer login password ... connection limit 3` through the Management API, stores it in the Mac
-   keychain item `spx-stats ingest_writer production`, proves it by calling `report_results('[]')` and by failing a `select` on `core.game`.
-   The password is never printed, written to a file or logged. `... ds1` does the same for DS1 (keychain item `spx-stats ingest_writer DS1 55440`).
-4. DS1 (stage 3, the job in Docker): the password sits in a root-only file `/volume1/docker/spx-stats-daily/secrets/ingest_writer.pw`
-   (mode 0600, mounted read-only as a Docker secret and read into `PGPASSWORD` by the entrypoint); the header of the script has the one
-   command that copies it there from the keychain without showing it.
-5. Point `run.py` at production: a `--target production` that reports only (`report.sql` with a connection as `ingest_writer`, no archive,
-   no staging load, no `152`); games the report finds no row for need a release first, then `select ingest.replay(true, true)` as the owner.
-   Not written yet.
+- **Release hook.** After a `--apply` that committed, `release_hook.prepare_release()` runs
+  `python3 -I scripts/release/release.py prepare --title "Daily scores <date>" --tables <the release tables the run wrote to>`. The tables
+  come from the run itself (`pg_stat_xact_all_tables` inside the load transaction: rows inserted, updated or deleted in core, meta, ref),
+  so a run that changed no game prepares nothing. It does not approve. **Off** unless `DAILY_PREPARE_RELEASE=1`; it also needs
+  `SUPABASE_ACCESS_TOKEN`, `PGHOST` (or `SPX_DS1_HOST`) and `PGPASSWORD` in the environment, and when any is missing it logs
+  `left to the nightly drift check` and carries on. A release that is refused or fails never fails the daily run (DS1 is already
+  committed); the outcome is in the log and in the heartbeat's `summary.release`.
+- **Release kind.** `DAILY_RELEASE_KIND=<kind>` adds `--kind <kind>` to `prepare`; unset, the flag is left out. The release side is adding a
+  `daily_scores` kind (auto-approved by policy after a hold). When it has it, set `DAILY_RELEASE_KIND=daily_scores`; if the option has a
+  different spelling, `KIND_OPTION` in `release_hook.py` is the one line to change.
+- **Until then** the nightly drift check on the release runner proposes the difference and John approves it at `/admin/data`.
 
 ## Known gaps (stage 2)
 
@@ -245,11 +244,17 @@ follows is the second option, the same function on production, prepared so John 
 - The CFL postseason and the NHL/NFL playoffs are not read yet (they start Oct 31, April, January); balldontlie is not enabled (no key).
 - Wikipedia revisions between two runs are not archived: only the revision used is. The raw cache is overwritten by the next fetch.
 
-## Stage 3 (not built)
+## Stage 3: the Docker job on the NAS
 
-Runs once a day in Docker on DS1 (about 10:00 ET, re-checking the last 7 days for late edits), DS15 as watchdog. **Production** gets the
-results like any other data, in a release of the tables DS1 changed (AGENTS.md section 8). Calling the same function on production is
-phase B of the ingest API (above), a second write path that needs John's decision.
+`daily/` (Dockerfile, `entry.sh`, `docker-compose.yml`, `daily.env.example`, `README.md` with the click-by-click setup) is a container
+modelled on `runner/`: the public repo fetched from GitHub at each run, `PGPASSWORD` and the other `PG*` names from an env file kept on
+the NAS, host networking, state on a mounted `data/` folder. It sleeps until 10:00 America/Toronto and runs `run.py --apply` once (the run
+re-checks the last 7 days itself), retrying a failed day after an hour up to 3 times. $0, no cloud. Nothing is fetched or polled between runs.
+
+**Heartbeat.** Each `--apply` writes a row to `ingest.daily_run` (migration 048, DS1 only): started, finished, outcome
+(`running`/`ok`/`failed`), host, code version and a `summary` (counts, tables written, release hook result, requests, error). No row for a day
+means the job did not start; a row left `running` means it died. The release side can show it on `/admin/data` later; no UI here.
+It is not `meta.load_run`: `meta` is a release schema (the row would count as drift) and that table's `kind` has no `daily`.
 
 ## Files
 
@@ -257,7 +262,8 @@ phase B of the ingest API (above), a second write path that needs John's decisio
 `parsers.py` wikitext to claims (NHL, MLB, NFL here; CFL and NBA wrap the older readers) · `games.py` pairing and cross-check ·
 `compare.py` DS1 comparison (SELECTs only) · `ds1.sh` DS1 `psql` (host and password found inside) · `apply.py` stage 2: rehearsal,
 archive, load, report, refresh (`observation()` builds what `ingest.report_results` takes) · `snapshot.sql` + `checks.sql` the report and the
-checks · `selftest.py` + `fixtures/` the tests · `ingest-writer-login.sh` phase B, not run ·
+checks · `selftest.py` + `fixtures/` the tests · `heartbeat.py` the `ingest.daily_run` row · `release_hook.py` `prepare_release()` ·
+`ingest-writer-login.sh` an optional DS1 login for the role · `../../daily/` the Docker job · `db/migrations/048_ingest_daily_run.sql` the heartbeat table ·
 `db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `044_ingest_report_results.sql` the API · `046_ingest_writer_role.sql` the
 role · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
 `db/tests/` (`run-ingest-tests.sh`, `run-rebuild-proof.sh`).
