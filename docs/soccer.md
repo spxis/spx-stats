@@ -41,12 +41,23 @@ the results by points, goal difference and goals scored (not FIFA's full tie-bre
 - **jfjelstul/worldcup**: Joshua C. Fjelstul, Ph.D., "The Fjelstul World Cup Database", © 2023 Joshua C. Fjelstul, Ph.D.,
   [CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/legalcode), https://github.com/jfjelstul/worldcup (commit 35a8667, 2026-06-11).
   The data here is modified: restructured into the archive's tables, people matched to existing records only with a confirming fact,
-  and the 90-minute score worked out from the goals. Anything built from it carries the same licence. The site credits it on `/worldcup`,
-  `/sources` and `/terms`.
+  and the 90-minute score worked out from the goals. Anything built from it carries the same licence. Every World Cup page carries the credit line
+  (`web/src/components/SoccerCredit.tsx`).
 - **openfootball/worldcup**: CC0, https://github.com/openfootball/worldcup (commit 19155966, 2026-08-22).
 - **Wikidata** item ids (CC0), read through the English Wikipedia page properties of the pages the CSVs link to.
 - Never FIFA.com, FBref / Sports Reference, Transfermarkt, ESPN, or the FIFA game ratings. No FIFA or World Cup emblems or logos. No
   sensitive personal data: the men's / women's split is only the competition itself.
+
+## Pages (web/)
+
+`/soccer` (sport page), `/worldcup` (every tournament: host, champion, runner-up, final, top scorer), `/worldcup/<year>` (groups, knockout rounds,
+teams, matches, top scorers, awards, stadiums, squads), `/worldcup/<year>/match/<id>-<slug>` (goals, shootout, cards, lineups with substitutions,
+referee), `/worldcup/teams`, `/worldcup/team/<slug>` (record, every tournament, every match), `/worldcup/player/<slug>-<id>` (a person's tournaments).
+`/players/<id>` of a person with no league of the five goes to their World Cup page. All are kept pages (`app/[locale]/s`, with `q/` twins under
+`/worldcup`); the Soccer link is in the header, the footer and on the home page. Flags are Hata's, drawn once in `/soccer-flags.svg` (some
+drawings with a coat of arms are over 100 KB). Stadium names are plain text until the world stadium dataset has a page to link to
+(`/venue/Q<venue_wikidata_id>`, see the comment in `worldcup/[year]/match/[match]/page.tsx`). With no soccer data in production the pages say
+so and nothing breaks.
 
 ## Size
 
