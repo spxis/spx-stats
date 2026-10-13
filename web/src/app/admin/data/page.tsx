@@ -1,16 +1,20 @@
 import type { Metadata } from "next";
+import { cookies } from "next/headers";
 import Link from "next/link";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
-import { ReleaseError, releaseDashboard, type Dashboard, type Release } from "@/lib/releases/client";
-import { autoApproveAt, bytesLabel, driftState, isAutoApproved, matchesAutoFilter, parseAutoFilter, stamp, type AutoFilter } from "@/lib/releases/rules";
+import { ReleaseError, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
+import { TABS, TAB_COOKIE, autoApproveAt, bytesLabel, driftState, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, stamp, type Tab } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
 import { AutoSwitch } from "./AutoSwitch";
 import { DecisionCard } from "./DecisionCard";
+import { RequestButton } from "./RequestButton";
+import { TabMemory } from "./TabMemory";
 
 /**
- * Data releases for admins: what is waiting for approval, what ran, whether DS1 and production agree, and how much space
- * production uses. Admin is checked on the server for every request and anyone else gets a 404. Never cached. English only.
+ * Data releases for admins: what is waiting for approval, what ran, whether DS1 and production agree, how much space
+ * production uses, and the settings (the auto-approval switch and scores update requests). Four tabs, chosen with ?tab= and
+ * remembered per viewer. Admin is checked on the server for every request and anyone else gets a 404. Never cached. English only.
  */
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -24,7 +28,7 @@ const when = (iso: string | null) => {
   const s = stamp(iso);
   return s ? <time dateTime={iso ?? undefined}>{s}</time> : dash;
 };
-const tone = (status: string) => (status === "done" ? "done" : status === "failed" ? "stale" : status === "running" || status === "approved" ? "live" : "");
+const tone = (status: string) => (status === "done" ? "done" : status === "failed" ? "stale" : status === "running" || status === "approved" || status === "queued" ? "live" : "");
 
 const PREVIEW_COLUMNS: SortColumn[] = [
   { key: "table", label: "Table" },
@@ -62,12 +66,31 @@ const SPACE_COLUMNS: SortColumn[] = [
   { key: "table", label: "Table" },
   { key: "size", label: "Size", num: true },
 ];
-
-const FILTERS: { key: AutoFilter; label: string }[] = [
-  { key: "all", label: "all" },
-  { key: "auto", label: "auto" },
-  { key: "manual", label: "manual" },
+const REQUEST_COLUMNS: SortColumn[] = [
+  { key: "id", label: "#", num: true },
+  { key: "what", label: "What" },
+  { key: "who", label: "Asked by" },
+  { key: "asked", label: "Asked", cls: "nowrap" },
+  { key: "status", label: "Status" },
+  { key: "summary", label: "What happened" },
+  { key: "release", label: "Release", cls: "nowrap" },
 ];
+
+const TAB_LABELS: Record<Tab, string> = { pending: "Pending", history: "History", drift: "Drift", settings: "Settings" };
+
+type Show = "collapsed" | "all" | "auto" | "manual";
+const SHOWS: { key: Show; label: string }[] = [
+  { key: "collapsed", label: "manual, auto collapsed" },
+  { key: "all", label: "all" },
+  { key: "auto", label: "auto only" },
+  { key: "manual", label: "manual only" },
+];
+
+const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
+const parseShow = (v: string | string[] | undefined): Show => {
+  const x = first(v);
+  return x === "all" || x === "auto" || x === "manual" ? x : "collapsed";
+};
 
 const keys = (c: SortColumn[]) => c.map((x) => x.key);
 const num = (n: number | null | undefined) => (n == null ? dash : n.toLocaleString("en-US"));
@@ -152,6 +175,8 @@ function PendingCard({ r, query, paused }: { r: Release; query: Query; paused: b
   );
 }
 
+const approvalNote = (by: string) => (by.toLowerCase().startsWith("request:") ? ` (scores update requested by ${by.slice(8)})` : isAutoApproved(by) ? " (automatic)" : "");
+
 function recentRow(r: Release): SortRow {
   const t = r.result?.totals ?? {};
   return {
@@ -166,7 +191,7 @@ function recentRow(r: Release): SortRow {
           {r.error ? <div className="note">{r.error.slice(0, 240)}</div> : null}
         </>
       ),
-      who: <>{r.created_by}{r.approved_by ? <div className="note">approved by {r.approved_by}{isAutoApproved(r.approved_by) ? " (automatic)" : ""}</div> : null}</>,
+      who: <>{r.created_by}{r.approved_by ? <div className="note">approved by {r.approved_by}{approvalNote(r.approved_by)}</div> : null}</>,
       when: when(r.finished_at ?? r.created_at),
       add: num(t.add), change: num(t.change), remove: num(t.remove),
       ticket: r.ticket ?? dash,
@@ -174,62 +199,107 @@ function recentRow(r: Release): SortRow {
   };
 }
 
-function Report({ data, query }: { data: Dashboard; query: Query }) {
-  const drift = driftState(data.sync);
-  const recentSort = parseSort(query.sort, keys(RECENT_COLUMNS), "when.desc");
-  const syncSort = parseSort(query.sort_sync, keys(SYNC_COLUMNS), "state.asc");
-  const spaceSort = parseSort(query.sort_space, keys(SPACE_COLUMNS), "size.desc");
-  const filter = parseAutoFilter(query.show);
-  const recent = data.recent.filter((r) => matchesAutoFilter(r.kind, r.approved_by, filter));
-  const paused = data.auto?.paused === true;
+function requestRow(q: ScoreRequest): SortRow {
+  return {
+    id: q.id,
+    sort: { id: q.id, what: q.kind, who: q.requested_by, asked: q.requested_at, status: q.status, summary: q.summary ?? "", release: q.release_number ?? "" },
+    cells: {
+      id: String(q.id),
+      what: q.kind === "drift" ? "drift check" : "scores update",
+      who: q.requested_by,
+      asked: when(q.requested_at),
+      status: <span className={`tk-badge ${tone(q.status)}`}>{q.status === "nothing" ? "nothing new" : q.status}</span>,
+      summary: q.summary ?? (q.status === "queued" ? "Waiting for the runner (it looks once a minute)." : q.status === "running" ? "Running now." : dash),
+      release: q.release_number ? <><code>{q.release_number}</code>{q.release_status ? <div className="note">{q.release_status}</div> : null}</> : dash,
+    },
+  };
+}
+
+function PendingTab({ data, query, paused }: { data: Dashboard; query: Query; paused: boolean }) {
   return (
     <>
-      {data.auto ? (
-        <section className="section">
-          {paused ? (
-            <p className="dr-alert" role="alert">
-              Auto-approval paused since {stamp(data.auto.paused_at)} UTC by {data.auto.paused_by} ({data.auto.reason}). Releases are still prepared but wait for you.
-            </p>
-          ) : (
-            <p className="note">Auto-approval is on. A daily scores release that meets the policy approves itself 10 minutes after it is prepared.</p>
-          )}
-          <AutoSwitch paused={paused} />
-        </section>
-      ) : null}
-
-      {drift.differs.length > 0 || drift.stale ? (
-        <p className="dr-alert" role="alert">
-          {drift.differs.length > 0 ? <>Production differs from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"}: {drift.differs.map((d) => d.table_name).join(", ")}. </> : null}
-          {drift.lastChecked === null ? "No drift check has run yet." : drift.stale ? `The last drift check was ${stamp(drift.lastChecked)} UTC, more than 36 hours ago.` : null}
-        </p>
-      ) : (
-        <p className="note">DS1 and production agree on every table. Last checked {stamp(drift.lastChecked)} UTC.</p>
-      )}
-
       <section className="section">
         <h2>Waiting for you</h2>
         {data.pending.length === 0 ? <p className="note">Nothing is waiting.</p> : data.pending.map((r) => <PendingCard key={r.id} r={r} query={query} paused={paused} />)}
       </section>
-
       {data.approved.length ? (
         <section className="section">
           <h2>Approved or running</h2>
           {data.approved.map((r) => (
-            <p key={r.id}><code>{r.number}</code> {r.title} <span className={`tk-badge ${tone(r.status)}`}>{r.status}</span>{isAutoApproved(r.approved_by) ? <span className="note"> approved by {r.approved_by}</span> : null}</p>
+            <p key={r.id}><code>{r.number}</code> {r.title} <span className={`tk-badge ${tone(r.status)}`}>{r.status}</span>{r.approved_by && isAutoApproved(r.approved_by) ? <span className="note"> approved by {r.approved_by}</span> : null}</p>
           ))}
         </section>
       ) : null}
+    </>
+  );
+}
 
-      <section className="section">
-        <h2>Recent releases</h2>
-        <p className="dr-actions" role="group" aria-label="Filter releases">
-          {FILTERS.map((f) => (
-            <Link key={f.key} href={f.key === "all" ? "?" : `?show=${f.key}`} className={`tk-badge ${filter === f.key ? "live" : ""}`} aria-current={filter === f.key ? "true" : undefined}>{f.label}</Link>
-          ))}
+function HistoryTab({ data, query }: { data: Dashboard; query: Query }) {
+  const show = parseShow(query.show);
+  const sort = parseSort(query.sort, keys(RECENT_COLUMNS), "when.desc");
+  const autoSort = parseSort(query.sort_auto, keys(RECENT_COLUMNS), "when.desc");
+  const isAuto = (r: Release) => matchesAutoFilter(r.kind, r.approved_by, "auto");
+  const main = data.recent.filter((r) => (show === "auto" ? isAuto(r) : show === "all" ? true : !isAuto(r)));
+  const folded = show === "collapsed" ? data.recent.filter(isAuto) : [];
+  return (
+    <section className="section">
+      <h2>Recent releases</h2>
+      <p className="dr-actions" role="group" aria-label="Filter releases">
+        {SHOWS.map((f) => (
+          <Link key={f.key} href={f.key === "collapsed" ? "?tab=history" : `?tab=history&show=${f.key}`} className={`tk-badge ${show === f.key ? "live" : ""}`} aria-current={show === f.key ? "true" : undefined}>{f.label}</Link>
+        ))}
+      </p>
+      {main.length === 0 ? <p className="note">{data.recent.length === 0 ? "No release has run yet." : "No release matches this filter."}</p> : (
+        <div className="scroll"><SortTable columns={RECENT_COLUMNS} rows={main.map(recentRow)} def="when.desc" initial={sort} label="Recent releases" /></div>
+      )}
+      {folded.length ? (
+        <details>
+          <summary>Automatic daily scores ({folded.length})</summary>
+          <div className="scroll"><SortTable columns={RECENT_COLUMNS} rows={folded.map(recentRow)} param="sort_auto" def="when.desc" initial={autoSort} label="Automatic daily scores releases" /></div>
+        </details>
+      ) : null}
+    </section>
+  );
+}
+
+const finished = (data: Dashboard) => data.recent.map((r) => ({ number: r.number, tables: r.tables, status: r.status, finished_at: r.finished_at }));
+
+/** What the comparison says, and when it was taken. A "differs" that a later release overtook is called out of date, not a mismatch. */
+function DriftNote({ data }: { data: Dashboard }) {
+  const drift = driftState(data.sync, finished(data));
+  const at = stamp(drift.lastChecked);
+  return (
+    <>
+      {drift.differs.length > 0 ? (
+        <p className="dr-alert" role="alert">
+          Production differed from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"} when compared at {at} UTC: {drift.differs.map((d) => d.table_name).join(", ")}. A fix is proposed under Pending.
         </p>
-        {recent.length === 0 ? <p className="note">{data.recent.length === 0 ? "No release has run yet." : "No release matches this filter."}</p> : (
-          <div className="scroll"><SortTable columns={RECENT_COLUMNS} rows={recent.map(recentRow)} def="when.desc" initial={recentSort} label="Recent releases" /></div>
-        )}
+      ) : null}
+      {drift.outdated.length > 0 ? (
+        <p className="note" role="status">
+          <strong>Out of date:</strong> {drift.outdated.length} {drift.outdated.length === 1 ? "table was" : "tables were"} reported as different ({drift.outdated.map((d) => d.table_name).join(", ")}),
+          but release {drift.newerRelease} finished after that comparison, so they may match now. Press Check now to compare again.
+        </p>
+      ) : null}
+      {drift.lastChecked === null ? <p className="dr-alert" role="alert">No drift check has run yet.</p> : drift.stale ? <p className="dr-alert" role="alert">The last drift check was {at} UTC, more than 36 hours ago.</p> : null}
+      {drift.differs.length === 0 && drift.outdated.length === 0 && drift.lastChecked !== null && !drift.stale ? <p className="note">DS1 and production agreed on every table when compared at {at} UTC.</p> : null}
+    </>
+  );
+}
+
+function DriftTab({ data, query }: { data: Dashboard; query: Query }) {
+  const blocked = requestBlock(data.requests, data.server_now ? Date.parse(data.server_now) : undefined, data.request_cooldown_minutes, "drift");
+  const lastDrift = data.requests.find((q) => q.kind === "drift");
+  const syncSort = parseSort(query.sort_sync, keys(SYNC_COLUMNS), "state.asc");
+  const spaceSort = parseSort(query.sort_space, keys(SPACE_COLUMNS), "size.desc");
+  return (
+    <>
+      <DriftNote data={data} />
+      <section className="section">
+        <h2>Check now</h2>
+        <p className="note">Compares every table on DS1 and production again (the runner looks for requests once a minute; a check also runs every night). One request at a time, about {data.request_cooldown_minutes} minutes apart.</p>
+        <RequestButton kind="drift" blocked={blocked} />
+        {lastDrift ? <p className="note">Last request #{lastDrift.id} ({lastDrift.status}): {lastDrift.summary ?? "waiting for the runner"}</p> : null}
       </section>
 
       <section className="section">
@@ -266,9 +336,84 @@ function Report({ data, query }: { data: Dashboard; query: Query }) {
   );
 }
 
+function SettingsTab({ data, query, paused }: { data: Dashboard; query: Query; paused: boolean }) {
+  const reqSort = parseSort(query.sort_req, keys(REQUEST_COLUMNS), "id.desc");
+  const blocked = requestBlock(data.requests, data.server_now ? Date.parse(data.server_now) : undefined, data.request_cooldown_minutes);
+  return (
+    <>
+      <section className="section">
+        <h2>Auto-approval</h2>
+        {data.auto ? (
+          <>
+            {paused ? (
+              <p className="dr-alert" role="alert">
+                Auto-approval paused since {stamp(data.auto.paused_at)} UTC by {data.auto.paused_by} ({data.auto.reason}). Releases are still prepared but wait for you.
+              </p>
+            ) : (
+              <p className="note">Auto-approval is on. A daily scores release that meets the policy approves itself 10 minutes after it is prepared.</p>
+            )}
+            <AutoSwitch paused={paused} />
+          </>
+        ) : <p className="note">The auto-approval switch is not set up on production yet (migration 047).</p>}
+      </section>
+
+      <section className="section">
+        <h2>Scores update</h2>
+        <p className="note">
+          Asks the runner next to DS1 to fetch the latest scores now (it looks for requests once a minute) and prepare a daily scores release.
+          Your click counts as the approval, with no 10 minute wait, but the auto-approval checks and the Hold switch above still apply: anything
+          that fails them waits for you under Pending. One request at a time, about {data.request_cooldown_minutes} minutes apart.
+          Wikipedia often updates hours after games end, so a request may find nothing new.
+        </p>
+        <RequestButton blocked={blocked} />
+        {data.requests.length === 0 ? <p className="note">No request has been made yet.</p> : (
+          <div className="scroll"><SortTable columns={REQUEST_COLUMNS} rows={data.requests.map(requestRow)} param="sort_req" def="id.desc" initial={reqSort} label="Scores update requests" /></div>
+        )}
+      </section>
+    </>
+  );
+}
+
+function Report({ data, query, tab }: { data: Dashboard; query: Query; tab: Tab }) {
+  const drift = driftState(data.sync, finished(data));
+  const paused = data.auto?.paused === true;
+  const badge: Record<Tab, number> = { pending: data.pending.length, history: 0, drift: drift.differs.length, settings: 0 };
+  return (
+    <>
+      {paused && tab !== "settings" ? (
+        <p className="dr-alert" role="alert">
+          Auto-approval paused since {stamp(data.auto?.paused_at)} UTC by {data.auto?.paused_by} ({data.auto?.reason}). Releases are still prepared but wait for you. <Link href="?tab=settings">Settings</Link>
+        </p>
+      ) : null}
+      {drift.differs.length > 0 && tab !== "drift" ? (
+        <p className="dr-alert" role="alert">
+          Production differed from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"} when compared at {stamp(drift.lastChecked)} UTC. <Link href="?tab=drift">Drift</Link>
+        </p>
+      ) : null}
+      {drift.outdated.length > 0 && drift.differs.length === 0 && tab !== "drift" ? (
+        <p className="note" role="status">The last comparison ({stamp(drift.lastChecked)} UTC) is out of date: release {drift.newerRelease} finished after it. <Link href="?tab=drift">Drift</Link></p>
+      ) : null}
+      <nav className="dr-tabs" aria-label="Data releases">
+        {TABS.map((t) => (
+          <Link key={t} href={`?tab=${t}`} aria-current={tab === t ? "page" : undefined}>
+            {TAB_LABELS[t]}
+            {badge[t] > 0 ? <span className={`tk-badge ${t === "drift" ? "stale" : "live"}`}>{badge[t]}</span> : null}
+          </Link>
+        ))}
+      </nav>
+      <TabMemory tab={tab} />
+      {tab === "pending" ? <PendingTab data={data} query={query} paused={paused} /> : null}
+      {tab === "history" ? <HistoryTab data={data} query={query} /> : null}
+      {tab === "drift" ? <DriftTab data={data} query={query} /> : null}
+      {tab === "settings" ? <SettingsTab data={data} query={query} paused={paused} /> : null}
+    </>
+  );
+}
+
 export default async function AdminDataPage({ searchParams }: { searchParams: Promise<Query> }) {
   await requireAdmin();
   const query = await searchParams;
+  const tab = parseTab(query.tab, (await cookies()).get(TAB_COOKIE)?.value);
 
   let data: Dashboard | null = null;
   let problem = "";
@@ -285,7 +430,7 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
         <p className="lede">Production changes only through numbered releases. Approve or reject each one here; the runner next to DS1 applies the approved ones and checks the result.</p>
         {problem ? <p className="note" role="alert">{problem}</p> : null}
       </section>
-      {data ? <Report data={data} query={query} /> : null}
+      {data ? <Report data={data} query={query} tab={tab} /> : null}
     </>
   );
 }

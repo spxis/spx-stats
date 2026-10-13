@@ -1,4 +1,5 @@
 import "server-only";
+import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { API_KEY, REST_URL } from "@/lib/api/config";
 
@@ -14,6 +15,7 @@ import { API_KEY, REST_URL } from "@/lib/api/config";
  * both refuse a wrong secret. The only write approve_release can make is pending -> approved or rejected.
  * Migration 047 adds three more narrow functions: hold_release (an auto-approvable release goes back to pending),
  * pause_auto_approvals and resume_auto_approvals. The site never approves automatically; the runner does.
+ * Migration 053 adds request_score_update (queues one request row, nothing else) and release_summary (three counts for the admin bar).
  */
 export class ReleaseError extends Error {
   name = "ReleaseError";
@@ -27,14 +29,14 @@ function secret(): string {
   return value;
 }
 
-async function rpc(fn: string, body: Record<string, unknown>): Promise<unknown> {
+async function rpc(fn: string, body: Record<string, unknown>, options: { noStore?: boolean } = {}): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(`${REST_URL}rpc/${fn}`, {
       method: "POST",
       headers: { apikey: API_KEY, "content-type": "application/json", "content-profile": "api", accept: "application/json" },
       body: JSON.stringify(body),
-      cache: "no-store",
+      ...(options.noStore === false ? {} : { cache: "no-store" as const }),
       signal: AbortSignal.timeout(TIMEOUT_MS),
     });
   } catch {
@@ -88,6 +90,19 @@ const release = z.object({
   held_at: z.string().nullish(),
 }).passthrough();
 
+const scoreRequest = z.object({
+  id: z.number(),
+  requested_by: z.string(),
+  requested_at: z.string(),
+  status: z.enum(["queued", "running", "done", "failed", "nothing"]),
+  started_at: z.string().nullable(),
+  finished_at: z.string().nullable(),
+  summary: z.string().nullable(),
+  release_number: z.string().nullable(),
+  release_status: z.string().nullish(),
+  kind: z.enum(["scores", "drift"]).default("scores"),
+});
+
 const dashboard = z.object({
   pending: z.array(release),
   approved: z.array(release),
@@ -98,6 +113,9 @@ const dashboard = z.object({
   })),
   space: z.array(z.object({ table: z.string(), bytes: z.number() })),
   database_bytes: z.number(),
+  requests: z.array(scoreRequest).default([]),
+  request_cooldown_minutes: z.number().default(10),
+  server_now: z.string().optional(),
   auto: z.object({
     paused: z.boolean(), paused_at: z.string().nullable(), paused_by: z.string().nullable(), reason: z.string().nullable(),
     resumed_at: z.string().nullable(), resumed_by: z.string().nullable(),
@@ -105,6 +123,7 @@ const dashboard = z.object({
 });
 
 export type Release = z.infer<typeof release>;
+export type ScoreRequest = z.infer<typeof scoreRequest>;
 export type Dashboard = z.infer<typeof dashboard>;
 
 export async function releaseDashboard(): Promise<Dashboard> {
@@ -133,6 +152,38 @@ export async function resumeAutoApprovals(actor: string): Promise<void> {
   await rpc("resume_auto_approvals", { p_secret: secret(), p_actor: actor });
 }
 
+/** Queue one scores update request (migration 053). Throws when one is open already or the last one ended less than about 10 minutes ago. */
+export async function requestScoreUpdate(actor: string): Promise<void> {
+  await rpc("request_score_update", { p_secret: secret(), p_actor: actor });
+}
+
+/** Queue one drift check ("Check now"): compare every table again. Same rules as the scores request: one open request, about 10 minutes apart. */
+export async function requestDriftCheck(actor: string): Promise<void> {
+  await rpc("request_drift_check", { p_secret: secret(), p_actor: actor });
+}
+
+const summary = z.object({ waiting: z.number(), drift: z.number(), paused: z.boolean() });
+export type AdminSummary = z.infer<typeof summary>;
+
+const cachedSummary = unstable_cache(
+  async () => {
+    const parsed = summary.safeParse(await rpc("release_summary", { p_secret: secret() }, { noStore: false }));
+    if (!parsed.success) throw new ReleaseError("The release summary did not have the expected shape.");
+    return parsed.data;
+  },
+  ["admin-bar-summary"],
+  { revalidate: 60, tags: ["admin-bar"] },
+);
+
+/** Three small counts for the admin bar, kept for a minute and refreshed after an admin's own action. Null when it cannot be read. Call it only for a signed-in admin. */
+export async function adminBarSummary(): Promise<AdminSummary | null> {
+  try {
+    return await cachedSummary();
+  } catch {
+    return null;
+  }
+}
+
 /** The number and current status of one release, or null when the dashboard does not list it. */
 export async function releaseStatus(id: number): Promise<{ number: string; status: string } | null> {
   const data = await releaseDashboard();
@@ -147,7 +198,7 @@ export async function latestDataVersion(): Promise<string | null> {
   try {
     const res = await fetch(`${REST_URL}data_version?select=number`, {
       headers: { apikey: API_KEY, "accept-profile": "api" },
-      next: { revalidate: 300 },
+      next: { revalidate: 300, tags: ["data-version"] },
       signal: AbortSignal.timeout(3000),
     });
     if (!res.ok) return null;

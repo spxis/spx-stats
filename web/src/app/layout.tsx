@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, JetBrains_Mono, Source_Sans_3 } from "next/font/google";
+import { AdminBar } from "@/components/AdminBar";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { SlugProvider } from "@/components/SlugProvider";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
@@ -41,6 +42,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <LocaleProvider locale={locale}>
           <SlugProvider table={slugs ? tableOf(slugs) : {}}>
+            <AdminBar />
             <SiteHeader />
             <main id="app" tabIndex={-1} className="page">
               {children}

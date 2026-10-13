@@ -1,10 +1,11 @@
 "use server";
 
+import { updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { sameOrigin } from "@/lib/auth/origin";
 import { requireAdmin } from "@/lib/auth/user";
-import { decideRelease, holdRelease, pauseAutoApprovals, releaseStatus, resumeAutoApprovals } from "@/lib/releases/client";
-import { alreadyDecided } from "@/lib/releases/rules";
+import { decideRelease, holdRelease, pauseAutoApprovals, releaseDashboard, releaseStatus, requestDriftCheck, requestScoreUpdate, resumeAutoApprovals } from "@/lib/releases/client";
+import { alreadyDecided, requestBlock } from "@/lib/releases/rules";
 
 export type DecideState = { ok: boolean; message: string } | null;
 
@@ -43,6 +44,7 @@ export async function decide(_previous: DecideState, form: FormData): Promise<De
     if (refused) return { ok: false, message: "The database did not answer, so I cannot tell if it worked. Reload the page to see the release's status." };
   }
 
+  updateTag("admin-bar");
   if (!refused) return success(current?.number ?? `release ${id}`, approve);
   if (!current) return { ok: false, message: `Release ${id} was not found.` };
   if (alreadyDecided(current.status, approve)) return success(current.number, approve);
@@ -74,6 +76,7 @@ export async function hold(_previous: DecideState, form: FormData): Promise<Deci
     if (refused) return { ok: false, message: "The database did not answer, so I cannot tell if it worked. Reload the page to see the release's status." };
   }
   const number = current?.number ?? `release ${id}`;
+  updateTag("admin-bar");
   if (!refused) return { ok: true, message: `Held ${number}. It stays pending until you decide.` };
   return { ok: false, message: `${number} could not be held${current ? ` (it is ${current.status}, or it was held already)` : ""}.` };
 }
@@ -88,14 +91,60 @@ export async function setAutoPause(_previous: DecideState, form: FormData): Prom
       const reason = String(form.get("reason") ?? "").trim();
       if (reason.length < 1 || reason.length > 300) return { ok: false, message: "Give a reason of 1 to 300 characters." };
       await pauseAutoApprovals(user.email, reason);
+      updateTag("admin-bar");
       return { ok: true, message: "Automatic approvals are paused. Releases are still prepared but wait for you. Reload to see the banner." };
     }
     if (decision === "resume") {
       await resumeAutoApprovals(user.email);
+      updateTag("admin-bar");
       return { ok: true, message: "Automatic approvals resumed. The runner re-checks and approves the eligible queue within a minute. Reload to see the banner." };
     }
   } catch {
     return { ok: false, message: "The database refused the request. Reload the page and try again." };
   }
   return { ok: false, message: "That request was not valid." };
+}
+
+/**
+ * Ask for a scores update. Admin and Origin are checked first. The database function only adds one queued row (one open
+ * request at a time, about 10 minutes between requests); the runner on the NAS does the work. When it refuses, the reason is
+ * worked out again from the current requests so the message is specific.
+ */
+export async function requestUpdate(): Promise<DecideState> {
+  const user = await requireAdmin();
+  if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  try {
+    await requestScoreUpdate(user.email);
+  } catch {
+    try {
+      const data = await releaseDashboard();
+      const why = requestBlock(data.requests, data.server_now ? Date.parse(data.server_now) : undefined, data.request_cooldown_minutes);
+      if (why) return { ok: false, message: why };
+    } catch {
+      return { ok: false, message: "The database did not answer. Reload the page to see whether the request was made." };
+    }
+    return { ok: false, message: "The database refused the request. Reload the page and try again." };
+  }
+  updateTag("admin-bar");
+  return { ok: true, message: "Requested. The runner picks it up within a minute; reload to see the status." };
+}
+
+/** "Check now" on the Drift tab: queues one drift check for the runner. Same checks and the same one-at-a-time rule as requestUpdate. */
+export async function requestDrift(): Promise<DecideState> {
+  const user = await requireAdmin();
+  if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  try {
+    await requestDriftCheck(user.email);
+  } catch {
+    try {
+      const data = await releaseDashboard();
+      const why = requestBlock(data.requests, data.server_now ? Date.parse(data.server_now) : undefined, data.request_cooldown_minutes, "drift");
+      if (why) return { ok: false, message: why };
+    } catch {
+      return { ok: false, message: "The database did not answer. Reload the page to see whether the request was made." };
+    }
+    return { ok: false, message: "The database refused the request. Reload the page and try again." };
+  }
+  updateTag("admin-bar");
+  return { ok: true, message: "Requested. The runner compares DS1 and production within a minute or two; reload to see the result." };
 }

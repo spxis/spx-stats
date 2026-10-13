@@ -16,7 +16,9 @@
     "task": "node scripts/task.ts",
     "i18n:review": "node scripts/i18n-review.ts",
     "test:i18n": "node --test scripts/i18n.test.ts",
-    "test:auth": "node --test scripts/auth.test.ts"
+    "test:auth": "node --test scripts/auth.test.ts",
+    "test:revalidate": "node --test scripts/revalidate.test.ts",
+    "test:releases": "node --test scripts/releases.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/chizu": "1.4.0",
