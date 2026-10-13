@@ -69,8 +69,10 @@ function toneMap(pins: Pin[]): Map<string, string> {
 
 interface View { z: number; x: number; y: number }
 
-export function MapViewer({ pins, title, total, note, onNavigate, bar, selected, onPick, zoomToSelected }: {
+export function MapViewer({ pins, title, total, note, onNavigate, bar, selected, onPick, zoomToSelected, tight }: {
   pins: Pin[]; title: string; total?: number; note?: string; onNavigate?: () => void; bar?: ReactNode;
+  /** The dots are all in one city or area: frame them closely (a window of about 150 km at the least) instead of a region's width. */
+  tight?: boolean;
   /** The chosen dot (Pin.f), marked on the map and described in the panel above it (team and venue as links); when given it replaces each pin's own `me`. A dot press then calls onPick instead of following its link. */
   selected?: number; onPick?: (f: number) => void;
   /** Start zoomed in on the chosen dot, and move there when the choice changes. */
@@ -125,7 +127,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       };
       const sel = pick.current.selected;
       const placed = shown.flatMap((t) => { const p = place(t); return p ? [{ ...t, p, me: sel != null ? t.f === sel : t.me }] : []; }).sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
-      const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, host.clientHeight, stateView ? 0.18 : 0.06) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
+      const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, host.clientHeight, tight ? (stateView ? 0.05 : 0.004) : stateView ? 0.18 : 0.06) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
       host.innerHTML = drawChizu(map, { tones: stateView ? {} : { US: "faint", CA: "faint", MX: "faint" }, language: locale === "ja" ? "ja" : "en", style: true });
       const svg = host.querySelector("svg");
       if (!svg) return;

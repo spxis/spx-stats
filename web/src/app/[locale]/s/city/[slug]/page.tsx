@@ -161,7 +161,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
           {pins.length ? (
             <section className="section">
               <h2>{say("city.mapHead")}</h2>
-              <MapViewer pins={pins} title={say("city.mapTitle", { name: nameOf(city) })} total={pins.length} note={say("city.mapNote", { n: fmt(pins.length) })} />
+              <MapViewer tight pins={pins} title={say("city.mapTitle", { name: nameOf(city) })} total={pins.length} note={say("city.mapNote", { n: fmt(pins.length) })} />
             </section>
           ) : null}
 
