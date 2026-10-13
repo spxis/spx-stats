@@ -115,7 +115,7 @@ from pg_class c
 where c.relkind in ('r', 'p') and not c.relispartition
   and c.relnamespace::regnamespace::text in (%s)
   and not (c.relnamespace = 'meta'::regnamespace
-           and (c.relname in ('data_release', 'sync_status', 'release_secret', 'auto_approval') or c.relname ~ '^r[sd]_[0-9]'))
+           and (c.relname in ('data_release', 'sync_status', 'release_secret', 'auto_approval', 'score_update_request') or c.relname ~ '^r[sd]_[0-9]'))
 order by 1, 2
 """ % ",".join(ql(s) for s in SCHEMAS)
 

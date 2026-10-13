@@ -74,6 +74,7 @@ def fresh():
         psql("postgres", "drop database if exists %s with (force)" % db)
         psql("postgres", "create database %s template %s" % (db, BASE))
         psql(db, "\\i %s" % os.path.join(REPO, "db", "migrations", "047_auto_approval.sql"))
+        psql(db, "\\i %s" % os.path.join(REPO, "db", "migrations", "053_score_update_requests.sql"))
     h = __import__("hashlib").sha256(SECRET.encode()).hexdigest()
     psql(PROD, "insert into meta.release_secret (secret_hash) values ('%s')" % h)
 

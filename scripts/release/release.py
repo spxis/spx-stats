@@ -28,9 +28,14 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
+import urllib.parse
+import urllib.request
 
 sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sync"))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compare as C  # noqa: E402
+import daily_lock  # noqa: E402
 
 REPO = os.environ.get("RELEASE_REPO") or os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SNAP_DIR = os.environ.get("RELEASE_SNAPSHOT_DIR") or os.path.join(os.getcwd(), "release-snapshots")
@@ -38,7 +43,7 @@ MAX_DB_BYTES = int(float(os.environ.get("RELEASE_MAX_DB_MB", "450")) * 1024 * 10
 SHRINK_LIMIT = 0.05
 MAIN_REF = os.environ.get("RELEASE_MAIN_REF", "origin/main")
 TABLE_RE = re.compile(r"^(core|meta|ref)\.[a-z_][a-z0-9_]*$")
-RESERVED = {"meta.data_release", "meta.sync_status", "meta.release_secret", "meta.auto_approval"}
+RESERVED = {"meta.data_release", "meta.sync_status", "meta.release_secret", "meta.auto_approval", "meta.score_update_request"}
 PUBLISH_KINDS = ("publish", "daily_scores")
 AUTO_ACTOR = "auto:daily-scores"
 AUTO_HOLD_MINUTES = 10
@@ -50,6 +55,10 @@ AUTO_MAX_SIDE_ROWS = 2000
 AUTO_ISSUE_SOURCE = "wikipedia_daily"
 AUTO_ISSUE_COLUMNS = {"resolution", "resolved_at"}
 AUTO_DRIFT_DAYS = 14
+REQUEST_PREFIX = "request:"
+HEARTBEAT_MINUTES = 30
+DAILY_TIMEOUT = int(os.environ.get("RELEASE_DAILY_TIMEOUT", "2400"))
+REVALIDATE_MAX_TAGS = 100
 STEP_FILE_RE = re.compile(r"^db/(migrations|build)/[A-Za-z0-9_.-]+\.sql$")
 REQUEST_BYTES = 900_000
 ROWS_PER_INSERT = 500
@@ -76,7 +85,7 @@ def log(msg):
 
 def scrub(text):
     text = str(text)
-    for name in ("SUPABASE_ACCESS_TOKEN", "PGPASSWORD"):
+    for name in ("SUPABASE_ACCESS_TOKEN", "PGPASSWORD", "REVALIDATE_SECRET"):
         v = os.environ.get(name)
         if v:
             text = text.replace(v, "***")
@@ -164,6 +173,8 @@ class Ctx:
         if not token:
             raise SystemExit("SUPABASE_ACCESS_TOKEN is not set")
         self.prod = C.ApiSide(args.project_ref, token, url=args.api_url)
+        self.ds1_dsn = args.ds1_dsn
+        self.daily_script = getattr(args, "daily_script", None) or os.path.join(REPO, "scripts", "daily", "run.py")
         self.by = getattr(args, "by", None) or "release.py"
 
 
@@ -899,6 +910,19 @@ def is_auto(approved_by):
     return str(approved_by or "").lower().startswith("auto:")
 
 
+def is_gated(approved_by):
+    """Approved by the runner's policy (auto:) or by an admin's score update request (request:): both are re-checked against
+    the policy and the Hold switch right before the apply, and a failure of either pauses automatic approvals."""
+    return str(approved_by or "").lower().startswith(("auto:", REQUEST_PREFIX))
+
+
+def gated_actor_ok(approved_by, kind):
+    """Only daily_scores can be approved this way, as exactly AUTO_ACTOR or as request:<an admin>."""
+    if kind != "daily_scores":
+        return False
+    return approved_by == AUTO_ACTOR or (str(approved_by).startswith(REQUEST_PREFIX) and len(str(approved_by)) > len(REQUEST_PREFIX))
+
+
 def same_release(p, mine):
     return (p["digest"] == mine["digest"] and p["kind"] == mine["kind"] and sorted(p["tables"]) == sorted(mine["tables"])
             and (p["options"] or {}) == (mine["options"] or {}))
@@ -950,7 +974,7 @@ def auto_drift_mismatch(ctx, diffs):
     DS1 moving ahead of production is not a mismatch: production still holds what the release wrote."""
     touched = {}
     for r in ctx.ds1.run("select number, result from meta.data_release where kind = 'daily_scores' and status = 'done' "
-                         "and approved_by like 'auto:%%' and finished_at > now() - interval '%d days' order by id" % AUTO_DRIFT_DAYS):
+                         "and (approved_by like 'auto:%%' or approved_by like 'request:%%') and finished_at > now() - interval '%d days' order by id" % AUTO_DRIFT_DAYS):
         for tbl, m in ((r["result"] or {}).get("touched") or {}).items():
             for ks, h in m.items():
                 touched[(tbl, tuple(json.loads(ks)))] = (r["number"], h)
@@ -1032,6 +1056,7 @@ def run_publish(ctx, rel, pre=None):
               "backup_schema": schema, "before_fp": before_fp, "verified": True, "refresh": refresh,
               "seconds": round(time.time() - started)}
     if rel["kind"] == "daily_scores":
+        result["leagues"] = touched_leagues(ctx, items)
         result["touched"] = {}
         for n, t, d in items:
             keys = list(d["only1"]) + list(d["differ"])
@@ -1147,6 +1172,227 @@ def run_rollback(ctx, rel):
     return {"rolled_back": number, "verified": True, "refresh": refresh, "seconds": round(time.time() - started)}
 
 
+# ---------------------------------------------------------------------------------------------------- score update requests
+
+def finish_request(ctx, rid, status, summary, release_number=None):
+    """Write the end state of a request on production. Only a queued or running row can be finished."""
+    sets = "status = %s, finished_at = now(), summary = %s, release_number = %s" % (
+        C.ql(status), C.ql(scrub(summary)[:500]), C.ql(release_number) if release_number else "null")
+    prod_exec(ctx.prod, "with u as (update meta.score_update_request set %s where id = %d and status in ('queued', 'running') "
+                        "returning 1) select count(*) as j from u" % (sets, rid))
+    log("score update request %d: %s: %s" % (rid, status, scrub(summary)[:200]))
+
+
+def daily_running(ctx):
+    """True when the daily job's heartbeat (ingest.daily_run, migration 048) shows a run that started lately and has not ended."""
+    try:
+        return ctx.ds1.run("select count(*) as n from ingest.daily_run where outcome = 'running' "
+                           "and started_at > now() - interval '%d minutes'" % HEARTBEAT_MINUTES)[0]["n"] > 0
+    except Exception as e:  # noqa: BLE001 - no heartbeat table yet: there is nothing to wait for
+        log("could not read the daily job's heartbeat (%s): going on" % scrub(e)[:120])
+        return False
+
+
+def run_daily_job(ctx):
+    """Run scripts/daily/run.py --apply against DS1 with the runner's environment. Its release hook is switched on here (the same
+    hook the scheduled job uses), so it prepares the release. Returns (exit code, output)."""
+    cache = os.environ.get("RELEASE_DAILY_CACHE") or os.path.join(os.path.dirname(SNAP_DIR.rstrip("/")), "daily")
+    for d in ("raw", "logs"):
+        os.makedirs(os.path.join(cache, d), exist_ok=True)
+    env = dict(os.environ, DAILY_PREPARE_RELEASE="1", DAILY_RELEASE_KIND="daily_scores", SPX_DAILY_CACHE=cache)
+    cmd = [sys.executable, "-I", ctx.daily_script, "--apply", "--state", os.path.join(cache, "state.json"),
+           "--raw-dir", os.path.join(cache, "raw"), "--log-dir", os.path.join(cache, "logs")]
+    try:
+        r = subprocess.run(cmd, capture_output=True, text=True, timeout=DAILY_TIMEOUT, env=env)
+    except subprocess.TimeoutExpired:
+        return 124, "the scores job ran longer than %d seconds and was stopped" % DAILY_TIMEOUT
+    return r.returncode, scrub(r.stdout + "\n" + r.stderr)
+
+
+def approve_for_request(ctx, rel, who):
+    """The admin's click counts as the approval of the release the request prepared, but the policy and the Hold switch still
+    apply, exactly as for an automatic approval. Returns (approved, why not)."""
+    if rel["kind"] != "daily_scores":
+        return False, "it changes more than scores, so it needs your review"
+    flag = read_flag(ctx)
+    mirror_flag(ctx, flag)
+    if flag["paused"]:
+        return False, "auto-approvals are on hold, so it waits for you"
+    p = ctx.prod.run("select id, number, kind, status, digest, tables, options, held_at from meta.data_release where id = %d" % rel["id"])
+    if not p or p[0]["status"] != "pending" or p[0]["held_at"] or not same_release(p[0], rel) or digest_check(rel) is False:
+        return False, "production's copy does not match, so it waits for you"
+    reasons, _ = auto_gate(ctx, rel)
+    if reasons:
+        mark_not_auto(ctx, rel, reasons)
+        return False, "it does not meet the auto-approval policy (%s), so it waits for you" % reasons[0][:160]
+    guard = "held_at is null and digest = %s and (select paused is false from meta.auto_approval)" % C.ql(rel["digest"])
+    if prod_exec(ctx.prod, update_sql(rel["id"], {"status": "approved", "approved_by": REQUEST_PREFIX + who, "approved_at": "NOW"}, "pending", guard)):
+        return True, ""
+    return False, "it could not be approved just now, so it waits for you"
+
+
+def drift_request(ctx, req):
+    """A "Check now" request: run the drift check here and now (the runner holds the run lock) and say what it found."""
+    if not prod_exec(ctx.prod, "with u as (update meta.score_update_request set status = 'running', started_at = now() "
+                               "where id = %d and status = 'queued' returning 1) select count(*) as j from u" % req["id"]):
+        return
+    log("drift check requested by %s (request %d)" % (req["requested_by"], req["id"]))
+    try:
+        code, summary, number = run_drift(ctx)
+        finish_request(ctx, req["id"], "done", summary, number)
+    except Exception as e:  # noqa: BLE001 - the request must not stay running
+        finish_request(ctx, req["id"], "failed", "The drift check failed: %s" % scrub(e)[:200])
+
+
+def request_pass(ctx):
+    """Handle the oldest queued score update request: run the daily scores job on DS1, prepare the release, approve it as
+    request:<admin> if the policy and the Hold switch allow, and write the status and a short summary on the request row.
+    Runs inside cmd_run, so it shares the run lock; the DS1 lock keeps it from overlapping the scheduled daily job."""
+    rows = ctx.prod.run("select id, requested_by, status, kind from meta.score_update_request where status in ('queued', 'running') order by id")
+    for r in rows:
+        if r["status"] == "running":  # this runner holds the run lock, so nobody is running it: the runner stopped
+            finish_request(ctx, r["id"], "failed", "The runner stopped while this was running. Try again.")
+    queued = [r for r in rows if r["status"] == "queued"]
+    if not queued:
+        return
+    req = queued[0]
+    who = str(req["requested_by"]).strip()
+    if not who or len(who) > 80 or re.match(r"(?i)^(auto:|request:|system$)", who):
+        finish_request(ctx, req["id"], "failed", "The request had no valid requester, so it was not run.")
+        return
+    if req["kind"] == "drift":
+        return drift_request(ctx, req)
+    lock = daily_lock.Lock(ctx.ds1_dsn)
+    if not lock.try_acquire():
+        log("score update request %d: the scores job holds the lock; it stays queued" % req["id"])
+        return
+    try:
+        if daily_running(ctx):
+            log("score update request %d: the daily job is running now; it stays queued" % req["id"])
+            return
+        open_rel = ctx.prod.run("select number, status from meta.data_release where kind = 'daily_scores' "
+                                "and status in ('pending', 'approved', 'running') order by id limit 1")
+        if open_rel:
+            finish_request(ctx, req["id"], "done", "Release %s (daily scores) is already %s. No new update was started; decide that one first."
+                           % (open_rel[0]["number"], open_rel[0]["status"]), open_rel[0]["number"])
+            return
+        if not prod_exec(ctx.prod, "with u as (update meta.score_update_request set status = 'running', started_at = now() "
+                                   "where id = %d and status = 'queued' returning 1) select count(*) as j from u" % req["id"]):
+            return
+        log("score update request %d from %s: running the scores job" % (req["id"], who))
+        before = ctx.ds1.run("select coalesce(max(id), 0) as m from meta.data_release")[0]["m"]
+        code, out = run_daily_job(ctx)
+        for line in out.strip().splitlines()[-6:]:
+            log("scores job: " + line[:300])
+        if code != 0:
+            finish_request(ctx, req["id"], "failed", "The scores job did not finish (exit %d). Nothing was published. Details are in the runner log." % code)
+            return
+        made = ctx.ds1.run("select * from meta.data_release where id > %d and created_by = 'daily-job' and status = 'pending' order by id" % before)
+        hook = re.findall(r"release hook: (\w+):", out)
+        if not made:
+            if hook and hook[-1] != "nothing":
+                finish_request(ctx, req["id"], "failed", "Scores were updated on DS1 but the release could not be prepared (%s). Details are in the runner log." % hook[-1])
+            else:
+                finish_request(ctx, req["id"], "nothing", "Nothing new: DS1 and production already agree. Wikipedia often updates hours after games end, so try again later.")
+            return
+        rel = made[0]
+        games = ((rel["preview"] or {}).get("auto") or {}).get("games") or 0
+        approved, why = approve_for_request(ctx, rel, who)
+        if approved:
+            finish_request(ctx, req["id"], "done", "Release %s approved by your request (%s). It is applied within a minute."
+                           % (rel["number"], "%d games" % games if games else "scores"), rel["number"])
+        else:
+            finish_request(ctx, req["id"], "done", "Release %s was prepared, but %s." % (rel["number"], why), rel["number"])
+    except Exception as e:  # noqa: BLE001 - the request must not stay running
+        try:
+            finish_request(ctx, req["id"], "failed", "The update failed: %s" % scrub(e)[:200])
+        except Exception as e2:  # noqa: BLE001
+            log("could not record the failure of request %d: %s" % (req["id"], scrub(e2)))
+    finally:
+        lock.release()
+
+
+# ---------------------------------------------------------------------------------------------------- refresh the site's cache
+
+def dependent_views(ctx, tables):
+    """The views in schema api that read the given tables, directly or through other views, from DS1's catalog."""
+    rows = ctx.ds1.run("""
+        with recursive deps(oid) as (
+          select c.oid from pg_class c where c.relnamespace::regnamespace::text || '.' || c.relname = any(%s)
+          union
+          select r.ev_class from deps d
+            join pg_depend dp on dp.refobjid = d.oid and dp.classid = 'pg_rewrite'::regclass
+            join pg_rewrite r on r.oid = dp.objid and r.ev_class <> d.oid)
+        select c.relname as v from deps d join pg_class c on c.oid = d.oid
+        where c.relnamespace = 'api'::regnamespace and c.relkind in ('v', 'm') order by 1""" % text_array(tables))
+    return [r["v"] for r in rows]
+
+
+def touched_leagues(ctx, items):
+    """Leagues (lower case) of the games a daily_scores release changes, or None when that cannot be said."""
+    try:
+        game = [d for n, t, d in items if n == "core.game"]
+        if not game or game[0]["only2"]:
+            return None
+        ids = sorted({int(k[0]) for k in list(game[0]["only1"]) + list(game[0]["differ"])})
+        found = set()
+        for i in range(0, len(ids), 1000):
+            found |= {r["l"] for r in ctx.ds1.run("select distinct lower(league) as l from api.games where game_id in (%s)"
+                                                  % ",".join(str(x) for x in ids[i:i + 1000]))}
+        return sorted(found) or None
+    except Exception as e:  # noqa: BLE001 - without leagues the whole view is refreshed, which is only broader
+        log("could not tell which leagues changed: " + scrub(e)[:120])
+        return None
+
+
+TAG_RE = re.compile(r"^[a-z0-9_:.-]{1,100}$")
+
+
+def revalidate_tags(ctx, tables, leagues):
+    """The cache tags of the site's fetches (web/src/lib/api/client.ts): api:<view>, and api:<view>:<league> or api:<view>:all."""
+    try:
+        views = dependent_views(ctx, tables)
+    except Exception as e:  # noqa: BLE001
+        log("could not list the views that read %s (%s): refreshing every api tag" % (",".join(tables), scrub(e)[:120]))
+        views = []
+    tags = ["data-version"]
+    if not views:
+        return tags + ["api"]
+    for v in views:
+        if leagues:
+            tags += ["api:%s:%s" % (v, x) for x in list(leagues) + ["all"]]
+        else:
+            tags.append("api:" + v)
+    tags = [t for t in dict.fromkeys(tags) if TAG_RE.match(t)]
+    if len(tags) > REVALIDATE_MAX_TAGS:
+        tags = ["data-version"] + ["api:" + v for v in views]
+    return tags
+
+
+def revalidate_site(ctx, tables, leagues):
+    """After a release changed production: ONE request to the site's secret-protected POST route, so the changed pages are rebuilt
+    now instead of within the hour. Never changes the release outcome. Returns "ok (<n> tags)", "off" or "failed: <why>"."""
+    url, secret = os.environ.get("REVALIDATE_URL", "").strip(), os.environ.get("REVALIDATE_SECRET", "").strip()
+    if not url or not secret:
+        log("REVALIDATE_URL / REVALIDATE_SECRET not set: the site refreshes within the hour")
+        return "off"
+    parts = urllib.parse.urlsplit(url)
+    if parts.scheme != "https" and not (parts.scheme == "http" and parts.hostname in ("127.0.0.1", "localhost")):
+        return "failed: REVALIDATE_URL must be https"
+    try:
+        tags = revalidate_tags(ctx, tables, leagues)
+        req = urllib.request.Request(url, data=json.dumps({"tags": tags}).encode(), method="POST",
+                                     headers={"Authorization": "Bearer " + secret, "Content-Type": "application/json",
+                                              "User-Agent": "spx-stats-release-runner/1"})
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp.read()
+        log("site cache refresh requested (%d tags)" % len(tags))
+        return "ok (%d tags)" % len(tags)
+    except Exception as e:  # noqa: BLE001 - the pages refresh within the hour anyway
+        log("site cache refresh failed: " + scrub(e)[:200])
+        return "failed: " + scrub(e)[:200]
+
+
 # ---------------------------------------------------------------------------------------------------- run loop
 
 def cmd_run(ctx, args):
@@ -1162,8 +1408,12 @@ def cmd_run(ctx, args):
         log("release id %d was left running by a runner that stopped: marking it failed" % r["id"])
         set_release(ctx, r["id"], {"status": "failed", "finished_at": "NOW",
                                    "error": "The runner stopped while this release was running. Check production with the drift report."})
-        if is_auto(r["approved_by"]):
+        if is_gated(r["approved_by"]):
             pause_auto(ctx, "Automatic release %s was left running by a runner that stopped." % r["number"])
+    try:
+        request_pass(ctx)
+    except Exception as e:  # noqa: BLE001 - a missing migration or a network error must not stop the manual releases
+        log("score update request step skipped: " + scrub(e))
     try:
         auto_pass(ctx)
     except Exception as e:  # noqa: BLE001 - a missing migration or a network error must not stop the manual releases
@@ -1175,7 +1425,7 @@ def cmd_run(ctx, args):
         mine = release_by_id(ctx.ds1, p["id"])
         if mine is None or mine["number"] != p["number"]:
             log("production has release %s that DS1 does not know: refusing it" % p["number"])
-            if is_auto(p["approved_by"]):
+            if is_gated(p["approved_by"]):
                 pause_auto(ctx, "Production has an automatically approved release (%s) that DS1 never prepared." % p["number"])
             prod_exec(ctx.prod, update_sql(p["id"], {"status": "failed", "finished_at": "NOW",
                                                      "error": "DS1 has no such release; refused."}, "approved"))
@@ -1188,7 +1438,7 @@ def cmd_run(ctx, args):
         if p["status"] == "rejected":
             ctx.w.exec(update_sql(mine["id"], {"status": "rejected", "approved_by": p["approved_by"], "approved_at": p["approved_at"]}, "pending"))
             continue
-        auto = is_auto(p["approved_by"])
+        auto = is_gated(p["approved_by"])
         if not same_release(p, mine) or digest_check(mine) is False:
             log("release %s: production's copy does not match DS1's copy: refusing it" % p["number"])
             set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW",
@@ -1198,7 +1448,7 @@ def cmd_run(ctx, args):
             continue
         pre, guard = None, None
         if auto:
-            if mine["kind"] != "daily_scores" or p["approved_by"] != AUTO_ACTOR:
+            if not gated_actor_ok(p["approved_by"], mine["kind"]):
                 log("release %s: only daily_scores can be approved automatically: refusing it" % p["number"])
                 set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW",
                                               "error": "Refused: automatic approval is only for daily_scores releases."})
@@ -1212,7 +1462,7 @@ def cmd_run(ctx, args):
                 continue
             if flag["paused"] or reasons:
                 prod_exec(ctx.prod, update_sql(p["id"], {"status": "pending", "approved_by": None, "approved_at": None}, "approved",
-                                               "approved_by like 'auto:%'"))
+                                               "approved_by ~ '^(auto|request):'"))
                 if flag["paused"]:
                     log("release %s: automatic approvals are paused, so it goes back to pending" % p["number"])
                 else:
@@ -1227,6 +1477,9 @@ def cmd_run(ctx, args):
         try:
             handler = {"publish": run_publish, "daily_scores": run_publish, "ds1_step": run_step_release, "rollback": run_rollback}[mine["kind"]]
             result = handler(ctx, mine, pre) if mine["kind"] in PUBLISH_KINDS else handler(ctx, mine)
+            if mine["kind"] != "ds1_step":
+                result["revalidate"] = revalidate_site(ctx, mine["tables"], result.get("leagues"))
+            result["sync_status"] = refresh_sync(ctx, mine["tables"])
             set_release(ctx, mine["id"], {"status": "done", "finished_at": "NOW", "result": result, "error": None})
             log("release %s done" % mine["number"])
         except Refused as e:
@@ -1237,7 +1490,7 @@ def cmd_run(ctx, args):
         except Exception as e:  # noqa: BLE001 - every failure is recorded
             failed = {"status": "failed", "finished_at": "NOW", "error": scrub(e)}
             if isinstance(e, AfterCommit) and e.result:
-                failed["result"] = e.result
+                failed["result"] = dict(e.result, revalidate=revalidate_site(ctx, mine["tables"], None), sync_status=refresh_sync(ctx, mine["tables"]))
             set_release(ctx, mine["id"], failed)
             log("release %s failed: %s" % (mine["number"], scrub(e)))
             if auto:
@@ -1257,33 +1510,66 @@ def digest_check(rel):
 
 # ---------------------------------------------------------------------------------------------------- drift
 
-def cmd_drift(ctx, args):
+def compare_table(ctx, c1, c2, n):
+    """One table, DS1 against production -> (status row (name, ds1 rows, prod rows, state, detail), (t, d) or None, blockers)."""
+    if n not in c2:
+        return (n, None, None, "differs", "missing in production: run its migration there"), None, []
+    if n not in c1:
+        return (n, None, None, "differs", "only in production (not on DS1)"), None, []
+    t = C.Table(n, c1[n], c2[n])
+    bl = [x for x in t.notes if not x.startswith("columns only on production")]
+    if not t.pk or bl:
+        return (n, None, None, "differs", "; ".join(bl) or "no usable primary key"), None, bl
+    d = C.diff_table(ctx.ds1, ctx.prod, t)
+    if d["only1"] or d["only2"] or d["differ"]:
+        return (n, d["ds1"], d["prod"], "differs", "only in DS1 %d, only in production %d, different %d"
+                % (len(d["only1"]), len(d["only2"]), len(d["differ"]))), (t, d), []
+    return (n, d["ds1"], d["prod"], "same", None), (t, d), []
+
+
+def sync_sql(status, only=None):
+    """SQL that writes meta.sync_status rows with the time of this comparison; replaces every row, or only the named tables."""
+    rows = ",\n".join("(%s, %s, %s, %s, now(), %s)" % (C.ql(n), lit(a), lit(b), C.ql(s), lit(det)) for n, a, b, s, det in status)
+    where = "" if only is None else " where table_name = any(%s)" % text_array(only)
+    ins = "insert into meta.sync_status (table_name, ds1_rows, prod_rows, state, checked_at, detail) values\n%s" % rows if rows else "select 1"
+    return "delete from meta.sync_status%s;\n%s" % (where, ins)
+
+
+def refresh_sync(ctx, names):
+    """After a release changed production (or DS1): compare just its tables again and write their rows in meta.sync_status on both
+    sides, so /admin/data does not go on showing the result of an older comparison. Returns "ok" or "failed: <why>"."""
+    try:
+        c1, c2 = C.catalog(ctx.ds1), C.catalog(ctx.prod)
+        names = sorted(n for n in set(names) if n in c1 or n in c2)
+        if not names:
+            return "ok"
+        sql = sync_sql([compare_table(ctx, c1, c2, n)[0] for n in names], only=names)
+        ctx.w.exec(sql)
+        prod_exec(ctx.prod, sql)
+        return "ok"
+    except Exception as e:  # noqa: BLE001 - only a record; the nightly check writes it again
+        log("could not refresh the sync status: " + scrub(e)[:200])
+        return "failed: " + scrub(e)[:200]
+
+
+def run_drift(ctx):
+    """The drift check: compare every table, write meta.sync_status, pause automatic approvals if rows an automatic release wrote have
+    changed, and propose one fix release. Returns (exit code, summary text, fix release number or None)."""
     c1, c2 = C.catalog(ctx.ds1), C.catalog(ctx.prod)
     names = sorted(set(c1) | set(c2))
     status, fixable = [], []
     diffs, blockers, warnings = {}, {}, {}
     for n in names:
-        if n not in c2:
-            status.append((n, None, None, "differs", "missing in production: run its migration there"))
+        row, td, bl = compare_table(ctx, c1, c2, n)
+        status.append(row)
+        if td is None:
+            if bl:
+                blockers[n], warnings[n] = bl, []
             continue
-        if n not in c1:
-            status.append((n, None, None, "differs", "only in production (not on DS1)"))
-            continue
-        t = C.Table(n, c1[n], c2[n])
-        bl = [x for x in t.notes if not x.startswith("columns only on production")]
-        if not t.pk or bl:
-            status.append((n, None, None, "differs", "; ".join(bl) or "no usable primary key"))
-            blockers[n], warnings[n] = bl, []
-            continue
-        d = C.diff_table(ctx.ds1, ctx.prod, t)
-        diffs[n], blockers[n], warnings[n] = (t, d), [], []
-        if d["only1"] or d["only2"] or d["differ"]:
-            status.append((n, d["ds1"], d["prod"], "differs", "only in DS1 %d, only in production %d, different %d"
-                           % (len(d["only1"]), len(d["only2"]), len(d["differ"]))))
+        diffs[n], blockers[n], warnings[n] = td, [], []
+        if row[3] == "differs":
             fixable.append(n)
-        else:
-            status.append((n, d["ds1"], d["prod"], "same", None))
-        log("%-30s %s" % (n, status[-1][3]))
+        log("%-30s %s" % (n, row[3]))
     try:
         bad = auto_drift_mismatch(ctx, diffs)
         if bad:
@@ -1291,23 +1577,29 @@ def cmd_drift(ctx, args):
                        % (len(bad), bad[0][0], bad[0][1], "/".join(bad[0][2])))
     except Exception as e:  # noqa: BLE001 - the drift report itself must still be written
         log("could not compare the rows automatic releases wrote: " + scrub(e))
-    rows = ",\n".join("(%s, %s, %s, %s, now(), %s)" % (C.ql(n), lit(a), lit(b), C.ql(s), lit(det)) for n, a, b, s, det in status)
-    sql = ("delete from meta.sync_status;\ninsert into meta.sync_status (table_name, ds1_rows, prod_rows, state, checked_at, detail) values\n%s" % rows)
+    sql = sync_sql(status)
     ctx.w.exec(sql)
     prod_exec(ctx.prod, sql)
+    differing = [r[0] for r in status if r[3] == "differs"]
+    summary = "Checked %d tables: " % len(status) + ("all match." if not differing else "%d differ (%s)." % (len(differing), ", ".join(differing[:6]) + (", ..." if len(differing) > 6 else "")))
     if not fixable:
         log("drift: nothing to propose")
-        return 0
+        return 0, summary, None
     old = ctx.ds1.run("select id from meta.data_release where status = 'pending' and created_by = 'drift'")
     for o in old:
         set_release(ctx, o["id"], {"status": "rejected", "approved_by": "drift", "approved_at": "NOW", "error": "Replaced by a newer drift proposal."})
     day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
     try:
-        prepare_publish(ctx, "Drift fix %s" % day, fixable, notes="Proposed by the nightly drift check: %s." % ", ".join(fixable),
-                        created_by="drift", diff_cache=(diffs, blockers, warnings))
+        row = prepare_publish(ctx, "Drift fix %s" % day, fixable, notes="Proposed by the nightly drift check: %s." % ", ".join(fixable),
+                              created_by="drift", diff_cache=(diffs, blockers, warnings))
+        return 1, summary + " Fix release %s is waiting under Pending." % row["number"], row["number"]
     except Refused as e:
         log("drift: %s" % e)
-    return 1
+    return 1, summary, None
+
+
+def cmd_drift(ctx, args):
+    return run_drift(ctx)[0]
 
 
 # ---------------------------------------------------------------------------------------------------- commands
@@ -1353,6 +1645,7 @@ def main():
     ap.add_argument("--project-ref", default=C.PROJECT_REF)
     ap.add_argument("--ds1-dsn", help="test only: psql connection string for DS1 instead of PG* env")
     ap.add_argument("--api-url", help="test only: a stand-in for the Management API query endpoint")
+    ap.add_argument("--daily-script", help="test only: a stand-in for scripts/daily/run.py")
     ap.add_argument("--by", help="who prepared it (default release.py)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("prepare")
