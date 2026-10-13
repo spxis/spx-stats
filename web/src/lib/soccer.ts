@@ -1,12 +1,25 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows as readRows } from "./api/client";
 
 /**
  * The World Cup, read from the api views of migration 066 (docs/soccer.md). Every function returns [] / null when the archive holds no
  * soccer yet (a production that has not had the data release), and throws ApiError when it cannot be read, like the rest of lib/api.
  */
+
+/**
+ * The same as client.rows, except that a view the database does not have yet (404: migration 066 not applied there) reads as no rows, so
+ * a production without soccer shows the pages' "no data" wording and not the "Couldn't load" note. Any other failure still throws.
+ */
+async function rows<S extends z.ZodType>(view: string, query: string, schema: S): Promise<z.infer<S>[]> {
+  try {
+    return await readRows(view, query, schema);
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) return [];
+    throw e;
+  }
+}
 
 const text = z.string();
 const nText = z.string().nullable();
