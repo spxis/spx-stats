@@ -140,6 +140,12 @@ def test_pairing():
     c = mk("C page", "X", "Y", 2, 3, d)                      # disagrees; the home club's own article wins the tie-break
     g = G.build_games([a, c], "nhl", 2026)
     check(g[0]["confidence"] == "disputed" and g[0]["alternatives"], "different scores -> disputed")
+    nv = dict(mk("nflverse", "X", "Y", 3, 2, d), source="nflverse")      # a third source agrees with one page: resolved, not disputed
+    g = G.build_games([a, c, nv], "nfl", 2026)
+    check(g[0]["confidence"] == "resolved" and g[0]["score"] == {"X": 3, "Y": 2} and g[0]["alternatives"], "nflverse + one page outvote the other page")
+    nv2 = dict(mk("nflverse", "X", "Y", 1, 0, d), source="nflverse")      # nflverse agrees with neither page: still disputed
+    g = G.build_games([a, c, nv2], "nfl", 2026)
+    check(g[0]["confidence"] == "disputed", "nflverse agreeing with no page leaves it disputed")
     bad = dict(mk("X page", "X", "Y", 2, 3, d), inconsistent="colour")   # a row that contradicts itself ranks last
     g = G.build_games([bad, mk("Y page", "X", "Y", 3, 2, d)], "nhl", 2026)
     check(g[0]["score"] == {"X": 3, "Y": 2}, "inconsistent row loses the dispute")
@@ -152,14 +158,32 @@ def test_pairing():
     check(g[0]["source_key"].startswith("wpdaily:nhl:2026:regular:2026-10-10:X:Y:"), "source_key")
 
 
+def test_stage2():
+    import apply as A
+    check(NHL.resolve("Colombus") and NHL.resolve("Colombus")["name"] == "Columbus Blue Jackets", "known typo Colombus resolves to Columbus")
+    d = D(2026, 10, 10)
+    a, c = mk("A page", "X", "Y", 3, 2, d), mk("C page", "X", "Y", 2, 3, d)
+    nv = dict(mk("nflverse", "X", "Y", 3, 2, d), source="nflverse")
+    g = G.build_games([a, c, nv], "nfl", 2026)[0]
+    r = A.staging_row(g)
+    check(r["confidence"] == "resolved" and r["home_name"] == "X" and r["away_name"] == "Y" and (r["home_score"], r["away_score"]) == (3, 2), "staging row keeps home, away and the score")
+    check(len(r["dissent"]) == 2 and any(x.startswith("A page + nflverse say ") for x in r["dissent"]) and any(x.startswith("C page says ") for x in r["dissent"]), "every source's statement is kept for a resolved game")
+    neutral = P.claim("N page", ("X", "Y"), {"X": 1, "Y": 0}, None, d, "final", "playoffs", neutral=True)
+    r = A.staging_row(G.build_games([neutral], "nfl", 2026)[0])
+    check(r["home_known"] is False and r["neutral"] and r["home_score"] is not None, "no known home: sides kept, neutral")
+    check(A.jlit({"a": "$j$"}).startswith("$jx$"), "a dollar-quoted literal never contains its own tag")
+    check(A.strip_txn(A.BUILD).count("\nbegin;") == 0 and "commit;" not in "\n".join(l for l in A.strip_txn(A.BUILD).split("\n") if l.strip() == "commit;"), "build step runs inside the caller's transaction")
+
+
 def run():
     test_parsers()
     test_pairing()
+    test_stage2()
     if FAILS:
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA) and pairing")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing and the stage 2 staging rows")
     return 0
 
 

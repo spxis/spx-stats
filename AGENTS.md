@@ -336,6 +336,9 @@ Then fix forward on `main`, redeploy, and tell John.
   **working copy**. Its work counts only once it is on DS1.
 - Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,
   then production.
+- **Ongoing scores** (the season in progress, all five leagues) come from English Wikipedia's club-season articles, with nflverse
+  as the NFL's second check: `scripts/daily/run.py --apply` writes them to DS1 only (see `scripts/daily/README.md`). The NHL API
+  and MLB statsapi are not used for new scores.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. After every
   load, run `scripts/sync/compare.py` (see `scripts/sync/README.md`): it compares DS1 and production by primary key and
   row hash, and writes insert-only SQL for what production lacks. Rows found only in production are reported to John

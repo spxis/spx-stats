@@ -25,6 +25,10 @@ def norm(s):
     return re.sub(r"\s+", " ", re.sub(r"[^a-z0-9]+", " ", s)).strip()
 
 
+# Spellings Wikipedia's editors got wrong, seen in real articles (normalised form -> what norm() gives the club).
+TYPOS = {"colombus": "columbus"}     # NHL: the San Jose Sharks article, March 13
+
+
 def unaccent(s):
     return unicodedata.normalize("NFKD", s).encode("ascii", "ignore").decode()
 
@@ -53,6 +57,7 @@ class Roster:
             t = re.sub(r"^(?:at|vs\.?|v\.?|@)\s+", "", t, flags=re.I)
             n = norm(t)
             if not n: continue
+            n = TYPOS.get(n, n)
             if n in self.by_name: return self.by_name[n]
             n2 = re.sub(r"^ny ", "new york ", n)
             n2 = re.sub(r"^la ", "los angeles ", n2)

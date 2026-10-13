@@ -1,8 +1,10 @@
-# Daily scores (stage 1: dry run)
+# Daily scores (stage 1: dry run, stage 2: write to DS1)
 
 Once a day, collect the game scores of the NHL, NBA, MLB, NFL and CFL from sources whose terms allow automated
-collection and reuse, without asking any league. This directory is **stage 1**: it fetches, parses, cross-checks and
-compares with DS1. It **writes nothing** to DS1 or production. Ticket: "Daily scores from Wikipedia and allowed sources".
+collection and reuse, without asking any league. **Stage 1** fetches, parses, cross-checks and compares with DS1 (`--dry-run`,
+read-only). **Stage 2** (`--rehearse`, `--apply`) writes to **DS1 only**: the raw pages to the archive, the parsed rows to
+`legacy_wikipedia_daily`, and the seasons, team seasons and games to `core`. **Production is stage 3** and needs John's separate OK:
+nothing here knows production. Ticket: "Daily scores from Wikipedia and allowed sources".
 
 ## Run it
 
@@ -11,6 +13,9 @@ compares with DS1. It **writes nothing** to DS1 or production. Ticket: "Daily sc
     scripts/daily/run.py --dry-run --since 2026-10-09 --league nhl,nfl -v
     scripts/daily/run.py --dry-run --offline         # parse the cached pages only, no request at all
     scripts/daily/run.py --dry-run --no-ds1 --json /tmp/games.json
+    scripts/daily/run.py --rehearse                  # stage 2 as a rehearsal: one DS1 transaction that ends in ROLLBACK, with the checks
+    scripts/daily/run.py --apply                     # stage 2: the same rehearsal first, then archive + load + build, commit (DS1 only)
+    scripts/daily/run.py --apply --league nhl,nfl    # only some leagues (the others' rows are left alone)
 
 Python 3 stdlib only, plus `psql`. DS1 is reached through `ds1.sh`: it finds the host with `ds1_host` from
 `scripts/mac/spx-checks.sh` (hosts-file name `ds1`, home LAN, then Tailscale) and reads the password from the keychain
@@ -75,8 +80,8 @@ after the last puck, overnight US time), within about **1 h** of the final whist
 ## Cross-check classes
 
 `confirmed` two or more sources give the same score (each club's article is one source; nflverse and, for the MLB
-postseason, the league page are others) · `single` one source only · `disputed` sources differ: the best-ranked source is
-kept (nflverse/balldontlie, league page, the home club's article, any other) and every other value is listed. A row whose
+postseason, the league page are others) · `single` one source only · `resolved` sources differ but nflverse agrees with one club's page, so that score holds · `disputed` sources differ: the best-ranked source is
+kept (nflverse/balldontlie, league page, the home club's article, any other) and every other value is listed; stage 2 applies nothing from it. A row whose
 own colour contradicts its score (a lost game coloured as won) ranks last. 2026-10-12 found a real one: the Maple Leafs
 article had Ottawa 2, Toronto 3 for Oct 3 on a row coloured as a loss, while Ottawa's article has Ottawa 3, Toronto 2.
 
@@ -90,24 +95,65 @@ postponed or cancelled, rescheduled, DS1 final games since `--since` that Wikipe
 team name lands there), and the clubs that have no `core.team_season` for the season (MLB, CFL and NBA 2026 have no
 `core.season` row at all in DS1).
 
-## Not done in stage 1 (stages 2 and 3)
+## Stage 2: what `--apply` writes to DS1, and where
 
-**Stage 2 (writes, needs John's go):**
-- archive each downloaded page to `legacy_files.raw_archive` (name `wikipedia/<date>/<league>/<file>`) and Dropbox
-  (`scripts/archive_raw.py`, `scripts/dropbox_put.py`) *before* parsing for load; the cached files in `raw/` are the input;
-- create `core.season` and `core.team_season` for MLB 2026, CFL 2026, NBA 2026-27;
-- insert new games, update scheduled to final on games that already exist (NHL, NFL), record `meta.verification`
-  (confirmed) and `meta.data_issue` (disputed, with both values), `core.external_id` for the `source_key`;
-- read the CFL and NHL/NFL postseason tables; test the NBA path on real 2026-27 games; test balldontlie if a key exists.
+Order, each step stopping the run when it fails (`apply.py`):
 
-**Stage 3 (schedule):** runs once a day in Docker on DS1 (about 10:00 ET, re-checking the last 7 days for late edits),
-DS15 as watchdog. A push to **production** needs John's OK: changing a game from scheduled to final is an UPDATE, and
-AGENTS.md says production loads are insert-only.
+1. **Rehearsal** (always first; `--rehearse` stops here): one transaction that applies migration `043`, the archive rows, the raw
+   load and `db/build/152_games_from_wikipedia_daily.sql` against DS1, prints before/after counts and the checks
+   (`snapshot.sql`, `checks.sql`), runs the build step a second time (it must change nothing), and **rolls back**.
+   Any failed check or error means nothing was written.
+2. **Archive** first: the exact wikitext of every page revision DS1 does not hold yet goes to `legacy_files.raw_archive`
+   (name `wikipedia/<day>/<league>/<title>.r<revision>.wikitext`; the nflverse file is stored as the season's rows, verbatim, under the
+   file's header line: `nflverse/<day>/games-<season>.<sha12>.csv`, because the whole file is 2 MB and changes daily). Committed on its own.
+3. **Load + build** in one transaction: `legacy_wikipedia_daily.page` (one row per revision, pointing at its archive row),
+   `.claim` (every game row of every revision as parsed), `.game` (the paired, cross-checked games of the league-season, replaced whole),
+   then the build step, the checks again, and `COMMIT` only if every check passed.
+4. `select api.refresh();`.
+5. On the Mac, `scripts/mac/spx-raw-export.sh` copies the new archive rows to Dropbox (`Backups/spx-stats/raw/`); it never overwrites.
+
+Re-running is a no-op: a revision DS1 holds is neither archived nor loaded again, the build step only changes rows that differ, and
+the last result of every run is `daily changes`: all zeros the second time. A page that changed gets a new `page` row; its
+claims are kept next to the older revision's.
+
+`db/build/152` (source code `wikipedia_daily`; runs after 150 and before 155, so a rebuild keeps everything and duplicates are
+still removed). `scripts/mac/ds1-apply.sh db/build/152_games_from_wikipedia_daily.sql --dry-run` runs it alone on the staged rows.
+
+| What | Rule |
+|---|---|
+| New season / team season (MLB 2026, CFL 2026, NBA 2026-27) | Created by the step (so step 100 cannot lose them); a club gets a team season when its season article exists or it has a staged game. |
+| New game | Inserted: finals always, cancelled games always, **scheduled games only in a season no other source holds**. A postponed or suspended game is **not** inserted: it is logged (`Postponed per Wikipedia: ...`). |
+| DS1 game with no result, Wikipedia final | Updated to final with the score (`No result in DS1` / `Filled from Wikipedia: h-a`; a moved date is kept as `original_date`). |
+| DS1 game already final, same score | `meta.verification` `confirmed`. |
+| DS1 game already final, different score | **Not overwritten**: `meta.verification` `disputed` and `meta.data_issue` `DS1 has a-b, Wikipedia c-d` / `Kept DS1's; needs a third source`. SPX's values always win. |
+| The two clubs' pages disagree | Nothing is marked final from the game: `Wikipedia sources disagree on ...` is logged with both values (and DS1's, when it holds a result). nflverse agreeing with one page settles an NFL game (`resolved`). A result this step filled earlier that is now disputed is **taken back** to no result. |
+| One club's page only (`single`) | Applied, flagged `Only one club's Wikipedia page lists this result` / `(one club page so far)`; `confirmed` once the other page agrees. The next run (the last 7 days are re-checked in stage 3) upgrades or disputes it. |
+| `confirmed` | Two sources agree (both clubs' pages, or a page and nflverse): a `confirmed` verification on the game. |
+| Deleted | Only what the step owns (`wikipedia_daily` games, external ids, verifications, issues), and only for the league-seasons staged in this run. |
+
+A league whose pages are not all found is skipped with a message (its rows are left as they are).
+
+## Known gaps (stage 2)
+
+- The NFL article parser skips rows without a date yet (flexible-scheduling weeks 16-18 of some clubs), so the per-club row counts
+  differ from the 17 games; every NFL game is in the staging because nflverse supplies all 272. The row-count check leaves the NFL out.
+- NBA 2026-27: the clubs' articles hold no regular-season schedule yet (one stray Dallas row is unreadable), so the step creates the season
+  and the 30 team seasons and no games. Re-run `--apply` when the schedule is published; the NBA path with real games is **untested**.
+- The CFL postseason and the NHL/NFL playoffs are not read yet (they start Oct 31, April, January); balldontlie is not enabled (no key).
+- Wikipedia revisions between two runs are not archived: only the revision used is. The raw cache is overwritten by the next fetch.
+
+## Stage 3 (not built)
+
+Runs once a day in Docker on DS1 (about 10:00 ET, re-checking the last 7 days for late edits), DS15 as watchdog. A push to
+**production** needs John's OK: changing a game from scheduled to final is an UPDATE, and AGENTS.md says production loads are
+insert-only. `scripts/sync/compare.py` finds what differs.
 
 ## Files
 
 `run.py` command line and reporting · `wikiapi.py` the API client and state file · `teams.py` club lists and name matching ·
 `parsers.py` wikitext to claims (NHL, MLB, NFL here; CFL and NBA wrap the older readers) · `games.py` pairing and cross-check ·
-`compare.py` DS1 comparison (SELECTs only) · `ds1.sh` read-only DS1 `psql` · `selftest.py` + `fixtures/` the tests.
+`compare.py` DS1 comparison (SELECTs only) · `ds1.sh` DS1 `psql` (host and password found inside) · `apply.py` stage 2: rehearsal,
+archive, load, build, refresh · `snapshot.sql` + `checks.sql` the report and the checks · `selftest.py` + `fixtures/` the tests ·
+`db/migrations/043_legacy_wikipedia_daily.sql` and `db/build/152_games_from_wikipedia_daily.sql` the schema and the core build.
 Fixtures are excerpts of Wikipedia articles (CC BY-SA 4.0); the first line of each names the article and revision, and the
 authors are in the article history.

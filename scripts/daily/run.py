@@ -1,7 +1,10 @@
 #!/usr/bin/env python3
-"""Daily scores from Wikipedia (CC BY-SA 4.0) and the allowed second sources. STAGE 1: dry run, read-only.
+"""Daily scores from Wikipedia (CC BY-SA 4.0) and the allowed second sources.
 
   run.py --dry-run [--league nhl,nba,mlb,nfl,cfl] [--state PATH] [--raw-dir DIR] [--offline] [--no-ds1] [--json OUT] [-v]
+         STAGE 1, the default: fetch, parse, cross-check, compare with DS1. Read-only.
+  run.py --rehearse   as --apply, but stops after the rehearsal (one DS1 transaction that ends in ROLLBACK)
+  run.py --apply      STAGE 2: rehearse, then write to DS1 only: archive, raw load, db/build/152, checks (see apply.py)
   run.py --self-test
 
 What a run does (see README.md):
@@ -10,7 +13,7 @@ What a run does (see README.md):
   3. download only the pages whose revision id differs from the state file (10 pages per request)
   4. parse every cached page to claims, pair the two clubs' claims into games, cross-check (nflverse for the NFL,
      balldontlie for the NBA when BALLDONTLIE_API_KEY is set)
-  5. compare with DS1's core.game and print the summary. Nothing is written to DS1 or production.
+  5. compare with DS1's core.game and print the summary. A dry run writes nothing; --apply writes to DS1 (never production).
 
 Forbidden sources (never fetched, even to test): NHL API, MLB statsapi, NBA.com / cdn.nba.com, NFL.com, cfl.ca, Yahoo,
 ESPN, Sports Reference, newspapers and TV sites.
@@ -102,6 +105,18 @@ def parse_pages(league, y, pages, roster, raw_dir, state):
 
 # ---- second sources ----
 
+def nflverse_subset(raw_dir, season):
+    """The season's rows of the cached games.csv, verbatim, under the file's header line -> (bytes, sha256) or None."""
+    path = os.path.join(raw_dir, "nflverse", "games.csv")
+    if not os.path.exists(path): return None
+    lines = open(path, encoding="utf-8", newline="").read().split("\n")
+    head = next(csv.reader([lines[0]]))
+    col = head.index("season")
+    keep = [lines[0]] + [ln for ln in lines[1:] if ln.strip() and next(csv.reader([ln]))[col] == str(season)]
+    data = ("\n".join(keep) + "\n").encode("utf-8")
+    return data, hashlib.sha256(data).hexdigest()
+
+
 def nflverse_claims(season, roster, state, raw_dir, offline):
     """games.csv from nflverse-data (CC BY 4.0) as claims. One conditional request: 304 when unchanged."""
     path = os.path.join(raw_dir, "nflverse", "games.csv")
@@ -135,6 +150,8 @@ def nflverse_claims(season, roster, state, raw_dir, offline):
                               rnd.get(r["game_type"]), neutral=(r["location"] == "Neutral"), ot=(r["overtime"] == "1") if played else None,
                               src=r["game_id"]))
         claims[-1]["source"] = "nflverse"
+    sub = nflverse_subset(raw_dir, season)
+    for c in claims: c["revid"] = sub[1] if sub else None
     return claims, bad, req
 
 
@@ -168,7 +185,10 @@ def balldontlie_claims(season, roster, since, offline):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("--dry-run", action="store_true", help="required in stage 1: compare only, write nothing to DS1")
+    ap.add_argument("--dry-run", action="store_true", help="compare only, write nothing (the default)")
+    ap.add_argument("--apply", action="store_true", help="stage 2: rehearse on DS1 (rolled back), then write to DS1 (never production)")
+    ap.add_argument("--rehearse", action="store_true", help="like --apply but stop after the rehearsal")
+    ap.add_argument("--log-dir", default=os.path.join(CACHE, "logs"), help="where --apply keeps its output")
     ap.add_argument("--self-test", action="store_true")
     ap.add_argument("--league", default=",".join(LEAGUES))
     ap.add_argument("--season", action="append", default=[], help="league=startYear, e.g. mlb=2026 (default: the season each league is in today)")
@@ -182,8 +202,8 @@ def main():
     a = ap.parse_args()
     if a.self_test:
         import selftest; return selftest.run()
-    if not a.dry_run:
-        sys.exit("stage 1 is a dry run: pass --dry-run (the write step is stage 2)")
+    writing = a.apply or a.rehearse
+    if writing and a.no_ds1: sys.exit("--apply / --rehearse write to DS1: drop --no-ds1")
     today = datetime.date.today()
     leagues = [x for x in a.league.split(",") if x]
     seasons = {lg: season_now(lg, today) for lg in leagues}
@@ -194,7 +214,7 @@ def main():
     rosters, rsrc = T.load_rosters(leagues, os.path.join(os.path.dirname(a.state), "rosters.json"))
     print("run %s | clubs from %s | state %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), rsrc, a.state))
     client = W.Client()
-    all_games, report, extra_req = {}, {}, 0
+    all_games, report, extra_req, league_claims = {}, {}, 0, {}
     plans = {lg: plan(lg, seasons[lg], rosters[lg]) for lg in leagues}
     every = [p for lg in leagues for p in plans[lg]]
     changed_all, missing_all, _ = refresh(client, state, every, a.raw_dir, a.offline)     # one revisions pass for all leagues
@@ -212,6 +232,7 @@ def main():
             if c2 is None: second.append("balldontlie skipped (BALLDONTLIE_API_KEY not set)")
             else: claims += c2; bad += b2; extra_req += n; second.append("balldontlie (%d claims)" % len(c2))
         gs = G.build_games(claims, lg, y)
+        league_claims[lg] = claims
         all_games[lg] = gs
         pre = sum(1 for c in claims if c["phase"] == "preseason")
         stamps = sorted(state["pages"][t].get("timestamp", "") for t in titles if t in state["pages"])
@@ -230,14 +251,14 @@ def main():
         gs = all_games[lg]
         c = collections.Counter(g["status"] for g in gs); k = collections.Counter(g["confidence"] for g in gs if g["status"] == "final")
         ph = collections.Counter(g["phase"] for g in gs)
-        print("%-4s %5d games (regular %d, playoffs %d) | final %d (confirmed %d, single-source %d, disputed %d) | scheduled %d | postponed %d | cancelled %d | suspended %d" % (
-            lg.upper(), len(gs), ph["regular"], ph["playoffs"], c["final"], k["confirmed"], k["single"], k["disputed"], c["scheduled"], c["postponed"], c["cancelled"], c["suspended"]))
+        print("%-4s %5d games (regular %d, playoffs %d) | final %d (confirmed %d, single-source %d, resolved by a third source %d, disputed %d) | scheduled %d | postponed %d | cancelled %d | suspended %d" % (
+            lg.upper(), len(gs), ph["regular"], ph["playoffs"], c["final"], k["confirmed"], k["single"], k["resolved"], k["disputed"], c["scheduled"], c["postponed"], c["cancelled"], c["suspended"]))
         for g in gs:
-            if g["confidence"] == "disputed" or (a.verbose and g["notes"]):
+            if g["confidence"] in ("disputed", "resolved") or (a.verbose and g["notes"]):
                 print("     %s %s: %s" % (g["date"], " v ".join(g["teams"]), "; ".join(g["alternatives"] + g["notes"])))
         if a.verbose:
             for t, b in report[lg]["bad"][:15]: print("     unreadable [%s]: %s" % (t, b))
-    if not a.no_ds1:
+    if not a.no_ds1 and not writing:
         import compare
         print("\n== Dry run against DS1 (read-only) ==")
         compare.report(all_games, rosters, seasons, since, a.verbose, {lg: len(r['bad']) for lg, r in report.items()})
@@ -246,10 +267,36 @@ def main():
             json.dump({lg: [dict({k: v for k, v in g.items() if k != "claims"}, date=g["date"].isoformat(), score=None if g["score"] is None else g["score"],
                                  provenance=["%s@%s" % (c["page"], c.get("revid")) for c in g["claims"]]) for g in gs] for lg, gs in all_games.items()},
                       f, indent=1, ensure_ascii=False, default=str)
+    rc = 0
+    if writing:
+        import apply as A
+        todo, staged, lseasons, skipped = [], [], [], []
+        for lg in leagues:
+            r = report[lg]
+            if r["missing"]:
+                skipped.append("%s (pages missing: %s)" % (lg.upper(), ", ".join(r["missing"][:3]))); continue
+            for p in plans[lg]:
+                todo.append(dict(p, path=raw_path(a.raw_dir, p), claims=[c for c in league_claims[lg] if c["page"] == p["title"]]))
+            staged += [A.staging_row(g) for g in all_games[lg]]
+            lseasons.append((lg, seasons[lg]))
+        nfl = None
+        if "nfl" in [lg for lg, _ in lseasons]:
+            sub = nflverse_subset(a.raw_dir, seasons["nfl"])
+            info = state.get("nflverse", {})
+            if sub:
+                fetched = info.get("fetched_at") or datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(a.raw_dir, "nflverse", "games.csv")), datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
+                           claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
+        if skipped: print("\nNOT applied: " + "; ".join(skipped))
+        rc = A.apply(todo, state["pages"], a.raw_dir, staged, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply)
     reqs = [x for x in client.log]
     print("\n== Requests this run ==")
     print("Wikipedia API: %d (%s) | other: %d (nflverse, balldontlie)" % (client.requests, ", ".join("%s x%d" % (k, sum(1 for w, n in reqs if w == k)) for k in ("revisions", "content")), extra_req))
 
 
+
+    return rc
+
+
 if __name__ == "__main__":
-    main()
+    sys.exit(main())

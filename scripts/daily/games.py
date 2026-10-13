@@ -6,7 +6,8 @@ apart are one game. A source counts once per game (the two clubs' articles are t
 
   confirmed  two or more sources give the same score
   single     one source only (the other club's article does not list it yet, or no second source exists)
-  disputed   sources give different scores: the best-ranked source is kept and every other value is listed
+  resolved   sources differ but nflverse / balldontlie agrees with at least one club's page: that score holds (stage 2 applies it)
+  disputed   sources give different scores: the best-ranked source is kept and every other value is listed (stage 2 applies nothing)
   scheduled  no source has a result yet (also postponed / cancelled / suspended)
 """
 import datetime
@@ -78,7 +79,8 @@ def summarize(cl, league, season):
         if len(distinct) == 1:
             conf = "confirmed" if len({c["source"] for c in finals}) >= 2 else "single"
         else:
-            conf = "disputed"
+            # a third source settles it: nflverse / balldontlie agrees with at least one club's page, so the score holds
+            conf = "resolved" if best["source"] in SOURCE_RANK and any(c is not best and c["source"] not in SOURCE_RANK and _scores(c) == _scores(best) for c in finals) else "disputed"
             for k, v in distinct.items():
                 if k != _scores(best):
                     alts.append("%s says %s" % (" + ".join(sorted({x["source"] for x in v})), ", ".join("%s %d" % (t, s) for t, s in sorted(dict(k).items()))))
