@@ -11,7 +11,7 @@ import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, T
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { isSpx } from "./leagues";
-import { withIdleTeams } from "./idleTeams";
+import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
 /* ---------- home, leagues -------------------------------------------------------------- */
@@ -91,7 +91,7 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
     getSeasonClubs(lg, y),
   ]);
   if (!summary[0]) return null;
-  const standings = summary[0].champion ? standingsPlayed : withIdleTeams(standingsPlayed, clubs);
+  const standings = summary[0].champion || !seasonOpen(games) ? standingsPlayed : withIdleTeams(standingsPlayed, clubs);
   const teams = new Map<number, ClubTeam>();
   for (const g of games) {
     teams.set(g.home_id, { id: g.home_id, f: g.home_f, name: g.home });

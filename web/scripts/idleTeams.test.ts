@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isIdleTeam, seasonStartDay, withIdleTeams } from "../src/lib/idleTeams.ts";
+import { isIdleTeam, seasonOpen, seasonStartDay, withIdleTeams } from "../src/lib/idleTeams.ts";
 
 /** Run in web/: pnpm test:idle */
 const club = (franchise_id: number, team: string) => ({ league: "nba", year: 2026, franchise_id, team });
@@ -38,4 +38,13 @@ test("the season starts on the first scheduled regular-season day when nothing h
   assert.equal(seasonStartDay([g("2026-10-21", "f"), g("2026-10-22", "s")]), null);
   assert.equal(seasonStartDay([]), null);
   assert.equal(seasonStartDay([g("2026-10-21", "c")]), null);
+});
+
+test("only a season still to be played is open to clubs waiting to play, not a finished one with an unplayed challenger", () => {
+  const g = (status: string, phase = "regular") => ({ phase, status });
+  assert.equal(seasonOpen([]), true);
+  assert.equal(seasonOpen([g("scheduled"), g("scheduled")]), true);
+  assert.equal(seasonOpen([g("final"), g("scheduled")]), true);
+  assert.equal(seasonOpen([g("final"), g("final"), g("final", "playoffs")]), false);
+  assert.equal(seasonOpen([g("final"), g("cancelled")]), false);
 });

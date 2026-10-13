@@ -36,6 +36,17 @@ export function withIdleTeams(standings: StandingRow[], clubs: readonly IdleSour
   return [...standings, ...idle];
 }
 
+/**
+ * Is the regular season still to be played, in whole or in part? True when no regular-season game has a result yet (or none is
+ * listed) and when a game is still scheduled; false once every listed regular-season game is over. Only then can a club be
+ * "waiting to play": in a finished season a team season without games is a club that was never in the league that year (a
+ * challenger met only in the title series, say), not an idle one.
+ */
+export function seasonOpen(games: readonly { phase: string; status: string }[]): boolean {
+  const regular = games.filter((g) => g.phase === "regular");
+  return !regular.some((g) => g.status.startsWith("f")) || regular.some((g) => g.status.startsWith("s"));
+}
+
 /** The day a season's first regular-season game is scheduled, when games are scheduled but none has a result; otherwise null. */
 export function seasonStartDay(games: readonly { date: string; phase: string; status: string }[]): string | null {
   const regular = games.filter((g) => g.phase === "r" && g.status !== "c");
