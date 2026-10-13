@@ -12,6 +12,7 @@
 --    and the sport and league agree. A statement with no start has no seasons to place. With no end it is the
 --    start season only. NHL and NBA seasons run autumn to spring: a start before August belongs to the season
 --    that began the year before, and an end year with no month ends the season that began the year before.
+--  * The position is not set here: db/build/186_person_positions.sql turns the P413 statements into position codes.
 --  * Only what Wikidata states for the properties scripts/people/fetch.py fetches is used: nothing about
 --    ethnicity, religion, health, sex or gender, family or politics was fetched, and none is stored.
 begin;
@@ -69,8 +70,6 @@ select i.qid, i.label as full_name,
      select round(case unit_qid when 'Q11573' then value_num * 100 when 'Q174728' then value_num when 'Q218593' then value_num * 2.54
                                 when 'Q3710' then value_num * 30.48 end)::int as v
      from c where c.qid = i.qid and prop = 'P2048' order by (rank = 'preferred') desc, n limit 1) h) as height_cm,
-  (select it.label from c join legacy_people.item it on it.qid = c.value_qid where c.qid = i.qid and prop = 'P413'
-    order by (rank = 'preferred') desc, n limit 1) as position,
   (select regexp_replace(replace(it.label, 'ambidextrous', 'both'), '-handed$', '') from c join legacy_people.item it on it.qid = c.value_qid
     where c.qid = i.qid and prop = 'P741' order by (rank = 'preferred') desc, n limit 1) as handedness,
   (select case when it.label ~* 'left' then 'L' when it.label ~* 'right' then 'R' end from c join legacy_people.item it on it.qid = c.value_qid
@@ -116,22 +115,30 @@ create temp table gone on commit drop as
 select x.entity_id from core.external_id x
 where x.entity_kind = 'person' and x.source_id = (select source_id from wd) and x.external_key not in (select qid from want);
 delete from core.external_id where entity_kind = 'person' and entity_id in (select entity_id from gone) and source_id = (select source_id from wd);
-delete from core.person where person_id in (select entity_id from gone);
+-- a record another source also keys (a merge, 185) stays
+delete from core.person where person_id in (select entity_id from gone)
+  and not exists (select 1 from core.external_id x where x.entity_kind = 'person' and x.entity_id = person.person_id);
 
 insert into core.person (person_id, full_name, kind, birth_date, birth_place, birth_country_code, birth_lat, birth_lon, death_date, death_place,
-                         death_country_code, nationality_code, height_cm, handedness, throws_or_shoots, primary_position, hall_of_fame_year, source_id)
+                         death_country_code, nationality_code, height_cm, handedness, throws_or_shoots, hall_of_fame_year, source_id)
 overriding system value
 select pp.person_id, pf2.full_name,
        case when pf2.exec_only and pf2.staff_only then 'executive' when pf2.staff_only then 'coach' else 'player' end,
        pf2.birth_date, pf2.birth_place, pf2.birth_country, pf2.birth_lat, pf2.birth_lon, pf2.death_date, pf2.death_place, pf2.death_country,
-       pf2.nationality, pf2.height_cm, pf2.handedness, pf2.shoots, pf2.position, pf2.hof, (select source_id from wd)
+       pf2.nationality, pf2.height_cm, pf2.handedness, pf2.shoots, pf2.hof, (select source_id from wd)
 from pf2 join pp using (qid) where pf2.full_name is not null
 on conflict (person_id) do update set
-  full_name = excluded.full_name, kind = excluded.kind, birth_date = excluded.birth_date, birth_place = excluded.birth_place,
-  birth_country_code = excluded.birth_country_code, birth_lat = excluded.birth_lat, birth_lon = excluded.birth_lon, death_date = excluded.death_date,
-  death_place = excluded.death_place, death_country_code = excluded.death_country_code, nationality_code = excluded.nationality_code,
-  height_cm = excluded.height_cm, handedness = excluded.handedness, throws_or_shoots = excluded.throws_or_shoots,
-  primary_position = excluded.primary_position, hall_of_fame_year = excluded.hall_of_fame_year, updated_at = now();
+  full_name = excluded.full_name,
+  kind = case when excluded.kind <> 'player' and exists (select 1 from core.player_season_stat s where s.person_id = core.person.person_id) then 'player' else excluded.kind end,
+  -- what Wikidata does not state stays as another source (or a merge, 185) gave it
+  birth_date = coalesce(excluded.birth_date, core.person.birth_date), birth_place = coalesce(excluded.birth_place, core.person.birth_place),
+  birth_country_code = coalesce(excluded.birth_country_code, core.person.birth_country_code),
+  birth_lat = coalesce(excluded.birth_lat, core.person.birth_lat), birth_lon = coalesce(excluded.birth_lon, core.person.birth_lon),
+  death_date = coalesce(excluded.death_date, core.person.death_date), death_place = coalesce(excluded.death_place, core.person.death_place),
+  death_country_code = coalesce(excluded.death_country_code, core.person.death_country_code),
+  nationality_code = coalesce(excluded.nationality_code, core.person.nationality_code), height_cm = coalesce(excluded.height_cm, core.person.height_cm),
+  handedness = coalesce(excluded.handedness, core.person.handedness), throws_or_shoots = coalesce(excluded.throws_or_shoots, core.person.throws_or_shoots),
+  hall_of_fame_year = coalesce(excluded.hall_of_fame_year, core.person.hall_of_fame_year), updated_at = now();
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'person', pp.person_id, (select source_id from wd), pp.qid from pp join core.person p using (person_id) where not pp.existed

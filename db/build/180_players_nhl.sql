@@ -3,8 +3,8 @@
 -- Rerunnable, and safe after scripts/build_core.sh has rebuilt team_seasons: every key it uses is stable.
 --  * A person is matched by the NHL's player id (core.external_id: entity_kind 'person', source nhl_api). A player
 --    the NHL id has not met is matched to an existing person only when Wikidata says that person played ice hockey
---    and their name is unique among both the NHL's players and ours; otherwise a new person is made, with the name,
---    position and hand the API states. Dates and places of birth are not in the API's summary: they stay empty.
+--    and their name (accents ignored) is unique among both the NHL's players and ours; otherwise a new person is made, with the name and
+--    hand the API states (the position is set by db/build/186_person_positions.sql). Dates and places of birth are not in the API's summary: they stay empty.
 --  * A club is a team_season, found by the NHL's tricode for the season (core.franchise_identity.abbreviation).
 --  * Only counting stats are stored; rates (GAA, SV%, points per game) are worked out where they are shown.
 begin;
@@ -13,19 +13,19 @@ create temp table src on commit drop as select source_id from meta.source where 
 update meta.source set notes = notes || E'\nPlayer season summaries from api.nhle.com/stats/rest/en (skater and goalie summary), 1917-18 to 2025-26.'
  where code = 'nhl_api' and notes not like '%Player season summaries%';
 
--- Names are matched lowercase.
+-- Names are matched with accents and punctuation ignored (core.fold_text).
 create temp table nhl_player on commit drop as
-select distinct on (player_id) player_id, full_name, lower(full_name) as n, position, hand
+select distinct on (player_id) player_id, full_name, core.fold_text(full_name) as n, position, hand
 from legacy_nhlapi.player_season order by player_id, season desc, game_type desc;
 
 create temp table name_count on commit drop as select n, count(*) as k from nhl_player group by n;
 
 create temp table hockey on commit drop as
-select p.person_id, lower(p.full_name) as n
+select p.person_id, core.fold_text(p.full_name) as n
 from core.person p
 join core.external_id x on x.entity_kind = 'person' and x.entity_id = p.person_id and x.source_id = (select source_id from meta.source where code = 'wikidata')
 join legacy_people.claim c on c.qid = x.external_key and c.prop = 'P641' and c.value_qid = 'Q41466'
-group by p.person_id, lower(p.full_name);
+group by p.person_id, core.fold_text(p.full_name);
 
 create temp table hockey_unique on commit drop as select n, min(person_id) as person_id from hockey group by n having count(*) = 1;
 
@@ -39,9 +39,9 @@ left join core.external_id x on x.entity_kind = 'person' and x.source_id = (sele
 left join name_count nc on nc.n = np.n
 left join hockey_unique hu on x.entity_id is null and nc.k = 1 and hu.n = np.n;
 
-insert into core.person (person_id, full_name, kind, primary_position, throws_or_shoots, source_id)
+insert into core.person (person_id, full_name, kind, throws_or_shoots, source_id)
 overriding system value
-select person_id, full_name, 'player', position, case when hand in ('L', 'R') then hand end, (select source_id from src)
+select person_id, full_name, 'player', case when hand in ('L', 'R') then hand end, (select source_id from src)
 from pp where not existed
 on conflict (person_id) do nothing;
 
