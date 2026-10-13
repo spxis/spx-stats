@@ -218,17 +218,64 @@ def test_observation():
     check(nums == [0, 1], "a doubleheader's second game is game_no 1")
 
 
+def test_release_hook():
+    import contextlib, io, json, tempfile, release_hook as R
+    with tempfile.TemporaryDirectory() as d:
+        stub = os.path.join(d, "release.py")
+        log = os.path.join(d, "argv.json")
+        open(stub, "w").write("import json, os, sys\njson.dump(sys.argv[1:], open(%r, 'w'))\n"
+                              "print(os.environ.get('STUB_OUT', 'release 1 (x): y'))\nsys.exit(int(os.environ.get('STUB_RC', '0')))\n" % log)
+        base = dict(DAILY_PREPARE_RELEASE="1", SUPABASE_ACCESS_TOKEN="tok-secret", PGHOST="h", PGPASSWORD="pw-secret", PATH=os.environ.get("PATH", ""))
+
+        def go(tables, rc=0, out="release 1 (x): y", **extra):
+            env = dict(base, STUB_RC=str(rc), STUB_OUT=out, **extra)
+            if os.path.exists(log): os.remove(log)
+            with contextlib.redirect_stdout(io.StringIO()):
+                r = R.prepare_release({t: dict(ins=1) for t in tables}, "2026-10-12", dict(games_changed=3), env=env, release=stub)
+            return r, (json.load(open(log)) if os.path.exists(log) else None)
+
+        auto = ["core.game", "meta.verification", "meta.data_issue"]
+        r, a = go(["core.game", "meta.verification"], DAILY_RELEASE_KIND="daily_scores")
+        check(r["status"] == "prepared" and r["route"] == "auto", "auto route: scores tables + a kind -> prepared on the auto route")
+        check(a and a[:4] == ["--by", "daily-job", "prepare", "--kind"] and a[4] == "daily_scores", "auto route: --by daily-job before prepare, then --kind daily_scores")
+        check(a and "--tables" not in a and a[a.index("--title") + 1] == "Daily scores 2026-10-12", "auto route: no --tables, plain title")
+        r, a = go(auto, DAILY_RELEASE_KIND="daily_scores")
+        check(r["route"] == "auto" and a and "--tables" not in a, "auto route: all three allowed tables")
+        r, a = go(["core.game", "core.season", "core.team_season", "core.external_id"], DAILY_RELEASE_KIND="daily_scores")
+        check(r["status"] == "prepared" and r["route"] == "review", "review route: a new season touched")
+        check(a and "--kind" not in a and a[:3] == ["--by", "daily-job", "prepare"], "review route: no --kind")
+        check(a and a[a.index("--tables") + 1] == "core.external_id,core.game,core.season,core.team_season", "review route: --tables lists ALL touched tables")
+        check(a and a[a.index("--title") + 1] == "Daily scores 2026-10-12 (needs review)", "review route: title says needs review")
+        r, a = go(["core.game"])
+        check(r["route"] == "review" and a and "--kind" not in a and "--tables" in a, "no DAILY_RELEASE_KIND -> review route even for scores only")
+        r, a = go(["core.game"], rc=1, out="release.py: DS1 and production already match for these tables: nothing to release", DAILY_RELEASE_KIND="daily_scores")
+        check(r["status"] == "nothing", "exit 1 with 'nothing to release' -> nothing")
+        r, a = go(["core.game"], rc=1, out="refused: checks failed", DAILY_RELEASE_KIND="daily_scores")
+        check(r["status"] == "refused", "other exit 1 -> refused")
+        r, a = go(["core.game"], rc=2, DAILY_RELEASE_KIND="daily_scores")
+        check(r["status"] == "failed", "other exit -> failed")
+        r, a = go(["core.game"], rc=1, out="boom tok-secret pw-secret", DAILY_RELEASE_KIND="daily_scores")
+        check("tok-secret" not in r["detail"] and "pw-secret" not in r["detail"], "secrets are scrubbed from the detail")
+        r, a = go(["core.game"], DAILY_PREPARE_RELEASE="0")
+        check(r["status"] == "off" and a is None, "hook off -> release.py not run")
+        r, a = go(["ingest.x"], DAILY_RELEASE_KIND="daily_scores")
+        check(r["status"] == "nothing" and a is None, "only non-release schemas -> nothing, not run")
+        r, a = go(["core.game"], SUPABASE_ACCESS_TOKEN="")
+        check(r["status"] == "skipped" and a is None, "no token -> skipped")
+
+
 def run():
     test_observation()
     test_parsers()
     test_pairing()
     test_doubleheader()
     test_stage2()
+    test_release_hook()
     if FAILS:
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows and the ingest observations")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations and the release hook (auto and review routes)")
     return 0
 
 

@@ -63,12 +63,13 @@ The job knows nothing about production (the ingest function is not installed the
 tables DS1 changed (`scripts/release/README.md`):
 
 - Today the nightly drift check on the release runner proposes the change and John approves it at `/admin/data`.
-- A hook can prepare that release right after the run instead: `scripts/daily/release_hook.py` (`prepare_release()`), titled
-  "Daily scores <date>". It is OFF unless `DAILY_PREPARE_RELEASE=1`, needs `SUPABASE_ACCESS_TOKEN` in `daily.env` (the same powerful
-  token the release runner holds; see the comment in `daily.env.example`) and does not approve anything. When it is off or cannot run
-  it logs `left to the nightly drift check`.
-- When the release side has its `daily_scores` kind (auto-approved after a hold), set `DAILY_RELEASE_KIND=daily_scores`; the hook
-  then adds `--kind daily_scores` to `release.py prepare`. No code change.
+- A hook can prepare that release right after the run instead: `scripts/daily/release_hook.py` (`prepare_release()`). It is OFF unless
+  `DAILY_PREPARE_RELEASE=1`, needs `SUPABASE_ACCESS_TOKEN` in `daily.env` (the same powerful token the release runner holds; see the comment
+  in `daily.env.example`) and does not approve anything. When it is off or cannot run it logs `left to the nightly drift check`.
+- With `DAILY_RELEASE_KIND=daily_scores`, a run that only changed `core.game`, `meta.verification` or `meta.data_issue` prepares a
+  `daily_scores` release ("Daily scores <date>"), which the runner auto-approves after a hold if it passes its checks. A run that also
+  touched anything else (a new season, team seasons, external ids) prepares a normal release titled "Daily scores <date> (needs review)"
+  that waits for John.
 
 ## Safety
 

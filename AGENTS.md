@@ -399,7 +399,7 @@ core rebuild; the release runner runs `select api.refresh();` after each release
      else; the game state machine and "final is terminal" live in it). History, rebuilds and new seasons stay bulk. A Docker job on the
      NAS (`daily/README.md`) runs `run.py --apply` once a day at 10:00 ET and leaves a heartbeat row in `ingest.daily_run` (DS1 only).
      The function is not installed on production: production gets those results like any other data, in a release. The job's hook
-     (`scripts/daily/release_hook.py`, off unless `DAILY_PREPARE_RELEASE=1`) prepares that release; otherwise the nightly drift check
+     (`scripts/daily/release_hook.py`, off unless `DAILY_PREPARE_RELEASE=1`) prepares that release (the auto lane when only scores tables changed and `DAILY_RELEASE_KIND=daily_scores`, else a normal release "(needs review)"); otherwise the nightly drift check
      proposes it.
    - **Automatic approval (daily scores only):** the daily job prepares with
      `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores [--title ".."]` (tables default to

@@ -221,16 +221,22 @@ and external ids) are ordinary tables in a release. `ingest` is not in the relea
 ingest function is **not** installed on production, there is no production login for `ingest_writer`, and the earlier "phase B"
 (reporting to production directly) is dropped.
 
-- **Release hook.** After a `--apply` that committed, `release_hook.prepare_release()` runs
-  `python3 -I scripts/release/release.py prepare --title "Daily scores <date>" --tables <the release tables the run wrote to>`. The tables
-  come from the run itself (`pg_stat_xact_all_tables` inside the load transaction: rows inserted, updated or deleted in core, meta, ref),
-  so a run that changed no game prepares nothing. It does not approve. **Off** unless `DAILY_PREPARE_RELEASE=1`; it also needs
-  `SUPABASE_ACCESS_TOKEN`, `PGHOST` (or `SPX_DS1_HOST`) and `PGPASSWORD` in the environment, and when any is missing it logs
-  `left to the nightly drift check` and carries on. A release that is refused or fails never fails the daily run (DS1 is already
-  committed); the outcome is in the log and in the heartbeat's `summary.release`.
-- **Release kind.** `DAILY_RELEASE_KIND=<kind>` adds `--kind <kind>` to `prepare`; unset, the flag is left out. The release side is adding a
-  `daily_scores` kind (auto-approved by policy after a hold). When it has it, set `DAILY_RELEASE_KIND=daily_scores`; if the option has a
-  different spelling, `KIND_OPTION` in `release_hook.py` is the one line to change.
+- **Release hook.** After a `--apply` that committed, `release_hook.prepare_release()` prepares a release for the release tables the run wrote
+  to (`pg_stat_xact_all_tables` inside the load transaction: rows inserted, updated or deleted in core, meta, ref), so a run that changed
+  no game prepares nothing. It never approves, and always passes `--by daily-job` (before `prepare`). Two routes:
+  - **Auto.** Every table the run wrote to is `core.game`, `meta.verification` or `meta.data_issue`, and `DAILY_RELEASE_KIND` is set:
+    `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores --title "Daily scores <date>" --notes ...`, with no
+    `--tables` (the kind's default is those three). The runner approves it after a hold if it only changes status, score and overtime/shootout
+    on games not final in production (`scripts/release/README.md` has the exact lane).
+  - **Review.** Anything else (a new season, `core.season`, `core.team_season`, `core.external_id`, `meta.source` ..., or no
+    `DAILY_RELEASE_KIND`): a normal publish release, `prepare --title "Daily scores <date> (needs review)" --tables <all the tables the run
+    wrote to>`. It waits for John at `/admin/data`.
+  - **Switches.** **Off** unless `DAILY_PREPARE_RELEASE=1`. It also needs `SUPABASE_ACCESS_TOKEN`, `PGHOST` (or `SPX_DS1_HOST`) and
+    `PGPASSWORD` in the environment; when any is missing it logs `left to the nightly drift check` and carries on.
+  - **Outcomes** (log and heartbeat `summary.release`, with the `route`): `prepared`; `nothing` (release.py exit 1 saying "nothing to release":
+    DS1 and production already match); `refused` (any other exit 1); `failed`; `skipped`; `off`. None of them fails the daily run (DS1 is
+    already committed).
+- **Release kind.** Set `DAILY_RELEASE_KIND=daily_scores` to enable the auto route; unset, every run takes the review route.
 - **Until then** the nightly drift check on the release runner proposes the difference and John approves it at `/admin/data`.
 
 ## Known gaps (stage 2)
