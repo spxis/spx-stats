@@ -33,7 +33,8 @@
     "test:flow": "node --test scripts/rosterFlow.test.ts",
     "test:coaches": "node --test scripts/coachMoves.test.ts",
     "test:positions": "node --test scripts/positions.test.ts",
-    "test:flags": "node --test scripts/flags.test.ts"
+    "test:flags": "node --test scripts/flags.test.ts",
+    "test:review": "node --test scripts/personReview.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",

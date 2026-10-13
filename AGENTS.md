@@ -462,6 +462,11 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    (`select api.refresh()` on production). Then run `db/checks/051` to `053` (finished season without a champion, team seasons without
    a conference or division, a stale season summary): each must stay at its baseline. A load that skips one is how the NFL 1973-1998
    seasons went live with no champions and no conferences.
+   **People who might be one person.** `db/build/185_person_merge.sql` merges two records only with a confirming fact (same birth date,
+   a team season in common, or a club Wikidata lists that the other record has within his lifetime); every other fitting pair is
+   logged as `possible-duplicate:` in `meta.data_issue` and never merged on the name. `db/review/person_review.sql` (read-only,
+   `ds1-apply.sh --dry-run`) lists them as `db/seed/person_review.csv`; `python3 -I scripts/people/review_to_ts.py` copies the list
+   to the admin page `/admin/people` (admin only, a snapshot in the code, not read from the database). Rerun both after a merge.
 8. **DS1 and working copies.** DS1 is permanent; cloud and Mac copies are temporary. Work done on a working copy
    (the cloud agent holds a lot of it) is pushed to DS1 before the production load and before the copy is discarded.
    Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without
