@@ -33,6 +33,8 @@ export interface VenueRow {
   capacity: number | null;
   roof: string | null;
   surface: string | null;
+  /** Who owns it, as the facts line says. */
+  owner: string | null;
   /** First and last year a club used it; from is null when unknown, to is null while a club still plays there. */
   from: number | null;
   to: number | null;

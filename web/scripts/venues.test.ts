@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { packVenues, unpackVenues } from "../src/lib/venueWire.ts";
 import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueRow } from "../src/lib/venueModel.ts";
 
 /** Run in web/: pnpm test:venues */
@@ -9,7 +10,7 @@ const LEAGUES = ["nhl", "nba", "mls"];
 
 const venue = (o: Partial<VenueRow>): VenueRow => ({
   id: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
-  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
+  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
 });
 
 test("no filter keeps everything, even a venue with no known years", () => {
@@ -61,4 +62,39 @@ test("every league gets a colour, the site's own where it has one", () => {
   assert.equal(colors.size, 3);
   assert.equal(venueColor(venue({ leagues: ["nhl", "nba"] }), order), "var(--muted)");
   assert.equal(venueColor(venue({ leagues: ["mls"] }), order), leagueColor("mls", 1));
+});
+
+const say = ((key: string, vars?: Record<string, unknown>) => `${key}${vars ? JSON.stringify(vars) : ""}`) as unknown as Parameters<typeof unpackVenues>[2];
+const countryName = (cc: string) => (cc === "US" ? "United States" : cc === "CA" ? "Canada" : cc);
+
+test("packed rows come back exactly as they went in, whatever shortcut they could take", () => {
+  const club = (o: Partial<VenueRow["clubs"][number]>) => ({ lg: "nhl", f: 1, name: "Boston Bruins", href: "/nhl/team/boston-bruins", from: 1995, to: null, ...o });
+  const rows: VenueRow[] = [
+    venue({ name: "TD Garden", cc: "US", place: "Boston, MA", citySlug: "boston", wiki: "https://en.wikipedia.org/wiki/TD_Garden", address: "100 Legends Way, Boston, MA, United States",
+      addressHref: "https://www.google.com/maps/search/?api=1&query=100%20Legends%20Way%2C%20Boston%2C%20MA%2C%20United%20States", clubs: [club({}), club({ lg: "nba", f: 9, name: "Boston Celtics", href: "/nba/team/boston-celtics" })],
+      opened: 1995, capacity: 19156, surface: "hardwood", owner: "Delaware North", al: ["nhl|East|Atlantic"] }),
+    // a partial address linked by coordinates, a Wikipedia title that is not the name, an address that does not end in the place, no place at all
+    venue({ name: "Old Forum", former: "Forum 1920\u20131960", lat: 45.49, lon: -73.57, cc: "CA", place: "Montreal, QC", citySlug: null, wiki: "https://en.wikipedia.org/wiki/Montreal_Forum", address: "Montreal, QC, Canada",
+      addressHref: "https://www.google.com/maps/search/?api=1&query=45.49%2C-73.57", clubs: [club({ f: 2, name: "Montreal Canadiens", href: "/nhl/team/montreal-canadiens", from: 1926, to: 1996 })], roof: "dome" }),
+    venue({ name: "X/Y Park", cc: null, place: null, wiki: "https://example.com/x", address: "Somewhere else entirely", addressHref: "https://example.com/m", clubs: [club({ f: 3, name: "Odd FC", href: "/odd/path", from: null, to: 1930 })] }),
+    venue({ name: "Bare", clubs: [club({})] }),
+  ];
+  for (const r of rows) {
+    r.leagues = [...new Set(r.clubs.map((c) => c.lg))];
+    r.current = r.clubs.some((c) => c.to == null);
+    r.from = r.clubs.some((c) => c.from == null) ? null : Math.min(...r.clubs.map((c) => c.from as number));
+    r.to = r.current ? null : Math.max(...r.clubs.map((c) => c.to as number));
+  }
+  const order = ["nhl", "nba"];
+  const wire = JSON.parse(JSON.stringify(packVenues(rows, order, countryName)));
+  const back = unpackVenues(wire, order, say, countryName);
+  assert.equal(back.length, rows.length);
+  rows.forEach((r, i) => {
+    const { id, extra, ...rest } = r;
+    const { id: id2, extra: extra2, ...rest2 } = back[i];
+    assert.deepEqual(rest2, rest);
+    assert.equal(id2, String(i));
+    void id; void extra; void extra2;
+  });
+  assert.ok(JSON.stringify(wire).length < JSON.stringify(rows).length / 2, "the packed rows are much smaller");
 });

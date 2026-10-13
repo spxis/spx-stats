@@ -7,6 +7,7 @@ import { COUNTRY_KEY } from "../components/countryKey";
 import { countryAt } from "./country";
 import { formatVenueAddress, type VenueAddress } from "./venueAddress";
 import type { VenuePlace } from "./venuePlace";
+import { factsText } from "./venueWire";
 
 type Say = Speaker["say"];
 
@@ -97,15 +98,7 @@ export function nowName(spans: VenueSpan[] | undefined, shown: string): string |
 
 /** "67,000 seats · opened 2002 · artificial turf · retractable roof · owner Washington State Public Stadium Authority", in the reader's language (surface and owner are the names Wikidata gives). */
 export function factsLine(f: VenueFacts | undefined, say: Say): string | null {
-  if (!f) return null;
-  const parts = [
-    f.capacity != null ? say("venues.seats", { n: f.capacity.toLocaleString("en-US") }) : null,
-    f.opened != null ? say("venues.opened", { year: f.opened }) : null,
-    f.surface,
-    f.roof === "retractable" ? say("venues.roofRetractable") : f.roof === "dome" ? say("venues.roofDome") : null,
-    f.owner ? say("venues.owner", { owner: f.owner }) : null,
-  ].filter((x): x is string => !!x);
-  return parts.length ? parts.join(" · ") : null;
+  return f ? factsText(f, say) : null;
 }
 
 /**

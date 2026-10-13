@@ -9,6 +9,7 @@ import type { Speaker } from "./i18n/i18n";
 import { getPaths } from "./teamSlugs";
 import { getVenueTeams } from "./venueMap";
 import type { VenueClub, VenueRow } from "./venueModel";
+import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
 
 export interface VenueList {
@@ -74,7 +75,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
             row: {
               id, name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
               wiki: v.wiki, address: v.address, addressHref: v.addressHref, leagues: [], clubs: [],
-              opened: f?.opened ?? null, closed: f?.closed ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null,
+              opened: f?.opened ?? null, closed: f?.closed ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
               from: null, to: null, current: false, al: [],
               extra: [namesLine(sp), factsLine(f, say)].filter((x): x is string => !!x),
             },
@@ -98,10 +99,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
   const out: VenueRow[] = [];
   for (const { row: r } of byVenue.values()) {
     r.clubs.sort((a, b) => (a.from ?? -1) - (b.from ?? -1) || BY(a.name, b.name));
-    r.leagues.sort((a, b) => leagues.indexOf(a) - leagues.indexOf(b));
-    r.current = r.clubs.some((c) => c.to == null);
-    r.from = r.clubs.some((c) => c.from == null) ? null : Math.min(...r.clubs.map((c) => c.from as number));
-    r.to = r.current ? null : Math.max(...r.clubs.map((c) => c.to as number));
+    finishRow(r, leagues);
     for (const c of r.clubs) {
       if (c.to != null) continue;
       const a = align.get(`${c.lg}|${c.f}`);

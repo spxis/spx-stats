@@ -21,3 +21,5 @@
 @media (max-width: 640px) {
   .venuefilters select { flex: 1 1 130px; font-size: 14px; padding: 7px 8px; }
 }
+.venuetable.pending { min-height: 60vh; }
+.venueplain { margin: 0; padding-left: 18px; }

@@ -1,11 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useDeferredValue, useEffect, useId, useMemo, useRef, useState } from "react";
+import { Fragment, useDeferredValue, useEffect, useId, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { fold } from "@/lib/fold";
 import { tableOf } from "@/lib/sort";
 import { replaceQuery } from "@/lib/urlQuery";
 import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueFilter, type VenueRow, type VenueStatus } from "@/lib/venueModel";
+import { unpackVenues, type VenueWire } from "@/lib/venueWire";
 import { COUNTRY_KEY } from "./countryKey";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { MapViewer } from "./MapViewer";
@@ -21,13 +22,16 @@ const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", ret
 /**
  * The venues page: filters (league, current or former, country, conference and division, years used), a map of the venues that pass and
  * a sortable table of them. Everything is filtered in the browser from the one list the page was drawn with, so the page stays a kept,
- * static copy; the choices are kept in the address (?league=&status=&nat=&conf=&div=&from=&to=) and read once the page is on screen.
+ * static copy (the rows arrive once, packed: venueWire.ts); the choices are kept in the address (?league=&status=&nat=&conf=&div=&from=&to=) and read once the page is on screen.
  *
  * Dots are coloured by league (grey for a venue several leagues used) and a venue no club plays at now is a hollow ring, so the
  * difference does not rest on colour. The leagues, and their colours, are whatever the rows carry.
  */
-export function VenueExplorer({ venues, leagues, labels, min, max }: { venues: VenueRow[]; leagues: string[]; labels: Record<string, string>; min: number; max: number }) {
+export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: VenueWire; leagues: string[]; labels: Record<string, string>; min: number; max: number }) {
   const { say, fmt, plural } = useSpeaker();
+  const venues = useMemo(() => unpackVenues(wire, leagues, say, (cc) => (COUNTRY_KEY[cc] ? say(COUNTRY_KEY[cc]) : cc)), [wire, leagues, say]);
+  // The table is drawn in the browser only: the page's HTML holds a plain list of the venues for a reader without scripts (and for a crawler), not 242 rows of table markup that the rows above already describe.
+  const mounted = useSyncExternalStore(() => () => {}, () => true, () => false);
   const uid = useId();
   const bounds = useMemo(() => ({ min, max }), [min, max]);
   const order = useMemo(() => new Map(leagues.map((l, i) => [l, i])), [leagues]);
@@ -88,7 +92,7 @@ export function VenueExplorer({ venues, leagues, labels, min, max }: { venues: V
 
   const years = (a: number | null, b: number | null) => `${a ?? "…"}–${b ?? say("team.today")}`;
 
-  const table = useMemo(() => tableOf(shown, [
+  const table = useMemo(() => (!mounted ? null : tableOf(shown, [
     {
       key: "name", label: say("venuesPage.colVenue"), cls: "team venuename", get: (v) => v.name,
       cell: (v) => (
@@ -125,14 +129,15 @@ export function VenueExplorer({ venues, leagues, labels, min, max }: { venues: V
       cell: (v) => (v.roof && v.roof in ROOF_KEY ? say(ROOF_KEY[v.roof as keyof typeof ROOF_KEY]) : v.roof ?? ""),
     },
     { key: "surface", label: say("venuesPage.colSurface"), get: (v) => v.surface, cell: (v) => v.surface ?? "" },
-  ], (v) => v.id),
+  ], (v) => v.id)),
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the phrases follow the language
-  [shown, say, fmt, labels, order]);
+  [mounted, shown, say, fmt, labels, order]);
 
+  const index = useMemo(() => new Map(venues.map((v, i) => [v, i])), [venues]);
   const pins = useMemo<Pin[]>(() => shown.map((v) => {
     const clubs = v.clubs.map((c) => c.name);
     return {
-      f: venues.indexOf(v), name: v.name, lat: v.lat, lon: v.lon, cc: v.cc, wiki: v.wiki, place: v.place, tone: venueColor(v, order), defunct: !v.current,
+      f: index.get(v) ?? 0, name: v.name, lat: v.lat, lon: v.lon, cc: v.cc, wiki: v.wiki, place: v.place, tone: venueColor(v, order), defunct: !v.current,
       team: clubs.slice(0, 4).join(", ") + (clubs.length > 4 ? ` +${clubs.length - 4}` : ""),
       teamHref: v.clubs.length === 1 ? v.clubs[0].href : undefined,
       venue: `${v.leagues.map(leagueName).join(" · ")} · ${v.current ? years(v.from, null) : `${years(v.from, v.to)} · ${say("venuesPage.former")}`}`,
@@ -140,9 +145,8 @@ export function VenueExplorer({ venues, leagues, labels, min, max }: { venues: V
     };
   }),
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the phrases follow the language
-  [shown, venues, order, say, labels]);
+  [shown, index, order, say, labels]);
 
-  const chosen = picked != null ? venues[picked] : null;
   const pick = (i: number) => { setPicked(i); link.pin(venues[i].id); };
 
   const full = f.from <= min && f.to >= max;
@@ -196,7 +200,7 @@ export function VenueExplorer({ venues, leagues, labels, min, max }: { venues: V
       {shown.length ? (
         <>
           <MapViewer
-            pins={pins} title={say("venuesPage.mapTitle")} total={pins.length} selected={chosen ? venues.indexOf(chosen) : undefined} onPick={pick}
+            pins={pins} title={say("venuesPage.mapTitle")} total={pins.length} selected={picked != null ? picked : undefined} onPick={pick}
             note={say("venuesPage.mapNote", { n: fmt(pins.length) })}
           />
           <ul className="maplegend venuelegend" aria-label={say("venuesPage.legend")}>
@@ -205,10 +209,30 @@ export function VenueExplorer({ venues, leagues, labels, min, max }: { venues: V
             <li><i className="filled" />{say("venuesPage.legendCurrent")}</li>
             <li><i className="ring" />{say("venuesPage.legendFormer")}</li>
           </ul>
-          <div className="scroll venuetable"><SortTable columns={table.columns} rows={table.rows} def="name.asc" label={say("venuesPage.title")} link={link} /></div>
+          <div className={`scroll venuetable${table ? "" : " pending"}`}>
+            {table
+              ? <SortTable columns={table.columns} rows={table.rows} def="name.asc" label={say("venuesPage.title")} link={link} />
+              : <noscript><PlainList venues={shown} /></noscript>}
+          </div>
           {!full ? <p className="note">{say("venuesPage.rangeNote", { from: String(f.from), to: String(f.to) })}</p> : null}
         </>
       ) : <p className="note">{say("venuesPage.none")}</p>}
     </>
+  );
+}
+
+/** The venues as a plain list, for a reader without scripts: the name, the city and each club, the clubs linked. */
+function PlainList({ venues }: { venues: VenueRow[] }) {
+  return (
+    <ul className="venueplain">
+      {venues.map((v) => (
+        <li key={v.id}>
+          {`${v.name}${v.place ? `, ${v.place}` : ""}: `}
+          {v.clubs.map((c, i) => (
+            <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<Link href={c.href} prefetch={false}>{c.name}</Link></Fragment>
+          ))}
+        </li>
+      ))}
+    </ul>
   );
 }
