@@ -2,7 +2,7 @@
 -- into core.person and core.player_season_stat, one row per player, club, season and phase (regular, playoffs).
 -- Rerunnable (scripts/players/lahman_load.py first), and safe after scripts/build_core.sh: every key is stable.
 --  * A person is matched by Lahman's playerID (core.external_id: entity_kind 'person', source lahman). One Lahman
---    has not met is matched to an existing person only on the same name and the same birth date; otherwise made.
+--    has not met is matched to an existing person only on the same name (accents ignored) and the same birth date; otherwise made.
 --  * A club is a team_season. Lahman's retrosheet team code and year find it through the games Retrosheet gave us,
 --    or, where we hold no Retrosheet game for that club-year (2002-2011 are SPX's), through the franchise that
 --    Retrosheet's current-name list files the code under. Clubs of leagues we do not hold (the Negro leagues, the
@@ -55,7 +55,7 @@ where exists (select 1 from legacy_lahman.batting b where b.playerid = p.playeri
 
 create temp table matched on commit drop as
 select lp.playerid, min(cp.person_id) as person_id
-from lp join core.person cp on lower(cp.full_name) = lower(lp.full_name) and cp.birth_date = lp.birth_date
+from lp join core.person cp on core.fold_text(cp.full_name) = core.fold_text(lp.full_name) and cp.birth_date = lp.birth_date
 where lp.birth_date is not null
 group by lp.playerid having count(distinct cp.person_id) = 1;
 
