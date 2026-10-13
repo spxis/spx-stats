@@ -3,8 +3,6 @@
 .pfact { padding: 9px 0; border-bottom: 1px solid var(--rule); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
 .pfact dt { font: 600 13px/1.2 var(--font-display, var(--display)); text-transform: uppercase; letter-spacing: .05em; color: var(--muted); }
 .pfact dd { margin: 0; font-weight: 600; overflow-wrap: anywhere; }
-.pflag { display: inline-block; vertical-align: -2px; height: var(--fh, 16px); margin-inline: 2px; }
-.pflag svg { display: block; height: 100%; width: auto; max-width: 28px; border-radius: 2px; box-shadow: 0 0 0 1px var(--rule); }
 .pmap { position: absolute; top: 0; right: 0; width: 220px; display: flex; flex-direction: column; gap: 4px; }
 .pmap .mapbtn { position: static; width: 100%; }
 .pmap .teammap { border: 1px solid var(--rule); background: var(--panel); }

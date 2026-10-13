@@ -1,0 +1,92 @@
+import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { test } from "node:test";
+import { FLAG_HEIGHT, FLAG_WIDTH, sizeFlagSvg } from "../src/lib/flagSvg.ts";
+
+/**
+ * Run in web/: pnpm test:flags
+ * The first tests need nothing. The browser test needs a running site (pnpm build && pnpm start, or pnpm dev) at
+ * SPX_BASE_URL (default http://localhost:3100) and Chromium for playwright-core; it is skipped, with the reason, when either is missing.
+ */
+
+test("sizeFlagSvg gives Hata's drawing the fixed box and keeps its viewBox", () => {
+  const out = sizeFlagSvg('<svg data-hata="ca" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 9600 4800"><path d="M0 0"/></svg>');
+  assert.match(out, new RegExp(`^<svg width="${FLAG_WIDTH}" height="${FLAG_HEIGHT}" aria-hidden="true" focusable="false" data-hata="ca"`));
+  assert.ok(out.includes('viewBox="0 0 9600 4800"'));
+  assert.ok(!out.includes("preserveAspectRatio"), "contained is the default; never 'none', which would stretch");
+});
+
+test("sizeFlagSvg replaces a size the drawing already carried", () => {
+  const out = sizeFlagSvg('<svg width="640" height="480" viewBox="0 0 4 3"></svg>');
+  assert.equal((out.match(/width=/g) ?? []).length, 1);
+  assert.equal((out.match(/height=/g) ?? []).length, 1);
+});
+
+test("flag.css uses the same numbers as flagSvg.ts", () => {
+  const css = readFileSync(new URL("../src/components/flag.css", import.meta.url), "utf8");
+  assert.ok(css.includes(`width: ${FLAG_WIDTH}px; height: ${FLAG_HEIGHT}px`));
+  assert.equal((css.match(new RegExp(`width: ${FLAG_WIDTH}px; height: ${FLAG_HEIGHT}px`, "g")) ?? []).length, 2);
+});
+
+test("no other stylesheet sizes a flag", () => {
+  for (const f of ["people.css", "team.css", "city.css"]) {
+    const css = readFileSync(new URL(`../src/components/${f}`, import.meta.url), "utf8");
+    assert.ok(!/\.(pflag|tflag)\b/.test(css), `${f} still styles an old flag class`);
+  }
+});
+
+const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:3100").replace(/\/$/, "");
+// Pages with flags: the roster and its country filter, a player, a city, the cities list, the team heading, the players list.
+const PAGES: [string, string][] = [
+  ["roster and country filter", "/nhl/2025-26/team/vancouver-canucks?nat=CA#roster"],
+  ["player page", "/nhl/player/quinn-hughes-2787"],
+  ["city page", "/city/vancouver"],
+  ["cities list", "/cities"],
+  ["players list", "/players"],
+];
+
+async function browserOrReason() {
+  try {
+    const res = await fetch(`${BASE}/`, { method: "HEAD", signal: AbortSignal.timeout(5000) });
+    if (!res.ok) return { reason: `${BASE} answered ${res.status}` };
+  } catch {
+    return { reason: `nothing is listening at ${BASE} (start the site, or set SPX_BASE_URL)` };
+  }
+  try {
+    const { chromium } = await import("playwright-core");
+    return { browser: await chromium.launch() };
+  } catch (e) {
+    return { reason: `no Chromium for playwright-core: ${(e as Error).message.split("\n")[0]}` };
+  }
+}
+
+test("every flag on the page is the same fixed size at desktop and phone width", async (t) => {
+  const got = await browserOrReason();
+  if (!got.browser) return t.skip(got.reason);
+  const { browser } = got;
+  try {
+    for (const width of [1280, 375]) {
+      const page = await browser.newPage({ viewport: { width, height: 900 } });
+      for (const [what, path] of PAGES) {
+        await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
+        const found = await page.evaluate(() => {
+          const box = (e: Element) => { const r = e.getBoundingClientRect(); return [Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; };
+          return {
+            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg") ? box(e.querySelector("svg")!) : null })),
+            stray: document.querySelectorAll("svg[data-hata]:not(.flag svg)").length,
+          };
+        });
+        // The players list is only required to be tidy once the country column exists; the others must show flags.
+        if (path !== "/players") assert.ok(found.flags.length > 0, `${what} at ${width}px: no flags found`);
+        for (const f of found.flags) {
+          assert.deepEqual(f.outer, [FLAG_WIDTH, FLAG_HEIGHT], `${what} at ${width}px: flag box is ${f.outer}`);
+          assert.deepEqual(f.svg, [FLAG_WIDTH, FLAG_HEIGHT], `${what} at ${width}px: flag drawing is ${f.svg}`);
+        }
+        assert.equal(found.stray, 0, `${what} at ${width}px: a flag is drawn outside the shared component`);
+      }
+      await page.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});

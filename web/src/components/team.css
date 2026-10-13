@@ -1,6 +1,4 @@
 /* Team and team-season additions: flag, filters, calendar pop-up, abbreviations, championship column. Tokens come from globals.css. */
-.tflag { display: inline-block; height: 18px; margin-left: 4px; opacity: .85; flex: none; align-self: center; }
-.tflag svg { display: block; height: 100%; width: auto; max-width: 30px; border-radius: 2px; box-shadow: 0 0 0 1px var(--rule); }
 
 .tn-short { display: none; text-decoration: none; }
 @media (max-width: 640px) {

@@ -119,7 +119,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
     <>
       <section className="head fade cityhead">
         <span className="eyebrow"><Link href="/cities">{say("cities.title")}</Link> · {placeOf(city)} · {countryName(city.country, locale)}</span>
-        <h1 className="cityname">{nameOf(city)}<Flag code={city.country} size={34} /></h1>
+        <h1 className="cityname">{nameOf(city)}<Flag code={city.country} /></h1>
         {metroName ? <p className="note">{say("city.metro", { name: metroName })}{members.length > 1 ? <> · {members.filter((m) => m.slug !== slug && perCity.has(m.slug)).map((m, i) => <span key={m.slug}>{i ? ", " : ""}<Link href={`/city/${m.slug}`} prefetch={false}>{nameOf(m)}</Link></span>)}</> : null}</p> : null}
         {total.clubs ? (
           <p className="lede">{say("city.lede", {

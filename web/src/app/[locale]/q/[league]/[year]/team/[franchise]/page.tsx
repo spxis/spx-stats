@@ -4,7 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { cache, Suspense } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CompareControl } from "@/components/CompareControl";
-import { TeamFlag } from "@/components/TeamFlag";
+import { Flag } from "@/components/Flag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamFlow } from "@/components/TeamFlow";
 import { TeamRoster } from "@/components/TeamRoster";
@@ -188,7 +188,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
         {seasonNav}
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <div className="namerow">
-          <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<TeamFlag code={countryAt(place?.latitude, place?.longitude)} /></h1>
+          <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<Flag code={countryAt(place?.latitude, place?.longitude)} /></h1>
           <div className="seasonside">
             <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link>
             {ranks || figureRanks.length ? <TeamRanks lg={lg} year={y} ranks={ranks} figures={figureRanks} /> : null}

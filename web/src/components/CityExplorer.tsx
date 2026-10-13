@@ -6,6 +6,7 @@ import { fmt3 } from "@/lib/format";
 import { fold } from "@/lib/fold";
 import { winShare } from "@/lib/cityModel";
 import { tableOf } from "@/lib/sort";
+import { FlagIcon } from "./FlagIcon";
 import { MapViewer } from "./MapViewer";
 import { SortTable } from "./SortTable";
 import { YearRange } from "./YearRange";
@@ -68,7 +69,7 @@ export function CityExplorer({ cities, min, max, flags }: { cities: CityListRow[
       cell: ({ c }) => (
         <>
           <Link href={`/city/${c.slug}`} prefetch={false}>{nameOf(c)}</Link>
-          <span className="seasoncell"> {c.region}{flags[c.cc] ? <span className="tflag" aria-hidden="true" dangerouslySetInnerHTML={{ __html: flags[c.cc] }} /> : null}</span>
+          <span className="seasoncell"> {c.region}{flags[c.cc] ? <FlagIcon svg={flags[c.cc]} /> : null}</span>
         </>
       ),
     },

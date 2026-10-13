@@ -32,7 +32,8 @@
     "test:path": "node --test scripts/playoffPath.test.ts",
     "test:flow": "node --test scripts/rosterFlow.test.ts",
     "test:coaches": "node --test scripts/coachMoves.test.ts",
-    "test:positions": "node --test scripts/positions.test.ts"
+    "test:positions": "node --test scripts/positions.test.ts",
+    "test:flags": "node --test scripts/flags.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",
@@ -56,6 +57,7 @@
     "@types/react-dom": "^19.3.0",
     "eslint": "^9.39.5",
     "eslint-config-next": "^16.4.0",
+    "playwright-core": "1.59.1",
     "postcss": "^8.5.29",
     "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"

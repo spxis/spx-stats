@@ -11,7 +11,7 @@ import { TeamCharts } from "@/components/TeamCharts";
 import { AddressCredit } from "@/components/AddressCredit";
 import { AddressLink } from "@/components/AddressLink";
 import { venueMapsUrl } from "@/lib/venueAddress";
-import { TeamFlag } from "@/components/TeamFlag";
+import { Flag } from "@/components/Flag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
 import { VenueMap } from "@/components/VenueMap";
@@ -242,7 +242,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           <TeamSwitch current={paths.team(lg, f)} options={switchClubs.map((c) => ({ name: c.name, href: paths.team(lg, c.f) }))} />
         </div>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{city ? <> · <Link className="citylink" href={`/city/${city.slug}`} prefetch={false} title={say("city.teamLink", { name: locale === "fr" && city.nameFr ? city.nameFr : city.name })}>{locale === "fr" && city.nameFr ? city.nameFr : city.name}</Link></> : null}</span>
-        <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<TeamFlag code={country} /></h1>
+        <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<Flag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={seasonPath(lg, reigning.year)}>
             <BadgeCup league={lg} />
