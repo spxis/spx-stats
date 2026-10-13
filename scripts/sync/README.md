@@ -26,6 +26,11 @@ looked at again, key by key. Large tables are read in several small queries (pro
 rows scanned per Management API call), with timeouts and retries. Only columns present on both sides are compared;
 timestamps are compared in UTC; ordering uses the `C` collation, so DS1 and production agree.
 
+A table listed in `PUBLISH_FILTER` (top of `compare.py`; today only `core.external_id` with `entity_kind <> 'game'`) is compared
+as DS1's filtered rows against all of production's rows: the DS1 side of every count, bucket, drill and copy reads
+`(select * from <table> where <condition>)`, the production side never does. Production rows the condition excludes show as
+"only in production". Only the side labelled DS1 (`PsqlSide.source`) is filtered.
+
 ## Output
 
 One line per table: `same`, or `DIFF` with the row counts and `only-in-DS1`, `only-in-prod`, `different`. A table

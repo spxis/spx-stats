@@ -365,6 +365,10 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
 - **Production** is Supabase project `njpvfrceahkvnrduerkk`: a published subset (schemas meta, ref, core and api only;
   no `legacy_*`), changed only by approved data releases (item 5). It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any time
   with the Supabase MCP `execute_sql` (tested).
+- **Production holds a filtered copy of `core.external_id`: no `entity_kind = 'game'` rows** (437k rows, about 80 MB with indexes,
+  which nothing on the site reads; the Supabase Free cap is 500 MB). DS1 keeps them all. The rule is `PUBLISH_FILTER` in
+  `scripts/sync/compare.py`, applied to the DS1 side of every release comparison, apply, verification and drift check, so
+  "production equals DS1" means "equals DS1 filtered" (`scripts/release/README.md`). Add a table there only if nothing reads it.
 - Any other Postgres (the cloud session's port 55432, the MacBook Docker container in item 8) is a temporary
   **working copy**. Its work counts only once it is on DS1.
 - Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,

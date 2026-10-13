@@ -539,7 +539,7 @@ def read_tuples(ds1, t, keys, source=None):
     keys = sorted(keys)
     for i in range(0, len(keys), 2000):
         part = keys[i:i + 2000]
-        for r in ds1.run("select %s as v from %s where %s order by %s" % (tuple_expr(t), source or t.fq, t.key_filter(part), order)):
+        for r in ds1.run("select %s as v from %s where %s order by %s" % (tuple_expr(t), source or t.src(ds1), t.key_filter(part), order)):
             yield r["v"]
 
 
@@ -992,7 +992,7 @@ def row_hashes(side, t, keys):
     out = {}
     keys = sorted(keys)
     for i in range(0, len(keys), 500):
-        for r in side.run("select %s as k, %s as h from %s where %s" % (kj, h, t.fq, t.key_filter(keys[i:i + 500]))):
+        for r in side.run("select %s as k, %s as h from %s where %s" % (kj, h, t.src(side), t.key_filter(keys[i:i + 500]))):
             out[tuple(r["k"])] = r["h"]
     return out
 

@@ -64,6 +64,26 @@ only then deletes the rows the release had inserted. One restore cannot work: a 
 (`core.person.primary_position` while it still holds free text instead of a position code), because the key is checked on every write of
 that column. The restore then fails as a whole and leaves production as the release made it (the release is marked failed with the error).
 
+## Tables published in part (`PUBLISH_FILTER`)
+
+Production is on the 500 MB plan, so some DS1 rows are not published. `PUBLISH_FILTER` in `scripts/sync/compare.py` maps a table to a
+SQL condition; today the only entry is `core.external_id`: `entity_kind <> 'game'` (437k game ids, about 80 MB with indexes, read by
+no api view, page or function and referenced by no foreign key; DS1 keeps them). The condition is applied to the DS1 side only
+(`Table.src(side)`, true for the side labelled `DS1`), everywhere the release reads that table:
+
+- the preview and the runner's re-comparison (`build_preview`, `diff_tables`): row counts, bucket fingerprints, row hashes and the
+  keys to add, change and remove. Production rows that fail the condition are "only in production", so a release removes them; the
+  5 percent shrink rule applies as always, so removing the game ids needs `--replace`;
+- the copy to production (`read_tuples`, `publish_plan`) and the apply block's expected row count (`expected` is the filtered count);
+- verification after the apply (production's buckets against DS1's filtered buckets), the snapshot and the restore (the snapshot
+  holds the removed rows, so a rollback puts the game ids back in production), `row_hashes`;
+- the nightly drift check and `meta.sync_status` (its `ds1_rows` is the published count), `compare.py`, `auto_gate`.
+
+New game ids on DS1 are therefore not drift and need no release. Add a table only if nothing reads the excluded rows and no key
+points at the table (the apply order and the fresh-table pass assume the filter never changes which rows are referenced).
+**The runner must run code that has the filter before a release that removes the rows is approved**, or its verification would
+compare production with unfiltered DS1 and fail (and restore the snapshot).
+
 ## Automatic approval (daily scores)
 
 `prepare --kind daily_scores` (default tables `core.game,meta.verification,meta.data_issue`; no `--replace`) writes an ordinary release
@@ -208,4 +228,4 @@ hashes for tables with float columns (`core.person`): prepare them again.
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies
 standing in for DS1 and production, and `mock_api.py` stands in for the Management API. Covers prepare, approval through the function,
 run, guardrail refusals, a failure mid-apply (production unchanged), a lost answer after commit, rollback, drift, ds1_step, float
-values through an API that rounds them, a restore with swapped unique keys, `api.refresh()` after a commit (also after a failed verification). `test_auto.py` simulates time by moving `created_at` back and covers the data issue resolve and re-open rule.
+values through an API that rounds them, a restore with swapped unique keys, `api.refresh()` after a commit (also after a failed verification). `filter_case` in `test_release.py` runs the whole `PUBLISH_FILTER` flow through the CLI (prepare with and without `--replace`, approve, run, drift, new DS1 game ids, rollback); `test_apply_order.py` has the same in process (`scenario_publish_filter`, no template database). `test_auto.py` simulates time by moving `created_at` back and covers the data issue resolve and re-open rule.

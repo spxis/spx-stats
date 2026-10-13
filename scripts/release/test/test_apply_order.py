@@ -429,6 +429,103 @@ def scenario_cycles(snap):
     ok("a table list without the loop still orders", R.ordered(ctx, ["core.a", "core.c"]) == ["core.a", "core.c"])
 
 
+FILTER_DDL = """
+create schema core; create schema meta; create schema ref;
+create table core.external_id (entity_kind text not null, entity_id bigint not null, source_id smallint not null,
+  external_key text not null, primary key (source_id, entity_kind, external_key));
+create index external_id_entity_idx on core.external_id (entity_kind, entity_id);
+create table core.plain (id int primary key, note text);
+"""
+
+
+def scenario_publish_filter(snap):
+    """PUBLISH_FILTER: production holds core.external_id without its 'game' rows (compare.py). Production starts with ALL of DS1's rows
+    plus two game rows DS1 does not have; DS1 has one new and one changed row of another kind. Checks that the preview shows every
+    game row as a removal (and the shrink guard asks for replace), that the apply leaves production equal to DS1 filtered while DS1 keeps
+    its game rows, that verification, the drift comparison and compare.py (the CLI) then report clean, that new DS1 game rows do not
+    drift, and that a restore brings the game rows back."""
+    P, D = "flt_prod", "flt_ds1"
+    for db in (P, D):
+        psql("postgres", "create database %s" % db)
+        psql(db, FILTER_DDL)
+    common = ("insert into core.external_id select 'game', g, 1, 'g' || g from generate_series(1, 40) g;\n"
+              "insert into core.external_id values ('person', 1, 1, 'p1'), ('person', 2, 1, 'p2'), ('venue', 7, 2, 'v7'), "
+              "('franchise', 9, 2, 'f9');\n"
+              "insert into core.plain values (1, 'a'), (2, 'b');\n")
+    psql(P, common + "insert into core.external_id values ('game', 900, 3, 'only-in-prod-1'), ('game', 901, 3, 'only-in-prod-2');")
+    psql(D, common + "update core.external_id set entity_id = 8 where external_key = 'v7';\n"
+                     "insert into core.external_id values ('season', 3, 1, 's3');\nupdate core.plain set note = 'z' where id = 2;")
+    R.SNAP_DIR = snap
+    ds1 = C.PsqlSide("DS1", dsn(D))
+    ctx = types.SimpleNamespace(ds1=ds1, prod=Prod(P), w=R.Ds1Writer(dsn(D)))
+    names = ["core.external_id", "core.plain"]
+    before = dump(P, names)
+    games_ds1 = psql(D, "select count(*) from core.external_id where entity_kind = 'game'")
+
+    c1, c2 = C.catalog(ds1), C.catalog(ctx.prod)
+    t = C.Table("core.external_id", c1["core.external_id"], c2["core.external_id"])
+    plain = C.Table("core.plain", c1["core.plain"], c2["core.plain"])
+    ok("PUBLISH_FILTER has exactly the one entry", C.PUBLISH_FILTER == {"core.external_id": "entity_kind <> 'game'"}, C.PUBLISH_FILTER)
+    ok("the DS1 side reads the filtered rows, production and unfiltered tables read the table",
+       "entity_kind <> 'game'" in t.src(ds1) and t.src(ctx.prod) == t.fq and plain.src(ds1) == plain.fq)
+    ok("DS1 counts only the published rows", C.count_rows(ds1, t) == 5 and C.count_rows(ctx.prod, t) == 46, (C.count_rows(ds1, t), C.count_rows(ctx.prod, t)))
+
+    # prepare: every game row in production is a removal; without replace the shrink guard refuses
+    diffs, blockers, warnings = R.diff_tables(ctx, names)
+    d = diffs["core.external_id"][1]
+    ok("the preview comparison: 1 add, 1 change, all 42 production game rows are removals",
+       (len(d["only1"]), len(d["differ"]), len(d["only2"])) == (1, 1, 42), (len(d["only1"]), len(d["differ"]), len(d["only2"])))
+    ok("no game row is ever on the add side", not any(k[1] == "game" for k in d["only1"]))
+    pv = R.build_preview(ctx, names, False, diffs, blockers, warnings)
+    ok("without replace the shrink guard blocks it", any("core.external_id would shrink" in b for b in pv["blockers"]), pv["blockers"])
+    pv = R.build_preview(ctx, names, True, diffs, blockers, warnings)
+    ok("with replace there is no blocker", not pv["blockers"], pv["blockers"])
+    ok("the preview says remove 42, ds1_rows is the published count",
+       pv["tables"]["core.external_id"]["remove"] == 42 and pv["tables"]["core.external_id"]["ds1_rows"] == 5)
+
+    # apply (snapshot, stage, the real block) and verify the way run_publish does
+    order = R.ordered(ctx, names)
+    items = [(n, diffs[n][0], diffs[n][1]) for n in order]
+    R.snapshot(ctx, 7, "2026.10.14-t", items)
+    R.stage_and_apply(ctx, 7, R.publish_plan(ctx, items))
+    ok("production equals DS1 filtered, bucket by bucket",
+       all(R.verify_equal(ctx, n, tt, dd["b1"]) for n, tt, dd in items))
+    ok("production has no game rows left", psql(P, "select count(*) from core.external_id where entity_kind = 'game'") == "0")
+    ok("production holds exactly DS1's other rows",
+       psql(P, "select string_agg(x::text, ';' order by x::text) from core.external_id x")
+       == psql(D, "select string_agg(x::text, ';' order by x::text) from core.external_id x where entity_kind <> 'game'"))
+    ok("DS1 still holds all its game rows", psql(D, "select count(*) from core.external_id where entity_kind = 'game'") == games_ds1 == "40")
+    ok("the unfiltered table was published as usual", dump(P, ["core.plain"]) == dump(D, ["core.plain"]))
+
+    # clean afterwards: the drift comparison, the sync status row, compare.py itself
+    row, td, _ = R.compare_table(ctx, c1, c2, "core.external_id")
+    ok("drift reports external_id as the same, with the published row count", row[3] == "same" and row[1] == 5 and row[2] == 5, row)
+    ok("the drift run's other table is the same too", R.compare_table(ctx, c1, c2, "core.plain")[0][3] == "same")
+    out = tempfile.mkdtemp(prefix="flt-")
+    cmd = [sys.executable, "-I", os.path.join(HERE, "..", "..", "sync", "compare.py"), "--out", out, "--tables", ",".join(names),
+           "--ds1-dsn", dsn(D), "--prod-dsn", dsn(P)]
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    ok("compare.py (the CLI) exits 0 on the filtered pair", r.returncode == 0, r.stdout + r.stderr)
+    # new game ids arrive on DS1: not published, so no drift and nothing to release
+    psql(D, "insert into core.external_id select 'game', g, 1, 'g' || g from generate_series(100, 130) g")
+    row, _, _ = R.compare_table(ctx, c1, c2, "core.external_id")
+    ok("new DS1 game ids do not make drift", row[3] == "same", row)
+    r = subprocess.run(cmd, capture_output=True, text=True)
+    ok("nor does compare.py report them", r.returncode == 0, r.stdout + r.stderr)
+    # a changed non-game row still drifts
+    psql(D, "update core.external_id set external_key = 'p1b' where external_key = 'p1'")
+    row, _, _ = R.compare_table(ctx, c1, c2, "core.external_id")
+    ok("a changed published row still drifts", row[3] == "differs", row)
+    psql(D, "update core.external_id set external_key = 'p1' where external_key = 'p1b'")
+    shutil.rmtree(out, ignore_errors=True)
+
+    # the restore (rollback and failed verification) brings production's game rows back from the snapshot
+    R.restore(ctx, 7, names, orig_rows={n: dd["prod"] for n, _, dd in items})
+    ok("restore puts the game rows back in production", dump(P, names) == before, (dump(P, names), before))
+    diffs3, _, _ = R.diff_tables(ctx, names)
+    ok("and after a restore the game rows are removals again", len(diffs3["core.external_id"][1]["only2"]) == 42)
+
+
 def main():
     snap = tempfile.mkdtemp(prefix="ordsnap-")
     tmp, stop = start_server()
@@ -437,6 +534,7 @@ def main():
         scenario_positions(snap, True)
         scenario_positions(snap, False)
         scenario_cycles(snap)
+        scenario_publish_filter(snap)
     finally:
         stop()
         shutil.rmtree(tmp, ignore_errors=True)

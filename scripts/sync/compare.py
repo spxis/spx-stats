@@ -27,6 +27,18 @@ PROJECT_REF = "njpvfrceahkvnrduerkk"
 SCHEMAS = ("core", "meta", "ref")
 BUCKETS = 256
 
+# What production publishes of a table, when it is less than all of DS1's rows: {"schema.table": "sql condition on the table's columns"}.
+# The condition is applied to the DS1 side ONLY, in every read that compares, hashes, counts, copies or verifies (Table.src), so
+# "production equals DS1" means "production equals DS1 filtered". Production-side reads are never filtered, so production rows that
+# fail the condition count as "only in production" and a release removes them (a table shrinking by more than 5 percent needs
+# --replace, as always). It is code, never user input: the text is put into SQL as is. Only add a table nothing on the site reads
+# and nothing references; the full table stays on DS1 (the source of truth).
+#   core.external_id: the 437k 'game' ids (about 80 MB with indexes, 2026-10) are not read by any api view or page and Supabase Free
+#   caps the database at 500 MB. entity_kind is NOT NULL, so <> is complete.
+PUBLISH_FILTER = {
+    "core.external_id": "entity_kind <> 'game'",
+}
+
 
 def qi(name):
     return '"' + name.replace('"', '""') + '"'
@@ -39,8 +51,10 @@ def ql(value):
 class PsqlSide:
     """A Postgres reached with psql. dsn None means PG* env."""
 
-    def __init__(self, label, dsn=None, chunk_rows=2_000_000, drill_rows=50_000):
+    def __init__(self, label, dsn=None, chunk_rows=2_000_000, drill_rows=50_000, source=None):
         self.label, self.dsn = label, dsn
+        # the DS1 side: reads of a table with a PUBLISH_FILTER are filtered. Default: a side labelled "DS1" (tests label stand-ins so).
+        self.source = (label == "DS1") if source is None else source
         self.chunk_rows, self.drill_rows = chunk_rows, drill_rows
 
     def run(self, sql):
@@ -68,6 +82,7 @@ class ApiSide:
 
     def __init__(self, ref, token, chunk_rows=100_000, drill_rows=10_000, url=None):
         self.label = "production"
+        self.source = False  # production is never filtered
         self.url = url or "https://api.supabase.com/v1/projects/%s/database/query" % ref
         self.token = token
         self.chunk_rows, self.drill_rows = chunk_rows, drill_rows
@@ -203,6 +218,7 @@ class Table:
             if d[c]["ty"] != p[c]["ty"]:
                 self.notes.append("type differs for %s: DS1 %s, production %s" % (c, d[c]["ty"], p[c]["ty"]))
         self.common = common
+        self.filter = PUBLISH_FILTER.get(name)
         self.types = {c: d[c]["ty"] for c in common}
         self.insert_cols = [c for c in common if d[c]["g"] != "s"]
         self.identity_cols = [c for c in self.insert_cols if d[c]["i"] in ("a", "d")]
@@ -216,8 +232,19 @@ class Table:
             kt = "row(%s)::text" % ",".join(cexpr(k, self.types[k]) for k in self.pk)
             kjson = "json_build_array(%s)" % ",".join(cexpr(k, self.types[k]) for k in self.pk)
             h = "md5(row(%s)::text)" % ",".join(cexpr(c, self.types[c]) for c in common)
-            self.base = ("select %s as kt, %s as k, %s as h, get_byte(decode(md5(%s), 'hex'), 0) as b from %s"
-                         % (kt, kjson, h, kt, self.fq))
+            self._base = ("select %s as kt, %s as k, %s as h, get_byte(decode(md5(%s), 'hex'), 0) as b from %%s"
+                          % (kt, kjson, h, kt))
+
+    def src(self, side):
+        """What to read rows from on this side (for a from clause): the table, or on the DS1 side of a table with a PUBLISH_FILTER
+        a subquery of just the rows production publishes. Production (and any non-source side) always reads the whole table."""
+        if self.filter and getattr(side, "source", False):
+            return "(select * from %s where %s) pf_" % (self.fq, self.filter)
+        return self.fq
+
+    def base(self, side):
+        """The per-row query (key text, key json, row hash, bucket) over this side's rows."""
+        return self._base % self.src(side)
 
     def key_filter(self, keys):
         """where-clause matching a list of keys (each a list of text values), compared as text."""
@@ -229,7 +256,7 @@ class Table:
 
 
 def count_rows(side, t):
-    return side.run("select count(*) as n from %s" % t.fq)[0]["n"]
+    return side.run("select count(*) as n from %s" % t.src(side))[0]["n"]
 
 
 def bucket_pass(side, t, n):
@@ -239,7 +266,7 @@ def bucket_pass(side, t, n):
     out = {}
     for lo in range(0, BUCKETS, step):
         sql = ("select b, count(*) as n, md5(string_agg(h, ',' order by kt collate \"C\")) as m from (%s) x "
-               "where b >= %d and b < %d group by b" % (t.base, lo, lo + step))
+               "where b >= %d and b < %d group by b" % (t.base(side), lo, lo + step))
         for r in side.run(sql):
             out[r["b"]] = (r["n"], r["m"])
     return out
@@ -263,7 +290,7 @@ def drill(side, t, buckets, counts):
     """{key tuple: row hash} for rows in the given buckets."""
     rows = {}
     for g in groups(buckets, counts, side.drill_rows):
-        sql = "select k, h from (%s) x where b in (%s)" % (t.base, ",".join(str(b) for b in g))
+        sql = "select k, h from (%s) x where b in (%s)" % (t.base(side), ",".join(str(b) for b in g))
         for r in side.run(sql):
             rows[tuple(r["k"])] = r["h"]
     return rows
@@ -278,7 +305,7 @@ def insert_sql(ds1, t, keys, batch=500):
     for i in range(0, len(keys), 2000):
         part = keys[i:i + 2000]
         order = ",".join(cexpr(k, t.types[k]) + ' collate "C"' for k in t.pk)
-        rows = ds1.run("select %s as v from %s where %s order by %s" % (tuple_expr, t.fq, t.key_filter(part), order))
+        rows = ds1.run("select %s as v from %s where %s order by %s" % (tuple_expr, t.src(ds1), t.key_filter(part), order))
         stmts.extend(r["v"] for r in rows)
     out = []
     for i in range(0, len(stmts), batch):
@@ -298,7 +325,7 @@ def fetch_rows(side, t, keys):
     for i in range(0, len(keys), 200):
         part = keys[i:i + 200]
         sql = ("select %s as k, (select to_jsonb(x) from (select %s) x) as r from %s where %s"
-               % (kj, cols, t.fq, t.key_filter(part)))
+               % (kj, cols, t.src(side), t.key_filter(part)))
         for r in side.run(sql):
             res[tuple(r["k"])] = r["r"]
     return res

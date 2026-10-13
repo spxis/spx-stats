@@ -523,6 +523,66 @@ def refresh_case(env):
     ok("a rollback runs api.refresh and records it", status(rn) == "done" and runs() == before + 1 and result(rn)["refresh"] == "ok", out + err)
 
 
+def filter_case(env):
+    """PUBLISH_FILTER (scripts/sync/compare.py): core.external_id is published without its 'game' rows. The whole flow through the CLI:
+    prepare (shrink blocker, then --replace), approve, run, drift, a rollback."""
+    fresh()
+    src = "(select min(source_id) from meta.source)"
+    # ids of games and people the template really holds (check 012 flags external ids of entities that do not exist)
+    rows = ("insert into core.external_id select 'game', game_id, %s, 'g' || game_id from core.game order by game_id limit 300;\n"
+            "insert into core.external_id select 'person', person_id, %s, 'p' || person_id from core.person order by person_id limit 20;\n" % (src, src))
+    psql(DS1, rows)
+    psql(PROD, rows + "insert into core.external_id select 'game', game_id, %s, 'only-prod' || game_id from core.game order by game_id limit 5;" % src)
+    games = lambda db: int(psql(db, "select count(*) from core.external_id where entity_kind = 'game'"))  # noqa: E731
+    people = int(psql(DS1, "select count(*) from core.external_id where entity_kind = 'person'"))
+    g_ds1, g_prod = games(DS1), games(PROD)
+    ok("the test data has game and person ids on both sides", g_ds1 > 0 and g_prod > g_ds1 and people > 0, (g_ds1, g_prod, people))
+
+    rc, out, err = env.rel("prepare", "--title", "Stop publishing game external ids", "--tables", "core.external_id")
+    ok("without --replace the removal of the game rows is a shrink blocker", rc == 0 and "would shrink" in out, out + err)
+    approve(number_of(out), yes=False)
+    rc, out, err = env.rel("prepare", "--title", "Stop publishing game external ids", "--tables", "core.external_id", "--replace")
+    n = number_of(out)
+    pv = json.loads(psql(DS1, "select preview::text from meta.data_release where number = '%s'" % n))["tables"]["core.external_id"]
+    ok("with --replace: no blocker, every production game row is a removal, nothing is added",
+       rc == 0 and "BLOCKER" not in out and (pv["add"], pv["change"], pv["remove"]) == (0, 0, g_prod), (out, err, pv))
+    ok("the preview's DS1 row count is the published one", pv["ds1_rows"] == people and pv["prod_rows"] == people + g_prod, pv)
+    good, err_ = approve(n)
+    ok("the release can be approved", good, err_)
+    rc, out, err = env.rel("run")
+    ok("run applies it and verifies production equals DS1 filtered", status(n) == "done" and status(n, DS1) == "done", out + err + status(n))
+    res = json.loads(psql(PROD, "select result::text from meta.data_release where number = '%s'" % n))
+    ok("the result says verified, every game row removed, the published count after",
+       res["verified"] is True and res["tables"]["core.external_id"]["remove"] == g_prod
+       and res["tables"]["core.external_id"]["rows_after"] == people, res)
+    ok("production has no game rows, DS1 keeps all of its own", games(PROD) == 0 and games(DS1) == g_ds1, (games(PROD), games(DS1)))
+    ok("production's other rows equal DS1's",
+       psql(PROD, "select md5(string_agg(x::text, ',' order by x::text)) from core.external_id x")
+       == psql(DS1, "select md5(string_agg(x::text, ',' order by x::text)) from core.external_id x where entity_kind <> 'game'"))
+    ok("the snapshot holds the removed game rows", psql(DS1, 'select count(*) from backup_release_%d."core.external_id"' % rid(n)) == str(g_prod))
+
+    rc, out, err = env.rel("drift")
+    ok("the drift check is clean afterwards", rc == 0 and "nothing to propose" in out, out + err)
+    ok("sync_status says external_id is the same, with the published count",
+       psql(PROD, "select state || ' ' || ds1_rows || ' ' || prod_rows from meta.sync_status where table_name = 'core.external_id'") == "same %d %d" % (people, people))
+    psql(DS1, "insert into core.external_id select 'game', game_id, %s, 'later' || game_id from core.game order by game_id limit 50" % src)
+    rc, out, err = env.rel("drift")
+    ok("new game ids on DS1 are not drift", rc == 0, out + err)
+    rc, out, err = env.rel("prepare", "--title", "Nothing", "--tables", "core.external_id", "--replace")
+    ok("and there is nothing to release for them", rc == 1 and "nothing to release" in out + err, out + err)
+    psql(DS1, "update core.external_id set external_key = external_key || 'b' where external_key = (select min(external_key) from core.external_id where entity_kind = 'person')")
+    rc, out, err = env.rel("drift")
+    ok("a changed published row is drift", rc == 1, out + err)
+    psql(DS1, "update core.external_id set external_key = left(external_key, -1) where entity_kind = 'person' and external_key like '%b'")
+
+    rc, out, err = env.rel("rollback", "--release", n)
+    rn = number_of(out)
+    ok("the release can be rolled back", rc == 0 and rn, out + err)
+    approve(rn)
+    rc, out, err = env.rel("run")
+    ok("the rollback puts the game rows back in production", status(rn) == "done" and games(PROD) == g_prod, out + err + status(rn))
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="spx_stats", help="database to copy the small template from (only read)")
@@ -531,7 +591,7 @@ def main():
     make_base(a.source)
     env = Env()
     try:
-        for fn in (main_flow, guardrails, failure_cases, drift_case, step_cases, float_case, restore_case, refresh_case):
+        for fn in (main_flow, guardrails, failure_cases, drift_case, step_cases, float_case, restore_case, refresh_case, filter_case):
             if a.only and fn.__name__ not in a.only.split(","):
                 continue
             print("--- " + fn.__name__, flush=True)
