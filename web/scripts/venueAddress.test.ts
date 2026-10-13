@@ -25,6 +25,12 @@ test("a given postal code is shown when its shape and region agree", () => {
   assert.equal(formatVenueAddress({ street: "10220 104 Ave NW", city: "Edmonton", region: "AB", postal: "t5j0h6", countryCode: "CA" })?.text, "10220 104 Ave NW, Edmonton AB T5J 0H6");
 });
 
+test("the codes Wikidata gives (api.venue_info.postal_code) read well beside the region the place gives", () => {
+  assert.equal(formatVenueAddress({ street: "1500 South Capitol St SE", city: "Washington, D.C.", region: "DC", postal: "20003", countryCode: "US", country: "United States" })?.text,
+    "1500 S Capitol St SE, Washington, DC 20003, United States");
+  assert.equal(formatVenueAddress({ street: "777 Pacific Blvd", city: "Vancouver", region: "BC", postal: "V6B 4Y8", countryCode: "CA", country: "Canada" })?.lines.at(1), "Vancouver BC V6B 4Y8");
+});
+
 test("a postal code of another region, or of no known shape, is dropped", () => {
   assert.equal(formatVenueAddress({ street: "800 Occidental Ave S", city: "Seattle", region: "WA", postal: "90210", countryCode: "US" })?.text, "800 Occidental Ave S, Seattle, WA");
   assert.equal(formatVenueAddress({ street: "800 Occidental Ave S", city: "Seattle", region: "WA", postal: "12", countryCode: "US" })?.text, "800 Occidental Ave S, Seattle, WA");

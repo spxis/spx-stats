@@ -7,7 +7,7 @@ export interface VenueAddressParts {
   city?: string | null;
   /** The state or province abbreviation ("AB", "WA"). */
   region?: string | null;
-  /** A postal or ZIP code, only when a source gave one. The archive holds none today, and one is never worked out from the rest. */
+  /** A postal or ZIP code, only when a source gave one (Wikidata P281, api.venue_info.postal_code). One is never worked out from the rest. */
   postal?: string | null;
   /** The ISO country code ("CA", "US"). */
   countryCode?: string | null;

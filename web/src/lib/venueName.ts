@@ -12,13 +12,13 @@ type Say = Speaker["say"];
 
 /** A name a venue carried and the years it applied; `until` is null for the name now. */
 export interface VenueSpan { name: string; from: number | null; until: number | null; current: boolean }
-/** Capacity, year opened, owner, surface, roof and street address of a venue; any part can be missing. */
-export interface VenueFacts { capacity: number | null; opened: number | null; owner: string | null; surface: string | null; roof: string | null; address: string | null }
+/** Capacity, year opened, owner, surface, roof, street address and postal code of a venue; any part can be missing. */
+export interface VenueFacts { capacity: number | null; opened: number | null; owner: string | null; surface: string | null; roof: string | null; address: string | null; postal: string | null }
 
 const nameRow = z.object({ wikidata_id: z.string(), name: z.string(), from_year: z.number().nullable(), until_year: z.number().nullable(), is_current: z.boolean() });
 const infoRow = z.object({
   wikidata_id: z.string(), capacity: z.number().nullable(), opened_year: z.number().nullable(), owner: z.string().nullable(),
-  surface: z.string().nullable(), roof: z.string().nullable(), address: z.string().nullable(),
+  surface: z.string().nullable(), roof: z.string().nullable(), address: z.string().nullable(), postal_code: z.string().nullable().optional(),
 });
 
 /** A name that starts before the next one ends is cut at the next one's start, so each year has one name. */
@@ -50,15 +50,26 @@ export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> =
   return out;
 });
 
-/** The facts of every home venue, by Wikidata id (api.venue_info, migration 052); empty if the view is missing. */
+const INFO_COLUMNS = "wikidata_id,capacity,opened_year,owner,surface,roof,address";
+
+/**
+ * The facts of every home venue, by Wikidata id (api.venue_info, migration 052; its postal_code column is migration 058, and until that
+ * is on the server the facts come without a postal code); empty if the view is missing.
+ */
 export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> => {
   const out = new Map<string, VenueFacts>();
+  let list: z.infer<typeof infoRow>[] = [];
   try {
-    for (const r of await rows("venue_info", "select=wikidata_id,capacity,opened_year,owner,surface,roof,address&order=wikidata_id", infoRow)) {
-      out.set(r.wikidata_id, { capacity: r.capacity, opened: r.opened_year, owner: r.owner, surface: r.surface, roof: r.roof, address: r.address });
-    }
+    list = await rows("venue_info", `select=${INFO_COLUMNS},postal_code&order=wikidata_id`, infoRow);
   } catch {
-    out.clear();
+    try {
+      list = await rows("venue_info", `select=${INFO_COLUMNS}&order=wikidata_id`, infoRow);
+    } catch {
+      list = [];
+    }
+  }
+  for (const r of list) {
+    out.set(r.wikidata_id, { capacity: r.capacity, opened: r.opened_year, owner: r.owner, surface: r.surface, roof: r.roof, address: r.address, postal: r.postal_code ?? null });
   }
   return out;
 });
@@ -99,12 +110,13 @@ export function factsLine(f: VenueFacts | undefined, say: Say): string | null {
 
 /**
  * A home venue's address in the one format the site uses: the street line from Wikidata, the city and region from api.venue_place,
- * and the country (from the place, else from the coordinates) in the reader's language. Null when none of it is known.
+ * the postal code Wikidata gives (checked when it was loaded, and again here), and the country (from the place, else from the
+ * coordinates) in the reader's language. Null when none of it is known.
  */
 export function placeAddress(at: VenuePlace | undefined, f: VenueFacts | undefined, lat: number | null | undefined, lon: number | null | undefined, say: Say): VenueAddress | null {
   const cc = at?.cc ?? countryAt(lat, lon);
   const key = cc ? COUNTRY_KEY[cc.toUpperCase()] : undefined;
-  return formatVenueAddress({ street: f?.address, city: at?.city, region: at?.region, countryCode: cc, country: key ? say(key) : null });
+  return formatVenueAddress({ street: f?.address, city: at?.city, region: at?.region, postal: f?.postal, countryCode: cc, country: key ? say(key) : null });
 }
 
 /** The lines the map's selection panel adds under a venue: its other names and its facts (the address comes apart, from placeAddress). */
