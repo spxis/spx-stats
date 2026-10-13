@@ -120,3 +120,11 @@ export const teamBrandSchema = z.object({
 
 /** Just the one column the sources page counts award winners by. */
 export const awardSourceSchema = z.object({ source: str });
+
+/** The columns of a playoff game that fix the shape of a season's bracket (who met whom, when, how it went), without names or sources. */
+export const playoffShapeSchema = z.object({
+  game_id: int, year: int, game_date: str, status: str, away_score: intN, home_score: intN, away_f: intN, home_f: intN,
+});
+
+/** A franchise's team seasons: the ids the games view can be read by quickly (its franchise columns are worked out row by row, so filtering on them scans every game). */
+export const teamSeasonIdSchema = z.object({ team_season_id: int, franchise_id: int });
