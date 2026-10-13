@@ -24,6 +24,10 @@ export interface Pin {
   me?: boolean;
   /** The country of the point (US, CA, MX), for the state and province view. */
   cc?: string | null;
+  /** A colour for the dot (a CSS colour or variable), when the page gives its dots their own, such as one per league. */
+  tone?: string;
+  /** A dot for something no longer in use: drawn as a hollow ring, so the difference is in the shape and not only the colour. */
+  defunct?: boolean;
   /** Conference and division as their short names, for the filters. */
   conf?: string | null;
   div?: string | null;

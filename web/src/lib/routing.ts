@@ -27,7 +27,7 @@ export const QUERY_KEYS = [
 
 /** Pages that read no query at all, even on the server: always the static copy, whatever the address carries (the home page and
     the league pages keep their year range and the like in the browser). */
-export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", ...LEAGUE_CODES] as const;
+export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", ...LEAGUE_CODES] as const;
 
 /** The first path segments that start pages with more in their address: anything else is not a page (a typo, a scanner) and is answered, unkept, with the 404. */
 export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city"] as const;

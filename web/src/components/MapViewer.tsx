@@ -52,6 +52,15 @@ function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, host
   return { x: clamp((x0 + x1) / 2 - w / 2, 0, bounds.width - w - pad), y: clamp((y0 + y1) / 2 - h / 2, 0, bounds.height - h), width: w + pad, height: h };
 }
 
+/** The class of a dot: a hollow ring for a defunct one, bigger and ink-filled when it is the chosen one. */
+const pinClass = (t: Pin) => `pin${t.me ? " me" : ""}${t.defunct ? " closed" : ""}`;
+/** The colour of a dot: its own tone, else the conference tone. A defunct dot draws it as the ring's outline instead of the fill. */
+function paint(c: SVGCircleElement, t: Pin, tone?: string) {
+  const color = t.tone ?? tone;
+  c.style.fill = t.defunct || t.me ? "" : color ?? "";
+  c.style.stroke = t.defunct && color && !t.me ? color : "";
+}
+
 const toneKey = (t: Pin) => `${t.conf ?? ""}|${t.div ?? ""}`;
 const HUES = [215, 25, 140, 300];
 const LIGHTS = [36, 54, 70];
@@ -144,10 +153,10 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         a.setAttribute("aria-label", pinText(t));
         const hit = document.createElementNS(NS, "circle"); hit.setAttribute("class", "hit");
         hit.setAttribute("cx", String(t.p[0])); hit.setAttribute("cy", String(t.p[1]));
-        const c = document.createElementNS(NS, "circle"); c.setAttribute("class", t.me ? "pin me" : "pin");
+        const c = document.createElementNS(NS, "circle"); c.setAttribute("class", pinClass(t));
         c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1]));
         const tone = tones.get(toneKey(t));
-        if (tone && !t.me) c.style.fill = tone;
+        paint(c, t, tone);
         a.append(hit, c);
         let img: SVGImageElement | undefined;
         if (t.logo) {
@@ -230,7 +239,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
   useEffect(() => {
     const s = scene.current;
     if (!s || selected == null) return;
-    for (const d of s.dots) { d.t.me = d.t.f === selected; d.c.setAttribute("class", d.t.me ? "pin me" : "pin"); d.c.style.fill = d.t.me ? "" : d.tone ?? ""; }
+    for (const d of s.dots) { d.t.me = d.t.f === selected; d.c.setAttribute("class", pinClass(d.t)); paint(d.c, d.t, d.tone); }
     const me = s.dots.find((d) => d.t.me);
     if (me && zoomToSelected) { view.current.x = me.t.p[0]; view.current.y = me.t.p[1]; }
     apply();

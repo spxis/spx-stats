@@ -43,6 +43,8 @@ test("a bare address is the static copy, in the reader's language", () => {
   assert.equal(route({ path: "/players" }), "/en/s/players");
   assert.equal(route({ path: "/teams" }), "/en/s/teams");
   assert.equal(route({ path: "/cities" }), "/en/s/cities");
+  assert.equal(route({ path: "/venues" }), "/en/s/venues");
+  assert.equal(route({ path: "/venues", query: { league: "nhl", status: "former", nat: "CA" } }), "/en/s/venues");
   assert.equal(route({ path: "/city/vancouver" }), "/en/s/city/vancouver");
 });
 

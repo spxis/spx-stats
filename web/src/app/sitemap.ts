@@ -37,6 +37,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...teamUrls,
     ...teamSeasonUrls,
     ...cityUrls,
-    ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/players", "/terms", "/privacy","/sources", "/quality", "/logos"].map((p) => ({ url: url(p), lastModified })),
+    ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/players", "/terms", "/privacy","/sources", "/quality", "/logos"].map((p) => ({ url: url(p), lastModified })),
   ];
 }

@@ -1,0 +1,23 @@
+/* The venues list (/venues): filters, legend and table around the shared map viewer. Tokens come from globals.css. */
+.venuefind { margin-bottom: 4px; }
+.venuefilters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; }
+.venuefilters select { max-width: 100%; }
+.venuefilters .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.venuefilters .chip { display: inline-flex; align-items: center; gap: 6px; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; }
+.venuefilters .chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
+.venuefilters .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.venuefilters .chip[aria-pressed="true"] i { box-shadow: 0 0 0 1.5px var(--paper); }
+.venuelegend { margin-top: 2px; }
+.venuelegend i.filled { background: var(--ink); }
+.venuelegend i.ring { background: transparent; border: 2px solid var(--ink); }
+.venuetable { margin-top: 14px; }
+.venuetable td.venuename { white-space: normal; min-width: 180px; }
+.venuetable td.venuecity { white-space: nowrap; }
+.venuetable td.venueclubs { min-width: 200px; }
+.venuetable .venuetag { margin-left: 6px; color: var(--muted); font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
+.venuetable .venuenames { display: block; color: var(--muted); font-size: 13px; line-height: 1.3; margin-top: 2px; }
+.venuetable .lgdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
+.venuetable a.ext::after { content: "\2197"; margin-left: 3px; font-size: .85em; }
+@media (max-width: 640px) {
+  .venuefilters select { flex: 1 1 130px; font-size: 14px; padding: 7px 8px; }
+}

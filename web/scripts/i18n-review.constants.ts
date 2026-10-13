@@ -6,6 +6,7 @@
 export const READBACK: Readonly<Record<string, string>> = {
   "nav.teams": "Teams.",
   "nav.players": "Players (the word for an athlete).",
+  "nav.venues": "Home grounds (the word for the place a team is based and plays).",
   "nav.aboutPage": "About this site.",
   "nav.privacy": "Privacy.",
   "nav.terms": "Rules of use (the usual word for terms of service).",

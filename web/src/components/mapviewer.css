@@ -10,6 +10,8 @@
 .teammap.viewer[data-zoomed="1"]:active { cursor: grabbing; }
 .teammap.viewer .pin { vector-effect: non-scaling-stroke; stroke-width: 1.5px; }
 .teammap.viewer .pin.me { vector-effect: non-scaling-stroke; stroke-width: 2px; }
+.teammap.viewer .pin.closed { fill: var(--paper); stroke: var(--accent); stroke-width: 2.5px; }
+.teammap.viewer .pin.closed.me { fill: var(--paper); stroke: var(--ink); stroke-width: 3px; }
 .teammap.viewer .hit { fill: transparent; stroke: none; pointer-events: fill; }
 .teammap.viewer a { outline: none; }
 .teammap.viewer a:focus-visible .pin { stroke: var(--ink); stroke-width: 3px; }

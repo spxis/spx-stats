@@ -15,7 +15,7 @@ import type { Pin } from "@/components/mapDraw";
 import type { TeamPaths } from "./slug";
 
 /** A venue a club used, with the years of the brand eras it was named in and where it stands. */
-export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null; wiki: string | null; extra: string[]; address: string | null; addressHref: string | null }
+export interface VenueStop { wid: string | null; venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null; wiki: string | null; extra: string[]; address: string | null; addressHref: string | null }
 /** A club with a venue on record: its address slug, its latest name and its venues, oldest first. */
 export interface VenueTeam { f: number; slug: string; href: string; name: string; venues: VenueStop[] }
 
@@ -47,7 +47,7 @@ export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPat
         const sp = vp?.wid ? spans.get(vp.wid) : undefined;
         const shown = nameIn(sp, b.brand_from ? Number(b.brand_from.slice(0, 4)) : null, b.home_venue!);
         const adr = placeAddress(vp, vp?.wid ? facts.get(vp.wid) : undefined, b.latitude, b.longitude, say);
-        stops.set(key, { venue: shown, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude),
+        stops.set(key, { wid: vp?.wid ?? null, venue: shown, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude),
           place: vp?.place ?? null, wiki: vp?.wiki ?? null, extra: venueExtra(sp, vp?.wid ? facts.get(vp.wid) : undefined, shown, say),
           address: adr?.text ?? null, addressHref: venueMapsUrl(adr, b.latitude, b.longitude) });
       } else {

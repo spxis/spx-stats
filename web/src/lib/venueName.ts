@@ -13,11 +13,11 @@ type Say = Speaker["say"];
 /** A name a venue carried and the years it applied; `until` is null for the name now. */
 export interface VenueSpan { name: string; from: number | null; until: number | null; current: boolean }
 /** Capacity, year opened, owner, surface, roof, street address and postal code of a venue; any part can be missing. */
-export interface VenueFacts { capacity: number | null; opened: number | null; owner: string | null; surface: string | null; roof: string | null; address: string | null; postal: string | null }
+export interface VenueFacts { capacity: number | null; opened: number | null; closed: number | null; owner: string | null; surface: string | null; roof: string | null; address: string | null; postal: string | null }
 
 const nameRow = z.object({ wikidata_id: z.string(), name: z.string(), from_year: z.number().nullable(), until_year: z.number().nullable(), is_current: z.boolean() });
 const infoRow = z.object({
-  wikidata_id: z.string(), capacity: z.number().nullable(), opened_year: z.number().nullable(), owner: z.string().nullable(),
+  wikidata_id: z.string(), capacity: z.number().nullable(), opened_year: z.number().nullable(), closed_year: z.number().nullable().optional(), owner: z.string().nullable(),
   surface: z.string().nullable(), roof: z.string().nullable(), address: z.string().nullable(), postal_code: z.string().nullable().optional(),
 });
 
@@ -50,7 +50,7 @@ export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> =
   return out;
 });
 
-const INFO_COLUMNS = "wikidata_id,capacity,opened_year,owner,surface,roof,address";
+const INFO_COLUMNS = "wikidata_id,capacity,opened_year,closed_year,owner,surface,roof,address";
 
 /**
  * The facts of every home venue, by Wikidata id (api.venue_info, migration 052; its postal_code column is migration 058, and until that
@@ -69,7 +69,7 @@ export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> =>
     }
   }
   for (const r of list) {
-    out.set(r.wikidata_id, { capacity: r.capacity, opened: r.opened_year, owner: r.owner, surface: r.surface, roof: r.roof, address: r.address, postal: r.postal_code ?? null });
+    out.set(r.wikidata_id, { capacity: r.capacity, opened: r.opened_year, closed: r.closed_year ?? null, owner: r.owner, surface: r.surface, roof: r.roof, address: r.address, postal: r.postal_code ?? null });
   }
   return out;
 });

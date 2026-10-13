@@ -17,7 +17,7 @@ reviewed legal copy.
 Not translated on purpose: team, player and venue names, league codes (NHL, NBA, MLB, NFL, CFL), and the names
 SPX Stats Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia Commons, Vercel, Supabase and GitHub.
 
-## 1. About, Terms, Privacy and the footer (81)
+## 1. About, Terms, Privacy and the footer (82)
 
 | Where a reader meets it | English on the site | French | Japanese | What the Japanese says back | Correction |
 | --- | --- | --- | --- | --- | --- |
@@ -28,6 +28,7 @@ SPX Stats Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wiki
 | Every page: header and footer | Leagues | Ligues | **リーグ** | Leagues. |  |
 | Every page: header and footer | All-time | Historique | **通算** | Total / cumulative (through all years). |  |
 | Every page: header and footer | About SPXN | À propos de SPXN | **SPXNについて** | About SPXN. |  |
+| Every page: header and footer | Venues | Installations | **本拠地** | Home grounds (the word for the place a team is based and plays). |  |
 | Every page: header and footer; About page, /about; Terms page, /terms | Sources | Sources | **情報源** | Information sources. |  |
 | Every page: header and footer; About page, /about; Terms page, /terms | Data quality | Qualité des données | **データの品質** | Quality of the data. |  |
 | Every page: header and footer; About page, /about | Logos | Logos | **ロゴ** | Logos. |  |
