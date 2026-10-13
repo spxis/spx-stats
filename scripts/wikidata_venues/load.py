@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""Load the raw files of scripts/wikidata_venues/fetch.py into legacy_wikidata_venues (migration 049).
-Usage: load.py <raw dir> <YYYY-MM-DD> [--sql-out FILE]     e.g. load.py ~/spx-raw/wikidata_venues/2026-10-12 2026-10-12
+"""Load the raw files of scripts/wikidata_venues/fetch.py into legacy_wikidata_venues (migration 051).
+Usage: load.py <raw dir> <YYYY-MM-DD> [--sql-out FILE]     e.g. load.py ~/Projects/backups/spx-stats/raw/wikidata_venues/2026-10-12 2026-10-12
 Reads PGHOST/PGPORT/PGUSER/PGDATABASE/PGPASSWORD. With --sql-out the SQL is written to FILE instead of run (apply it with
 scripts/mac/ds1-apply.sh). Rerunnable: every venue in the raw files is deleted and loaded again.
 Names come from Wikidata P1448 (official name) and P2561 (name), with their P580/P582 start and end, and from the

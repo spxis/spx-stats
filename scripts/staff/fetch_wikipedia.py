@@ -52,7 +52,7 @@ def get(titles):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--raw", default=os.path.expanduser("~/spx-raw/wikipedia_staff/" + datetime.date.today().isoformat()))
+    ap.add_argument("--raw", default=os.path.expanduser(os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + "/wikipedia_staff/" + datetime.date.today().isoformat()))
     ap.add_argument("--leagues", default="nhl,nba,cfl")
     ap.add_argument("--extra", default="", help="more page titles, separated by |, fetched as well (franchise lists of head coaches)")
     a = ap.parse_args()

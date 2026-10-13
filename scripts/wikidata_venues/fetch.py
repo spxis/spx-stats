@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Fetch the venue items of every club's home venue from Wikidata (CC0), then each venue's English Wikipedia article (CC BY-SA 4.0).
 Every response is saved byte for byte under <out>/ with a line in <out>/manifest.jsonl (file, url, sha256, bytes, fetched_at).
-Usage: fetch.py [out dir]      default ~/spx-raw/wikidata_venues/<today>   (keep it outside the repo)
+Usage: fetch.py [out dir]      default ~/Projects/backups/spx-stats/raw/wikidata_venues/<today> ($SPX_RAW_DIR replaces the root; outside the repo)
 The venue ids come from the database named by PG* variables: the home venues of legacy_team_brand.team_place (--qids FILE
 reads one Q-id per line instead). Wikidata: wbgetentities, 50 ids a request, one request every 2.5 s; Wikipedia: 20 titles a
 request, one every 2.5 s; both back off on 429/503. Resumable: a file that exists is kept, so a rerun only fetches what is missing."""
@@ -13,7 +13,7 @@ args = [a for a in sys.argv[1:]]
 qids_file = None
 if "--qids" in args:
     i = args.index("--qids"); qids_file = args[i + 1]; del args[i:i + 2]
-out = os.path.expanduser(args[0] if args else f"~/spx-raw/wikidata_venues/{date.today().isoformat()}")
+out = os.path.expanduser(args[0] if args else os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + f"/wikidata_venues/{date.today().isoformat()}")
 os.makedirs(out, exist_ok=True)
 manifest = open(os.path.join(out, "manifest.jsonl"), "a")
 

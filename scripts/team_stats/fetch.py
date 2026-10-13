@@ -49,7 +49,7 @@ def main():
     ap.add_argument("--source", required=True, choices=["nhl", "nflverse"])
     ap.add_argument("--raw")
     a = ap.parse_args()
-    raw = a.raw or os.path.expanduser(f"~/spx-raw/team_stats_{a.source}/{datetime.date.today().isoformat()}")
+    raw = a.raw or os.path.expanduser(os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + f"/team_stats_{a.source}/{datetime.date.today().isoformat()}")
     os.makedirs(raw, exist_ok=True)
     last = 0.0
     for name, url in jobs(a.source):

@@ -164,7 +164,7 @@ def captain_rows(text):
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--raw", default=os.path.expanduser("~/spx-raw/wikipedia_staff/2026-10-12"))
+    ap.add_argument("--raw", default=os.path.expanduser(os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + "/wikipedia_staff/2026-10-12"))
     ap.add_argument("--dry-run", action="store_true")
     a = ap.parse_args()
     pages, redirect = {}, {}

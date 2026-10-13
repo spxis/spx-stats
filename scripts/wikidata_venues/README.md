@@ -4,8 +4,8 @@ Name history and basic facts (capacity, year opened, owner, surface, roof, addre
 Sources: Wikidata items (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA 4.0). Never Sports Reference or ESPN.
 Requests use the User-Agent `spx-stats/1.0 (https://spxn.com; john@spxis.com)`, 50 ids or 20 titles per request, one request every 2.5 s.
 
-Tables: `legacy_wikidata_venues.venue` and `.name` (raw, DS1 only, migration 049) feed `core.brand_venue_name` and
-`core.brand_venue_info` (migration 050) through `db/build/193_venue_names.sql`; the site reads the views `api.venue_name` and
+Tables: `legacy_wikidata_venues.venue` and `.name` (raw, DS1 only, migration 051) feed `core.brand_venue_name` and
+`core.brand_venue_info` (migration 052) through `db/build/193_venue_names.sql`; the site reads the views `api.venue_name` and
 `api.venue_info`. A name is placed by its years (`from_year`, `until_year`); a name with no year anywhere is left out (holes are fine).
 `is_current` marks the Wikidata label now.
 
@@ -14,7 +14,7 @@ Tables: `legacy_wikidata_venues.venue` and `.name` (raw, DS1 only, migration 049
 Names only; no credentials besides DS1. The venue ids come from `legacy_team_brand.team_place`, so refresh the team brand data
 first if a club moved. Raw files go outside the repo. On a Mac the DS1 steps go through `scripts/mac/ds1-apply.sh` (dry run first).
 
-    day=$(date +%F); raw=~/spx-raw/wikidata_venues/$day
+    day=$(date +%F); raw=~/Projects/backups/spx-stats/raw/wikidata_venues/$day
     # 1. venue ids (read-only query on DS1 -> one id per line in ids.txt), then the raw files, about 2 minutes
     python3 -I scripts/wikidata_venues/fetch.py --qids ids.txt $raw      # without --qids it reads DS1 itself (PG* variables)
     # 2. raw archive on DS1, then the Dropbox copy

@@ -23,7 +23,7 @@ def main():
     ap.add_argument("--source", required=True, choices=["nhl", "nflverse"])
     ap.add_argument("--raw")
     a = ap.parse_args()
-    raw = a.raw or sorted(glob.glob(os.path.expanduser(f"~/spx-raw/team_stats_{a.source}/*")))[-1]
+    raw = a.raw or sorted(glob.glob(os.path.expanduser(os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + f"/team_stats_{a.source}/*")))[-1]
     if a.source == "nhl":
         rows = []
         for p in sorted(glob.glob(raw + "/*.json")):

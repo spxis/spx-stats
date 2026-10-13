@@ -342,7 +342,7 @@ Then fix forward on `main`, redeploy, and tell John.
 - **Venue names and facts** (every name a home venue carried with its years, plus capacity, opened, owner, surface, roof, address) come
   from Wikidata (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA). Refresh once a year (February) or after a
   rename: the command list is in `scripts/wikidata_venues/README.md`; production gets `core.brand_venue_name` and
-  `core.brand_venue_info` through a data release (item 5), after migration 050 is on production.
+  `core.brand_venue_info` through a data release (item 5), after migration 052 is on production.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
@@ -379,7 +379,8 @@ core rebuild; the release runner runs `select api.refresh();` after each release
 4. **Migrations** (a new table or column): write `db/migrations/NNN_name.sql`, apply it to the working copy, then to
    DS1 (item 8), then to production with the Supabase MCP `apply_migration` (`project_id` above, `name` in snake_case, `query` the file),
    **before** any load. `list_migrations` shows what production has. Numbers 030 and 031 are each used by two files:
-   apply by file name and check `list_migrations` first.
+   apply by file name and check `list_migrations` first. Take the next free number after `git fetch && git rebase origin/main`;
+   `scripts/check_migration_numbers.sh` must pass before push (it allows only the 030 and 031 duplicates).
 5. **Production changes only through data releases.** DS1 is the only place data is written; a release makes production
    match DS1 for the tables you name. Never load, update or delete production by hand.
    - **Prepare:** `python3 -I scripts/release/release.py prepare --title "<what>" --tables core.game,core.team_season [--ticket ..]

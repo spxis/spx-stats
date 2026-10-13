@@ -1,10 +1,11 @@
+-- Applied to DS1 on 2026-10-12 as 050_venue_names, before renumbering to 052 (two agents had both used 049 and 050).
 -- The names a home venue has carried and its basic facts, per Wikidata venue item (the id api.venue_place gives as wikidata_id).
 -- core.brand_venue_name: one row per name with the years it applied (from_year, until_year; a year both names shared is the year of the
 --   change), filled by db/build/193_venue_names.sql from Wikidata (CC0; official name P1448 and name P2561 with start and end time) and,
 --   where Wikidata has no dated names, the "Former names" of the English Wikipedia infobox (CC BY-SA 4.0). is_current marks the name now.
 -- core.brand_venue_info: capacity, year opened, owner, surface, roof and street address from the same Wikidata items.
 -- About 700 and 300 rows (well under 1 MB). On production they are filled by a data release (AGENTS.md section 8, item 5): tables core.brand_venue_name and core.brand_venue_info.
--- The legacy tables the build reads are migration 049 (working copy and DS1 only).
+-- The legacy tables the build reads are migration 051 (working copy and DS1 only).
 
 create table if not exists core.brand_venue_name (
   wikidata_id  text not null,

@@ -1,5 +1,5 @@
 """Keep the exact bytes of every file of a raw folder in legacy_files.raw_archive (replaces rows of the same name).
-Usage: archive_raw.py <name prefix> <raw dir> <YYYY-MM-DD> [--sql-out FILE]     e.g. archive_raw.py wikipedia-staff ~/spx-raw/wikipedia_staff/2026-10-12 2026-10-12
+Usage: archive_raw.py <name prefix> <raw dir> <YYYY-MM-DD> [--sql-out FILE]     e.g. archive_raw.py wikipedia-staff ~/Projects/backups/spx-stats/raw/wikipedia_staff/2026-10-12 2026-10-12
 Name stored: <prefix>/<day>/<path relative to the raw dir>. Reads PGHOST/PGPORT/PGUSER/PGDATABASE. With --sql-out the inserts are written to FILE instead of run (apply it with scripts/mac/ds1-apply.sh)."""
 import hashlib, os, subprocess, sys
 argv = sys.argv[1:]

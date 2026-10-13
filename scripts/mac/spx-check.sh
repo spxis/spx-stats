@@ -81,12 +81,18 @@ check_counts() {
   else line 9 "row counts DS1 vs production: MISMATCH: DS1 [$d] production [$p]; run scripts/sync/compare.py (see scripts/sync/README.md); DS1 first, then production"; fi
 }
 
-for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts; do "$c" & done
+check_migrations() {
+  local out
+  if out=$(bash "$HERE/../check_migration_numbers.sh" 2>&1); then line 10 "$out"
+  else line 10 "migration numbers: MISSING: fix the clash (git fetch && git rebase origin/main, renumber your file): $(echo "$out" | head -n 1)"; fi
+}
+
+for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations; do "$c" & done
 wait
 
 echo "[spx-check] connections on this Mac (claude.ai connectors: the agent checks its own tool list)"
 n=0
-for i in 1 2 3 4 5 6 7 8 9; do
+for i in 1 2 3 4 5 6 7 8 9 10; do
   l=$(cat "$OUT/$i" 2>/dev/null || echo "check $i: MISSING: check did not finish")
   echo "[spx-check] $l"
   case "$l" in *MISSING*) n=$((n + 1));; esac

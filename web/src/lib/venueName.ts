@@ -28,7 +28,7 @@ function settle(spans: VenueSpan[]): VenueSpan[] {
 }
 
 /**
- * The names of every home venue, by Wikidata id (api.venue_place.wikidata_id), oldest first. The view comes with migration 050;
+ * The names of every home venue, by Wikidata id (api.venue_place.wikidata_id), oldest first. The view comes with migration 052;
  * until it is on the server, or if it cannot be read, this is empty and the pages show the venue names they showed before.
  */
 export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> => {
@@ -46,7 +46,7 @@ export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> =
   return out;
 });
 
-/** The facts of every home venue, by Wikidata id (api.venue_info, migration 050); empty if the view is missing. */
+/** The facts of every home venue, by Wikidata id (api.venue_info, migration 052); empty if the view is missing. */
 export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> => {
   const out = new Map<string, VenueFacts>();
   try {

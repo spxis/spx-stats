@@ -1,4 +1,5 @@
--- Raw venue names and facts as published: Wikidata (CC0) venue items and the "Former names" of each venue's English Wikipedia
+-- Applied to DS1 on 2026-10-12 as 049_legacy_wikidata_venues, before renumbering to 051 (two agents had both used 049 and 050).
+-- Raw venue names and facts as published:Wikidata (CC0) venue items and the "Former names" of each venue's English Wikipedia
 -- infobox (CC BY-SA 4.0). For the working copy and DS1 only (production has no legacy_* schemas). Loaded by
 -- scripts/wikidata_venues/load.py from the raw files scripts/wikidata_venues/fetch.py saved; read by db/build/193_venue_names.sql.
 create schema if not exists legacy_wikidata_venues;
