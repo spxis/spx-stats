@@ -117,6 +117,12 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue", "worldcup", "country"]);
 });
 
+test("the drawings of playing surfaces (app/surface/[file]) are no page: the 404 rule leaves them to their route handler", () => {
+  assert.equal(route({ path: "/surface/nfl.en.svg" }), "(none) /surface/nfl.en.svg");
+  assert.equal(route({ path: "/surfaces/nfl.en.svg" }), "/en/q/surfaces/nfl.en.svg");
+  assert.ok(statSync(join(SRC, "app", "surface", "[file]", "route.ts")).isFile());
+});
+
 test("a rewrite's own result is never rewritten again, and the language tree is closed to readers", () => {
   for (const path of ["/en/s/about", "/fr/q/nhl", "/ja/s", "/en"]) assert.equal(route({ path }), `(none) ${path}`);
   const hit = match(hideInternalPaths.source, { decode: decodeURIComponent });

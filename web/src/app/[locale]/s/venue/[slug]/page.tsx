@@ -20,7 +20,6 @@ import { tableOf } from "@/lib/sort";
 import { surfacesFor } from "@/lib/venueDraw";
 import { findVenue, getVenueIndex } from "@/lib/venuePage";
 import "@/components/city.css";
-import "@/components/kyogijo.css";
 import "@/components/venue.css";
 
 // Nothing is drawn at build time: each venue is drawn on its first visit, then kept and revalidated like the rest.
@@ -129,7 +128,8 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
           <div className="venuesurfaces">
             {surfaces.map((s) => (
               <figure key={s.sport} className="venuesurface">
-                <div dangerouslySetInnerHTML={{ __html: s.svg }} />
+                {/* eslint-disable-next-line @next/next/no-img-element -- a small SVG file, not a photo: next/image has nothing to resize */}
+                <img src={s.src} alt={s.alt} width={s.width} height={s.height} loading="lazy" decoding="async" />
                 <figcaption className="note">
                   {s.parkName ? say("venue.surfacePark", { league: leagueName(s.sport), park: s.parkName }) : say("venue.surfaceStd", { league: leagueName(s.sport) })}
                 </figcaption>
@@ -146,7 +146,7 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
             {shown.map(([k, val]) => <div key={k}><dt>{k}</dt><dd>{typeof val === "number" ? String(val) : val}</dd></div>)}
           </dl>
         ) : null}
-        <MapViewer tight pins={[pin]} title={say("venue.mapTitle", { name: v.name })} total={1} note={say("venue.mapNote")} />
+        <MapViewer tight lone pins={[pin]} title={say("venue.mapTitle", { name: v.name })} total={1} note={say("venue.mapNote")} />
       </section>
 
       <p className="note">

@@ -1,8 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { readFileSync } from "node:fs";
 import { KYOGIJO_STYLE, PARKS, PARK_IDS, SPORTS } from "@johnmorrisdotca/kyogijo";
-import { MLB_PARKS, parkIdFor, SURFACE_SPORT } from "../src/lib/venuePark.ts";
+import { MLB_PARKS, parkIdFor, parseSurfaceFile, SURFACE_SPORT, surfaceFileName } from "../src/lib/venuePark.ts";
 
 /** Run in web/: pnpm test:venues */
 
@@ -45,7 +44,15 @@ test("every sport we draw is one kyogijo draws", () => {
   for (const sport of Object.values(SURFACE_SPORT)) assert.ok((SPORTS as readonly string[]).includes(sport), sport);
 });
 
-test("components/kyogijo.css is the stylesheet of the installed kyogijo, so the pages can link it instead of carrying it", () => {
-  const css = readFileSync(new URL("../src/components/kyogijo.css", import.meta.url), "utf8");
-  assert.equal(css.slice(css.indexOf("*/\n") + 3).trim(), KYOGIJO_STYLE.trim(), "copy KYOGIJO_STYLE into src/components/kyogijo.css again");
+test("a surface file name round-trips, and a name that is none is refused", () => {
+  assert.equal(surfaceFileName("nfl", null, "en"), "nfl.en.svg");
+  assert.deepEqual(parseSurfaceFile("nfl.en.svg"), { sport: "nfl", park: null, language: "en" });
+  assert.deepEqual(parseSurfaceFile(surfaceFileName("mlb", "fenway-park", "ja")), { sport: "mlb", park: "fenway-park", language: "ja" });
+  for (const id of PARK_IDS) assert.equal(parseSurfaceFile(surfaceFileName("mlb", id, "en"))?.park, id);
+  for (const bad of ["", "nfl.fr.svg", "nfl-fenway-park.en.svg", "soccer.en.svg", "../mlb.en.svg", "nfl.en.svg/x", "mlb-.en.svg"]) assert.equal(parseSurfaceFile(bad), null, bad);
+});
+
+test("the stylesheet inside a surface file can have its page-only selector cut (venueDraw.ts), so the dark colours follow the browser", () => {
+  assert.ok(KYOGIJO_STYLE.includes("html:not([data-theme=light]) "), "kyogijo changed how its dark colours are chosen: check lib/venueDraw.ts");
+  assert.ok(KYOGIJO_STYLE.includes("@media (prefers-color-scheme:dark)"));
 });

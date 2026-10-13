@@ -60,3 +60,20 @@ export function parkIdFor(names: readonly string[], current: boolean): string | 
   }
   return null;
 }
+
+/**
+ * The file a drawing is served from (`/surface/<name>`): `nfl.en.svg` for a sport's standard surface, `mlb-fenway-park.ja.svg` for a
+ * ballpark's own. The page names a drawing with an <img> instead of carrying the SVG twice (in its HTML and in its data).
+ */
+export function surfaceFileName(sport: SurfaceSport, park: string | null, language: "en" | "ja"): string {
+  return `${park ? `${sport}-${park}` : sport}.${language}.svg`;
+}
+
+/** The sport, park and language a file name stands for, or null when it names none (the caller checks the park against kyogijo's list). */
+export function parseSurfaceFile(name: string): { sport: SurfaceSport; park: string | null; language: "en" | "ja" } | null {
+  const m = /^([a-z]+)(?:-([a-z0-9-]+))?\.(en|ja)\.svg$/.exec(name);
+  if (!m) return null;
+  const sport = Object.values(SURFACE_SPORT).find((s) => s === m[1]);
+  if (!sport || (m[2] && sport !== "mlb")) return null;
+  return { sport, park: m[2] ?? null, language: m[3] as "en" | "ja" };
+}

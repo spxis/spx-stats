@@ -66,8 +66,11 @@ const internal = new RegExp(`^/(?:${LOCALES.join("|")})(?:/|$)`);
 /** True for an address inside the language tree, which the rewrites below must not wrap a second time. */
 export const isInternalPath = (path: string) => internal.test(path);
 
-/** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again). */
-const NOT_A_LOCALE = `(?!(?:${LOCALES.join("|")})(?:/|$))[^/]+`;
+/** First path segments served by a route handler with a dynamic segment (app/surface/[file]); Next matches those after the rewrites, so rule 4 below must leave them alone. */
+export const FILE_ROOTS = ["surface"] as const;
+
+/** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again) or one of FILE_ROOTS. */
+const NOT_A_LOCALE = `(?!(?:${[...LOCALES, ...FILE_ROOTS].join("|")})(?:/|$))[^/]+`;
 
 /** Vercel refuses a route whose has or missing list holds more than this many items. */
 export const MAX_CONDITIONS = 16;

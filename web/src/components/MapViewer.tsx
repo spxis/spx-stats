@@ -39,7 +39,7 @@ interface Scene {
   halo: SVGCircleElement;
 }
 /** A window that holds the points with room to spare, never past the map's edge; short enough to see on a phone and on a laptop. */
-function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, hostHeight: number, minShare: number): MapBox {
+function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, hostHeight: number, minShare: number, centred = false): MapBox {
   const xs = pts.map((p) => p[0]), ys = pts.map((p) => p[1]);
   const x0 = Math.min(...xs), x1 = Math.max(...xs), y0 = Math.min(...ys), y1 = Math.max(...ys);
   const minW = bounds.width * minShare;
@@ -48,7 +48,7 @@ function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, host
   const target = Math.max(natural, Math.min(hostWidth / Math.max(hostHeight, 1), bounds.width / h));
   if (w / h < target) w = Math.min(h * target, bounds.width); else h = Math.min(w / target, bounds.height);
   // leave the strip under the zoom buttons clear of dots
-  const pad = Math.min((52 * w) / Math.max(hostWidth, 1), bounds.width - w);
+  const pad = centred ? 0 : Math.min((52 * w) / Math.max(hostWidth, 1), bounds.width - w);
   return { x: clamp((x0 + x1) / 2 - w / 2, 0, bounds.width - w - pad), y: clamp((y0 + y1) / 2 - h / 2, 0, bounds.height - h), width: w + pad, height: h };
 }
 
@@ -78,8 +78,10 @@ function toneMap(pins: Pin[]): Map<string, string> {
 
 interface View { z: number; x: number; y: number }
 
-export function MapViewer({ pins, title, total, note, onNavigate, bar, selected, onPick, zoomToSelected, tight }: {
+export function MapViewer({ pins, title, total, note, onNavigate, bar, selected, onPick, zoomToSelected, tight, lone }: {
   pins: Pin[]; title: string; total?: number; note?: string; onNavigate?: () => void; bar?: ReactNode;
+  /** The map is of one place (a venue's page): the dot sits in the middle of a window about a region wide (a state or two), which shows its surroundings, not a few kilometres of a coarse outline. Needs `tight`'s one pin; any other count is framed as `tight` does. */
+  lone?: boolean;
   /** The dots are all in one city or area: frame them closely (a window of about 150 km at the least) instead of a region's width. */
   tight?: boolean;
   /** The chosen dot (Pin.f), marked on the map and described in the panel above it (team and venue as links); when given it replaces each pin's own `me`. A dot press then calls onPick instead of following its link. */
@@ -136,7 +138,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       };
       const sel = pick.current.selected;
       const placed = shown.flatMap((t) => { const p = place(t); return p ? [{ ...t, p, me: sel != null ? t.f === sel : t.me }] : []; }).sort((a, b) => (a.me ? 1 : 0) - (b.me ? 1 : 0));
-      const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, host.clientHeight, tight ? (stateView ? 0.05 : 0.004) : stateView ? 0.18 : 0.06) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
+      const alone = !!lone && placed.length === 1;
+      const base = placed.length ? fitBox(placed.map((t) => t.p), bounds, host.clientWidth, host.clientHeight, alone ? (stateView ? 0.14 : 0.05) : tight ? (stateView ? 0.05 : 0.004) : stateView ? 0.18 : 0.06, alone) : { x: 0, y: 0, width: bounds.width, height: bounds.width / 1.7 };
       host.innerHTML = drawChizu(map, { tones: stateView ? {} : { US: "faint", CA: "faint", MX: "faint" }, language: locale === "ja" ? "ja" : "en", style: true });
       const svg = host.querySelector("svg");
       if (!svg) return;
