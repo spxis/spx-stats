@@ -43,7 +43,7 @@ export default guard(async function CountryPage({ params }: PageProps<"/[locale]
   if (!leagueRows?.length) {
     return (
       <>
-        <section className="head fade"><h1 className="cityname">{name}<Flag code={code} /></h1><p className="lede">{say("country.countryNone", { name })}</p></section>
+        <section className="head fade"><h1 className="cityname">{name}<Flag code={code} /></h1><p className="lede">{leagueRows ? say("country.countryNone", { name }) : say("country.notLoaded")}</p></section>
         <p className="note"><Link href="/countries">{say("country.allLink")}</Link></p>
       </>
     );

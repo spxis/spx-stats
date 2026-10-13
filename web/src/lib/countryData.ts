@@ -7,7 +7,7 @@ import type { FranchiseCount, LeagueCount, SeasonCount, TeamSeasonCount } from "
 import { HATA_SHAPE, type FlagShape } from "./flagSvg";
 
 /**
- * The reads behind the country pages (api.country_team_season, country_season, country_league, country_franchise: migration 065).
+ * The reads behind the country pages (api.country_team_season, country_season, country_league, country_franchise: migration 067).
  * Until that migration is on the database the views answer 4xx; every read then gives null and the page leaves its country section out,
  * so a missing view is never a "Couldn't load". A busy database (5xx) is still an ApiError, which the pages' guard turns into the note.
  */

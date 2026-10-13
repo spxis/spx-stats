@@ -13,7 +13,7 @@ import "@/components/country.css";
 const KEEP = 6;
 
 /**
- * "Where the players come from" on a franchise's page (migration 065's views; the section is left out while they are missing): a donut of everyone
+ * "Where the players come from" on a franchise's page (migration 067's views; the section is left out while they are missing): a donut of everyone
  * who played for the club by country, a world map of the same, the countries over the seasons as a stacked area, and the country ranker over all its
  * seasons. A country in the map links to its page (every league's players from there).
  */
