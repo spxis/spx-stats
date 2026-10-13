@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { sayFor, type Say } from "@/lib/seriesCopy";
+import { roundSay } from "@/lib/roundWords";
+import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
 import type { Bracket, Box } from "@/lib/bracket";
 import { loadPlayoffs } from "@/lib/playoffs";
@@ -28,7 +29,7 @@ export function SeriesCard({ paths, lg, s, brands, year, say }: { paths: TeamPat
           <b>{num(i)}</b>
         </span>
       ))}
-      <span className="sermeta">{goals ? say("card.totalScore") : single ? say("card.oneGame") : say("card.games", { count: s.games.length })}{s.winner == null ? say("card.notSettled") : ""}</span>
+      <span className="sermeta">{goals ? say("card.totalScore") : single ? say("card.oneGame") : say("card.games", { count: s.games.filter((g) => g.played).length })}{s.live ? say("card.live") : s.winner == null ? say("card.notSettled") : ""}</span>
     </Link>
   );
 }
@@ -59,7 +60,7 @@ function BracketBox({ paths, lg, year, s, brands, say, pos, top, dim }: { paths:
 /** The playoff bracket of a season: one half down each side (the conferences where the alignment data splits them), the final in the middle. Draws nothing when there are no playoff games. */
 export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
-  const say = sayFor(sp);
+  const say = roundSay(sp);
   const [{ series, names, bracket, brands, align }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
   if (!series.length) return null;
   const rounds = names.length;

@@ -30,6 +30,7 @@
     "test:lineage": "node --test scripts/lineage.test.ts",
     "test:provenance": "node --test scripts/provenance.test.ts",
     "test:path": "node --test scripts/playoffPath.test.ts",
+    "test:series": "node --test scripts/series.test.ts",
     "test:flow": "node --test scripts/rosterFlow.test.ts",
     "test:coaches": "node --test scripts/coachMoves.test.ts",
     "test:positions": "node --test scripts/positions.test.ts",

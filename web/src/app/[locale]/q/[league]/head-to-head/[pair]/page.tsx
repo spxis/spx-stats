@@ -332,9 +332,9 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const meetings: PlayoffMeeting[] = phase === "regular" ? [] : playoffMeetings(lg, d.history, a, b).filter((m) => year == null || m.year === year);
   const seriesTable = tableOf(meetings, [
     { key: "season", label: say("col.season"), cls: "seasoncell", get: (m: PlayoffMeeting) => m.year, cell: (m: PlayoffMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
-    { key: "winner", label: say("past.winner"), cls: "team", get: (m: PlayoffMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PlayoffMeeting) => (m.s.winner == null ? "–" : <span className="won">{m.s.sides[0].name}</span>) },
+    { key: "winner", label: say("past.winner"), cls: "team", get: (m: PlayoffMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PlayoffMeeting) => (m.s.winner == null ? (m.s.live ? say("past.inProgress") : "–") : <span className="won">{m.s.sides[0].name}</span>) },
     { key: "result", label: say("past.result"), num: true, get: (m: PlayoffMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PlayoffMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
-    { key: "games", label: say("col.gp"), num: true, get: (m: PlayoffMeeting) => m.s.games.length },
+    { key: "games", label: say("col.gp"), num: true, get: (m: PlayoffMeeting) => m.s.games.filter((g) => g.played).length },
   ], (m) => `${m.year}-${m.s.meeting}`);
   const aSeries = meetings.filter((m) => m.s.winner != null && m.s.sides[0].f === a).length, bSeries = meetings.filter((m) => m.s.winner != null && m.s.sides[0].f === b).length;
 

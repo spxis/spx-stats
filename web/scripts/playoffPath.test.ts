@@ -7,8 +7,10 @@ import type { Series } from "../src/lib/series.ts";
 // A series with the winner first, as deriveSeries gives them.
 const ser = (w: number, l: number, decided = true): Series => ({
   league: "nhl", year: 2020, sides: [{ f: w, id: w, name: `T${w}`, wins: 4, scored: 0 }, { f: l, id: l, name: `T${l}`, wins: 1, scored: 0 }],
-  games: [], ties: 0, winner: decided ? 0 : null, basis: "wins", start: "2021-04-01", end: "2021-04-10", meeting: 1,
+  games: [], ties: 0, winner: decided ? 0 : null, live: false, bestOf: 7, needed: 4, remaining: 0, next: null, basis: "wins", start: "2021-04-01", end: "2021-04-10", meeting: 1,
 });
+/** A series still being played: nobody has won it, the side ahead is first. */
+const playing = (a: number, b: number): Series => ({ ...ser(a, b, false), live: true, remaining: 5, next: "2021-04-12" });
 const club = (f: number) => ({ f, place: f });
 const clubs = [1, 2, 3, 4, 5, 6].map(club);
 
@@ -60,6 +62,17 @@ test("no champion when the final is not decided, or the last round holds several
 test("round-robin games (round 0) are not part of the bracket", () => {
   const g = pathGraph([ser(1, 2), ser(1, 2)], [0, 1], [1, 2].map(club), 1);
   assert.equal(g.nodes.filter((n) => n.kind === "series").length, 1);
+});
+
+test("a series still being played crowns nobody and knocks nobody out: both bands stop in it and no title band is drawn", () => {
+  const g = pathGraph([ser(1, 4), ser(2, 3), playing(1, 2)], [1, 1, 2], clubs, 2);
+  assert.equal(g.champion, null);
+  assert.ok(!g.nodes.some((n) => n.id === CHAMPION));
+  assert.ok(!g.links.some((l) => l.kind === "title"));
+  // Both clubs carry their earlier wins into the open series and end their band there: neither has gone on, and neither is out.
+  assert.deepEqual(g.routes.find((r) => r.f === 1)?.nodes, [teamId(1), IN, seriesId(0), seriesId(2)]);
+  assert.deepEqual(g.routes.find((r) => r.f === 2)?.nodes, [teamId(2), IN, seriesId(1), seriesId(2)]);
+  assert.equal(g.links.filter((l) => l.source === seriesId(2)).length, 0);
 });
 
 test("a club that played but has no standings row still gets a block", () => {

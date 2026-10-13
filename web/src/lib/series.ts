@@ -4,9 +4,10 @@
  * Pure (no server-only imports) so the pages, the charts and the checks all use the same counting.
  */
 import type { GameRow } from "./api/types";
-import { LG, type LeagueCode } from "./leagues";
-import type { Say } from "./seriesCopy";
-import { seasonPath, type TeamPaths } from "./slug";
+import { LG, type LeagueCode } from "./leagues.ts";
+import { bestOfFromGames, bestOfIn, roundKeys, winsNeeded, type RoundKey } from "./playoffFormat.ts";
+import type { Say, SeriesKey } from "./seriesCopy.ts";
+import { seasonPath, type TeamPaths } from "./slug.ts";
 
 /** The columns of a game a series needs. */
 export type PlayoffGame = Pick<GameRow, "game_id" | "game_date" | "status" | "away_id" | "away" | "away_score" | "home_id" | "home" | "home_score" | "overtime" | "source" | "away_f" | "home_f" | "checked">;
@@ -33,6 +34,10 @@ export interface SeriesGame {
   /** What each side scored (null with no result). */
   score: [number | null, number | null];
   ot: boolean;
+  /** Whether it has been played (a final result on record); a game still to come has no score. */
+  played: boolean;
+  /** A game still to come that is not needed yet: the series cannot reach it before the games ahead of it are played. */
+  ifNeeded: boolean;
   /** The side that won it; null for a tie or no result. */
   winner: 0 | 1 | null;
   /** Wins of each side after this game. */
@@ -44,12 +49,26 @@ export interface SeriesGame {
 export interface Series {
   league: string;
   year: number;
-  /** The winner first; for a series nobody has won (yet, or in the data), the lower franchise id first. */
+  /**
+   * The winner first; a series still being played has the side ahead first (the lower franchise id when level), and a series
+   * nobody has won in the data has the lower franchise id first.
+   */
   sides: [SeriesSide, SeriesSide];
+  /** The games played, and (while the series is in progress) the games still to come. */
   games: SeriesGame[];
   ties: number;
-  /** The side that won it, or null when the games do not settle it. */
+  /** The side that won it. Null while the series is in progress, and when the games do not settle it. */
   winner: 0 | 1 | null;
+  /** Still being played: games remain and neither side has the wins needed. It has no winner, and nobody is out. */
+  live: boolean;
+  /** Games the series is played to (best of N): the round's known format, else read off the games it has. */
+  bestOf: number;
+  /** Wins that settle it: half of N, rounded up. */
+  needed: number;
+  /** Games still to come (0 once the series is decided). */
+  remaining: number;
+  /** The date of the next game still to come, while the series is in progress. */
+  next: string | null;
   /** How it was settled: more games won, or (a total-goals series) more goals over the games. */
   basis: "wins" | "goals" | null;
   start: string;
@@ -74,15 +93,44 @@ const dayNumber = (d: string) => Date.parse(`${d}T00:00:00Z`) / 86_400_000;
 const byDate = (x: { game_date: string; game_id: number }, y: { game_date: string; game_id: number }) =>
   x.game_date < y.game_date ? -1 : x.game_date > y.game_date ? 1 : x.game_id - y.game_id;
 
-/** One series from the games of a pair (any order), or null when the list has none between two known franchises. */
-export function buildSeries(league: string, year: number, games: readonly PlayoffGame[], meeting = 1): Series | null {
+/** A scheduled game this many days older than the latest result in the data was never played (a series the data cut short); it is left out. */
+const STALE_DAYS = 7;
+
+export interface SeriesOptions {
+  /** The games the series is played to, when the round's format is known; otherwise it is read off the games listed. */
+  bestOf?: number | null;
+  /** The date of the latest result of the season (or of the games given, if omitted): older unplayed games are ignored. */
+  asOf?: string | null;
+}
+
+const latestResult = (games: readonly PlayoffGame[]): string | null =>
+  games.reduce<string | null>((m, g) => (g.status === "final" && (m == null || g.game_date > m) ? g.game_date : m), null);
+
+/**
+ * One series from the games of a pair (any order), or null when the list has none between two known franchises.
+ *
+ * A series is decided when a side has the wins needed (best of N needs half of N rounded up), or when no game is left to
+ * play. Until then it is in progress (`live`): it has no winner, nobody is out, and the games still to come are listed.
+ */
+export function buildSeries(league: string, year: number, games: readonly PlayoffGame[], meeting = 1, opts: SeriesOptions = {}): Series | null {
   const list = games.filter((g) => g.home_f != null && g.away_f != null && g.home_f !== g.away_f).sort(byDate);
   if (!list.length) return null;
   const f0 = Math.min(list[0].home_f!, list[0].away_f!), f1 = Math.max(list[0].home_f!, list[0].away_f!);
-  const mine = list.filter((g) => Math.min(g.home_f!, g.away_f!) === f0 && Math.max(g.home_f!, g.away_f!) === f1);
-  if (!mine.length) return null;
+  const pair = list.filter((g) => Math.min(g.home_f!, g.away_f!) === f0 && Math.max(g.home_f!, g.away_f!) === f1);
+  if (!pair.length) return null;
+
+  // Games with a result, and games still to come. A cancelled game, and a scheduled one long past the season's latest result, are neither.
+  const asOf = opts.asOf ?? latestResult(list);
+  const fresh = (g: PlayoffGame) => g.status === "scheduled" && (asOf == null || dayNumber(g.game_date) >= dayNumber(asOf) - STALE_DAYS);
+  const finals = pair.filter((g) => g.status === "final");
+  const pending = pair.filter(fresh);
+  if (!finals.length && !pending.length) return null;
+
+  const bestOf = opts.bestOf ?? bestOfFromGames(finals.length + pending.length);
+  const needed = winsNeeded(bestOf);
+
   const nameOf = (f: number) => {
-    const g = mine.find((x) => x.home_f === f) ?? mine.find((x) => x.away_f === f)!;
+    const g = pair.find((x) => x.home_f === f) ?? pair.find((x) => x.away_f === f)!;
     return g.home_f === f ? { id: g.home_id, name: g.home ?? `Team ${f}` } : { id: g.away_id, name: g.away ?? `Team ${f}` };
   };
   const base = (f: number): SeriesSide => ({ f, ...nameOf(f), wins: 0, scored: 0 });
@@ -90,52 +138,78 @@ export function buildSeries(league: string, year: number, games: readonly Playof
   const idx = (f: number): 0 | 1 => (f === sides[0].f ? 0 : 1);
 
   let ties = 0;
-  for (const g of mine) {
-    if (g.status !== "final" || g.home_score == null || g.away_score == null) continue;
+  for (const g of finals) {
+    if (g.home_score == null || g.away_score == null) continue;
     const h = idx(g.home_f!), a = idx(g.away_f!);
     sides[h].scored += g.home_score;
     sides[a].scored += g.away_score;
     if (g.home_score > g.away_score) sides[h].wins++; else if (g.home_score < g.away_score) sides[a].wins++; else ties++;
   }
+  const clinched = Math.max(sides[0].wins, sides[1].wins) >= needed;
+  const live = pending.length > 0 && !clinched;
+
   let winner: 0 | 1 | null = null;
   let basis: Series["basis"] = null;
-  if (sides[0].wins !== sides[1].wins) { winner = sides[0].wins > sides[1].wins ? 0 : 1; basis = "wins"; }
-  else if (totalGoalsEra(league, year) && sides[0].scored !== sides[1].scored && sides[0].wins + sides[1].wins + ties > 0) { winner = sides[0].scored > sides[1].scored ? 0 : 1; basis = "goals"; }
-  // Counted in franchise order above; from here on the winner is side 0.
-  if (winner === 1) { sides = [sides[1], sides[0]]; winner = 0; }
+  if (!live) {
+    if (sides[0].wins !== sides[1].wins) { winner = sides[0].wins > sides[1].wins ? 0 : 1; basis = "wins"; }
+    else if (totalGoalsEra(league, year) && sides[0].scored !== sides[1].scored && sides[0].wins + sides[1].wins + ties > 0) { winner = sides[0].scored > sides[1].scored ? 0 : 1; basis = "goals"; }
+  }
+  // Counted in franchise order above; from here on the winner (or, in progress, the side ahead) is side 0.
+  if (winner === 1 || (live && sides[1].wins > sides[0].wins)) sides = [sides[1], sides[0]];
+  if (winner === 1) winner = 0;
 
+  // A decided series lists the games played; one in progress lists the games to come as well.
+  const shown = (live ? [...finals, ...pending] : finals).sort(byDate);
+  const leaderWins = Math.max(sides[0].wins, sides[1].wins);
+  const lastNeeded = finals.length + Math.max(needed - leaderWins, 0);
   const out: SeriesGame[] = [];
   const run: [number, number] = [0, 0];
-  mine.forEach((g, i) => {
+  shown.forEach((g, i) => {
     const homeIdx = idx(g.home_f!);
-    const fin = g.status === "final" && g.home_score != null && g.away_score != null;
+    const played = g.status === "final";
+    const fin = played && g.home_score != null && g.away_score != null;
     const score: [number | null, number | null] = [null, null];
     if (fin) { score[homeIdx] = g.home_score; score[idx(g.away_f!)] = g.away_score; }
     let w: 0 | 1 | null = null;
     if (fin && g.home_score !== g.away_score) w = (g.home_score! > g.away_score!) === (homeIdx === 0) ? 0 : 1;
     if (w != null) run[w]++;
-    out.push({ id: g.game_id, date: g.game_date, n: i + 1, home: homeIdx, score, ot: !!g.overtime, winner: w, run: [run[0], run[1]], source: g.source, checked: g.checked });
+    out.push({ id: g.game_id, date: g.game_date, n: i + 1, home: homeIdx, score, ot: !!g.overtime, played, ifNeeded: !played && i + 1 > lastNeeded, winner: w, run: [run[0], run[1]], source: g.source, checked: g.checked });
   });
   return {
     league, year, sides, games: out, ties,
     winner,
+    live,
+    bestOf, needed,
+    remaining: live ? pending.length : 0,
+    next: live ? pending[0].game_date : null,
     basis,
-    start: mine[0].game_date, end: mine[mine.length - 1].game_date, meeting,
+    start: shown[0].game_date, end: shown[shown.length - 1].game_date, meeting,
   };
 }
 
-/** One pair's games split into the separate series they make up (a long gap starts a new one), in the order played. */
-export function meetingsOf(league: string, year: number, games: readonly PlayoffGame[]): Series[] {
+/** One pair's games split into the games of each separate series (a long gap starts a new one), in the order played. */
+function splitMeetings(games: readonly PlayoffGame[]): PlayoffGame[][] {
   const list = games.filter((g) => g.home_f != null && g.away_f != null && g.home_f !== g.away_f).sort(byDate);
   const groups: PlayoffGame[][] = [];
   for (const g of list) {
     const last = groups.at(-1);
     if (last && dayNumber(g.game_date) - dayNumber(last[last.length - 1].game_date) <= SERIES_GAP_DAYS) last.push(g); else groups.push([g]);
   }
-  return groups.map((l, i) => buildSeries(league, year, l, i + 1)).filter((s): s is Series => s != null);
+  return groups;
 }
 
-/** Every series of a season's playoff games, in the order they began. A game with no result does not make a series. */
+/** One pair's games split into the separate series they make up (a long gap starts a new one), in the order played. */
+export function meetingsOf(league: string, year: number, games: readonly PlayoffGame[], asOf?: string | null): Series[] {
+  return splitMeetings(games).map((l, i) => buildSeries(league, year, l, i + 1, { asOf })).filter((s): s is Series => s != null);
+}
+
+const bySeries = (a: Series, b: Series) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.end < b.end ? -1 : a.end > b.end ? 1 : a.sides[0].f - b.sides[0].f);
+
+/**
+ * Every series of a season's playoff games, in the order they began. A game with no result does not make a series.
+ * Each series is first read with the games it has; then, once the rounds are known, a round with a known format
+ * (best of 5, best of 7) settles its series by that format.
+ */
 export function deriveSeries(league: string, year: number, games: readonly PlayoffGame[]): Series[] {
   const by = new Map<string, PlayoffGame[]>();
   for (const g of games) {
@@ -144,9 +218,25 @@ export function deriveSeries(league: string, year: number, games: readonly Playo
     const l = by.get(k);
     if (l) l.push(g); else by.set(k, [g]);
   }
-  const out: Series[] = [];
-  for (const list of by.values()) out.push(...meetingsOf(league, year, list).filter((s) => s.games.some((g) => g.winner != null || g.score[0] != null)));
-  return out.sort((a, b) => (a.start < b.start ? -1 : a.start > b.start ? 1 : a.end < b.end ? -1 : a.end > b.end ? 1 : a.sides[0].f - b.sides[0].f));
+  const asOf = latestResult(games);
+  const parts: { games: PlayoffGame[]; meeting: number; s: Series }[] = [];
+  for (const list of by.values()) {
+    splitMeetings(list).forEach((g, i) => {
+      const s = buildSeries(league, year, g, i + 1, { asOf });
+      if (s && s.games.some((x) => x.winner != null || x.score[0] != null)) parts.push({ games: g, meeting: i + 1, s });
+    });
+  }
+  parts.sort((x, y) => bySeries(x.s, y.s));
+  const first = parts.map((p) => p.s);
+  const plan = planRounds(league, year, first, true);
+  const keys = plan.keys;
+  if (!keys) return first;
+  return parts.map((p, i) => {
+    const key = keys[plan.round[i] - 1];
+    const known = key ? bestOfIn(league, year, key) : null;
+    if (known == null || known === p.s.bestOf) return p.s;
+    return buildSeries(league, year, p.games, p.meeting, { asOf, bestOf: known }) ?? p.s;
+  });
 }
 
 /** The 2019-20 NHL restart seeded each conference with a round robin of single games; they are not part of the bracket (round 0). */
@@ -193,14 +283,44 @@ export function roundName(lg: string, year: number, round: number, rounds: numbe
   return say("round.n", { n: round });
 }
 
-/** Every series with its round (0 for a round robin), the names of the rounds 1..n (the last is the final only when it holds one series), and the number of the final (0 when the last round holds more than one series). */
-export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[]; final: number } {
+/**
+ * The rounds of a season: the round of each series (0 for a round robin), what each round is called (`keys`, round 1 first, null when the
+ * league's format table has no row for this many rounds), and the number of the final (0 when the last round holds more than one series, or
+ * is not the league's last round: a season still in its early rounds has no final yet).
+ */
+export function planRounds(lg: string, year: number, list: readonly Series[], assumeOpen = false): { round: number[]; keys: RoundKey[] | null; final: number; single: boolean } {
   const round = assignRounds(list, (s) => isRobin(lg, year, s));
   const count = Math.max(0, ...round);
-  const finals = round.filter((r) => r === count).length;
-  const names = Array.from({ length: count }, (_, i) => (finals === 1 ? roundName(lg, year, i + 1, count, say) : say("round.n", { n: i + 1 })));
-  return { round, names, final: finals === 1 ? count : 0 };
+  const last = list.filter((_, i) => round[i] === count);
+  const single = last.length === 1;
+  // Settled: the one series of the last round is decided and nothing else is being played. Otherwise more rounds may follow.
+  // (`assumeOpen`: the series have only been read off their own games so far, so a lead that looks decided may not be.)
+  const open = assumeOpen || !(single && !last[0].live) || list.some((s) => s.live);
+  const keys = count ? roundKeys(lg, year, count, single, open) : null;
+  const isFinal = single && (keys ? keys[count - 1] === "final" : true);
+  return { round, keys, final: isFinal ? count : 0, single };
 }
+
+/** Every series with its round (0 for a round robin), the names of the rounds 1..n, and the number of the final (0 when there is none yet). */
+export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[]; final: number } {
+  const { round, keys, final, single } = planRounds(lg, year, list);
+  const count = Math.max(0, ...round);
+  const names = Array.from({ length: count }, (_, i) => {
+    const key = keys?.[i];
+    if (key) return key === "final" ? finalName(lg, year, say) : say(ROUND_WORD[key]);
+    return single ? roundName(lg, year, i + 1, count, say) : say("round.n", { n: i + 1 });
+  });
+  return { round, names, final };
+}
+
+/** The series word that names each round of the format table. */
+const ROUND_WORD: Record<Exclude<RoundKey, "final">, SeriesKey> = {
+  first: "round.first", second: "round.second", prelim: "round.prelim", qual: "round.qual", quarters: "round.quarters", semis: "round.semis",
+  divSemis: "round.divSemis", divFinals: "round.divFinals", confQuarters: "round.confQuarters", confSemis: "round.confSemis",
+  confFinal: "round.confFinal", confFinals: "round.confFinals", scSemis: "round.scSemis", tiebreak: "round.tiebreak", wcGame: "round.wcGame",
+  wcSeries: "round.wcSeries", ds: "round.ds", lcs: "round.lcs", wildcard: "round.wildcard", divisional: "round.divisional",
+  confChamp: "round.confChamp", cflSemi: "round.cflSemi", cflFinal: "round.cflFinal",
+};
 
 /** The calendar year a series was played in: its last game's (a Super Bowl or a spring final of a split-year season falls in the second year). */
 export const playedYear = (s: Pick<Series, "end">): number => Number(s.end.slice(0, 4));

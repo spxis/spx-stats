@@ -23,7 +23,8 @@ import { LOCALE_TAG } from "@/lib/locale";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
 import { datedRound, datePath, describeRounds, deriveSeries, nickname, playedYear, rankIn, roundPath, roundTitle as nameOfRound, scoreText, scoreWords, seriesPath, type Series } from "@/lib/series";
-import { SERIES_COPY, sayFor, type Say } from "@/lib/seriesCopy";
+import { roundSay } from "@/lib/roundWords";
+import { SERIES_COPY, type Say } from "@/lib/seriesCopy";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { loadPastMeetings, type PastMeeting } from "@/lib/playoffs";
 import { getPairGames, getPlayoffGames, getSeasonStandings } from "@/lib/seriesData";
@@ -64,15 +65,17 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   if (!p) return {};
   const [d, sp, paths] = await Promise.all([load(league, y, p.a, p.b, p.meeting), currentSpeaker(), getPaths()]);
   if (!d.series) return { robots: { index: false } };
-  const say = sayFor(sp);
+  const say = roundSay(sp);
   const s = d.series, [a, b] = s.sides;
   const { title: round, dated } = roundOf(league, y, d.all, s, say, sp.say("playoffs.robin"));
   const season = seasonLabel(league, y);
   return pageMeta({
     title: say("page.metaTitle", { a: a.name, b: b.name, round: dated }),
-    description: s.winner == null
-      ? say("page.metaMet", { a: a.name, b: b.name, season, round })
-      : say("page.metaBeat", { a: a.name, b: b.name, score: scoreWords(s, say), season, round }),
+    description: s.live
+      ? say(a.wins === b.wins ? "page.metaLevel" : "page.metaLive", { a: a.name, b: b.name, x: a.wins, y: b.wins, season, round })
+      : s.winner == null
+        ? say("page.metaMet", { a: a.name, b: b.name, season, round })
+        : say("page.metaBeat", { a: a.name, b: b.name, score: scoreWords(s, say), season, round }),
     path: seriesPath(paths, league, y, s),
     locale: sp.locale,
   });
@@ -137,10 +140,11 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   const [d, summary, sp, paths] = await Promise.all([load(lg, y, p.a, p.b, p.meeting), getSummary(), currentSpeaker(), getPaths()]);
   if (!d.series) notFound();
   const s = d.series;
-  // One address per series: the winner first, the teams by that season's names.
-  if (seriesPath(paths, lg, y, s) !== `/${lg}/${year}/series/${pair}`) permanentRedirect(seriesPath(paths, lg, y, s));
+  // One address per decided series: the winner first, the teams by that season's names. A series in progress has no winner yet, so it answers at either order
+  // (redirecting for good while the lead changes hands would leave a visitor's browser with the wrong address).
+  if (!s.live && seriesPath(paths, lg, y, s) !== `/${lg}/${year}/series/${pair}`) permanentRedirect(seriesPath(paths, lg, y, s));
 
-  const say = sayFor(sp), { fmt, dt } = sp;
+  const say = roundSay(sp), { fmt, dt } = sp;
   const { title: roundTitle, dated: roundDated, number, rounds } = roundOf(lg, y, d.all, s, say, sp.say("playoffs.robin"));
   const lastRound = d.all.filter((x) => roundOf(lg, y, d.all, x, say, "").number === rounds).length;
   const [A, B] = s.sides;
@@ -159,19 +163,24 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   };
 
   const settled = s.winner != null;
+  const played = s.games.filter((g) => g.played).length;
   const n = s.games.length;
+  const level = A.wins === B.wins;
   const verdict =
-    !settled ? say("verdict.unsettled")
+    s.live ? say(level ? "games.tied" : "games.lead", { team: na, a: fmt(A.wins), b: fmt(B.wins) })
+    : !settled ? say("verdict.unsettled")
       : s.basis === "goals" ? say("verdict.total", { team: na })
         : single ? say("verdict.one", { team: na })
           : B.wins === 0 ? say("verdict.sweep", { team: na }) : say("verdict.inN", { team: na, count: fmt(n) });
-  const lede = !settled
+  const lede = s.live
+    ? say(level ? "page.ledeLevel" : "page.ledeLive", { a: A.name, b: B.name, x: fmt(A.wins), y: fmt(B.wins), season, round: roundTitle, date: dt.full(atUtc(s.next!)) })
+    : !settled
     ? say("page.ledeUnsettled", { a: A.name, b: B.name, season, round: roundTitle })
     : single
       ? say("page.ledeOne", { a: A.name, b: B.name, score: scoreText(s), season, round: roundTitle, date: dt.full(atUtc(s.end)) })
       : say("page.ledeMany", { a: A.name, b: B.name, words: scoreWords(s, say), season, round: roundTitle, from: dt.monthDayShort(atUtc(s.start)), to: dt.full(atUtc(s.end)) });
 
-  const chartGames = s.games.map((g) => ({ n: g.n, date: g.date, score: g.score, winner: g.winner, ot: g.ot, run: g.run }));
+  const chartGames = s.games.filter((g) => g.played).map((g) => ({ n: g.n, date: g.date, score: g.score, winner: g.winner, ot: g.ot, run: g.run }));
   const extra = say(lg === "mlb" ? "extras" : "ot");
   const sources = [...new Set(s.games.map((g) => g.source))];
 
@@ -201,7 +210,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   const pastTable = tableOf(past ?? [], [
     { key: "season", label: sp.say("past.season"), cls: "seasoncell", get: (m: PastMeeting) => m.year, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
     { key: "round", label: sp.say("past.round"), cls: "team", get: (m: PastMeeting) => m.n, cell: (m: PastMeeting) => <Link href={roundPath(lg, m.year, m.n)} prefetch={false}>{m.round}</Link> },
-    { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? "–" : <span className="won">{m.s.sides[0].name}</span>) },
+    { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? (m.s.live ? sp.say("past.inProgress") : "–") : <span className="won">{m.s.sides[0].name}</span>) },
     { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
   ], (m) => `${m.year}-${m.s.meeting}`);
   const mets = metrics(say, unit, ra, rb);
@@ -242,7 +251,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
             <b className={`n b${s.winner === 1 ? " w" : ""}`}>{single ? s.games[0].score[1] ?? "–" : s.basis === "goals" ? B.scored : B.wins}</b>
           </div>
           <span className="verdict">{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={36} shape="circle" /> : null}{verdict}</span>
-          <span className="sdnote">{s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })}</span>
+          <span className="sdnote">{s.live ? say("verdict.noteLive", { bestOf: fmt(s.bestOf), played: fmt(played) }) : s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })}</span>
         </div>
         {side(1)}
       </section>
@@ -255,9 +264,13 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
             const awayIdx: 0 | 1 = g.home === 0 ? 1 : 0;
             const run = g.run;
             const hi = Math.max(...run), lo = Math.min(...run);
-            const lead = run[0] === run[1]
-              ? say("games.tied", { a: fmt(run[0]), b: fmt(run[1]) })
-              : say(g.n === n && settled ? "games.win" : "games.lead", { team: run[0] > run[1] ? na : nb, a: fmt(hi), b: fmt(lo) });
+            const lead = !g.played
+              ? run[0] === run[1]
+                ? say("games.seriesTied", { a: fmt(run[0]), b: fmt(run[1]) })
+                : say("games.seriesLead", { team: run[0] > run[1] ? na : nb, a: fmt(hi), b: fmt(lo) })
+              : run[0] === run[1]
+                ? say("games.tied", { a: fmt(run[0]), b: fmt(run[1]) })
+                : say(g.n === n && settled ? "games.win" : "games.lead", { team: run[0] > run[1] ? na : nb, a: fmt(hi), b: fmt(lo) });
             const row = (i: 0 | 1) => (
               <span className={`grow${g.winner === i ? " won" : ""}`} key={i}>
                 <i className="pip" style={{ background: i === 0 ? "var(--ca)" : "var(--cb)" }} />
@@ -266,10 +279,11 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
               </span>
             );
             return (
-              <li key={g.id} className="gtile" style={{ "--tc": g.winner == null ? "var(--rule)" : g.winner === 0 ? "var(--ca)" : "var(--cb)" } as React.CSSProperties}>
+              <li key={g.id} className={`gtile${g.played ? "" : " ahead"}${g.ifNeeded ? " ifneeded" : ""}`} style={{ "--tc": g.winner == null ? "var(--rule)" : g.winner === 0 ? "var(--ca)" : "var(--cb)" } as React.CSSProperties}>
                 <span className="ghead">
                   <b>{single ? say("games.theGame") : say("games.gameN", { n: fmt(g.n) })}</b>
                   {g.ot ? <span className="badge">{extra}</span> : null}
+                  {g.ifNeeded ? <span className="badge">{say("games.ifNeeded")}</span> : null}
                   <Link href={datePath(lg, y, g.date, "playoffs")} prefetch={false} title={say("games.dayTitle")}>{dt.monthDayShort(atUtc(g.date))}</Link>
                 </span>
                 {row(awayIdx)}

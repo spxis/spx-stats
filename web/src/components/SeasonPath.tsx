@@ -41,6 +41,10 @@ export const SeasonPath = guard(async function SeasonPath({ lg, year }: { lg: st
   const result = (f: number, i: number): string => {
     const s = series[i];
     const other = s.sides.find((x) => x.f !== f)!.name;
+    if (s.live) {
+      const mine = s.sides.find((x) => x.f === f)!, theirs = s.sides.find((x) => x.f !== f)!;
+      return say(mine.wins > theirs.wins ? "path.playingLeads" : mine.wins < theirs.wins ? "path.playingTrails" : "path.playingLevel", { opponent: other, round: roundOf(i), score: `${mine.wins}–${theirs.wins}` });
+    }
     if (s.winner == null) return say("path.open", { opponent: other, round: roundOf(i) });
     const won = s.sides[0].f === f;
     return say(won ? "path.beat" : "path.lost", { opponent: other, round: roundOf(i), score: scoreText(s) });
@@ -74,12 +78,12 @@ export const SeasonPath = guard(async function SeasonPath({ lg, year }: { lg: st
       const i = n.series!, s = series[i];
       const [a, b] = s.sides;
       return {
-        id: n.id, column: n.column, order: n.order, label: `${abbr(a.f, a.name)}–${abbr(b.f, b.name)}`, sub: s.winner != null ? scoreText(s) : undefined,
+        id: n.id, column: n.column, order: n.order, label: `${abbr(a.f, a.name)}–${abbr(b.f, b.name)}`, sub: s.winner != null || s.live ? scoreText(s) : undefined,
         href: seriesPath(paths, lg, year, s), tone: s.winner != null ? tone(a.f) : "var(--muted)",
         title: say("path.vs", { a: a.name, b: b.name }),
         lines: [
           roundOf(i),
-          s.winner != null ? say("path.won", { winner: a.name, loser: b.name, score: scoreText(s) }) : say("path.unsettled"),
+          s.winner != null ? say("path.won", { winner: a.name, loser: b.name, score: scoreText(s) }) : s.live ? say("path.live", { score: scoreText(s) }) : say("path.unsettled"),
         ],
       };
     }

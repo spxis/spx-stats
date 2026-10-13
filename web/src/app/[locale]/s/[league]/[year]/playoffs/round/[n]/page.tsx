@@ -10,7 +10,7 @@ import { loadPlayoffs } from "@/lib/playoffs";
 import { datedRound, playedYear, roundPath, roundTitle } from "@/lib/series";
 import { parseSeasonSeg, seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
-import { sayFor } from "@/lib/seriesCopy";
+import { roundSay } from "@/lib/roundWords";
 import "@/components/series.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
@@ -28,7 +28,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   if (!isLeague(league) || !ys || r == null) return {};
   const y = ys.y;
   const sp = await currentSpeaker();
-  const d = await loadPlayoffs(league, y, sayFor(sp));
+  const d = await loadPlayoffs(league, y, roundSay(sp));
   const list = d.series.filter((_, i) => d.round[i] === r);
   if (!list.length) return { robots: { index: false } };
   const round = roundTitle(d.names, r, sp.say("playoffs.robin"));
@@ -50,7 +50,7 @@ export default guard(async function PlayoffRoundPage({ params }: PageProps<"/[lo
   if (!ys.canonical) permanentRedirect(roundPath(lg, y, r));
   const paths = await getPaths();
   const sp = await currentSpeaker();
-  const say = sayFor(sp);
+  const say = roundSay(sp);
   const d = await loadPlayoffs(lg, y, say);
   const members = d.series.map((_, i) => i).filter((i) => d.round[i] === r);
   if (!members.length) notFound();
