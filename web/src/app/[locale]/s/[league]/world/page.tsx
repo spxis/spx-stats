@@ -7,7 +7,9 @@ import { Credits } from "@/components/Credits";
 import { FlagIcon } from "@/components/FlagIcon";
 import { LeagueWorld, type LeagueWorldData } from "@/components/LeagueWorld";
 import { SortTable } from "@/components/SortTable";
-import { TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
+import { logoFor } from "@/lib/brand";
+import { getBrands } from "@/lib/data";
 import { flagsFor, getLeagueCounts, getLeagueFranchises, getSeasonCounts } from "@/lib/countryData";
 import { coolCards, isKnown, stackSeries, tally } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -35,7 +37,7 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
   const { league: lg } = await params;
   if (!isLeague(lg)) notFound();
   const { say, plural, fmt, locale } = await currentSpeaker();
-  const [seasonRows, leagueRows, franchiseRows] = await Promise.all([getSeasonCounts(lg), getLeagueCounts(lg), getLeagueFranchises(lg)]);
+  const [seasonRows, leagueRows, franchiseRows, brands] = await Promise.all([getSeasonCounts(lg), getLeagueCounts(lg), getLeagueFranchises(lg), getBrands()]);
   const head = (
     <>
       <AccentStyle league={lg} />
@@ -80,7 +82,7 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
     return t.known ? [{ f, name: clubs.get(f) ?? `#${f}`, t }] : [];
   });
   const teamTable = tableOf(teams, [
-    { key: "team", label: say("col.team"), cls: "team", get: (x) => x.name, cell: (x) => <TeamLink lg={lg} f={x.f} name={x.name} /> },
+    { key: "team", label: say("col.team"), cls: "team", get: (x) => x.name, cell: (x) => <TeamLabel lg={lg} f={x.f} name={x.name} logo={logoFor(brands, x.f)} /> },
     { key: "players", label: say("country.colPlayers"), num: true, get: (x) => x.t.total, cell: (x) => fmt(x.t.total) },
     { key: "countries", label: say("country.colCountries"), num: true, get: (x) => x.t.list.length, cell: (x) => fmt(x.t.list.length) },
     {

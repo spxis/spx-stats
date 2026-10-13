@@ -7,10 +7,12 @@ import { CountryMap } from "@/components/CountryMap";
 import { Credits } from "@/components/Credits";
 import { FlagIcon } from "@/components/FlagIcon";
 import { SortTable } from "@/components/SortTable";
-import { Figures, TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
+import { Figures } from "@/components/ui";
+import { logoFor } from "@/lib/brand";
 import { flagsFor, getLeagueSeasonClubs, getSeasonCounts } from "@/lib/countryData";
 import { tally, UNKNOWN, withOther } from "@/lib/countryModel";
-import { getSeasonStandings } from "@/lib/data";
+import { getBrands, getSeasonStandings } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -42,7 +44,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
   const y = ys.y;
   const { say, plural, fmt, locale } = await currentSpeaker();
   const season = seasonLabel(lg, y);
-  const [clubs, seasonRows] = await Promise.all([getLeagueSeasonClubs(lg, y), getSeasonCounts(lg, undefined, y)]);
+  const [clubs, seasonRows, brands] = await Promise.all([getLeagueSeasonClubs(lg, y), getSeasonCounts(lg, undefined, y), getBrands()]);
   const head = (
     <>
       <AccentStyle league={lg} />
@@ -72,7 +74,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
   const rows = [...per].map(([f, list]) => ({ f, name: names.get(f) ?? `#${f}`, t: tally(list), by: new Map(list) }));
   const matrix = t.list.slice(0, MATRIX).map((c) => c.code);
   const table = tableOf(rows, [
-    { key: "team", label: say("col.team"), cls: "team", get: (x) => x.name, cell: (x) => <TeamLink lg={lg} f={x.f} name={x.name} year={y} /> },
+    { key: "team", label: say("col.team"), cls: "team", get: (x) => x.name, cell: (x) => <TeamLabel lg={lg} f={x.f} name={x.name} year={y} logo={logoFor(brands, x.f, y)} /> },
     { key: "players", label: say("country.colPlayers"), num: true, get: (x) => x.t.total, cell: (x) => fmt(x.t.total) },
     { key: "countries", label: say("country.colCountries"), num: true, get: (x) => x.t.list.length, cell: (x) => fmt(x.t.list.length) },
     ...matrix.map((code) => ({

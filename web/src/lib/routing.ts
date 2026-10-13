@@ -66,18 +66,21 @@ const internal = new RegExp(`^/(?:${LOCALES.join("|")})(?:/|$)`);
 /** True for an address inside the language tree, which the rewrites below must not wrap a second time. */
 export const isInternalPath = (path: string) => internal.test(path);
 
-/** First path segments served by a route handler with a dynamic segment (app/surface/[file]); Next matches those after the rewrites, so rule 4 below must leave them alone. */
-export const FILE_ROOTS = ["surface"] as const;
+/** First path segments that belong to something other than the public pages: the API (app/api; its auth route is a catch-all, [...nextauth]), the build's own
+    files, the playing-surface drawings (app/surface/[file]) and the signed-in pages (app/(dyn)). Next matches a route with a dynamic segment AFTER the rewrites,
+    so rule 4 below must leave these alone, or it wraps them in the language tree and answers the 404 page (sign-in broke that way). scripts/routing.test.ts
+    reads app/ and fails when a first segment found there is missing from this list. */
+export const RESERVED_ROOTS = ["api", "_next", "surface", "admin", "me", "login", "tickets", "sitemap.xml", "robots.txt", "venues.csv", "venues.geojson", "soccer-flags.svg"] as const;
 
-/** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again) or one of FILE_ROOTS. */
-const NOT_A_LOCALE = `(?!(?:${[...LOCALES, ...FILE_ROOTS].join("|")})(?:/|$))[^/]+`;
+/** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again) or one of RESERVED_ROOTS. */
+const NOT_A_LOCALE = `(?!(?:${[...LOCALES, ...RESERVED_ROOTS.map((r) => r.replace(/\./g, "\\."))].join("|")})(?:/|$))[^/]+`;
 
 /** Vercel refuses a route whose has or missing list holds more than this many items. */
 export const MAX_CONDITIONS = 16;
 
 export interface Rewrite { source: string; destination: string; has?: Cond[]; missing?: Cond[] }
 
-/** The rewrites, in order (first match wins). Page requests only: files, /api, /_next and the signed-in pages never reach them. */
+/** The rewrites, in order (first match wins). Page requests only: no rule matches /api, /_next, /surface or the signed-in pages (RESERVED_ROOTS), whether Next matches them before or after the rewrites. */
 export function pageRewrites(): Rewrite[] {
   const out: Rewrite[] = [];
   const each = (add: (lang: ReturnType<typeof languageRules>[number]) => void) => languageRules().forEach(add);

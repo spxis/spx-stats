@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { createRequire } from "node:module";
-import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS } from "../src/lib/routing.ts";
+import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
 
@@ -121,6 +121,47 @@ test("the drawings of playing surfaces (app/surface/[file]) are no page: the 404
   assert.equal(route({ path: "/surface/nfl.en.svg" }), "(none) /surface/nfl.en.svg");
   assert.equal(route({ path: "/surfaces/nfl.en.svg" }), "/en/q/surfaces/nfl.en.svg");
   assert.ok(statSync(join(SRC, "app", "surface", "[file]", "route.ts")).isFile());
+});
+
+/** Every route the app serves outside app/[locale]: [its first segment, a concrete address]. Route groups like (dyn) add no segment; [x] and [...x] get sample values. */
+function outsideLocaleRoutes(dir = join(SRC, "app"), at: string[] = []): [string, string][] {
+  return readdirSync(dir).flatMap((name) => {
+    const path = join(dir, name);
+    if (!statSync(path).isDirectory() || (at.length === 0 && name === "[locale]")) return [];
+    const seg = /^\(.*\)$/.test(name) ? [] : [/^\[\.\.\..+\]$/.test(name) ? "a/b" : /^\[.+\]$/.test(name) ? "x" : name];
+    const here = [...at, ...seg];
+    const own: [string, string][] = here.length && readdirSync(path).some((f) => /^(route|page)\.tsx?$/.test(f)) ? [[here[0], "/" + here.join("/")]] : [];
+    return [...own, ...outsideLocaleRoutes(path, here)];
+  });
+}
+
+test("no rewrite touches the API, the build's files, the drawings or the signed-in pages, whether Next matches them before or after the rewrites", () => {
+  // Next matches a route with a dynamic segment AFTER the rewrites. Sign-in broke when the 404 rule wrapped /api/auth/* (app/api/auth/[...nextauth]).
+  const found = outsideLocaleRoutes();
+  assert.ok(found.length >= 12, "app/ was read");
+  const addresses = new Set([
+    "/api/auth/providers", "/api/auth/session", "/api/auth/csrf", "/api/auth/signin", "/api/auth/signout", "/api/auth/error", "/api/auth/callback/google", "/api/auth/callback/github",
+    "/api/me", "/api/locale", "/api/revalidate", "/api/players", "/api/players/suggest", "/api/teams", "/api/teams/suggest", "/api/venues", "/api/anything/at/all", "/api",
+    "/_next/static/chunks/main.js", "/_next/image", "/surface/nfl.en.svg", "/surface/nhl.fr.svg",
+    "/sitemap.xml", "/robots.txt", "/venues.csv", "/venues.geojson", "/soccer-flags.svg",
+    "/admin", "/admin/data", "/admin/people", "/admin/tickets", "/admin/tickets/new", "/admin/tickets/abc", "/me", "/me/profile", "/me/settings", "/login", "/tickets", "/tickets/abc",
+    ...found.map(([, address]) => address),
+  ]);
+  const cases: Omit<Req, "path">[] = [{}, { cookie: "spxn-locale=fr" }, { acceptLanguage: "ja" }, { query: { q: "x", view: "y" } }];
+  for (const path of addresses) for (const c of cases) assert.equal(route({ path, ...c }), `(none) ${path}`, path);
+});
+
+test("every first segment app/ serves outside app/[locale] is in RESERVED_ROOTS, so the 404 rule cannot shadow it", () => {
+  const reserved = new Set<string>(RESERVED_ROOTS);
+  const roots = [...new Set(outsideLocaleRoutes().map(([first]) => first))];
+  assert.ok(roots.includes("api") && roots.includes("surface") && roots.includes("admin"));
+  const missing = roots.filter((first) => !reserved.has(first));
+  assert.deepEqual(missing, [], "add these to RESERVED_ROOTS in src/lib/routing.ts");
+  for (const root of RESERVED_ROOTS) assert.equal(route({ path: `/${root}/zz/yy` }), `(none) /${root}/zz/yy`, root);
+  // The lookahead covers the whole first segment: a longer word is still no page, and still the 404.
+  assert.equal(route({ path: "/apis/auth" }), "/en/q/apis/auth");
+  assert.equal(route({ path: "/api-docs" }), "/en/q/api-docs");
+  assert.equal(route({ path: "/login2" }), "/en/q/login2");
 });
 
 test("a rewrite's own result is never rewritten again, and the language tree is closed to readers", () => {
