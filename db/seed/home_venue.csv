@@ -153,7 +153,7 @@ nba,Miami Heat,Q1857422,1988-11-05,2000-01-02,wikipedia,https://en.wikipedia.org
 nba,Milwaukee Bucks,Q1142808,1968-10-16,1988-10-01,wikipedia,https://en.wikipedia.org/wiki/UW%E2%80%93Milwaukee_Panther_Arena,Milwaukee Arena (MECCA) 1968-88; until = Bradley Center opening
 nba,Milwaukee Bucks,Q737976,1988-10-01,2018-10-19,wikipedia,https://en.wikipedia.org/wiki/Bradley_Center,Bradley Center 1988-2018 (opened 1988-10-01); until = first Fiserv Forum game
 nba,Milwaukee Hawks,Q1142808,1951-11-03,1955-11-05,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Milwaukee Arena (UW–Milwaukee Panther Arena) 1951-55; until = first St. Louis home game
-nba,Minneapolis Lakers,Q3315539,1947-01-01,1959-10-18,wikidata,https://www.wikidata.org/wiki/Q121783,Auditorium; start year-precision; duplicate item Q125537911
+nba,Minneapolis Lakers,Q125537911,1947-01-01,1959-10-18,wikipedia,https://en.wikipedia.org/wiki/Minneapolis_Auditorium,Minneapolis Auditorium (1927-1989; Wikipedia: Lakers 1947-59); Wikidata P115 names the 1905 building Q3315539
 nba,Minneapolis Lakers,Q745327,1959-10-18,1960-10-24,wikipedia,https://en.wikipedia.org/wiki/1959%E2%80%9360_Minneapolis_Lakers_season,Armory 22 of 25 home games 1959-60; until = first LA home game
 nba,Minnesota Timberwolves,Q1072186,1989-11-08,1990-10-13,wikipedia,https://en.wikipedia.org/wiki/Hubert_H._Humphrey_Metrodome,Metrodome 1989-90; home debut 1989-11-08; until = Target Center opening
 nba,New Jersey Nets,Q6686804,1977-10-21,1981-10-30,wikipedia,https://en.wikipedia.org/wiki/Brooklyn_Nets,Rutgers Athletic Center (Piscataway); item label Jersey Mike's Arena

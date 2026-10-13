@@ -13,5 +13,8 @@ select 'period', (select min(fl.league_code) from core.franchise_league fl where
 from core.franchise_home_venue h
 join core.venue v on v.venue_id = h.venue_id
 where h.basis in ('brand', 'wikidata')
-  and ((v.opened_on is not null and lower(h.valid_during) < v.opened_on - 30) or (v.closed_on is not null and upper(h.valid_during) > v.closed_on + 31))
+  and ((v.opened_on is not null and lower(h.valid_during) < v.opened_on - 30
+        and not exists (select 1 from core.franchise_home_venue p where p.franchise_id = h.franchise_id and upper(p.valid_during) = lower(h.valid_during)))   -- a handover from another venue on that day is the offseason, not an anachronism
+    or (v.closed_on is not null and upper(h.valid_during) > v.closed_on + 31
+        and not exists (select 1 from core.franchise_home_venue n where n.franchise_id = h.franchise_id and lower(n.valid_during) = upper(h.valid_during))))
 group by 1, 2, 3, 5, 6

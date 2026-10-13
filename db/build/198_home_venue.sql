@@ -111,14 +111,18 @@ select venue_id, rng, name from t where not isempty(rng);
 -- the closing; a month or year counts as its first day for an opening and its last for a closing), then from core.brand_venue_info
 -- (years), then apply db/seed/venue_dates.csv, which corrects a date Wikidata gets wrong (the old Yankee Stadium is dated closed in
 -- 1973, when it was shut for rebuilding, but was used until 2008). 'Closed' may be a demolition date, so it can only be too late.
-update core.venue v set opened_on = coalesce(v.opened_on, g.opened_on), closed_on = coalesce(v.closed_on, g.closed_on)
+update core.venue v set opened_on = coalesce(g.opened_on, v.opened_on), closed_on = coalesce(g.closed_on, v.closed_on)   -- the load is the better source: a month or year counts at its right end
 from legacy_game_venue.venue g
 where v.source_id = (select source_id from wd) and v.source_key = g.qid
-  and ((v.opened_on is null and g.opened_on is not null) or (v.closed_on is null and g.closed_on is not null));
+  and (v.opened_on is distinct from coalesce(g.opened_on, v.opened_on) or v.closed_on is distinct from coalesce(g.closed_on, v.closed_on));
 update core.venue v set opened_on = coalesce(v.opened_on, make_date(i.opened_year, 1, 1)), closed_on = coalesce(v.closed_on, make_date(i.closed_year, 12, 31))
 from core.brand_venue_info i
 where v.source_id = (select source_id from wd) and v.source_key = i.wikidata_id
   and ((v.opened_on is null and i.opened_year is not null) or (v.closed_on is null and i.closed_year is not null));
+-- an earlier run of this step wrote the first day of the closing year; a closing year means its last day
+update core.venue v set closed_on = make_date(i.closed_year, 12, 31)
+from core.brand_venue_info i
+where v.source_id = (select source_id from wd) and v.source_key = i.wikidata_id and v.closed_on = make_date(i.closed_year, 1, 1) and not exists (select 1 from legacy_game_venue.venue g where g.qid = v.source_key and g.closed_on is not null);
 update core.venue v set opened_on = coalesce(d.opened_on, v.opened_on), closed_on = coalesce(d.closed_on, v.closed_on)
 from seed_venue_dates d where v.source_id = (select source_id from wd) and v.source_key = d.qid;
 
