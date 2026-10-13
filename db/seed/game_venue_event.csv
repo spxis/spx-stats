@@ -1,0 +1,659 @@
+league,game_date,team_a,team_b,qid,neutral,international,reason,source,source_url
+nfl,1974-01-13,Miami Dolphins,Minnesota Vikings,Q1857419,true,false,Super Bowl VIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_VIII
+nfl,1975-01-12,Minnesota Vikings,Pittsburgh Steelers,Q1536237,true,false,Super Bowl IX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_IX
+nfl,1976-01-18,Dallas Cowboys,Pittsburgh Steelers,Q619512,true,false,Super Bowl X,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_X
+nfl,1977-01-09,Minnesota Vikings,Oakland Raiders,Q582280,true,false,Super Bowl XI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XI
+nfl,1978-01-15,Dallas Cowboys,Denver Broncos,Q756452,true,false,Super Bowl XII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XII
+nfl,1979-01-21,Dallas Cowboys,Pittsburgh Steelers,Q619512,true,false,Super Bowl XIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XIII
+nfl,1980-01-20,Los Angeles Rams,Pittsburgh Steelers,Q582280,true,false,Super Bowl XIV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XIV
+nfl,1981-01-25,Oakland Raiders,Philadelphia Eagles,Q756452,true,false,Super Bowl XV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XV
+nfl,1982-01-24,Cincinnati Bengals,San Francisco 49ers,Q211662,true,false,Super Bowl XVI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XVI
+nfl,1983-01-30,Miami Dolphins,Washington Redskins,Q582280,true,false,Super Bowl XVII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XVII
+nfl,1984-01-22,Los Angeles Raiders,Washington Redskins,Q2095984,true,false,Super Bowl XVIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XVIII
+nfl,1985-01-20,Miami Dolphins,San Francisco 49ers,Q692470,true,false,Super Bowl XIX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XIX
+nfl,1986-01-26,Chicago Bears,New England Patriots,Q756452,true,false,Super Bowl XX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XX
+nfl,1987-01-25,Denver Broncos,New York Giants,Q582280,true,false,Super Bowl XXI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXI
+nfl,1988-01-31,Denver Broncos,Washington Redskins,Q956072,true,false,Super Bowl XXII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXII
+nfl,1989-01-22,Cincinnati Bengals,San Francisco 49ers,Q864339,true,false,Super Bowl XXIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXIII
+nfl,1990-01-28,Denver Broncos,San Francisco 49ers,Q756452,true,false,Super Bowl XXIV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXIV
+nfl,1991-01-27,Buffalo Bills,New York Giants,Q2095984,true,false,Super Bowl XXV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXV
+nfl,1992-01-26,Buffalo Bills,Washington Redskins,Q1072186,true,false,Super Bowl XXVI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXVI
+nfl,1993-01-31,Buffalo Bills,Dallas Cowboys,Q582280,true,false,Super Bowl XXVII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXVII
+nfl,1994-01-30,Buffalo Bills,Dallas Cowboys,Q1058931,true,false,Super Bowl XXVIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXVIII
+nfl,1995-01-29,San Diego Chargers,San Francisco 49ers,Q864339,true,false,Super Bowl XXIX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXIX
+nfl,1996-01-28,Dallas Cowboys,Pittsburgh Steelers,Q1849318,true,false,Super Bowl XXX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXX
+nfl,1997-01-26,Green Bay Packers,New England Patriots,Q756452,true,false,Super Bowl XXXI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXI
+nfl,1998-01-25,Denver Broncos,Green Bay Packers,Q956072,true,false,Super Bowl XXXII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXII
+nfl,1999-01-31,Atlanta Falcons,Denver Broncos,Q864339,true,false,Super Bowl XXXIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXIII
+nfl,2000-01-30,Tennessee Titans,St Louis Rams,Q1058931,true,false,Super Bowl XXXIV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXIV
+nfl,2001-01-28,New York Giants,Baltimore Ravens,Q1141343,true,false,Super Bowl XXXV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXV
+nfl,2002-02-03,New England Patriots,St Louis Rams,Q756452,true,false,Super Bowl XXXVI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXVI
+nfl,2003-01-26,Tampa Bay Buccaneers,Oakland Raiders,Q956072,true,false,Super Bowl XXXVII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXVII
+nfl,2004-02-01,New England Patriots,Carolina Panthers,Q1058864,true,false,Super Bowl XXXVIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXVIII
+nfl,2005-02-06,Philadelphia Eagles,New England Patriots,Q635117,true,false,Super Bowl XXXIX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XXXIX
+nfl,2006-02-05,Pittsburgh Steelers,Seattle Seahawks,Q1142586,true,false,Super Bowl XL,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XL
+nfl,2007-02-04,Chicago Bears,Indianapolis Colts,Q864339,true,false,Super Bowl XLI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLI
+nfl,2008-02-03,New England Patriots,New York Giants,Q756433,true,false,Super Bowl XLII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLII
+nfl,2009-02-01,Arizona Cardinals,Pittsburgh Steelers,Q1141343,true,false,Super Bowl XLIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLIII
+nfl,2010-02-07,Indianapolis Colts,New Orleans Saints,Q864339,true,false,Super Bowl XLIV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLIV
+nfl,2011-02-06,Green Bay Packers,Pittsburgh Steelers,Q838284,true,false,Super Bowl XLV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLV
+nfl,2012-02-05,New England Patriots,New York Giants,Q867160,true,false,Super Bowl XLVI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLVI
+nfl,2013-02-03,San Francisco 49ers,Baltimore Ravens,Q756452,true,false,Super Bowl XLVII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLVII
+nfl,2014-02-02,Denver Broncos,Seattle Seahawks,Q10862290,true,false,Super Bowl XLVIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLVIII
+nfl,2015-02-01,Seattle Seahawks,New England Patriots,Q756433,true,false,Super Bowl XLIX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_XLIX
+nfl,2016-02-07,Denver Broncos,Carolina Panthers,Q7419343,true,false,Super Bowl 50,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_50
+nfl,2017-02-05,Atlanta Falcons,New England Patriots,Q1058864,true,false,Super Bowl LI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LI
+nfl,2018-02-04,New England Patriots,Philadelphia Eagles,Q7929512,true,false,Super Bowl LII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LII
+nfl,2019-02-03,Los Angeles Rams,New England Patriots,Q7007552,true,false,Super Bowl LIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LIII
+nfl,2020-02-02,Kansas City Chiefs,San Francisco 49ers,Q864339,true,false,Super Bowl LIV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LIV
+nfl,2021-02-07,Tampa Bay Buccaneers,Kansas City Chiefs,Q1141343,false,false,Super Bowl LV,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LV
+nfl,2022-02-13,Cincinnati Bengals,Los Angeles Rams,Q19520501,false,false,Super Bowl LVI,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LVI
+nfl,2023-02-12,Philadelphia Eagles,Kansas City Chiefs,Q756433,true,false,Super Bowl LVII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LVII
+nfl,2024-02-11,Kansas City Chiefs,San Francisco 49ers,Q27768421,true,false,Super Bowl LVIII,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LVIII
+nfl,2025-01-13,Los Angeles Rams,Minnesota Vikings,Q756433,true,false,NFC Wild Card moved from SoFi Stadium,wikipedia,https://en.wikipedia.org/wiki/2024%E2%80%9325_NFL_playoffs
+nfl,2025-02-09,Philadelphia Eagles,Kansas City Chiefs,Q756452,true,false,Super Bowl LIX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LIX
+nfl,2026-02-08,New England Patriots,Seattle Seahawks,Q7419343,true,false,Super Bowl LX,wikipedia,https://en.wikipedia.org/wiki/Super_Bowl_LX
+cfl,1958-11-29,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q5374130,true,false,46th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/46th_Grey_Cup
+cfl,1959-11-28,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q1383747,true,false,47th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/47th_Grey_Cup
+cfl,1960-11-26,Ottawa Rough Riders,Edmonton Eskimos,Q5374130,true,false,48th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/48th_Grey_Cup
+cfl,1961-12-02,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q1383747,true,false,49th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/49th_Grey_Cup
+cfl,1962-12-01,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q1383747,true,false,50th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/50th_Grey_Cup
+cfl,1963-11-30,Hamilton Tiger-Cats,BC Lions,Q5374130,false,false,51st Grey Cup,wikipedia,https://en.wikipedia.org/wiki/51st_Grey_Cup
+cfl,1964-11-28,Hamilton Tiger-Cats,BC Lions,Q1383747,true,false,52nd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/52nd_Grey_Cup
+cfl,1965-11-27,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q1383747,true,false,53rd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/53rd_Grey_Cup
+cfl,1966-11-26,Ottawa Rough Riders,Saskatchewan Roughriders,Q5374130,true,false,54th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/54th_Grey_Cup
+cfl,1967-12-02,Hamilton Tiger-Cats,Saskatchewan Roughriders,Q1442809,true,false,55th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/55th_Grey_Cup
+cfl,1968-11-30,Ottawa Rough Riders,Calgary Stampeders,Q1383747,true,false,56th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/56th_Grey_Cup
+cfl,1969-11-30,Ottawa Rough Riders,Saskatchewan Roughriders,Q2873035,true,false,57th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/57th_Grey_Cup
+cfl,1970-11-28,Montreal Alouettes,Calgary Stampeders,Q1383747,true,false,58th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/58th_Grey_Cup
+cfl,1971-11-28,Toronto Argonauts,Calgary Stampeders,Q5374130,true,false,59th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/59th_Grey_Cup
+cfl,1972-12-03,Hamilton Tiger-Cats,Saskatchewan Roughriders,Q1978036,false,false,60th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/60th_Grey_Cup
+cfl,1973-11-25,Ottawa Rough Riders,Edmonton Eskimos,Q1383747,true,false,61st Grey Cup,wikipedia,https://en.wikipedia.org/wiki/61st_Grey_Cup
+cfl,1974-11-24,Montreal Alouettes,Edmonton Eskimos,Q5374130,true,false,62nd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/62nd_Grey_Cup
+cfl,1975-11-23,Montreal Alouettes,Edmonton Eskimos,Q1810204,true,false,63rd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/63rd_Grey_Cup
+cfl,1976-11-28,Ottawa Rough Riders,Saskatchewan Roughriders,Q1383747,true,false,64th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/64th_Grey_Cup
+cfl,1977-11-27,Montreal Alouettes,Edmonton Eskimos,Q285467,false,false,65th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/65th_Grey_Cup
+cfl,1978-11-26,Montreal Alouettes,Edmonton Eskimos,Q1383747,true,false,66th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/66th_Grey_Cup
+cfl,1979-11-25,Montreal Alouettes,Edmonton Eskimos,Q285467,false,false,67th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/67th_Grey_Cup
+cfl,1980-11-23,Hamilton Tiger-Cats,Edmonton Eskimos,Q1383747,true,false,68th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/68th_Grey_Cup
+cfl,1981-11-22,Ottawa Rough Riders,Edmonton Eskimos,Q285467,true,false,69th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/69th_Grey_Cup
+cfl,1982-11-28,Toronto Argonauts,Edmonton Eskimos,Q1383747,false,false,70th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/70th_Grey_Cup
+cfl,1983-11-27,Toronto Argonauts,BC Lions,Q612227,false,false,71st Grey Cup,wikipedia,https://en.wikipedia.org/wiki/71st_Grey_Cup
+cfl,1984-11-18,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q130381,true,false,72nd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/72nd_Grey_Cup
+cfl,1985-11-24,Hamilton Tiger-Cats,BC Lions,Q285467,true,false,73rd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/73rd_Grey_Cup
+cfl,1986-11-30,Hamilton Tiger-Cats,Edmonton Eskimos,Q612227,true,false,74th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/74th_Grey_Cup
+cfl,1987-11-29,Toronto Argonauts,Edmonton Eskimos,Q612227,true,false,75th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/75th_Grey_Cup
+cfl,1988-11-27,Winnipeg Blue Bombers,BC Lions,Q1442809,true,false,76th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/76th_Grey_Cup
+cfl,1989-11-26,Hamilton Tiger-Cats,Saskatchewan Roughriders,Q76318,true,false,77th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/77th_Grey_Cup
+cfl,1990-11-25,Winnipeg Blue Bombers,Edmonton Eskimos,Q612227,true,false,78th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/78th_Grey_Cup
+cfl,1991-11-24,Toronto Argonauts,Calgary Stampeders,Q3378622,true,false,79th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/79th_Grey_Cup
+cfl,1992-11-29,Winnipeg Blue Bombers,Calgary Stampeders,Q76318,true,false,80th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/80th_Grey_Cup
+cfl,1993-11-28,Winnipeg Blue Bombers,Edmonton Eskimos,Q1810204,true,false,81st Grey Cup,wikipedia,https://en.wikipedia.org/wiki/81st_Grey_Cup
+cfl,1994-11-27,Baltimore CFLers,BC Lions,Q612227,false,false,82nd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/82nd_Grey_Cup
+cfl,1995-11-19,Calgary Stampeders,Baltimore Stallions,Q3380246,true,false,83rd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/83rd_Grey_Cup
+cfl,1996-11-24,Toronto Argonauts,Edmonton Eskimos,Q1978036,true,false,84th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/84th_Grey_Cup
+cfl,1997-11-16,Toronto Argonauts,Saskatchewan Roughriders,Q130381,true,false,85th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/85th_Grey_Cup
+cfl,1998-11-22,Hamilton Tiger-Cats,Calgary Stampeders,Q3378622,true,false,86th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/86th_Grey_Cup
+cfl,1999-11-28,Hamilton Tiger-Cats,Calgary Stampeders,Q612227,true,false,87th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/87th_Grey_Cup
+cfl,2000-11-26,Montreal Alouettes,BC Lions,Q1810204,true,false,88th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/88th_Grey_Cup
+cfl,2001-11-25,Winnipeg Blue Bombers,Calgary Stampeders,Q285467,true,false,89th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/89th_Grey_Cup
+cfl,2002-11-24,Montreal Alouettes,Edmonton Eskimos,Q130381,false,false,90th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/90th_Grey_Cup
+cfl,2003-11-16,Edmonton Eskimos,Montreal Alouettes,Q3380246,true,false,91st Grey Cup,wikipedia,https://en.wikipedia.org/wiki/91st_Grey_Cup
+cfl,2004-11-21,Toronto Argonauts,B.C. Lions,Q1442809,true,false,92nd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/92nd_Grey_Cup
+cfl,2005-11-27,Edmonton Eskimos,Montreal Alouettes,Q612227,true,false,93rd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/93rd_Grey_Cup
+cfl,2006-11-19,Montreal Alouettes,B.C. Lions,Q3378622,true,false,94th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/94th_Grey_Cup
+cfl,2007-11-25,Winnipeg Blue Bombers,Saskatchewan Roughriders,Q76318,true,false,95th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/95th_Grey_Cup
+cfl,2008-11-23,Montreal Alouettes,Calgary Stampeders,Q285467,false,false,96th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/96th_Grey_Cup
+cfl,2009-11-29,Saskatchewan Roughriders,Montreal Alouettes,Q1810204,true,false,97th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/97th_Grey_Cup
+cfl,2010-11-28,Saskatchewan Roughriders,Montreal Alouettes,Q130381,true,false,98th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/98th_Grey_Cup
+cfl,2011-11-27,B.C. Lions,Winnipeg Blue Bombers,Q612227,false,false,99th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/99th_Grey_Cup
+cfl,2012-11-25,Toronto Argonauts,Calgary Stampeders,Q76318,false,false,100th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/100th_Grey_Cup
+cfl,2013-11-24,Hamilton Tiger-Cats,Saskatchewan Roughriders,Q3380246,false,false,101st Grey Cup,wikipedia,https://en.wikipedia.org/wiki/101st_Grey_Cup
+cfl,2014-11-30,Hamilton Tiger-Cats,Calgary Stampeders,Q612227,true,false,102nd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/102nd_Grey_Cup
+cfl,2015-11-29,Ottawa Redblacks,Edmonton Eskimos,Q1671788,true,false,103rd Grey Cup,wikipedia,https://en.wikipedia.org/wiki/103rd_Grey_Cup
+cfl,2016-11-27,Ottawa Redblacks,Calgary Stampeders,Q796351,true,false,104th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/104th_Grey_Cup
+cfl,2017-11-26,Toronto Argonauts,Calgary Stampeders,Q1442809,true,false,105th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/105th_Grey_Cup
+cfl,2018-11-25,Ottawa Redblacks,Calgary Stampeders,Q130381,true,false,106th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/106th_Grey_Cup
+cfl,2019-11-24,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q1810204,true,false,107th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/107th_Grey_Cup
+cfl,2021-12-12,Hamilton Tiger-Cats,Winnipeg Blue Bombers,Q7008048,false,false,108th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/108th_Grey_Cup
+cfl,2022-11-20,Toronto Argonauts,Winnipeg Blue Bombers,Q7011148,true,false,109th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/109th_Grey_Cup
+cfl,2023-11-19,Montreal Alouettes,Winnipeg Blue Bombers,Q7008048,true,false,110th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/110th_Grey_Cup
+cfl,2024-11-17,Toronto Argonauts,Winnipeg Blue Bombers,Q612227,true,false,111th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/111th_Grey_Cup
+cfl,2025-11-16,Montreal Alouettes,Saskatchewan Roughriders,Q1671788,true,false,112th Grey Cup,wikipedia,https://en.wikipedia.org/wiki/112th_Grey_Cup
+nba,1962-03-02,New York Knicks,Philadelphia Warriors,Q1577702,true,false,Wilt Chamberlain's 100-point game,wikipedia,https://en.wikipedia.org/wiki/Wilt_Chamberlain's_100-point_game
+nba,1994-04-28,Denver Nuggets,Seattle SuperSonics,Q977529,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-04-30,Denver Nuggets,Seattle SuperSonics,Q977529,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-02,Denver Nuggets,Seattle SuperSonics,Q2081796,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-05,Denver Nuggets,Seattle SuperSonics,Q2081796,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-07,Denver Nuggets,Seattle SuperSonics,Q977529,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-10,Denver Nuggets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-12,Denver Nuggets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-14,Denver Nuggets,Utah Jazz,Q2081796,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-15,Denver Nuggets,Utah Jazz,Q2081796,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-17,Denver Nuggets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-19,Denver Nuggets,Utah Jazz,Q2081796,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-05-21,Denver Nuggets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1994_NBA_playoffs
+nba,1994-11-05,Seattle SuperSonics,Utah Jazz,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-11-09,Seattle SuperSonics,Sacramento Kings,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-11-11,Seattle SuperSonics,Phoenix Suns,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-11-13,Seattle SuperSonics,Los Angeles Clippers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-11-22,Seattle SuperSonics,New Jersey Nets,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-11-28,Seattle SuperSonics,Indiana Pacers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-11-30,Seattle SuperSonics,San Antonio Spurs,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-03,Seattle SuperSonics,Milwaukee Bucks,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-15,Seattle SuperSonics,Portland Trail Blazers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-17,Seattle SuperSonics,Orlando Magic,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-20,Seattle SuperSonics,Los Angeles Clippers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-22,Seattle SuperSonics,Dallas Mavericks,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-26,Seattle SuperSonics,Sacramento Kings,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1994-12-28,Seattle SuperSonics,Philadelphia 76ers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-01-13,Seattle SuperSonics,Los Angeles Clippers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-01-15,Seattle SuperSonics,Portland Trail Blazers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-01-17,Seattle SuperSonics,Cleveland Cavaliers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-01-24,Seattle SuperSonics,Denver Nuggets,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-01-26,Seattle SuperSonics,Utah Jazz,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-01-28,Seattle SuperSonics,Los Angeles Lakers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-07,Seattle SuperSonics,San Antonio Spurs,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-09,Seattle SuperSonics,Chicago Bulls,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-14,Seattle SuperSonics,Golden State Warriors,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-20,Seattle SuperSonics,Los Angeles Lakers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-22,Seattle SuperSonics,Minnesota Timberwolves,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-24,Seattle SuperSonics,Denver Nuggets,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-02-27,Seattle SuperSonics,Charlotte Hornets,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-06,Seattle SuperSonics,Golden State Warriors,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-14,Seattle SuperSonics,Boston Celtics,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-16,Seattle SuperSonics,Miami Heat,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-18,Seattle SuperSonics,Detroit Pistons,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-23,Seattle SuperSonics,Washington Bullets,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-26,Seattle SuperSonics,New York Knicks,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-29,Seattle SuperSonics,Minnesota Timberwolves,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-03-31,Seattle SuperSonics,Sacramento Kings,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-04-02,Seattle SuperSonics,Atlanta Hawks,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-04-11,Seattle SuperSonics,Phoenix Suns,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-04-13,Seattle SuperSonics,Dallas Mavericks,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-04-17,Seattle SuperSonics,Portland Trail Blazers,Q1570942,false,false,SuperSonics 1994-95 home game in Tacoma,wikipedia,https://en.wikipedia.org/wiki/1994%E2%80%9395_Seattle_SuperSonics_season
+nba,1995-04-27,Houston Rockets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-04-29,Houston Rockets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-07,Houston Rockets,Utah Jazz,Q82294,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-09,Houston Rockets,Phoenix Suns,Q1538690,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-11,Houston Rockets,Phoenix Suns,Q1538690,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-16,Houston Rockets,Phoenix Suns,Q1538690,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-20,Houston Rockets,Phoenix Suns,Q1538690,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-22,Houston Rockets,San Antonio Spurs,Q1618347,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-24,Houston Rockets,San Antonio Spurs,Q1618347,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1995-05-30,Houston Rockets,San Antonio Spurs,Q1618347,false,false,Playoff game flagged neutral in DB; host-club arena,wikipedia,https://en.wikipedia.org/wiki/1995_NBA_playoffs
+nba,1999-11-05,Sacramento Kings,Minnesota Timberwolves,Q733748,true,true,NBA Japan Games 1999,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,1999-11-06,Minnesota Timberwolves,Sacramento Kings,Q733748,true,true,NBA Japan Games 1999,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2003-10-30,Seattle,Los Angeles Clippers,Q1052149,true,true,NBA Japan Games 2003,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2003-10-31,Los Angeles Clippers,Seattle,Q1052149,true,true,NBA Japan Games 2003,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2005-11-01,New Orleans Hornets,Sacramento Kings,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-11-09,New Orleans Hornets,Orlando Magic,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-11-12,New Orleans Hornets,Dallas Mavericks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-11-16,New Orleans Hornets,Denver Nuggets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-11-18,New Orleans Hornets,Atlanta Hawks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-11-23,New Orleans Hornets,Minnesota Timberwolves,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-02,New Orleans Hornets,Philadelphia 76ers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-07,New Orleans Hornets,Boston Celtics,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-14,New Orleans Hornets,Los Angeles Clippers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-16,New Orleans Hornets,Phoenix Suns,Q3738031,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-18,New Orleans Hornets,San Antonio Spurs,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-28,New Orleans Hornets,Houston Rockets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2005-12-31,New Orleans Hornets,Dallas Mavericks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-02,New Orleans Hornets,Charlotte Bobcats,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-04,New Orleans Hornets,Miami Heat,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-06,New Orleans Hornets,Portland Trail Blazers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-10,New Orleans Hornets,Detroit Pistons,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-13,New Orleans Hornets,Sacramento Kings,Q6662666,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-18,New Orleans Hornets,Memphis Grizzlies,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-25,New Orleans Hornets,San Antonio Spurs,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-01-30,New Orleans Hornets,Milwaukee Bucks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-01,New Orleans Hornets,Chicago Bulls,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-04,New Orleans Hornets,Los Angeles Lakers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-08,New Orleans Hornets,Seattle,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-10,New Orleans Hornets,New York Knicks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-13,New Orleans Hornets,Washington Wizards,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-15,New Orleans Hornets,Portland Trail Blazers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-02-22,New Orleans Hornets,Utah Jazz,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-06,New Orleans Hornets,Phoenix Suns,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-08,New Orleans Hornets,Los Angeles Lakers,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-10,New Orleans Hornets,Indiana Pacers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-12,New Orleans Hornets,New Jersey Nets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-18,New Orleans Hornets,Denver Nuggets,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-21,New Orleans Hornets,Los Angeles Clippers,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-23,New Orleans Hornets,Houston Rockets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-03-31,New Orleans Hornets,Memphis Grizzlies,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-04-05,New Orleans Hornets,Golden State Warriors,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-04-07,New Orleans Hornets,Toronto Raptors,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-04-10,New Orleans Hornets,Cleveland Cavaliers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-04-12,New Orleans Hornets,Seattle,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-04-14,New Orleans Hornets,Utah Jazz,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2005%E2%80%9306_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-11-05,New Orleans Hornets,Houston Rockets,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-11-07,New Orleans Hornets,Golden State Warriors,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-11-14,New Orleans Hornets,Charlotte Bobcats,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-11-21,New Orleans Hornets,Miami Heat,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-11-24,New Orleans Hornets,Minnesota Timberwolves,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-11-28,New Orleans Hornets,Toronto Raptors,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-01,New Orleans Hornets,Chicago Bulls,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-11,New Orleans Hornets,Cleveland Cavaliers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-14,New Orleans Hornets,San Antonio Spurs,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-16,New Orleans Hornets,Dallas Mavericks,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-22,New Orleans Hornets,Memphis Grizzlies,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-23,New Orleans Hornets,San Antonio Spurs,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2006-12-29,New Orleans Hornets,Denver Nuggets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-02,New Orleans Hornets,Golden State Warriors,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-04,New Orleans Hornets,Detroit Pistons,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-06,New Orleans Hornets,Indiana Pacers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-08,New Orleans Hornets,Los Angeles Clippers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-12,New Orleans Hornets,Washington Wizards,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-16,New Orleans Hornets,Orlando Magic,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-20,New Orleans Hornets,Los Angeles Lakers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-26,New Orleans Hornets,Sacramento Kings,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-27,New Orleans Hornets,Utah Jazz,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-29,New Orleans Hornets,Portland Trail Blazers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-01-31,New Orleans Hornets,Philadelphia 76ers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-02-02,New Orleans Hornets,Minnesota Timberwolves,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-02-08,New Orleans Hornets,Milwaukee Bucks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-02-10,New Orleans Hornets,Memphis Grizzlies,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-02-14,New Orleans Hornets,Sacramento Kings,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-02-23,New Orleans Hornets,Seattle,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-02-28,New Orleans Hornets,Atlanta Hawks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-03-04,New Orleans Hornets,Utah Jazz,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-03-13,New Orleans Hornets,New Jersey Nets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-03-19,New Orleans Hornets,Boston Celtics,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-03-23,New Orleans Hornets,Los Angeles Lakers,Q1515840,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-03-25,New Orleans Hornets,Houston Rockets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-03-27,New Orleans Hornets,Dallas Mavericks,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-04-04,New Orleans Hornets,Seattle,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-04-06,New Orleans Hornets,Phoenix Suns,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-04-10,New Orleans Hornets,Los Angeles Clippers,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2007-04-13,New Orleans Hornets,Denver Nuggets,Q665434,false,false,Hornets 2005-07 home game,wikipedia,https://en.wikipedia.org/wiki/2006%E2%80%9307_New_Orleans/Oklahoma_City_Hornets_season
+nba,2011-03-04,New Jersey Nets,Toronto Raptors,Q5364202,true,true,NBA London Game 2011,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2011-03-05,New Jersey Nets,Toronto Raptors,Q5364202,true,true,NBA London Game 2011,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2013-01-17,Detroit Pistons,New York Knicks,Q5364202,true,true,NBA London Game 2013,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2014-01-16,Atlanta Hawks,Brooklyn Nets,Q5364202,true,true,NBA London Game 2014,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2014-11-12,Minnesota Timberwolves,Houston Rockets,Q6826206,true,true,NBA Mexico City Game 2014,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2015-01-15,Milwaukee Bucks,New York Knicks,Q5364202,true,true,NBA London Game 2015,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2015-12-03,Sacramento Kings,Boston Celtics,Q6826206,true,true,NBA Mexico City Game 2015,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2016-01-14,Orlando Magic,Toronto Raptors,Q5364202,true,true,NBA London Game 2016,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2017-01-12,Denver Nuggets,Indiana Pacers,Q5364202,true,true,NBA London Game 2017,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2017-01-12,Phoenix Suns,Dallas Mavericks,Q6826206,true,true,NBA Mexico City Game 2017,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2017-01-14,Phoenix Suns,San Antonio Spurs,Q6826206,true,true,NBA Mexico City Game 2017,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2017-12-07,Brooklyn Nets,Oklahoma City Thunder,Q6826206,true,true,NBA Mexico City Game 2017,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2017-12-09,Brooklyn Nets,Miami Heat,Q6826206,true,true,NBA Mexico City Game 2017,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2018-01-11,Philadelphia 76ers,Boston Celtics,Q5364202,true,true,NBA London Game 2018,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2018-12-13,Orlando Magic,Chicago Bulls,Q6826206,true,true,NBA Mexico City Game 2018,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2018-12-15,Orlando Magic,Utah Jazz,Q6826206,true,true,NBA Mexico City Game 2018,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2019-01-17,Washington Wizards,New York Knicks,Q5364202,true,true,NBA London Game 2019,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2019-12-12,Detroit Pistons,Dallas Mavericks,Q6826206,true,true,NBA Mexico City Game 2019,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2019-12-14,Phoenix Suns,San Antonio Spurs,Q6826206,true,true,NBA Mexico City Game 2019,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2020-01-24,Charlotte Hornets,Milwaukee Bucks,Q537720,true,true,NBA Paris Game 2020,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2020-07-30,Los Angeles Lakers,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_Los_Angeles_Lakers_season
+nba,2020-07-30,New Orleans Pelicans,Utah Jazz,Q112620434,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_New_Orleans_Pelicans_season
+nba,2020-07-31,Brooklyn Nets,Orlando Magic,Q112620434,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_Brooklyn_Nets_season
+nba,2020-07-31,Dallas Mavericks,Houston Rockets,Q112620308,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_Dallas_Mavericks_season
+nba,2020-07-31,Milwaukee Bucks,Boston Celtics,Q112620434,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_Milwaukee_Bucks_season
+nba,2020-07-31,Portland Trail Blazers,Memphis Grizzlies,Q112620308,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_Portland_Trail_Blazers_season
+nba,2020-07-31,San Antonio Spurs,Sacramento Kings,Q112620319,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_San_Antonio_Spurs_season
+nba,2020-07-31,Washington Wizards,Phoenix Suns,Q112620319,true,false,2020 NBA bubble seeding game,wikipedia,https://en.wikipedia.org/wiki/2019%E2%80%9320_Washington_Wizards_season
+nba,2020-08-17,Boston Celtics,Philadelphia 76ers,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-17,Denver Nuggets,Utah Jazz,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-17,Los Angeles Clippers,Dallas Mavericks,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-17,Toronto Raptors,Brooklyn Nets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-18,Houston Rockets,Oklahoma City Thunder,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-18,Indiana Pacers,Miami Heat,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-18,Los Angeles Lakers,Portland Trail Blazers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-18,Milwaukee Bucks,Orlando Magic,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-19,Boston Celtics,Philadelphia 76ers,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-19,Denver Nuggets,Utah Jazz,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-19,Los Angeles Clippers,Dallas Mavericks,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-19,Toronto Raptors,Brooklyn Nets,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-20,Houston Rockets,Oklahoma City Thunder,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-20,Indiana Pacers,Miami Heat,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-20,Los Angeles Lakers,Portland Trail Blazers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-20,Milwaukee Bucks,Orlando Magic,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-21,Brooklyn Nets,Toronto Raptors,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-21,Dallas Mavericks,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-21,Philadelphia 76ers,Boston Celtics,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-21,Utah Jazz,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-22,Miami Heat,Indiana Pacers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-22,Oklahoma City Thunder,Houston Rockets,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-22,Orlando Magic,Milwaukee Bucks,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-22,Portland Trail Blazers,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-23,Brooklyn Nets,Toronto Raptors,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-23,Dallas Mavericks,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-23,Philadelphia 76ers,Boston Celtics,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-23,Utah Jazz,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-24,Miami Heat,Indiana Pacers,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-24,Oklahoma City Thunder,Houston Rockets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-24,Orlando Magic,Milwaukee Bucks,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-24,Portland Trail Blazers,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-25,Denver Nuggets,Utah Jazz,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-25,Los Angeles Clippers,Dallas Mavericks,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-29,Houston Rockets,Oklahoma City Thunder,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-29,Los Angeles Lakers,Portland Trail Blazers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-29,Milwaukee Bucks,Orlando Magic,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-30,Dallas Mavericks,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-30,Toronto Raptors,Boston Celtics,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-30,Utah Jazz,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-31,Milwaukee Bucks,Miami Heat,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-08-31,Oklahoma City Thunder,Houston Rockets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-01,Denver Nuggets,Utah Jazz,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-01,Toronto Raptors,Boston Celtics,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-02,Houston Rockets,Oklahoma City Thunder,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-02,Milwaukee Bucks,Miami Heat,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-03,Boston Celtics,Toronto Raptors,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-03,Los Angeles Clippers,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-04,Los Angeles Lakers,Houston Rockets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-04,Miami Heat,Milwaukee Bucks,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-05,Boston Celtics,Toronto Raptors,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-05,Los Angeles Clippers,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-06,Los Angeles Lakers,Houston Rockets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-06,Miami Heat,Milwaukee Bucks,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-07,Denver Nuggets,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-07,Toronto Raptors,Boston Celtics,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-08,Houston Rockets,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-08,Milwaukee Bucks,Miami Heat,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-09,Boston Celtics,Toronto Raptors,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-09,Denver Nuggets,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-10,Houston Rockets,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-11,Los Angeles Clippers,Denver Nuggets,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-11,Toronto Raptors,Boston Celtics,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-12,Los Angeles Lakers,Houston Rockets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-13,Denver Nuggets,Los Angeles Clippers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-15,Boston Celtics,Miami Heat,Q112620434,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-15,Los Angeles Clippers,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-17,Boston Celtics,Miami Heat,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-18,Los Angeles Lakers,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-19,Miami Heat,Boston Celtics,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-20,Los Angeles Lakers,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-22,Denver Nuggets,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-23,Miami Heat,Boston Celtics,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-24,Denver Nuggets,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-25,Boston Celtics,Miami Heat,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-26,Los Angeles Lakers,Denver Nuggets,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-27,Miami Heat,Boston Celtics,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-09-30,Los Angeles Lakers,Miami Heat,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-10-02,Los Angeles Lakers,Miami Heat,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-10-04,Miami Heat,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-10-06,Miami Heat,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-10-09,Los Angeles Lakers,Miami Heat,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-10-11,Miami Heat,Los Angeles Lakers,Q112620308,true,false,2020 NBA bubble playoffs,wikipedia,https://en.wikipedia.org/wiki/2020_NBA_playoffs
+nba,2020-12-23,Toronto Raptors,New Orleans Pelicans,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2020-12-31,Toronto Raptors,New York Knicks,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-04,Toronto Raptors,Boston Celtics,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-14,Toronto Raptors,Charlotte Hornets,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-16,Toronto Raptors,Charlotte Hornets,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-18,Toronto Raptors,Dallas Mavericks,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-20,Toronto Raptors,Miami Heat,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-22,Toronto Raptors,Miami Heat,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-27,Toronto Raptors,Milwaukee Bucks,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-29,Toronto Raptors,Sacramento Kings,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-01-31,Toronto Raptors,Orlando Magic,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-02-14,Toronto Raptors,Minnesota Timberwolves,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-02-21,Toronto Raptors,Philadelphia 76ers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-02-23,Toronto Raptors,Philadelphia 76ers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-02-26,Toronto Raptors,Houston Rockets,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-03-03,Toronto Raptors,Detroit Pistons,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-03-11,Toronto Raptors,Atlanta Hawks,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-03-19,Toronto Raptors,Utah Jazz,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-03-24,Toronto Raptors,Denver Nuggets,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-03-26,Toronto Raptors,Phoenix Suns,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-03-28,Toronto Raptors,Portland Trail Blazers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-02,Toronto Raptors,Golden State Warriors,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-05,Toronto Raptors,Washington Wizards,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-06,Toronto Raptors,Los Angeles Lakers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-08,Toronto Raptors,Chicago Bulls,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-13,Toronto Raptors,Atlanta Hawks,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-14,Toronto Raptors,San Antonio Spurs,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-16,Toronto Raptors,Orlando Magic,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-18,Toronto Raptors,Oklahoma City Thunder,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-21,Toronto Raptors,Brooklyn Nets,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-26,Toronto Raptors,Cleveland Cavaliers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-04-27,Toronto Raptors,Brooklyn Nets,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-05-06,Toronto Raptors,Washington Wizards,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-05-08,Toronto Raptors,Memphis Grizzlies,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-05-11,Toronto Raptors,Los Angeles Clippers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2021-05-16,Toronto Raptors,Indiana Pacers,Q940199,false,false,Raptors 2020-21 home game in Tampa,wikipedia,https://en.wikipedia.org/wiki/2020%E2%80%9321_Toronto_Raptors_season
+nba,2022-12-17,San Antonio Spurs,Miami Heat,Q6826206,true,true,NBA Mexico City Game 2022,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2023-01-19,Detroit Pistons,Chicago Bulls,Q537720,true,true,NBA Paris Game 2023,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2023-11-09,Orlando Magic,Atlanta Hawks,Q6826206,true,true,NBA Mexico City Game 2023,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2024-01-11,Cleveland Cavaliers,Brooklyn Nets,Q537720,true,true,NBA Paris Game 2024,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2024-11-02,Washington Wizards,Miami Heat,Q6826206,true,true,NBA Mexico City Game 2024,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2025-01-23,Indiana Pacers,San Antonio Spurs,Q537720,true,true,NBA Paris Game 2025,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2025-01-25,San Antonio Spurs,Indiana Pacers,Q537720,true,true,NBA Paris Game 2025,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2025-11-01,Detroit Pistons,Dallas Mavericks,Q6826206,true,true,NBA Mexico City Game 2025,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2026-01-15,Orlando Magic,Memphis Grizzlies,Q265463,true,true,NBA Berlin Game 2026,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2026-01-18,Memphis Grizzlies,Orlando Magic,Q5364202,true,true,NBA London Game 2026,wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2026-11-07,Indiana Pacers,Denver Nuggets,Q6826206,true,true,NBA Mexico City Game 2026 (scheduled),wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2027-01-14,San Antonio Spurs,New Orleans Pelicans,Q537720,true,true,NBA Paris Game 2027 (scheduled),wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nba,2027-01-17,New Orleans Pelicans,San Antonio Spurs,Q111962681,true,true,NBA Manchester Game 2027 (scheduled),wikipedia,https://en.wikipedia.org/wiki/NBA_Global_Games
+nhl,1997-10-03,Vancouver Canucks,Anaheim Ducks,Q1069457,true,true,1997 NHL Japan Games,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,1997-10-04,Anaheim Ducks,Vancouver Canucks,Q1069457,true,true,1997 NHL Japan Games,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,1998-10-09,Calgary Flames,San Jose Sharks,Q1069457,true,true,1998 NHL Japan Games,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,1998-10-10,San Jose Sharks,Calgary Flames,Q1069457,true,true,1998 NHL Japan Games,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2000-10-06,Nashville Predators,Pittsburgh Penguins,Q1052149,true,true,2000 NHL Japan Games,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2000-10-07,Pittsburgh Penguins,Nashville Predators,Q1052149,true,true,2000 NHL Japan Games,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2003-11-22,Edmonton Oilers,Montréal Canadiens,Q130381,false,false,2003 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2003_Heritage_Classic
+nhl,2007-09-29,Los Angeles Kings,Anaheim Ducks,Q5364202,true,true,2007 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2007-09-30,Anaheim Ducks,Los Angeles Kings,Q5364202,true,true,2007 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2008-01-01,Buffalo Sabres,Pittsburgh Penguins,Q1475645,false,false,2008 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2008_NHL_Winter_Classic
+nhl,2008-10-04,Ottawa Senators,Pittsburgh Penguins,Q32926,true,true,2008 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2008-10-04,Tampa Bay Lightning,New York Rangers,Q692207,true,true,2008 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2008-10-05,New York Rangers,Tampa Bay Lightning,Q692207,true,true,2008 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2008-10-05,Pittsburgh Penguins,Ottawa Senators,Q32926,true,true,2008 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2009-01-01,Chicago Blackhawks,Detroit Red Wings,Q1052807,false,false,2009 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2009_NHL_Winter_Classic
+nhl,2009-10-02,Chicago Blackhawks,Florida Panthers,Q33176,true,true,2009 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2009-10-02,St. Louis Blues,Detroit Red Wings,Q32926,true,true,2009 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2009-10-03,Detroit Red Wings,St. Louis Blues,Q32926,true,true,2009 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2009-10-03,Florida Panthers,Chicago Blackhawks,Q33176,true,true,2009 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2010-01-01,Boston Bruins,Philadelphia Flyers,Q49136,false,false,2010 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2010_NHL_Winter_Classic
+nhl,2010-10-07,Minnesota Wild,Carolina Hurricanes,Q33176,true,true,2010 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2010-10-08,Carolina Hurricanes,Minnesota Wild,Q33176,true,true,2010 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2010-10-08,San Jose Sharks,Columbus Blue Jackets,Q32926,true,true,2010 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2010-10-09,Boston Bruins,Phoenix Coyotes,Q692207,true,true,2010 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2010-10-09,Columbus Blue Jackets,San Jose Sharks,Q32926,true,true,2010 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2010-10-10,Phoenix Coyotes,Boston Bruins,Q692207,true,true,2010 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2011-01-01,Pittsburgh Penguins,Washington Capitals,Q1067148,false,false,2011 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2011_NHL_Winter_Classic
+nhl,2011-02-20,Calgary Flames,Montréal Canadiens,Q1810204,false,false,2011 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2011_Heritage_Classic
+nhl,2011-10-07,Buffalo Sabres,Anaheim Ducks,Q33176,true,true,2011 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2011-10-07,Los Angeles Kings,New York Rangers,Q32926,true,true,2011 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2011-10-08,Anaheim Ducks,New York Rangers,Q32926,true,true,2011 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2011-10-08,Los Angeles Kings,Buffalo Sabres,Q265463,true,true,2011 NHL Premiere,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2012-01-02,Philadelphia Flyers,New York Rangers,Q912770,false,false,2012 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2012_NHL_Winter_Classic
+nhl,2014-01-01,Detroit Red Wings,Toronto Maple Leafs,Q1640118,false,false,2014 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2014_NHL_Winter_Classic
+nhl,2014-01-25,Los Angeles Kings,Anaheim Ducks,Q247420,false,false,2014 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2014_NHL_Stadium_Series
+nhl,2014-01-26,New Jersey Devils,New York Rangers,Q753529,false,false,2014 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2014_NHL_Stadium_Series
+nhl,2014-01-29,New York Islanders,New York Rangers,Q753529,false,false,2014 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2014_NHL_Stadium_Series
+nhl,2014-03-01,Chicago Blackhawks,Pittsburgh Penguins,Q1132413,false,false,2014 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2014_NHL_Stadium_Series
+nhl,2014-03-02,Vancouver Canucks,Ottawa Senators,Q612227,false,false,2014 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2014_Heritage_Classic
+nhl,2015-01-01,Washington Capitals,Chicago Blackhawks,Q517545,false,false,2015 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2015_NHL_Winter_Classic
+nhl,2015-02-21,San Jose Sharks,Los Angeles Kings,Q7419343,false,false,2015 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2015_NHL_Stadium_Series
+nhl,2016-01-01,Boston Bruins,Montréal Canadiens,Q373355,false,false,2016 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2016_NHL_Winter_Classic
+nhl,2016-02-21,Minnesota Wild,Chicago Blackhawks,Q3512039,false,false,2016 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2016_NHL_Stadium_Series
+nhl,2016-02-27,Colorado Avalanche,Detroit Red Wings,Q1129916,false,false,2016 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2016_NHL_Stadium_Series
+nhl,2016-10-23,Winnipeg Jets,Edmonton Oilers,Q1671788,false,false,2016 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2016_Heritage_Classic
+nhl,2017-01-01,Toronto Maple Leafs,Detroit Red Wings,Q796351,false,false,2017 Centennial Classic,wikipedia,https://en.wikipedia.org/wiki/2017_NHL_Centennial_Classic
+nhl,2017-01-02,St. Louis Blues,Chicago Blackhawks,Q253546,false,false,2017 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2017_NHL_Winter_Classic
+nhl,2017-02-25,Pittsburgh Penguins,Philadelphia Flyers,Q1067148,false,false,2017 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2017_NHL_Stadium_Series
+nhl,2017-11-10,Colorado Avalanche,Ottawa Senators,Q32926,true,true,2017 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2017-11-11,Ottawa Senators,Colorado Avalanche,Q32926,true,true,2017 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2017-12-16,Ottawa Senators,Montréal Canadiens,Q1442809,false,false,2017 NHL 100 Classic,wikipedia,https://en.wikipedia.org/wiki/NHL_100_Classic
+nhl,2018-01-01,Buffalo Sabres,New York Rangers,Q1072882,false,false,2018 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2018_NHL_Winter_Classic
+nhl,2018-03-03,Washington Capitals,Toronto Maple Leafs,Q3337331,false,false,2018 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2018_NHL_Stadium_Series
+nhl,2018-10-06,New Jersey Devils,Edmonton Oilers,Q1138447,true,true,2018 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2018-11-01,Florida Panthers,Winnipeg Jets,Q33176,true,true,2018 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2018-11-02,Winnipeg Jets,Florida Panthers,Q33176,true,true,2018 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2019-01-01,Chicago Blackhawks,Boston Bruins,Q847043,true,false,2019 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2019_NHL_Winter_Classic
+nhl,2019-02-23,Philadelphia Flyers,Pittsburgh Penguins,Q1052370,false,false,2019 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2019_NHL_Stadium_Series
+nhl,2019-10-04,Philadelphia Flyers,Chicago Blackhawks,Q692207,true,true,2019 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2019-10-26,Winnipeg Jets,Calgary Flames,Q7011148,true,false,2019 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2019_Heritage_Classic
+nhl,2019-11-08,Buffalo Sabres,Tampa Bay Lightning,Q32926,true,true,2019 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2019-11-09,Tampa Bay Lightning,Buffalo Sabres,Q32926,true,true,2019 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2020-01-01,Dallas Stars,Nashville Predators,Q1136764,false,false,2020 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2020_NHL_Winter_Classic
+nhl,2020-02-15,Colorado Avalanche,Los Angeles Kings,Q907843,true,false,2020 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2020_NHL_Stadium_Series
+nhl,2020-08-01,Calgary Flames,Winnipeg Jets,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-01,Carolina Hurricanes,New York Rangers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-01,Edmonton Oilers,Chicago Blackhawks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-01,New York Islanders,Florida Panthers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-01,Pittsburgh Penguins,Montréal Canadiens,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-02,Boston Bruins,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-02,Colorado Avalanche,St. Louis Blues,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-02,Nashville Predators,Arizona Coyotes,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-02,Toronto Maple Leafs,Columbus Blue Jackets,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-02,Vancouver Canucks,Minnesota Wild,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-03,Calgary Flames,Winnipeg Jets,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-03,Carolina Hurricanes,New York Rangers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-03,Edmonton Oilers,Chicago Blackhawks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-03,Pittsburgh Penguins,Montréal Canadiens,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-03,Tampa Bay Lightning,Washington Capitals,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-03,Vegas Golden Knights,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-04,Nashville Predators,Arizona Coyotes,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-04,New York Islanders,Florida Panthers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-04,New York Rangers,Carolina Hurricanes,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-04,Toronto Maple Leafs,Columbus Blue Jackets,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-04,Vancouver Canucks,Minnesota Wild,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-04,Winnipeg Jets,Calgary Flames,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-05,Arizona Coyotes,Nashville Predators,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-05,Boston Bruins,Tampa Bay Lightning,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-05,Chicago Blackhawks,Edmonton Oilers,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-05,Dallas Stars,Colorado Avalanche,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-05,Florida Panthers,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-05,Montréal Canadiens,Pittsburgh Penguins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-06,Columbus Blue Jackets,Toronto Maple Leafs,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-06,Minnesota Wild,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-06,Philadelphia Flyers,Washington Capitals,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-06,St. Louis Blues,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-06,Winnipeg Jets,Calgary Flames,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-07,Arizona Coyotes,Nashville Predators,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-07,Chicago Blackhawks,Edmonton Oilers,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-07,Columbus Blue Jackets,Toronto Maple Leafs,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-07,Florida Panthers,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-07,Minnesota Wild,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-07,Montréal Canadiens,Pittsburgh Penguins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-08,Colorado Avalanche,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-08,Tampa Bay Lightning,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-09,St. Louis Blues,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-09,Toronto Maple Leafs,Columbus Blue Jackets,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-09,Washington Capitals,Boston Bruins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-11,Dallas Stars,Calgary Flames,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-11,Tampa Bay Lightning,Columbus Blue Jackets,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-11,Vegas Golden Knights,Chicago Blackhawks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-12,Boston Bruins,Carolina Hurricanes,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-12,Colorado Avalanche,Arizona Coyotes,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-12,Philadelphia Flyers,Montréal Canadiens,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-12,St. Louis Blues,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-12,Washington Capitals,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-13,Boston Bruins,Carolina Hurricanes,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-13,Dallas Stars,Calgary Flames,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-13,Tampa Bay Lightning,Columbus Blue Jackets,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-13,Vegas Golden Knights,Chicago Blackhawks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-14,Calgary Flames,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-14,Colorado Avalanche,Arizona Coyotes,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-14,Philadelphia Flyers,Montréal Canadiens,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-14,St. Louis Blues,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-14,Washington Capitals,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-15,Arizona Coyotes,Colorado Avalanche,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-15,Carolina Hurricanes,Boston Bruins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-15,Chicago Blackhawks,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-15,Columbus Blue Jackets,Tampa Bay Lightning,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-16,Calgary Flames,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-16,Chicago Blackhawks,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-16,Montréal Canadiens,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-16,New York Islanders,Washington Capitals,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-16,Vancouver Canucks,St. Louis Blues,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-17,Arizona Coyotes,Colorado Avalanche,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-17,Carolina Hurricanes,Boston Bruins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-17,Columbus Blue Jackets,Tampa Bay Lightning,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-17,Vancouver Canucks,St. Louis Blues,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-18,Dallas Stars,Calgary Flames,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-18,Montréal Canadiens,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-18,New York Islanders,Washington Capitals,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-18,Vegas Golden Knights,Chicago Blackhawks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-19,Boston Bruins,Carolina Hurricanes,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-19,Colorado Avalanche,Arizona Coyotes,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-19,Philadelphia Flyers,Montréal Canadiens,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-19,St. Louis Blues,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-19,Tampa Bay Lightning,Columbus Blue Jackets,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-20,Calgary Flames,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-20,Washington Capitals,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-21,Montréal Canadiens,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-21,Vancouver Canucks,St. Louis Blues,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-22,Colorado Avalanche,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-23,Tampa Bay Lightning,Boston Bruins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-23,Vegas Golden Knights,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-24,Colorado Avalanche,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-24,Philadelphia Flyers,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-25,Tampa Bay Lightning,Boston Bruins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-25,Vegas Golden Knights,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-26,Boston Bruins,Tampa Bay Lightning,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-26,Dallas Stars,Colorado Avalanche,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-26,Philadelphia Flyers,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-29,Boston Bruins,Tampa Bay Lightning,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-29,New York Islanders,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-29,Vancouver Canucks,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-30,Dallas Stars,Colorado Avalanche,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-30,New York Islanders,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-30,Vancouver Canucks,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-31,Colorado Avalanche,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-08-31,Tampa Bay Lightning,Boston Bruins,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-01,Philadelphia Flyers,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-01,Vegas Golden Knights,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-02,Dallas Stars,Colorado Avalanche,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-03,New York Islanders,Philadelphia Flyers,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-03,Vancouver Canucks,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-04,Colorado Avalanche,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-04,Vegas Golden Knights,Vancouver Canucks,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-05,Philadelphia Flyers,New York Islanders,Q406972,true,false,2020 Stanley Cup playoffs hub (Toronto),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-06,Vegas Golden Knights,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-07,Tampa Bay Lightning,New York Islanders,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-08,Vegas Golden Knights,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-09,Tampa Bay Lightning,New York Islanders,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-10,Dallas Stars,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-11,New York Islanders,Tampa Bay Lightning,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-12,Dallas Stars,Vegas Golden Knights,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-13,New York Islanders,Tampa Bay Lightning,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-14,Vegas Golden Knights,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-15,Tampa Bay Lightning,New York Islanders,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-17,New York Islanders,Tampa Bay Lightning,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-19,Tampa Bay Lightning,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-21,Tampa Bay Lightning,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-23,Dallas Stars,Tampa Bay Lightning,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-25,Dallas Stars,Tampa Bay Lightning,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-26,Tampa Bay Lightning,Dallas Stars,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2020-09-28,Dallas Stars,Tampa Bay Lightning,Q5339036,true,false,2020 Stanley Cup playoffs hub (Edmonton),wikipedia,https://en.wikipedia.org/wiki/2020_Stanley_Cup_playoffs
+nhl,2021-02-20,Colorado Avalanche,Vegas Golden Knights,Q104882786,true,false,2021 NHL Outdoors at Lake Tahoe,wikipedia,https://en.wikipedia.org/wiki/NHL_Outdoors_at_Lake_Tahoe
+nhl,2021-02-21,Boston Bruins,Philadelphia Flyers,Q104882786,true,false,2021 NHL Outdoors at Lake Tahoe,wikipedia,https://en.wikipedia.org/wiki/NHL_Outdoors_at_Lake_Tahoe
+nhl,2022-01-01,Minnesota Wild,St. Louis Blues,Q1156635,false,false,2022 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2022_NHL_Winter_Classic
+nhl,2022-02-26,Nashville Predators,Tampa Bay Lightning,Q1142992,false,false,2022 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2022_NHL_Stadium_Series
+nhl,2022-03-13,Buffalo Sabres,Toronto Maple Leafs,Q7008048,true,false,2022 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2022_Heritage_Classic
+nhl,2022-10-07,Nashville Predators,San Jose Sharks,Q692207,true,true,2022 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2022-10-08,San Jose Sharks,Nashville Predators,Q692207,true,true,2022 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2022-11-04,Colorado Avalanche,Columbus Blue Jackets,Q7681773,true,true,2022 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2022-11-05,Columbus Blue Jackets,Colorado Avalanche,Q7681773,true,true,2022 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2023-01-02,Boston Bruins,Pittsburgh Penguins,Q49136,false,false,2023 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2023_NHL_Winter_Classic
+nhl,2023-02-18,Carolina Hurricanes,Washington Capitals,Q945172,false,false,2023 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2023_NHL_Stadium_Series
+nhl,2023-10-29,Edmonton Oilers,Calgary Flames,Q130381,false,false,2023 Heritage Classic,wikipedia,https://en.wikipedia.org/wiki/2023_Heritage_Classic
+nhl,2023-11-16,Ottawa Senators,Detroit Red Wings,Q32926,true,true,2023 NHL Global Series Sweden,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2023-11-17,Detroit Red Wings,Toronto Maple Leafs,Q32926,true,true,2023 NHL Global Series Sweden,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2023-11-18,Ottawa Senators,Minnesota Wild,Q32926,true,true,2023 NHL Global Series Sweden,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2023-11-19,Minnesota Wild,Toronto Maple Leafs,Q32926,true,true,2023 NHL Global Series Sweden,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2024-01-01,Seattle Kraken,Vegas Golden Knights,Q1193117,false,false,2024 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2024_NHL_Winter_Classic
+nhl,2024-02-17,New Jersey Devils,Philadelphia Flyers,Q10862290,false,false,2024 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2024_NHL_Stadium_Series
+nhl,2024-02-18,New York Islanders,New York Rangers,Q10862290,false,false,2024 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2024_NHL_Stadium_Series
+nhl,2024-10-04,Buffalo Sabres,New Jersey Devils,Q692207,true,true,2024 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2024-10-05,New Jersey Devils,Buffalo Sabres,Q692207,true,true,2024 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2024-11-01,Dallas Stars,Florida Panthers,Q7681773,true,true,2024 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2024-11-02,Florida Panthers,Dallas Stars,Q7681773,true,true,2024 NHL Global Series,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2024-12-31,Chicago Blackhawks,St. Louis Blues,Q1052807,false,false,2025 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2025_NHL_Winter_Classic
+nhl,2025-03-01,Columbus Blue Jackets,Detroit Red Wings,Q774694,false,false,2025 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2025_NHL_Stadium_Series
+nhl,2025-11-14,Nashville Predators,Pittsburgh Penguins,Q32926,true,true,2025 NHL Global Series Sweden,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2025-11-16,Pittsburgh Penguins,Nashville Predators,Q32926,true,true,2025 NHL Global Series Sweden,wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2026-01-02,Florida Panthers,New York Rangers,Q1368138,false,false,2026 Winter Classic,wikipedia,https://en.wikipedia.org/wiki/2026_NHL_Winter_Classic
+nhl,2026-02-01,Tampa Bay Lightning,Boston Bruins,Q1141343,false,false,2026 Stadium Series,wikipedia,https://en.wikipedia.org/wiki/2026_NHL_Stadium_Series
+nhl,2026-10-25,Winnipeg Jets,Montréal Canadiens,Q1671788,false,false,2026 Heritage Classic (scheduled),wikipedia,https://en.wikipedia.org/wiki/2026_Heritage_Classic
+nhl,2026-11-12,Seattle Kraken,Carolina Hurricanes,Q33176,true,true,2026 NHL Global Series (scheduled),wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2026-11-14,Carolina Hurricanes,Seattle Kraken,Q33176,true,true,2026 NHL Global Series (scheduled),wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2026-12-18,Ottawa Senators,Chicago Blackhawks,Q319387,true,true,2026 NHL Global Series (scheduled),wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2026-12-20,Chicago Blackhawks,Ottawa Senators,Q319387,true,true,2026 NHL Global Series (scheduled),wikipedia,https://en.wikipedia.org/wiki/NHL_Global_Series
+nhl,2026-12-31,Utah Mammoth,Colorado Avalanche,Q922761,false,false,2027 Winter Classic (scheduled),wikipedia,https://en.wikipedia.org/wiki/2027_NHL_Winter_Classic
+nhl,2027-02-20,Dallas Stars,Vegas Golden Knights,Q838284,false,false,2027 Stadium Series (scheduled),wikipedia,https://en.wikipedia.org/wiki/2027_NHL_Stadium_Series

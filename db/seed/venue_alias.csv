@@ -1,0 +1,98 @@
+source,name,qid,note
+nflverse,3Com Park,Q1033076,Candlestick Park
+nflverse,Candlestick Park,Q1033076,
+nflverse,Monster Park,Q1033076,
+nflverse,Allianz Arena,Q127429,
+nflverse,FC Bayern Munich Stadium,Q127429,"Allianz Arena, Munich"
+nflverse,Arena Corinthians,Q1362236,"Neo Quimica Arena, Sao Paulo"
+nflverse,Azteca Stadium,Q320454,
+nflverse,Estadio Banorte,Q320454,Estadio Azteca after its 2024 renaming
+nflverse,Bernabeu,Q164027,
+nflverse,Deutsche Bank Park,Q157273,"Waldstadion, Frankfurt"
+nflverse,Dome at America's Center,Q1292739,
+nflverse,TWA Dome,Q1292739,
+nflverse,EverBank Stadium,Q635117,
+nflverse,TIAA Bank Stadium,Q635117,
+nflverse,Foxboro Stadium,Q339850,
+nflverse,Giants Stadium,Q375365,
+nflverse,Highmark Stadium,Q1475645,"Buffalo's Bills Stadium, Orchard Park"
+nflverse,New Era Field,Q1475645,
+nflverse,Invesco Field at Mile High,Q1046135,
+nflverse,Sports Authority Field at Mile High,Q1046135,
+nflverse,Mall of America Field,Q1072186,Metrodome
+nflverse,Maracana Stadium,Q155174,
+nflverse,Melbourne Cricket Ground,Q330136,
+nflverse,Memorial Stadium (Champaign),Q3305514,"Gies Memorial Stadium, the Bears' home 2002"
+nflverse,Mile High Stadium,Q1934586,
+nflverse,NRG Stadium,Q1058864,Reliant Stadium
+nflverse,Qualcomm Stadium,Q956072,San Diego Stadium
+nflverse,Seattle Kingdome,Q990430,
+nflverse,Stade de France,Q13205,
+nflverse,Texas Stadium,Q601596,
+nflverse,Tiger Stadium (LSU),Q1594708,Saints home games 2005 after Hurricane Katrina
+nflverse,Tottenham Hotspur Stadium,Q55074091,
+nflverse,Tottenham Stadium,Q55074091,
+nflverse,Twickenham Stadium,Q209725,
+nflverse,University of Phoenix Stadium,Q756433,State Farm Stadium
+nflverse,Veterans Stadium,Q1545870,
+nflverse,Wembley Stadium,Q128468,the new Wembley (2007 on); nflverse plays only there
+nhlapi,Ak-Sar-Ben Coliseum,Q4700018,Omaha
+nhlapi,Arrowhead Pond,Q774138,"Anaheim, now Honda Center"
+nhlapi,Atlantic City Auditorium,Q887566,"Boardwalk Hall, Atlantic City Convention Hall"
+nhlapi,Avicii Arena,Q32926,Stockholm
+nhlapi,Ericsson Globe,Q32926,"Stockholm, now Avicii Arena"
+nhlapi,Globe Arena,Q32926,"Stockholm, now Avicii Arena"
+nhlapi,Border Cities Arena,Q8024565,"Windsor Arena, Windsor, Ontario"
+nhlapi,Carter-Finley Stadium,Q945172,"2023 Stadium Series, Raleigh"
+nhlapi,Centre Bell,Q522282,"Montreal, name of Bell Centre in French"
+nhlapi,Centre Molson,Q522282,"Montreal, Molson Centre (1996-2002)"
+nhlapi,"Commonwealth Stadium, Edmonton",Q130381,
+nhlapi,Compaq Center at San Jose,Q261863,San Jose Arena / SAP Center
+nhlapi,HP Pavilion at San Jose,Q261863,San Jose Arena / SAP Center
+nhlapi,SAP Center at San Jose,Q261863,
+nhlapi,Copps Coliseum,Q1131541,"Hamilton, Ontario (now TD Coliseum)"
+nhlapi,Cotton Bowl Stadium,Q1136764,"2020 Winter Classic, Dallas"
+nhlapi,Denman Arena,Q779088,Vancouver
+nhlapi,Duquesne Gardens,Q3041488,Pittsburgh
+nhlapi,Edgewood Tahoe Resort,Q104882786,2021 outdoor games at Lake Tahoe
+nhlapi,Entertainment and Sports Arena,Q39177,Raleigh arena of the Hurricanes (now Lenovo Center)
+nhlapi,Falcon Stadium,Q907843,"2020 Stadium Series, Colorado Springs"
+nhlapi,Gila River Arena,Q1421377,"Glendale, Arizona (now Desert Diamond Arena)"
+nhlapi,Glendale Arena,Q1421377,
+nhlapi,Jobing.com Arena,Q1421377,
+nhlapi,Great Western Forum,Q639129,Inglewood (now Kia Forum)
+nhlapi,The Forum,Q639129,Inglewood
+nhlapi,Greensboro Coliseum,Q842952,
+nhlapi,Halifax Metro Centre,Q976408,now Scotiabank Centre
+nhlapi,Hartwall Areena,Q33176,Helsinki Halli
+nhlapi,Hartwall Arena,Q33176,Helsinki Halli
+nhlapi,Investors Group Field,Q1671788,"Winnipeg, now Princess Auto Stadium"
+nhlapi,Jubilee Rink,Q599978,"Jubilee Arena, Montreal"
+nhlapi,Le Colis√©e,Q600226,"Colisee de Quebec; the NHL API's text is garbled, kept as published"
+nhlapi,Madison Square Garden III,Q6728098,the 1925 building (NHL API numbers it III)
+nhlapi,Madison Square Garden,Q186125,the 1968 building (NHL API: plain name)
+nhlapi,Michigan Stadium,Q1640118,2014 Winter Classic
+nhlapi,Myriad Convention Center,Q3001879,Oklahoma City
+nhlapi,Navy-Marine Corps Memorial Stadium,Q3337331,"2018 Stadium Series, Annapolis"
+nhlapi,Nokia Arena,Q7681773,Tampere
+nhlapi,NYCB Live/Nassau Coliseum,Q1048921,Uniondale
+nhlapi,O-Rena,Q481794,Orlando Arena
+nhlapi,O2 Arena,Q5364202,London
+nhlapi,O2 Arena Berlin,Q265463,
+nhlapi,O2 Czech Republic,Q692207,Prague
+nhlapi,Ohio Stadium,Q774694,"2025 outdoor game, Columbus"
+nhlapi,Ottawa Auditorium,Q7109141,
+nhlapi,Patrick Arena,Q7146057,"Victoria, British Columbia"
+nhlapi,Peace Bridge Arena,Q7157338,"Fort Erie, Ontario"
+nhlapi,Providence Civic Center,Q1266006,now Amica Mutual Pavilion
+nhlapi,Quebec Arena,Q7269749,
+nhlapi,Richfield Coliseum,Q2982682,
+nhlapi,Riverfront Coliseum,Q2790698,"Cincinnati, now Heritage Bank Center"
+nhlapi,Saitama Super Arena,Q1052149,
+nhlapi,Scandinavium,Q1138447,Gothenburg
+nhlapi,Seattle Ice Arena,Q7442114,
+nhlapi,Springfield Civic Center,Q6783965,"Springfield, Massachusetts (now MassMutual Center)"
+nhlapi,Westmount Arena,Q849938,Montreal Arena
+nhlapi,Yoyogi Arena,Q1069457,Yoyogi National Gymnasium
+nhlapi,Busch Stadium,Q253546,"2017 Winter Classic, St. Louis"
+nhlapi,Yankee Stadium,Q675214,"2014 Stadium Series, the new Yankee Stadium"

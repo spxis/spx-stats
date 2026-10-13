@@ -1,0 +1,267 @@
+park_id,qid,label,confidence,note
+ALB01,,,low,no Wikidata item for the Albany park (only Buffalo/other cities' Riverside Parks exist)
+ALT01,Q5149785,Columbia Park,high,"Columbia Park, baseball field in Altoona PA; opened 1884 matches"
+ANA01,Q531897,Angel Stadium of Anaheim,high,Angel Stadium; alias Edison International Field; opened 1966 (DB)
+ARL01,Q2861657,Arlington Stadium,high,"Arlington Stadium, 1965-1994; Rangers 1972-93"
+ARL02,Q1634492,Choctaw Stadium,high,Same ground as Rangers Ballpark in Arlington (now Choctaw Stadium); aliases list Ballpark in Arlington and Ameriquest Field; opened 1994
+ARL03,Q24284037,Globe Life Field,high,"Globe Life Field; name, city, coordinates agree; WD has no dates"
+ATL01,Q641243,Atlanta-Fulton County Stadium,high,Atlanta-Fulton County Stadium 1965-1997; alias Fulton County Stadium
+ATL02,Q1150936,Turner Field,high,"Turner Field; label exact, coordinates Atlanta; WD P31 is only 'built structure', no dates; Q28449162 (Center Parc Stadium, same structure converted) not used"
+ATL03,Q17003430,Truist Park,high,"Truist Park (aliases SunTrust Park); P131 Cobb County, Atlanta metro, matches DB; WD has no dates"
+BAL01,Q6727873,Madison Avenue Grounds,medium,"Madison Avenue Grounds, Baltimore; label and coordinates agree, no P31 or dates in WD"
+BAL02,Q16957123,Newington Park,high,"Newington Park, baseball venue Baltimore; no dates in WD"
+BAL03,,,low,"only aggregate Oriole Park items exist (Q7102741 opened 1914, Q60776197 = Oriole Park V); no item for Oriole Park I"
+BAL04,Q4881872,Belair Lot,high,"Belair Lot, Baltimore baseball venue; alias Union Park"
+BAL05,Q6727873,Madison Avenue Grounds,medium,English Wikipedia says Madison Avenue Grounds was later known as Monumental Park (same ground as BAL01); WD has no dates
+BAL06,,,low,no item for Oriole Park II (only aggregate Oriole Park items)
+BAL07,,,low,no item for Oriole Park III (only aggregate Oriole Park items)
+BAL09,,,low,no item for Oriole Park IV / American League Park Baltimore (aggregate Oriole Park items only; DC American League Park is a different park)
+BAL10,Q60776197,Oriole Park,medium,"Wikidata 'Oriole Park' alias 'Oriole Park (V)' = Terrapin Park / Oriole Park V (Wikipedia: longest-lasting Oriole Park, 1914-1944); label differs from Retrosheet NAME, no coordinates"
+BAL11,Q2748739,Memorial Stadium,high,Memorial Stadium Baltimore; WD 1922-1997 (DB same) covers the 1954-91 MLB years
+BAL12,Q1141174,Oriole Park at Camden Yards,high,Oriole Park at Camden Yards; opened 1992 (DB)
+BOS01,Q6646308,South End Grounds I,high,South End Grounds I; open 1871 close 1887 matches; alias Walpole Street Grounds I
+BOS02,Q5225698,Dartmouth Grounds,medium,"Dartmouth Grounds, Boston (Back Bay coordinates); exact label but WD gives only P31 'geographical feature', no dates"
+BOS03,Q115640874,South End Grounds II,high,South End Grounds II; closed 1894 matches
+BOS04,Q5160829,Congress Street Grounds,high,"Congress Street Grounds, Boston; no dates in WD"
+BOS05,Q115641009,South End Grounds III,high,South End Grounds III; closed 1914 matches
+BOS06,Q1056422,Huntington Avenue Grounds,high,Huntington Avenue Grounds; open 1901-05-08 equals Retrosheet start; closed 1911/12
+BOS07,Q49136,Fenway Park,high,Fenway Park; opened 1912 (DB)
+BOS08,Q11335096,Braves Field,high,Braves Field; 1915-1952 matches; alias The Bee Hive
+BUF01,Q7338569,Riverside Park,high,Riverside Park (Buffalo); Wikipedia: NL Bisons 1879-1883 = Retrosheet dates; Retrosheet calls it Riverside Grounds
+BUF02,Q7089106,Olympic Park,medium,Olympic Park (Buffalo): WD item is the Wikipedia article covering both Olympic Parks (I and II); close 1889
+BUF03,Q7089106,Olympic Park,medium,Same aggregate item covering Olympic Park I and II
+BUF04,Q16987028,International Fair Association Grounds,high,"International Fair Association Grounds, Buffalo; opened 1914 matches"
+BUF05,Q2981192,Sahlen Field,high,"Sahlen Field (alias Pilot Field), Buffalo; opened 1988, used by Blue Jays 2020"
+CAN01,Q6732799,Mahaffey Park,high,"Mahaffey Park, Canton OH; Cleveland used it 1902-03 per Wikipedia"
+CAN02,Q6732799,Mahaffey Park,medium,Pastime Park is listed as an AKA of Mahaffey Park (CAN01) with the same 9/18/1890 PIT game; treated as the same ground
+CHI01,Q6645272,Union Base-Ball Grounds,high,Union Base-Ball Grounds = Lake Front Park I; 1871 matches
+CHI02,Q4631707,23rd Street Grounds,high,23rd Street Grounds Chicago; 1872-1877 matches (Retrosheet: 23rd Street Park)
+CHI03,Q115701919,Lake Front Park,high,Lake Front Park (alias Lake Front Park II); close 1885
+CHI04,Q115701919,Lake Front Park,medium,Lake Front Park III is the same ground as II (WD item covers the park to 1885)
+CHI05,,,low,no item for South Side Park I / Cricket Club Grounds (Q7568485 is the later 1890-1940 South Side Park)
+CHI06,Q3299098,West Side Park,high,West Side Park (I) Chicago; 1885-1891 matches
+CHI07,Q7568485,South Side Park,medium,South Side Park: Wikipedia article covers three parks on nearby sites; WD item 1890-1940 spans II and III
+CHI08,Q115682974,West Side Grounds,high,West Side Grounds (West Side Park II); closed 1915/1920
+CHI09,Q7568485,South Side Park,medium,South Side Park III; aggregate WD item (see CHI07)
+CHI10,Q1114772,Comiskey Park,high,Comiskey Park (1910-1990)
+CHI11,Q1052807,Wrigley Field,high,"Wrigley Field; aliases Weeghman Park, Cubs Park"
+CHI12,Q633613,Rate Field,high,"Rate Field (aliases Comiskey Park II, U.S. Cellular Field); the 1991 park; WD opened 1989 is construction date"
+CIN01,Q6550931,Lincoln Park Grounds,high,Lincoln Park Grounds Cincinnati
+CIN02,Q4828195,Avenue Grounds,high,Avenue Grounds Cincinnati
+CIN03,Q4855985,Bank Street Grounds,high,Bank Street Grounds Cincinnati
+CIN04,Q6508941,League Park,high,League Park (League Park I) Cincinnati; opened 1884
+CIN05,Q123118023,League Park II,high,"League Park II Cincinnati, closed 1901 matches; WD has no coordinates"
+CIN06,Q7126271,Palace of the Fans,high,Palace of the Fans; 1902-1911 matches
+CIN07,Q3003747,Crosley Field,high,Crosley Field; 1912-1970 matches
+CIN08,Q153824,Riverfront Stadium,high,Riverfront Stadium (alias Cinergy Field); 1970-2002
+CIN09,Q979975,Great American Ball Park,high,Great American Ball Park
+CLE01,Q14716742,National Association Grounds,high,National Association Grounds Cleveland
+CLE02,Q14716743,National League Park,medium,"National League Park (Kennard Street Park) Cleveland 1879-84; one WD item covers both Cleveland National League Parks, coordinates are the Kennard Street ground"
+CLE03,Q14716743,National League Park,medium,Second National League Park / Association Park (1887-90) is in the same WD item; its coordinates point to the first ground a few blocks away
+CLE04,Q2926271,Brotherhood Park,high,Brotherhood Park Cleveland
+CLE05,Q870897,League Park,medium,"League Park Cleveland (built 1891, rebuilt 1910, same site); Retrosheet splits III and IV"
+CLE06,Q870897,League Park,high,"League Park, alias Dunn Field; closed 1951"
+CLE07,Q2113078,Cleveland Stadium,high,Cleveland Stadium (Municipal Stadium)
+CLE08,Q1154053,Progressive Field,high,Progressive Field (alias Jacobs Field)
+CLE09,,,low,no Wikidata item for Cedar Avenue Driving Park
+CLL01,Q3059481,Euclid Beach Park,medium,"Euclid Beach Park amusement park (Collinwood, Cleveland); item is the resort not a ballpark"
+COL01,Q7303050,Recreation Park,medium,Recreation Park Columbus; one WD item for the Wikipedia article covering Recreation Park I and II
+COL02,Q7303050,Recreation Park,medium,Same aggregate item (Recreation Park I and II)
+COL03,Q48977446,Neil Park,medium,Neil Park Columbus; Wikipedia treats it as one park 1900-1932; Retrosheet splits I and II; no P31 in WD
+COL04,Q48977446,Neil Park,medium,Same Neil Park item
+COV01,,,low,"no Wikidata item for Star Baseball Park, Covington"
+DAY01,,,low,"no Wikidata item for Fairview Park, Dayton"
+DEN01,Q1934586,Mile High Stadium,high,Mile High Stadium (alias Bears Stadium); 1948-2001
+DEN02,Q1129916,Coors Field,high,Coors Field
+DET01,Q7303052,Recreation Park,high,Recreation Park Detroit
+DET02,Q4889724,Bennett Park,high,Bennett Park Detroit
+DET03,Q5000085,Burns Park,high,Burns Park Detroit baseball park; no dates in WD
+DET04,Q1750255,Tiger Stadium,high,"Tiger Stadium (aliases Navin Field, Briggs Stadium)"
+DET05,Q868482,Comerica Park,high,Comerica Park
+DOV01,Q5430847,Fairview Park Fair Grounds,high,Fairview Park Fair Grounds Dover DE; no coordinates in WD
+DUN01,Q5461213,TD Ballpark,high,"TD Ballpark, Dunedin FL"
+DYE01,Q5447096,Field of Dreams,medium,"Field of Dreams baseball field, Dyersville IA (built for the 1989 film); the 2021 MLB game used a new park beside it"
+ELM01,Q135646817,Maple Avenue Driving Park,medium,"Maple Avenue Driving Park Elmira; WD opened 1886, game was 10/10/1885; no coordinates"
+FOR01,Q5644933,Hamilton Field,high,Kekionga Ball Grounds (WD label Hamilton Field); first NA game 1871-05-04 = Retrosheet start
+FOR02,Q49568528,Swinney Park,medium,"Swinney Park Fort Wayne (city park item, coordinates agree); no baseball ground item exists"
+FOR03,,,low,no Wikidata item for Jailhouse Flats
+FTB01,,,low,no Wikidata item for Fort Bragg Field NC (Green Memorial Field is Fort Bragg California)
+GEA01,Q3100026,Geauga Lake,medium,Geauga Lake amusement park (resort that hosted the 1888 game); item is the resort not a ballpark
+GLO01,Q5572070,Gloucester Point Grounds,medium,"Gloucester Point Grounds; label and coordinates agree, WD has no P31 or dates"
+GLO02,,,low,no Wikidata item for Gloucester Fireworks Park
+GRA01,Q7289927,Ramona Park,medium,"Ramona Park amusement park at Reeds Lake, Grand Rapids area; item is the resort"
+HAR01,Q5665786,Harrison Park,medium,"Harrison Park (NJ), Federal League Newark Peppers 1915; Retrosheet calls it Harrison Field"
+HON01,Q1697292,Aloha Stadium,high,"Aloha Stadium (Halawa, Honolulu)"
+HOU01,Q5149429,Colt Stadium,high,Colt Stadium 1962-1964 matches
+HOU02,Q1025406,Astrodome,high,Astrodome
+HOU03,Q1193671,Daikin Park,high,"Daikin Park (aliases Enron Field, Astros Field)"
+HRT01,Q5674426,Hartford Ball Club Grounds,high,Hartford Ball Club Grounds 1874-1876 matches
+HRT02,,,low,no Wikidata item for Hartford Trotting Park
+IND01,Q7568566,South Street Park,high,South Street Park Indianapolis
+IND02,Q7808330,Tinker Park,medium,"Tinker Park = Seventh Street Park (Wikipedia, used 1884, 1887-89); WD coordinates and P131 are wrong (Winnebago County IL), do not copy them"
+IND03,Q4977585,Bruce Grounds,high,Bruce Grounds Indianapolis
+IND04,Q7808330,Tinker Park,medium,Seventh Street Park II = Tinker Park; WD coordinates wrong (see IND02)
+IND05,Q7808330,Tinker Park,medium,Seventh Street Park III = Tinker Park; WD coordinates wrong (see IND02)
+IND06,Q16892633,Indianapolis Park,high,Indianapolis Park (Athletic Park II) Indianapolis
+IND07,Q5440281,Federal League Park,medium,Federal League Park; WD item covers both Indianapolis Federal League Parks
+IRO01,,,low,"no Wikidata item for Windsor Beach, Irondequoit"
+JER01,,,low,no Wikidata item for Oakdale Park Jersey City (Q7073809 is the Philadelphia Oakdale Park)
+JER02,Q7366501,Roosevelt Stadium,high,Roosevelt Stadium Jersey City 1937-1985
+KAN01,Q4813751,Athletic Park,high,Athletic Park Kansas City
+KAN02,Q4809301,Association Park,high,Association Park Kansas City
+KAN03,Q5421607,Exposition Park,high,Exposition Park Kansas City
+KAN04,Q5586026,Gordon and Koppel Field,high,Gordon and Koppel Field Kansas City
+KAN05,Q6936283,Municipal Stadium,high,Municipal Stadium Kansas City (1955-1976; DB opened 1923 as Muehlebach Field)
+KAN06,Q1737017,Kauffman Stadium,high,Kauffman Stadium (alias Royals Stadium)
+KEO01,Q7169868,Perry Park,high,"Perry Park, baseball grounds in Keokuk area (coordinates agree); no dates in WD"
+LAS01,Q2941022,Cashman Field,high,Cashman Field Las Vegas
+LBV01,Q2920554,Champion Stadium,medium,"Champion Stadium, now The Stadium at the ESPN Wide World of Sports (Walt Disney World, built 1997); Retrosheet name is an older Disney name; no dates in WD"
+LON01,Q172190,London Stadium,high,"London Stadium (baseball venue type, Stratford)"
+LOS01,Q849784,Los Angeles Memorial Coliseum,high,Los Angeles Memorial Coliseum
+LOS02,Q3297716,Wrigley Field,high,Wrigley Field Los Angeles 1925-1969
+LOS03,Q247420,Dodger Stadium,high,Dodger Stadium
+LOU01,Q6689448,Louisville Baseball Park,high,Louisville Baseball Park
+LOU02,Q5333021,Eclipse Park I,high,Eclipse Park I; closed 1893
+LOU03,Q115635626,Eclipse Park II,high,Eclipse Park II; closed 1899
+LOU04,,,low,"no item for Eclipse Park III (Q5333021 is I, Q115635626 is II)"
+LUD01,,,low,no Wikidata item for Ludlow Baseball Park
+MAS01,,,low,"no Wikidata item for Long Island Grounds, Maspeth"
+MIA01,Q864339,Hard Rock Stadium,high,"Same ground as Sun Life Stadium (now Hard Rock Stadium), Miami Gardens; opened 1987"
+MIA02,Q1368138,LoanDepot Park,high,loanDepot park (alias Marlins Park); 2012
+MID01,Q6751634,Mansfield Club Grounds,high,Mansfield Club Grounds Middletown CT; 1872
+MIL01,Q5333022,Eclipse Park,high,"Eclipse Park, also known as Milwaukee Base-Ball Grounds (Wikipedia); 1878-05-14 to 1878-09-14 equals Retrosheet dates"
+MIL02,Q8038268,Wright Street Grounds,high,Wright Street Grounds Milwaukee
+MIL03,,,low,no confident item (Borchert Field Q4944408 was once called Athletic Park but could not confirm the 1891 AA use)
+MIL04,Q6662766,Lloyd Street Grounds,high,Lloyd Street Grounds Milwaukee
+MIL05,Q3314569,Milwaukee County Stadium,high,Milwaukee County Stadium 1953-2000
+MIL06,Q1339293,American Family Field,high,"American Family Field (alias Miller Park), matches DB; WD P31 is only 'built structure'"
+MIN01,Q4813755,Athletic Park,high,"Athletic Park Minneapolis, closed 1896"
+MIN02,Q1415967,Metropolitan Stadium,high,Metropolitan Stadium (Bloomington)
+MIN03,Q1072186,Hubert H. Humphrey Metrodome,high,Hubert H. Humphrey Metrodome
+MIN04,Q1156635,Target Field,high,Target Field
+MNT01,Q373282,Estadio de Béisbol Monterrey,high,Estadio de Beisbol Monterrey (opened 1990); Q3058827 is a football stadium
+MON01,Q3495641,Jarry Park Stadium,high,Jarry Park Stadium Montreal (Q3363835 is the surrounding urban park)
+MON02,Q285467,Olympic Stadium,high,Olympic Stadium Montreal
+NEW01,Q140377787,Howard Avenue Grounds,medium,"Howard Avenue Grounds, stadium in New Haven; label exact, no coordinates, P31 or dates in WD"
+NEW02,Q5645089,Hamilton Park,high,Hamilton Park New Haven
+NEW03,,,low,no Wikidata item for Beyerle's Park
+NWK01,Q134289686,Wiedenmayer's Park,high,Wiedenmayer's Park Newark 1902-1925; no coordinates
+NYC01,Q6137902,Union Grounds,high,Union Grounds Brooklyn 1862-1883
+NYC02,Q5035970,Capitoline Grounds,high,Capitoline Grounds Brooklyn
+NYC03,,,low,"low: WD 'Polo Grounds' (Q1276360) lists Polo Grounds I as an alias but its dates (1890-1963) and coordinates are the 155th St ground, not the 110th St Southeast Diamond"
+NYC04,,,low,low: same as NYC03 (Southwest Diamond at 110th St)
+NYC05,Q7972104,Washington Park I,high,Washington Park I Brooklyn 1884-1889
+NYC06,Q6825180,Metropolitan Park,high,Metropolitan Park Manhattan
+NYC07,,,low,Grauer's Ridgewood Park: no item (Q7332862 is Wallace's Ridgewood Park)
+NYC08,Q115648792,Washington Park II,high,Washington Park II Brooklyn
+NYC09,Q1276360,Polo Grounds,medium,Polo Grounds (III is an alias of the item; 155th St area); WD item aggregates Polo Grounds
+NYC10,Q1276360,Polo Grounds,high,Polo Grounds IV; WD item open 1890 close 1963/64 and coordinates are the Coogan's Hollow ground (DB uses it)
+NYC11,Q5330371,Eastern Park,high,Eastern Park Brooklyn
+NYC12,Q115650862,Washington Park III,high,Washington Park III 1898-1912
+NYC13,Q5764114,Hilltop Park,high,Hilltop Park 1903-1912
+NYC14,Q1276360,Polo Grounds,high,Polo Grounds V (rebuilt 1911 on the same Coogan's Hollow site); item runs to 1963
+NYC15,Q1278537,Ebbets Field,high,Ebbets Field
+NYC16,Q675214,Yankee Stadium,high,Old Yankee Stadium 1923-2008
+NYC17,Q1056326,Shea Stadium,high,Shea Stadium
+NYC18,Q7332862,Ridgewood Park,high,"Ridgewood Park, alias Wallace's Ridgewood Park (Wikipedia: Wallace's/Wallace Grounds)"
+NYC19,Q115651328,Washington Park IV,high,Washington Park IV 1914-1915
+NYC20,Q1072882,Citi Field,high,Citi Field
+NYC21,Q753529,Yankee Stadium,high,New Yankee Stadium (2009)
+OAK01,Q1147732,Oakland Coliseum,high,Oakland Coliseum (alias Network Associates Coliseum)
+OMA01,Q7669888,Charles Schwab Field Omaha,high,Charles Schwab Field Omaha (alias TD Ameritrade Park Omaha); opened 2011
+PEN01,Q5328312,East End Park,high,East End Park Cincinnati 1891
+PHI01,Q6175596,Jefferson Street Grounds,high,Jefferson Street Grounds Philadelphia; no dates in WD
+PHI02,Q5059144,Centennial Grounds,medium,"Centennial Grounds (also Centennial Park per Wikipedia), Philadelphia Centennials NA 1875"
+PHI03,Q7073809,Oakdale Park,high,"Oakdale Park Philadelphia, opened 1882 matches"
+PHI04,Q7303055,Recreation Park,high,"Recreation Park Philadelphia, closed 1886/1890"
+PHI05,Q16944823,Keystone Park,high,Keystone Park Philadelphia
+PHI06,Q4849117,Baker Bowl,medium,Huntingdon Grounds = site of Baker Bowl (WD opened 1887)
+PHI07,Q5468738,Forepaugh Park,high,Forepaugh Park Philadelphia
+PHI08,,,low,low: candidates Franklin Field Q5491503 and University Athletic Grounds Q137168764 not confirmed as the 1894 Penn athletic field
+PHI09,Q4849117,Baker Bowl,high,Baker Bowl 1887-1938
+PHI10,Q5149784,Columbia Park,high,Columbia Park Philadelphia 1901-1912
+PHI11,Q7496044,Shibe Park,high,Shibe Park (alias Connie Mack Stadium)
+PHI12,Q1545870,Veterans Stadium,high,Veterans Stadium
+PHI13,Q912770,Citizens Bank Park,high,Citizens Bank Park
+PHI14,Q4849117,Baker Bowl,medium,Temporary structure on the Huntingdon Grounds site after the 1894 fire (same ground as Baker Bowl)
+PHO01,Q1068011,Chase Field,high,Chase Field (alias Bank One Ballpark)
+PIT01,Q7303060,Recreation Park,medium,"Recreation Park Allegheny/Pittsburgh, Wikipedia: known as Union Park"
+PIT02,Q5421611,Exposition Park,medium,Exposition Park: one WD item for the Wikipedia article on all three Exposition Parks
+PIT03,Q5421611,Exposition Park,medium,Exposition Park: aggregate item for all three parks
+PIT04,Q7303060,Recreation Park,high,Recreation Park Pittsburgh
+PIT05,Q5421611,Exposition Park,high,"Exposition Park III (alias on item), 1890-1915 matches"
+PIT06,Q1963954,Forbes Field,high,Forbes Field
+PIT07,Q1189339,Three Rivers Stadium,high,Three Rivers Stadium
+PIT08,Q1151177,PNC Park,high,PNC Park
+PRO01,,,low,no Wikidata item for Adelaide Avenue Grounds
+PRO02,Q5978034,Messer Street Grounds,high,Messer Street Grounds Providence; opened 1878-05-01 equals Retrosheet start
+RCK01,Q4693928,Agricultural Society Fair Grounds,high,Agricultural Society Fair Grounds Rockford
+RIC01,,,low,no Wikidata item for Richmond Fair Grounds
+RIC02,,,low,no Wikidata item for Allens Pasture
+ROC01,Q5193731,Culver Field I,high,Culver Field I Rochester
+ROC02,Q115633274,Culver Field II,high,"Culver Field II Rochester, closed 1908"
+ROC03,Q96482958,Ontario Beach Park,medium,"Ontario Beach Park (Charlotte, Rochester) county park/beach; item is the beach park, not a ballpark"
+SAI01,Q7588206,St. George Cricket Grounds,high,"St. George Cricket Grounds, Staten Island"
+SAN01,Q956072,San Diego Stadium,high,San Diego Stadium (Qualcomm/Jack Murphy)
+SAN02,Q1194586,Petco Park,high,Petco Park
+SEA01,Q6127401,Sick's Stadium,high,Sick's Stadium
+SEA02,Q990430,Kingdome,high,Kingdome
+SEA03,Q1193117,T-Mobile Park,high,T-Mobile Park (alias Safeco Field)
+SFO01,Q7440659,Seals Stadium,high,Seals Stadium
+SFO02,Q1033076,Candlestick Park,high,Candlestick Park
+SFO03,Q298585,Oracle Park,high,"Oracle Park (aliases AT&T Park, SBC Park, Pacific Bell Park)"
+SJU01,Q1369267,Hiram Bithorn Stadium,high,Hiram Bithorn Stadium
+SPR01,,,low,no Wikidata item for Hampden Park Race Track
+STL01,Q7305121,Red Stocking Baseball Park,high,"Red Stocking Baseball Park (Compton Avenue Park), St. Louis Red Stockings NA 1875"
+STL02,,,low,no Wikidata item for Grand Avenue Park
+STL03,Q7579980,Sportsman's Park,medium,"Sportsman's Park; Wikipedia: same site rebuilt in 1881, 1902, 1909; WD item has no dates"
+STL04,Q7885716,Union Grounds,high,Union Grounds St. Louis
+STL05,Q11350605,Robison Field,high,Robison Field
+STL06,Q7579980,Sportsman's Park,medium,"Sportsman's Park (1902 structure, same site)"
+STL07,Q7579980,Sportsman's Park,high,"Sportsman's Park (1909 steel and concrete grandstand, Busch Stadium I)"
+STL08,Q5647453,Handlan's Park,high,Handlan's Park St. Louis
+STL09,Q1017286,Busch Memorial Stadium,high,Busch Memorial Stadium (alias Busch Stadium II)
+STL10,Q253546,Busch Stadium,high,"Busch Stadium (III), opened 2006"
+STP01,Q1810119,Tropicana Field,high,Tropicana Field
+SYD01,Q856393,Sydney Cricket Ground,high,Sydney Cricket Ground
+SYR01,Q7600819,Star Park I,high,"Star Park I, alias Newell Park (duplicate item Q14707091 'Newell Park' also exists)"
+SYR02,Q115648260,Star Park II,high,"Star Park II Syracuse, closed 1890"
+SYR03,,,low,no Wikidata item for Iron Pier (no game was played there)
+THR01,,,low,no Wikidata item for Three Rivers Park (NY)
+TOK01,Q733748,Tokyo Dome,high,Tokyo Dome
+TOL01,Q6508945,League Park,high,League Park Toledo; no dates in WD
+TOL02,,,low,no Wikidata item for Tri-State Fair Grounds Toledo
+TOL03,Q7576348,Speranza Park,high,Speranza Park Toledo
+TOL04,Q4793758,Armory Park,high,"Armory Park Toledo, closed 1934"
+TOR01,Q1383747,Exhibition Stadium,high,Exhibition Stadium Toronto
+TOR02,Q76318,Rogers Centre,high,Rogers Centre (SkyDome)
+TRO01,Q5686950,Haymakers' Grounds,high,Haymakers' Grounds Troy
+TRO02,,,low,"low: Q7262339 'Putnam Grounds' is a mixed disambiguation-type item (Troy vs Brooklyn), Q132477698 is the Brooklyn Putnam Grounds"
+WAR01,Q7355970,Rocky Point Amusement Park,medium,"Rocky Point Amusement Park, Warwick RI (resort that hosted the 1903 game); item is the resort"
+WAS01,Q7089171,Olympics Grounds,high,"Olympics Grounds Washington (Olympic Club 1871-72, 1873 and 1875 clubs)"
+WAS02,,,low,"no Wikidata item for National Grounds, Washington"
+WAS03,Q5035875,Capitol Grounds,high,Capitol Grounds (Capitol Park I) opened 1884
+WAS04,Q4813756,Athletic Park,high,"Athletic Park Washington, AA Nationals 1884"
+WAS05,Q7653386,Swampoodle Grounds,high,Swampoodle Grounds (Capitol Park II) 1886-1889
+WAS06,Q4949942,Boundary Field,high,Boundary Field 1891-1911
+WAS07,Q4744320,American League Park,high,American League Park (I) 1901-1903
+WAS08,Q4949942,Boundary Field,medium,"American League Park II = alias of Boundary Field item (same site as National Park, later Griffith Stadium)"
+WAS09,Q5608924,Griffith Stadium,high,Griffith Stadium
+WAS10,Q153312,Robert F. Kennedy Memorial Stadium,high,RFK Stadium (D.C. Stadium)
+WAS11,Q517545,Nationals Park,high,Nationals Park
+WAT01,Q7846755,Troy Ball Clubs Grounds,high,Troy Ball Clubs Grounds Watervliet
+WAV01,Q7975478,Waverly Fairgrounds,high,Waverly Fairgrounds (Elizabeth Resolutes NA 1873); Waverly is now part of Newark
+WEE01,,,low,no Wikidata item for Monitor Grounds
+WHE01,,,low,"no Wikidata item for Island Grounds, Wheeling"
+WIL01,,,low,"no Wikidata item for Union Street Park, Wilmington"
+WIL02,Q4951307,Bowman Field,high,"Bowman Field, Williamsport (alias BB&T Ballpark at Bowman Field)"
+WNY01,,,low,no Wikidata item for West New York Field Club Grounds
+WOR01,Q8034144,Worcester Agricultural Fairgrounds,high,"Worcester Agricultural Fairgrounds, open 1880-05-01 close 1882-09-29 matches"
+WOR02,,,low,probably the same fairgrounds but WD item only covers 1880-1882; not mapped
+WOR03,,,low,no Wikidata item for Worcester Driving Park Grounds
+BIR01,Q7332012,Rickwood Field,high,"not in the older parkcode.txt; in ballparks.csv (2026); 2024 MLB at Rickwood Field"
+BST01,Q383490,Bristol Motor Speedway,high,"in ballparks.csv (2026); 2025 Speedway Classic"
+MEX02,Q60830511,Estadio Alfredo Harp Helu,high,"in ballparks.csv (2026); Mexico City Series 2023"
+SAC01,Q3418115,Sutter Health Park,high,"in ballparks.csv (2026); Athletics home 2025"
+SEO01,Q10855359,Gocheok Sky Dome,high,"in ballparks.csv (2026); Seoul Series 2024"
+TAM02,Q3101733,George M. Steinbrenner Field,high,"in ballparks.csv (2026); Rays home 2025"

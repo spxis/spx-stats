@@ -467,6 +467,9 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    logged as `possible-duplicate:` in `meta.data_issue` and never merged on the name. `db/review/person_review.sql` (read-only,
    `ds1-apply.sh --dry-run`) lists them as `db/seed/person_review.csv`; `python3 -I scripts/people/review_to_ts.py` copies the list
    to the admin page `/admin/people` (admin only, a snapshot in the code, not read from the database). Rerun both after a merge.
+   **Venues of games.** `db/build/198_home_venue.sql` (where each club played, `core.franchise_home_venue`) and then `199_game_venue.sql`
+   (`core.game.venue_id` for the five leagues, only games with none) rerun after any step that writes games (120 to 156) or home venues
+   (175, 176, 193). Sources, seeds and the load order: `scripts/game_venue/README.md`. A Wikidata item that is a city is never a venue.
 8. **DS1 and working copies.** DS1 is permanent; cloud and Mac copies are temporary. Work done on a working copy
    (the cloud agent holds a lot of it) is pushed to DS1 before the production load and before the copy is discarded.
    Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without
