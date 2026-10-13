@@ -25,9 +25,14 @@ export const PLAYER_SORTS: Record<string, Col> = {
 export const PLAYER_TIE: Col[] = [{ field: "name" }, { field: "person_id", num: true }];
 const PLAYER_SELECT = ["person_id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons_played", "award_count"];
 
+// `country` exists once migration 063 has run. Until then the database answers a 400 to any read that names it; that is remembered for a
+// minute (so a page does not ask twice) and the rows are read without it: the page and the API then leave the country out.
+let noCountryUntil = 0;
+const COUNTRY_RETRY = 60_000;
+
 export const playerOrder = (sort: readonly SortKey[]): Order => orderOf(sort, PLAYER_SORTS, PLAYER_TIE);
 
-export interface PlayerFilters { league: string; words: readonly string[]; position?: string; from?: number; to?: number }
+export interface PlayerFilters { league: string; words: readonly string[]; position?: string; nat?: string; from?: number; to?: number }
 
 /** The first and last season in the players index for a league (every league when none), which is the full reach of the year slider. */
 export const playerSpan = (league: string): Promise<Span> => readSpan("player_index", isLeague(league) ? [`leagues=cs.${encodeURIComponent(`{${league}}`)}`] : []);
@@ -41,10 +46,20 @@ export async function readPlayers(f: PlayerFilters, order: Order, win: { offset:
     isLeague(f.league) ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
     // a player matches by the main position or by any other they hold, by code; an older word ("Defenseman") is read as its code
     ...overlapFilters(f.from, f.to),
+    f.nat ? `country=eq.${encodeURIComponent(f.nat.toUpperCase())}` : "",
     f.position ? `or=${encodeURIComponent(`(position.ilike.${positionCode(f.position) ?? f.position},positions.cs.{${positionCode(f.position) ?? f.position}})`)}` : "",
   ].filter(Boolean);
-  const run = async (view: string, filters: string[]) => {
-    const query = listQuery({ filters, select: PLAYER_SELECT, order, after: win.after });
+  const run = async (view: string, filters: string[]): Promise<{ rows: PlayerIndexRow[]; total: number | null; more: boolean }> => {
+    const query = (select: string[]) => listQuery({ filters, select, order, after: win.after });
+    if (Date.now() < noCountryUntil) return read(view, query(PLAYER_SELECT));
+    try { return await read(view, query([...PLAYER_SELECT, "country"])); } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 400 || f.nat) throw e;
+      const rows = await read(view, query(PLAYER_SELECT)).catch(() => { throw e; });
+      noCountryUntil = Date.now() + COUNTRY_RETRY;
+      return rows;
+    }
+  };
+  const read = async (view: string, query: string) => {
     if (win.after) {
       const rows = await rowsSlice(view, query, 0, win.limit + 1, playerIndexSchema);
       return { rows: rows.slice(0, win.limit), total: null, more: rows.length > win.limit };
@@ -75,9 +90,9 @@ export interface PlayerPage { list: PlayerIndexRow[]; total: number; page: numbe
  * One page of the players index, in the order asked for (the view is indexed for each column), with the number of players
  * that match the league and the name. A page past the last is answered with the last page.
  */
-export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, years: { from?: number; to?: number } = {}): Promise<PlayerPage> {
+export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, more: { from?: number; to?: number; nat?: string } = {}): Promise<PlayerPage> {
   const order = playerOrder(sort);
-  const f = { league, words: searchWords(q), ...years };
+  const f = { league, words: searchWords(q), ...more };
   let at = page;
   for (let tries = 0; ; tries++) {
     const { rows, total } = await readPlayers(f, order, { offset: (at - 1) * PLAYERS_PER_PAGE, limit: PLAYERS_PER_PAGE });

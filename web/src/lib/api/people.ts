@@ -100,8 +100,10 @@ export const leagueAwardSchema = z.object({
   year: int, award_code: str, award: str, kind: str, winner: strN, person_id: intN, franchise_id: intN,
 }) satisfies z.ZodType<LeagueAwardRow>;
 
-/** One row of `api.player_index` (db/migrations/034_player_index.sql, `positions` from 050), the players list. */
+/** One row of `api.player_index` (db/migrations/034_player_index.sql, `positions` from 050, `country` from 063), the players list. */
 export const playerIndexSchema = z.object({
   person_id: int, name: str, position: strN, positions: z.array(str).nullable().optional(), leagues: z.array(str).nullable(), first_season: intN, last_season: intN, seasons_played: int, award_count: int,
+  /** Capitals ISO code of the birth country, else of the nationality (migration 063); absent until that migration has run. */
+  country: strN.optional(),
 });
 export type PlayerIndexRow = z.infer<typeof playerIndexSchema>;

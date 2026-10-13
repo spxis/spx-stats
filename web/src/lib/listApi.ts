@@ -26,7 +26,7 @@ const brands = memo(HOLD, getBrands);
 export interface Page { limit: number; offset: number | null; sort: string; next: string | null; total: number | null }
 export interface Listing<T> { data: Partial<T>[]; page: Page }
 
-export const PLAYER_FIELDS = ["id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons", "awards", "url"] as const;
+export const PLAYER_FIELDS = ["id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons", "awards", "country", "url"] as const;
 export const TEAM_FIELDS_OUT = ["id", "league", "name", "former_names", "first_season", "last_season", "seasons", "titles", "share", "active", "logo", "url"] as const;
 
 const pick = <T extends Record<string, unknown>>(o: T, fields: readonly string[] | null): Partial<T> =>
@@ -39,14 +39,14 @@ const lg = (code: string | undefined): string => (code && isLeague(code) ? LG[co
 
 const playerItem = (p: PlayerIndexRow, url: (id: number, name: string, league?: string | null) => string) => ({
   id: p.person_id, name: p.name, position: p.position, positions: positionCodes(p.positions, p.position), leagues: p.leagues ?? [], first_season: p.first_season, last_season: p.last_season,
-  seasons: p.seasons_played, awards: p.award_count, url: url(p.person_id, p.name, p.leagues?.[0]),
+  seasons: p.seasons_played, awards: p.award_count, country: p.country?.toUpperCase() ?? null, url: url(p.person_id, p.name, p.leagues?.[0]),
 });
 
 export async function listPlayers(sp: URLSearchParams): Promise<Listing<ReturnType<typeof playerItem>>> {
   const { values: v, sort, sortText, fields, range } = parseListParams("players", sp, { sorts: Object.keys(PLAYER_SORTS), fields: PLAYER_FIELDS, defSort: "name.asc" });
   const order = playerOrder(sort);
   const after = afterValues(v.after, sortText, order);
-  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, ...range }, order, { offset: v.offset, limit: v.limit, after });
+  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, nat: v.nat, ...range }, order, { offset: v.offset, limit: v.limit, after });
   const url = fields && !fields.includes("url") ? () => "" : await playerPaths();
   return {
     data: rows.map((p) => pick(playerItem(p, url), fields)),

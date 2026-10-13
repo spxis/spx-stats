@@ -34,7 +34,11 @@ const common = {
   fields: text(200),
 };
 const listSchemas = {
-  players: z.object({ ...common, position: z.preprocess(blank, z.string().regex(/^[A-Za-z0-9 /-]{1,24}$/, "letters, digits, spaces, / and - only").optional()) }),
+  players: z.object({
+    ...common,
+    position: z.preprocess(blank, z.string().regex(/^[A-Za-z0-9 /-]{1,24}$/, "letters, digits, spaces, / and - only").optional()),
+    nat: z.preprocess(blank, z.string().regex(/^[A-Za-z]{2}$/, "a two-letter country code, e.g. CA").optional()),
+  }),
   teams: z.object({ ...common, status: z.preprocess(blank, z.enum(["all", "active", "defunct"]).default("all")) }),
 };
 const suggestSchema = z.object({

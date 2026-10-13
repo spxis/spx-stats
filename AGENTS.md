@@ -536,12 +536,12 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - `@johnmorrisdotca/address-plus`: addresses.
   - `@johnmorrisdotca/kuni`: ISO codes.
 - **List APIs** (public, read-only JSON, cached an hour; the contract is the comment at the top of each route file): `GET /api/players`
-  and `GET /api/teams` take `league`, `q` (accents ignored; teams also match former names), `status=active|defunct` (teams), `position` (players; a position code such as LW or SS, older words read as codes; matches any position a player holds, rows carry `position` and `positions` as codes),
+  and `GET /api/teams` take `league`, `q` (accents ignored; teams also match former names), `status=active|defunct` (teams), `position` (players; a position code such as LW or SS, older words read as codes; matches any position a player holds, rows carry `position` and `positions` as codes), `nat` (players; a two-letter country code, matched against the row's `country`),
   `from` and `to` (whole years 1800 to 2100, from not after to: keeps rows whose first..last season overlaps the range; the same `?from=&to=` drives the year slider on `/players` and `/teams`, remembered per page in `spxn-range-players` and `spxn-range-teams`),
   `sort=col.dir` (allow-list), `limit` (50, max 200), `fields`, and page either by `offset` or by `after=<page.next>` (keyset cursor, opaque; `total` only
   with offset); `GET /api/players/suggest?q=` and `/api/teams/suggest?q=` return up to 10 for autocomplete. A bad parameter is a 400 naming it. The routes
   only read `api.player_index`, `api.player_search` and `api.team_index` through `lib/api/client.ts` using `lib/listQuery.ts`, which also serves the
-  `/players` and `/teams` pages: never build a query from caller text any other way. The views need migration `037`.
+  `/players` and `/teams` pages: never build a query from caller text any other way. Each player row carries `country` (capitals code of the birth country, else of the nationality; null when unknown): `/players` draws it as a flag that links to `?nat=`. The views need migration `037`, and `country` needs `063`; until that has run `country` reads null and the page draws no country column.
 - **Positions are codes from a fixed list per league** (`ref.position`, served by `api.position`; the raw-value map is `ref.position_alias`,
   seeded by `db/build/185_ref_position.sql`; `db/build/186_person_positions.sql` applies it to `core.person`). A raw value no map row covers is
   logged in `meta.data_issue` (`entity_kind = 'position'`), never guessed: complete the map in one place. Tables show the code, the player page the name.
@@ -555,6 +555,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
 - **Shared components:**
+  - `Flag` (`components/Flag.tsx`, over `FlagIcon`) for every country flag: one fixed 24x16 box, styled nowhere else (`scripts/flags.test.ts` checks it in a browser).
   - `SortTable` for every table.
   - `NoSeason` (grey box, compact "–") for years with no games.
   - `DatePicker` for date choices.

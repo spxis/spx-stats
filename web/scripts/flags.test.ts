@@ -42,7 +42,7 @@ const PAGES: [string, string][] = [
   ["player page", "/nhl/player/quinn-hughes-2787"],
   ["city page", "/city/vancouver"],
   ["cities list", "/cities"],
-  ["players list", "/players"],
+  ["players list", "/players?sort=name.asc"],
 ];
 
 async function browserOrReason() {
@@ -77,7 +77,7 @@ test("every flag on the page is the same fixed size at desktop and phone width",
           };
         });
         // The players list is only required to be tidy once the country column exists; the others must show flags.
-        if (path !== "/players") assert.ok(found.flags.length > 0, `${what} at ${width}px: no flags found`);
+        if (!path.startsWith("/players")) assert.ok(found.flags.length > 0, `${what} at ${width}px: no flags found`);
         for (const f of found.flags) {
           assert.deepEqual(f.outer, [FLAG_WIDTH, FLAG_HEIGHT], `${what} at ${width}px: flag box is ${f.outer}`);
           assert.deepEqual(f.svg, [FLAG_WIDTH, FLAG_HEIGHT], `${what} at ${width}px: flag drawing is ${f.svg}`);
