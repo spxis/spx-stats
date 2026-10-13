@@ -4,6 +4,7 @@ import { LEAGUES, SITE_URL } from "@/lib/leagues";
 import { getPaths } from "@/lib/teamSlugs";
 import { leadersPath } from "@/lib/leaderStats";
 import { scoresPath } from "@/lib/scores";
+import { withGaps } from "@/lib/coverage";
 import { seasonPath } from "@/lib/slug";
 
 export const revalidate = 3600;
@@ -28,7 +29,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...LEAGUES.map((l) => ({ url: url(`/${l.code}/alignment`), lastModified })),
     ...LEAGUES.map((l) => ({ url: url(`/${l.code}/all-time`), lastModified })),
     ...LEAGUES.map((l) => ({ url: url(scoresPath(l.code)), lastModified })),
-    ...seasons.map((s) => ({ url: url(seasonPath(s.league, s.year)), lastModified })),
+    ...withGaps(seasons).map((s) => ({ url: url(seasonPath(s.league, s.year)), lastModified })),
     ...seasons.filter((s) => s.games > 0).map((s) => ({ url: url(leadersPath(s.league, s.year)), lastModified })),
     ...teamUrls,
     ...teamSeasonUrls,

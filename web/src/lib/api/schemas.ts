@@ -8,9 +8,13 @@ import type {
   SeasonSummaryRow,
   SourceRow,
   StandingRow,
+  SeasonCoachRow,
   SeasonNoteRow,
+  SeasonOutageRow,
+  SeasonRosterRow,
   TeamAbbrRow,
   TeamBrandRow,
+  TeamIdentityRow,
   TeamSeasonRow,
   TotalsRow,
 } from "./types";
@@ -84,6 +88,24 @@ export const seasonNoteSchema = z.object({
   league: str, year: int, franchise_id: intN, kind: str, games_planned: intN, games_usual: intN,
   note_en: str, note_fr: strN, note_ja: strN, source: str, source_url: httpsUrl,
 }) satisfies z.ZodType<SeasonNoteRow>;
+
+export const seasonOutageSchema = z.object({
+  league: str, year: int, kind: str, stopped_on: strN, cancelled_on: strN, resumed_on: strN, games_cancelled: intN,
+  note_en: str, note_fr: strN, note_ja: strN, source: str, source_url: httpsUrl,
+}) satisfies z.ZodType<SeasonOutageRow>;
+
+export const teamIdentitySchema = z.object({
+  league: str, year: int, franchise_id: int, team_season_id: int, location: strN, nickname: strN, team: strN, region: strN, country_code: strN,
+}) satisfies z.ZodType<TeamIdentityRow>;
+
+export const seasonRosterSchema = z.object({
+  league: str, year: int, franchise_id: int, team_season_id: int, person_id: int, name: str, position: strN, games_played: intN,
+  first_season: intN, last_season: intN, seasons_played: int,
+}) satisfies z.ZodType<SeasonRosterRow>;
+
+export const seasonCoachSchema = z.object({
+  franchise_id: int, person_id: int, name: str, first_on: strN, last_on: strN, ord: int,
+}) satisfies z.ZodType<SeasonCoachRow>;
 
 export const teamBrandSchema = z.object({
   league: str, franchise_id: int, brand_from: strN, brand_to: strN,

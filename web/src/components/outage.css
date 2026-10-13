@@ -1,0 +1,36 @@
+/* The page of a season the league did not play (SeasonOutage, OutageSlope). */
+.outage-article h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; }
+.outage-text { font-size: 18px; line-height: 1.55; max-width: 72ch; margin: 0; }
+.outfacts { display: flex; flex-wrap: wrap; gap: 10px 32px; margin: 0; padding: 12px 0; border-block: 1px solid var(--rule); }
+.outfacts div { display: flex; flex-direction: column; gap: 2px; }
+.outfacts dt { color: var(--muted); font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
+.outfacts dd { margin: 0; font-variant-numeric: tabular-nums; }
+
+.ba { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); gap: 14px; }
+.bacard { background: var(--panel); border: 1px solid var(--rule); border-top: 4px solid var(--accent); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.bacard h3 { margin: 0; font: 700 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; }
+.bacard .champ { margin: 0; min-height: 1.4em; }
+.bafig { margin: 0; display: grid; gap: 6px; }
+.bafig div { display: flex; justify-content: space-between; gap: 12px; align-items: baseline; border-bottom: 1px solid var(--rule); padding-bottom: 5px; }
+.bafig dt { color: var(--muted); font-size: 14px; }
+.bafig dd { margin: 0; font-variant-numeric: tabular-nums; text-align: right; }
+.tm { display: inline-flex; align-items: center; gap: 4px; flex-wrap: nowrap; }
+.meta { color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.up { color: var(--ok); }
+.down { color: var(--bad); }
+
+.outslope .nm { cursor: pointer; fill: var(--ink); font-size: 12px; font-variant-numeric: tabular-nums; }
+.outslope .nm.on { font-weight: 700; text-decoration: underline; }
+.outslope .lab { fill: var(--ink); font: 600 15px var(--display); letter-spacing: .05em; }
+
+.movers { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 14px 28px; }
+.movers h3, .plists h3 { margin: 0 0 6px; font: 600 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: .05em; }
+.movers ol, .plists ul, .changes { margin: 0; padding: 0; list-style: none; display: grid; gap: 6px; }
+.movers ol { counter-reset: m; }
+.movers li, .changes li { display: block; }
+
+.plists { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 280px), 1fr)); gap: 18px 28px; }
+.plists li { border-bottom: 1px solid var(--rule); padding-bottom: 5px; }
+.plists .note { margin: 0 0 8px; }
+
+td.names { min-width: 180px; font-size: 14px; }

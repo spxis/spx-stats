@@ -175,3 +175,57 @@ export interface TeamBrandRow {
   latitude: number | null;
   longitude: number | null;
 }
+
+/** A season the league did not play, and why (api.season_outage, db/migrations/057_season_outage.sql). */
+export interface SeasonOutageRow {
+  league: string;
+  year: number;
+  kind: string;
+  stopped_on: string | null;
+  cancelled_on: string | null;
+  resumed_on: string | null;
+  games_cancelled: number | null;
+  note_en: string;
+  note_fr: string | null;
+  note_ja: string | null;
+  source: string;
+  source_url: string | null;
+}
+
+/** A club's city and nickname in one season (api.team_season_identity, migration 057). */
+export interface TeamIdentityRow {
+  league: string;
+  year: number;
+  franchise_id: number;
+  team_season_id: number;
+  location: string | null;
+  nickname: string | null;
+  team: string | null;
+  region: string | null;
+  country_code: string | null;
+}
+
+/** A player of a club's season with their career span in that league (api.season_roster, migration 057). */
+export interface SeasonRosterRow {
+  league: string;
+  year: number;
+  franchise_id: number;
+  team_season_id: number;
+  person_id: number;
+  name: string;
+  position: string | null;
+  games_played: number | null;
+  first_season: number | null;
+  last_season: number | null;
+  seasons_played: number;
+}
+
+/** A club's head coach in a season (api.team_season_staff, role head_coach). */
+export interface SeasonCoachRow {
+  franchise_id: number;
+  person_id: number;
+  name: string;
+  first_on: string | null;
+  last_on: string | null;
+  ord: number;
+}

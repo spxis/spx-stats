@@ -5,6 +5,7 @@ import { AccentStyle } from "@/components/AccentStyle";
 import { ChampionNote } from "@/components/ChampionNote";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
 import { SeasonBar } from "@/components/SeasonBar";
+import { SeasonOutage } from "@/components/SeasonOutage";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
@@ -18,11 +19,12 @@ import { abbrFor } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
+import { getOutage } from "@/lib/outageData";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LEAGUES, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
-import { isGapYear } from "@/lib/coverage";
+import { isGapYear, withGaps } from "@/lib/coverage";
 import { leadersPath } from "@/lib/leaderStats";
 import { isIdleTeam, seasonStartDay } from "@/lib/idleTeams";
 import { leagueSat } from "@/lib/noSeason";
@@ -43,6 +45,13 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const y = ys.y;
   const { seasons } = await getSummary();
   const s = seasons.find((x) => x.league === league && x.year === y);
+  if (!s && isGapYear(seasons, league, y)) {
+    const { say, locale } = await currentSpeaker();
+    const outage = await getOutage(league, y);
+    const text = (locale === "fr" ? outage?.note_fr : locale === "ja" ? outage?.note_ja : null) ?? outage?.note_en;
+    const lead = text ? text.split(/(?<=[.。])\s*/)[0] : "";
+    return pageMeta({ title: say("outage.metaTitle", { label: seasonLabel(league, y), league: LG[league] }), description: lead || say("outage.metaDesc", { label: seasonLabel(league, y), league: LG[league] }), path: seasonPath(league, y), locale });
+  }
   if (!s) return {};
   const { say, plural, fmt, locale } = await currentSpeaker();
   const parts = [say("season.metaLead", { label: s.label, league: LG[league] })];
@@ -62,6 +71,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const [d, brands, abbrs, summary, notes, paths, player] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths()]);
   const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
   const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
+  // The picker also offers the years the league sat out, so a reader can open them.
+  const pickable = withGaps(summary.seasons).filter((x) => x.league === lg).sort((a, b) => b.year - a.year).map((x) => ({ year: x.year, label: x.label }));
   if (!d) {
     if (!isGapYear(summary.seasons, lg, y)) notFound();
     return (
@@ -74,8 +85,10 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           </nav>
           <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
           <h1>{say("season.title", { label: seasonLabel(lg, y) })}</h1>
-          <p><NoSeason /></p>
+          <p className="lede"><NoSeason /> {say("outage.lede", { league: LG[lg] })}</p>
+          <SeasonBar lg={lg} year={y} seasons={pickable} days={[]} date="" />
         </section>
+        <SeasonOutage lg={lg} year={y} seasons={summary.seasons} />
       </>
     );
   }
@@ -186,7 +199,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
               </p>
             )}
         <SeasonBar lg={lg} year={y}
-          seasons={summary.seasons.filter((x) => x.league === lg).sort((a, b) => b.year - a.year).map((x) => ({ year: x.year, label: x.label }))}
+          seasons={pickable}
           days={days} date={asOfDate} />
       </section>
       {champ ? (

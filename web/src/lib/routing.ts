@@ -19,7 +19,7 @@ import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, type Locale } from "./loca
 
 /** Every query parameter some public page reads on the server (sort_* are the tables' own sort parameters). */
 export const QUERY_KEYS = [
-  "sort", "sort_awards", "sort_games", "sort_meet", "sort_members", "sort_names", "sort_past", "sort_seasons", "sort_series", "sort_teams", "sort_venues",
+  "sort", "sort_awards", "sort_clubs", "sort_coach", "sort_games", "sort_meet", "sort_members", "sort_names", "sort_past", "sort_roster", "sort_seasons", "sort_series", "sort_teams", "sort_venues",
   "phase", "team", "teams", "month", "day", "date", "all", "season", "view", "loc", "result", "conf", "div",
   "map", "mapteam", "stat", "pos", "nat", "list", "active",
   "q", "league", "status", "page", "from", "to", "after", "offset",
