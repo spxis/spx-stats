@@ -25,6 +25,10 @@ export const QUERY_KEYS = [
   "q", "league", "status", "page", "from", "to", "after", "offset",
 ] as const;
 
+/** Query keys a player page reads in the browser (components/PlayerBoard.tsx: the seasons shown, the phase and the clubs), so on a player page they
+    do not ask for a copy drawn per request: the one static page serves them all. Everywhere else they are read on the server as before. */
+export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season"] as const;
+
 /** Pages that read no query at all, even on the server: always the static copy, whatever the address carries (the home page and
     the league pages keep their year range and the like in the browser). */
 export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", ...LEAGUE_CODES] as const;
@@ -78,8 +82,16 @@ export function pageRewrites(): Rewrite[] {
   each((l) => out.push({ source: `/:first(${ALWAYS_STATIC.join("|")})`, destination: `/${l.locale}/s/:first`, has: l.has, missing: l.missing }));
   // 2. A query key on the address: the copy drawn for this request. One rule per key, because Vercel refuses a has or missing list of
   //    more than MAX_CONDITIONS items, so "none of these keys" cannot be one rule. Inside each pass the language rules keep their order.
+  //    The keys a player page reads in the browser (PLAYER_CLIENT_KEYS) skip the player pages (/nhl/player/...) and keep the rest.
+  const notPlayer = `/:first(${LEAGUE_CODES.join("|")})/:second((?!player(?:/|$))[^/]+)/:rest*`, others = `/:first(players|teams|city)/:rest*`;
   each((l) => {
-    for (const key of QUERY_KEYS) out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/q/:first/:rest*`, has: [...l.has, { type: "query", key }], missing: l.missing });
+    for (const key of QUERY_KEYS) {
+      const has: Cond[] = [...l.has, { type: "query", key }];
+      if ((PLAYER_CLIENT_KEYS as readonly string[]).includes(key)) {
+        out.push({ source: others, destination: `/${l.locale}/q/:first/:rest*`, has, missing: l.missing });
+        out.push({ source: notPlayer, destination: `/${l.locale}/q/:first/:second/:rest*`, has, missing: l.missing });
+      } else out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/q/:first/:rest*`, has, missing: l.missing });
+    }
   });
   // 3. No rule above matched, so the address has none of the keys: the static copy.
   each((l) => out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/s/:first/:rest*`, has: l.has, missing: l.missing }));

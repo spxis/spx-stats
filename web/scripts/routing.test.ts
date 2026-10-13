@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { createRequire } from "node:module";
-import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, QUERY_KEYS } from "../src/lib/routing.ts";
+import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
 
@@ -76,6 +76,21 @@ test("an address with a query the pages read is drawn for the request; one with 
   assert.equal(route({ path: "/nhl/2012-13", query: { utm_source: "x", fbclid: "y" } }), "/en/s/nhl/2012-13");
   assert.equal(route({ path: "/nhl/2012-13", query: { _rsc: "abc" } }), "/en/s/nhl/2012-13");
   for (const key of QUERY_KEYS) assert.match(route({ path: "/nhl/2012-13/leaders", query: { [key]: "1" } }), /^\/en\/q\//, key);
+});
+
+test("a player page reads its seasons, phase and clubs in the browser, so those keys leave it the static copy; its sorts and every other page still ask the server", () => {
+  const player = "/nhl/player/mark-messier-2359";
+  for (const key of PLAYER_CLIENT_KEYS) {
+    assert.equal(route({ path: player, query: { [key]: "1" } }), `/en/s${player}`, key);
+    assert.match(route({ path: "/nhl/2012-13", query: { [key]: "1" } }), /^\/en\/q\//, `${key} on a season`);
+    assert.match(route({ path: "/players", query: { [key]: "1" } }), /^\/en\/q\//, `${key} on the players list`);
+    assert.match(route({ path: "/mlb/team/yankees", query: { [key]: "1" } }), /^\/en\/q\//, `${key} on a team`);
+  }
+  assert.equal(route({ path: player, query: { from: "1985", to: "1990", phase: "p", teams: "nhl:1" }, cookie: "spxn-locale=ja" }), `/ja/s${player}`);
+  assert.equal(route({ path: player, query: { from: "1985", sort_awards: "season.asc" } }), `/en/q${player}`);
+  assert.equal(route({ path: player, query: { q: "x" } }), `/en/q${player}`);
+  assert.equal(route({ path: "/nhl/player", query: { from: "1985" } }), "/en/s/nhl/player");
+  assert.equal(route({ path: "/nhl/players-of-note", query: { from: "1985" } }), "/en/q/nhl/players-of-note");
 });
 
 test("the home page and the pages that read no query stay static whatever the query is", () => {

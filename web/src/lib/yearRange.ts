@@ -22,7 +22,7 @@ const LEAGUE_ROOTS = LEAGUE_CODES.map((c) => `/${c}`);
 /** Runs in the document head, before the first paint. When the page holds a range the viewer wants (in the address, or saved) it sets
     data-yr-pending on <html>, and the stylesheet keeps the chart or list invisible (its height reserved) until it is drawn at that range.
     With no script or no saved range nothing is set and the page shows as usual. The test mirrors readRaw below and runs on RANGE_PAGES and the league pages only. */
-export const RANGE_HOLD_SCRIPT = `try{var P=${JSON.stringify(RANGE_PAGES)}[location.pathname]||(${JSON.stringify(LEAGUE_ROOTS)}.indexOf(location.pathname)>=0?{key:'',holdForAddress:true}:0);if(P){var q=new URLSearchParams(location.search),d=/^\\d{1,4}$/,u=d.test(q.get('from')||'')||d.test(q.get('to')||''),h=u&&P.holdForAddress;if(!u&&P.key){try{h=/^\\d{1,4}-\\d{1,4}$/.test(localStorage.getItem(P.key)||'')}catch(e){}}if(h)document.documentElement.setAttribute('data-yr-pending','')}}catch(e){}`;
+export const RANGE_HOLD_SCRIPT = `try{var L=${JSON.stringify(LEAGUE_ROOTS)},W=location.pathname,P=${JSON.stringify(RANGE_PAGES)}[W]||(L.indexOf(W)>=0?{key:'',holdForAddress:true}:/^\\/(?:${LEAGUE_CODES.join("|")})\\/player\\/[^\\/]+$/.test(W)?{key:'spxn-range-p:'+W,holdForAddress:true}:0);if(P){var q=new URLSearchParams(location.search),d=/^\\d{1,4}$/,u=d.test(q.get('from')||'')||d.test(q.get('to')||'')||d.test(q.get('season')||''),h=u&&P.holdForAddress;if(!u&&P.key){try{h=/^\\d{1,4}-\\d{1,4}$/.test(localStorage.getItem(P.key)||'')}catch(e){}}if(h)document.documentElement.setAttribute('data-yr-pending','')}}catch(e){}`;
 
 /** Holds the page's chart or list out of sight (see RANGE_HOLD_SCRIPT) for a visit made inside the site, which the head script never sees. */
 export function holdRange(): void {
@@ -68,7 +68,7 @@ export function chooseRange(r: YearSpan): void {
   listeners.forEach((cb) => cb());
 }
 
-export interface RangePreset { id: "all" | "last10" | "since" | "spx"; from: number; to: number; year?: number }
+export interface RangePreset { id: "all" | "last10" | "since" | "spx" | "peak"; from: number; to: number; year?: number }
 
 /** One-tap ranges inside min..max: all, the latest ten seasons, since 2000 and 1990, and SPX's own years. A preset that would repeat an earlier span is left out. */
 export function rangePresets(min: number, max: number): RangePreset[] {
