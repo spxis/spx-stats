@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import type { z } from "zod";
 import { API_KEY, PAGE_SIZE, REST_URL, REVALIDATE } from "./config";
+import { tagsFor } from "./tags";
 
 /** A failed read of the archive (a busy or slow database, a bad answer). Pages show the inline "Couldn't load" note for it, not a 404 or 500. */
 export class ApiError extends Error {
@@ -30,7 +31,7 @@ const fetchPage = cache(async (view: string, query: string, from: number, size: 
     try {
       const res = await fetch(`${REST_URL}${view}?${query}`, {
         headers: { apikey: API_KEY, "Accept-Profile": "api", Range: `${from}-${from + size - 1}`, ...(count ? { Prefer: "count=exact" } : {}) },
-        next: { revalidate: REVALIDATE },
+        next: { revalidate: REVALIDATE, tags: tagsFor(view, query) },
         signal: AbortSignal.timeout(TIMEOUT_MS),
       });
       if (res.ok || (count && res.status === 416)) return res;
