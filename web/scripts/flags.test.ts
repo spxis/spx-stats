@@ -50,9 +50,10 @@ test("no other stylesheet sizes a flag", () => {
 
 const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:3100").replace(/\/$/, "");
 // Pages with flags: the roster and its country filter, a player, a city, the cities list, the team heading, the players list.
+// The roster is an MLB club: NHL birth countries are held for only 5% of players (a Canucks roster has just one country, so no filter), MLB for 99%.
 // `rounds` and `rects` are the least number of round and rectangle flags each page must show (the filter buttons and chips are round, the table columns and headings rectangles).
 const PAGES: [string, string, { rounds: number; rects: number } | null][] = [
-  ["roster and country filter", "/nhl/2025-26/team/vancouver-canucks?nat=CA#roster", { rounds: 2, rects: 1 }],
+  ["roster and country filter", "/mlb/2024/team/toronto-blue-jays?nat=CA#roster", { rounds: 2, rects: 1 }],
   ["player page", "/nhl/player/quinn-hughes-2787", null],
   ["city page", "/city/vancouver", null],
   ["cities list", "/cities", null],
