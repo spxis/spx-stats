@@ -2,7 +2,7 @@
 
 import { sankey, type SankeyLink, type SankeyNode } from "d3-sankey";
 import Link from "next/link";
-import { useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
 import "./sankey.css";
@@ -25,6 +25,20 @@ export interface SankeyNodeIn {
   muted?: boolean;
   title: string;
   lines: string[];
+  /** A list under the lines (the players of a band), each with its page; shown in the details panel (see `panel`). */
+  items?: SankeyItem[];
+}
+
+/** One entry of a list in the details: a player, a coach. */
+export interface SankeyItem {
+  label: string;
+  href?: string;
+}
+
+/** One real route through the diagram: the blocks and the bands it passes, by id (bands may run parallel between two blocks). */
+export interface SankeyRoute {
+  nodes: string[];
+  links: string[];
 }
 
 export interface SankeyLinkIn {
@@ -36,6 +50,7 @@ export interface SankeyLinkIn {
   tone?: string;
   title: string;
   lines: string[];
+  items?: SankeyItem[];
 }
 
 export interface SankeyLabels {
@@ -65,12 +80,22 @@ interface Props {
    * whole path (everything upstream and downstream) is lit.
    */
   traces?: string[][];
+  /**
+   * The same, by block and band ids, for diagrams where two blocks have several bands between them (one per coach, one per group of
+   * players): choosing a block or a band lights the routes that pass it. Wins over `traces`.
+   */
+  routes?: SankeyRoute[];
+  /**
+   * Show the details of the chosen block or band in a panel under the diagram (and keep them after the pointer leaves), instead of
+   * beside it. For details with lists of links, which a tooltip that follows the pointer cannot offer.
+   */
+  panel?: boolean;
   /** Extra content under the details (a note about holes in the data). */
   children?: ReactNode;
 }
 
 type N = SankeyNodeIn;
-type L = { id: string; href?: string; tone?: string; title: string; lines: string[] };
+type L = { id: string; href?: string; tone?: string; title: string; lines: string[]; items?: SankeyItem[] };
 type Active = { kind: "node" | "link"; id: string; via: "mouse" | "touch" | "key" };
 
 const NODE_W = 12, PAD = 6, TOP = 28, BOTTOM = 8, MIN_PITCH = 150, CHAR_W = 6.3;
@@ -104,10 +129,13 @@ const fit = (s: string, room: number): string => {
  * under the diagram. The whole path through a block (everything upstream and downstream) is lit while it is chosen. The diagram is as
  * wide as the page allows and scrolls inside its own box when its columns do not fit.
  */
-export default function Sankey({ nodes, links, columnTitles, labels, unitPx, height, minPitch = MIN_PITCH, traces, children }: Props) {
+export default function Sankey({ nodes, links, columnTitles, labels, unitPx, height, minPitch = MIN_PITCH, traces, routes, panel, children }: Props) {
   const [ref, W] = useChartWidth(900, 280);
   const tip = useTooltip(ref);
   const [active, setActive] = useState<Active | null>(null);
+  // In panel mode the last block or band chosen stays in the panel after the pointer has left it.
+  const [kept, setKept] = useState<Active | null>(null);
+  const panelEl = useRef<HTMLDivElement | null>(null);
   const [scroll, setScroll] = useState(0);
   const pointer = useRef<string>("mouse");
   const cols = Math.max(columnTitles.length, 1);
@@ -144,6 +172,14 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
   const lit = useMemo(() => {
     if (!active) return null;
     const nodeSet = new Set<string>(), linkSet = new Set<string>();
+    if (routes) {
+      for (const route of routes) {
+        if (!(active.kind === "node" ? route.nodes.includes(active.id) : route.links.includes(active.id))) continue;
+        route.nodes.forEach((id) => nodeSet.add(id));
+        route.links.forEach((id) => linkSet.add(id));
+      }
+      return nodeSet.size ? { nodes: nodeSet, links: linkSet } : null;
+    }
     if (traces) {
       const link = new Map(links.map((l) => [`${l.source}>${l.target}`, l.id]));
       const chosen = active.kind === "node" ? null : links.find((l) => l.id === active.id);
@@ -167,14 +203,15 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
       linkSet.add(l.id); nodeSet.add(s.id); nodeSet.add(t.id); up(s); down(t);
     }
     return { nodes: nodeSet, links: linkSet };
-  }, [active, layout, links, traces]);
+  }, [active, layout, links, traces, routes]);
 
+  const shown = panel ? active ?? kept : active;
   const detail = useMemo(() => {
-    if (!active) return null;
-    if (active.kind === "node") { const n = nodes.find((x) => x.id === active.id); return n ? { title: n.title, lines: n.lines, href: n.href } : null; }
-    const l = links.find((x) => x.id === active.id);
-    return l ? { title: l.title, lines: l.lines, href: l.href } : null;
-  }, [active, nodes, links]);
+    if (!shown) return null;
+    if (shown.kind === "node") { const n = nodes.find((x) => x.id === shown.id); return n ? { title: n.title, lines: n.lines, href: n.href, items: n.items } : null; }
+    const l = links.find((x) => x.id === shown.id);
+    return l ? { title: l.title, lines: l.lines, href: l.href, items: l.items } : null;
+  }, [shown, nodes, links]);
 
   // Where a chosen block or band is, in the diagram's own coordinates: the details of a touch or a key press open beside it.
   const anchor = useMemo(() => {
@@ -186,7 +223,10 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
     return { x: (s.x1! + t.x0!) / 2, y: ((l.y0 ?? 0) + (l.y1 ?? 0)) / 2 };
   }, [active, layout]);
 
-  const pick = (kind: Active["kind"], id: string, via: Active["via"]) => setActive((a) => (a && a.kind === kind && a.id === id && a.via === via ? a : { kind, id, via }));
+  const pick = (kind: Active["kind"], id: string, via: Active["via"]) => {
+    setActive((a) => (a && a.kind === kind && a.id === id && a.via === via ? a : { kind, id, via }));
+    if (panel) setKept((k) => (k && k.kind === kind && k.id === id ? k : { kind, id, via }));
+  };
   const press = (e: MouseEvent, kind: Active["kind"], id: string) => {
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     // A first touch only chooses; the second (or the link in the details) goes there.
@@ -203,15 +243,20 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
     setActive((a) => (a && a.kind === kind && a.id === id && a.via === "mouse" ? null : a));
   };
 
+  // A touch or a key press brings the panel into view when it is below the fold of a tall diagram.
+  useEffect(() => {
+    if (panel && kept && kept.via !== "mouse") panelEl.current?.scrollIntoView({ block: "nearest" });
+  }, [panel, kept]);
+
   const colX = (c: number) => 4 + (cols > 1 ? ((innerW - room - NODE_W - 4) * c) / (cols - 1) : 0);
   const state = (kind: "node" | "link", id: string) => (!lit ? "" : (kind === "node" ? lit.nodes : lit.links).has(id) ? " on" : " off");
 
   return (
-    <div className="sk" ref={ref} data-lit={lit ? "" : undefined} onKeyDown={(e) => { if (e.key === "Escape") { setActive(null); tip.hide(); } }}>
+    <div className="sk" ref={ref} data-lit={lit ? "" : undefined} onKeyDown={(e) => { if (e.key === "Escape") { setActive(null); setKept(null); tip.hide(); } }}>
       <div className="sk-scroll" tabIndex={-1} onScroll={(e) => setScroll(e.currentTarget.scrollLeft)}>
         <svg width={innerW} height={layout.H} viewBox={`0 0 ${innerW} ${layout.H}`} role="group" aria-label={labels.aria}
           onPointerDown={(e) => { pointer.current = e.pointerType || "mouse"; }}
-          onClick={(e) => { if (e.target === e.currentTarget) setActive(null); }}>
+          onClick={(e) => { if (e.target === e.currentTarget) { setActive(null); setKept(null); } }}>
           {columnTitles.map((t, c) => (
             <text key={c} className="sk-col" x={colX(c)} y={14}>{fit(t, room + NODE_W)}</text>
           ))}
@@ -270,14 +315,30 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
         </svg>
       </div>
       {tip.element}
-      {detail && anchor && active && active.via !== "mouse" ? (
+      {!panel && detail && anchor && active && active.via !== "mouse" ? (
         <Pop x={anchor.x - scroll} y={anchor.y} boxW={W} boxH={layout.H}>
           <b>{detail.title}</b>
           {detail.lines.map((l, i) => <div key={i}>{l}</div>)}
           {detail.href && <Link className="sk-open" href={detail.href} tabIndex={-1}>{labels.open(detail.title)}</Link>}
         </Pop>
       ) : null}
-      <p className="sk-hint">{labels.hint}</p>
+      {panel ? (
+        <div className="sk-panel" ref={panelEl}>
+          {detail ? (
+            <>
+              <b>{detail.title}</b>
+              {detail.lines.map((l, i) => <div key={i}>{l}</div>)}
+              {detail.items?.length ? (
+                <ul className="sk-items">
+                  {detail.items.map((it, i) => <li key={i}>{it.href ? <Link href={it.href} prefetch={false}>{it.label}</Link> : it.label}</li>)}
+                </ul>
+              ) : null}
+              {detail.href && <Link className="sk-open" href={detail.href} prefetch={false}>{labels.open(detail.title)}</Link>}
+            </>
+          ) : <p className="sk-hint">{labels.hint}</p>}
+        </div>
+      ) : null}
+      {panel ? null : <p className="sk-hint">{labels.hint}</p>}
       <div className="sk-sr" aria-live="polite">{detail ? [detail.title, ...detail.lines].join(". ") : ""}</div>
       {children}
     </div>

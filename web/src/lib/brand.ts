@@ -69,3 +69,13 @@ export function teamAccent(b: TeamBrandRow | null): { light: string | null; dark
   const pick = (paper: string) => colours.find((h) => contrast(h, paper) >= 3) ?? null;
   return { light: pick(PAPER.light), dark: pick(PAPER.dark) };
 }
+
+/**
+ * A team's colour for a diagram, in both themes: whichever of its colours reads on the page background, written as light-dark() so the
+ * switch needs no script. A team with no readable colour gets the fallback (a CSS colour or variable).
+ */
+export function teamTone(b: TeamBrandRow | null, fallback = "var(--muted)"): string {
+  const a = teamAccent(b);
+  if (!a.light && !a.dark) return fallback;
+  return `light-dark(${a.light ? `#${a.light}` : fallback}, ${a.dark ? `#${a.dark}` : fallback})`;
+}

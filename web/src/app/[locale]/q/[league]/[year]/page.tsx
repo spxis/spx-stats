@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { ChampionNote } from "@/components/ChampionNote";
+import { SeasonPath } from "@/components/SeasonPath";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
 import { SeasonBar } from "@/components/SeasonBar";
 import { LeagueSeasonNav } from "@/components/SeasonNav";
@@ -231,6 +232,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />
+      <SeasonPath lg={lg} year={y} />
       {awards.length ? (
         <section className="section">
           <h2>{say("season.awards")}</h2>

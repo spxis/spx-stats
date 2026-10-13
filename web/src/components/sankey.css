@@ -37,3 +37,10 @@
 .sk-skeleton { min-height: 360px; display: grid; place-items: center; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
 
 .sk-controls .seg button { min-height: 40px; padding: 8px 14px; }
+
+/* The details panel under a diagram whose blocks and bands carry lists of links (components/Sankey.tsx, `panel`). */
+.sk-panel { border: 1px solid var(--rule); border-left: 4px solid var(--accent); background: var(--panel); padding: 10px 14px; min-height: 7.5em; font-size: 14px; scroll-margin-bottom: 12px; }
+.sk-panel b { display: block; font: 700 17px/1.2 var(--display); letter-spacing: .02em; margin-bottom: 2px; }
+.sk-items { list-style: none; margin: 8px 0 0; padding: 0; columns: 3 180px; column-gap: 20px; max-height: 14em; overflow-y: auto; }
+.sk-items li { break-inside: avoid; padding: 2px 0; }
+.sk-items a { text-decoration: underline; text-underline-offset: 2px; }
