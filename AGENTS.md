@@ -388,6 +388,11 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    - Emergency only, with John's OK in chat: a hand fix through the Supabase MCP `execute_sql`; afterwards put the same
      change on DS1 so the next drift check is clean. Never `truncate`, never `load.py --replace`, never a full load.
    - `scripts/sync/compare.py` is still the read-only comparison (and what the release code reuses).
+   - **Daily scores** (`scripts/daily`, later live scores) are reported to DS1, never written to `core.game` directly: they call
+     `ingest.report_results(jsonb)` (migrations 044 and 046; login role `ingest_writer` can execute that one function and nothing
+     else; the game state machine and "final is terminal" live in it). History, rebuilds and new seasons stay bulk. Production gets
+     those results like any other data, in a release. Calling the same function on production (phase B in `scripts/daily/README.md`)
+     would be a second write path beside releases and needs John's decision first.
 6. **After every release:** the runner verifies and refreshes `api` (`api.refresh()`); look at one affected page on spxn.com.
 7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
    read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
