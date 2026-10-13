@@ -102,7 +102,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "privacy.cookie":
     "There is only one cookie, spxn-locale. It is for remembering your language (EN, FR, Japanese) for one year. It is set only when you choose a language at the bottom of a page, and its contents are only the language code.",
   "privacy.theme":
-    "When you use the light/dark switch, that choice is saved in your browser's local storage (spxn-theme). The place it is kept is only your device, and it is never sent to the site.",
+    "When you use the light/dark switch, the setting you chose is saved in the browser's local storage (spxn-theme). It is kept only inside the device and is never sent to the site.",
   "privacy.browserLanguage":
     "If you have not chosen a language, we display to match your browser's language setting. Nothing is saved for that.",
   "privacy.trackingTitle": "No ads and no tracking.",
@@ -111,10 +111,10 @@ export const READBACK: Readonly<Record<string, string>> = {
   "privacy.visitsTitle":
     "Home grounds you have visited.",
   "privacy.visits":
-    "On the home-ground list page you can put a mark on the grounds you have visited, and keep a date and a note too if you like. This list is saved only in the browser you use (localStorage); it is never sent to spxn.com or to anyone else, and we cannot see it either. If you clear this site's data in the browser, the list disappears too. If you use the export and import buttons, you can also move it between browsers yourself.",
+    "On the home-ground list page you can put a mark on the grounds you have visited, and you can also keep a date and a note. This list is saved only in the browser (localStorage); because it is never sent to spxn.com or to anyone else, we cannot see it. If you clear this site's data in the browser, the list disappears too. If you use the export and import buttons, you can also move it to a different browser yourself.",
   "privacy.logosTitle": "Team logos.",
   "privacy.logos":
-    "Team logos are loaded directly from Wikimedia Commons. When a logo is loaded, your IP address and browser information are visible to Wikimedia. This is the same whichever other site you look at. We attach no referring-page information to logos, so Wikimedia cannot tell which SPXN page you are looking at.",
+    "Team logos are loaded directly from Wikimedia Commons. When one is loaded, the IP address and browser information reach Wikimedia. This is the same whichever site you view. We attach no referring-page information when loading logos, so Wikimedia cannot tell which SPXN page is being viewed.",
   "privacy.hostTitle": "Hosting and data.",
   "privacy.host":
     "SPXN is hosted on Vercel. Like many hosting companies, Vercel keeps ordinary server logs such as the IP address, the requested page, the time and the type of browser. For details, please see {link}.",
