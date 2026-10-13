@@ -2,6 +2,8 @@ import "server-only";
 import { ApiError, rowsSlice, rowsWindow } from "./api/client";
 import { playerIndexSchema, type PlayerIndexRow } from "./api/people";
 import { isLeague } from "./leagues";
+import { readSpan, type Span } from "./listSpan";
+import { overlapFilters } from "./listRange";
 import { listQuery, orderOf, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
 import { slugify } from "./slug";
@@ -24,16 +26,20 @@ const PLAYER_SELECT = ["person_id", "name", "position", "positions", "leagues", 
 
 export const playerOrder = (sort: readonly SortKey[]): Order => orderOf(sort, PLAYER_SORTS, PLAYER_TIE);
 
-export interface PlayerFilters { league: string; words: readonly string[]; position?: string }
+export interface PlayerFilters { league: string; words: readonly string[]; position?: string; from?: number; to?: number }
+
+/** The first and last season in the players index for a league (every league when none), which is the full reach of the year slider. */
+export const playerSpan = (league: string): Promise<Span> => readSpan("player_index", isLeague(league) ? [`leagues=cs.${encodeURIComponent(`{${league}}`)}`] : []);
 
 /**
- * The rows of the players index that match (a league, the words of a name, a position), in this order, a window of them by offset or the ones after a
+ * The rows of the players index that match (a league, the words of a name, a position, the years they played in), in this order, a window of them by offset or the ones after a
  * cursor. The name is searched in the folded `search` of api.player_search (no accents, indexed); until that view exists (migration 037) it is the plain name.
  */
 export async function readPlayers(f: PlayerFilters, order: Order, win: { offset: number; limit: number; after?: readonly Val[] | null }): Promise<{ rows: PlayerIndexRow[]; total: number | null; more: boolean }> {
   const base = [
     isLeague(f.league) ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
     // a player matches by the main position or by any other they hold (positions is lower case)
+    ...overlapFilters(f.from, f.to),
     f.position ? `or=${encodeURIComponent(`(position.ilike.${f.position},positions.cs.{${f.position.toLowerCase()}})`)}` : "",
   ].filter(Boolean);
   const run = async (view: string, filters: string[]) => {
@@ -68,9 +74,9 @@ export interface PlayerPage { list: PlayerIndexRow[]; total: number; page: numbe
  * One page of the players index, in the order asked for (the view is indexed for each column), with the number of players
  * that match the league and the name. A page past the last is answered with the last page.
  */
-export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number): Promise<PlayerPage> {
+export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, years: { from?: number; to?: number } = {}): Promise<PlayerPage> {
   const order = playerOrder(sort);
-  const f = { league, words: searchWords(q) };
+  const f = { league, words: searchWords(q), ...years };
   let at = page;
   for (let tries = 0; ; tries++) {
     const { rows, total } = await readPlayers(f, order, { offset: (at - 1) * PLAYERS_PER_PAGE, limit: PLAYERS_PER_PAGE });

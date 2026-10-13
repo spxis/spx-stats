@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -13,8 +14,9 @@ import { searchWords } from "@/lib/listQuery";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { formatSort, parseSort, tableOf } from "@/lib/sort";
-import { getTeamPage, TEAM_SORTS, type TeamStatus } from "@/lib/teamIndex";
+import { getTeamPage, TEAM_SORTS, teamSpan, type TeamStatus } from "@/lib/teamIndex";
 import { getPaths } from "@/lib/teamSlugs";
+import { rangeFromQuery } from "@/lib/yearRange";
 import type { TeamIndexRow } from "@/lib/api/teams";
 import "@/components/alignment.css";
 
@@ -30,7 +32,7 @@ const STATUS_LABEL = { all: "teams.statusAll", active: "teams.statusActive", def
 export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/teams">): Promise<Metadata> => {
   const sp = await searchParams;
   const { say, locale } = await currentSpeaker();
-  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort) && statusOf(first(sp.status)) === "all";
+  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort) && statusOf(first(sp.status)) === "all" && !first(sp.from) && !first(sp.to);
   return { ...pageMeta({ title: say("teams.title"), description: say("teams.metaDesc"), path: "/teams", locale }), ...(plain ? {} : { robots: { index: false } }) };
 });
 
@@ -42,8 +44,10 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/team
   const status = statusOf(first(sp.status));
   const sort = parseSort(sp.sort, Object.keys(TEAM_SORTS), DEF_SORT).slice(0, 1);
   const sortText = formatSort(sort);
-  const [data, paths, brands] = await Promise.all([getTeamPage(league, q, status, sort, pageOf(first(sp.page))).catch(() => null), getPaths(), getBrands()]);
-  const keep = { league: league || null, q: q || null, status: status === "all" ? null : status, sort: sortText === DEF_SORT ? null : sortText };
+  const span = await teamSpan(league).catch(() => null);
+  const range = span ? rangeFromQuery(first(sp.from), first(sp.to), span.min, span.max) : null;
+  const [data, paths, brands] = await Promise.all([getTeamPage(league, q, status, sort, pageOf(first(sp.page)), range ?? {}).catch(() => null), getPaths(), getBrands()]);
+  const keep = { league: league || null, q: q || null, status: status === "all" ? null : status, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
   const href = (changes: Record<string, string | null>) => queryHref("/teams", sp, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
 
@@ -83,8 +87,10 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/team
               <Link key={s} href={href({ status: s === "all" ? null : s })} prefetch={false} aria-current={s === status ? "page" : undefined}>{say(STATUS_LABEL[s])}</Link>
             ))}
           </nav>
-          <SearchBox kind="teams" action="/teams" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(keep.status ? { status: keep.status } : {}), ...(keep.sort ? { sort: keep.sort } : {}) }} placeholder={say("teams.search")} buttonLabel={say("teams.searchGo")} />
+          <SearchBox kind="teams" action="/teams" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(keep.status ? { status: keep.status } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }} placeholder={say("teams.search")} buttonLabel={say("teams.searchGo")} />
         </div>
+        {span ? <ListRange page="/teams" min={span.min} max={span.max} from={range?.from ?? span.min} to={range?.to ?? span.max} inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))} /> : null}
+        <div className="yr-hold">
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>
             <p className="note">{plural("count.teams", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
@@ -100,6 +106,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/team
             ) : null}
           </>
         ) : <p className="note">{say("teams.none")}</p>}
+        </div>
       </section>
     </>
   );

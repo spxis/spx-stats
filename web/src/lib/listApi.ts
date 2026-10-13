@@ -42,10 +42,10 @@ const playerItem = (p: PlayerIndexRow, url: (id: number, name: string, league?: 
 });
 
 export async function listPlayers(sp: URLSearchParams): Promise<Listing<ReturnType<typeof playerItem>>> {
-  const { values: v, sort, sortText, fields } = parseListParams("players", sp, { sorts: Object.keys(PLAYER_SORTS), fields: PLAYER_FIELDS, defSort: "name.asc" });
+  const { values: v, sort, sortText, fields, range } = parseListParams("players", sp, { sorts: Object.keys(PLAYER_SORTS), fields: PLAYER_FIELDS, defSort: "name.asc" });
   const order = playerOrder(sort);
   const after = afterValues(v.after, sortText, order);
-  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position }, order, { offset: v.offset, limit: v.limit, after });
+  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, ...range }, order, { offset: v.offset, limit: v.limit, after });
   const url = fields && !fields.includes("url") ? () => "" : await playerPaths();
   return {
     data: rows.map((p) => pick(playerItem(p, url), fields)),
@@ -87,11 +87,11 @@ const teamItem = (t: TeamIndexRow, url: string, logo: string | null) => ({
 });
 
 export async function listTeams(sp: URLSearchParams): Promise<Listing<ReturnType<typeof teamItem>>> {
-  const { values: v, sort, sortText, fields } = parseListParams("teams", sp, { sorts: Object.keys(TEAM_SORTS), fields: TEAM_FIELDS_OUT, defSort: "name.asc" });
+  const { values: v, sort, sortText, fields, range } = parseListParams("teams", sp, { sorts: Object.keys(TEAM_SORTS), fields: TEAM_FIELDS_OUT, defSort: "name.asc" });
   const order = teamOrder(sort);
   const after = afterValues(v.after, sortText, order);
   const words = searchWords(v.q ?? "");
-  const { rows, total, more } = await readTeams({ league: v.league ?? "", words, status: v.status as TeamStatus }, order, { offset: v.offset, limit: v.limit, after });
+  const { rows, total, more } = await readTeams({ league: v.league ?? "", words, status: v.status as TeamStatus, ...range }, order, { offset: v.offset, limit: v.limit, after });
   const [paths, logos] = await Promise.all([teamPaths(), fields && !fields.includes("logo") ? {} : brands()]);
   return {
     data: rows.map((t) => pick(teamItem(t, paths.team(t.league, t.franchise_id), logoFor(logos, t.franchise_id)), fields)),

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
 import { queryHref } from "@/components/ViewTabs";
@@ -8,9 +9,10 @@ import { isLeague, LEAGUES, LG } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
 import { positionsText } from "@/lib/people-format";
-import { getPlayerPage, PLAYER_SORTS, searchWords } from "@/lib/playerIndex";
+import { getPlayerPage, PLAYER_SORTS, playerSpan, searchWords } from "@/lib/playerIndex";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { formatSort, parseSort, tableOf } from "@/lib/sort";
+import { rangeFromQuery } from "@/lib/yearRange";
 import "@/components/alignment.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
@@ -24,7 +26,7 @@ const pageOf = (v: string) => (/^\d{1,4}$/.test(v) && Number(v) > 0 ? Number(v) 
 export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/players">): Promise<Metadata> => {
   const sp = await searchParams;
   const { say, locale } = await currentSpeaker();
-  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort);
+  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.sort) && !first(sp.from) && !first(sp.to);
   return { ...pageMeta({ title: say("players.title"), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
 });
 
@@ -36,8 +38,10 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/pl
   const q = clean(first(sp.q));
   const sort = parseSort(sp.sort, Object.keys(PLAYER_SORTS), DEF_SORT).slice(0, 1);
   const sortText = formatSort(sort);
-  const data = await getPlayerPage(league, q, sort, pageOf(first(sp.page))).catch(() => null);
-  const keep = { league: league || null, q: q || null, sort: sortText === DEF_SORT ? null : sortText };
+  const span = await playerSpan(league).catch(() => null);
+  const range = span ? rangeFromQuery(first(sp.from), first(sp.to), span.min, span.max) : null;
+  const data = await getPlayerPage(league, q, sort, pageOf(first(sp.page)), range ?? {}).catch(() => null);
+  const keep = { league: league || null, q: q || null, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
   const href = (changes: Record<string, string | null>) => queryHref("/players", sp, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
 
@@ -63,8 +67,10 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/pl
               <Link key={l.code} href={href({ league: l.code || null })} prefetch={false} aria-current={l.code === league ? "page" : undefined}>{l.short}</Link>
             ))}
           </nav>
-          <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(keep.sort ? { sort: keep.sort } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
+          <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
         </div>
+        {span ? <ListRange page="/players" min={span.min} max={span.max} from={range?.from ?? span.min} to={range?.to ?? span.max} inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))} /> : null}
+        <div className="yr-hold">
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>
             <p className="note">{plural("count.players", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
@@ -80,6 +86,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/pl
             ) : null}
           </>
         ) : <p className="note">{say("players.none")}</p>}
+        </div>
       </section>
     </>
   );

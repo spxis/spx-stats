@@ -4,6 +4,7 @@
  */
 import { z } from "zod";
 import { LEAGUE_CODES } from "./leagues";
+import { readRange } from "./listRange";
 import { cursorOf, readCursor, searchWords, valuesOf, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
 
@@ -26,6 +27,8 @@ const common = {
   q: text(80),
   limit: z.preprocess(blank, z.coerce.number().int().min(1).max(MAX_LIMIT).default(DEFAULT_LIMIT)),
   offset: z.preprocess(blank, z.coerce.number().int().min(0).max(1_000_000).default(0)),
+  from: text(12),
+  to: text(12),
   after: text(600),
   sort: text(80),
   fields: text(200),
@@ -72,6 +75,8 @@ export interface ListParams<K extends "players" | "teams"> {
   sort: SortKey[];
   sortText: string;
   fields: string[] | null;
+  /** The years asked for with `from` and `to` (an open end is undefined); the list keeps what was active in any season inside them. */
+  range: { from: number | undefined; to: number | undefined };
 }
 
 export function parseListParams<K extends "players" | "teams">(kind: K, sp: URLSearchParams, o: { sorts: readonly string[]; fields: readonly string[]; defSort: string }): ListParams<K> {
@@ -80,7 +85,9 @@ export function parseListParams<K extends "players" | "teams">(kind: K, sp: URLS
   const values = r.data as ListParams<K>["values"];
   const sort = parseSortParam(values.sort, o.sorts, o.defSort);
   if (values.after && values.offset > 0) throw new BadParams([{ param: "after", message: "use either offset or after, not both" }]);
-  return { values, sort, sortText: sort.map((s) => `${s.key}.${s.dir}`).join(","), fields: parseFieldsParam(values.fields, o.fields) };
+  const range = readRange(values.from, values.to);
+  if (!range.ok) throw new BadParams([range.problem]);
+  return { values, sort, sortText: sort.map((s) => `${s.key}.${s.dir}`).join(","), fields: parseFieldsParam(values.fields, o.fields), range: { from: range.from, to: range.to } };
 }
 
 export function parseSuggestParams(sp: URLSearchParams): { q: string; words: string[]; league: string | undefined; limit: number } {

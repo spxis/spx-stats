@@ -23,3 +23,6 @@
    the head sets the flag, the Heatmap clears it). The animation lifts the hold after 3 s if the page never finishes loading. */
 html[data-yr-pending] .yr-hold { visibility: hidden; animation: yr-unhold 0s 3s forwards; }
 @keyframes yr-unhold { to { visibility: visible; } }
+
+/* The same slider above the players and teams lists. */
+.listrange { margin: 4px 0 10px; }

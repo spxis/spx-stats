@@ -1,14 +1,28 @@
-/** Where the home chart's year range is remembered: the address (?from=&to=) and, as the default for later visits, localStorage.
-    The range lives in a small store so React can read it with useSyncExternalStore: the server and the first hydration draw the
+/** Where a page's year range is remembered: the address (?from=&to=) and, as the default for later visits, localStorage (a key per page,
+    RANGE_PAGES). The players and teams lists (ListRange) read it themselves; this is about the home chart. The range lives in a small store so React can read it with useSyncExternalStore: the server and the first hydration draw the
     full range, then the client switches to the address's range or the saved one in the same pass. The page holds the chart out of
     sight meanwhile (RANGE_HOLD_SCRIPT), so the full range is never painted when another one is wanted. */
 
 const KEY = "spxn-range";
 
-/** Runs in the document head, before the first paint. When the address or storage holds a range it sets data-yr-pending on <html>,
-    and the stylesheet keeps the chart invisible (its height reserved) until the Heatmap has drawn that range. With no script or no
-    saved range nothing is set and the chart shows as usual. The test mirrors readRaw below and runs on the home page only. */
-export const RANGE_HOLD_SCRIPT = `try{if(location.pathname==='/'){var q=new URLSearchParams(location.search),d=/^\\d{1,4}$/,h=d.test(q.get('from')||'')||d.test(q.get('to')||'');if(!h){try{h=/^\\d{1,4}-\\d{1,4}$/.test(localStorage.getItem('${KEY}')||'')}catch(e){}}if(h)document.documentElement.setAttribute('data-yr-pending','')}}catch(e){}`;
+/** The pages that keep a year range: where each is remembered (a key per page) and whether an address range also needs the hold. The home chart
+    draws in the browser, so it waits for an address range as well as a saved one; the players and teams lists are drawn by the server, which
+    reads an address range itself, so only a saved range (one the server cannot see) holds them back. */
+export const RANGE_PAGES: Record<string, { key: string; holdForAddress: boolean }> = {
+  "/": { key: KEY, holdForAddress: true },
+  "/players": { key: "spxn-range-players", holdForAddress: false },
+  "/teams": { key: "spxn-range-teams", holdForAddress: false },
+};
+
+/** Runs in the document head, before the first paint. When the page holds a range the viewer wants (in the address, or saved) it sets
+    data-yr-pending on <html>, and the stylesheet keeps the chart or list invisible (its height reserved) until it is drawn at that range.
+    With no script or no saved range nothing is set and the page shows as usual. The test mirrors readRaw below and runs on RANGE_PAGES only. */
+export const RANGE_HOLD_SCRIPT = `try{var P=${JSON.stringify(RANGE_PAGES)}[location.pathname];if(P){var q=new URLSearchParams(location.search),d=/^\\d{1,4}$/,u=d.test(q.get('from')||'')||d.test(q.get('to')||''),h=u&&P.holdForAddress;if(!u){try{h=/^\\d{1,4}-\\d{1,4}$/.test(localStorage.getItem(P.key)||'')}catch(e){}}if(h)document.documentElement.setAttribute('data-yr-pending','')}}catch(e){}`;
+
+/** Holds the page's chart or list out of sight (see RANGE_HOLD_SCRIPT) for a visit made inside the site, which the head script never sees. */
+export function holdRange(): void {
+  document.documentElement.setAttribute("data-yr-pending", "");
+}
 
 /** Lets the chart show: the Heatmap calls this once it has drawn the wanted range. */
 export function releaseRangeHold(): void {
@@ -79,6 +93,13 @@ export function parseRange(raw: string, min: number, max: number): YearSpan | nu
   return { from: Math.min(f, t), to: Math.max(f, t) };
 }
 
+/** The range named by the text of `?from=` and `?to=` (digits only; anything else counts as missing), read inside min..max with from <= to.
+    Null for none and for a range that covers min..max whole, since neither narrows anything. */
+export function rangeFromQuery(from: string, to: string, min: number, max: number): YearSpan | null {
+  const r = parseRange(`${whole(from)}-${whole(to)}`, min, max);
+  return r && (r.from > min || r.to < max) ? r : null;
+}
+
 /** Puts the range in the address without a navigation; the full range leaves the address plain. */
 export function writeAddress(r: YearSpan, min: number, max: number): void {
   try {
@@ -90,10 +111,18 @@ export function writeAddress(r: YearSpan, min: number, max: number): void {
   } catch { /* the address stays as it is */ }
 }
 
-/** Remembers the range for the next visit; the full range forgets it. */
-export function saveRange(r: YearSpan, min: number, max: number): void {
+/** Remembers the range for the next visit (under the page's own key, the home chart's by default); the full range forgets it. */
+export function saveRange(r: YearSpan, min: number, max: number, key: string = KEY): void {
   try {
-    if (r.from <= min && r.to >= max) window.localStorage.removeItem(KEY);
-    else window.localStorage.setItem(KEY, `${r.from}-${r.to}`);
+    if (r.from <= min && r.to >= max) window.localStorage.removeItem(key);
+    else window.localStorage.setItem(key, `${r.from}-${r.to}`);
   } catch { /* storage may be blocked */ }
+}
+
+/** The range a page's key remembers, as "from-to" text for parseRange, or "" for none. */
+export function savedRange(key: string = KEY): string {
+  try {
+    const m = /^(\d{1,4})-(\d{1,4})$/.exec(window.localStorage.getItem(key) ?? "");
+    return m ? `${m[1]}-${m[2]}` : "";
+  } catch { return ""; }
 }
