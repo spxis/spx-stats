@@ -268,6 +268,7 @@ No `.env` is needed: the defaults point at the live Supabase project's public re
     pnpm exec next typegen        # first on a fresh checkout
     pnpm exec tsc --noEmit
     pnpm build
+    pnpm test:routing             # when you touch a page, a query parameter or next.config.ts (section 9, "Kept pages")
 
 On a fresh checkout `tsc` fails with "Cannot find name 'PageProps'" until `next typegen` (or a build or dev run) has
 generated the route types. That is not a bug in your change.
@@ -496,6 +497,24 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - Read `web/node_modules/next/dist/docs/` before writing Next.js code: this version differs from older ones.
   - Data comes from PostgREST (`Accept-Profile: api`) through server fetches with `next: { revalidate: 3600 }`,
     validated with Zod. A failed fetch shows an inline "Couldn't load" message.
+- **Kept pages (no server work per view).** Every public page is static and revalidated hourly (ISR), so a visit costs no
+  server render: the Vercel account has a 4 h a month Active CPU cap. Two things used to force a render per request,
+  and both are part of the route now (`web/src/lib/routing.ts` explains it; `web/next.config.ts` builds the rewrites):
+  - **Language** is the first route segment, `app/[locale]` (read anywhere with `currentLocale()`, which uses
+    `next/root-params`). The address a reader sees has no language: rewrites pick `/en`, `/fr` or `/ja` from the
+    `spxn-locale` cookie, then `Accept-Language`, then English.
+  - **Query.** An address with none of `QUERY_KEYS` (`routing.ts`) is served from `app/[locale]/s`, kept. One with a key
+    is drawn per request from `app/[locale]/q`. A page that reads `searchParams` lives in `q/` and has a thin twin in `s/`
+    that passes it `NO_QUERY` (copy an existing twin); a page that reads none lives in `s/` and has a twin in `q/`.
+  - **Rules for a page in `s/`:** no `cookies()`, `headers()`, `searchParams` or `useSearchParams` outside a
+    `<Suspense>` of its own, and nothing from the browser's address at render (a kept page is drawn once for everyone; read
+    `location` in an effect or `useSyncExternalStore` with a server value). A new query parameter goes into `QUERY_KEYS`.
+    `pnpm test:routing` checks the rewrites and scans the source for both mistakes.
+  - **Who is signed in** is learned in the browser: the header, footer and admin bar fetch `/api/me`, only for a browser
+    that carries the `spxn-in` hint cookie (or has never been asked; `lib/auth/hint.ts`). The signed-in pages (`/me`,
+    `/admin`, `/login`, `/tickets`) live in `app/(dyn)`, drawn per request.
+  - Check a change with `pnpm build` (the route table shows `●` for kept pages, `ƒ` for `q/` and `(dyn)`) and `pnpm start`:
+    a second request to the same address answers with `x-nextjs-cache: HIT`.
 - **`site/`** is the retired plain-JS site; don't add to it.
 - **Languages:** EN, FR and JA through `web/src/lib/i18n` (`say('key')`, `currentSpeaker()` / `useSpeaker()`, cookie
   `spxn-locale`).

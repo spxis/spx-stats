@@ -12,9 +12,9 @@ import { READBACK, TODO_KEYS } from "./i18n-review.constants.ts";
 export const SCOPE: readonly { file: string; place: string }[] = [
   { file: "src/components/SiteChrome.tsx", place: "Every page: header and footer" },
   { file: "src/components/i18n/LanguagePicker.tsx", place: "Every page: footer" },
-  { file: "src/app/about/page.tsx", place: "About page, /about" },
-  { file: "src/app/terms/page.tsx", place: "Terms page, /terms" },
-  { file: "src/app/privacy/page.tsx", place: "Privacy page, /privacy" },
+  { file: "src/app/[locale]/s/about/page.tsx", place: "About page, /about" },
+  { file: "src/app/[locale]/s/terms/page.tsx", place: "Terms page, /terms" },
+  { file: "src/app/[locale]/s/privacy/page.tsx", place: "Privacy page, /privacy" },
 ];
 
 export const SHEET_FILE = "docs/i18n-review.md";

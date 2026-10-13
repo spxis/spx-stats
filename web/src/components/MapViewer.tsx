@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { MapBox } from "@johnmorrisdotca/chizu";
 import { regionPoint, type RegionCountry } from "@/lib/regionProject";
 import { abbreviationLabels, chizu, NS, pinText, regionsOf, selectionOf, type Pin } from "./mapDraw";
@@ -76,7 +76,8 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
 }) {
   const { say, locale } = useSpeaker();
   const router = useRouter();
-  const pathname = usePathname();
+  // The address as the browser has it. A kept page is drawn once for everyone, so the server cannot say: it draws the link, the browser then replaces it with plain text when it points here.
+  const pathname = useSyncExternalStore(() => () => {}, () => location.pathname, () => "");
   const hostRef = useRef<HTMLDivElement>(null);
   const scene = useRef<Scene | null>(null);
   const view = useRef<View>({ z: 1, x: 0, y: 0 });

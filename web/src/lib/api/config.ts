@@ -13,5 +13,7 @@ export const API_KEY =
 
 /** Seconds a response is kept before the next request refreshes it in the background. */
 export const REVALIDATE = 3600;
+/** Seconds a retried read is kept (and so, because a page lives no longer than its shortest read, how long a page drawn after a failed first try is kept). */
+export const RETRY_REVALIDATE = 15;
 /** Rows PostgREST returns per request. */
 export const PAGE_SIZE = 1000;

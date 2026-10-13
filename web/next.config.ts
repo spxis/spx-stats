@@ -1,4 +1,5 @@
 import type { NextConfig } from "next";
+import { hideInternalPaths, pageRewrites } from "./src/lib/routing.ts";
 
 const dev = process.env.NODE_ENV !== "production";
 
@@ -26,6 +27,14 @@ const nextConfig: NextConfig = {
   // Lets a second build (e.g. against a stand-in API) sit beside the real one while testing.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
+  // The public pages sit under app/[locale]/{s,q}; the address a reader sees has neither (lib/routing.ts). Rewrites run after files, so
+  // /api, /sitemap.xml, /robots.txt, /_next and the signed-in pages (app/(dyn)) are never touched.
+  async redirects() {
+    return [hideInternalPaths];
+  },
+  async rewrites() {
+    return { beforeFiles: [], afterFiles: pageRewrites(), fallback: [] };
+  },
   async headers() {
     return [
       {

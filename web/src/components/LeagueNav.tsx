@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import type { MouseEvent } from "react";
 import { LEAGUES } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -12,7 +12,10 @@ const SHARED = new Set(["scores", "all-time"]);
 export function LeagueNav() {
   const { say } = useSpeaker();
   const router = useRouter();
-  const parts = usePathname().split("/");
+  // The page's own address: a kept page is drawn once for everyone, so it is read from the route (the same on the server and in the
+  // browser), minus the "s" or "q" the rewrites add (lib/routing.ts).
+  const segments = useSelectedLayoutSegments();
+  const parts = ["", ...(segments[0] === "s" || segments[0] === "q" ? segments.slice(1) : segments)];
   const current = parts[1];
   const keep = SHARED.has(parts[2] ?? "");
   const go = (e: MouseEvent, code: string) => {

@@ -20,7 +20,8 @@
     "test:revalidate": "node --test scripts/revalidate.test.ts",
     "test:releases": "node --test scripts/releases.test.ts",
     "test:idle": "node --test scripts/idleTeams.test.ts",
-    "test:range": "node --test scripts/listRange.test.ts"
+    "test:range": "node --test scripts/listRange.test.ts",
+    "test:routing": "node --test scripts/routing.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/chizu": "1.4.0",

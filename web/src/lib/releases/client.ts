@@ -1,7 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
-import { API_KEY, REST_URL } from "@/lib/api/config";
+import { API_KEY, REST_URL, RETRY_REVALIDATE } from "@/lib/api/config";
 
 /**
  * The data releases, read and approved through two functions in the production database's `api` schema
@@ -193,18 +193,27 @@ export async function releaseStatus(id: number): Promise<{ number: string; statu
 
 const versionRow = z.array(z.object({ number: z.string().regex(/^\d{4}\.\d{2}\.\d{2}-\d+$/) }));
 
-/** The newest finished release that changed production data, for the footer. Null when the view is missing or the call fails. */
+/**
+ * The newest finished release that changed production data, for the footer. Null when the view is missing or the call fails.
+ * Kept for an hour like the pages around it (every page carries this footer, so a shorter time would make every kept page
+ * regenerate that often); a release refreshes it at once through the "data-version" tag (POST /api/revalidate).
+ */
 export async function latestDataVersion(): Promise<string | null> {
-  try {
-    const res = await fetch(`${REST_URL}data_version?select=number`, {
-      headers: { apikey: API_KEY, "accept-profile": "api" },
-      next: { revalidate: 300, tags: ["data-version"] },
-      signal: AbortSignal.timeout(3000),
-    });
-    if (!res.ok) return null;
-    const parsed = versionRow.safeParse(await res.json());
-    return parsed.success ? (parsed.data[0]?.number ?? null) : null;
-  } catch {
-    return null;
+  // A read that fails is tried once more and that try is kept briefly, so a footer drawn while the database struggles is replaced soon
+  // (a page lives no longer than its shortest read) instead of going without the version for an hour.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(`${REST_URL}data_version?select=number`, {
+        headers: { apikey: API_KEY, "accept-profile": "api" },
+        next: { revalidate: attempt ? RETRY_REVALIDATE : 3600, tags: ["data-version"] },
+        signal: AbortSignal.timeout(3000),
+      });
+      if (!res.ok) continue;
+      const parsed = versionRow.safeParse(await res.json());
+      return parsed.success ? (parsed.data[0]?.number ?? null) : null;
+    } catch {
+      /* try again, then go without */
+    }
   }
+  return null;
 }

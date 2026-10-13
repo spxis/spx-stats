@@ -1,18 +1,15 @@
 import Link from "next/link";
-import { SignInLink, UserMenu } from "./auth/UserMenu";
+import { FooterLanguage, HeaderAccount } from "./auth/Account";
 import { Rich } from "./i18n/Rich";
-import { LanguagePicker } from "./i18n/LanguagePicker";
 import { LeagueNav } from "./LeagueNav";
-import { ThemeToggle } from "./ThemeToggle";
 import { authEnabled } from "@/lib/auth/config";
-import { currentUser } from "@/lib/auth/user";
 import { latestDataVersion } from "@/lib/releases/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES } from "@/lib/leagues";
 import pkg from "../../package.json";
 
 export async function SiteHeader() {
-  const [{ say }, user] = await Promise.all([currentSpeaker(), currentUser()]);
+  const { say } = await currentSpeaker();
   return (
     <header className="top">
       <Link className="brand" href="/">
@@ -24,15 +21,14 @@ export async function SiteHeader() {
         <Link href="/teams">{say("nav.teams")}</Link>
         <Link href="/players">{say("nav.players")}</Link>
         <Link href="/about">{say("nav.aboutPage")}</Link>
-        {user ? null : <ThemeToggle />}
-        {user ? <UserMenu user={user} version={pkg.version} /> : authEnabled() ? <SignInLink /> : null}
+        <HeaderAccount version={pkg.version} signIn={authEnabled()} />
       </nav>
     </header>
   );
 }
 
 export async function SiteFooter() {
-  const [{ say }, user, dataVersion] = await Promise.all([currentSpeaker(), currentUser(), latestDataVersion()]);
+  const [{ say }, dataVersion] = await Promise.all([currentSpeaker(), latestDataVersion()]);
   const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
   return (
     <footer className="foot">
@@ -78,7 +74,7 @@ export async function SiteFooter() {
         </p>
       </div>
       <div className="foot-base">
-        {user ? <span /> : <LanguagePicker />}
+        <FooterLanguage />
         <p className="ver">
           {say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}
           {dataVersion ? ` · Data ${dataVersion}` : null}

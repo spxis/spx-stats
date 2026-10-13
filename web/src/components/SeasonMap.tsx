@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useId, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { MapViewer } from "./MapViewer";
@@ -73,6 +73,11 @@ export function SeasonVenueLine({ venue }: { venue: string }) {
 
 /** The dialog, mounted only while the address asks for it. `pins` carry no `me`: the chosen club comes from the address. */
 export function SeasonMapDialog(props: DialogProps) {
+  // Reading the address' query makes a kept page draw this part in the browser; the boundary keeps that to the dialog alone.
+  return <Suspense fallback={null}><DialogGate {...props} /></Suspense>;
+}
+
+function DialogGate(props: DialogProps) {
   const mode = useSearchParams().get("map");
   return mode === "open" || mode === "venue" ? <Dialog {...props} mode={mode} /> : null;
 }

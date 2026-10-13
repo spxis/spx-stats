@@ -1,19 +1,35 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
+import { setHint } from "@/lib/auth/hint";
 import { LanguagePicker } from "../i18n/LanguagePicker";
 import { ThemeToggle } from "../ThemeToggle";
 
 export type MenuUser = { name: string | null; email: string; image: string | null; admin: boolean };
 
-/** The way in, shown to signed-out visitors when sign-in is configured. Returns here afterwards. */
+/**
+ * The way in, shown to signed-out visitors when sign-in is configured. Returns to the page it was clicked on. A kept page is drawn
+ * once for everyone, so the page to return to is read from the browser when the link is used, not when it is drawn.
+ */
 export function SignInLink() {
-  const path = usePathname();
-  const next = path && path !== "/login" ? `?next=${encodeURIComponent(path)}` : "";
-  return <Link className="signin-link" href={`/login${next}`}>Sign in</Link>;
+  const router = useRouter();
+  return (
+    <Link
+      className="signin-link"
+      href="/login"
+      onClick={(e) => {
+        const path = location.pathname;
+        if (path === "/login" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        e.preventDefault();
+        router.push(`/login?next=${encodeURIComponent(path)}`);
+      }}
+    >
+      Sign in
+    </Link>
+  );
 }
 
 /** Top-right account menu: who you are, Profile, Settings, the admin section for admins, version, Sign out. */
@@ -67,7 +83,7 @@ export function UserMenu({ user, version }: { user: MenuUser; version: string })
             <span className="note">Version {version}</span>
             {user.admin ? <Link role="menuitem" href="/admin/tickets?status=done">What is new</Link> : null}
           </div>
-          <button type="button" role="menuitem" onClick={() => void signOut({ callbackUrl: "/" })}>Sign out</button>
+          <button type="button" role="menuitem" onClick={() => { setHint(false); void signOut({ callbackUrl: "/" }); }}>Sign out</button>
         </div>
       ) : null}
     </div>

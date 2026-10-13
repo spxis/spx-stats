@@ -1,7 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
-import { fileTicket, type FileState } from "@/app/admin/tickets/new/actions";
+import { fileTicket, type FileState } from "@/app/(dyn)/admin/tickets/new/actions";
 
 export function TicketForm() {
   const [state, action, pending] = useActionState<FileState, FormData>(fileTicket, null);

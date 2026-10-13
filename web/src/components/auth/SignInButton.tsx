@@ -2,6 +2,7 @@
 
 import { signIn } from "next-auth/react";
 import { useState } from "react";
+import { setProbed } from "@/lib/auth/hint";
 
 /** Starts the Google sign-in. `next` has already been checked on the server; next-auth checks it again. */
 export function SignInButton({ next }: { next: string }) {
@@ -13,6 +14,7 @@ export function SignInButton({ next }: { next: string }) {
       disabled={busy}
       onClick={() => {
         setBusy(true);
+        setProbed(false);
         void signIn("google", { callbackUrl: next });
       }}
     >
