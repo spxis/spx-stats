@@ -531,6 +531,12 @@ export const FR: Dictionary = {
   "venues.leagueNote": "{n} enceintes de la {league}, {season}. Appuyez sur un point pour voir son équipe et son enceinte. Carte : Chizu, d’après Natural Earth.",
   "venues.historyNote": "{n} enceintes de cette équipe, avec les années d’utilisation. Carte : Chizu, d’après Natural Earth.",
   "venues.wikipedia": "Wikipédia",
+  "venues.seats": "{n} places",
+  "venues.opened": "ouvert en {year}",
+  "venues.roofRetractable": "toit rétractable",
+  "venues.roofDome": "avec dôme",
+  "venues.owner": "propriétaire : {owner}",
+  "venues.now": "Aujourd’hui : {name}",
   "map.wikiOpens": "{venue} sur Wikipédia (s’ouvre dans un nouvel onglet)",
 
   // sources, data quality, logos

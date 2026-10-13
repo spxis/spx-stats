@@ -7,6 +7,7 @@ import { countryAt } from "./country";
 import { abbrFor, type AbbrMap } from "./abbr";
 import type { AlignmentRow } from "./alignment";
 import { getVenuePlaces, placeKey, type VenuePlace } from "./venuePlace";
+import type { Speaker } from "./i18n/i18n";
 import { getVenueFacts, getVenueNames, nameIn, venueExtra, type VenueFacts, type VenueSpan } from "./venueName";
 import { placeFor } from "./venue";
 import type { Pin } from "@/components/mapDraw";
@@ -27,7 +28,7 @@ const getNames = cache(async (lg: string) =>
  * venue are one stop, from the first year to the last (open if any is). Locations come from the brand rows, which carry
  * only the venue name and coordinates; the city and state come from api.venue_place.
  */
-export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPaths): Promise<VenueTeam[]> {
+export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPaths, say: Speaker["say"]): Promise<VenueTeam[]> {
   const names = new Map<number, string>();
   const [named, places, spans, facts] = await Promise.all([getNames(lg), getVenuePlaces(lg), getVenueNames(), getVenueFacts()]);
   for (const n of named) names.set(n.franchise_id, n.name);
@@ -45,7 +46,7 @@ export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPat
         const sp = vp?.wid ? spans.get(vp.wid) : undefined;
         const shown = nameIn(sp, b.brand_from ? Number(b.brand_from.slice(0, 4)) : null, b.home_venue!);
         stops.set(key, { venue: shown, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude),
-          place: vp?.place ?? null, wiki: vp?.wiki ?? null, extra: venueExtra(sp, vp?.wid ? facts.get(vp.wid) : undefined, shown) });
+          place: vp?.place ?? null, wiki: vp?.wiki ?? null, extra: venueExtra(sp, vp?.wid ? facts.get(vp.wid) : undefined, shown, say) });
       } else {
         s.to = s.to && b.brand_to ? (b.brand_to > s.to ? b.brand_to : s.to) : null;
       }
@@ -59,7 +60,7 @@ export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPat
 export function clubPins(o: {
   year: number; me: number; clubs: { franchise_id: number; team: string | null }[]; brands: BrandMap; abbrs: AbbrMap;
   alignment: AlignmentRow[]; places: Map<string, VenuePlace>; href: (f: number) => string; slug?: (f: number) => string;
-  names?: Map<string, VenueSpan[]>; facts?: Map<string, VenueFacts>;
+  names?: Map<string, VenueSpan[]>; facts?: Map<string, VenueFacts>; say: Speaker["say"];
 }): Pin[] {
   const seen = new Set<number>();
   return o.clubs.flatMap((c) => {
@@ -73,7 +74,7 @@ export function clubPins(o: {
     const venue = b.home_venue ? nameIn(sp, o.year, b.home_venue) : b.home_venue;
     return [{
       f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(o.abbrs, c.franchise_id, o.year, c.team), lat: b.latitude, lon: b.longitude, venue,
-      extra: venueExtra(sp, vp?.wid ? o.facts?.get(vp.wid) : undefined, venue ?? ""),
+      extra: venueExtra(sp, vp?.wid ? o.facts?.get(vp.wid) : undefined, venue ?? "", o.say),
       place: vp?.place, wiki: vp?.wiki, slug: o.slug?.(c.franchise_id), href: o.href(c.franchise_id), me: c.franchise_id === o.me, cc: countryAt(b.latitude, b.longitude),
       conf: al?.conference_short ?? al?.conference, div: al?.division_short ?? al?.division, logo: logoFor(o.brands, c.franchise_id, o.year),
     }];

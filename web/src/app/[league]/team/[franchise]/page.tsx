@@ -113,7 +113,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   let clubCount = 0;
   if (lastYear != null && me && me.latitude != null && me.longitude != null) {
     const [clubs, places] = await Promise.all([getClubs(lg, lastYear), getSeasonAlignment(lg, lastYear)]);
-    leaguePins = clubPins({ year: lastYear, me: f, clubs, brands, abbrs, alignment: places, places: venuePlaces, names: venueNames, facts: venueFacts, href: (c) => paths.team(lg, c) });
+    leaguePins = clubPins({ year: lastYear, me: f, clubs, brands, abbrs, alignment: places, places: venuePlaces, names: venueNames, facts: venueFacts, say, href: (c) => paths.team(lg, c) });
     clubCount = clubs.length;
     const mePlace = venuePlaces.get(placeKey(f, me.home_venue, me.latitude, me.longitude) ?? "");
     map = (
@@ -184,7 +184,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
     const spans = at?.wid ? venueNames.get(at.wid) : undefined;
     const fy = v.brand_from ? Number(v.brand_from.slice(0, 4)) : null, ty = v.brand_to ? Number(v.brand_to.slice(0, 4)) : null;
     const inside = (spans ?? []).filter((s) => (ty == null || s.from == null || s.from <= ty) && (fy == null || s.until == null || s.until >= fy));
-    const facts = factsLine(at?.wid ? venueFacts.get(at.wid) : undefined);
+    const facts = factsLine(at?.wid ? venueFacts.get(at.wid) : undefined, say);
     if (!inside.length) return [{ v, shown: v.home_venue!, from: v.brand_from, to: v.brand_to, now: null, facts }];
     return inside.map((s, i) => ({
       v, shown: s.name, from: i === 0 ? v.brand_from : String(s.from), to: i === inside.length - 1 ? v.brand_to : String(s.until),
@@ -198,7 +198,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         const wiki = venuePlaces.get(placeKey(f, r.v.home_venue, r.v.latitude, r.v.longitude) ?? "")?.wiki;
         return <>
           {r.shown}
-          {r.now ? <><br /><span className="seasoncell">{`now ${r.now}`}</span></> : null}
+          {r.now ? <><br /><span className="seasoncell">{say("venues.now", { name: r.now })}</span></> : null}
           {wiki ? <><br /><a className="seasoncell" href={wiki} target="_blank" rel="noopener noreferrer">{say("venues.wikipedia")}</a></> : null}
           {r.facts ? <><br /><span className="note">{r.facts}</span></> : null}
         </>;
@@ -219,7 +219,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       },
     },
   ], (r, i) => `${i}|${r.shown}`);
-  const venueTeams = venues.length ? await getVenueTeams(lg, brands, paths) : [];
+  const venueTeams = venues.length ? await getVenueTeams(lg, brands, paths, say) : [];
   const spOne = (k: string) => { const v = sp[k]; return Array.isArray(v) ? v[0] : v; };
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);

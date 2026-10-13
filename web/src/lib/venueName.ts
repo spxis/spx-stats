@@ -2,6 +2,9 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
+import type { Speaker } from "./i18n/i18n";
+
+type Say = Speaker["say"];
 
 /** A name a venue carried and the years it applied; `until` is null for the name now. */
 export interface VenueSpan { name: string; from: number | null; until: number | null; current: boolean }
@@ -25,7 +28,7 @@ function settle(spans: VenueSpan[]): VenueSpan[] {
 }
 
 /**
- * The names of every home venue, by Wikidata id (api.venue_place.wikidata_id), oldest first. The view comes with migration 044;
+ * The names of every home venue, by Wikidata id (api.venue_place.wikidata_id), oldest first. The view comes with migration 050;
  * until it is on the server, or if it cannot be read, this is empty and the pages show the venue names they showed before.
  */
 export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> => {
@@ -43,7 +46,7 @@ export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> =
   return out;
 });
 
-/** The facts of every home venue, by Wikidata id (api.venue_info, migration 044); empty if the view is missing. */
+/** The facts of every home venue, by Wikidata id (api.venue_info, migration 050); empty if the view is missing. */
 export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> => {
   const out = new Map<string, VenueFacts>();
   try {
@@ -77,21 +80,21 @@ export function nowName(spans: VenueSpan[] | undefined, shown: string): string |
   return now && now !== shown ? now : null;
 }
 
-/** "67,000 seats · opened 2002 · artificial turf · retractable roof · owner Washington State Public Stadium Authority". */
-export function factsLine(f: VenueFacts | undefined): string | null {
+/** "67,000 seats · opened 2002 · artificial turf · retractable roof · owner Washington State Public Stadium Authority", in the reader's language (surface and owner are the names Wikidata gives). */
+export function factsLine(f: VenueFacts | undefined, say: Say): string | null {
   if (!f) return null;
   const parts = [
-    f.capacity != null ? `${f.capacity.toLocaleString("en-US")} seats` : null,
-    f.opened != null ? `opened ${f.opened}` : null,
+    f.capacity != null ? say("venues.seats", { n: f.capacity.toLocaleString("en-US") }) : null,
+    f.opened != null ? say("venues.opened", { year: f.opened }) : null,
     f.surface,
-    f.roof === "retractable" ? "retractable roof" : f.roof === "dome" ? "domed" : null,
-    f.owner ? `owner ${f.owner}` : null,
+    f.roof === "retractable" ? say("venues.roofRetractable") : f.roof === "dome" ? say("venues.roofDome") : null,
+    f.owner ? say("venues.owner", { owner: f.owner }) : null,
   ].filter((x): x is string => !!x);
   return parts.length ? parts.join(" · ") : null;
 }
 
 /** The lines the map's selection panel adds under a venue: its other names, its facts and its address. */
-export function venueExtra(spans: VenueSpan[] | undefined, f: VenueFacts | undefined, shown: string): string[] {
+export function venueExtra(spans: VenueSpan[] | undefined, f: VenueFacts | undefined, shown: string, say: Say): string[] {
   const now = nowName(spans, shown);
-  return [now ? `Now ${now}` : null, namesLine(spans), factsLine(f), f?.address ?? null].filter((x): x is string => !!x);
+  return [now ? say("venues.now", { name: now }) : null, namesLine(spans), factsLine(f, say), f?.address ?? null].filter((x): x is string => !!x);
 }

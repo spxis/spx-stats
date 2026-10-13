@@ -122,7 +122,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const figureRanks = await getFigureRanks(lg, y, f);
   const selection = parseSelection(sp);
   const mapPins = clubPins({
-    year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts,
+    year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts, say,
     href: (c) => paths.teamSeason(lg, c, y), slug: (c) => paths.season(lg, c, y),
   });
   const mePin = mapPins.find((p) => p.f === f);
