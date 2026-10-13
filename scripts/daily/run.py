@@ -12,7 +12,7 @@ What a run does (see README.md):
   2. one `revisions` call per 50 pages: the latest revision id of every team-season article
   3. download only the pages whose revision id differs from the state file (10 pages per request)
   4. parse every cached page to claims, pair the two clubs' claims into games, cross-check (nflverse for the NFL,
-     balldontlie for the NBA when BALLDONTLIE_API_KEY is set)
+     balldontlie for the NBA when its key is set: the NBA schedule for a season the articles do not carry yet)
   5. compare with DS1's core.game and print the summary. A dry run writes nothing; --apply writes to DS1 (never production).
 
 Forbidden sources (never fetched, even to test): NHL API, MLB statsapi, NBA.com / cdn.nba.com, NFL.com, cfl.ca, Yahoo,
@@ -22,7 +22,7 @@ import argparse, collections, csv, datetime, hashlib, io, json, os, re, sys, tim
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import games as G, parsers as P, teams as T, wikiapi as W
+import balldontlie as B, games as G, parsers as P, teams as T, wikiapi as W
 
 CACHE = os.path.expanduser(os.environ.get("SPX_DAILY_CACHE", "~/Library/Caches/spx-stats-daily"))
 LEAGUES = ["nhl", "nba", "mlb", "nfl", "cfl"]
@@ -155,32 +155,6 @@ def nflverse_claims(season, roster, state, raw_dir, offline):
     return claims, bad, req
 
 
-def balldontlie_claims(season, roster, since, offline):
-    """NBA second check. Needs BALLDONTLIE_API_KEY (free tier; 5 requests a minute). UNTESTED: no key was available."""
-    key = os.environ.get("BALLDONTLIE_API_KEY")
-    if not key: return None, [], 0
-    if offline: return [], [], 0
-    claims, bad, req, cursor = [], [], 0, None
-    while True:
-        q = "https://api.balldontlie.io/v1/games?per_page=100&seasons[]=%d&start_date=%s" % (season, since.isoformat()) + (("&cursor=%s" % cursor) if cursor else "")
-        time.sleep(13)
-        req += 1
-        with urllib.request.urlopen(urllib.request.Request(q, headers={"Authorization": key, "User-Agent": UA}), timeout=60, context=W.CTX) as r:
-            d = json.loads(r.read().decode("utf-8"))
-        for g in d.get("data", []):
-            h, a = roster.resolve(g["home_team"]["full_name"]), roster.resolve(g["visitor_team"]["full_name"])
-            if not h or not a:
-                bad.append(("balldontlie", g["home_team"]["full_name"] + " / " + g["visitor_team"]["full_name"])); continue
-            fin = str(g.get("status", "")).lower().startswith("final")
-            claims.append(P.claim("balldontlie", (a["name"], h["name"]), {a["name"]: g["visitor_team_score"], h["name"]: g["home_team_score"]} if fin else None,
-                                  h["name"], datetime.date.fromisoformat(g["date"][:10]), "final" if fin else "scheduled",
-                                  "playoffs" if g.get("postseason") else "regular", src=str(g.get("id"))))
-            claims[-1]["source"] = "balldontlie"
-        cursor = (d.get("meta") or {}).get("next_cursor")
-        if not cursor: break
-    return claims, bad, req
-
-
 # ---- reporting ----
 
 def main():
@@ -244,9 +218,12 @@ def run(a, result):
         if lg == "nfl":
             c2, b2, n = nflverse_claims(y, roster, state, a.raw_dir, a.offline); claims += c2; bad += b2; extra_req += n; second.append("nflverse (%d claims)" % len(c2))
         if lg == "nba":
-            c2, b2, n = balldontlie_claims(y, roster, since, a.offline)
-            if c2 is None: second.append("balldontlie skipped (BALLDONTLIE_API_KEY not set)")
-            else: claims += c2; bad += b2; extra_req += n; second.append("balldontlie (%d claims)" % len(c2))
+            try:
+                c2, b2, n = B.claims(y, roster, since, a.offline, a.raw_dir, state)
+            except RuntimeError as e:
+                c2, b2, n = [], [], 0; second.append("balldontlie FAILED, not used this run: %s" % e)
+            if c2 is None: second.append("balldontlie skipped (no key: Mac keychain item '%s' or BALLDONTLIE_API_KEY)" % B.KEYCHAIN_ITEM)
+            else: claims += c2; bad += b2; extra_req += n; second.append("balldontlie (%d claims, %d requests)" % (len(c2), n))
         gs = G.build_games(claims, lg, y)
         league_claims[lg] = claims
         all_games[lg] = gs
@@ -304,9 +281,16 @@ def run(a, result):
                 fetched = info.get("fetched_at") or datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(a.raw_dir, "nflverse", "games.csv")), datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                 nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
                            claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
+        files = []
+        bdl = [c for c in league_claims.get("nba", []) if c["source"] == B.SOURCE]
+        if "nba" in [lg for lg, _ in lseasons] and bdl:
+            sub = B.subset(a.raw_dir, seasons["nba"])
+            fetched = state.get(B.SOURCE, {}).get("fetched_at") or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if sub: files.append(dict(source=B.SOURCE, league="nba", season=seasons["nba"], title=B.TITLE, ext="json", data=sub[0], sha256=sub[1],
+                                      day=fetched[:10], fetched_at=fetched, claims=bdl))
         if skipped: print("\nNOT applied: " + "; ".join(skipped))
         result.update(leagues=[lg for lg, _ in lseasons], skipped=skipped)
-        rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply, result=result)
+        rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply, result=result, files=files)
         if rc == 0 and result.get("committed"):
             import release_hook
             load = result.get("load") or {}

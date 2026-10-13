@@ -97,7 +97,8 @@ select 'the report ran as the restricted role (it holds no privilege on core.gam
 
 -- each club's games in core against the rows of its own article: the club mapped to the right franchise. A game held back
 -- because its sources disagree is missing from core on purpose, and a game only one article lists (single) may be missing from
--- the other club's count. The NFL is left out: its article parser skips rows with no date yet, and nflverse supplies every NFL game.
+-- the other club's count. A game only balldontlie lists (the NBA schedule before the articles carry it) is not on any article, so it is
+-- taken off the club's core count. The NFL is left out: its article parser skips rows with no date yet, and nflverse supplies every NFL game.
 create temp table _clubcount as
 select p.league, p.season, p.title, p.club, c.franchise_id,
        (select count(*) from legacy_wikipedia_daily.claim k where k.page_id = p.page_id and k.phase <> 'preseason' and k.status in ('final', 'scheduled', 'cancelled')) as page_rows,
@@ -106,16 +107,17 @@ select p.league, p.season, p.title, p.club, c.franchise_id,
        (select count(*) from sg x where x.act = 'hold' and c.franchise_id in (x.hf, x.af)
           and not exists (select 1 from core.game g where g.source_key = x.source_key and g.source_id = (select source_id from src))
           and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = x.source_key)) as held,
-       (select count(*) from sg x where x.confidence = 'single' and c.franchise_id in (x.hf, x.af)) as singles
+       (select count(*) from sg x where x.confidence = 'single' and c.franchise_id in (x.hf, x.af)) as singles,
+       (select count(*) from sg x where x.sources = array['balldontlie']::text[] and c.franchise_id in (x.hf, x.af)) as bdl_only
 from (select distinct on (source, title) * from legacy_wikipedia_daily.page where kind = 'team' order by source, title, page_id desc) p
 join club c on c.league = p.league and c.name = p.club
 join core.season s on s.league_code = p.league and s.start_year = p.season
 where (p.league, p.season) in (select league, season from scope) and p.league <> 'nfl';
 insert into _checks
-select 'each club article''s rows = the club''s games in core (franchise mapping; NFL left out)', count(*) filter (where abs(page_rows - core_games - held) > singles) = 0,
-       count(*) filter (where abs(page_rows - core_games - held) > singles) || ' of ' || count(*) || ' clubs unexplained; '
-       || count(*) filter (where page_rows <> core_games) || ' differ by a held or single-source game' ||
-       coalesce(': ' || string_agg(club || ' ' || page_rows || ' vs ' || core_games, '; ' order by club) filter (where abs(page_rows - core_games - held) > singles), '')
+select 'each club article''s rows = the club''s games in core (franchise mapping; NFL left out)', count(*) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles) = 0,
+       count(*) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles) || ' of ' || count(*) || ' clubs unexplained; '
+       || count(*) filter (where page_rows <> core_games - bdl_only) || ' differ by a held or single-source game' ||
+       coalesce(': ' || string_agg(club || ' ' || page_rows || ' vs ' || (core_games - bdl_only), '; ' order by club) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles), '')
 from _clubcount;
 
 \echo

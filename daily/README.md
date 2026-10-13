@@ -42,7 +42,7 @@ A failed run is tried again after an hour, up to 3 times that day (`DAILY_MAX_TR
 - One transaction: the rehearsal (rolled back) runs first and any failed check or error means nothing was written; the load is one
   transaction that commits only if every check passed. A run that fails leaves DS1 as it was (the raw pages are archived first, on their
   own, which only adds rows). The run exits non-zero and the log says why.
-- The container only needs DS1 on the NAS, GitHub, Wikipedia and nflverse (github.com). Nothing else.
+- The container only needs DS1 on the NAS, GitHub, Wikipedia, nflverse (github.com) and, for the NBA schedule, api.balldontlie.io. Nothing else.
 
 ## The heartbeat: did today's run happen?
 

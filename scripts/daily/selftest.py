@@ -218,6 +218,74 @@ def test_observation():
     check(nums == [0, 1], "a doubleheader's second game is game_no 1")
 
 
+def test_balldontlie():
+    import json, tempfile, apply as A, balldontlie as B
+    ids = sorted(B.TEAMS)
+    check(ids == list(range(1, 31)), "balldontlie table: the 30 NBA team ids, 1 to 30")
+    check(len({a for a, _ in B.TEAMS.values()}) == 30 and len({n for _, n in B.TEAMS.values()}) == 30, "balldontlie table: abbreviations and names are all different")
+    full = roster("nba", [(n, n.rsplit(" ", 1)[0], n.rsplit(" ", 1)[1], a) for a, n in B.TEAMS.values()])
+    check(all(full.by_name.get(T.norm(n)) for _, n in B.TEAMS.values()), "balldontlie table: every name is a club of a roster built from it")
+    d = json.loads(fx("balldontlie_games.json"))
+    cs, bad = B.claims_from(d["data"], full, 2026)
+    check(not bad and len(cs) == 8, "balldontlie fixture: 8 NBA games read, the game against a foreign club skipped (%d, %r)" % (len(cs), bad))
+    by = {c["src"]: c for c in cs}
+    c = by["21717855"]
+    check(c["status"] == "scheduled" and c["score"] is None and c["home"] == "Detroit Pistons" and set(c["teams"]) == {"Detroit Pistons", "Boston Celtics"} and c["date"] == D(2026, 10, 20), "balldontlie: a scheduled game")
+    c = by["900001"]
+    check(c["status"] == "final" and c["score"] == {"Miami Heat": 112, "Minnesota Timberwolves": 104} and c["ot"] is False, "balldontlie: a final, scores by team")
+    c = by["900002"]
+    check(c["ot"] is True and c["ot_n"] == 1 and c["score"]["Los Angeles Lakers"] == 121, "balldontlie: period 5 is one overtime")
+    check(by["900003"]["status"] == "scheduled" and by["900003"]["score"] is None, "balldontlie: a game being played has no result yet")
+    check(by["900004"]["phase"] == "playoffs" and by["900004"]["status"] == "final", "balldontlie: a postseason game is a playoff game")
+    check(by["900005"]["status"] == "postponed", "balldontlie: postponed")
+    check(all(c["source"] == "balldontlie" and c["page"] == "balldontlie" for c in cs), "balldontlie: claims carry the source name")
+    # cross-check: balldontlie + one Wikipedia page agreeing = confirmed; alone = single; disagreeing = disputed (a page outranks nothing, balldontlie ranks first)
+    fin = by["900001"]
+    wp = mk("2026–27 Miami Heat season", "Miami Heat", "Minnesota Timberwolves", 112, 104, D(2026, 10, 22))
+    g = G.build_games([fin, wp], "nba", 2026)
+    check(len(g) == 1 and g[0]["confidence"] == "confirmed", "balldontlie + a Wikipedia page agreeing -> confirmed")
+    g = G.build_games([fin], "nba", 2026)
+    check(g[0]["confidence"] == "single" and g[0]["status"] == "final", "balldontlie alone -> single final")
+    # an observation names balldontlie as the source and carries its reference
+    bd = dict(fin, revid="abc")
+    o = A.observation(G.build_games([bd], "nba", 2026)[0], full)
+    check(o["source"] == "balldontlie" and o["ref"] == "balldontlie@abc" and o["verdict"] == "single", "observation: source balldontlie, reference balldontlie@<sha>")
+    sch = A.observation(G.build_games([by["21717855"]], "nba", 2026)[0], full)
+    check(sch["source"] == "balldontlie" and sch["status"] == "scheduled" and sch["verdict"] == "none", "observation: a scheduled game seen only by balldontlie")
+    # fetching: throttled, whole season first, then the window; games merge by id; the archived bytes are stable
+    pages = [dict(data=d["data"][:5], meta=dict(next_cursor=5, per_page=5)), dict(data=d["data"][5:], meta=dict(next_cursor=None, per_page=5))]
+    calls, slept = [], []
+    def fake_get(path, params, key):
+        calls.append((path, dict(params))); return pages[1 if "cursor" in params else 0]
+    with tempfile.TemporaryDirectory() as raw:
+        st = {}
+        n = B.fetch(2026, D(2026, 10, 15), raw, st, "k", today=D(2026, 10, 12), sleep=slept.append, get=fake_get)
+        check(n == 2 and slept == [B.PAGE_GAP] and "start_date" not in calls[0][1] and calls[1][1].get("cursor") == 5, "fetch: whole season, two pages, one 13 s pause")
+        check(len(B.load_cache(raw, 2026)["games"]) == len(d["data"]) and st["balldontlie"]["full_at"] == "2026-10-12", "fetch: games cached by id, whole read recorded")
+        sub1 = B.subset(raw, 2026)
+        calls.clear(); slept.clear()
+        n = B.fetch(2026, D(2026, 10, 15), raw, st, "k", today=D(2026, 10, 14), sleep=slept.append, get=fake_get)
+        check(calls[0][1].get("start_date") == "2026-10-15" and calls[0][1].get("end_date") == "2026-10-15", "fetch: two days later only the window up to tomorrow is read")
+        sub2 = B.subset(raw, 2026)
+        check(sub1[1] == sub2[1] and sub1[0].endswith(b"\n"), "the archived bytes are identical when no game changed")
+        calls.clear()
+        B.fetch(2026, D(2026, 10, 15), raw, st, "k", today=D(2026, 10, 19), sleep=slept.append, get=fake_get)
+        check("start_date" not in calls[0][1], "fetch: a week after the last whole read, the whole season again")
+        cs2, bad2, n2 = B.claims(2026, full, D(2026, 10, 15), True, raw, {})
+        check(n2 == 0 and len(cs2) == 8 and all(c["revid"] == sub1[1] for c in cs2), "offline: claims from the cache, no request, revision = the file's sha256")
+        files = [dict(source="balldontlie", league="nba", season=2026, title=B.TITLE, ext="json", data=sub1[0], sha256=sub1[1], day="2026-10-12", fetched_at="2026-10-12T14:00:00Z", claims=cs2)]
+        arch, pg, cl = A.plan_load([], set(), {}, raw, None, files)
+        check(len(arch) == 1 and arch[0]["name"] == "balldontlie/2026-10-12/games-2026.%s.json" % sub1[1][:12] and pg[0]["source"] == "balldontlie" and pg[0]["kind"] == "file", "plan_load: the file is archived as balldontlie/<day>/games-<season>.<sha12>.json")
+        arch, pg, cl = A.plan_load([], {("balldontlie", B.TITLE, sub1[1])}, {}, raw, None, files)
+        check(not arch and not pg, "plan_load: content DS1 already holds is not archived again")
+    # no key: nothing is requested
+    k = os.environ.pop("BALLDONTLIE_API_KEY", None)
+    try:
+        if sys.platform != "darwin": check(B.claims(2026, full, D(2026, 10, 15), False, "/nonexistent", {}) == (None, [], 0), "no key -> skipped, no request")
+    finally:
+        if k: os.environ["BALLDONTLIE_API_KEY"] = k
+
+
 def test_release_hook():
     import contextlib, io, json, tempfile, release_hook as R
     with tempfile.TemporaryDirectory() as d:
@@ -266,6 +334,7 @@ def test_release_hook():
 
 def run():
     test_observation()
+    test_balldontlie()
     test_parsers()
     test_pairing()
     test_doubleheader()
@@ -275,7 +344,7 @@ def run():
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations and the release hook (auto and review routes)")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive) and the release hook (auto and review routes)")
     return 0
 
 

@@ -21,7 +21,7 @@ if HERE not in sys.path: sys.path.insert(0, HERE)
 import games as G, teams as T
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DS1 = os.path.join(HERE, "ds1.sh")
-MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql")]
+MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql")]
 BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
@@ -90,6 +90,11 @@ def staging_row(g):
                 provenance=["%s@%s" % (c["page"], c.get("revid")) for c in g["claims"]])
 
 
+def _src(c):
+    """The source an observation names: a ranked second source (nflverse, balldontlie) by name, any club page as wikipedia."""
+    return c["source"] if c["source"] in G.SOURCE_RANK else "wikipedia"
+
+
 def _ref(c):
     return "%s@%s" % (c["page"], c.get("revid"))
 
@@ -107,11 +112,11 @@ def observation(g, roster):
         same = lambda c: c["score"] == best["score"]
         agree = [_ref(c) for c in finals if same(c)]
         conflict = [dict(ref=_ref(c), source=re.sub(r"^wp:", "", c["source"]), home_score=c["score"].get(h), away_score=c["score"].get(a)) for c in finals if not same(c)]
-        src, ref = ("nflverse" if best["source"] in G.SOURCE_RANK else "wikipedia"), _ref(best)
+        src, ref = _src(best), _ref(best)
         verdict = r["confidence"]
     else:
         agree, conflict, verdict = [_ref(c) for c in claims], [], "none"
-        src = "nflverse" if claims and all(c["source"] in G.SOURCE_RANK for c in claims) else "wikipedia"
+        src = _src(claims[0]) if claims and all(c["source"] in G.SOURCE_RANK for c in claims) else "wikipedia"
         ref = agree[0] if agree else None
     return dict(game_ref=r["source_key"], league=r["league"], season=r["season"], phase=r["phase"], round=r["round"], game_date=r["game_date"],
                 game_no=int(r["source_key"].rsplit(":", 1)[1]), home_key=fk(h), away_key=fk(a), home_name=h, away_name=a,
@@ -120,7 +125,7 @@ def observation(g, roster):
                 agree=agree, conflict=conflict, dissent=r["dissent"], notes=r["notes"])
 
 
-def plan_load(todo, held, pages_state, raw_dir, nfl):
+def plan_load(todo, held, pages_state, raw_dir, nfl, files=()):
     """-> (archive rows, page rows, claim sets). `todo` is the pages (dicts from run.plan) of the leagues being applied."""
     archive, pages, claims = [], [], []
     for p in todo:
@@ -145,6 +150,13 @@ def plan_load(todo, held, pages_state, raw_dir, nfl):
             pages.append(dict(source="nflverse", league="nfl", season=nfl["season"], kind="file", title="games.csv", club=None, revision=nfl["sha256"],
                               revision_at=None, sha256=nfl["sha256"], bytes=len(nfl["data"]), archive_name=name, fetched_at=nfl["fetched_at"]))
             claims.append(("games.csv", nfl["sha256"], "nflverse", nfl["claims"]))
+    for f in files:      # another source's season file (balldontlie's games.json): kept as fetched, one page row per distinct content
+        if (f["source"], f["title"], f["sha256"]) in held: continue
+        name = "%s/%s/games-%d.%s.%s" % (f["source"], f["day"], f["season"], f["sha256"][:12], f["ext"])
+        archive.append(dict(name=name, saved_on=f["day"], sha256=f["sha256"], data=f["data"]))
+        pages.append(dict(source=f["source"], league=f["league"], season=f["season"], kind="file", title=f["title"], club=None, revision=f["sha256"],
+                          revision_at=None, sha256=f["sha256"], bytes=len(f["data"]), archive_name=name, fetched_at=f["fetched_at"]))
+        claims.append((f["title"], f["sha256"], f["source"], f["claims"]))
     return archive, pages, claims
 
 
@@ -256,7 +268,7 @@ def daily_summary(out):
     return None
 
 
-def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False, result=None):
+def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False, result=None, files=()):
     """todo_pages: [dict(league, season, kind, title, team, path, claims)]; staged_games: staging rows; observations: what
     ingest.report_results takes; nfl: dict or None. `result`, if given, is filled in for the caller (heartbeat, release hook):
     pages_new, archive_rows, committed, and the DAILY_SUMMARY of the committed load."""
@@ -265,7 +277,7 @@ def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     log = os.path.join(log_dir, "%s-apply.log" % stamp)
     held = held_revisions()
-    archive, pages, claims = plan_load(todo_pages, held, pages_state, raw_dir, nfl)
+    archive, pages, claims = plan_load(todo_pages, held, pages_state, raw_dir, nfl, files)
     print("\nDS1 holds %d page revisions; new to load: %d (%d claim rows); staged games: %d; observations to report: %d" % (
         len(held), len(pages), sum(len(c[3]) for c in claims), len(staged_games), len(observations)))
     result.update(pages_new=len(pages), archive_rows=len(archive), committed=False)

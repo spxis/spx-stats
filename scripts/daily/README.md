@@ -54,7 +54,7 @@ checks + 14 content batches of 10 pages); a run when nothing changed is 3 API re
 |---|---|---|
 | English Wikipedia, MediaWiki API | main source: club-season articles' game logs, MLB postseason page | CC BY-SA 4.0; authors are each article's history; `meta.source` code `wikipedia`. Pages and revision ids are kept as provenance. |
 | nflverse `games.csv` (nflverse-data release `schedules`) | NFL second check | CC BY 4.0; credit "NFL data from nflverse (github.com/nflverse), CC BY 4.0." (`meta.source` code `nflverse`) |
-| balldontlie free tier | NBA second check, only when `BALLDONTLIE_API_KEY` is set | **untested** (no key). Its terms must be read before stage 2 enables it. Nobody signs up for it here. |
+| balldontlie, free tier (`api.balldontlie.io/v1`, docs `docs.balldontlie.io`) | the NBA schedule and scores; the second check beside the clubs' articles, and the only source for a season the articles do not carry yet | John's free account (teams and games endpoints only; never a paid endpoint, never a trial). Its terms allow storing and publishing the data (John, 2026-10-12). Credit "NBA schedule and scores from balldontlie.io". Provenance: `balldontlie@<sha256 of the archived file>`. See [balldontlie](#balldontlie-the-nba-schedule) |
 
 **Never fetched, not even to test:** NHL API (`api-web.nhle.com`, `api.nhle.com`), MLB statsapi, NBA.com and
 `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, Yahoo, ESPN, Sports Reference sites, newspapers and TV sites. Articles
@@ -98,6 +98,33 @@ Per league: new games (final / scheduled), scheduled to final, same result alrea
 postponed or cancelled, rescheduled, DS1 final games since `--since` that Wikipedia lacks, unreadable rows (an unmatched
 team name lands there), and the clubs that have no `core.team_season` for the season (MLB, CFL and NBA 2026 have no
 `core.season` row at all in DS1).
+
+## balldontlie: the NBA schedule
+
+`balldontlie.py`. Only the free tier's endpoints (`/v1/games`; `/v1/teams` was read once to build the fixed table). 5 requests a minute, so
+requests are 13 s apart; a 429 waits at least 30 s (up to 3 retries); a 401/403 stops the source for the run with one line, the rest of the
+run goes on without it.
+
+- **Key.** On a Mac the keychain item `spx-stats balldontlie api key`, read inside the process (`security find-generic-password -s ... -w`);
+  anywhere else `BALLDONTLIE_API_KEY` from the environment (the NAS: `/volume2/docker/spx-daily-scores/daily.env`, see `daily/daily.env.example`).
+  It is never printed or logged. **No key: the source is skipped with one line** (`balldontlie skipped (no key ...)`) and nothing is requested.
+- **What is read.** The first run of a season, and one a week, reads the whole season (`seasons[]=<start year>`, 100 a page: 13 requests for 1,200
+  games, about 3 minutes). The other days read only the games from `--since` to tomorrow (a result can only be there): 0 or 1 request
+  before the season starts, 1 or 2 during it. Games merge by id into `balldontlie/games-<season>.json` in the raw cache (each game object as
+  returned).
+- **Teams.** A fixed table in the script (balldontlie team id -> abbreviation and the club's full name in DS1, ids 1 to 30), checked by the
+  self-test against a roster built from it. A game with a team outside the table (balldontlie also lists defunct clubs and foreign clubs that
+  play NBA preseason games) is skipped without a word; a table club the DS1 roster lacks is an unreadable row, never a guess.
+- **Statuses.** `status_state` `final` is a final (scores by team, `period` above 4 is overtime), `postponed` is postponed, anything else
+  (scheduled, being played) is scheduled with no score. `postseason` is a playoff game.
+- **Archive and provenance.** The season file (without fetch times, so it changes only when a game does) goes to `legacy_files.raw_archive`
+  as `balldontlie/<day>/games-<season>.<sha12>.json` and one `legacy_wikipedia_daily.page` row (`source = 'balldontlie'`, title `games.json`,
+  revision = the sha256; migration 055 lets the table hold it). Claims, staging games and observations name it `balldontlie@<sha256>`.
+- **Cross-check.** balldontlie ranks first, like nflverse. It plus one club article agreeing is `confirmed`; alone it is `single` (the flag
+  text is still the Wikipedia one); balldontlie agreeing with one article against another is `resolved`. New games come from the bulk step
+  (`ingest.replay(true, true)`), because no other source holds the season; scheduled games of a season another source holds are not made.
+- **Dry run:** `scripts/daily/run.py --dry-run --league nba -v` (reads the key, does the whole-season read once). `--rehearse --league nba` proves the
+  DS1 side and rolls back.
 
 ## Stage 2: what `--apply` writes to DS1, and where
 
@@ -243,11 +270,13 @@ ingest function is **not** installed on production, there is no production login
 
 - The NFL article parser skips rows without a date yet (flexible-scheduling weeks 16-18 of some clubs), so the per-club row counts
   differ from the 17 games; every NFL game is in the staging because nflverse supplies all 272. The row-count check leaves the NFL out.
-- NBA 2026-27: the clubs' articles hold no regular-season schedule yet (one stray Dallas row is unreadable), so the step creates the season
-  and the 30 team seasons and no games. Re-run `--apply` when the schedule is published; the NBA path with real games is **untested**.
+- NBA 2026-27: the clubs' articles hold no regular-season schedule yet (one stray Dallas row is unreadable), so balldontlie supplies it:
+  1,200 regular-season games, 80 per club (checked 2026-10-12; a full season is 82 per club, so 30 games are missing there: probably the
+  NBA Cup ones, not looked into). The articles' rows replace nothing: where an article lists a game too, the two agree (confirmed) or are
+  disputed like any two sources. Rehearsed on DS1 (rolled back), not yet applied.
 - Live (in_progress) states and the second game of a doubleheader as a live game are accepted by the function but nothing reports them yet;
   the daily job reports scheduled, final, postponed, cancelled and suspended games.
-- The CFL postseason and the NHL/NFL playoffs are not read yet (they start Oct 31, April, January); balldontlie is not enabled (no key).
+- The CFL postseason and the NHL/NFL playoffs are not read yet (they start Oct 31, April, January). balldontlie's playoff games (`postseason`) are read but untested until April.
 - Wikipedia revisions between two runs are not archived: only the revision used is. The raw cache is overwritten by the next fetch.
 
 ## Stage 3: the Docker job on the NAS
@@ -264,13 +293,13 @@ It is not `meta.load_run`: `meta` is a release schema (the row would count as dr
 
 ## Files
 
-`run.py` command line and reporting · `wikiapi.py` the API client and state file · `teams.py` club lists and name matching ·
+`run.py` command line and reporting · `balldontlie.py` the NBA source (key, throttled reads, cache, claims, the fixed team table) · `wikiapi.py` the API client and state file · `teams.py` club lists and name matching ·
 `parsers.py` wikitext to claims (NHL, MLB, NFL here; CFL and NBA wrap the older readers) · `games.py` pairing and cross-check ·
 `compare.py` DS1 comparison (SELECTs only) · `ds1.sh` DS1 `psql` (host and password found inside) · `apply.py` stage 2: rehearsal,
 archive, load, report, refresh (`observation()` builds what `ingest.report_results` takes) · `snapshot.sql` + `checks.sql` the report and the
 checks · `selftest.py` + `fixtures/` the tests · `heartbeat.py` the `ingest.daily_run` row · `release_hook.py` `prepare_release()` ·
 `ingest-writer-login.sh` an optional DS1 login for the role · `../../daily/` the Docker job · `db/migrations/048_ingest_daily_run.sql` the heartbeat table ·
-`db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `044_ingest_report_results.sql` the API · `046_ingest_writer_role.sql` the
+`db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `055_daily_balldontlie.sql` lets it hold balldontlie's file · `044_ingest_report_results.sql` the API · `046_ingest_writer_role.sql` the
 role · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
 `db/tests/` (`run-ingest-tests.sh`, `run-rebuild-proof.sh`).
 Fixtures are excerpts of Wikipedia articles (CC BY-SA 4.0); the first line of each names the article and revision, and the
