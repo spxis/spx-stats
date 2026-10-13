@@ -192,7 +192,7 @@ export interface SeasonOutageRow {
   source_url: string | null;
 }
 
-/** A season whose championship was not awarded, and why (api.title_not_awarded, db/migrations/058_title_not_awarded.sql). */
+/** A season whose championship was not awarded, and why (api.title_not_awarded, db/migrations/060_title_not_awarded.sql). */
 export interface TitleNotAwardedRow {
   league: string;
   year: number;

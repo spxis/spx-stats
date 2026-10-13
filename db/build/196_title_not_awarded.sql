@@ -1,5 +1,5 @@
 -- Championships that were not awarded, from db/seed/title_not_awarded.csv (run from the repo root, as scripts/build_core.sh does).
--- Rerunnable: the table is only ever fed from the seed, so it is emptied and filled again. Needs migration 058.
+-- Rerunnable: the table is only ever fed from the seed, so it is emptied and filled again. Needs migration 060.
 
 drop table if exists pg_temp.seed_title;
 create temp table seed_title (
