@@ -7,6 +7,7 @@ import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { currentLocale, currentSpeaker } from "@/lib/i18n/currentLocale";
 import { SITE_URL } from "@/lib/leagues";
 import { LOCALE_OG } from "@/lib/locale";
+import { RANGE_HOLD_SCRIPT } from "@/lib/yearRange";
 import { tableOf } from "@/lib/slug";
 import { getSlugs } from "@/lib/teamSlugs";
 import "./globals.css";
@@ -38,6 +39,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
     <html lang={locale} className={`${barlow.variable} ${source.variable} ${mono.variable}`} suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+        <script dangerouslySetInnerHTML={{ __html: RANGE_HOLD_SCRIPT }} />
       </head>
       <body>
         <LocaleProvider locale={locale}>

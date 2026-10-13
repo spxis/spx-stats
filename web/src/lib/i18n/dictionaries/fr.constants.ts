@@ -67,6 +67,11 @@ export const FR: Dictionary = {
   "range.start": "Année de début",
   "range.end": "Année de fin",
   "range.reset": "Réinitialiser",
+  "range.presets": "Périodes rapides",
+  "range.all": "Tout",
+  "range.last10": "10 dernières années",
+  "range.since": "Depuis {year}",
+  "range.spx": "Années SPX",
 
   // league page
   "league.metaDesc": "Saisons, classements, champions et récompenses de la {league} : {seasons} disputées, {champions} au dossier.",

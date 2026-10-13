@@ -116,6 +116,11 @@ export const PHRASES = {
   "range.start": "Start year",
   "range.end": "End year",
   "range.reset": "Reset",
+  "range.presets": "Quick ranges",
+  "range.all": "All",
+  "range.last10": "Last 10 years",
+  "range.since": "Since {year}",
+  "range.spx": "SPX years",
 
   // league page
   "league.metaDesc": "{league} seasons, standings, champions and awards: {seasons} held, {champions} on record.",

@@ -67,6 +67,11 @@ export const JA: Dictionary = {
   "range.start": "開始年",
   "range.end": "終了年",
   "range.reset": "リセット",
+  "range.presets": "期間のショートカット",
+  "range.all": "すべて",
+  "range.last10": "直近10年",
+  "range.since": "{year}年以降",
+  "range.spx": "SPXの期間",
 
   // league page
   "league.metaDesc": "{league}のシーズン、順位表、優勝チーム、各賞：開催{seasons}、記録上の{champions}。",

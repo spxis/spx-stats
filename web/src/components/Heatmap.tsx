@@ -2,13 +2,13 @@
 
 import { max, min, range } from "d3";
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import { LG } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
 import { seasonPath } from "@/lib/slug";
-import { chooseRange, parseRange, saveRange, serverRange, snapshotRange, subscribeRange, writeAddress } from "@/lib/yearRange";
+import { chooseRange, parseRange, releaseRangeHold, saveRange, serverRange, snapshotRange, subscribeRange, writeAddress } from "@/lib/yearRange";
 import { YearRange } from "./YearRange";
 
 export interface HeatSeason {
@@ -32,6 +32,8 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
   const span = useMemo(() => parseRange(raw, y0, y1) ?? { from: y0, to: y1 }, [raw, y0, y1]);
   // A saved range that came from storage is shown in the address too, so the page can be shared. The first (server-like) pass has nothing to write.
   useEffect(() => { if (raw) writeAddress(span, y0, y1); }, [raw, span, y0, y1]);
+  // The head script keeps the chart hidden while a wanted range is pending; show it once this render uses that range (not the server's full one).
+  useLayoutEffect(() => { if (raw === snapshotRange()) releaseRangeHold(); }, [raw]);
   const onRange = useCallback((from: number, to: number, final: boolean) => {
     chooseRange({ from, to });
     writeAddress({ from, to }, y0, y1);
@@ -59,7 +61,7 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
   const ticks = years.filter((y) => y % step === 0);
   const H = top + rowH * leagues.length + 4;
   return (
-    <>
+    <div className="yr-hold">
       <YearRange min={y0} max={y1} from={span.from} to={span.to} onChange={onRange} />
       <div className="chart scroll" ref={ref}>
         <svg viewBox={`0 0 ${Wd} ${H}`} role="img" aria-label={say("heatmap.aria")}>
@@ -86,6 +88,6 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
         </svg>
         {tip.element}
       </div>
-    </>
+    </div>
   );
 }

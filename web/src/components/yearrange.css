@@ -12,3 +12,14 @@
 .yr-reset { flex: none; border: 0; background: none; padding: 8px 2px; color: var(--ink); font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }
 .yr-reset:disabled { visibility: hidden; }
 @media (prefers-reduced-motion: reduce) { .yr-thumb::before { transition: none; } }
+.yr-wrap { margin-bottom: 8px; }
+.yr-wrap .yr { margin-bottom: 0; }
+.yr-presets { display: flex; flex-wrap: wrap; gap: 0 6px; max-width: 520px; }
+.yr-preset { border: 0; background: none; padding: 8px 6px; color: var(--ink); font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.yr-preset[aria-pressed="true"] { background: var(--ink); color: var(--paper); text-decoration: none; }
+.yr-preset:focus-visible, .yr-reset:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+
+/* With a saved or addressed range the chart waits, invisible but keeping its room, until it is drawn at that range (RANGE_HOLD_SCRIPT in
+   the head sets the flag, the Heatmap clears it). The animation lifts the hold after 3 s if the page never finishes loading. */
+html[data-yr-pending] .yr-hold { visibility: hidden; animation: yr-unhold 0s 3s forwards; }
+@keyframes yr-unhold { to { visibility: visible; } }

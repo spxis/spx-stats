@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
+import { rangePresets } from "@/lib/yearRange";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./yearrange.css";
 
@@ -102,7 +103,11 @@ export function YearRange({ min, max, from, to, onChange }: Props) {
     );
   };
 
+  const labelOf = (p: ReturnType<typeof rangePresets>[number]) =>
+    p.id === "all" ? say("range.all") : p.id === "last10" ? say("range.last10") : p.id === "spx" ? say("range.spx") : say("range.since", { year: p.year ?? p.from });
+
   return (
+    <div className="yr-wrap">
     <div className="yr" role="group" aria-label={say("range.aria")}>
       <span className="yr-v" aria-hidden="true">{from}</span>
       <div ref={track} className="yr-track" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
@@ -113,6 +118,12 @@ export function YearRange({ min, max, from, to, onChange }: Props) {
       </div>
       <span className="yr-v" aria-hidden="true">{to}</span>
       <button type="button" className="yr-reset" disabled={full} onClick={() => onChange(min, max, true)}>{say("range.reset")}</button>
+    </div>
+    <div className="yr-presets" role="group" aria-label={say("range.presets")}>
+      {rangePresets(min, max).map((p) => (
+        <button key={`${p.from}-${p.to}`} type="button" className="yr-preset" aria-pressed={from === p.from && to === p.to} onClick={() => onChange(p.from, p.to, true)}>{labelOf(p)}</button>
+      ))}
+    </div>
     </div>
   );
 }
