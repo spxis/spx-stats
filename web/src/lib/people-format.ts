@@ -1,5 +1,6 @@
 import { LOCALE_TAG, type Locale } from "@/lib/locale";
 import { positionsShort } from "@/lib/positions";
+import { subdivisionName } from "@/lib/soccerNames";
 
 const names = new Map<Locale, Intl.DisplayNames | null>();
 const regions = (locale: Locale) => {
@@ -11,6 +12,8 @@ const regions = (locale: Locale) => {
 
 /** A country's name in the reader's language from its ISO code. */
 export function countryName(code: string, locale: Locale): string {
+  const sub = subdivisionName(code, locale);
+  if (sub) return sub;
   try { return regions(locale)?.of(code.toUpperCase()) || code; } catch { return code; }
 }
 

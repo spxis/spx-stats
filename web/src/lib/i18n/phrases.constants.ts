@@ -1,3 +1,4 @@
+import { SOCCER_EN } from "./soccer.constants.ts";
 /**
  * Every word of the site's own chrome, in English: one flat catalogue, dotted keys grouped by the area that owns them,
  * `{placeholders}` filled by `fill()`. A count that changes its noun is a `<base>.one` / `<base>.other` pair, read
@@ -1721,6 +1722,7 @@ export const PHRASES = {
   "venue.mapNote": "Press the dot to see the venue's clubs and facts.",
   "venue.dataCredit": "Facts: Wikidata (CC0) and, for surface and roof, Wikipedia (CC BY-SA 4.0). Clubs and years: the SPX archive and the sources listed on the sources page.",
   "credit.surfaces": "Playing surfaces: {kyogijo}.",
+  ...SOCCER_EN,
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;

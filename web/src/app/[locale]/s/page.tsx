@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Heatmap } from "@/components/Heatmap";
+import { SoccerHomeCard } from "@/components/SoccerHomeCard";
 import { Figures } from "@/components/ui";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
@@ -29,7 +30,7 @@ export default guard(async function Home() {
   return (
     <>
       <section className="head fade">
-        <span className="eyebrow">NHL · NBA · MLB · NFL · CFL</span>
+        <span className="eyebrow">NHL · NBA · MLB · NFL · CFL · {say("nav.soccer")}</span>
         <h1>{say("home.title")}</h1>
         <p className="lede">{say("home.lede")}</p>
       </section>
@@ -58,6 +59,7 @@ export default guard(async function Home() {
             </Link>
           );
         })}
+        <SoccerHomeCard />
       </section>
     </>
   );

@@ -39,7 +39,8 @@
     "test:review": "node --test scripts/personReview.test.ts",
     "test:looks": "node --test scripts/seriesLooks.test.ts",
     "test:label": "node --test scripts/teamLabel.test.ts",
-    "test:player": "node --test scripts/player.test.ts"
+    "test:player": "node --test scripts/player.test.ts",
+    "test:soccer": "node --test scripts/soccer.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",

@@ -19,7 +19,7 @@ import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, type Locale } from "./loca
 
 /** Every query parameter some public page reads on the server (sort_* are the tables' own sort parameters). */
 export const QUERY_KEYS = [
-  "sort", "sort_awards", "sort_clubs", "sort_coach", "sort_games", "sort_meet", "sort_members", "sort_names", "sort_past", "sort_roster", "sort_seasons", "sort_series", "sort_teams", "sort_venues",
+  "sort", "sort_awards", "sort_clubs", "sort_coach", "sort_games", "sort_meet", "sort_members", "sort_men", "sort_names", "sort_past", "sort_roster", "sort_scorers", "sort_seasons", "sort_series", "sort_teams", "sort_venues", "sort_women",
   "phase", "team", "teams", "month", "day", "date", "all", "season", "view", "loc", "result", "conf", "div",
   "map", "mapteam", "stat", "pos", "nat", "list", "active",
   "q", "league", "status", "page", "from", "to", "after", "offset",
@@ -31,10 +31,10 @@ export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season"] as 
 
 /** Pages that read no query at all, even on the server: always the static copy, whatever the address carries (the home page and
     the league pages keep their year range and the like in the browser). */
-export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", ...LEAGUE_CODES] as const;
+export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", "soccer", "worldcup", ...LEAGUE_CODES] as const;
 
 /** The first path segments that start pages with more in their address: anything else is not a page (a typo, a scanner) and is answered, unkept, with the 404. */
-export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city", "venue"] as const;
+export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city", "venue", "worldcup"] as const;
 
 type Cond = { type: "header" | "cookie" | "query"; key: string; value?: string };
 

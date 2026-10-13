@@ -73,6 +73,10 @@ test("an address with a query the pages read is drawn for the request; one with 
   assert.equal(route({ path: "/players", query: { q: "gretzky" } }), "/en/q/players");
   assert.equal(route({ path: "/city/vancouver", query: { from: "1990" } }), "/en/q/city/vancouver");
   assert.equal(route({ path: "/cities", query: { from: "1990", sort: "x" } }), "/en/s/cities");
+  assert.equal(route({ path: "/worldcup/2022" }), "/en/s/worldcup/2022");
+  assert.equal(route({ path: "/worldcup/2022", query: { sort_games: "date.desc" }, cookie: "spxn-locale=fr" }), "/fr/q/worldcup/2022");
+  assert.equal(route({ path: "/worldcup", query: { sort_men: "year.asc" } }), "/en/s/worldcup");
+  assert.equal(route({ path: "/soccer" }), "/en/s/soccer");
   assert.equal(route({ path: "/nhl/2012-13", query: { utm_source: "x", fbclid: "y" } }), "/en/s/nhl/2012-13");
   assert.equal(route({ path: "/nhl/2012-13", query: { _rsc: "abc" } }), "/en/s/nhl/2012-13");
   for (const key of QUERY_KEYS) assert.match(route({ path: "/nhl/2012-13/leaders", query: { [key]: "1" } }), /^\/en\/q\//, key);
@@ -103,7 +107,7 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.equal(route({ path: "/wp-login.php" }), "/en/q/wp-login.php");
   assert.equal(route({ path: "/xx/yy/zz", cookie: "spxn-locale=fr" }), "/fr/q/xx/yy/zz");
   assert.equal(route({ path: "/about/more" }), "/en/q/about/more");
-  assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue"]);
+  assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue", "worldcup"]);
 });
 
 test("a rewrite's own result is never rewritten again, and the language tree is closed to readers", () => {

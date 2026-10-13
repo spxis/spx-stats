@@ -8,6 +8,8 @@ import { leadersPath } from "@/lib/leaderStats";
 import { scoresPath } from "@/lib/scores";
 import { withGaps } from "@/lib/coverage";
 import { seasonPath } from "@/lib/slug";
+import { getSoccerTeams, getTournaments } from "@/lib/soccer";
+import { soccerTeamPath, tournamentPath } from "@/lib/soccerPath";
 
 export const revalidate = 3600;
 
@@ -15,7 +17,7 @@ const url = (path: string) => `${SITE_URL}${path}`;
 
 // The sitemap is built at deploy time, so a failed read of the archive leaves that part out instead of failing the build.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [summary, teams, teamSeasons, paths, cityData, venues] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs()]);
+  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams()]);
   const seasons = summary.status === "fulfilled" ? summary.value.seasons : [];
   const lastModified = summary.status === "fulfilled" ? new Date(summary.value.totals.refreshed_at) : new Date();
   const held = new Set(seasons.filter((s) => s.games > 0).map((s) => `${s.league}|${s.year}`));
@@ -29,6 +31,11 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const cityUrls = cityData.status === "fulfilled" ? [...new Set(cityData.value.stays.map((s) => s.city))].sort().map((c) => ({ url: url(`/city/${c}`), lastModified })) : [];
   // A venue page exists for each home venue of the /venues list.
   const venueUrls = venues.status === "fulfilled" ? [...venues.value].sort().map((s) => ({ url: url(`/venue/${s}`), lastModified })) : [];
+  // World Cup pages exist once the archive holds a tournament; a failed read leaves them out.
+  const soccerUrls = [
+    ...(soccer.status === "fulfilled" && soccer.value.length ? ["/soccer", "/worldcup", "/worldcup/teams", ...soccer.value.map((t) => tournamentPath(t.year))].map((p) => ({ url: url(p), lastModified })) : []),
+    ...(soccerTeams.status === "fulfilled" ? soccerTeams.value.filter((t) => t.tournaments > 0).map((t) => ({ url: url(soccerTeamPath(t.slug)), lastModified })) : []),
+  ];
   return [
     { url: url("/"), lastModified },
     ...LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
@@ -41,6 +48,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...teamSeasonUrls,
     ...cityUrls,
     ...venueUrls,
+    ...soccerUrls,
     ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/players", "/terms", "/privacy","/sources", "/quality", "/logos"].map((p) => ({ url: url(p), lastModified })),
   ];
 }

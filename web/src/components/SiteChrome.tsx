@@ -2,6 +2,7 @@ import Link from "next/link";
 import { FooterLanguage, HeaderAccount } from "./auth/Account";
 import { Rich } from "./i18n/Rich";
 import { LeagueNav } from "./LeagueNav";
+import { SoccerFooterLinks } from "./SoccerFooterLinks";
 import { authEnabled } from "@/lib/auth/config";
 import { latestDataVersion } from "@/lib/releases/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -37,6 +38,7 @@ export async function SiteFooter() {
           <b>{say("footer.colLeagues")}</b>
           <div className="foot-links">
             {LEAGUES.map((l) => <Link key={l.code} href={`/${l.code}`}>{l.short}</Link>)}
+            <SoccerFooterLinks />
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("nav.allTime")}>

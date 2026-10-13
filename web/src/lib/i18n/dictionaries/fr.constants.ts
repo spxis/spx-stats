@@ -1,4 +1,5 @@
 import type { Dictionary } from "../dictionaries";
+import { SOCCER_FR } from "../soccer.constants.ts";
 
 /** French (Canada). Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
 export const FR: Dictionary = {
@@ -1529,4 +1530,5 @@ export const FR: Dictionary = {
   "venue.mapNote": "Appuyez sur le point pour voir les clubs et les caractéristiques de l’installation.",
   "venue.dataCredit": "Caractéristiques : Wikidata (CC0) et, pour la surface et le toit, Wikipédia (CC BY-SA 4.0). Clubs et années : archive SPX et sources énumérées à la page des sources.",
   "credit.surfaces": "Surfaces de jeu : {kyogijo}.",
+  ...SOCCER_FR,
 };
