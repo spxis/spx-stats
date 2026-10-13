@@ -1,0 +1,60 @@
+<!-- Excerpt of the English Wikipedia article "2026 New York Yankees season", revision 1379561054 (2026-10-10T18:49:03Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+== Game log ==
+{| class="wikitable" style="font-size:90%"
+|-
+!colspan=2|Legend
+|-
+| style="background:#bfb;"|&nbsp;||Yankees win
+|-
+| style="background:#fbb;"|&nbsp;||Yankees loss
+|-
+| style="background:#bbb;"|&nbsp;||Postponement
+|- 
+| style="background:#039;"|&nbsp;||Clinched playoff spot
+|- 
+|'''Bold'''||Yankees team member
+|}
+{{Game log start|style={{Baseball primary style|New York Yankees}};|title= 2026 Game Log: 93–68 (Home: 46–34; Away: 47–34)}}
+{{Game log section start|hide=y|style={{Baseball secondary style|New York Yankees}};|title=March/April: 20–11 (Home: 8–5; Away: 12–6) | #| Date| Opponent| Score| Win| Loss| Save| Stadium| Attendance| Record}}
+|-style="background:#bfb;"
+| 1 || March 25 || @ [[2026 San Francisco Giants season|Giants]] || 7–0 || '''[[Max Fried|Fried]]''' (1–0) || [[Logan Webb|Webb]] (0–1) || — || [[Oracle Park]] || 40,856 || 1–0 
+|-style="background:#bfb;"
+| 2 || March 27 || @ [[2026 San Francisco Giants season|Giants]] || 3–0 || '''[[Cam Schlittler|Schlittler]]''' (1–0) || [[Robbie Ray|Ray]] (0–1) || '''[[David Bednar (baseball)|Bednar]]''' (1) || Oracle Park || 40,273 || 2–0 
+|-style="background:#bfb;"
+| 3 || March 28 || @ [[2026 San Francisco Giants season|Giants]] || 3–1 || '''[[Jake Bird (baseball)|Bird]]''' (1–0) || [[Tyler Mahle|Mahle]] (0–1) || '''[[David Bednar (baseball)|Bednar]]''' (2) || Oracle Park || 40,634 || 3–0 
+|-style="background:#fbb;"
+| 4 || March 30 || @ [[2026 Seattle Mariners season|Mariners]] || 1–2 || [[Matt Brash (baseball)|Brash]] (1–0) || '''[[Paul Blackburn (baseball)|Blackburn]]''' (0–1) || — || [[T-Mobile Park]] || 27,291 || 3–1 
+|-style="background:#bfb;"
+|}
+{{Game log section end}}
+|-style="background:#bfb;"
+| 159 || September 24 || [[2026 Tampa Bay Rays season|Rays]] || 6–4 || '''[[Bradley Hanner|Hanner]] ''' (1–0) || [[Steven Matz|Matz]] (5–6) || — || '''Yankee Stadium''' || 44,136 || 92–67
+|-style="background:#fbb;"
+| 160 || September 25 {{small|(1)}} || [[2026 Baltimore Orioles season|Orioles]] || 2–10 || [[Albert Suárez|Suárez]] (3–0) || '''[[Brendan Beck|Beck]]''' (0–2) || — || '''Yankee Stadium''' || (Game 2) || 92–68
+|-style="background:#bfb;"
+| 161 || September 25 {{small|(2)}} || [[2026 Baltimore Orioles season|Orioles]] || 6–3 || '''[[Will Warren|Warren]]''' (11–6) || [[Brandon Young (baseball)|Young]] (9–6) || — || '''Yankee Stadium''' || 46,656 || 93–68
+|-style="background:#bbb;"
+| – || September 27 || [[2026 Baltimore Orioles season|Orioles]] || colspan=8|''Canceled due to rain''
+|-
+{{Game log section end}}
+{{Game log end}}
+==Postseason==
+===Postseason game log===
+{{MLB game log|style={{Baseball primary style|New York Yankees}};|year=2026 Postseason|record= 2–3) (Home 2–1; Away 0−2}}
+{{MLB game log section|hide=y|style={{Baseball secondary style|New York Yankees}};|section=American League Wild Card Series: 2–0 |stadium=y}}
+|- style="background:#bfb;"
+| 1 || September 29 || [[2026 Boston Red Sox season|Red Sox]] || '''[[Yankee Stadium]]''' || 9–0 || '''[[Cam Schlittler|Schlittler]]''' (1–0) || [[Payton Tolle|Tolle]] (0–1) || – || 48,437 || 1–0
+|- style="background:#bfb;"
+| 2 || September 30 || [[2026 Boston Red Sox season|Red Sox]] || '''[[Yankee Stadium]]''' || 9–2 || '''[[Max Fried|Fried]]''' (1–0) || [[Sonny Gray|Gray]] (0–1) || – || 49,004 || 2–0
+|- 
+{{Game log section end}} 
+{{MLB game log section|hide=y|style={{Baseball secondary style|New York Yankees}};|section=American League Division Series: 0–3 |stadium=y}}
+|- style="background:#fbb;" 
+| 1 || October 3 || @ [[2026 Tampa Bay Rays season|Rays]] || [[Tropicana Field]] || 0–1 || [[Drew Rasmussen|Rasmussen]] (1–0) || '''[[Gerrit Cole|Cole]]''' (0–1) || [[Bryan Baker (baseball)|Baker]] (1) || 40,542 || 0–1
+|- style="background:#fbb;" 
+| 2 || October 5 || @ [[2026 Tampa Bay Rays season|Rays]] || [[Tropicana Field]] || 2–5 || [[Cam Booser|Booser]] (1–0) || '''[[Cam Schlittler|Schlittler]]''' (1–1) || [[Bryan Baker (baseball)|Baker]] (2) || 40,226 || 0–2
+|- style="background:#fbb;" 
+| 3 || October 7 || [[2026 Tampa Bay Rays season|Rays]] || '''[[Yankee Stadium]]''' || 3–4 || [[Ian Seymour|Seymour]] (1–0) || '''[[Max Fried|Fried]]''' (1–1) || [[Bryan Baker (baseball)|Baker]] (3) || 48,865 || 0–3
+|-
+{{Game log section end}}
+{{Game log end}}

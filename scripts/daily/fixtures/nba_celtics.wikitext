@@ -1,0 +1,52 @@
+<!-- Excerpt of the English Wikipedia article "2026–27 Boston Celtics season", revision 1379720169 (2026-10-11T15:16:16Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+== Game log ==
+=== Preseason ===
+{{NBA game log start|Boston Celtics|preseason=yes|end_year=2027|record=Total: 2–0 (Home: 1–0; Road: 1–0)}}
+{{NBA game log section|Boston Celtics|Preseason|first=yes|show=no
+| home_wins   = 1
+| home_losses = 0
+| road_wins   = 1
+| road_losses = 0
+}}
+|- {{Game-won}}
+| 1
+| October 8
+| @ [[2026–27 Cleveland Cavaliers season|Cleveland]]
+| {{NBA game|id=0012600011|pf=124|pa=113}}
+| [[Luke Garza]] (22)
+| Luke Garza (10)
+| [[Hugo González (basketball)|Hugo González]] (5)
+| [[Rocket Arena]]<br>15,464
+| 1–0
+|- {{Game-won}}
+| 2
+| October 10
+| [[2026–27 Philadelphia 76ers season|Philadelphia]]
+| {{NBA game|id=0012600013|pf=144|pa=106}}
+| [[Payton Pritchard]] (25)
+| [[Neemias Queta]] (10)
+| [[Baylor Scheierman]] (8)
+| [[TD Garden]]<br>19,156
+| 2–0
+|- <!-- {{Game-won}}, {{Game-lost}} -->
+{{NBA game log end|bos|preseason=yes|end_year=2027}}
+=== Regular season ===
+{{NBA game log start|Boston Celtics|end_year=2027|record=Total: 0–0 (Home: 0–0; Road: 0–0)}}
+{{NBA game log section|Boston Celtics|October|first=yes|show=no
+| home_wins   = 0
+| home_losses = 0
+| road_wins   = 0
+| road_losses = 0
+}}
+|- <!-- {{Game-won}}, {{Game-lost}} -->
+| 1
+| October 20
+| @ [[2026–27 Detroit Pistons season|Detroit]]
+| <!--{{NBA game|id=|pf=|pa=}}-->
+| 
+| 
+| 
+| [[Little Caesars Arena]]<br>
+| –
+|- <!-- {{Game-won}}, {{Game-lost}} -->
+| 2

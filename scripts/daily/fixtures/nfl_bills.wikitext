@@ -1,0 +1,114 @@
+<!-- Excerpt of the English Wikipedia article "2026 Buffalo Bills season", revision 1379967679 (2026-10-13T00:17:13Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+==Schedule and results==
+===Preseason===
+{| class="wikitable" style="text-align:center"
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Week
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Date
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Opponent
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Result
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Record
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Venue
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Recap
+|- {{Game-won}}
+! 1 
+| {{dow tooltip|August 15, 2026}}
+| [[2026 Carolina Panthers season|Carolina Panthers]]
+| '''W''' 29–14
+| 1–0
+| [[Highmark Stadium]]
+| Recap
+|- {{Game-won}}
+! 2
+| {{dow tooltip|August 22, 2026}}
+| at [[2026 Cleveland Browns season|Cleveland Browns]]
+| '''W''' 31–7
+| 2–0
+| [[Huntington Bank Field]]
+| Recap
+|- {{Game-won}}
+! 3
+| {{dow tooltip|August 27, 2026}}
+| [[2026 Pittsburgh Steelers season|Pittsburgh Steelers]]
+| '''W''' 28–27
+| 3–0
+| Highmark Stadium
+| Recap
+|}
+
+===Regular season===
+The Bills' 2026 schedule was released on May 14, 2026.
+
+{| class="wikitable" style="text-align:center"
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Week
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Date
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Time ([[Eastern Time Zone|{{color|white|ET}}]])
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Opponent
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Result
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Record
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Venue
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Network
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Attendance
+! style="{{NFLPrimaryStyle|Buffalo Bills|year=2026|border=2}}"| Recap
+|- {{Game-won}}
+! [[#Week 1: at Houston Texans|1]]
+| September 13
+| 1:00{{nbsp}}p.m.
+| at [[2026 Houston Texans season|Houston Texans]]
+| '''W''' 36–31
+| 1–0
+| [[Reliant Stadium]]
+| [[NFL on CBS|CBS]]
+| 71,008
+| Recap
+|- {{Game-won}}
+! [[#Week 2: vs. Detroit Lions|2]]
+| {{dow tooltip|September 17, 2026}}
+| 8:15{{nbsp}}p.m.
+| [[2026 Detroit Lions season|Detroit Lions]]
+| '''W''' 41–31
+| 2–0
+| [[Highmark Stadium]]
+| [[NFL on Prime Video|Prime Video]]
+| 60,644
+| Recap
+|- {{Game-won}}
+! [[#Week 3: vs. Los Angeles Chargers|3]]
+| September 27
+| 1:00{{nbsp}}p.m.
+| [[2026 Los Angeles Chargers season|Los Angeles Chargers]]
+| '''W''' 24–16
+| 3–0
+| Highmark Stadium
+| [[NFL on Fox|Fox]]
+| 60,361
+| Recap
+|- {{Game-lost}}
+! [[#Week 4: vs. New England Patriots|4]]
+| October 4
+| 1:00{{nbsp}}p.m.
+| '''[[2026 New England Patriots season|New England Patriots]]'''
+| '''L''' 26–29
+| 3–1
+| Highmark Stadium
+| CBS
+| 60,606
+| Recap
+|- <!--{{Game-won}} or {{Game-lost}}-->
+! [[#Week 5: at Los Angeles Rams|5]]
+|- <!--{{Game-won}} or {{Game-lost}}-->
+! [[#Week 5: at Los Angeles Rams|5]]
+| {{dow tooltip|October 12, 2026}}
+| 8:15{{nbsp}}p.m.
+| at [[2026 Los Angeles Rams season|Los Angeles Rams]]
+| <!--RESULT-->
+| <!--RECORD-->
+| [[SoFi Stadium]]
+| [[Monday Night Football|ESPN]]/[[NFL on ABC|ABC]]
+|
+|- 
+! 7
+| colspan=9| ''[[Bye (sports)|Bye]]''
+|- <!--{{Game-won}} or {{Game-lost}}-->
+! 8 <!--UNHIDE ONLY ONE WEEK AT A TIME [[#Week 8: vs. Baltimore Ravens|8]]-->
+| November 1
+|}

@@ -1,0 +1,13 @@
+<!-- Excerpt of the English Wikipedia article "2026 Los Angeles Dodgers season", revision 1379981375 (2026-10-13T01:58:39Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+===Game log===
+{{Game log start|style={{Baseball primary style|Los Angeles Dodgers}};|title= 2026 Game Log: 100–62 (Home: 51–30; Road: 49–32)}}
+{{Game log section start|hide=y|style={{Baseball secondary style|Los Angeles Dodgers}};|title=March/April: 20–11 (Home: 12–6; Road: 8–5) | #| Date| Opponent| Score| Win| Loss| Save| Attendance| Record}}
+|-style="background:#bbffbb;"
+| 1 || March 26 || [[2026 Arizona Diamondbacks season|Diamondbacks]] || '''W''' 8–2 || '''[[Yoshinobu Yamamoto|Yamamoto]]''' (1–0) || [[Zac Gallen|Gallen]] (0–1) || — || 53,712 || 1–0
+|-style="background:#bbffbb;"
+| 2 || March 27 || [[2026 Arizona Diamondbacks season|Diamondbacks]] || '''W''' 5–4 || '''[[Edgardo Henriquez|Henriquez]]''' (1–0) || [[Kevin Ginkel|Ginkel]] (0–1) || '''[[Edwin Díaz|Díaz]]''' (1) || 51,540 || 2–0
+|-style="background:#bbffbb;"
+| 3 || March 28 || [[2026 Arizona Diamondbacks season|Diamondbacks]] || '''W''' 3–2 ||'''[[Will Klein (baseball)|Klein]]''' (1–0) || [[Juan Morillo (baseball, born 1999)|Morillo]] (0–1) || '''[[Edwin Díaz|Díaz]]''' (2)  || 53,340 || 3–0
+|-style="background:#ffbbbb;"
+{{Game log section end}}
+{{Game log end}}

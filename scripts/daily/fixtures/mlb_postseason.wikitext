@@ -1,0 +1,51 @@
+<!-- Excerpt of the English Wikipedia article "2026 Major League Baseball postseason", revision 1379977309 (2026-10-13T01:26:37Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+==American League Division Series==
+{{Main article|2026 American League Division Series}}
+
+===(1) Tampa Bay Rays vs. (4) New York Yankees===
+{{MLB Playoff Summary
+| summary =
+| winner = Tampa Bay
+| leader =
+| score = 3–0
+| date1 = October 3
+| score1 = New York Yankees – 0, '''Tampa Bay Rays''' – 1
+| loc1 = [[Tropicana Field]]
+| time1 = 2:30
+| att1 = 40,542
+| ref1 = 
+| date2 = October 5
+| score2 = New York Yankees – 2, '''Tampa Bay Rays''' – 5
+| loc2 = Tropicana Field
+| time2 = 3:02
+| att2 = 40,226
+| ref2 = 
+| date3 = October 7
+| score3 = '''Tampa Bay Rays''' – 4, New York Yankees – 3
+| loc3 = [[Yankee Stadium]] 
+| time3 = 3:04
+| att3 = 48,865
+| ref3 = }}
+
+This was the second postseason meeting between the Rays and Yankees. They last met in the ALDS in [[2020 American League Division Series#Tampa Bay vs. New York|2020]], which the Rays won in five games before falling in the World Series. The Rays swept the Yankees to advance to the ALCS for the first time since [[2020 ALCS|2020]].
+
+[[Drew Rasmussen]] pitched eight shutout innings despite having a no-hit bid broken up as the Rays narrowly took Game 1. Game 2 turned out to be a disaster for the Yankees, as they committed three errors in the first inning, and the Rays offense chased [[Cam Schlittler]] from the mound as they won to take a 2–0 series lead headed to the Bronx. In Game 3, misfortune fell upon the Yankees again, as what would’ve been a game-tying two-run home run for [[Anthony Volpe]] in the bottom of the sixth was changed to an RBI double due to fan interference, which kept the Rays in the lead for good as they completed the sweep. This was the first playoff series win for the Rays since winning the American League pennant in 2020, and it marked the first time ever that the Yankees were swept in a postseason series outside of the ALCS and World Series.
+
+==American League Championship Series==
+{{Main article|2026 American League Championship Series}}
+
+===(1) Tampa Bay Rays vs. (2) Cleveland Guardians===
+{{MLB Playoff Summary
+| summary =
+| winner = 
+| leader = 
+| score = 0–0
+| date1 = October 12
+| score1 = Cleveland Guardians at Tampa Bay Rays
+| loc1 = [[Tropicana Field]]
+| time1 = 8:00 p.m. ([[Eastern Time Zone|EDT]])
+| att1 = 
+| ref1 = 
+| date2 = October 13
+| score2 = Cleveland Guardians at Tampa Bay Rays
+}}

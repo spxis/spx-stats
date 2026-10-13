@@ -1,0 +1,37 @@
+<!-- Excerpt of the English Wikipedia article "2026–27 Toronto Maple Leafs season", revision 1379708580 (2026-10-11T13:35:57Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+===Regular season===
+{| class="toccolours" style="width:90%; clear:both; margin:1.5em auto; text-align:center;"
+|-
+! colspan="12" style="background:#fff; border-top:#013E7F 5px solid; border-bottom:#013E7F 5px solid;"| 2026–27 Game Log: 3–2–1, 7 points (home: 2–2–0; road: 1–0–1)
+|-
+| colspan=12 |
+{| class="toccolours collapsible collapsed" style="width:100%;"
+|-
+! colspan="12" style="background:#fff; border-top:#013E7F 2px solid; border-bottom:#013E7F 2px solid;"| September: 1–1–0, 2 points (Home: 1–1–0; Road: 0–0–0)
+|- style="text-align:center; background:#ddd;"
+! # !! Date !! Visitor !! Score !! Home !! OT !! Decision !! Attendance !! Record !! Pts !! Recap
+|- {{Game-lost}}
+| 1 || September 29 || [[2026–27 Montreal Canadiens season|Montreal]] || 3–2 || Toronto || || [[Sergei Bobrovsky|Bobrovsky]] <small>(0–1–0)</small> || 19,088 || 0–1–0 || 0 ||  
+|- {{Game-won}}
+| 2 || September 30 || [[2026–27 New York Islanders season|NY Islanders]] || 1–2 || Toronto || || [[Anthony Stolarz|Stolarz]] <small>(1–0–0)</small> || 18,801 || 1–1–0 || 2 ||  
+|}
+|-
+| colspan=12 |
+{| class="toccolours collapsible" style="width:100%;"
+|-
+! colspan="12" style="background:#fff; border-top:#013E7F 2px solid; border-bottom:#013E7F 2px solid;"| October: 2–1–1, 5 points (Home: 1–1–0; Road: 1–0–1)
+|- style="text-align:center; background:#ddd;"
+! # !! Date !! Visitor !! Score !! Home !! OT !! Decision !! Attendance !! Record !! Pts !! Recap
+|- {{Game-lost}}
+| 3 || October 3 || [[2026–27 Ottawa Senators season|Ottawa]] || 2–3 || Toronto || || [[Sergei Bobrovsky|Bobrovsky]] <small>(0–2–0)</small> || 18,434 || 1–2–0 || 2 ||  
+|- {{Game-won}}
+| 4 || October 6 || [[2026–27 Nashville Predators season|Nashville]] || 4–5 || Toronto || OT || [[Anthony Stolarz|Stolarz]] <small>(2–0–0)</small> || 18,792 || 2–2–0 || 4 ||   
+|- {{Game-otl}}
+| 5 || October 8 || Toronto || 3–4 || [[2026–27 Vegas Golden Knights season|Vegas]] || SO || Bobrovsky <small>(0–2–1)</small> || 15,977 || 2–2–1 || 5 || 
+|- {{Game-won}}
+| 6 || October 10 || Toronto || 6–3 || [[2026–27 Colorado Avalanche season|Colorado]] || || Bobrovsky <small>(1–2–1)</small> || 18,091 || 3–2–1 || 7 ||  
+|- <!-- {{Game-won}}, {{Game-lost}}, {{Game-otl}} -->
+| 7 || October 13 || Toronto || – || [[2026–27 Utah Mammoth season|Utah]] || || ||  || 0–0–0 ||  || 
+|- <!-- {{Game-won}}, {{Game-lost}}, {{Game-otl}} -->
+| 8 || October 15 || [[2026–27 Buffalo Sabres season|Buffalo]] || – || Toronto || || ||  || 0–0–0 ||  || 
+|}

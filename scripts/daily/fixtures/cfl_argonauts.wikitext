@@ -1,0 +1,64 @@
+<!-- Excerpt of the English Wikipedia article "2026 Toronto Argonauts season", revision 1378671921 (2026-10-05T16:15:55Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily. -->
+==Regular season==
+===Standings===
+{{2026 CFL East Division standings}}
+
+===Schedule===
+On August 15, 2025, it was announced that the Argonauts would play one "home" game in each of [[Hamilton Stadium]] against the [[Hamilton Tiger-Cats]], [[Mosaic Stadium]] against the [[Saskatchewan Roughriders]] and [[Princess Auto Stadium]] against the [[Winnipeg Blue Bombers]] while the [[2026 FIFA World Cup]] is being played. For record-keeping purposes, these three games were officially "away" games for the Argonauts. The team's remaining six home games were scheduled toward the second half of the season.
+
+{| class="wikitable" style="font-size: 95%;"
+|-
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Week
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Game
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Date
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Kickoff
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Opponent
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" colspan=2 | Results
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | TV
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Venue
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Attendance
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" rowspan=2 | Summary
+|-
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" | Score
+! scope="col" style="{{NFLPrimaryStyle|Toronto Argonauts|border=2}};" | Record
+|-align="center"= bgcolor="ffffff"
+! align="center" | 1
+| colspan=10 align="center" valign="middle" | ''Bye''
+|-align="center"= bgcolor="ffbbbb"
+! align="center" | 2
+! style="text-align:center; background:white;"|<span style="color:#002147;">1</span>
+| align="center" | Fri, June 12
+| align="center" | 7:00 p.m. [[Eastern Time Zone|EDT]]
+| align="center" | at [[2026 Montreal Alouettes season|Montreal Alouettes]] 
+| align="center" | L 30–37
+| align="center" | 0–1
+| align="center" | [[The Sports Network|TSN]]/[[Réseau des sports|RDS]]
+| align="center" | [[Percival Molson Memorial Stadium|Molson Stadium]]
+| align="center" | 21,106
+| align="center" | Recap
+|-align="center"= bgcolor="ddffdd"
+|-align="center"= bgcolor="ddffdd"
+! align="center" | 3
+! style="text-align:center; background:#5E8EB2;"|<span style="color:#002147;">2</span>
+| align="center" | Sat, June 20
+| align="center" | 1:00 p.m. EDT
+| align="center" | at [[2026 Ottawa Redblacks season|Ottawa Redblacks]]
+| align="center" | W 44–24
+| align="center" | 1–1
+| align="center" | TSN
+| align="center" | [[TD Place Stadium]]
+| align="center" | 13,943
+| align="center" | Recap
+| align="center" | 
+|-align="center"= bgcolor="ffffff"
+! align="center" | 21
+! align="center" | 18
+| align="center" | Fri, Oct 23
+| align="center" | 7:00 p.m. EDT
+| align="center" | vs. Montreal Alouettes
+| align="center" | 
+| align="center" | 
+| align="center" | TSN/RDS
+| align="center" | BMO Field
+| align="center" | 
+|}
