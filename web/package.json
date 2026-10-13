@@ -26,6 +26,7 @@
     "test:range": "node --test scripts/listRange.test.ts",
     "test:routing": "node --test scripts/routing.test.ts",
     "test:streaks": "node --test scripts/streaks.test.ts",
+    "test:city": "node --test scripts/city.test.ts",
     "test:address": "node --test scripts/venueAddress.test.ts",
     "test:lineage": "node --test scripts/lineage.test.ts",
     "test:provenance": "node --test scripts/provenance.test.ts",

@@ -547,6 +547,11 @@ Ask John before deleting or overwriting data. Production changes only through ap
   logged in `meta.data_issue` (`entity_kind = 'position'`), never guessed: complete the map in one place. Tables show the code, the player page the name.
 - **One record per person:** `db/build/185_person_merge.sql` merges records that are the same human (never on name alone) and keeps
   `core.person_redirect`, which the player page uses to redirect an old id. Pairs it will not merge are logged as `possible-duplicate:` in `meta.data_issue`.
+- **Cities:** `/cities` (search, year-range slider, sortable table and map, all filtered in the browser) and `/city/<slug>` (every club that
+  played there, its venues on a map, timeline, titles by decade, how the city ranks). Both are kept pages that read no query (`cities` is in
+  `ALWAYS_STATIC`, `city` in `PAGE_ROOTS`, `q/city/[slug]` is the twin for an address with another page's query key). Which city a club season
+  belongs to, the metro areas and the rank method are data and documented in `scripts/city/README.md` (tables `ref.city`, `ref.city_alias`,
+  `ref.metro`, `core.team_season_city`, built by `db/build/196_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
 - **Shared components:**

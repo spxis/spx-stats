@@ -35,6 +35,8 @@ import { getTeamAwards } from "@/lib/people";
 import { seasonPath } from "@/lib/slug";
 import { getLeagueClubs, getPaths, teamOf } from "@/lib/teamSlugs";
 import { TeamSwitch } from "@/components/TeamSwitch";
+import { getClubCity } from "@/lib/cityData";
+import "@/components/city.css";
 import { clubPins, getVenueTeams } from "@/lib/venueMap";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
 import { factsLine, getVenueFacts, getVenueNames, nameIn, nowName, placeAddress } from "@/lib/venueName";
@@ -95,7 +97,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   if (at.path !== `/${lg}/team/${franchise}`) permanentRedirect(at.path);
   const f = at.f;
   const paths = await getPaths();
-  const { say, plural, fmt } = await currentSpeaker();
+  const { say, plural, fmt, locale } = await currentSpeaker();
   const [t, rows, brands, abbrs, summary, venuePlaces] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getAbbrs(lg), getSummary(), getVenuePlaces(lg)]);
   const [venueNames, venueFacts, outageYears] = await Promise.all([getVenueNames(), getVenueFacts(), getOutageYears(lg)]);
   if (!t) notFound();
@@ -227,6 +229,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const spOne = (k: string) => { const v = sp[k]; return Array.isArray(v) ? v[0] : v; };
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
+  const city = await getClubCity(lg, f);
   return (
     <>
       <AccentStyle league={lg} team={b?.primary_hex ? teamAccent(b) : undefined} />
@@ -238,7 +241,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           {map}
           <TeamSwitch current={paths.team(lg, f)} options={switchClubs.map((c) => ({ name: c.name, href: paths.team(lg, c.f) }))} />
         </div>
-        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
+        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{city ? <> · <Link className="citylink" href={`/city/${city.slug}`} prefetch={false} title={say("city.teamLink", { name: locale === "fr" && city.nameFr ? city.nameFr : city.name })}>{locale === "fr" && city.nameFr ? city.nameFr : city.name}</Link></> : null}</span>
         <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<TeamFlag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={seasonPath(lg, reigning.year)}>

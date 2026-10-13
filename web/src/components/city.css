@@ -1,0 +1,42 @@
+/* The city pages (/city/<slug>) and the cities list (/cities). Tokens come from globals.css. */
+.cityhead .cityname { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: clamp(44px, 9vw, 96px); line-height: .95; overflow-wrap: anywhere; }
+.cityhead .cityname .pflag { --fh: clamp(24px, 4vw, 40px); }
+.cityfind { margin-bottom: 4px; }
+.cityfind input[type="search"] { width: min(360px, 100%); min-height: 40px; }
+.cityfind .note { margin: 0; }
+.citytable td.team, .cityclubs td.team { white-space: nowrap; }
+.citytable td.team .tflag { margin-left: 6px; }
+
+.cityrank { width: auto; min-width: min(100%, 480px); }
+.cityrank th[scope="row"] { position: static; text-transform: none; letter-spacing: 0; font: 600 15px/1.3 var(--body); color: var(--ink); border-bottom: 1px solid var(--rule); background: none; white-space: normal; }
+.cityrank td { white-space: nowrap; }
+.cityrank td b { margin-right: 8px; font: 700 20px/1 var(--display); }
+.cityrank .sub { color: var(--muted); font-size: 14px; }
+
+/* Championships: totals by sport beside the column chart by decade. */
+.citysplit { display: grid; grid-template-columns: minmax(0, 1fr); gap: 20px 32px; align-items: start; }
+@media (min-width: 760px) { .citysplit { grid-template-columns: minmax(200px, 280px) minmax(0, 1fr); } }
+.citybysport { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.citybysport li { display: grid; grid-template-columns: 48px minmax(0, 1fr) auto; gap: 8px; align-items: center; }
+.citybysport b { font: 600 15px/1 var(--display); letter-spacing: .06em; }
+.citybysport i { display: block; height: 14px; background: var(--lg); min-width: 3px; }
+.citybysport span { font-variant-numeric: tabular-nums; font-weight: 600; }
+.citytitles .decade { outline: none; }
+.citytitles .decade:focus-visible rect:not(.hit) { stroke: var(--ink); stroke-width: 2; }
+.citytitles .legend { display: flex; flex-wrap: wrap; gap: 4px 14px; margin-top: 6px; font-size: 14px; }
+.citytitles .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; }
+.citytitlelist { margin-top: 8px; }
+
+.citytimeline text.clubname { fill: var(--ink); font: 600 13px var(--body); }
+.citytimeline .leaguelink:hover text.clubname, .citytimeline .leaguelink:focus-visible text.clubname { text-decoration: underline; }
+
+.cityaround { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 280px), 1fr)); gap: 12px 24px; }
+.cityaround li { display: flex; flex-direction: column; gap: 2px; padding-block: 8px; border-top: 1px solid var(--rule); }
+.cityaround li > span { color: var(--muted); font-size: 15px; }
+
+/* The link from a team page to its city. */
+.citylink { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
+
+@media (max-width: 560px) {
+  .cityrank td b { font-size: 18px; }
+}
