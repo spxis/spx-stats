@@ -41,7 +41,8 @@ export function logoFor(brands: BrandMap, f: number | null | undefined, year?: n
   return covering.at(-1)?.logo_url ?? null;
 }
 
-const lum = (hex: string): number => {
+/** WCAG relative luminance of a hex colour (no #), 0 for black to 1 for white. */
+export const lum = (hex: string): number => {
   const c = [0, 2, 4]
     .map((i) => parseInt(hex.slice(i, i + 2), 16) / 255)
     .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));

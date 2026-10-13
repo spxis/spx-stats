@@ -35,7 +35,8 @@
     "test:coaches": "node --test scripts/coachMoves.test.ts",
     "test:positions": "node --test scripts/positions.test.ts",
     "test:flags": "node --test scripts/flags.test.ts",
-    "test:review": "node --test scripts/personReview.test.ts"
+    "test:review": "node --test scripts/personReview.test.ts",
+    "test:looks": "node --test scripts/seriesLooks.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",
