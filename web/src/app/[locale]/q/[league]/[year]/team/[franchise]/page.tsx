@@ -31,6 +31,7 @@ import { parseResult } from "@/lib/resultFilter";
 import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
 import { parseSort } from "@/lib/sort";
+import { playedFromRows, regularSeasonOpen, resultsByTeam, teamStreaks, type Run } from "@/lib/streaks";
 import { placeFor } from "@/lib/venue";
 import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
@@ -83,7 +84,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   if (at.path !== `/${lg}/${year}/team/${franchise}`) permanentRedirect(withQuery(at.path, sp));
   const f = at.f;
   const paths = await getPaths();
-  const { say, plural, fmt, locale } = await currentSpeaker();
+  const { say, plural, fmt, dt, locale } = await currentSpeaker();
   const sort = parseSort(sp.sort, TEAM_GAME_SORT_KEYS, "date.asc");
   const dateSort = sort.find((s) => s.key === "date");
   const [d, t, summary, leagueSt, notes, alignment, venuePlaces] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y), getSeasonAlignment(lg, y), getVenuePlaces(lg)]);
@@ -144,6 +145,21 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   if (st?.road) figs.push([say("col.road"), st.road]);
 
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
+  // Streaks of the regular season: the one running now while the season is on, and the longest winning and losing ones.
+  const countsOtl = leagueSt.some((r) => r.otl != null);
+  const streaks = teamStreaks(resultsByTeam(playedFromRows(raw), countsOtl).get(f) ?? []);
+  const streakOn = regularSeasonOpen(raw.map((g) => ({ regular: g.phase === "regular", scheduled: g.status === "scheduled" })), complete);
+  const streakBreaks = countsOtl || raw.some((g) => g.phase === "regular" && g.status === "final" && g.home_score != null && g.home_score === g.away_score);
+  const outcomeKey = { W: "col.w", L: "col.l", T: "col.t", OTL: "col.otl" } as const;
+  const span = (r: Run) => (r.from === r.to ? dt.monthDayShort(atUtc(r.from)) : `${dt.monthDayShort(atUtc(r.from))} – ${dt.monthDayShort(atUtc(r.to))}`);
+  const longest = (r: Run | null, key: "streaks.longestWin" | "streaks.longestLoss"): [string, number | string][] =>
+    r && r.length >= 2 ? [[say("streaks.withDates", { label: say(key), dates: span(r) }), r.length]] : [];
+  const streakFigs: [string, number | string][] = [
+    ...(streakOn && streaks.current ? [[say("streaks.current"), `${say(outcomeKey[streaks.current.kind])}${fmt(streaks.current.length)}`] as [string, string]] : []),
+    ...longest(streaks.win, "streaks.longestWin"),
+    ...longest(streaks.loss, "streaks.longestLoss"),
+  ];
+  figs.push(...streakFigs);
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
   const here = summary.seasons.find((x) => x.league === lg && x.year === y);
   const ranks = teamRanks(leagueSt, f, !!here && here.games > 0 && here.finals < 0.9 * here.games, LG[lg]);
@@ -188,6 +204,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       </section>
       {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
       <Figures items={figs} />
+      {streakFigs.length ? <p className="note">{say(streakBreaks ? "streaks.noteBreak" : "streaks.note")}</p> : null}
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
       {st ? <Suspense fallback={null}><TeamStaff lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}

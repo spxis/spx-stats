@@ -6,6 +6,7 @@ import { ChampionNote } from "@/components/ChampionNote";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
 import { SeasonBar } from "@/components/SeasonBar";
 import { SeasonGames } from "@/components/SeasonGames";
+import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge, NoSeason, TeamLink } from "@/components/ui";
@@ -199,6 +200,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       {st.length ? (
         <section className="section">
           <h2>{say("season.standings")}</h2>
+          {asOf ? null : <SeasonStreaks year={y} games={d.games} standings={d.standings} champion={complete} brands={brands} href={(f) => paths.teamSeason(lg, f, y)} />}
           {asOfDate ? (
             <div className="asof">
               <b>{say("season.asOf", { date: dt.full(atUtc(asOfDate)) })}</b>
