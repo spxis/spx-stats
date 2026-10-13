@@ -26,7 +26,9 @@ Exit code: 0 ok, 1 refused or blocked or (drift) differences found, 2 error.
    transaction whatever the API does): delete the listed removals (children first), upsert (parents first), check row counts,
    reset identity sequences, drop the staging tables. It then verifies by bucket fingerprint that production equals DS1 and runs
    `api.refresh()`. If verification fails it restores the snapshot and marks the release failed. If the apply fails, production
-   is unchanged and the release is failed with the error.
+   is unchanged and the release is failed with the error. Whenever an apply has committed (done, failed verification, after a
+   restore, and a rollback) the runner runs `select api.refresh();` on production and records `refresh` in the result (`ok`, or
+   `failed: <error>`, which does not change the release outcome). A failure before the commit runs no refresh.
 4. **ds1_step** runs one `db/migrations` or `db/build` file on DS1 in one transaction at the git sha pinned at prepare (the
    file must be committed and on `origin/main`); prepare does a dry run first. It rolls back if any check gets worse, and refuses
    files with psql backslash commands. Production is not touched; a migration must also be applied on production by hand (AGENTS.md item 4).
@@ -45,7 +47,10 @@ comparison it applies): only those three tables; `core.game` rows change only in
 `went_to_overtime`, `decided_by_shootout`, `overtime_periods`, `decided_by`, `updated_at`; only games that are not `final` in
 production; no inserts, no deletes, at most 500 games; `meta.verification` and `meta.data_issue` changes are new rows only
 (`entity_id` / `entity_key` of a changed game, at most 2000); no blocker (every check passes, size limit); and the release is
-unchanged since its preview. An update to an existing `meta.data_issue` row (for example `resolved_at`) makes a release ineligible.
+unchanged since its preview. One narrow exception: an existing `meta.data_issue` row may be updated when its source is
+`wikipedia_daily`, `entity_kind` is `game`, `entity_key` is a game changed in the same release, and the only changed columns are
+`resolution` and `resolved_at` (resolving or re-opening). Any other update to an existing data issue (other column, other source,
+other kind, a game not in the release) makes the release ineligible, with the reason.
 
 - **Eligible:** the runner approves it as `auto:daily-scores` once it is 10 minutes old (measured from `created_at` on production's
   clock, never earlier), at most one release per run, oldest first, then applies it in the same run. Nothing else is ever approved
@@ -113,4 +118,4 @@ hashes for tables with float columns (`core.person`): prepare them again.
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies
 standing in for DS1 and production, and `mock_api.py` stands in for the Management API. Covers prepare, approval through the function,
 run, guardrail refusals, a failure mid-apply (production unchanged), a lost answer after commit, rollback, drift, ds1_step, float
-values through an API that rounds them, a restore with swapped unique keys. `test_auto.py` simulates time by moving `created_at` back.
+values through an API that rounds them, a restore with swapped unique keys, `api.refresh()` after a commit (also after a failed verification). `test_auto.py` simulates time by moving `created_at` back and covers the data issue resolve and re-open rule.

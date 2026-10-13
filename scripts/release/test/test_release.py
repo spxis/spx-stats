@@ -452,6 +452,76 @@ def restore_case(env):
     ok("production is exactly as it was", psql(PROD, "select string_agg(id || code || coalesce(note, ''), ',' order by id) from core.rel_swap") == "1a,2b")
 
 
+def refresh_case(env):
+    fresh()
+    psql(PROD, "create table public.refresh_probe (n serial);\n"
+               "create or replace function api.refresh() returns void language sql security definer as $$ insert into public.refresh_probe default values $$")
+
+    def runs():
+        return int(psql(PROD, "select count(*) from public.refresh_probe"))
+
+    def result(num):
+        return json.loads(psql(PROD, "select coalesce(result, '{}')::text from meta.data_release where number = '%s'" % num))
+
+    psql(DS1, "update core.venue set city = city || ' (r)' where venue_id = (select min(venue_id) from core.venue)")
+    rc, out, err = env.rel("prepare", "--title", "Refresh after apply", "--tables", "core.venue")
+    n = number_of(out)
+    approve(n)
+    rc, out, err = env.rel("run")
+    ok("a release that is applied runs api.refresh once and records it", status(n) == "done" and runs() == 1 and result(n)["refresh"] == "ok", out + err)
+
+    psql(PROD, "create or replace function api.refresh() returns void language sql security definer as $$ select 1 / 0 $$")
+    psql(DS1, "update core.venue set city = city || ' (s)' where venue_id = (select min(venue_id) from core.venue)")
+    rc, out, err = env.rel("prepare", "--title", "Refresh fails", "--tables", "core.venue")
+    n = number_of(out)
+    approve(n)
+    rc, out, err = env.rel("run")
+    ok("a failing api.refresh is recorded and the release is still done", status(n) == "done" and result(n)["refresh"].startswith("failed"), out + err + str(result(n)))
+    psql(PROD, "create or replace function api.refresh() returns void language sql security definer as $$ insert into public.refresh_probe default values $$")
+
+    # an apply that fails before it commits changes nothing, so there is nothing to refresh
+    psql(DS1, "insert into core.person (full_name, kind) values ('BAD NAME', 'player')")
+    psql(PROD, "alter table core.person add constraint no_bad check (full_name <> 'BAD NAME')")
+    rc, out, err = env.rel("prepare", "--title", "Fails halfway", "--tables", "core.person")
+    n = number_of(out)
+    approve(n)
+    before = runs()
+    rc, out, err = env.rel("run")
+    ok("a failed apply does not refresh", status(n) == "failed" and runs() == before and "refresh" not in result(n), out + err)
+    psql(PROD, "alter table core.person drop constraint no_bad")
+    psql(DS1, "delete from core.person where full_name = 'BAD NAME'")
+
+    # verification fails after the commit: the snapshot is restored and the views are still refreshed
+    ddl = "create table core.rel_swap (id int primary key, code text not null unique, note text);\ninsert into core.rel_swap values (1, 'a'), (2, 'b');"
+    psql(DS1, ddl)
+    psql(PROD, ddl + """
+        create function core.rel_swap_tamper() returns trigger language plpgsql as $$ begin if new.code = 'c' then new.note := 'tampered'; end if; return new; end $$;
+        create trigger tamper before insert or update on core.rel_swap for each row execute function core.rel_swap_tamper();""")
+    psql(DS1, "update core.rel_swap set code = case id when 1 then 'c' else 'a' end")
+    rc, out, err = env.rel("prepare", "--title", "Codes swap places", "--tables", "core.rel_swap")
+    n = number_of(out)
+    approve(n)
+    before = runs()
+    rc, out, err = env.rel("run")
+    ok("a failed verification still runs api.refresh, after the restore, and records it",
+       status(n) == "failed" and runs() == before + 1 and result(n).get("refresh") == "ok" and result(n).get("verified") is False
+       and "snapshot was restored" in psql(PROD, "select error from meta.data_release where number = '%s'" % n), out + err + str(result(n)))
+    ok("the result is on DS1 too", json.loads(psql(DS1, "select result::text from meta.data_release where number = '%s'" % n)).get("refresh") == "ok")
+
+    # a rollback refreshes too
+    psql(DS1, "update core.venue set city = city || ' (t)' where venue_id = (select min(venue_id) from core.venue)")
+    rc, out, err = env.rel("prepare", "--title", "To undo", "--tables", "core.venue")
+    n = number_of(out)
+    approve(n)
+    env.rel("run")
+    rc, out, err = env.rel("rollback", "--release", n)
+    rn = number_of(out)
+    approve(rn)
+    before = runs()
+    rc, out, err = env.rel("run")
+    ok("a rollback runs api.refresh and records it", status(rn) == "done" and runs() == before + 1 and result(rn)["refresh"] == "ok", out + err)
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="spx_stats", help="database to copy the small template from (only read)")
@@ -460,7 +530,7 @@ def main():
     make_base(a.source)
     env = Env()
     try:
-        for fn in (main_flow, guardrails, failure_cases, drift_case, step_cases, float_case, restore_case):
+        for fn in (main_flow, guardrails, failure_cases, drift_case, step_cases, float_case, restore_case, refresh_case):
             if a.only and fn.__name__ not in a.only.split(","):
                 continue
             print("--- " + fn.__name__, flush=True)

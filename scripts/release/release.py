@@ -47,6 +47,8 @@ AUTO_GAME_COLUMNS = {"status", "home_score", "away_score", "went_to_overtime", "
                      "decided_by", "updated_at"}
 AUTO_MAX_GAMES = 500
 AUTO_MAX_SIDE_ROWS = 2000
+AUTO_ISSUE_SOURCE = "wikipedia_daily"
+AUTO_ISSUE_COLUMNS = {"resolution", "resolved_at"}
 AUTO_DRIFT_DAYS = 14
 STEP_FILE_RE = re.compile(r"^db/(migrations|build)/[A-Za-z0-9_.-]+\.sql$")
 REQUEST_BYTES = 900_000
@@ -58,6 +60,14 @@ RELEASE_FIELDS = ("id", "number", "kind", "title", "notes", "ticket", "tables", 
 
 class Refused(Exception):
     """The release must not go ahead (a guardrail, a failed check, something changed). The message is for John."""
+
+
+class AfterCommit(RuntimeError):
+    """A failure after production's data was changed (the apply committed, or a restore did). result is saved with the failed release."""
+
+    def __init__(self, msg, result=None):
+        super().__init__(msg)
+        self.result = result
 
 
 def log(msg):
@@ -699,6 +709,16 @@ def ordered(ctx, names):
     return C.apply_order(list(names), ctx.ds1)
 
 
+def refresh_production(ctx):
+    """Run api.refresh() on production after a change to its data was committed. Returns "ok" or "failed: <why>" for the result."""
+    try:
+        prod_exec(ctx.prod, "select api.refresh()")
+        return "ok"
+    except Exception as e:  # noqa: BLE001 - recorded in the result, never hides the release outcome
+        log("api.refresh failed: " + scrub(e))
+        return "failed: " + scrub(e)[:200]
+
+
 def verify_equal(ctx, name, t, want_buckets):
     n = C.count_rows(ctx.prod, t)
     return C.bucket_pass(ctx.prod, t, n) == want_buckets
@@ -711,11 +731,44 @@ def short(ids, n=5):
     return ", ".join(ids[:n]) + (" and %d more" % (len(ids) - n) if len(ids) > n else "")
 
 
+def issue_update_reasons(ctx, t, keys, game_keys):
+    """Updates to existing meta.data_issue rows are allowed only for resolution and resolved_at (resolving or re-opening) of an
+    issue from AUTO_ISSUE_SOURCE about a game in this release (game_keys: their source keys). Returns the reasons for the rest."""
+    if not keys:
+        return []
+    if len(keys) > AUTO_MAX_SIDE_ROWS:
+        return ["meta.data_issue: %d rows would change (the limit is %d)" % (len(keys), AUTO_MAX_SIDE_ROWS)]
+    ids_ = []
+    for side in (ctx.ds1, ctx.prod):
+        r = side.run("select source_id from meta.source where code = %s" % C.ql(AUTO_ISSUE_SOURCE))
+        ids_.append(str(r[0]["source_id"]) if r else None)
+    sid1, sid2 = ids_
+    a, b = C.fetch_rows(ctx.ds1, t, keys), C.fetch_rows(ctx.prod, t, keys)
+    causes = {}
+    for k in sorted(keys):
+        ra, rb = a.get(k), b.get(k)
+        if ra is None or rb is None:
+            causes.setdefault("it could not be read on both sides", []).append(k[0])
+            continue
+        for c in t.common:
+            if ra.get(c) != rb.get(c) and c not in AUTO_ISSUE_COLUMNS:
+                causes.setdefault("column %s changes; only resolution and resolved_at may" % c, []).append(k[0])
+        if sid1 is None or ra.get("source_id") != sid1 or rb.get("source_id") != sid2:
+            causes.setdefault("the source is not %s" % AUTO_ISSUE_SOURCE, []).append(k[0])
+        if ra.get("entity_kind") != "game" or rb.get("entity_kind") != "game":
+            causes.setdefault("it is not about a game", []).append(k[0])
+        elif ra.get("entity_key") not in game_keys:
+            causes.setdefault("its game is not one of the games that change", []).append(k[0])
+    return ["meta.data_issue: %d rows would change: %s (data_issue_id %s)" % (len(ids), why, short(ids))
+            for why, ids in sorted(causes.items())]
+
+
 def policy_reasons(ctx, names, diffs):
     """Why a daily_scores release may NOT be approved automatically; an empty list means it meets the policy.
     The policy: only core.game, meta.verification and meta.data_issue; games change only in status, score, overtime and
     shootout fields (and updated_at), only games that are not final in production, no inserts, no deletes, at most 500
-    games; verification and data issue rows are inserts only and only about those games."""
+    games; verification and data issue rows are inserts only and only about those games, except that an existing
+    wikipedia_daily data issue about one of those games may change its resolution and resolved_at."""
     why = []
     outside = [n for n in names if n not in AUTO_TABLES]
     if outside:
@@ -758,7 +811,11 @@ def policy_reasons(ctx, names, diffs):
         if name not in diffs:
             continue
         t, d = diffs[name]
-        if d["only2"] or d["differ"]:
+        if name == "meta.data_issue":
+            if d["only2"]:
+                why.append("%s: %d rows would be removed (only new rows are allowed)" % (name, len(d["only2"])))
+            why += issue_update_reasons(ctx, t, d["differ"], allowed)
+        elif d["only2"] or d["differ"]:
             why.append("%s: %d rows would change or be removed (only new rows are allowed)" % (name, len(d["only2"]) + len(d["differ"])))
         if len(d["only1"]) > AUTO_MAX_SIDE_ROWS:
             why.append("%s: %d new rows (the limit is %d)" % (name, len(d["only1"]), AUTO_MAX_SIDE_ROWS))
@@ -954,19 +1011,21 @@ def run_publish(ctx, rel, pre=None):
             log("the answer was lost but production matches DS1: counting the release as applied (%s)" % scrub(e))
         else:
             raise
-    for n, t, d in items:
-        if not verify_equal(ctx, n, t, d["b1"]):
-            log("verification failed for %s: restoring the snapshot" % n)
-            try:
-                restore(ctx, rel["id"], names, before_fp=before_fp, orig_rows={x: now["tables"][x]["prod_rows"] for x in names})
-            except Exception as e2:  # noqa: BLE001
-                raise RuntimeError("production does not match DS1 after the release for %s and the automatic restore failed: %s" % (n, scrub(e2)))
-            raise RuntimeError("production did not match DS1 after the release for %s; the snapshot was restored" % n)
-    refresh = "ok"
+    problem = None
     try:
-        prod_exec(ctx.prod, "select api.refresh()")
-    except Exception as e:  # noqa: BLE001
-        refresh = "failed: " + scrub(e)[:200]
+        for n, t, d in items:
+            if not verify_equal(ctx, n, t, d["b1"]):
+                log("verification failed for %s: restoring the snapshot" % n)
+                try:
+                    restore(ctx, rel["id"], names, before_fp=before_fp, orig_rows={x: now["tables"][x]["prod_rows"] for x in names})
+                except Exception as e2:  # noqa: BLE001
+                    raise RuntimeError("production does not match DS1 after the release for %s and the automatic restore failed: %s" % (n, scrub(e2)))
+                raise RuntimeError("production did not match DS1 after the release for %s; the snapshot was restored" % n)
+    except Exception as e:  # noqa: BLE001 - the apply committed, so the views must be refreshed whatever went wrong
+        problem = e
+    refresh = refresh_production(ctx)
+    if problem:
+        raise AfterCommit(scrub(problem), {"refresh": refresh, "verified": False, "backup_schema": schema})
     result = {"tables": {n: {"add": now["tables"][n]["add"], "change": now["tables"][n]["change"], "remove": now["tables"][n]["remove"],
                              "rows_before": now["tables"][n]["prod_rows"], "rows_after": now["tables"][n]["ds1_rows"]} for n in names},
               "totals": {k: now["totals"][k] for k in ("add", "change", "remove")},
@@ -1064,7 +1123,7 @@ def restore(ctx, rid, names, before_fp=None, orig_rows=None):
             t = p["t"]
             n2 = C.count_rows(ctx.prod, t)
             if fp(C.bucket_pass(ctx.prod, t, n2)) != before_fp[p["_n"]]:
-                raise RuntimeError("after the restore %s does not match its state before the release" % p["_n"])
+                raise AfterCommit("after the restore %s does not match its state before the release" % p["_n"])
 
 
 def run_rollback(ctx, rel):
@@ -1078,14 +1137,14 @@ def run_rollback(ctx, rel):
         raise Refused("later releases changed the same tables: " + ", ".join(x["number"] for x in later))
     res = orig["result"]
     names = list(orig["tables"])
-    restore(ctx, orig["id"], names, before_fp=res["before_fp"],
-            orig_rows={n: v["rows_before"] for n, v in res["tables"].items()})
     try:
-        prod_exec(ctx.prod, "select api.refresh()")
-    except Exception as e:  # noqa: BLE001
-        log("api.refresh failed: " + scrub(e))
+        restore(ctx, orig["id"], names, before_fp=res["before_fp"],
+                orig_rows={n: v["rows_before"] for n, v in res["tables"].items()})
+    except AfterCommit as e:
+        raise AfterCommit(str(e), {"refresh": refresh_production(ctx), "verified": False})
+    refresh = refresh_production(ctx)
     set_release(ctx, orig["id"], {"status": "rolled_back"}, from_status="done")
-    return {"rolled_back": number, "verified": True, "seconds": round(time.time() - started)}
+    return {"rolled_back": number, "verified": True, "refresh": refresh, "seconds": round(time.time() - started)}
 
 
 # ---------------------------------------------------------------------------------------------------- run loop
@@ -1176,7 +1235,10 @@ def cmd_run(ctx, args):
             if auto:
                 pause_auto(ctx, "Automatic release %s was refused: %s" % (mine["number"], scrub(e)))
         except Exception as e:  # noqa: BLE001 - every failure is recorded
-            set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW", "error": scrub(e)})
+            failed = {"status": "failed", "finished_at": "NOW", "error": scrub(e)}
+            if isinstance(e, AfterCommit) and e.result:
+                failed["result"] = e.result
+            set_release(ctx, mine["id"], failed)
             log("release %s failed: %s" % (mine["number"], scrub(e)))
             if auto:
                 pause_auto(ctx, "Automatic release %s failed: %s" % (mine["number"], scrub(e)))

@@ -386,7 +386,8 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    - **Apply:** the runner on the NAS (`runner/README.md`) runs approved releases within a minute: it re-checks, snapshots
      the rows it will change (gzip TSV on the NAS and schema `backup_release_<id>` on DS1, never in production), applies
      all tables in one transaction, verifies production equals DS1 and marks the release done or failed (production is
-     then unchanged). `release.py rollback --release <number>` prepares an undo that John approves the same way.
+     then unchanged if the apply itself failed). Once an apply has committed, `api.refresh()` always runs, even when verification
+     fails and the snapshot is restored; the result records `refresh`. `release.py rollback --release <number>` prepares an undo that John approves the same way.
    - A schema change (new table or column) is a `ds1_step` release (`prepare --kind ds1_step --file db/migrations/NNN.sql`,
      committed and pushed first), then the same migration on production (item 4) before the release that fills it.
    - A nightly drift check compares every table, shows the result at `/admin/data` and proposes a fix release when
@@ -405,7 +406,8 @@ core rebuild; the release runner runs `select api.refresh();` after each release
      `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores [--title ".."]` (tables default to
      `core.game,meta.verification,meta.data_issue`). The runner approves it as `auto:daily-scores`, 10 minutes after it was
      prepared, only if games change just in status, score and overtime/shootout fields, only on games not final in production,
-     no inserts or deletes, at most 500 games, verification/data issue rows are new rows about those games, and all checks pass;
+     no inserts or deletes, at most 500 games, verification/data issue rows are new rows about those games (the one exception: an existing `wikipedia_daily` game issue
+     about a changed game may change only `resolution` and `resolved_at`), and all checks pass;
      it re-checks the policy before applying. Anything else stays pending for John, with the reasons at `/admin/data`. John can
      Hold a release, or "Hold all auto-approvals" (migration 047); the runner also sets that switch itself when an automatic
      release fails or the drift check finds rows an automatic release wrote changed. Never approve a release yourself.

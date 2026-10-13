@@ -351,7 +351,82 @@ def auto_drift(env):
     ok("the pause is on the DS1 mirror too", psql(DS1, "select paused from meta.auto_approval") == "t")
 
 
-CASES = (auto_basic, auto_ineligible, auto_hold, auto_pause, auto_resume, auto_failure, auto_apply_checks, auto_drift)
+def add_daily_source():
+    for db in (DS1, PROD):
+        psql(db, "insert into meta.source (source_id, code, name, kind) overriding system value "
+                 "values (777, 'wikipedia_daily', 'Wikipedia (daily scores)', 'website')")
+
+
+def issue_case(env, name, expect, change, kind="game", source=777, key=None, resolved=False):
+    """One game changes; a data issue (about that game unless key is given) is on both sides and DS1 then changes it with `change`.
+    expect None: the release is eligible. Otherwise a part of the reason that must be given."""
+    fresh()
+    add_daily_source()
+    ids = sched(3)
+    k = psql(DS1, "select source_key from core.game where game_id = %s" % ids[0])
+    other = psql(DS1, "select source_key from core.game where game_id not in (%s) and source_key is not null limit 1" % ",".join(ids))
+    row = ("(9001, %d, '%s', '%s', 'score disagrees', %s, '2026-10-01 12:00:00+00', %s)"
+           % (source, kind, key or k, "'fixed'" if resolved else "null", "'2026-10-02 12:00:00+00'" if resolved else "null"))
+    sql = ("insert into meta.data_issue (data_issue_id, source_id, entity_kind, entity_key, issue, resolution, found_at, resolved_at) "
+           "overriding system value values " + row.replace("%KEY%", other))
+    psql(PROD, sql)
+    psql(DS1, sql)
+    psql(DS1, "update meta.data_issue set %s where data_issue_id = 9001" % change.replace("OTHER", other))
+    n, text = prep_daily(env)
+    a = auto_of(n) if n else {}
+    if expect is None:
+        ok("eligible: " + name, n and a.get("eligible") is True and a.get("reasons") == [], a.get("reasons") or text)
+    else:
+        ok("not eligible: " + name, n and a.get("eligible") is False and any(expect in r for r in a.get("reasons", [])), a.get("reasons") or text)
+    return n
+
+
+def auto_issue_update(env):
+    resolve = "resolution = 'fixed', resolved_at = '2026-10-12 08:00:00+00'"
+    n = issue_case(env, "resolving a wikipedia_daily issue about a changed game", None, resolve)
+    backdate(n)
+    rc, out, err = env.rel("run")
+    ok("it is approved and applied, and production holds the resolution",
+       status(n) == "done" and psql(PROD, "select resolution || ' ' || (resolved_at is not null) from meta.data_issue where data_issue_id = 9001") == "fixed true"
+       and psql(PROD, "select approved_by from meta.data_release where number = '%s'" % n) == AUTO, out + err)
+    issue_case(env, "re-opening a resolved issue", None, "resolution = null, resolved_at = null", resolved=True)
+    issue_case(env, "changing the resolution text of a resolved issue", None, "resolution = 'fixed again'", resolved=True)
+    issue_case(env, "a change to the issue text", "column issue changes", resolve + ", issue = 'something else'")
+    issue_case(env, "a different source", "the source is not wikipedia_daily", resolve, source=93)
+    issue_case(env, "a game that is not in the release", "its game is not one of the games that change", resolve, key="%KEY%")
+    issue_case(env, "an entity kind other than game", "it is not about a game", resolve, kind="season")
+    issue_case(env, "a change to the entity key", "column entity_key changes", "entity_key = 'OTHER'")
+    fresh()
+    add_daily_source()
+    ids = sched(3)
+    k = psql(DS1, "select source_key from core.game where game_id = %s" % ids[0])
+    sql = ("insert into meta.data_issue (data_issue_id, source_id, entity_kind, entity_key, issue, found_at) overriding system value "
+           "values (9002, 777, 'game', '%s', 'x', '2026-10-01 12:00:00+00')" % k)
+    psql(PROD, sql)
+    n, _ = prep_daily(env)
+    ok("a data issue only in production is a removal and not eligible",
+       auto_of(n)["eligible"] is False and any("would be removed" in r for r in auto_of(n)["reasons"]), auto_of(n))
+    # the policy is checked again right before the apply
+    fresh()
+    add_daily_source()
+    ids = sched(3)
+    k = psql(DS1, "select source_key from core.game where game_id = %s" % ids[0])
+    sql = ("insert into meta.data_issue (data_issue_id, source_id, entity_kind, entity_key, issue, found_at) overriding system value "
+           "values (9001, 777, 'game', '%s', 'x', '2026-10-01 12:00:00+00')" % k)
+    psql(PROD, sql)
+    psql(DS1, sql)
+    psql(DS1, "update meta.data_issue set resolution = 'fixed', resolved_at = now()")
+    n, _ = prep_daily(env)
+    backdate(n)
+    psql(PROD, "update meta.data_release set status = 'approved', approved_by = '%s', approved_at = now() where number = '%s'" % (AUTO, n))
+    psql(DS1, "update meta.data_issue set issue = 'edited after the approval'")
+    rc, out, err = env.rel("run")
+    ok("a change to the issue text after the approval sends the release back to pending, untouched",
+       status(n) == "pending" and psql(PROD, "select resolution is null from meta.data_issue where data_issue_id = 9001") == "t"
+       and auto_of(n)["eligible"] is False and any("column issue changes" in r for r in auto_of(n)["reasons"]), out + err)
+
+
+CASES = (auto_basic, auto_ineligible, auto_hold, auto_pause, auto_resume, auto_failure, auto_apply_checks, auto_drift, auto_issue_update)
 
 
 def main():
