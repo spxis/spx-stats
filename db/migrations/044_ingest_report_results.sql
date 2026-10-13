@@ -37,11 +37,12 @@
 --     sources disagreeing: nothing finalizes, a data issue says so). verdict 'single' finals are allowed and flagged.
 --   * SPX-era and other sources' FINAL games are never changed, only confirmed or disputed.
 --
--- STORAGE. One row per CHANGE of a game's reported state (about 400 bytes with its indexes), not one per sighting: a game costs
---   2-3 rows over its life (scheduled, final, a single-source -> confirmed upgrade). Daily: about 4,200 rows for the first
---   sighting of a season's games, then roughly 60 rows a day across the five leagues, about 25,000 a year (about 10 MB). A 5-minute
---   live poll adds one row per score change per game while it is on: roughly 700 rows a day in season, 250,000 a year (about 100 MB)
---   unless superseded in_progress rows are pruned (documented in the README; nothing prunes them yet).
+-- STORAGE. One row per CHANGE of a game's reported state (measured on DS1: 532 bytes of row, 857 with its indexes and free space), not one per
+--   sighting: a game costs 2-3 rows over its life (scheduled, final, a single-source -> confirmed upgrade). Daily: about 4,200 rows
+--   (3.5 MB) for the first sighting of a season's games, then roughly 60 rows a day across the five leagues, about 25,000 a year (21 MB).
+--   A 5-minute live poll adds one row per score change per game while it is on: roughly 700 rows a day in season, 250,000 a year
+--   (215 MB) unless superseded in_progress rows are pruned (README; nothing prunes them yet). A repeat sighting rewrites the row
+--   (last_seen, seen_count; no indexed column changes), so the table keeps free space in each page for in-page (HOT) updates.
 --
 -- Rerunnable (create ... if not exists / create or replace). Apply with scripts/mac/ds1-apply.sh.
 begin;
@@ -94,6 +95,7 @@ comment on table ingest.game_observation is 'Append-only log of reported game st
 create index if not exists game_observation_ref_idx on ingest.game_observation (game_ref, observation_id desc);
 create index if not exists game_observation_day_idx on ingest.game_observation (league, season, game_date);
 create index if not exists game_observation_unmatched_idx on ingest.game_observation (observation_id) where outcome = 'unmatched';
+alter table ingest.game_observation set (fillfactor = 80);   -- room for the in-page updates of repeat sightings
 alter table ingest.game_observation enable row level security;      -- no policies: nothing but the owner reads it
 revoke all on ingest.game_observation from public;
 
