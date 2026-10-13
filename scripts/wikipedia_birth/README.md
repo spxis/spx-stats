@@ -25,5 +25,6 @@ higher source's value. Raw files live in `~/Projects/backups/spx-stats/raw/wikid
 content or information" or "use any other unauthorized automated means to compile information", and may use the Services "only for
 non-commercial, informational, personal use" and may not "enter into a database ... or in any way use or exploit" NHL Content.
 `https://www.nhl.com/robots.txt` allows `/`; `api-web.nhle.com/robots.txt` is a 404. AGENTS.md section 3: if a source's terms forbid automated
-collection, don't. No request was made to `api-web.nhle.com` for this work. (`scripts/nhlapi/` and `scripts/players/nhl_fetch.py` already
-use the NHL's APIs for results and season lines; that is for John to decide on.)
+collection, don't. No request was made to `api-web.nhle.com` for this work. (`scripts/nhlapi/` and `scripts/players/nhl_fetch.py` had used
+the NHL's APIs for results and season lines. John decided on 2026-10-14: no new requests to any NHL endpoint; the data already
+loaded stays, credited "NHL"; those fetch scripts now refuse to run. AGENTS.md section 3.)

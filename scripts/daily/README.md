@@ -60,7 +60,8 @@ checks + 14 content batches of 10 pages); a run when nothing changed is 3 API re
 **Never fetched, not even to test:** NHL API (`api-web.nhle.com`, `api.nhle.com`), MLB statsapi, NBA.com and
 `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, Yahoo, ESPN, Sports Reference sites, newspapers and TV sites. Articles
 link to some of those (the "Recap" columns); the parsers drop external links and nothing follows them. The NHL API stays
-as the historic source behind `db/build/145_nhl_from_nhlapi.sql`; the daily job must not use it.
+as the historic source behind `db/build/145_nhl_from_nhlapi.sql` (data already loaded stays, credited "NHL"); no new request
+may go to any NHL endpoint (AGENTS.md section 3), and the fetch scripts refuse to run. The daily job must not use it.
 
 ## Where each league's scores are (checked 2026-10-12)
 

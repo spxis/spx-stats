@@ -42,6 +42,13 @@ The **runner** is a small program on the NAS that applies approved releases, onc
   final yet, no inserts or deletes, at most 500 games, all checks pass.
 - Anything else waits for John, with the reasons shown at `/admin/data`.
 
+## The NHL's own servers are off limits
+
+We send no new requests to any NHL server (`api-web.nhle.com`, `api.nhle.com` or any other), because NHL.com's terms forbid
+automated collection. What we already loaded from the NHL stays and is credited "NHL"; nothing is deleted. When Wikipedia,
+Wikidata or SPX has the same fact, that source wins and the NHL value is only a cross-check. The NHL fetch scripts stop with a
+message if anyone runs them.
+
 ## Asking for things from /admin/data
 
 - **Request scores update** (Settings tab): production cannot reach DS1, so the click only writes one request row. The runner (it already

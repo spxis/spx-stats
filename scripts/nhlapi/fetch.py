@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""Fetch NHL results and standings from the NHL's public web API into a raw cache.
+"""REFUSES TO RUN: no new requests to any NHL endpoint (AGENTS.md section 3). Kept as the record of how the loaded data was fetched.
+
+Fetch NHL results and standings from the NHL's public web API into a raw cache.
 
 Source: https://api-web.nhle.com/v1/ (results and standings are facts; the NHL is credited).
 Per season: the standings on the last regular-season day (which also lists the season's
@@ -14,6 +16,8 @@ Default order grows outward from SPX's best seasons: 2001-02, 2011-12, 2012-13, 
 """
 import argparse, datetime, json, os, ssl, sys, time, urllib.error, urllib.request
 
+REFUSAL = "NHL endpoints are not used for new requests: AGENTS.md section 3 (John, 2026-10-14). Loaded data stays; use load.py on files already in raw/nhlapi."
+
 BASE = "https://api-web.nhle.com/v1"
 UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 GAP = 2.0                       # seconds between requests
@@ -27,6 +31,7 @@ CTX = ctx()
 
 def get(url):
     """One polite GET with backoff on 429/5xx. Returns (status, parsed json or None)."""
+    sys.exit(REFUSAL)
     delay = 5
     for attempt in range(8):
         wait = GAP - (time.time() - _last[0])
@@ -95,6 +100,7 @@ def fetch_season(sea, info, cache, fh):
 CURRENT = None
 def main():
     global CURRENT
+    sys.exit(REFUSAL)
     ap = argparse.ArgumentParser()
     ap.add_argument("--seasons"); ap.add_argument("--first", type=int)
     ap.add_argument("--cache", default="raw/nhlapi")

@@ -98,12 +98,17 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   - Retrosheet: credit notice required.
   - Lahman.
   - nflverse: CC BY 4.0.
-  - NHL API: credited "NHL".
   - Wikipedia: CC BY-SA 4.0, `meta.source` code `wikipedia`.
   - Wikidata: CC0.
   - Wikimedia Commons: logos, licence per file.
   - OpenStreetMap (Overpass API): venue outlines, pitches and field bearings; ODbL 1.0, credit "(c) OpenStreetMap contributors". Kept only in
     `legacy_osm` and `core.brand_venue_osm`, never mixed into CC0 tables (`scripts/osm_venues/README.md`).
+- **NHL endpoints: no new requests, ever** (John, 2026-10-14; NHL.com's terms bar spidering, scraping and entering NHL
+  Content into a database). Send nothing to `api-web.nhle.com`, `api.nhle.com`, `statsapi.web.nhl.com` or any other NHL
+  endpoint, not even to test. Data already loaded (`legacy_nhlapi` and anything built from it, such as game venue names)
+  stays, credited "NHL"; never delete it. Where Wikipedia, Wikidata or SPX holds the same fact, use that source and keep
+  the NHL value only as a cross-check. The fetch scripts refuse to run (`scripts/nhlapi/fetch.py`,
+  `scripts/players/nhl_fetch.py`, `scripts/team_stats/fetch.py --source nhl`).
 - **Never** use Sports Reference (hockey-, basketball-, baseball-, pro-football-reference) or ESPN. Check a source's
   terms before using it; if they forbid automated collection, don't.
 - **Provenance** goes in `source_id`, `source_key` and `external_id`, never in free-text notes.
@@ -366,7 +371,7 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   then a data release to production.
 - **Ongoing scores** (the season in progress, all five leagues) come from English Wikipedia's club-season articles, with nflverse
   as the NFL's second check: `scripts/daily/run.py --apply` writes them to DS1 only (see `scripts/daily/README.md`). The NHL API
-  and MLB statsapi are not used for new scores.
+  (no new requests of any kind, section 3) and MLB statsapi are not used for new scores.
 - **Venue names and facts** (every name a home venue carried with its years, plus capacity, opened, owner, surface, roof, address) come
   from Wikidata (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA). Refresh once a year (February) or after a
   rename: the command list is in `scripts/wikidata_venues/README.md`; production gets `core.brand_venue_name` and

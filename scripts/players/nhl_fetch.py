@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-"""NHL skater and goalie season summaries from the NHL's stats API (api.nhle.com/stats/rest/en), raw first.
+"""REFUSES TO RUN: no new requests to any NHL endpoint (AGENTS.md section 3). Kept as the record of how the loaded data was fetched.
+
+NHL skater and goalie season summaries from the NHL's stats API (api.nhle.com/stats/rest/en), raw first.
 
   nhl_fetch.py <raw dir> [first_year [last_year]]
 
@@ -11,9 +13,11 @@ import json, os, sys, time, urllib.error, urllib.parse, urllib.request
 from concurrent.futures import ThreadPoolExecutor
 BASE = "https://api.nhle.com/stats/rest/en"
 UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
+REFUSAL = "NHL endpoints are not used for new requests: AGENTS.md section 3 (John, 2026-10-14). Loaded data stays; use nhl_load.py on files already saved."
 KINDS = {"skater": "skater/summary", "goalie": "goalie/summary"}
 
 def get(url, tries=8):
+    sys.exit(REFUSAL)
     delay = 3
     for _ in range(tries):
         try:
@@ -39,6 +43,7 @@ def fetch(raw, season, gt, kind, team=None):
     return d
 
 def main(raw, y0, y1):
+    sys.exit(REFUSAL)
     os.makedirs(raw, exist_ok=True)
     tp = os.path.join(raw, "teams.json")
     if not os.path.exists(tp):

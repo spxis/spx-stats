@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 """Fetch season-level team statistics into a raw folder (outside the repository), with a sha256 manifest.
 
+--source nhl REFUSES TO RUN: no new requests to any NHL endpoint (AGENTS.md section 3). nflverse still works.
+
   fetch.py --source nhl      api.nhle.com/stats/rest/en/team/summary and /penalties, regular season, one answer per season and endpoint
                              (power play and penalty kill percentages, penalty minutes, shots). Source: the NHL, credited "NHL".
   fetch.py --source nflverse stats_team_week_<year>.csv from the nflverse-data releases (CC BY 4.0), one file per season.
@@ -14,6 +16,7 @@ import argparse, datetime, hashlib, json, os, subprocess, sys, time, urllib.erro
 
 UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@spxis.com)"
 GAP = 1.5
+NHL_REFUSAL = "NHL endpoints are not used for new requests: AGENTS.md section 3 (John, 2026-10-14). Loaded data stays; --source nflverse still works."
 
 def seasons(league):
     p = subprocess.run(["psql", "-X", "-At", "-c", f"select start_year from core.season where league_code = '{league}' order by 1"], capture_output=True, text=True)
@@ -21,6 +24,7 @@ def seasons(league):
     return [int(x) for x in p.stdout.split()]
 
 def get(url):
+    if "nhle.com" in url or "nhl.com" in url: sys.exit(NHL_REFUSAL)
     delay = 10
     for _ in range(6):
         try:
@@ -49,6 +53,7 @@ def main():
     ap.add_argument("--source", required=True, choices=["nhl", "nflverse"])
     ap.add_argument("--raw")
     a = ap.parse_args()
+    if a.source == "nhl": sys.exit(NHL_REFUSAL)
     raw = a.raw or os.path.expanduser(os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + f"/team_stats_{a.source}/{datetime.date.today().isoformat()}")
     os.makedirs(raw, exist_ok=True)
     last = 0.0
