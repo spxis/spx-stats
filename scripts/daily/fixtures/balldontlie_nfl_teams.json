@@ -1,0 +1,293 @@
+{
+ "note": "GET https://api.balldontlie.io/nfl/v1/teams as returned on 2026-10-13, verbatim. The self-test checks the fixed table in scripts/daily/bdlsports.py against it. Documentation: https://docs.balldontlie.io",
+ "data": [
+  {
+   "id": 8,
+   "conference": "AFC",
+   "division": "NORTH",
+   "location": "Cleveland",
+   "name": "Browns",
+   "full_name": "Cleveland Browns",
+   "abbreviation": "CLE"
+  },
+  {
+   "id": 7,
+   "conference": "AFC",
+   "division": "NORTH",
+   "location": "Pittsburgh",
+   "name": "Steelers",
+   "full_name": "Pittsburgh Steelers",
+   "abbreviation": "PIT"
+  },
+  {
+   "id": 9,
+   "conference": "AFC",
+   "division": "NORTH",
+   "location": "Cincinnati",
+   "name": "Bengals",
+   "full_name": "Cincinnati Bengals",
+   "abbreviation": "CIN"
+  },
+  {
+   "id": 13,
+   "conference": "AFC",
+   "division": "SOUTH",
+   "location": "Jacksonville",
+   "name": "Jaguars",
+   "full_name": "Jacksonville Jaguars",
+   "abbreviation": "JAX"
+  },
+  {
+   "id": 12,
+   "conference": "AFC",
+   "division": "SOUTH",
+   "location": "Indianapolis",
+   "name": "Colts",
+   "full_name": "Indianapolis Colts",
+   "abbreviation": "IND"
+  },
+  {
+   "id": 10,
+   "conference": "AFC",
+   "division": "SOUTH",
+   "location": "Houston",
+   "name": "Texans",
+   "full_name": "Houston Texans",
+   "abbreviation": "HOU"
+  },
+  {
+   "id": 11,
+   "conference": "AFC",
+   "division": "SOUTH",
+   "location": "Tennessee",
+   "name": "Titans",
+   "full_name": "Tennessee Titans",
+   "abbreviation": "TEN"
+  },
+  {
+   "id": 14,
+   "conference": "AFC",
+   "division": "WEST",
+   "location": "Kansas City",
+   "name": "Chiefs",
+   "full_name": "Kansas City Chiefs",
+   "abbreviation": "KC"
+  },
+  {
+   "id": 15,
+   "conference": "AFC",
+   "division": "WEST",
+   "location": "Denver",
+   "name": "Broncos",
+   "full_name": "Denver Broncos",
+   "abbreviation": "DEN"
+  },
+  {
+   "id": 16,
+   "conference": "AFC",
+   "division": "WEST",
+   "location": "Las Vegas",
+   "name": "Raiders",
+   "full_name": "Las Vegas Raiders",
+   "abbreviation": "LV"
+  },
+  {
+   "id": 17,
+   "conference": "AFC",
+   "division": "WEST",
+   "location": "Los Angeles",
+   "name": "Chargers",
+   "full_name": "Los Angeles Chargers",
+   "abbreviation": "LAC"
+  },
+  {
+   "id": 20,
+   "conference": "NFC",
+   "division": "EAST",
+   "location": "New York",
+   "name": "Giants",
+   "full_name": "New York Giants",
+   "abbreviation": "NYG"
+  },
+  {
+   "id": 18,
+   "conference": "NFC",
+   "division": "EAST",
+   "location": "Philadelphia",
+   "name": "Eagles",
+   "full_name": "Philadelphia Eagles",
+   "abbreviation": "PHI"
+  },
+  {
+   "id": 19,
+   "conference": "NFC",
+   "division": "EAST",
+   "location": "Dallas",
+   "name": "Cowboys",
+   "full_name": "Dallas Cowboys",
+   "abbreviation": "DAL"
+  },
+  {
+   "id": 21,
+   "conference": "NFC",
+   "division": "EAST",
+   "location": "Washington",
+   "name": "Commanders",
+   "full_name": "Washington Commanders",
+   "abbreviation": "WSH"
+  },
+  {
+   "id": 22,
+   "conference": "NFC",
+   "division": "NORTH",
+   "location": "Green Bay",
+   "name": "Packers",
+   "full_name": "Green Bay Packers",
+   "abbreviation": "GB"
+  },
+  {
+   "id": 25,
+   "conference": "NFC",
+   "division": "NORTH",
+   "location": "Detroit",
+   "name": "Lions",
+   "full_name": "Detroit Lions",
+   "abbreviation": "DET"
+  },
+  {
+   "id": 24,
+   "conference": "NFC",
+   "division": "NORTH",
+   "location": "Chicago",
+   "name": "Bears",
+   "full_name": "Chicago Bears",
+   "abbreviation": "CHI"
+  },
+  {
+   "id": 3,
+   "conference": "AFC",
+   "division": "EAST",
+   "location": "Buffalo",
+   "name": "Bills",
+   "full_name": "Buffalo Bills",
+   "abbreviation": "BUF"
+  },
+  {
+   "id": 1,
+   "conference": "AFC",
+   "division": "EAST",
+   "location": "New England",
+   "name": "Patriots",
+   "full_name": "New England Patriots",
+   "abbreviation": "NE"
+  },
+  {
+   "id": 4,
+   "conference": "AFC",
+   "division": "EAST",
+   "location": "New York",
+   "name": "Jets",
+   "full_name": "New York Jets",
+   "abbreviation": "NYJ"
+  },
+  {
+   "id": 5,
+   "conference": "AFC",
+   "division": "EAST",
+   "location": "Miami",
+   "name": "Dolphins",
+   "full_name": "Miami Dolphins",
+   "abbreviation": "MIA"
+  },
+  {
+   "id": 6,
+   "conference": "AFC",
+   "division": "NORTH",
+   "location": "Baltimore",
+   "name": "Ravens",
+   "full_name": "Baltimore Ravens",
+   "abbreviation": "BAL"
+  },
+  {
+   "id": 29,
+   "conference": "NFC",
+   "division": "SOUTH",
+   "location": "Carolina",
+   "name": "Panthers",
+   "full_name": "Carolina Panthers",
+   "abbreviation": "CAR"
+  },
+  {
+   "id": 27,
+   "conference": "NFC",
+   "division": "SOUTH",
+   "location": "Atlanta",
+   "name": "Falcons",
+   "full_name": "Atlanta Falcons",
+   "abbreviation": "ATL"
+  },
+  {
+   "id": 28,
+   "conference": "NFC",
+   "division": "SOUTH",
+   "location": "Tampa Bay",
+   "name": "Buccaneers",
+   "full_name": "Tampa Bay Buccaneers",
+   "abbreviation": "TB"
+  },
+  {
+   "id": 26,
+   "conference": "NFC",
+   "division": "SOUTH",
+   "location": "New Orleans",
+   "name": "Saints",
+   "full_name": "New Orleans Saints",
+   "abbreviation": "NO"
+  },
+  {
+   "id": 30,
+   "conference": "NFC",
+   "division": "WEST",
+   "location": "San Francisco",
+   "name": "49ers",
+   "full_name": "San Francisco 49ers",
+   "abbreviation": "SF"
+  },
+  {
+   "id": 31,
+   "conference": "NFC",
+   "division": "WEST",
+   "location": "Seattle",
+   "name": "Seahawks",
+   "full_name": "Seattle Seahawks",
+   "abbreviation": "SEA"
+  },
+  {
+   "id": 32,
+   "conference": "NFC",
+   "division": "WEST",
+   "location": "Los Angeles",
+   "name": "Rams",
+   "full_name": "Los Angeles Rams",
+   "abbreviation": "LAR"
+  },
+  {
+   "id": 33,
+   "conference": "NFC",
+   "division": "WEST",
+   "location": "Arizona",
+   "name": "Cardinals",
+   "full_name": "Arizona Cardinals",
+   "abbreviation": "ARI"
+  },
+  {
+   "id": 23,
+   "conference": "NFC",
+   "division": "NORTH",
+   "location": "Minnesota",
+   "name": "Vikings",
+   "full_name": "Minnesota Vikings",
+   "abbreviation": "MIN"
+  }
+ ]
+}

@@ -14,6 +14,7 @@ Docker on the NAS ([Stage 3](#stage-3-the-docker-job-on-the-nas), `daily/README.
     scripts/daily/run.py --dry-run                   # fetch what changed, parse, cross-check, compare with DS1 (read-only)
     scripts/daily/run.py --dry-run --since 2026-10-09 --league nhl,nfl -v
     scripts/daily/run.py --dry-run --offline         # parse the cached pages only, no request at all
+    scripts/daily/run.py --dry-run --no-balldontlie  # Wikipedia and nflverse only (no NBA, MLB or NFL second check)
     scripts/daily/run.py --dry-run --no-ds1 --json /tmp/games.json
     scripts/daily/run.py --rehearse                  # stage 2 as a rehearsal: one DS1 transaction that ends in ROLLBACK, with the checks
     scripts/daily/run.py --apply                     # stage 2: the same rehearsal first, then archive + load + report, commit (DS1 only)
@@ -54,7 +55,7 @@ checks + 14 content batches of 10 pages); a run when nothing changed is 3 API re
 |---|---|---|
 | English Wikipedia, MediaWiki API | main source: club-season articles' game logs, MLB postseason page | CC BY-SA 4.0; authors are each article's history; `meta.source` code `wikipedia`. Pages and revision ids are kept as provenance. |
 | nflverse `games.csv` (nflverse-data release `schedules`) | NFL second check | CC BY 4.0; credit "NFL data from nflverse (github.com/nflverse), CC BY 4.0." (`meta.source` code `nflverse`) |
-| balldontlie, free tier (`api.balldontlie.io/v1`, docs `docs.balldontlie.io`) | the NBA schedule and scores; the second check beside the clubs' articles, and the only source for a season the articles do not carry yet | John's free account (teams and games endpoints only; never a paid endpoint, never a trial). Its terms allow storing and publishing the data (John, 2026-10-12). Credit "NBA schedule and scores from balldontlie.io". Provenance: `balldontlie@<sha256 of the archived file>`. See [balldontlie](#balldontlie-the-nba-schedule) |
+| balldontlie, free tier (`api.balldontlie.io/v1`, `/mlb/v1`, `/nfl/v1`, docs `docs.balldontlie.io`) | the NBA schedule and scores (second check beside the clubs' articles, and the only source for a season the articles do not carry yet); the MLB and NFL games as an independent second check | John's free account (teams and games endpoints only; never a paid endpoint, never a trial). Its terms allow storing and publishing the data (John, 2026-10-12). Credit "NBA schedule and scores from balldontlie.io". Provenance: `balldontlie@<sha256 of the archived file>`. See [balldontlie](#balldontlie-the-nba-schedule) and [MLB and NFL](#balldontlie-mlb-and-nfl-the-second-check) |
 
 **Never fetched, not even to test:** NHL API (`api-web.nhle.com`, `api.nhle.com`), MLB statsapi, NBA.com and
 `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, Yahoo, ESPN, Sports Reference sites, newspapers and TV sites. Articles
@@ -83,7 +84,7 @@ after the last puck, overnight US time), within about **1 h** of the final whist
 
 ## Cross-check classes
 
-`confirmed` two or more sources give the same score (each club's article is one source; nflverse and, for the MLB
+`confirmed` two or more sources give the same score (each club's article is one source; nflverse, balldontlie and, for the MLB
 postseason, the league page are others) · `single` one source only · `resolved` sources differ but nflverse agrees with one club's page, so that score holds · `disputed` sources differ: the best-ranked source is
 kept (nflverse/balldontlie, league page, the home club's article, any other) and every other value is listed; stage 2 applies nothing from it. A row whose
 own colour contradicts its score (a lost game coloured as won) ranks last. 2026-10-12 found a real one: the Maple Leafs
@@ -125,6 +126,53 @@ run goes on without it.
   (`ingest.replay(true, true)`), because no other source holds the season; scheduled games of a season another source holds are not made.
 - **Dry run:** `scripts/daily/run.py --dry-run --league nba -v` (reads the key, does the whole-season read once). `--rehearse --league nba` proves the
   DS1 side and rolls back.
+
+## balldontlie: MLB and NFL, the second check
+
+`bdlsports.py` (the NBA stays in `balldontlie.py`; the key, the request function and the clock are shared). Same free account and key, only the
+free endpoints (`/mlb/v1/games`, `/nfl/v1/games`, and `/teams` once to build the tables). **The 5 requests a minute are the account's, not a
+sport's:** every request waits 13 s after the previous one of any sport (`balldontlie.pace()`), so NBA, MLB and NFL together stay at
+4.6 a minute at most, and a 429 waits at least 30 s. A run never has the sports read in parallel.
+
+- **Requests per run** (measured 2026-10-13). A day: **1 request each for MLB and NFL** (plus the NBA's 1 or 2), 2 for a busy MLB week
+  (more than 100 games in the window). The first run of a season, and one a week, reads the whole season: MLB **26 requests** (regular season
+  25 pages of 100, then the postseason, about 5.5 minutes), NFL **3**. No `start_date` or `end_date` exists for MLB and NFL (a request with them
+  is answered with the oldest games, unfiltered); `dates[]` takes any number of days, so the window `--since` to tomorrow is one request listing
+  its days. A `--since` more than 14 days back reads the whole season. MLB spring training games are neither kept nor archived.
+- **How far back the free tier goes** (one real call each, 2026-10-13): **MLB regular season from 2001** (the first game is 2001-04-01; 2000 has
+  spring training only) and **MLB postseason from 2002**; **NFL from the 2002 season** (first game 2002-09-06, its playoffs from 2003-01-04). The
+  daily job reads the season each league is in, so this matters for a backfill, not for the daily run.
+- **Days.** A game's `date` is its UTC start. The club's local date is that minus 9 hours (a game starts between noon ET and 10:30 pm PT), so
+  a 00:20Z start is the day before. A game with no time yet (NFL status `TBD`, an MLB playoff game not placed) is stored at 04:00 or 05:00Z
+  and keeps its UTC day. The pairing tolerates a day either way, and a different day is noted (`date differs by source`).
+- **Teams.** Fixed tables in `bdlsports.py` (balldontlie id -> abbreviation and the club's full name in DS1: MLB ids 1 to 30, NFL ids 1 and 3
+  to 33), checked by the self-test against the saved responses `fixtures/balldontlie_mlb_teams.json` and `balldontlie_nfl_teams.json`
+  (verbatim `/teams`). balldontlie's "Oakland Athletics" (20) is DS1's Sacramento Athletics. A game with a club id of -1 (the All-Star Game, a
+  playoff pairing not decided yet) is skipped without a word; an id outside the table, a club the DS1 roster lacks, a final without both
+  scores and a state we do not read (`abandoned`, `unknown`) are unreadable rows, never guessed.
+- **Statuses.** `status_state` `final` is a final; `scheduled`, `in_progress` and `delayed` are scheduled (no score until it ends);
+  `postponed`, `canceled` and `suspended` are what they say. MLB overtime is more than 9 innings (`period`, `ot_n` the extra innings); NFL
+  overtime is a score in `home_team_ot` or `visitor_team_ot`, or `Final/OT`. A playoff game is `postseason`. balldontlie does not number
+  doubleheaders: two games of the same pair on one local day are numbered by start time. It dates a suspended game by its start, where an
+  article may date the resumed part (2026-06-16/17, Braves and Giants), so the games sit a day apart for the two sources.
+- **Archive and provenance.** As the NBA's: the season file (without fetch times, so it changes only when a game does) goes to
+  `legacy_files.raw_archive` as `balldontlie/<day>/games-<league>-<season>.<sha12>.json` and one `legacy_wikipedia_daily.page` row
+  (`source = 'balldontlie'`, title `games-mlb.json` or `games-nfl.json`, revision = the sha256). Observations name it `balldontlie@<sha256>`.
+- **Cross-check.** balldontlie ranks first, like nflverse. **balldontlie plus one club article agreeing is `confirmed`** (so is balldontlie plus
+  nflverse for the NFL); alone it is `single`; balldontlie agreeing with one article against another is `resolved`, and that score is what
+  stage 2 reports. **Disagreements are held and logged as before:** balldontlie against the only article that has the game, or against
+  nflverse, is `disputed`, applies nothing and leaves the `meta.data_issue`. A final in DS1 is never changed (the state machine above): a
+  different balldontlie score is `rejected` and flagged.
+- **First look (2026-10-13, MLB 2026 and NFL 2026).** MLB: 2,497 balldontlie games read, 2,453 final games confirmed (two or more sources agree), 1 single-source,
+  and all 2,454 finals DS1 holds carry the same score; the 4 games the articles disagreed on (2026-05-18, 07-08, 08-12, 08-14, all
+  held out of DS1 until now) are `resolved` by balldontlie. NFL: 272 games, all 79 finals confirmed (balldontlie, nflverse and the articles agree),
+  no difference in DS1, and the 193 scheduled games agree with nflverse on the day.
+- **Dry run:** `scripts/daily/run.py --dry-run --league mlb,nfl -v`. `--no-balldontlie` skips all three sports (offline runs, tests).
+
+The pairing in `games.py` (`pair_claims`) works in three passes since balldontlie joined (it sorts before the Wikipedia sources and used
+to start clusters in the wrong order): the same day without a clash, then same-day clusters that share no source, then a day apart. A
+rain-out and its make-up the next day stay two games; a game two sources date a day apart is still one. NHL, CFL, NBA and NFL results are
+identical to the old pairing on the current data.
 
 ## Stage 2: what `--apply` writes to DS1, and where
 
@@ -276,6 +324,7 @@ ingest function is **not** installed on production, there is no production login
   disputed like any two sources. Rehearsed on DS1 (rolled back), not yet applied.
 - Live (in_progress) states and the second game of a doubleheader as a live game are accepted by the function but nothing reports them yet;
   the daily job reports scheduled, final, postponed, cancelled and suspended games.
+- MLB and NFL from balldontlie: no neutral-site flag (the NFL Super Bowl and international games use balldontlie's home side; a different home side from nflverse is noted), no NFL playoff round names (nflverse supplies them), MLB doubleheader numbers are by start time. The free tier holds MLB from 2001 and the NFL from 2002.
 - The CFL postseason and the NHL/NFL playoffs are not read yet (they start Oct 31, April, January). balldontlie's playoff games (`postseason`) are read but untested until April.
 - Wikipedia revisions between two runs are not archived: only the revision used is. The raw cache is overwritten by the next fetch.
 
@@ -293,7 +342,7 @@ It is not `meta.load_run`: `meta` is a release schema (the row would count as dr
 
 ## Files
 
-`run.py` command line and reporting · `balldontlie.py` the NBA source (key, throttled reads, cache, claims, the fixed team table) · `wikiapi.py` the API client and state file · `teams.py` club lists and name matching ·
+`run.py` command line and reporting · `balldontlie.py` the NBA source (key, the shared request clock, throttled reads, cache, claims, the fixed team table) · `bdlsports.py` the MLB and NFL source (fixed tables, window and whole-season reads, claims) · `wikiapi.py` the API client and state file · `teams.py` club lists and name matching ·
 `parsers.py` wikitext to claims (NHL, MLB, NFL here; CFL and NBA wrap the older readers) · `games.py` pairing and cross-check ·
 `compare.py` DS1 comparison (SELECTs only) · `ds1.sh` DS1 `psql` (host and password found inside) · `apply.py` stage 2: rehearsal,
 archive, load, report, refresh (`observation()` builds what `ingest.report_results` takes) · `snapshot.sql` + `checks.sql` the report and the

@@ -11,8 +11,9 @@ What a run does (see README.md):
   1. current clubs per league (DS1, cached), the season each league is in today
   2. one `revisions` call per 50 pages: the latest revision id of every team-season article
   3. download only the pages whose revision id differs from the state file (10 pages per request)
-  4. parse every cached page to claims, pair the two clubs' claims into games, cross-check (nflverse for the NFL,
-     balldontlie for the NBA when its key is set: the NBA schedule for a season the articles do not carry yet)
+  4. parse every cached page to claims, pair the two clubs' claims into games, cross-check (nflverse for the NFL;
+     balldontlie for the NBA, MLB and NFL when its key is set: the NBA schedule for a season the articles do not carry yet,
+     an independent second source for MLB and NFL games; one request at a time, 13 s apart, whatever the sport)
   5. compare with DS1's core.game and print the summary. A dry run writes nothing; --apply writes to DS1 (never production).
 
 Forbidden sources (never fetched, even to test): NHL API, MLB statsapi, NBA.com / cdn.nba.com, NFL.com, cfl.ca, Yahoo,
@@ -22,7 +23,7 @@ import argparse, collections, csv, datetime, hashlib, io, json, os, re, sys, tim
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import balldontlie as B, games as G, parsers as P, teams as T, wikiapi as W
+import balldontlie as B, bdlsports as S, games as G, parsers as P, teams as T, wikiapi as W
 
 CACHE = os.path.expanduser(os.environ.get("SPX_DAILY_CACHE", "~/Library/Caches/spx-stats-daily"))
 LEAGUES = ["nhl", "nba", "mlb", "nfl", "cfl"]
@@ -168,6 +169,7 @@ def main():
     ap.add_argument("--season", action="append", default=[], help="league=startYear, e.g. mlb=2026 (default: the season each league is in today)")
     ap.add_argument("--state", default=os.path.join(CACHE, "state.json"))
     ap.add_argument("--raw-dir", default=os.path.join(CACHE, "raw"))
+    ap.add_argument("--no-balldontlie", action="store_true", help="do not read balldontlie (NBA, MLB, NFL) this run")
     ap.add_argument("--offline", action="store_true", help="parse the cached pages only; no request at all")
     ap.add_argument("--no-ds1", action="store_true", help="skip the DS1 comparison (rosters then come from the cache)")
     ap.add_argument("--since", help="report DS1 games on or after this date that Wikipedia lacks (default: 7 days ago)")
@@ -196,6 +198,7 @@ def run(a, result):
     if writing and a.no_ds1: sys.exit("--apply / --rehearse write to DS1: drop --no-ds1")
     today = datetime.date.today()
     leagues = [x for x in a.league.split(",") if x]
+    a.bdl_leagues = [] if a.no_balldontlie else ["nba", "mlb", "nfl"]
     seasons = {lg: season_now(lg, today) for lg in leagues}
     for s in a.season:
         lg, y = s.split("="); seasons[lg] = int(y)
@@ -204,7 +207,7 @@ def run(a, result):
     rosters, rsrc = T.load_rosters(leagues, os.path.join(os.path.dirname(a.state), "rosters.json"))
     print("run %s | clubs from %s | state %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), rsrc, a.state))
     client = W.Client()
-    all_games, report, extra_req, league_claims = {}, {}, 0, {}
+    all_games, report, extra_req, league_claims, bdl_req = {}, {}, 0, {}, {}
     plans = {lg: plan(lg, seasons[lg], rosters[lg]) for lg in leagues}
     every = [p for lg in leagues for p in plans[lg]]
     changed_all, missing_all, _ = refresh(client, state, every, a.raw_dir, a.offline)     # one revisions pass for all leagues
@@ -217,13 +220,13 @@ def run(a, result):
         second = []
         if lg == "nfl":
             c2, b2, n = nflverse_claims(y, roster, state, a.raw_dir, a.offline); claims += c2; bad += b2; extra_req += n; second.append("nflverse (%d claims)" % len(c2))
-        if lg == "nba":
+        if lg in ("nba", "mlb", "nfl") and lg in a.bdl_leagues:      # balldontlie, free tier: NBA (balldontlie.py), MLB and NFL (bdlsports.py)
             try:
-                c2, b2, n = B.claims(y, roster, since, a.offline, a.raw_dir, state)
+                c2, b2, n = B.claims(y, roster, since, a.offline, a.raw_dir, state) if lg == "nba" else S.claims(lg, y, roster, since, a.offline, a.raw_dir, state)
             except RuntimeError as e:
                 c2, b2, n = [], [], 0; second.append("balldontlie FAILED, not used this run: %s" % e)
             if c2 is None: second.append("balldontlie skipped (no key: Mac keychain item '%s' or BALLDONTLIE_API_KEY)" % B.KEYCHAIN_ITEM)
-            else: claims += c2; bad += b2; extra_req += n; second.append("balldontlie (%d claims, %d requests)" % (len(c2), n))
+            else: claims += c2; bad += b2; extra_req += n; bdl_req[lg] = n; second.append("balldontlie (%d claims, %d requests)" % (len(c2), n))
         gs = G.build_games(claims, lg, y)
         league_claims[lg] = claims
         all_games[lg] = gs
@@ -282,12 +285,13 @@ def run(a, result):
                 nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
                            claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
         files = []
-        bdl = [c for c in league_claims.get("nba", []) if c["source"] == B.SOURCE]
-        if "nba" in [lg for lg, _ in lseasons] and bdl:
-            sub = B.subset(a.raw_dir, seasons["nba"])
-            fetched = state.get(B.SOURCE, {}).get("fetched_at") or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            if sub: files.append(dict(source=B.SOURCE, league="nba", season=seasons["nba"], title=B.TITLE, ext="json", data=sub[0], sha256=sub[1],
-                                      day=fetched[:10], fetched_at=fetched, claims=bdl))
+        for lg in ("nba", "mlb", "nfl"):
+            bdl = [c for c in league_claims.get(lg, []) if c["source"] == B.SOURCE]
+            if lg not in [x for x, _ in lseasons] or not bdl: continue
+            sub = B.subset(a.raw_dir, seasons[lg]) if lg == "nba" else S.subset(a.raw_dir, lg, seasons[lg])
+            fetched = state.get(B.SOURCE if lg == "nba" else S.state_key(lg), {}).get("fetched_at") or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            if sub: files.append(dict(source=B.SOURCE, league=lg, season=seasons[lg], title=B.TITLE if lg == "nba" else S.title(lg), ext="json", data=sub[0], sha256=sub[1],
+                                      day=fetched[:10], fetched_at=fetched, claims=bdl, **({} if lg == "nba" else {"stem": S.stem(lg, seasons[lg])})))
         if skipped: print("\nNOT applied: " + "; ".join(skipped))
         result.update(leagues=[lg for lg, _ in lseasons], skipped=skipped)
         rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply, result=result, files=files)
@@ -297,8 +301,9 @@ def run(a, result):
             result["release"] = release_hook.prepare_release(load.get("tables"), datetime.date.today().isoformat(), load)
     reqs = [x for x in client.log]
     print("\n== Requests this run ==")
-    print("Wikipedia API: %d (%s) | other: %d (nflverse, balldontlie)" % (client.requests, ", ".join("%s x%d" % (k, sum(1 for w, n in reqs if w == k)) for k in ("revisions", "content")), extra_req))
-    result.update(wikipedia_requests=client.requests, other_requests=extra_req)
+    bdl_note = (" - balldontlie " + ", ".join("%s %d" % (lg.upper(), n) for lg, n in bdl_req.items())) if bdl_req else ""
+    print("Wikipedia API: %d (%s) | other: %d (nflverse, balldontlie%s)" % (client.requests, ", ".join("%s x%d" % (k, sum(1 for w, n in reqs if w == k)) for k in ("revisions", "content")), extra_req, bdl_note))
+    result.update(wikipedia_requests=client.requests, other_requests=extra_req, balldontlie_requests=bdl_req)
     return rc
 
 

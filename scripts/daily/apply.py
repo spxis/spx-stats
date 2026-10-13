@@ -152,7 +152,7 @@ def plan_load(todo, held, pages_state, raw_dir, nfl, files=()):
             claims.append(("games.csv", nfl["sha256"], "nflverse", nfl["claims"]))
     for f in files:      # another source's season file (balldontlie's games.json): kept as fetched, one page row per distinct content
         if (f["source"], f["title"], f["sha256"]) in held: continue
-        name = "%s/%s/games-%d.%s.%s" % (f["source"], f["day"], f["season"], f["sha256"][:12], f["ext"])
+        name = "%s/%s/%s.%s.%s" % (f["source"], f["day"], f.get("stem") or "games-%d" % f["season"], f["sha256"][:12], f["ext"])
         archive.append(dict(name=name, saved_on=f["day"], sha256=f["sha256"], data=f["data"]))
         pages.append(dict(source=f["source"], league=f["league"], season=f["season"], kind="file", title=f["title"], club=None, revision=f["sha256"],
                           revision_at=None, sha256=f["sha256"], bytes=len(f["data"]), archive_name=name, fetched_at=f["fetched_at"]))

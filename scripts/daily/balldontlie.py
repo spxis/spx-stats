@@ -83,14 +83,29 @@ def subset(raw_dir, season):
     return data, hashlib.sha256(data).hexdigest()
 
 
-def _get(path, params, key, sleep=time.sleep):
-    """One GET, with the rate limit respected: 13 s before it (the caller says when it is the first), and a wait on a 429."""
-    url = API + path + ("?" + urllib.parse.urlencode(params, doseq=True, safe="[]") if params else "")
+_LAST = [None]       # when the last request to balldontlie ended (monotonic): one clock for every sport, because the 5 a minute are the account's
+
+
+def pace(sleep=time.sleep, now=time.monotonic):
+    """Wait until PAGE_GAP seconds have passed since the last request of ANY sport in this process (NBA, MLB and NFL share the limit)."""
+    if _LAST[0] is not None:
+        wait = PAGE_GAP - (now() - _LAST[0])
+        if wait > 0: sleep(wait)
+
+
+def _get(path, params, key, sleep=time.sleep, base=None):
+    """One GET, with the rate limit respected: at least PAGE_GAP s after the previous request of any sport, and a wait on a 429.
+    `base` is the sport's API root (the NBA's is API; MLB and NFL are bdlsports.py's)."""
+    url = (base or API) + path + ("?" + urllib.parse.urlencode(params, doseq=True, safe="[]") if params else "")
     for attempt in range(4):
+        pace(sleep)
         try:
             req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; john@spxis.com)")})
-            with urllib.request.urlopen(req, timeout=60) as r:
-                return json.loads(r.read().decode("utf-8"))
+            try:
+                with urllib.request.urlopen(req, timeout=60) as r:
+                    return json.loads(r.read().decode("utf-8"))
+            finally:
+                _LAST[0] = time.monotonic()
         except urllib.error.HTTPError as e:
             if e.code == 429 and attempt < 3:
                 sleep(max(int(e.headers.get("Retry-After") or 0), 30)); continue

@@ -153,6 +153,22 @@ def test_pairing():
     dh = [mk("A page", "X", "Y", 1, 0, d, dh=1), mk("A page", "X", "Y", 5, 4, d, dh=2), mk("B page", "X", "Y", 5, 4, d, dh=2), mk("B page", "X", "Y", 1, 0, d, dh=1)]
     g = G.build_games(dh, "mlb", 2026)
     check(len(g) == 2 and all(x["confidence"] == "confirmed" for x in g), "doubleheader pairs game 1 with game 1")
+    # a rain-out on the 26th and its make-up on the 27th are two games, whichever source is read first (a source named 'a...' sorts before 'A page')
+    d26, d27 = D(2026, 9, 26), D(2026, 9, 27)
+    rain = P.claim("B page", ("X", "Y"), None, "X", d26, "postponed", "regular")
+    fin_b, fin_c = mk("B page", "X", "Y", 2, 6, d27), dict(mk("a source", "X", "Y", 2, 6, d27), source="a source")
+    g = G.build_games([rain, fin_b, fin_c], "mlb", 2026)
+    check(len(g) == 2 and [x["status"] for x in g] == ["postponed", "final"] and g[1]["confidence"] == "confirmed", "a postponed row of one source does not take another source's make-up game")
+    # two games on one day with no doubleheader numbers: the score decides who pairs with whom, not the order the sources are read
+    two = [dict(mk("a source", "X", "Y", 5, 4, d), source="a source"), mk("B page", "X", "Y", 1, 0, d), mk("B page", "X", "Y", 5, 4, d),
+           dict(mk("a source", "X", "Y", 1, 0, d), source="a source")]
+    g = G.build_games(two, "mlb", 2026)
+    check(len(g) == 2 and all(x["confidence"] == "confirmed" for x in g), "two unnumbered games of one day pair by score")
+    # one game dated a day apart by two sources is one game; a different score still makes it a disputed one
+    g = G.build_games([mk("A page", "X", "Y", 3, 2, d), mk("B page", "X", "Y", 3, 2, D(2026, 10, 11))], "nhl", 2026)
+    check(len(g) == 1 and g[0]["confidence"] == "confirmed" and any("date differs" in n for n in g[0]["notes"]), "a game dated a day apart is still one game")
+    g = G.build_games([mk("A page", "X", "Y", 3, 2, d), mk("B page", "X", "Y", 2, 3, D(2026, 10, 11))], "nhl", 2026)
+    check(len(g) == 1 and g[0]["confidence"] == "disputed", "a game dated a day apart with another score is a disputed game")
     sched = P.claim("A page", ("X", "Y"), None, "X", d, "scheduled", "regular")
     g = G.build_games([sched, b], "nhl", 2026)
     check(len(g) == 1 and g[0]["status"] == "final" and g[0]["notes"], "a stale scheduled row does not undo a final")
@@ -286,6 +302,118 @@ def test_balldontlie():
         if k: os.environ["BALLDONTLIE_API_KEY"] = k
 
 
+def test_bdlsports():
+    import json, tempfile, apply as A, balldontlie as B, bdlsports as S
+    # the fixed tables against the saved /teams responses
+    for lg, table, name_of in (("mlb", S.MLB_TEAMS, lambda t: t["display_name"]), ("nfl", S.NFL_TEAMS, lambda t: t["full_name"])):
+        teams = json.loads(fx("balldontlie_%s_teams.json" % lg))["data"]
+        check(len(teams) == len(table) == (30 if lg == "mlb" else 32), "%s table: %d clubs" % (lg, len(table)))
+        want = {t["id"]: (t["abbreviation"], {20: "Sacramento Athletics"}.get(t["id"], name_of(t)) if lg == "mlb" else name_of(t)) for t in teams}
+        check(want == table, "%s table: every id, abbreviation and name equals the saved /teams response (the Athletics are DS1's Sacramento Athletics)" % lg)
+        check(len({a for a, _ in table.values()}) == len(table) and len({n for _, n in table.values()}) == len(table), "%s table: abbreviations and names are all different" % lg)
+    rosters = {lg: roster(lg, [(n, n, n, a) for a, n in S.SPORTS[lg]["teams"].values()]) for lg in ("mlb", "nfl")}
+    # the clock is shared: a request waits for the gap since the last one, whatever the sport
+    waits = []
+    B._LAST[0] = 100.0
+    B.pace(sleep=waits.append, now=lambda: 104.0)
+    B._LAST[0] = None
+    B.pace(sleep=waits.append, now=lambda: 104.0)
+    check(waits == [B.PAGE_GAP - 4.0], "pace: 9 s still to wait 4 s after the last request, nothing before the first (%r)" % waits)
+    # MLB
+    d = json.loads(fx("balldontlie_mlb_games.json"))["data"]
+    cs, bad = S.claims_from("mlb", d, rosters["mlb"], 2026)
+    by = {c["src"]: c for c in cs}
+    check(len(cs) == 10 and len(bad) == 2, "mlb fixture: 10 games read; a team outside the table and an abandoned game unreadable; spring training and another season skipped (%d, %r)" % (len(cs), bad))
+    real = [c for c in cs if int(c["src"]) >= 1000000]
+    check(len(real) == 3 and all(c["status"] == "final" and c["phase"] == "playoffs" for c in real), "mlb: the three real postseason finals are playoff finals")
+    c = real[0]
+    check(c["date"] == D(2026, 10, 10) and sum(c["score"].values()) > 0 and c["home"] in c["score"], "mlb: the club's local date is the UTC start minus 9 hours (00:00Z on the 11th is the 10th)")
+    check(by["900001"]["status"] == "scheduled" and by["900001"]["score"] is None and by["900001"]["date"] == D(2026, 10, 20), "mlb: a scheduled game")
+    check(by["900002"]["status"] == "postponed" and by["900002"]["score"] is None, "mlb: postponed")
+    check(by["900003"]["ot"] is True and by["900003"]["ot_n"] == 2 and by["900003"]["phase"] == "playoffs", "mlb: 11 innings is two extra innings")
+    check(by["900004"]["ot"] is False and by["900004"]["ot_n"] is None and by["900004"]["phase"] == "regular", "mlb: nine innings, regular season")
+    check(by["900008"]["status"] == "scheduled" and by["900008"]["score"] is None, "mlb: a game being played has no result yet")
+    check(by["900005"]["dh"] == 1 and by["900006"]["dh"] == 2 and by["900004"]["dh"] is None, "mlb: two games of a pair on one day are a doubleheader, the earlier start first")
+    check(all(c["source"] == "balldontlie" and c["page"] == "balldontlie" for c in cs), "mlb: claims carry the source name")
+    g5, g6 = by["900005"], by["900006"]
+    wp = [dict(g5, page="2026 X season", source="wp:2026 X season", dh=1), dict(g6, page="2026 X season", source="wp:2026 X season", dh=2)]
+    gs = G.build_games([g5, g6] + wp, "mlb", 2026)
+    check(len(gs) == 2 and all(g["confidence"] == "confirmed" for g in gs), "mlb: balldontlie + a club article agreeing -> confirmed, both games of a doubleheader")
+    # NFL
+    d = json.loads(fx("balldontlie_nfl_games.json"))["data"]
+    cs, bad = S.claims_from("nfl", d, rosters["nfl"], 2026)
+    by = {c["src"]: c for c in cs}
+    check(len(cs) == 7 and len(bad) == 1, "nfl fixture: 7 games read, one with a team outside the table unreadable, other seasons skipped (%d, %r)" % (len(cs), bad))
+    ot = by["1392219"]
+    check(ot["status"] == "final" and ot["ot"] is True and len(ot["score"]) == 2, "nfl: Final/OT is an overtime final")
+    check(by["1392216"]["ot"] is False and by["1392216"]["date"] == D(2026, 9, 9) and by["1392216"]["phase"] == "regular", "nfl: regulation final; the local date of a 00:20Z start is the day before")
+    check(by["1392295"]["status"] == "scheduled" and by["1392295"]["score"] is None and by["1392295"]["date"] == D(2026, 10, 15), "nfl: a scheduled game")
+    check(by["900001"]["status"] == "postponed" and by["900002"]["status"] == "scheduled" and by["900002"]["score"] is None, "nfl: postponed; a game being played has no result yet")
+    tbd = dict(d[4], id=900005, date="2027-01-10T05:00:00.000Z", status="TBD")
+    c = S.claims_from("nfl", [tbd], rosters["nfl"], 2026)[0][0]
+    check(c["status"] == "scheduled" and c["date"] == D(2027, 1, 10), "nfl: a game with no time yet (05:00Z, TBD) keeps its day")
+    mix = dict(d[4], id=900006, home_team=dict(d[4]["home_team"], id=-1))
+    check(S.claims_from("nfl", [mix], rosters["nfl"], 2026) == ([], []), "a game with a club that is not one (id -1: the All-Star Game, an undecided pairing) is skipped without a word")
+    cs25, bad25 = S.claims_from("nfl", d, rosters["nfl"], 2025)
+    check(len(cs25) == 2 and not bad25 and {c["src"]: c for c in cs25}["1286916"]["phase"] == "playoffs" and {c["src"]: c for c in cs25}["1286916"]["ot"] is True, "nfl: the 2025 playoff overtime game, read for 2025 only")
+    # the cross-check, NFL: balldontlie + nflverse + a club article
+    fin = by["1392216"]
+    h, a = fin["home"], next(t for t in fin["teams"] if t != fin["home"])
+    nv = dict(mk("nflverse", h, a, fin["score"][h], fin["score"][a], fin["date"]), source="nflverse", page="nflverse")
+    wp1 = mk("2026 %s season" % h, h, a, fin["score"][h], fin["score"][a], fin["date"])
+    wp2 = mk("2026 %s season" % a, h, a, fin["score"][a], fin["score"][h], fin["date"])
+    check(G.build_games([fin, nv], "nfl", 2026)[0]["confidence"] == "confirmed", "nfl: balldontlie + nflverse agreeing -> confirmed")
+    check(G.build_games([fin, wp1], "nfl", 2026)[0]["confidence"] == "confirmed", "nfl: balldontlie + one club article agreeing -> confirmed")
+    check(G.build_games([fin, wp2], "nfl", 2026)[0]["confidence"] == "disputed", "nfl: balldontlie against one club article -> disputed, held")
+    check(G.build_games([fin, nv, wp2], "nfl", 2026)[0]["confidence"] == "disputed", "nfl: balldontlie + nflverse against the only club article -> disputed, held (no club article agrees)")
+    check(G.build_games([fin, nv, wp1, wp2], "nfl", 2026)[0]["confidence"] == "resolved", "nfl: balldontlie + nflverse + one club article against the other -> resolved")
+    check(G.build_games([fin], "nfl", 2026)[0]["confidence"] == "single", "nfl: balldontlie alone -> single")
+    # fetching: the whole season (MLB: regular season, then postseason), then the days from `since` to tomorrow in one request
+    mlb = json.loads(fx("balldontlie_mlb_games.json"))["data"]
+    calls = []
+    def fake_get(path, params, key, base=None):
+        calls.append((base, path, dict(params)))
+        pages = {"regular": [mlb[:5], mlb[5:9]], "postseason": [mlb[9:]]}.get(params.get("season_type"), [mlb])
+        i = 1 if "cursor" in params else 0
+        return dict(data=pages[i] if i < len(pages) else [], meta=dict(per_page=100, **({"next_cursor": 5} if len(pages) > 1 and i == 0 else {})))
+    with tempfile.TemporaryDirectory() as raw:
+        st = {}
+        n = S.fetch("mlb", 2026, D(2026, 10, 6), raw, st, "k", today=D(2026, 10, 13), get=fake_get)
+        check(n == 3 and calls[0][0].endswith("/mlb/v1") and calls[0][2].get("season_type") == "regular" and calls[2][2].get("season_type") == "postseason"
+              and all("dates[]" not in c[2] for c in calls), "mlb fetch: whole season = regular season (two pages) then postseason")
+        check(len(S.load_cache(raw, "mlb", 2026)["games"]) == len([g for g in mlb if g.get("season_type") != "spring_training"]) and st["balldontlie_mlb"]["full_at"] == "2026-10-13", "mlb fetch: games cached by id, spring training not kept, whole read recorded")
+        sub1 = S.subset(raw, "mlb", 2026)
+        calls.clear()
+        n = S.fetch("mlb", 2026, D(2026, 10, 10), raw, st, "k", today=D(2026, 10, 14), get=fake_get)
+        check(n == 1 and calls[0][2]["dates[]"] == ["2026-10-10", "2026-10-11", "2026-10-12", "2026-10-13", "2026-10-14", "2026-10-15"] and "season_type" not in calls[0][2],
+              "mlb fetch: two days later one request listing the days from since to tomorrow")
+        check(S.subset(raw, "mlb", 2026)[1] == sub1[1], "mlb fetch: the archived bytes are identical when no game changed")
+        calls.clear()
+        S.fetch("mlb", 2026, D(2026, 10, 12), raw, st, "k", today=D(2026, 10, 20), get=fake_get)
+        check("dates[]" not in calls[0][2], "mlb fetch: a week after the last whole read, the whole season again")
+        calls.clear()
+        S.fetch("mlb", 2026, D(2026, 9, 1), raw, st, "k", today=D(2026, 10, 21), get=fake_get)
+        check("dates[]" not in calls[0][2], "mlb fetch: a since more than 14 days back reads the whole season")
+        cs2, bad2, n2 = S.claims("mlb", 2026, rosters["mlb"], D(2026, 10, 15), True, raw, {})
+        check(n2 == 0 and len(cs2) == 10 and all(c["revid"] == sub1[1] for c in cs2), "mlb offline: claims from the cache, no request, revision = the file's sha256")
+        files = [dict(source="balldontlie", league="mlb", season=2026, title=S.title("mlb"), stem=S.stem("mlb", 2026), ext="json", data=sub1[0], sha256=sub1[1], day="2026-10-13", fetched_at="2026-10-13T14:00:00Z", claims=cs2)]
+        arch, pg, cl = A.plan_load([], set(), {}, raw, None, files)
+        check(len(arch) == 1 and arch[0]["name"] == "balldontlie/2026-10-13/games-mlb-2026.%s.json" % sub1[1][:12] and pg[0]["title"] == "games-mlb.json" and pg[0]["league"] == "mlb",
+              "plan_load: the file is archived as balldontlie/<day>/games-<league>-<season>.<sha12>.json")
+        arch, pg, cl = A.plan_load([], {("balldontlie", "games-mlb.json", sub1[1])}, {}, raw, None, files)
+        check(not arch and not pg, "plan_load: content DS1 already holds is not archived again")
+    calls.clear()
+    with tempfile.TemporaryDirectory() as raw:
+        n = S.fetch("nfl", 2026, D(2026, 10, 6), raw, {}, "k", today=D(2026, 10, 13), get=fake_get)
+        check(n == 1 and calls[0][0].endswith("/nfl/v1") and "season_type" not in calls[0][2] and calls[0][2]["seasons[]"] == 2026, "nfl fetch: the whole season is one parameter set (regular season and postseason are the default)")
+    # no key: nothing is requested
+    k = os.environ.pop("BALLDONTLIE_API_KEY", None)
+    try:
+        if sys.platform != "darwin": check(S.claims("mlb", 2026, rosters["mlb"], D(2026, 10, 15), False, "/nonexistent", {}) == (None, [], 0), "no key -> skipped, no request")
+    finally:
+        if k: os.environ["BALLDONTLIE_API_KEY"] = k
+
+
 def test_release_hook():
     import contextlib, io, json, tempfile, release_hook as R
     with tempfile.TemporaryDirectory() as d:
@@ -335,6 +463,7 @@ def test_release_hook():
 def run():
     test_observation()
     test_balldontlie()
+    test_bdlsports()
     test_parsers()
     test_pairing()
     test_doubleheader()
@@ -344,7 +473,7 @@ def run():
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive) and the release hook (auto and review routes)")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL) and the release hook (auto and review routes)")
     return 0
 
 

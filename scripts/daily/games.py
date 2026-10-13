@@ -19,26 +19,49 @@ def _scores(c):
     return None if c["score"] is None else frozenset(c["score"].items())
 
 
+def _clash(x, y):
+    """(doubleheader numbers differ, scores differ) for two claims."""
+    return (bool(x["dh"] and y["dh"] and x["dh"] != y["dh"]), bool(_scores(x) and _scores(y) and _scores(x) != _scores(y)))
+
+
 def pair_claims(claims):
-    """-> list of clusters (lists of claims). One source never appears twice in a cluster."""
+    """-> list of clusters (lists of claims). One source never appears twice in a cluster.
+
+    Three passes per pair of clubs, so the order in which sources happen to be read cannot decide who is paired with whom:
+      1. the same day, and only claims that do not clash (different doubleheader number or score) with the cluster they join;
+      2. clusters of the same day that share no source join each other even when their scores differ (that is a disputed game);
+      3. clusters a day apart that share no source and do not differ in doubleheader number (two sources dating one game a day apart;
+         a score that differs still joins, as a disputed game; the pair closest in score and date goes first).
+    A rain-out on the 26th and its make-up on the 27th stay two games, because a source's row for the 27th meets the other sources'
+    rows for the 27th before it can meet the 26th's."""
     groups = {}
     for c in claims: groups.setdefault(frozenset(c["teams"]), []).append(c)
     clusters = []
     for pair, cs in groups.items():
-        cs.sort(key=lambda c: (c["date"], c["dh"] or 0, c["source"]))
+        cs.sort(key=lambda c: (c["date"], c["dh"] or 9, c["source"]))      # numbered doubleheader rows first: a row with no number then picks the game left over
         cur = []
         for c in cs:
             best = None
             for cl in cur:
-                if any(x["source"] == c["source"] for x in cl): continue
-                dd = min(abs((x["date"] - c["date"]).days) for x in cl)
-                if dd > 1: continue
-                dhm = any(x["dh"] and c["dh"] and x["dh"] != c["dh"] for x in cl)
-                sm = any(_scores(x) and _scores(c) and _scores(x) != _scores(c) for x in cl)
-                key = (dhm, sm, dd)
-                if best is None or key < best[0]: best = (key, cl)
+                if any(x["source"] == c["source"] for x in cl) or any(x["date"] != c["date"] for x in cl): continue
+                if any(any(_clash(x, c)) for x in cl): continue
+                best = cl; break
             if best is None: cur.append([c])
-            else: best[1].append(c)
+            else: best.append(c)
+        for within in (0, 1):
+            merged = []
+            for cl in cur:
+                hit = None                     # ((score differs, days apart), the cluster to join)
+                for other in merged:
+                    if {x["source"] for x in cl} & {x["source"] for x in other}: continue
+                    dd = min(abs((x["date"] - y["date"]).days) for x in cl for y in other)
+                    if dd > within: continue
+                    if any(_clash(x, y)[0] for x in cl for y in other): continue
+                    sm = any(_clash(x, y)[1] for x in cl for y in other)
+                    if hit is None or (sm, dd) < hit[0]: hit = ((sm, dd), other)
+                if hit is None: merged.append(cl)
+                else: hit[1].extend(cl)
+            cur = merged
         clusters += cur
     return clusters
 

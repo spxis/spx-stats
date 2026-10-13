@@ -1,0 +1,1371 @@
+{
+ "note": "Excerpt of GET https://api.balldontlie.io/mlb/v1/games as returned on 2026-10-13: ids below 900000 are verbatim (one spring training game, three postseason finals, a dates[] request); ids 900001 and up are edited copies that stand in for states no game was in yet (scheduled, postponed, 11 innings, a regular season final, the two games of a doubleheader, a team id outside the table, a game being played, an abandoned game, a game of another season). Documentation: https://docs.balldontlie.io",
+ "data": [
+  {
+   "id": 5043938,
+   "home_team_name": "Baltimore Orioles",
+   "away_team_name": "New York Yankees",
+   "home_team": {
+    "id": 3,
+    "slug": "baltimore-orioles",
+    "abbreviation": "BAL",
+    "display_name": "Baltimore Orioles",
+    "short_display_name": "Orioles",
+    "name": "Orioles",
+    "location": "Baltimore",
+    "league": "American",
+    "division": "East"
+   },
+   "away_team": {
+    "id": 19,
+    "slug": "new-york-yankees",
+    "abbreviation": "NYY",
+    "display_name": "New York Yankees",
+    "short_display_name": "Yankees",
+    "name": "Yankees",
+    "location": "New York",
+    "league": "American",
+    "division": "East"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "spring_training",
+   "date": "2026-02-20T18:05:00.000Z",
+   "home_team_data": {
+    "hits": 8,
+    "runs": 2,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 3,
+    "runs": 0,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "venue": "Ed Smith Stadium",
+   "attendance": 7886,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Alonso homered to left, Jackson scored.",
+     "inning": "bottom",
+     "period": "6th",
+     "away_score": 0,
+     "home_score": 2
+    }
+   ]
+  },
+  {
+   "id": 15467417,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Chicago White Sox",
+   "home_team": {
+    "id": 8,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 6,
+    "slug": "chicago-white-sox",
+    "abbreviation": "CHW",
+    "display_name": "Chicago White Sox",
+    "short_display_name": "White Sox",
+    "name": "White Sox",
+    "location": "Chicago",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": true,
+   "season_type": "postseason",
+   "date": "2026-10-11T00:00:00.000Z",
+   "home_team_data": {
+    "hits": 6,
+    "runs": 2,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 3,
+    "runs": 0,
+    "errors": 1,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 36889,
+   "conference_play": true,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Ramírez homered to right (348 feet), Kwan scored.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 0,
+     "home_score": 2
+    }
+   ]
+  },
+  {
+   "id": 15467418,
+   "home_team_name": "Milwaukee Brewers",
+   "away_team_name": "Los Angeles Dodgers",
+   "home_team": {
+    "id": 16,
+    "slug": "milwaukee-brewers",
+    "abbreviation": "MIL",
+    "display_name": "Milwaukee Brewers",
+    "short_display_name": "Brewers",
+    "name": "Brewers",
+    "location": "Milwaukee",
+    "league": "National",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 14,
+    "slug": "los-angeles-dodgers",
+    "abbreviation": "LAD",
+    "display_name": "Los Angeles Dodgers",
+    "short_display_name": "Dodgers",
+    "name": "Dodgers",
+    "location": "Los Angeles",
+    "league": "National",
+    "division": "West"
+   },
+   "season": 2026,
+   "postseason": true,
+   "season_type": "postseason",
+   "date": "2026-10-12T00:00:00.000Z",
+   "home_team_data": {
+    "hits": 6,
+    "runs": 2,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     1,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 7,
+    "runs": 1,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "venue": "American Family Field",
+   "attendance": 42617,
+   "conference_play": true,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Pages singled to right, Ohtani scored, T. Hernández to second.",
+     "inning": "top",
+     "period": "2nd",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Turang homered to left center (384 feet).",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "Lara singled to center, Mitchell scored.",
+     "inning": "bottom",
+     "period": "5th",
+     "away_score": 1,
+     "home_score": 2
+    }
+   ]
+  },
+  {
+   "id": 15467420,
+   "home_team_name": "Milwaukee Brewers",
+   "away_team_name": "Los Angeles Dodgers",
+   "home_team": {
+    "id": 16,
+    "slug": "milwaukee-brewers",
+    "abbreviation": "MIL",
+    "display_name": "Milwaukee Brewers",
+    "short_display_name": "Brewers",
+    "name": "Brewers",
+    "location": "Milwaukee",
+    "league": "National",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 14,
+    "slug": "los-angeles-dodgers",
+    "abbreviation": "LAD",
+    "display_name": "Los Angeles Dodgers",
+    "short_display_name": "Dodgers",
+    "name": "Dodgers",
+    "location": "Los Angeles",
+    "league": "National",
+    "division": "West"
+   },
+   "season": 2026,
+   "postseason": true,
+   "season_type": "postseason",
+   "date": "2026-10-12T21:00:00.000Z",
+   "home_team_data": {
+    "hits": 12,
+    "runs": 7,
+    "errors": 2,
+    "inning_scores": [
+     1,
+     0,
+     2,
+     0,
+     1,
+     1,
+     0,
+     2
+    ]
+   },
+   "away_team_data": {
+    "hits": 3,
+    "runs": 4,
+    "errors": 2,
+    "inning_scores": [
+     1,
+     0,
+     1,
+     0,
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "venue": "American Family Field",
+   "attendance": 42516,
+   "conference_play": true,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "T. Hernández hit sacrifice fly to center, Betts scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Contreras singled to left, Turang scored.",
+     "inning": "bottom",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "Edman scored on pickoff error by pitcher Henderson, Betts picked off second.",
+     "inning": "top",
+     "period": "3rd",
+     "away_score": 2,
+     "home_score": 1
+    },
+    {
+     "play": "Edman scored on pickoff error by pitcher Henderson, Betts picked off second.",
+     "inning": "top",
+     "period": "3rd",
+     "away_score": 2,
+     "home_score": 1
+    },
+    {
+     "play": "Yelich singled to center, Hamilton scored and Turang scored, Bauers to second.",
+     "inning": "bottom",
+     "period": "3rd",
+     "away_score": 2,
+     "home_score": 3
+    },
+    {
+     "play": "Edman hit sacrifice bunt, Tucker scored, Edman to second on throwing error by pitcher Henderson.",
+     "inning": "top",
+     "period": "5th",
+     "away_score": 3,
+     "home_score": 3
+    },
+    {
+     "play": "Freeman hit sacrifice fly to left, Edman scored. Milwaukee Brewers challenged: call on the field was upheld.",
+     "inning": "top",
+     "period": "5th",
+     "away_score": 4,
+     "home_score": 3
+    },
+    {
+     "play": "Contreras homered to center (436 feet).",
+     "inning": "bottom",
+     "period": "5th",
+     "away_score": 4,
+     "home_score": 4
+    },
+    {
+     "play": "Contreras singled to left, Hamilton scored, Turang to second.",
+     "inning": "bottom",
+     "period": "6th",
+     "away_score": 4,
+     "home_score": 5
+    },
+    {
+     "play": "Turang singled to right, Hamilton scored.",
+     "inning": "bottom",
+     "period": "8th",
+     "away_score": 4,
+     "home_score": 6
+    },
+    {
+     "play": "Bauers singled to center, Turang scored, Contreras to second, Contreras safe at third on fielding error by center fielder Pages.",
+     "inning": "bottom",
+     "period": "8th",
+     "away_score": 4,
+     "home_score": 7
+    }
+   ]
+  },
+  {
+   "id": 900001,
+   "home_team_name": "Milwaukee Brewers",
+   "away_team_name": "Los Angeles Dodgers",
+   "home_team": {
+    "id": 16,
+    "slug": "milwaukee-brewers",
+    "abbreviation": "MIL",
+    "display_name": "Milwaukee Brewers",
+    "short_display_name": "Brewers",
+    "name": "Brewers",
+    "location": "Milwaukee",
+    "league": "National",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 14,
+    "slug": "los-angeles-dodgers",
+    "abbreviation": "LAD",
+    "display_name": "Los Angeles Dodgers",
+    "short_display_name": "Dodgers",
+    "name": "Dodgers",
+    "location": "Los Angeles",
+    "league": "National",
+    "division": "West"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-10-20T23:05:00.000Z",
+   "home_team_data": {
+    "hits": 0,
+    "runs": 0,
+    "errors": 0,
+    "inning_scores": []
+   },
+   "away_team_data": {
+    "hits": 0,
+    "runs": 0,
+    "errors": 0,
+    "inning_scores": []
+   },
+   "venue": "American Family Field",
+   "attendance": 42617,
+   "conference_play": true,
+   "status": "STATUS_SCHEDULED",
+   "status_state": "scheduled",
+   "period": 0,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Pages singled to right, Ohtani scored, T. Hernández to second.",
+     "inning": "top",
+     "period": "2nd",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Turang homered to left center (384 feet).",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "Lara singled to center, Mitchell scored.",
+     "inning": "bottom",
+     "period": "5th",
+     "away_score": 1,
+     "home_score": 2
+    }
+   ]
+  },
+  {
+   "id": 900002,
+   "home_team_name": "Milwaukee Brewers",
+   "away_team_name": "Los Angeles Dodgers",
+   "home_team": {
+    "id": 16,
+    "slug": "milwaukee-brewers",
+    "abbreviation": "MIL",
+    "display_name": "Milwaukee Brewers",
+    "short_display_name": "Brewers",
+    "name": "Brewers",
+    "location": "Milwaukee",
+    "league": "National",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 14,
+    "slug": "los-angeles-dodgers",
+    "abbreviation": "LAD",
+    "display_name": "Los Angeles Dodgers",
+    "short_display_name": "Dodgers",
+    "name": "Dodgers",
+    "location": "Los Angeles",
+    "league": "National",
+    "division": "West"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-10-12T00:00:00.000Z",
+   "home_team_data": {
+    "hits": 0,
+    "runs": 0,
+    "errors": 0,
+    "inning_scores": []
+   },
+   "away_team_data": {
+    "hits": 0,
+    "runs": 0,
+    "errors": 0,
+    "inning_scores": []
+   },
+   "venue": "American Family Field",
+   "attendance": 42617,
+   "conference_play": true,
+   "status": "STATUS_POSTPONED",
+   "status_state": "postponed",
+   "period": 0,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Pages singled to right, Ohtani scored, T. Hernández to second.",
+     "inning": "top",
+     "period": "2nd",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Turang homered to left center (384 feet).",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "Lara singled to center, Mitchell scored.",
+     "inning": "bottom",
+     "period": "5th",
+     "away_score": 1,
+     "home_score": 2
+    }
+   ]
+  },
+  {
+   "id": 900003,
+   "home_team_name": "Seattle Mariners",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 25,
+    "slug": "seattle-mariners",
+    "abbreviation": "SEA",
+    "display_name": "Seattle Mariners",
+    "short_display_name": "Mariners",
+    "name": "Mariners",
+    "location": "Seattle",
+    "league": "American",
+    "division": "West"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": true,
+   "season_type": "postseason",
+   "date": "2025-10-05T00:38:00.000Z",
+   "home_team_data": {
+    "hits": 6,
+    "runs": 2,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 7,
+    "runs": 3,
+    "errors": 0,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     0,
+     2,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1
+    ]
+   },
+   "venue": "T-Mobile Park",
+   "attendance": 47290,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 11,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Rodríguez homered to center (413 feet).",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 0,
+     "home_score": 1
+    },
+    {
+     "play": "Carpenter homered to right center (409 feet), Meadows scored.",
+     "inning": "top",
+     "period": "5th",
+     "away_score": 2,
+     "home_score": 1
+    },
+    {
+     "play": "Rodríguez singled to right, Arozarena scored, Raleigh to second.",
+     "inning": "bottom",
+     "period": "6th",
+     "away_score": 2,
+     "home_score": 2
+    },
+    {
+     "play": "McKinstry singled to center, Torkelson scored.",
+     "inning": "top",
+     "period": "11th",
+     "away_score": 3,
+     "home_score": 2
+    }
+   ]
+  },
+  {
+   "id": 900004,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 8,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-09-20T17:10:00.000Z",
+   "home_team_data": {
+    "hits": 4,
+    "runs": 1,
+    "errors": 2,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 5,
+    "runs": 2,
+    "errors": 1,
+    "inning_scores": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 26186,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Torkelson singled to left, Carpenter scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Arias reached on infield single to pitcher, Martínez scored, Ramírez to third.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "McKinstry hit sacrifice bunt to first, Greene scored, Pérez to second.",
+     "inning": "top",
+     "period": "7th",
+     "away_score": 2,
+     "home_score": 1
+    }
+   ]
+  },
+  {
+   "id": 900005,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 8,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-09-21T17:10:00.000Z",
+   "home_team_data": {
+    "hits": 4,
+    "runs": 1,
+    "errors": 2,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 5,
+    "runs": 2,
+    "errors": 1,
+    "inning_scores": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 26186,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Torkelson singled to left, Carpenter scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Arias reached on infield single to pitcher, Martínez scored, Ramírez to third.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "McKinstry hit sacrifice bunt to first, Greene scored, Pérez to second.",
+     "inning": "top",
+     "period": "7th",
+     "away_score": 2,
+     "home_score": 1
+    }
+   ]
+  },
+  {
+   "id": 900006,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 8,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-09-21T22:40:00.000Z",
+   "home_team_data": {
+    "hits": 4,
+    "runs": 6,
+    "errors": 2,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 5,
+    "runs": 2,
+    "errors": 1,
+    "inning_scores": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 26186,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Torkelson singled to left, Carpenter scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Arias reached on infield single to pitcher, Martínez scored, Ramírez to third.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "McKinstry hit sacrifice bunt to first, Greene scored, Pérez to second.",
+     "inning": "top",
+     "period": "7th",
+     "away_score": 2,
+     "home_score": 1
+    }
+   ]
+  },
+  {
+   "id": 900007,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 99,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-09-20T17:10:00.000Z",
+   "home_team_data": {
+    "hits": 4,
+    "runs": 1,
+    "errors": 2,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 5,
+    "runs": 2,
+    "errors": 1,
+    "inning_scores": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 26186,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Torkelson singled to left, Carpenter scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Arias reached on infield single to pitcher, Martínez scored, Ramírez to third.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "McKinstry hit sacrifice bunt to first, Greene scored, Pérez to second.",
+     "inning": "top",
+     "period": "7th",
+     "away_score": 2,
+     "home_score": 1
+    }
+   ]
+  },
+  {
+   "id": 900008,
+   "home_team_name": "Milwaukee Brewers",
+   "away_team_name": "Los Angeles Dodgers",
+   "home_team": {
+    "id": 16,
+    "slug": "milwaukee-brewers",
+    "abbreviation": "MIL",
+    "display_name": "Milwaukee Brewers",
+    "short_display_name": "Brewers",
+    "name": "Brewers",
+    "location": "Milwaukee",
+    "league": "National",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 14,
+    "slug": "los-angeles-dodgers",
+    "abbreviation": "LAD",
+    "display_name": "Los Angeles Dodgers",
+    "short_display_name": "Dodgers",
+    "name": "Dodgers",
+    "location": "Los Angeles",
+    "league": "National",
+    "division": "West"
+   },
+   "season": 2026,
+   "postseason": true,
+   "season_type": "postseason",
+   "date": "2026-10-12T21:00:00.000Z",
+   "home_team_data": {
+    "hits": 12,
+    "runs": 7,
+    "errors": 2,
+    "inning_scores": [
+     1,
+     0,
+     2,
+     0,
+     1,
+     1,
+     0,
+     2
+    ]
+   },
+   "away_team_data": {
+    "hits": 3,
+    "runs": 4,
+    "errors": 2,
+    "inning_scores": [
+     1,
+     0,
+     1,
+     0,
+     2,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "venue": "American Family Field",
+   "attendance": 42516,
+   "conference_play": true,
+   "status": "STATUS_IN_PROGRESS",
+   "status_state": "in_progress",
+   "period": 4,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "T. Hernández hit sacrifice fly to center, Betts scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Contreras singled to left, Turang scored.",
+     "inning": "bottom",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "Edman scored on pickoff error by pitcher Henderson, Betts picked off second.",
+     "inning": "top",
+     "period": "3rd",
+     "away_score": 2,
+     "home_score": 1
+    },
+    {
+     "play": "Edman scored on pickoff error by pitcher Henderson, Betts picked off second.",
+     "inning": "top",
+     "period": "3rd",
+     "away_score": 2,
+     "home_score": 1
+    },
+    {
+     "play": "Yelich singled to center, Hamilton scored and Turang scored, Bauers to second.",
+     "inning": "bottom",
+     "period": "3rd",
+     "away_score": 2,
+     "home_score": 3
+    },
+    {
+     "play": "Edman hit sacrifice bunt, Tucker scored, Edman to second on throwing error by pitcher Henderson.",
+     "inning": "top",
+     "period": "5th",
+     "away_score": 3,
+     "home_score": 3
+    },
+    {
+     "play": "Freeman hit sacrifice fly to left, Edman scored. Milwaukee Brewers challenged: call on the field was upheld.",
+     "inning": "top",
+     "period": "5th",
+     "away_score": 4,
+     "home_score": 3
+    },
+    {
+     "play": "Contreras homered to center (436 feet).",
+     "inning": "bottom",
+     "period": "5th",
+     "away_score": 4,
+     "home_score": 4
+    },
+    {
+     "play": "Contreras singled to left, Hamilton scored, Turang to second.",
+     "inning": "bottom",
+     "period": "6th",
+     "away_score": 4,
+     "home_score": 5
+    },
+    {
+     "play": "Turang singled to right, Hamilton scored.",
+     "inning": "bottom",
+     "period": "8th",
+     "away_score": 4,
+     "home_score": 6
+    },
+    {
+     "play": "Bauers singled to center, Turang scored, Contreras to second, Contreras safe at third on fielding error by center fielder Pages.",
+     "inning": "bottom",
+     "period": "8th",
+     "away_score": 4,
+     "home_score": 7
+    }
+   ]
+  },
+  {
+   "id": 900009,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 8,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2026,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-09-20T17:10:00.000Z",
+   "home_team_data": {
+    "hits": 4,
+    "runs": 1,
+    "errors": 2,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 5,
+    "runs": 2,
+    "errors": 1,
+    "inning_scores": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 26186,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "abandoned",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Torkelson singled to left, Carpenter scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Arias reached on infield single to pitcher, Martínez scored, Ramírez to third.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "McKinstry hit sacrifice bunt to first, Greene scored, Pérez to second.",
+     "inning": "top",
+     "period": "7th",
+     "away_score": 2,
+     "home_score": 1
+    }
+   ]
+  },
+  {
+   "id": 900010,
+   "home_team_name": "Cleveland Guardians",
+   "away_team_name": "Detroit Tigers",
+   "home_team": {
+    "id": 8,
+    "slug": "cleveland-guardians",
+    "abbreviation": "CLE",
+    "display_name": "Cleveland Guardians",
+    "short_display_name": "Guardians",
+    "name": "Guardians",
+    "location": "Cleveland",
+    "league": "American",
+    "division": "Central"
+   },
+   "away_team": {
+    "id": 10,
+    "slug": "detroit-tigers",
+    "abbreviation": "DET",
+    "display_name": "Detroit Tigers",
+    "short_display_name": "Tigers",
+    "name": "Tigers",
+    "location": "Detroit",
+    "league": "American",
+    "division": "Central"
+   },
+   "season": 2025,
+   "postseason": false,
+   "season_type": "regular",
+   "date": "2026-09-20T17:10:00.000Z",
+   "home_team_data": {
+    "hits": 4,
+    "runs": 1,
+    "errors": 2,
+    "inning_scores": [
+     0,
+     0,
+     0,
+     1,
+     0,
+     0,
+     0,
+     0,
+     0
+    ]
+   },
+   "away_team_data": {
+    "hits": 5,
+    "runs": 2,
+    "errors": 1,
+    "inning_scores": [
+     1,
+     0,
+     0,
+     0,
+     0,
+     0,
+     1,
+     0,
+     0
+    ]
+   },
+   "venue": "Progressive Field",
+   "attendance": 26186,
+   "conference_play": false,
+   "status": "STATUS_FINAL",
+   "status_state": "final",
+   "period": 9,
+   "clock": 0,
+   "display_clock": "0:00",
+   "scoring_summary": [
+    {
+     "play": "Torkelson singled to left, Carpenter scored.",
+     "inning": "top",
+     "period": "1st",
+     "away_score": 1,
+     "home_score": 0
+    },
+    {
+     "play": "Arias reached on infield single to pitcher, Martínez scored, Ramírez to third.",
+     "inning": "bottom",
+     "period": "4th",
+     "away_score": 1,
+     "home_score": 1
+    },
+    {
+     "play": "McKinstry hit sacrifice bunt to first, Greene scored, Pérez to second.",
+     "inning": "top",
+     "period": "7th",
+     "away_score": 2,
+     "home_score": 1
+    }
+   ]
+  }
+ ]
+}
