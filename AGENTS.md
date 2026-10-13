@@ -551,7 +551,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
   played there, its venues on a map, timeline, titles by decade, how the city ranks). Both are kept pages that read no query (`cities` is in
   `ALWAYS_STATIC`, `city` in `PAGE_ROOTS`, `q/city/[slug]` is the twin for an address with another page's query key). Which city a club season
   belongs to, the metro areas and the rank method are data and documented in `scripts/city/README.md` (tables `ref.city`, `ref.city_alias`,
-  `ref.metro`, `core.team_season_city`, built by `db/build/196_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
+  `ref.metro`, `core.team_season_city`, built by `db/build/197_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
 - **Shared components:**

@@ -3,7 +3,7 @@
 --   ref.metro            a metro area: a name for the cities that make up one urban area (Los Angeles, Anaheim and Inglewood). A grouping only:
 --                        every city keeps its own page; the metro is used to list the clubs around a city and to rank metro areas.
 --   ref.city             a city, one row per page: slug, name (and the French name where it differs), ISO 3166-2 region, country,
---                        Wikidata item and coordinates (Wikidata, CC0), the metro area it belongs to. Filled by db/build/196_city.sql
+--                        Wikidata item and coordinates (Wikidata, CC0), the metro area it belongs to. Filled by db/build/197_city.sql
 --                        from db/seed/metro.csv, db/seed/city.csv and db/seed/city_place.csv.
 --   ref.city_alias       every spelling of a place name that appears in the data (core.franchise_identity.location, core.brand_venue.city)
 --                        and the city it means, keyed by core.fold_text() of the spelling ("Montréal" and "Montreal" are one row).
@@ -12,7 +12,7 @@
 --   core.team_season_city  the city of each team season and how it was found: 'identity' (the city in the club's name that season),
 --                        'venue' (the club's name has no city, so the city of the home venue that covers the season), 'venue_nearest'
 --                        (the same, but the nearest era with a venue in the same state or province). Also the venue itself, for the map.
---                        Filled by db/build/196_city.sql; a season it cannot place is left out and logged in meta.data_issue.
+--                        Filled by db/build/197_city.sql; a season it cannot place is left out and logged in meta.data_issue.
 -- core.fold_text is repeated from 037 so the build step runs wherever this migration does (the same text; harmless to run again).
 -- On production: apply this file, then a data release of ref.metro, ref.city, ref.city_alias and core.team_season_city (AGENTS.md section 8, item 5).
 -- Rerunnable.
@@ -63,7 +63,7 @@ create table if not exists core.team_season_city (
   venue_longitude   numeric(8, 5),
   venue_city_slug   text references ref.city
 );
-comment on table core.team_season_city is 'The city each team season belongs to: the city in the club''s name, else the city of its home venue. Built by db/build/196_city.sql.';
+comment on table core.team_season_city is 'The city each team season belongs to: the city in the club''s name, else the city of its home venue. Built by db/build/197_city.sql.';
 create index if not exists team_season_city_city_idx on core.team_season_city (city_slug);
 
 create or replace view api.city as

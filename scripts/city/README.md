@@ -2,7 +2,7 @@
 
 Which club played in which city in each season is **data**, decided by rules and seed files, not by code in the site.
 Tables: `ref.metro`, `ref.city`, `ref.city_alias` (all three from `db/seed/*.csv`) and `core.team_season_city`
-(worked out by `db/build/196_city.sql`); views `api.city` and `api.team_season_city` (migration 060). The site adds the
+(worked out by `db/build/197_city.sql`); views `api.city` and `api.team_season_city` (migration 061). The site adds the
 seasons up (`web/src/lib/cityModel.ts`, tested by `pnpm test:city`).
 
 ## Seed files (`db/seed/`)
@@ -15,7 +15,7 @@ seasons up (`web/src/lib/cityModel.ts`, tested by `pnpm test:city`).
 | `metro.csv` | metro areas: a name for cities that make up one urban area | editorial |
 | `place_region.csv` | the state or province a region-name stands in (`Golden State` -> US-CA), used only to find a venue | editorial |
 
-## How a team season gets its city (`196_city.sql`)
+## How a team season gets its city (`197_city.sql`)
 
 1. **identity**: the city in the club's name that season (`core.franchise_identity.location`) when `city_alias.csv` knows the
    name. The name wins over the venue: the New York Giants play in East Rutherford and are a club of New York; the Anaheim
@@ -59,8 +59,8 @@ Run from the repo root. Raw files go outside the repo; DS1 steps go through `scr
     python3 -I scripts/archive_raw.py wikidata_city $raw $day --sql-out archive.sql
     bash scripts/mac/ds1-apply.sh archive.sql --dry-run && bash scripts/mac/ds1-apply.sh archive.sql
     bash scripts/mac/spx-raw-export.sh --check && bash scripts/mac/spx-raw-export.sh     # the Dropbox copy
-    bash scripts/mac/ds1-apply.sh db/migrations/060_city.sql --dry-run    # once
-    bash scripts/mac/ds1-apply.sh db/build/196_city.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/196_city.sql
+    bash scripts/mac/ds1-apply.sh db/migrations/061_city.sql --dry-run    # once
+    bash scripts/mac/ds1-apply.sh db/build/197_city.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/197_city.sql
     # production only through a data release (AGENTS.md section 8; John approves at /admin/data), after the migration is applied there:
     python3 -I scripts/release/release.py prepare --title "Cities" --tables ref.metro,ref.city,ref.city_alias,core.team_season_city
 

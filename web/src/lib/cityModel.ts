@@ -1,7 +1,7 @@
 /**
  * The city pages' numbers, worked out from three lists the database gives (no server code here, so a node script can test it):
  * the cities (api.city), the city of every club season (api.team_season_city) and the club seasons (api.team_seasons).
- * Which city a season belongs to is decided in the database (db/build/196_city.sql, scripts/city/README.md); this file only adds up.
+ * Which city a season belongs to is decided in the database (db/build/197_city.sql, scripts/city/README.md); this file only adds up.
  */
 
 export interface CityRef {
