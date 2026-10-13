@@ -3,8 +3,9 @@
 --   * Wikidata "position played" (P413) statements of the person's Wikidata item, preferred first, in Wikidata's order; statements that
 --     name a job (coach, manager) are dropped;
 --   * the NHL API's position for the person's NHL API id, the most recent first.
--- The main position is the first code; positions lists every code the person holds, the main one first. A raw value that fits no list
--- ("winger", "forward", "utility player") is logged in meta.data_issue (entity_kind 'position') and leaves nothing; so does every raw
+-- The main position is the first code; positions lists every code the person holds, the main one first. An unsided "winger" is LW and RW; a hockey "forward" is F
+-- (not C, LW or RW, which it could be), and is dropped when the person has a more exact forward position. A raw value that fits no list
+-- ("utility player") is logged in meta.data_issue (entity_kind 'position') and leaves nothing; so does every raw
 -- value of SPX's roster and injury tables and of Wikipedia's award tables that has no row in ref.position_alias, so the map can be
 -- completed in one place. A person whose values all fail to map has no position. Nothing is guessed.
 -- 177 and 180 no longer write a position: this step is the only one that does. Run after 185 (person merge and position lists), before 190.
@@ -45,13 +46,21 @@ from raw0 r cross join lateral regexp_split_to_table(r.raw, '\s*[/,]\s*') with o
 where t.tok <> '';
 
 create temp table mapped on commit drop as
-select t.person_id, t.ord * 10 + a.ord as ord, a.code
+select t.person_id, t.ord * 10 + a.ord as ord, a.code, a.league_code,
+       -- a value that names one position is a sure statement; "winger" (LW and RW) and the NHL's "forward" (F) are not
+       ((select count(*) from ref.position_alias b where b.source_code = a.source_code and b.league_code = a.league_code and b.raw_value = a.raw_value) = 1
+        and not (a.league_code = 'nhl' and a.code = 'F')) as sure
 from tok t join pl on pl.person_id = t.person_id
 join ref.position_alias a on a.source_code = t.src and a.raw_value = t.tok and a.league_code = any (pl.lg);
 
+-- The main position is the first sure one in the order the sources gave them, else the first. A "forward" (F) is dropped when the person
+-- also has a more exact forward position (C, LW or RW) from any source.
 create temp table want on commit drop as
-select person_id, array_agg(code order by first_ord) as codes
-from (select person_id, code, min(ord) as first_ord from mapped group by person_id, code) z
+select person_id, array_agg(code order by not sure, first_ord) as codes
+from (select m.person_id, m.code, bool_or(m.sure) as sure, min(m.ord) as first_ord from mapped m
+       where not (m.league_code = 'nhl' and m.code = 'F'
+                  and exists (select 1 from mapped x where x.person_id = m.person_id and x.league_code = 'nhl' and x.code in ('C', 'LW', 'RW')))
+       group by m.person_id, m.code) z
 group by person_id;
 
 update core.person p set primary_position = w.codes[1], positions = w.codes

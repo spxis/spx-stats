@@ -2,12 +2,12 @@
 -- sources state (SPX's codes, Wikidata's "position played" labels, the NHL API, Wikipedia's award tables) to those codes
 -- (ref.position_alias: source, league, raw value in lower case, order, code). Migration 061 makes the tables. Rerunnable: it
 -- rewrites the three tables to exactly the lists below. db/build/186_person_positions.sql applies the map to core.person.
---  * NHL: C, LW, RW, D, G. NBA: PG, SG, SF, PF, C, and G, F, G-F, F-C where SPX's rosters use them. MLB: P, C, 1B, 2B, 3B, SS, LF, CF, RF,
+--  * NHL: C, LW, RW, F, D, G (F, forward: a source that says only "forward" does not say which of C, LW and RW). NBA: PG, SG, SF, PF, C, and G, F, G-F, F-C where SPX's rosters use them. MLB: P, C, 1B, 2B, 3B, SS, LF, CF, RF,
 --    DH, and OF, IF (a source that only says outfielder or infielder) and TWP (two-way player). NFL and CFL: the standard football codes
 --    SPX's lookup holds (the CFL also SB, slotback).
 --  * Starting pitchers, relief pitchers and closers are all P. A raw value that is two positions ("rf/lf", "Forward/center") maps to both,
---    in order. A raw value that fits no list ("winger", "forward" for hockey, "utility player", SPX's "U4") has no row here: the
---    build step logs it in meta.data_issue and leaves the position empty. Nothing is guessed.
+--    in order. An unsided "winger" is both LW and RW (two rows, in that order). A raw value that fits no list
+--    ("utility player", SPX's "U4") has no row here: the build step logs it in meta.data_issue and leaves the position empty. Nothing is guessed.
 begin;
 
 delete from ref.position_alias;
@@ -62,8 +62,9 @@ insert into ref.position (league_code, code, sort, grp, name_en, name_fr, name_j
   ('nhl', 'C', 1, 'forward', 'Centre', 'Centre', 'センター'),
   ('nhl', 'LW', 2, 'forward', 'Left wing', 'Ailier gauche', '左ウイング'),
   ('nhl', 'RW', 3, 'forward', 'Right wing', 'Ailier droit', '右ウイング'),
-  ('nhl', 'D', 4, 'defence', 'Defenseman', 'Défenseur', 'ディフェンスマン'),
-  ('nhl', 'G', 5, 'goaltender', 'Goaltender', 'Gardien de but', 'ゴールテンダー'),
+  ('nhl', 'F', 4, 'forward', 'Forward', 'Attaquant', 'フォワード'),
+  ('nhl', 'D', 5, 'defence', 'Defenseman', 'Défenseur', 'ディフェンスマン'),
+  ('nhl', 'G', 6, 'goaltender', 'Goaltender', 'Gardien de but', 'ゴールテンダー'),
   ('nba', 'PG', 1, 'guard', 'Point guard', 'Meneur de jeu', 'ポイントガード'),
   ('nba', 'SG', 2, 'guard', 'Shooting guard', 'Arrière', 'シューティングガード'),
   ('nba', 'SF', 3, 'forward', 'Small forward', 'Petit ailier', 'スモールフォワード'),
@@ -142,6 +143,7 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('spx', 'nhl', 'rw', 1, 'RW'),
   ('spx', 'nhl', 'd', 1, 'D'),
   ('spx', 'nhl', 'g', 1, 'G'),
+  ('spx', 'nhl', 'f', 1, 'F'),
   ('wikidata', 'nhl', 'centre', 1, 'C'),
   ('wikidata', 'nhl', 'center', 1, 'C'),
   ('wikidata', 'nhl', 'left winger', 1, 'LW'),
@@ -152,6 +154,9 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'nhl', 'defenceman', 1, 'D'),
   ('wikidata', 'nhl', 'goaltender', 1, 'G'),
   ('wikidata', 'nhl', 'goalkeeper', 1, 'G'),
+  ('wikidata', 'nhl', 'winger', 1, 'LW'),
+  ('wikidata', 'nhl', 'winger', 2, 'RW'),
+  ('wikidata', 'nhl', 'forward', 1, 'F'),
   ('wikipedia', 'nhl', 'c', 1, 'C'),
   ('wikipedia', 'nhl', 'centre', 1, 'C'),
   ('wikipedia', 'nhl', 'center', 1, 'C'),

@@ -1,7 +1,7 @@
 import type { Locale } from "@/lib/locale";
 
 /**
- * Positions are codes from a fixed list per league (ref.position, served by api.position): NHL C, LW, RW, D, G; MLB P, C, 1B, SS, ...;
+ * Positions are codes from a fixed list per league (ref.position, served by api.position): NHL C, LW, RW, F, D, G; MLB P, C, 1B, SS, ...;
  * NFL and CFL QB, RB, WR, ... Tables show the short code; the player page shows the name in the reader's language.
  */
 export interface PositionRow {

@@ -10,6 +10,8 @@ const list = [
   row("mlb", "P", "Pitcher", "Lanceur", "投手"),
   row("mlb", "DH", "Designated hitter", "Frappeur désigné", "指名打者"),
   row("nhl", "LW", "Left wing", "Ailier gauche", "左ウイング"),
+  row("nhl", "RW", "Right wing", "Ailier droit", "右ウイング"),
+  row("nhl", "F", "Forward", "Attaquant", "フォワード"),
 ];
 
 test("a code stays a code, upper case", () => {
@@ -49,6 +51,8 @@ test("names come from the league's own list, in the reader's language", () => {
   assert.equal(positionNames(["C"], "mlb", list, "en"), "Catcher");
   assert.equal(positionNames(["P", "DH"], "mlb", list, "fr"), "Lanceur / Frappeur désigné");
   assert.equal(positionNames(["LW"], "nhl", list, "ja"), "左ウイング");
+  assert.equal(positionNames(["LW", "RW"], "nhl", list, "en"), "Left wing / Right wing");
+  assert.equal(positionNames(["F"], "nhl", list, "fr"), "Attaquant");
 });
 
 test("a code the league lacks is looked up elsewhere, and one nobody holds is shown as it is", () => {
