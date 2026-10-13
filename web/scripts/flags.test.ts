@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { FLAG_HEIGHT, FLAG_WIDTH, sizeFlagSvg } from "../src/lib/flagSvg.ts";
+import { FLAG_HEIGHT, FLAG_SIDE, FLAG_WIDTH, HATA_SHAPE, sizeFlagSvg } from "../src/lib/flagSvg.ts";
 
 /**
  * Run in web/: pnpm test:flags
@@ -22,10 +22,23 @@ test("sizeFlagSvg replaces a size the drawing already carried", () => {
   assert.equal((out.match(/height=/g) ?? []).length, 1);
 });
 
+test("sizeFlagSvg gives the round and square shapes the 18px box", () => {
+  for (const shape of ["round", "square"] as const) {
+    const out = sizeFlagSvg('<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><path d="M0 0"/></svg>', shape);
+    assert.match(out, new RegExp(`^<svg width="${FLAG_SIDE}" height="${FLAG_SIDE}" aria-hidden="true" focusable="false"`));
+    assert.ok(out.includes('viewBox="0 0 512 512"'));
+  }
+});
+
+test("the round and square shapes are Hata's own frames, never clipped by hand", () => {
+  assert.deepEqual(HATA_SHAPE, { rect: undefined, round: { shape: "round" }, square: { shape: "1:1" } });
+});
+
 test("flag.css uses the same numbers as flagSvg.ts", () => {
   const css = readFileSync(new URL("../src/components/flag.css", import.meta.url), "utf8");
   assert.ok(css.includes(`width: ${FLAG_WIDTH}px; height: ${FLAG_HEIGHT}px`));
   assert.equal((css.match(new RegExp(`width: ${FLAG_WIDTH}px; height: ${FLAG_HEIGHT}px`, "g")) ?? []).length, 2);
+  assert.equal((css.match(new RegExp(`width: ${FLAG_SIDE}px; height: ${FLAG_SIDE}px`, "g")) ?? []).length, 2);
 });
 
 test("no other stylesheet sizes a flag", () => {
@@ -37,12 +50,13 @@ test("no other stylesheet sizes a flag", () => {
 
 const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:3100").replace(/\/$/, "");
 // Pages with flags: the roster and its country filter, a player, a city, the cities list, the team heading, the players list.
-const PAGES: [string, string][] = [
-  ["roster and country filter", "/nhl/2025-26/team/vancouver-canucks?nat=CA#roster"],
-  ["player page", "/nhl/player/quinn-hughes-2787"],
-  ["city page", "/city/vancouver"],
-  ["cities list", "/cities"],
-  ["players list", "/players?sort=name.asc"],
+// `rounds` and `rects` are the least number of round and rectangle flags each page must show (the filter buttons and chips are round, the table columns and headings rectangles).
+const PAGES: [string, string, { rounds: number; rects: number } | null][] = [
+  ["roster and country filter", "/nhl/2025-26/team/vancouver-canucks?nat=CA#roster", { rounds: 2, rects: 1 }],
+  ["player page", "/nhl/player/quinn-hughes-2787", null],
+  ["city page", "/city/vancouver", null],
+  ["cities list", "/cities", null],
+  ["players list", "/players?nat=CA&sort=name.asc", { rounds: 1, rects: 0 }],
 ];
 
 async function browserOrReason() {
@@ -67,20 +81,27 @@ test("every flag on the page is the same fixed size at desktop and phone width",
   try {
     for (const width of [1280, 375]) {
       const page = await browser.newPage({ viewport: { width, height: 900 } });
-      for (const [what, path] of PAGES) {
+      for (const [what, path, want] of PAGES) {
         await page.goto(`${BASE}${path}`, { waitUntil: "networkidle" });
         const found = await page.evaluate(() => {
           const box = (e: Element) => { const r = e.getBoundingClientRect(); return [Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; };
           return {
-            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg") ? box(e.querySelector("svg")!) : null })),
+            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg") ? box(e.querySelector("svg")!) : null, shaped: e.classList.contains("flag-round") || e.classList.contains("flag-square") })),
             stray: document.querySelectorAll("svg[data-hata]:not(.flag svg)").length,
           };
         });
         // The players list is only required to be tidy once the country column exists; the others must show flags.
         if (!path.startsWith("/players")) assert.ok(found.flags.length > 0, `${what} at ${width}px: no flags found`);
         for (const f of found.flags) {
-          assert.deepEqual(f.outer, [FLAG_WIDTH, FLAG_HEIGHT], `${what} at ${width}px: flag box is ${f.outer}`);
-          assert.deepEqual(f.svg, [FLAG_WIDTH, FLAG_HEIGHT], `${what} at ${width}px: flag drawing is ${f.svg}`);
+          const want = f.shaped ? [FLAG_SIDE, FLAG_SIDE] : [FLAG_WIDTH, FLAG_HEIGHT];
+          assert.deepEqual(f.outer, want, `${what} at ${width}px: flag box is ${f.outer}`);
+          assert.deepEqual(f.svg, want, `${what} at ${width}px: flag drawing is ${f.svg}`);
+        }
+        // Country buttons and chips are round; table columns and headings stay rectangles.
+        if (want) {
+          const rounds = found.flags.filter((f) => f.shaped).length;
+          assert.ok(rounds >= want.rounds, `${what} at ${width}px: ${rounds} round flags, expected at least ${want.rounds}`);
+          assert.ok(found.flags.length - rounds >= want.rects, `${what} at ${width}px: expected rectangle flags too`);
         }
         assert.equal(found.stray, 0, `${what} at ${width}px: a flag is drawn outside the shared component`);
       }

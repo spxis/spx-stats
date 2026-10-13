@@ -55,7 +55,7 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
       {nats.length > 1 ? (
         <nav className="seg views scroll" aria-label={say("roster.filterNat")}>
           {[{ key: "", label: say("roster.allNat") }, ...nats.map((x) => ({ key: x, label: countryName(x, locale) }))].map((c) => (
-            <Link key={c.key} href={href({ nat: c.key || null })} prefetch={false} aria-current={c.key === nat ? "page" : undefined}>{c.key ? <Flag code={c.key} /> : null}{c.label}</Link>
+            <Link key={c.key} href={href({ nat: c.key || null })} prefetch={false} aria-current={c.key === nat ? "page" : undefined}>{c.key ? <Flag code={c.key} shape="round" /> : null}{c.label}</Link>
           ))}
         </nav>
       ) : null}

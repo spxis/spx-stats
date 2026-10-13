@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { CityTimeline, type TimelineClub } from "@/components/CityTimeline";
 import { CityTitles } from "@/components/CityTitles";
 import { Flag } from "@/components/Flag";
+import { Credits } from "@/components/Credits";
 import { MapViewer } from "@/components/MapViewer";
 import { RankBars, type RankItem } from "@/components/RankBars";
 import { SortTable } from "@/components/SortTable";
@@ -213,6 +214,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
           </ul>
         </section>
       ) : null}
+      <p className="note"><Credits say={say} use={["flags"]} /></p>
     </>
   );
 });

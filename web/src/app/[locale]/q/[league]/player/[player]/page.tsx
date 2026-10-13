@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
 import { BirthMap } from "@/components/BirthMap";
+import { Credits } from "@/components/Credits";
 import type { Pin } from "@/components/mapDraw";
 import { Flag } from "@/components/Flag";
 import { Rich } from "@/components/i18n/Rich";
@@ -214,7 +215,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
       <p className="note">
         <Rich text={say("player.credit")} parts={{
           wikidata: <a href="https://www.wikidata.org">Wikidata</a>,
-          hata: <a href="https://github.com/johnmorrisdotca/hata">Hata</a>,
+          credits: <Credits say={say} use={["flags", "maps"]} />,
         }} />
       </p>
     </>

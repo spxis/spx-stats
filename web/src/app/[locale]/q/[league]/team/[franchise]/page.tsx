@@ -8,7 +8,7 @@ import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { TeamCharts } from "@/components/TeamCharts";
-import { AddressCredit } from "@/components/AddressCredit";
+import { Credits } from "@/components/Credits";
 import { AddressLink } from "@/components/AddressLink";
 import { venueMapsUrl } from "@/lib/venueAddress";
 import { Flag } from "@/components/Flag";
@@ -298,9 +298,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
             />
           ) : null}
           <div className="scroll"><SortTable {...venueTable} param="sort_venues" /></div>
-          {venueTeams.length ? null : <p className="note"><AddressCredit text={say("address.credit")} /></p>}
+          {venueTeams.length ? null : <p className="note"><Credits say={say} use={["addresses"]} /></p>}
         </section>
       ) : null}
+      <p className="note"><Credits say={say} use={["flags"]} /></p>
     </>
   );
 });

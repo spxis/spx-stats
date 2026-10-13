@@ -1,3 +1,7 @@
-/* The one flag size. Keep the numbers in step with FLAG_WIDTH and FLAG_HEIGHT in lib/flagSvg.ts. */
+/* The flag sizes. Keep the numbers in step with FLAG_WIDTH, FLAG_HEIGHT and FLAG_SIDE in lib/flagSvg.ts. */
 .flag { display: inline-block; width: 24px; height: 16px; flex: none; align-self: center; vertical-align: -3px; margin-inline: 2px; line-height: 0; opacity: .92; }
 .flag svg { display: block; width: 24px; height: 16px; max-width: none; border-radius: 2px; filter: drop-shadow(0 0 .5px var(--muted, #888)); }
+/* Round and square (country buttons and chips): Hata draws the frame, so nothing is clipped here. */
+.flag-round, .flag-square { width: 18px; height: 18px; vertical-align: -4px; }
+.flag-round svg, .flag-square svg { width: 18px; height: 18px; }
+.flag-round svg { border-radius: 0; }

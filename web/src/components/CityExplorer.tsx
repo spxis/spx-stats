@@ -7,6 +7,7 @@ import { fold } from "@/lib/fold";
 import { winShare } from "@/lib/cityModel";
 import { tableOf } from "@/lib/sort";
 import { FlagIcon } from "./FlagIcon";
+import { Credits } from "./Credits";
 import { MapViewer } from "./MapViewer";
 import { SortTable } from "./SortTable";
 import { YearRange } from "./YearRange";
@@ -101,7 +102,7 @@ export function CityExplorer({ cities, min, max, flags }: { cities: CityListRow[
       {shown.length ? (
         <>
           <div className="scroll citytable"><SortTable {...table} def="titles.desc" label={say("cities.title")} /></div>
-          <p className="note">{say("cities.rangeNote", { from: String(range.from), to: String(range.to) })}</p>
+          <p className="note">{say("cities.rangeNote", { from: String(range.from), to: String(range.to) })} <Credits say={say} use={["flags"]} /></p>
           {pins.length ? <MapViewer pins={pins} title={say("cities.mapTitle")} total={pins.length} note={say("cities.mapNote", { n: fmt(pins.length) })} /> : null}
         </>
       ) : <p className="note">{say("cities.none")}</p>}

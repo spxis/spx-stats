@@ -78,6 +78,8 @@ export const READBACK: Readonly<Record<string, string>> = {
   "terms.wikipedia":
     "The notes about shortened seasons are made on the basis of Wikipedia (CC BY-SA 4.0). Each note has a link to the original Wikipedia article.",
   "address.credit": "The addresses are formatted using {link}.",
+  "credit.maps": "Map: {chizu}, from {naturalEarth}.",
+  "credit.flags": "Flags: {hata}; the designs are from {commons}.",
   "terms.fullList":
     "The list of data sources, and the licence and source of each, are on {sources}.",
   "terms.logosTitle": "Logos and names.",
