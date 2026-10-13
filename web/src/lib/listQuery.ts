@@ -74,3 +74,13 @@ export function listQuery(p: { filters: string[]; select: readonly string[]; ord
 
 /** One filter per search word, each a piece of the folded name(s) in `search`. */
 export const searchFilters = (words: readonly string[]): string[] => words.map((w) => `search=like.${encodeURIComponent(`*${w}*`)}`);
+
+/**
+ * The filter every list of players carries: a row of `api.player_index` must have a league. The index holds every `core.person` of kind
+ * player, which includes the World Cup's soccer people (none of the five leagues, so `leagues` is null); they are reached from /worldcup,
+ * never from the five-league lists, their counts, their paging or their suggestions. (`leagues <> '{}'` is also false for null.)
+ */
+export const PLAYER_LISTED = "leagues=neq.%7B%7D";
+
+/** `listQuery` for a view of players (`player_index`, `player_search`): the same query with PLAYER_LISTED among the filters, always. */
+export const playerQuery = (p: Parameters<typeof listQuery>[0]): string => listQuery({ ...p, filters: [PLAYER_LISTED, ...p.filters] });

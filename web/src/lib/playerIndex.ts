@@ -4,7 +4,7 @@ import { playerIndexSchema, type PlayerIndexRow } from "./api/people";
 import { isLeague } from "./leagues";
 import { readSpan, type Span } from "./listSpan";
 import { overlapFilters } from "./listRange";
-import { listQuery, orderOf, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
+import { orderOf, PLAYER_LISTED, playerQuery, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
 import { positionCode } from "./positions";
 import { slugify } from "./slug";
@@ -35,7 +35,7 @@ export const playerOrder = (sort: readonly SortKey[]): Order => orderOf(sort, PL
 export interface PlayerFilters { league: string; words: readonly string[]; position?: string; nat?: string; from?: number; to?: number }
 
 /** The first and last season in the players index for a league (every league when none), which is the full reach of the year slider. */
-export const playerSpan = (league: string): Promise<Span> => readSpan("player_index", isLeague(league) ? [`leagues=cs.${encodeURIComponent(`{${league}}`)}`] : []);
+export const playerSpan = (league: string): Promise<Span> => readSpan("player_index", [PLAYER_LISTED, ...(isLeague(league) ? [`leagues=cs.${encodeURIComponent(`{${league}}`)}`] : [])]);
 
 /**
  * The rows of the players index that match (a league, the words of a name, a position, the years they played in), in this order, a window of them by offset or the ones after a
@@ -50,7 +50,7 @@ export async function readPlayers(f: PlayerFilters, order: Order, win: { offset:
     f.position ? `or=${encodeURIComponent(`(position.ilike.${positionCode(f.position) ?? f.position},positions.cs.{${positionCode(f.position) ?? f.position}})`)}` : "",
   ].filter(Boolean);
   const run = async (view: string, filters: string[]): Promise<{ rows: PlayerIndexRow[]; total: number | null; more: boolean }> => {
-    const query = (select: string[]) => listQuery({ filters, select, order, after: win.after });
+    const query = (select: string[]) => playerQuery({ filters, select, order, after: win.after });
     if (Date.now() < noCountryUntil) return read(view, query(PLAYER_SELECT));
     try { return await read(view, query([...PLAYER_SELECT, "country"])); } catch (e) {
       if (!(e instanceof ApiError) || e.status !== 400 || f.nat) throw e;

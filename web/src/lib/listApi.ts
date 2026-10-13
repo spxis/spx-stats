@@ -7,7 +7,7 @@ import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { LG, isLeague } from "./leagues";
 import { afterValues, nextCursor, parseListParams, parseSuggestParams } from "./listParams";
-import { fold, listQuery, searchWords } from "./listQuery";
+import { fold, playerQuery, searchWords } from "./listQuery";
 import { memo } from "./memo";
 import { positionsText } from "./people-format";
 import { positionCodes } from "./positions";
@@ -64,7 +64,7 @@ export async function suggestPlayers(sp: URLSearchParams) {
   const order = playerOrder([{ key: "seasons", dir: "desc" }, { key: "awards", dir: "desc" }]);
   const select = ["person_id", "name", "position", "positions", "leagues", "first_season", "last_season", "seasons_played", "award_count"];
   const found = await Promise.all(tiers.map((t) =>
-    rowsSlice("player_search", listQuery({ filters: [...base, `search=like.${encodeURIComponent(t)}`], select, order }), 0, limit, playerIndexSchema)));
+    rowsSlice("player_search", playerQuery({ filters: [...base, `search=like.${encodeURIComponent(t)}`], select, order }), 0, limit, playerIndexSchema)));
   const seen = new Set<number>();
   const picked = found.flat().filter((p) => !seen.has(p.person_id) && !!seen.add(p.person_id)).slice(0, limit);
   const url = await playerPaths();

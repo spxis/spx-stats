@@ -65,6 +65,11 @@ On DS1 (2026-10-13): `core.soccer_*` 17.5 MB; 11,369 new people and 22,442 exter
 about 1 MB. After `api.refresh()` the players index gains the 11,369 people (about 6 MB with its indexes). Estimated on production: about
 35 MB of the 500 MB plan.
 
+The five-league lists must not show those people: they have no league tag, so `leagues` is null in the index. Every player-list query
+(`playerQuery` and `PLAYER_LISTED` in `web/src/lib/listQuery.ts`: `/players`, `/api/players`, `/suggest`, the year span, counts and
+paging) filters on `leagues <> '{}'`; `pnpm test:playerlist` keeps it so. A future `api.player_index` rebuild (built `_new`, then
+swapped) should give soccer people their own league tag (`wc`, `wwc`) and the lists then choose it by league, not by this filter.
+
 Row counts on DS1: 31 tournaments (30 from jfjelstul + 2026), 93 teams, 1,352 matches (1,248 + 104), 3,945 goals (3,637 + 308),
 27,432 lineup entries, 13,843 squad entries, 3,178 cards, 10,222 substitution rows, 396 shootout kicks, 11,369 people.
 
