@@ -1,6 +1,7 @@
 import "server-only";
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
+import { queuedAtBuild } from "@/lib/api/buildShare";
 import { API_KEY, REST_URL, RETRY_REVALIDATE } from "@/lib/api/config";
 
 /**
@@ -203,11 +204,14 @@ export async function latestDataVersion(): Promise<string | null> {
   // (a page lives no longer than its shortest read) instead of going without the version for an hour.
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
-      const res = await fetch(`${REST_URL}data_version?select=number`, {
-        headers: { apikey: API_KEY, "accept-profile": "api" },
-        next: { revalidate: attempt ? RETRY_REVALIDATE : 3600, tags: ["data-version"] },
-        signal: AbortSignal.timeout(3000),
-      });
+      // Sent once per `next build`, not once per page-drawing worker (api/buildShare.ts).
+      const res = await queuedAtBuild("data_version", () =>
+        fetch(`${REST_URL}data_version?select=number`, {
+          headers: { apikey: API_KEY, "accept-profile": "api" },
+          next: { revalidate: attempt ? RETRY_REVALIDATE : 3600, tags: ["data-version"] },
+          signal: AbortSignal.timeout(3000),
+        }),
+      );
       if (!res.ok) continue;
       const parsed = versionRow.safeParse(await res.json());
       return parsed.success ? (parsed.data[0]?.number ?? null) : null;

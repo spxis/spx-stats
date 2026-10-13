@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import type { z } from "zod";
+import { queuedAtBuild } from "./buildShare";
 import { API_KEY, PAGE_SIZE, REST_URL, RETRY_REVALIDATE, REVALIDATE } from "./config";
 import { tagsFor } from "./tags";
 
@@ -31,11 +32,14 @@ const fetchPage = cache(async (view: string, query: string, from: number, size: 
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt) await new Promise((r) => setTimeout(r, 300));
     try {
-      const res = await fetch(`${REST_URL}${view}?${query}`, {
-        headers: { apikey: API_KEY, "Accept-Profile": "api", Range: `${from}-${from + size - 1}`, ...(count ? { Prefer: "count=exact" } : {}) },
-        next: { revalidate: attempt ? RETRY_REVALIDATE : REVALIDATE, tags: tagsFor(view, query) },
-        signal: AbortSignal.timeout(TIMEOUT_MS),
-      });
+      const send = () =>
+        fetch(`${REST_URL}${view}?${query}`, {
+          headers: { apikey: API_KEY, "Accept-Profile": "api", Range: `${from}-${from + size - 1}`, ...(count ? { Prefer: "count=exact" } : {}) },
+          next: { revalidate: attempt ? RETRY_REVALIDATE : REVALIDATE, tags: tagsFor(view, query) },
+          signal: AbortSignal.timeout(TIMEOUT_MS),
+        });
+      // During `next build` only, the page-drawing workers take turns per read so it is sent once, not once per worker (buildShare.ts).
+      const res = await queuedAtBuild(`${view}?${query}|${from}|${size}|${count}`, send);
       if (res.ok || (count && res.status === 416)) return res;
       last = String(res.status);
       if (res.status < 500) break;

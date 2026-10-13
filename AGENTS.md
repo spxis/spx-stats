@@ -522,6 +522,10 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - Read `web/node_modules/next/dist/docs/` before writing Next.js code: this version differs from older ones.
   - Data comes from PostgREST (`Accept-Profile: api`) through server fetches with `next: { revalidate: 3600 }`,
     validated with Zod. A failed fetch shows an inline "Couldn't load" message.
+  - `next build` draws pages in ~19 worker processes that do not share Next's data cache while it is cold, so each read used to
+    go out once per worker. `web/src/lib/api/buildShare.ts` makes the workers queue per read (lock files under `.next/cache`) so
+    it goes out once per build; it only acts while `NEXT_PHASE` is the production build (`SPX_BUILD_QUEUE=off` disables it).
+    A new server `fetch` to the database should go through `queuedAtBuild` the same way (`lib/api/client.ts` already does).
 - **Kept pages (no server work per view).** Every public page is static and revalidated hourly (ISR), so a visit costs no
   server render: the Vercel account has a 4 h a month Active CPU cap. Two things used to force a render per request,
   and both are part of the route now (`web/src/lib/routing.ts` explains it; `web/next.config.ts` builds the rewrites):
