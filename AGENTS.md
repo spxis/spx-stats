@@ -102,6 +102,8 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   - Wikipedia: CC BY-SA 4.0, `meta.source` code `wikipedia`.
   - Wikidata: CC0.
   - Wikimedia Commons: logos, licence per file.
+  - OpenStreetMap (Overpass API): venue outlines, pitches and field bearings; ODbL 1.0, credit "(c) OpenStreetMap contributors". Kept only in
+    `legacy_osm` and `core.brand_venue_osm`, never mixed into CC0 tables (`scripts/osm_venues/README.md`).
 - **Never** use Sports Reference (hockey-, basketball-, baseball-, pro-football-reference) or ESPN. Check a source's
   terms before using it; if they forbid automated collection, don't.
 - **Provenance** goes in `source_id`, `source_key` and `external_id`, never in free-text notes.
