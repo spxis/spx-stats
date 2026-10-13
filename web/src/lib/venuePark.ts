@@ -1,10 +1,15 @@
+import { eraChanges, ERA_CURRENT, PARKS, PARK_IDS, parkByWikidata, parkQuirksIn, parkWallsIn, type Park } from "@johnmorrisdotca/kyogijo";
+
 /**
- * Which drawing a venue gets from @johnmorrisdotca/kyogijo (0.1.0): a surface for the sport of each league that played there, and for
- * a ballpark a club plays in today, that park's own outfield fence. Kyogijo 0.1.0 knows the thirty current MLB parks by a key of its own
- * (`fenway-park`) and carries no Wikidata ids, so a park is found by name: any name the venue has had (the archive can still hold the
- * old sponsor's name). A past park, even one that shared a name with today's (the first Yankee Stadium), gets the generic field.
+ * Which drawing a venue gets from @johnmorrisdotca/kyogijo (0.2.0): a surface for the sport of each league that played there, as it was
+ * in the venue's last season for that league, and for a ballpark an MLB club played in, that park's own outfield fence. Kyogijo 0.2.0 has
+ * ninety-four parks, each with its Wikidata item, so a park is found by the venue's Wikidata id (Olympic Stadium, Jarry Park and the Polo
+ * Grounds get their own fences). A venue with no match, or no id, falls back to the names the park has gone by, and only while an MLB club
+ * plays there: a past park that shares a name with today's (the first Yankee Stadium) must not take its fence.
  *
- * Pure and import-free, so a node script can test it against kyogijo's own list of parks.
+ * A drawing is a file, and its name carries the first season of the era it shows (`nhl_1997.en.svg`), not the season asked for, so that
+ * two venues in the same era share a file. The eras are the seasons the rules changed (kyogijo's `eraChanges`) and, for a past ballpark,
+ * the seasons its fence, walls or quirks changed.
  */
 
 /** The sports kyogijo draws, by the league whose clubs played there. A league not listed has no drawing. */
@@ -49,10 +54,13 @@ const norm = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCa
 const BY_NAME = new Map(Object.entries(MLB_PARKS).flatMap(([id, names]) => names.map((n) => [norm(n), id] as const)));
 
 /**
- * The kyogijo key of the MLB park a venue is, or null (use the generic field). `names` is every name the venue has had; `current` is
- * whether an MLB club plays there now: only then is a name taken to mean today's park.
+ * The kyogijo key of the MLB park a venue is, or null (use the generic field). `wikidata` is the venue's Wikidata item, the sure way: any MLB
+ * park of kyogijo's, past or present. Without a match, `names` is every name the venue has had and `current` whether an MLB club plays there
+ * now: only then is a name taken to mean today's park.
  */
-export function parkIdFor(names: readonly string[], current: boolean): string | null {
+export function parkIdFor(names: readonly string[], current: boolean, wikidata?: string | null): string | null {
+  const byId = parkByWikidata(wikidata ?? undefined);
+  if (byId && byId.league === "MLB") return byId.id;
   if (!current) return null;
   for (const n of names) {
     const id = BY_NAME.get(norm(n));
@@ -61,19 +69,70 @@ export function parkIdFor(names: readonly string[], current: boolean): string | 
   return null;
 }
 
-/**
- * The file a drawing is served from (`/surface/<name>`): `nfl.en.svg` for a sport's standard surface, `mlb-fenway-park.ja.svg` for a
- * ballpark's own. The page names a drawing with an <img> instead of carrying the SVG twice (in its HTML and in its data).
- */
-export function surfaceFileName(sport: SurfaceSport, park: string | null, language: "en" | "ja"): string {
-  return `${park ? `${sport}-${park}` : sport}.${language}.svg`;
+/** The ballparks of the MLB that kyogijo draws (its NPB parks are not on a venue page). */
+export const MLB_PARK_IDS: readonly string[] = PARK_IDS.filter((id) => PARKS[id].league === "MLB");
+
+/** The park, when it is one a club has left: only these are drawn as of a season (a park that still stands is drawn as it is). */
+const pastPark = (park: string | null): Park | null => (park && PARKS[park]?.status === "past" ? PARKS[park] : null);
+
+/** The seasons the drawing of a sport (and of a past park) changes in, oldest first: the rules' changes up to today's, then the park's own. */
+function changeYears(sport: SurfaceSport, park: string | null): number[] {
+  const p = pastPark(park);
+  const rules = eraChanges(sport).filter((c) => !c.planned && c.from != null && c.from <= ERA_CURRENT).map((c) => c.from as number);
+  if (!p) return [...new Set(rules)].sort((a, b) => a - b);
+  const [lo, hi] = [p.from ?? 0, p.to ?? ERA_CURRENT];
+  const own = new Set<number>([lo]);
+  for (const y of rules) own.add(y);
+  for (const x of p.periods ?? []) { own.add(x.from); own.add(x.to + 1); }
+  for (const x of [...(p.walls ?? []), ...(p.quirks ?? [])]) { if (x.first != null) own.add(x.first); if (x.last != null) own.add(x.last + 1); }
+  return [...own].filter((y) => y >= lo && y <= hi).sort((a, b) => a - b);
 }
 
-/** The sport, park and language a file name stands for, or null when it names none (the caller checks the park against kyogijo's list). */
-export function parseSurfaceFile(name: string): { sport: SurfaceSport; park: string | null; language: "en" | "ja" } | null {
-  const m = /^([a-z]+)(?:-([a-z0-9-]+))?\.(en|ja)\.svg$/.exec(name);
+/**
+ * The first season of the era a season belongs to, which is what a file is named by; null for today's drawing. A season before the first
+ * change gets the season before it (the sport's first state). A past ballpark has no today: it is held to the seasons it was used.
+ */
+export function eraOf(sport: SurfaceSport, park: string | null, year: number | null | undefined): number | null {
+  const p = pastPark(park);
+  if (park && !p) return null;
+  const changes = changeYears(sport, park);
+  if (year == null) return p ? changes[0] : null;
+  const y = p ? Math.min(Math.max(year, changes[0]), p.to ?? ERA_CURRENT) : year;
+  const era = changes.filter((c) => c <= y).at(-1) ?? changes[0] - 1;
+  return !p && era === changes.at(-1) ? null : era;
+}
+
+/** The eras a sport (and ballpark) has a file for: null for today's, then each season an era begins. */
+export function erasOf(sport: SurfaceSport, park: string | null): (number | null)[] {
+  if (park && !pastPark(park)) return [null];
+  const changes = changeYears(sport, park);
+  return [...new Set((pastPark(park) ? changes : [changes[0] - 1, ...changes]).map((y) => eraOf(sport, park, y)))];
+}
+
+/** Whether a ballpark has walls or quirks to draw in a season (turned on only then: the options add a stylesheet to a drawing that has none). */
+export function parkExtras(park: string | null, year: number | null): { walls: boolean; quirks: boolean } {
+  const p = park ? PARKS[park] : undefined;
+  if (!p) return { walls: false, quirks: false };
+  return {
+    walls: parkWallsIn(p, year ?? undefined).some((w) => w.height_ft > 0),
+    quirks: parkQuirksIn(p, year ?? undefined).length > 0 || p.backstop_ft != null || p.dugouts != null,
+  };
+}
+
+/**
+ * The file a drawing is served from (`/surface/<name>`): `nfl.en.svg` for a sport's standard surface, `nhl_1997.en.svg` for an era's,
+ * `mlb-fenway-park.ja.svg` for a ballpark's own, `mlb-polo-grounds_1911.en.svg` for a past one's. The page names a drawing with an <img>
+ * instead of carrying the SVG twice (in its HTML and in its data).
+ */
+export function surfaceFileName(sport: SurfaceSport, park: string | null, language: "en" | "ja", era: number | null = null): string {
+  return `${park ? `${sport}-${park}` : sport}${era != null ? `_${era}` : ""}.${language}.svg`;
+}
+
+/** The sport, park, era and language a file name stands for, or null when it names none (the caller checks them against `erasOf`). */
+export function parseSurfaceFile(name: string): { sport: SurfaceSport; park: string | null; era: number | null; language: "en" | "ja" } | null {
+  const m = /^([a-z]+)(?:-([a-z0-9-]+))?(?:_(\d{4}))?\.(en|ja)\.svg$/.exec(name);
   if (!m) return null;
   const sport = Object.values(SURFACE_SPORT).find((s) => s === m[1]);
   if (!sport || (m[2] && sport !== "mlb")) return null;
-  return { sport, park: m[2] ?? null, language: m[3] as "en" | "ja" };
+  return { sport, park: m[2] ?? null, era: m[3] ? Number(m[3]) : null, language: m[4] as "en" | "ja" };
 }

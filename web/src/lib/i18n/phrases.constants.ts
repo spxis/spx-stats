@@ -1716,6 +1716,7 @@ export const PHRASES = {
   "venue.surfaceHead": "The playing surface",
   "venue.surfaceStd": "{league}: the standard surface, drawn to scale from the rulebook. These are not this venue's own markings.",
   "venue.surfacePark": "{league}: the outfield fence of {park}, drawn to scale from its published distances.",
+  "venue.surfaceYear": "Drawn as of {year}, the last season a club played here.",
   "venue.factsHead": "Facts and map",
   "venue.owner": "Owner",
   "venue.address": "Address",

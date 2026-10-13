@@ -18,8 +18,8 @@ importers:
         specifier: 1.5.0
         version: 1.5.0
       '@johnmorrisdotca/kyogijo':
-        specifier: 0.1.0
-        version: 0.1.0
+        specifier: 0.2.0
+        version: 0.2.0
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -393,9 +393,14 @@ packages:
     resolution: {integrity: sha512-CAzssK6RXy0rRlCP+v5XLNSr1A+RK7dESqyzB/hz/VRNUySlESSiNsAO+6r5DAQ2oi7iII5ruI79BqJA7X5wCA==}
     engines: {node: '>=24'}
 
-  '@johnmorrisdotca/kyogijo@0.1.0':
-    resolution: {integrity: sha512-Bk/hIOm7RR1iXYXChMGgECDy1zKSFylz9zmXMkmGyBLRZ06d6snQcMlHQbnQgWi2s07rTmeZt9G835LrKOK54w==}
+  '@johnmorrisdotca/kyogijo@0.2.0':
+    resolution: {integrity: sha512-pRJnEsZKrV6gbHicWLSQwbAnKYTi62+SVxgDCVoHqCN+qhw86SUidAY9qlxuDcbF3WrkICStUUymu29CySj4Xw==}
     engines: {node: '>=22'}
+    peerDependencies:
+      '@resvg/resvg-js': '>=2.6.0'
+    peerDependenciesMeta:
+      '@resvg/resvg-js':
+        optional: true
 
   '@jridgewell/gen-mapping@0.3.13':
     resolution: {integrity: sha512-2kkt/7niJ6MgEPxF0bYdQ6etZaA+fQvDcLKckhy1yIQOzaoKjBBjSj63/aLVjYE3qhRt5dvM+uUyfCg6UKCBbA==}
@@ -2689,7 +2694,7 @@ snapshots:
 
   '@johnmorrisdotca/hata@1.5.0': {}
 
-  '@johnmorrisdotca/kyogijo@0.1.0': {}
+  '@johnmorrisdotca/kyogijo@0.2.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

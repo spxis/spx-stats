@@ -1526,6 +1526,7 @@ export const FR: Dictionary = {
   "venue.surfaceHead": "La surface de jeu",
   "venue.surfaceStd": "{league} : la surface standard, dessinée à l’échelle d’après le règlement. Ce ne sont pas les marques propres à cette installation.",
   "venue.surfacePark": "{league} : la clôture du champ extérieur de {park}, dessinée à l’échelle d’après ses distances publiées.",
+  "venue.surfaceYear": "Dessinée comme en {year}, la dernière saison où un club y a joué.",
   "venue.factsHead": "Fiche et carte",
   "venue.owner": "Propriétaire",
   "venue.address": "Adresse",

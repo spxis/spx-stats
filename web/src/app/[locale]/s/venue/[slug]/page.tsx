@@ -132,6 +132,7 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
                 <img src={s.src} alt={s.alt} width={s.width} height={s.height} loading="lazy" decoding="async" />
                 <figcaption className="note">
                   {s.parkName ? say("venue.surfacePark", { league: leagueName(s.sport), park: s.parkName }) : say("venue.surfaceStd", { league: leagueName(s.sport) })}
+                  {s.year != null ? <>{" "}{say("venue.surfaceYear", { year: s.year })}</> : null}
                 </figcaption>
               </figure>
             ))}

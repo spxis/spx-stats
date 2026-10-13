@@ -1526,6 +1526,7 @@ export const JA: Dictionary = {
   "venue.surfaceHead": "競技面",
   "venue.surfaceStd": "{league}：規定の競技面をルールブックに基づいて縮尺どおりに描いたものです。この施設自体の線の引き方ではありません。",
   "venue.surfacePark": "{league}：{park}の外野フェンスを、公表されている距離から縮尺どおりに描いたものです。",
+  "venue.surfaceYear": "ここで最後に試合が行われた{year}年シーズン時点の姿で描いています。",
   "venue.factsHead": "基本情報と地図",
   "venue.owner": "所有者",
   "venue.address": "住所",
