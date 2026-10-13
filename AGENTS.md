@@ -259,6 +259,8 @@ coordinating session, put the ticket in a new create-only Dropbox file
 This project owns local ports **3100-3199** (John's port table): dev on 3100, worktrees and test servers 3101 and up
 (check `lsof -iTCP:<port> -sTCP:LISTEN` first). Never 3000-3099 or another project's block; give every server and
 headless-browser base URL an explicit port.
+Several sessions run servers in this block at once: stop only your own server by its PID (`kill <pid>`), never
+`pkill -f next-server` or any other pattern kill.
 
 No `.env` is needed: the defaults point at the live Supabase project's public read-only key.
 
