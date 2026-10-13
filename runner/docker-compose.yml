@@ -1,0 +1,9 @@
+services:
+  release-runner:
+    build: .
+    container_name: spx-release-runner
+    init: true
+    restart: unless-stopped
+    env_file: ./release-runner.env
+    volumes:
+      - ./data:/data
