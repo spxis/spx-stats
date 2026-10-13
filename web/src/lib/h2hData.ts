@@ -19,7 +19,7 @@ export const getFranchiseSeasons = cache(async (lg: string, fs: readonly number[
   rows("team_season_identity", `league=eq.${lg}&franchise_id=in.(${fs.join(",")})&select=team_season_id,franchise_id,year`, teamSeasonIdSchema));
 
 /** Runs the jobs at most `limit` at a time (the database is small: a long history is a few slices, not a request for every season at once), keeping their order. */
-async function limited<T>(jobs: readonly (() => Promise<T>)[], limit: number): Promise<T[]> {
+export async function limited<T>(jobs: readonly (() => Promise<T>)[], limit: number): Promise<T[]> {
   const out = new Array<T>(jobs.length);
   let next = 0;
   await Promise.all(Array.from({ length: Math.min(limit, jobs.length) }, async () => {
@@ -32,7 +32,7 @@ async function limited<T>(jobs: readonly (() => Promise<T>)[], limit: number): P
 }
 
 const SLICES_AT_ONCE = 4;
-const slicesOf = <T,>(list: readonly T[], size: number): T[][] => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size));
+export const slicesOf = <T,>(list: readonly T[], size: number): T[][] => Array.from({ length: Math.ceil(list.length / size) }, (_, i) => list.slice(i * size, (i + 1) * size));
 
 /** Seasons per slice of a pair's history: they meet a few times a season, so thirty seasons are well under a page. */
 const PAIR_SLICE = 30;

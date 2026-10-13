@@ -211,7 +211,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <span className="cup">{champ.award}</span>
           <Badge src={champ.source} />
           <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
-          <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} /></span>
+          <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} alone /></span>
         </section>
       ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}
       {st.length ? (

@@ -13,11 +13,11 @@ import { guard } from "@/lib/loadGuard";
  * series page and the opponent to their team-season page, wherever the playoffs hold that series. A note that
  * does not read that way, or a final the games do not hold, is drawn as plain text.
  */
-export const ChampionNote = guard(async function ChampionNote({ lg, year, champ, note }: { lg: string; year: number; champ: number | null | undefined; note: string | null | undefined }) {
+export const ChampionNote = guard(async function ChampionNote({ lg, year, champ, note, alone }: { lg: string; year: number; champ: number | null | undefined; note: string | null | undefined; alone?: boolean }) {
   const text = note ?? "";
   const p = parseChampionNote(text);
   if (!p || champ == null) return <>{text}</>;
-  const [all, paths, brands] = await Promise.all([getLeaguePlayoffTeams(lg), getPaths(), getBrands()]);
+  const [all, paths, brands] = await Promise.all([getLeaguePlayoffTeams(lg, alone ? year : undefined), getPaths(), getBrands()]);
   const games = all.filter((g) => g.year === year);
   const found = findFinal(games, champ, p.opp);
   if (!found) return <>{text}</>;
