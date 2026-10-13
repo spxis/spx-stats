@@ -15,6 +15,7 @@ Exit code: 0 all same, 1 differences found, 2 error.
 import argparse
 import json
 import os
+import struct
 import subprocess
 import sys
 import time
@@ -44,7 +45,7 @@ class PsqlSide:
 
     def run(self, sql):
         env = dict(os.environ)
-        env["PGOPTIONS"] = "-c default_transaction_read_only=on"
+        env["PGOPTIONS"] = "-c default_transaction_read_only=on -c extra_float_digits=3"
         env["PGCONNECT_TIMEOUT"] = "15"
         if self.dsn is None and os.environ.get("SPX_DS1_HOST") and not env.get("PGHOST"):
             env["PGHOST"] = os.environ["SPX_DS1_HOST"]
@@ -129,15 +130,38 @@ def catalog(side):
     return {"%s.%s" % (r["s"], r["t"]): r for r in side.run(CATALOG_SQL)}
 
 
+FLOAT_SEND = {"double precision": "float8send", "real": "float4send"}
+
+
 def cexpr(col, ty):
-    """Text of a column for hashing and comparing; timestamptz is pinned to UTC so session time zones do not matter."""
+    """Text of a column for hashing and comparing; timestamptz is pinned to UTC so session time zones do not matter,
+    and float columns are their exact bits in hex, because the text of a float depends on the session's extra_float_digits
+    (the Management API answers with 15 digits) while the stored value is the same."""
+    if ty in FLOAT_SEND:
+        return "(encode(%s(%s), 'hex'))" % (FLOAT_SEND[ty], qi(col))
     if ty.startswith("timestamp with time zone"):
         return "((%s at time zone 'UTC')::text)" % qi(col)
     return "(%s::text)" % qi(col)
 
 
-def vexpr(col):
+def vexpr(col, ty=None):
+    """Text of a column to copy as a value. With ty given, a float column comes back as hex bits (float_text turns it into
+    exact text); use that for anything read from production. DS1 reads set extra_float_digits=3, so plain text is exact."""
+    if ty in FLOAT_SEND:
+        return cexpr(col, ty)
     return "%s::text" % qi(col)
+
+
+def float_text(hexbits):
+    """The exact text of a float4 (8 hex digits) or float8 (16 hex digits) given as hex bits."""
+    if hexbits is None:
+        return None
+    v = struct.unpack(">d" if len(hexbits) == 16 else ">f", bytes.fromhex(hexbits))[0]
+    if v != v:
+        return "NaN"
+    if v in (float("inf"), float("-inf")):
+        return "Infinity" if v > 0 else "-Infinity"
+    return repr(v)
 
 
 class Table:

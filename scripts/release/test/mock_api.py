@@ -8,6 +8,7 @@ A query whose text starts with the wrapper ApiSide.run uses is answered as [{"j"
 [{"j": <last output line>}] when its last output line is JSON, else []. A failed query answers HTTP 400 {"message": ...}.
 CONTROL_FILE (JSON, read on every request) can hold {"drop_after_commit": "<regex>"}: a query matching it is run, then
 answered with HTTP 500, as if the answer had been lost on the way back.
+Like the real API, its sessions print floats with 15 digits (extra_float_digits 0), so a float read through it is rounded.
 Bearer token: the value of MOCK_TOKEN (default "test").
 """
 import json
@@ -41,7 +42,8 @@ class Handler(BaseHTTPRequestHandler):
             return self.reply(404, {"message": "no such endpoint"})
         query = json.loads(self.rfile.read(int(self.headers["Content-Length"])))["query"]
         r = subprocess.run(["psql", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1", "-1", DSN, "-f", "-"],
-                           input=query, capture_output=True, text=True)
+                           input=query, capture_output=True, text=True,
+                           env=dict(os.environ, PGOPTIONS="-c extra_float_digits=0"))
         if r.returncode != 0:
             return self.reply(400, {"message": r.stderr.strip()})
         if CONTROL and os.path.exists(CONTROL):

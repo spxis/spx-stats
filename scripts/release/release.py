@@ -85,6 +85,7 @@ def text_array(items):
 def ds1_env():
     env = dict(os.environ)
     env["PGCONNECT_TIMEOUT"] = "15"
+    env["PGOPTIONS"] = (env.get("PGOPTIONS", "") + " -c extra_float_digits=3").strip()
     if os.environ.get("SPX_DS1_HOST") and not env.get("PGHOST"):
         env["PGHOST"] = os.environ["SPX_DS1_HOST"]
         env.setdefault("PGPORT", "55440")
@@ -567,7 +568,8 @@ class Stage:
 
 
 def apply_block(steps):
-    """One DO block: deletes (children first), then upserts (parents first), count checks, sequence resets, drop the stages.
+    """One DO block: deletes (children first), then upserts (parents first; a "fresh" table, one nothing references, first
+    deletes the rows it is about to write and then inserts them, so natural-key swaps cannot collide), count checks, sequence resets, drop the stages.
     A single statement, so it commits or rolls back as a whole whatever the API does with a multi-statement text."""
     out = ["do $apply$ begin"]
     for s in reversed(steps):
@@ -575,12 +577,17 @@ def apply_block(steps):
         if s["del"]:
             cond = " and ".join("t.%s = d.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
             out.append("delete from %s t using %s d where %s;" % (t.fq, s["del"], cond))
+        if s.get("fresh") and s["up"]:
+            cond = " and ".join("t.%s = u.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
+            out.append("delete from %s t using %s u where %s;" % (t.fq, s["up"], cond))
     for s in steps:
         t = s["t"]
         cols = ",".join(C.qi(c) for c in t.insert_cols)
         pk = ",".join(C.qi(k) for k in t.pk)
         rest = [c for c in t.insert_cols if c not in t.pk]
-        if rest:
+        if s.get("fresh"):
+            tail = ""
+        elif rest:
             sets = ", ".join("%s = excluded.%s" % (C.qi(c), C.qi(c)) for c in rest)
             old = ", ".join("%s.%s::text" % (t.fq, C.qi(c)) for c in rest)
             new = ", ".join("excluded.%s::text" % C.qi(c) for c in rest)
@@ -611,7 +618,7 @@ def stage_and_apply(ctx, rid, plan):
         steps = []
         for i, p in enumerate(plan):
             t = p["t"]
-            step = {"t": t, "up": None, "del": None, "expected": p["expected"]}
+            step = {"t": t, "up": None, "del": None, "expected": p["expected"], "fresh": p.get("fresh", False)}
             if p["ups"] is not None:
                 step["up"] = st.create("s", i, t, t.insert_cols)
                 send_batches(ctx.prod, insert_statements(step["up"], t.insert_cols, p["ups"]))
@@ -645,9 +652,10 @@ def snapshot(ctx, rid, number, items):
         lines = []
         for i in range(0, len(affected), 1000):
             part = affected[i:i + 1000]
-            sql = "select json_build_array(%s) as r from %s where %s" % (",".join(C.vexpr(c) for c in cols), t.fq, t.key_filter(part))
+            sql = "select json_build_array(%s) as r from %s where %s" % (",".join(C.vexpr(c, t.types[c]) for c in cols), t.fq, t.key_filter(part))
             for r in ctx.prod.run(sql):
-                lines.append("\t".join(tsv_cell(v) for v in r["r"]))
+                vals = [C.float_text(v) if t.types[c] in C.FLOAT_SEND else v for c, v in zip(cols, r["r"])]
+                lines.append("\t".join(tsv_cell(v) for v in vals))
         if len(lines) != len(affected):
             raise RuntimeError("snapshot of %s: expected %d rows, production returned %d" % (name, len(affected), len(lines)))
         data = "".join(x + "\n" for x in lines)
@@ -805,6 +813,7 @@ def restore(ctx, rid, names, before_fp=None, orig_rows=None):
     tabs = load_tables(ctx, names)
     plan = []
     order = ordered(ctx, names)
+    referenced = {e["parent"] for e in ctx.ds1.run(C.FK_SQL)}
     for n in order:
         t, bl, _ = tabs[n]
         if t is None or bl:
@@ -814,7 +823,8 @@ def restore(ctx, rid, names, before_fp=None, orig_rows=None):
         keys = [tuple(r["k"]) for r in ctx.ds1.run("select json_build_array(%s) as k from %s" % (",".join(C.cexpr(k, t.types[k]) for k in t.pk), bi))]
         now_rows = C.count_rows(ctx.prod, t)
         plan.append({"t": t, "ups": read_all_tuples(ctx.ds1, t, bt) if cnt["r"] else None, "dels": keys,
-                     "expected": (orig_rows or {}).get(n, now_rows), "_n": n})
+                     "expected": (orig_rows or {}).get(n, now_rows), "_n": n,
+                     "fresh": n not in referenced})
     stage_and_apply(ctx, rid * 1000 + 1, plan)
     if before_fp:
         for p in plan:

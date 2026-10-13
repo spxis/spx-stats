@@ -18,6 +18,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
@@ -97,6 +98,12 @@ class Env:
     def close(self):
         self.mock.terminate()
         shutil.rmtree(self.tmp, ignore_errors=True)
+
+    def api(self, sql):
+        req = urllib.request.Request(self.url, data=json.dumps({"query": sql}).encode(), method="POST",
+                                     headers={"Authorization": "Bearer test", "Content-Type": "application/json"})
+        with urllib.request.urlopen(req) as r:
+            return json.loads(r.read().decode())
 
     def rel(self, *args, env=None):
         e = dict(os.environ, SUPABASE_ACCESS_TOKEN="test", RELEASE_SNAPSHOT_DIR=self.snap, RELEASE_MAIN_REF="HEAD")
@@ -395,15 +402,66 @@ def step_cases(env):
     ok("an uncommitted file is refused", rc != 0 and "committed" in err, out + err)
     env.repo = None
 
+def float_case(env):
+    fresh()
+    ids = "(select person_id from core.person order by person_id limit 40)"
+    psql(DS1, "update core.person set birth_lat = random() * 180 - 90, birth_lon = 49.89555555555555 + random() where person_id in %s" % ids)
+    psql(DS1, "insert into core.person (full_name, kind, birth_lat, birth_lon) select 'Float ' || g, 'player', 1.0 / (g + 2), -123.45678901234567 from generate_series(1, 5) g")
+    psql(PROD, "update core.person set birth_lat = 49.89555555555555 where person_id = (select min(person_id) from core.person)")
+    shown = env.api("select to_json(birth_lat::text) from core.person where birth_lat = 49.89555555555555")[0]["j"]
+    ok("the mock API rounds floats to 15 digits like the real one", shown == "49.8955555555556", shown)
+    exact = "set extra_float_digits = 3; select md5(string_agg(person_id || ':' || coalesce(birth_lat::text, '') || ':' || coalesce(birth_lon::text, ''), ',' order by person_id)) from core.person"
+    before = psql(PROD, exact).splitlines()[-1]
+    rc, out, err = env.rel("prepare", "--title", "Float values", "--tables", "core.person")
+    n = number_of(out)
+    ok("float release prepared", rc == 0 and n, out + err)
+    approve(n)
+    rc, out, err = env.rel("run")
+    ok("a release with float columns verifies and is done", status(n) == "done", out + err + psql(PROD, "select error from meta.data_release where number = '%s'" % n))
+    ok("the stored float values are identical on both sides", psql(PROD, exact).splitlines()[-1] == psql(DS1, exact).splitlines()[-1])
+    ok("compare.py agrees", compare_same("core.person")[0])
+    psql(DS1, "update core.person set birth_lat = birth_lat + 1e-14 where person_id = (select min(person_id) from core.person where birth_lat is not null and person_id not in (select min(person_id) from core.person))")
+    rc, out, err = env.rel("prepare", "--title", "Tiny float change", "--tables", "core.person")
+    pv = json.loads(psql(DS1, "select preview::text from meta.data_release where number = '%s'" % number_of(out)))["tables"]["core.person"]
+    ok("a change in the 14th decimal of a float is seen", (pv["add"], pv["change"], pv["remove"]) == (0, 1, 0), pv)
+    approve(number_of(out), yes=False)
+    rc, out, err = env.rel("rollback", "--release", n)
+    rn = number_of(out)
+    approve(rn)
+    rc, out, err = env.rel("run")
+    ok("rolling back a float release restores the exact values", status(rn) == "done" and psql(PROD, exact).splitlines()[-1] == before, out + err)
+
+
+def restore_case(env):
+    fresh()
+    ddl = "create table core.rel_swap (id int primary key, code text not null unique, note text);\ninsert into core.rel_swap values (1, 'a'), (2, 'b');"
+    psql(DS1, ddl)
+    psql(PROD, ddl + """
+        create function core.rel_swap_tamper() returns trigger language plpgsql as $$ begin if new.code = 'c' then new.note := 'tampered'; end if; return new; end $$;
+        create trigger tamper before insert or update on core.rel_swap for each row execute function core.rel_swap_tamper();""")
+    psql(DS1, "update core.rel_swap set code = case id when 1 then 'c' else 'a' end")
+    rc, out, err = env.rel("prepare", "--title", "Codes swap places", "--tables", "core.rel_swap")
+    n = number_of(out)
+    ok("swap release prepared", rc == 0 and n, out + err)
+    approve(n)
+    rc, out, err = env.rel("run")
+    error = psql(PROD, "select error from meta.data_release where number = '%s'" % n)
+    ok("a failed verification restores the snapshot even when ids swap natural keys",
+       status(n) == "failed" and "snapshot was restored" in error, error + out + err)
+    ok("production is exactly as it was", psql(PROD, "select string_agg(id || code || coalesce(note, ''), ',' order by id) from core.rel_swap") == "1a,2b")
+
 
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--source", default="spx_stats", help="database to copy the small template from (only read)")
+    ap.add_argument("--only", help="run only the named test functions (comma-separated)")
     a = ap.parse_args()
     make_base(a.source)
     env = Env()
     try:
-        for fn in (main_flow, guardrails, failure_cases, drift_case, step_cases):
+        for fn in (main_flow, guardrails, failure_cases, drift_case, step_cases, float_case, restore_case):
+            if a.only and fn.__name__ not in a.only.split(","):
+                continue
             print("--- " + fn.__name__, flush=True)
             fn(env)
     finally:
