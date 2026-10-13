@@ -6,6 +6,7 @@ import { LeagueNav } from "./LeagueNav";
 import { ThemeToggle } from "./ThemeToggle";
 import { authEnabled } from "@/lib/auth/config";
 import { currentUser } from "@/lib/auth/user";
+import { latestDataVersion } from "@/lib/releases/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES } from "@/lib/leagues";
 import pkg from "../../package.json";
@@ -31,7 +32,7 @@ export async function SiteHeader() {
 }
 
 export async function SiteFooter() {
-  const [{ say }, user] = await Promise.all([currentSpeaker(), currentUser()]);
+  const [{ say }, user, dataVersion] = await Promise.all([currentSpeaker(), currentUser(), latestDataVersion()]);
   const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
   return (
     <footer className="foot">
@@ -78,7 +79,10 @@ export async function SiteFooter() {
       </div>
       <div className="foot-base">
         {user ? <span /> : <LanguagePicker />}
-        <p className="ver">{say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}</p>
+        <p className="ver">
+          {say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}
+          {dataVersion ? ` · Data ${dataVersion}` : null}
+        </p>
       </div>
     </footer>
   );

@@ -145,7 +145,7 @@ prints the value. If one is missing, say which and carry on with what does not n
 | `SUMILABU_BOARD_URL`, `SUMILABU_BOARD_TOKEN` | the ticket board | `pnpm task` |
 | `SPX_DS1_DB_PASSWORD`, `TS_AUTHKEY` | reaching DS1 over Tailscale (cloud only: a Mac uses the home LAN or Tailscale itself) | the session-start hook |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN` | archive uploads | `scripts/dropbox_put.py` |
-| `SUPABASE_ACCESS_TOKEN` | bulk production loads | `scripts/supabase/load.py`, `scripts/players/prod_load.py` |
+| `SUPABASE_ACCESS_TOKEN` | data releases and production reads | `scripts/release/release.py`, `scripts/sync/compare.py` |
 
 **MCP servers** a cloud session normally has: Supabase (project `njpvfrceahkvnrduerkk`), Vercel (project
 `prj_MfgGl5vzVccEhmtSyvgze6hhgXJg`), Dropbox, GitHub. Tested read-only: Supabase `execute_sql` and `list_migrations`,
@@ -330,24 +330,23 @@ Then fix forward on `main`, redeploy, and tell John.
   permanent **source of truth**: all `legacy_*` schemas, `legacy_files.raw_archive`, `core`, `meta`, `ref`, `api`.
 - **Dropbox** `/Backups/spx-stats/raw/<source>/<year or date>/` holds a hard copy of every raw download.
 - **Production** is Supabase project `njpvfrceahkvnrduerkk`: a published subset (schemas meta, ref, core and api only;
-  no `legacy_*`), loaded last and insert-only. It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any time
+  no `legacy_*`), changed only by approved data releases (item 5). It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any time
   with the Supabase MCP `execute_sql` (tested).
 - Any other Postgres (the cloud session's port 55432, the MacBook Docker container in item 8) is a temporary
   **working copy**. Its work counts only once it is on DS1.
 - Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,
-  then production.
+  then a data release to production.
 - **Ongoing scores** (the season in progress, all five leagues) come from English Wikipedia's club-season articles, with nflverse
   as the NFL's second check: `scripts/daily/run.py --apply` writes them to DS1 only (see `scripts/daily/README.md`). The NHL API
   and MLB statsapi are not used for new scores.
-- **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. After every
-  load, run `scripts/sync/compare.py` (see `scripts/sync/README.md`): it compares DS1 and production by primary key and
-  row hash, and writes insert-only SQL for what production lacks. Rows found only in production are reported to John
-  and never deleted without his OK.
+- **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
+  drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
+  is the same comparison by hand. Rows found only in production are removed only by a release John approved.
 
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
 materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
-core rebuild, and after player loads to production run `select api.refresh();`).
+core rebuild; the release runner runs `select api.refresh();` after each release).
 
 1. **Archive first.** Every raw download goes into DS1's `legacy_files.raw_archive` (name, saved_on, sha256, data bytea)
    before it is loaded, and a hard copy goes to Dropbox, both before anything is loaded to production. The Mac export
@@ -371,28 +370,31 @@ core rebuild, and after player loads to production run `select api.refresh();`).
    DS1 (item 8), then to production with the Supabase MCP `apply_migration` (`project_id` above, `name` in snake_case, `query` the file),
    **before** any load. `list_migrations` shows what production has. Numbers 030 and 031 are each used by two files:
    apply by file name and check `list_migrations` first.
-5. **Production loads are insert-only**: `insert … on conflict do nothing`, never `truncate`, never `load.py --replace`.
-   - The pattern is `scripts/players/prod_load.py` (reads rows from the Postgres it is pointed at, which must already
-     match DS1; sends batches through the Management API,
-     resets identity sequences, has `--dry-run`). It needs `SUPABASE_ACCESS_TOKEN`, which agents don't normally have,
-     so a production load is usually run by the coordinating session or John.
-   - `scripts/supabase/load.py` refuses before writing if production lacks a table or column the source database has;
-     never bypass that. A full `--replace` load once failed halfway and left the site empty (it empties each table, and
-     by cascade its children, before refilling), so load only the tables you changed (`load_table`).
-   - The auto-mode permission check often refuses production loads from agents even after John approves in chat,
-     because agents don't see his messages. If refused, stop and report the exact command; the coordinating session
-     runs it once John approves. Small fixes can go through the Supabase MCP `execute_sql`.
-   - Never run a full load while agents are changing the schema.
-6. **After every load:** `select api.refresh();`, run `scripts/sync/compare.py` (DS1 against production, by key and row
-   hash; the coordinating session runs it, it needs `SUPABASE_ACCESS_TOKEN` and DS1), and look at one affected page on
-   spxn.com. `scripts/mac/spx-check.sh` also warns when the row counts of a few key tables differ.
+5. **Production changes only through data releases.** DS1 is the only place data is written; a release makes production
+   match DS1 for the tables you name. Never load, update or delete production by hand.
+   - **Prepare:** `python3 -I scripts/release/release.py prepare --title "<what>" --tables core.game,core.team_season [--ticket ..]
+     [--replace]` (needs DS1 and `SUPABASE_ACCESS_TOKEN`). It runs `db/checks/*.sql` on DS1, compares the tables by key and
+     writes a pending numbered release (for example `2026.10.12-1`) with a preview: rows to add, change and remove,
+     size change, blockers. Fix every blocker first. A table shrinking by more than 5 percent needs `--replace`.
+   - **Approve:** John approves or rejects at `/admin/data` on his phone. Nothing else can approve.
+   - **Apply:** the runner on the NAS (`runner/README.md`) runs approved releases within a minute: it re-checks, snapshots
+     the rows it will change (gzip TSV on the NAS and schema `backup_release_<id>` on DS1, never in production), applies
+     all tables in one transaction, verifies production equals DS1 and marks the release done or failed (production is
+     then unchanged). `release.py rollback --release <number>` prepares an undo that John approves the same way.
+   - A schema change (new table or column) is a `ds1_step` release (`prepare --kind ds1_step --file db/migrations/NNN.sql`,
+     committed and pushed first), then the same migration on production (item 4) before the release that fills it.
+   - A nightly drift check compares every table, shows the result at `/admin/data` and proposes a fix release when
+     production differs from DS1; it never approves anything.
+   - Emergency only, with John's OK in chat: a hand fix through the Supabase MCP `execute_sql`; afterwards put the same
+     change on DS1 so the next drift check is clean. Never `truncate`, never `load.py --replace`, never a full load.
+   - `scripts/sync/compare.py` is still the read-only comparison (and what the release code reuses).
+6. **After every release:** the runner verifies and refreshes `api` (`api.refresh()`); look at one affected page on spxn.com.
 7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
    read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
    empty for the whole league, else `<source code>:<source key>`; EN required, FR and JA when known; `source` is a
    `meta.source` code, `source_url` the page), run `scripts/build_core.sh` or just `psql -f db/build/183_season_notes.sql`
-   from the repo root, then load production: `python3 scripts/season_notes/to_sql.py` prints insert-only SQL
-   (`on conflict do nothing`; add `--update` to replace the text of notes already there), run it with the Supabase MCP
-   `execute_sql`. Check one page on spxn.com (pages cache for an hour). Migration `033` creates the table.
+   from the repo root, then publish `core.season_note` to production with a data release (item 5). Check one page on
+   spxn.com (pages cache for an hour). Migration `033` creates the table.
 8. **DS1 and working copies.** DS1 is permanent; cloud and Mac copies are temporary. Work done on a working copy
    (the cloud agent holds a lot of it) is pushed to DS1 before the production load and before the copy is discarded.
    Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without

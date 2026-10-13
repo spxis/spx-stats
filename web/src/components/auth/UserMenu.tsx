@@ -60,6 +60,7 @@ export function UserMenu({ user, version }: { user: MenuUser; version: string })
               <b>Admin</b>
               <Link role="menuitem" href="/admin/tickets">Tickets</Link>
               <Link role="menuitem" href="/admin/tickets/new">File a ticket</Link>
+              <Link role="menuitem" href="/admin/data">Data releases</Link>
             </div>
           ) : null}
           <div className="usermenu-sec">
