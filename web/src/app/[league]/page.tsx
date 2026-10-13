@@ -74,7 +74,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[league]"
         <div className="seasonlist">
           {list.map((x) => leagueSat(x) ? <NoSeason key={x.year} compact>{x.label}</NoSeason> : (
             <Link key={x.year} prefetch={false} href={seasonPath(lg, x.year)} className={x.share >= 0.98 ? "full" : undefined}
-              title={x.games ? say("league.seasonTip", { finals: fmt(x.finals), games: fmt(x.games) }) : say("league.awardsOnly")}>
+              title={x.games ? say("league.seasonTip", { finals: fmt(x.finals), games: fmt(x.games) }) : x.teams ? say("season.noSchedule") : say("league.awardsOnly")}>
               {x.label}
             </Link>
           ))}

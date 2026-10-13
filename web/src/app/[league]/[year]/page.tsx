@@ -23,6 +23,7 @@ import { isLeague, isSpx, LEAGUES, LG, seasonLabel, srcName } from "@/lib/league
 import { pageMeta } from "@/lib/meta";
 import { isGapYear } from "@/lib/coverage";
 import { leadersPath } from "@/lib/leaderStats";
+import { isIdleTeam, seasonStartDay } from "@/lib/idleTeams";
 import { leagueSat } from "@/lib/noSeason";
 import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
@@ -105,8 +106,10 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const grouped = groupStandings(say, st, view, LEAGUES.find((l) => l.code === lg)?.name);
   const pub = d.standings.find((r) => r.basis === "published");
   const basis = asOf ? say("season.basisAsOf") : pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
+  const startDay = seasonStartDay(d.games.map((g) => ({ date: g[0], phase: g[5], status: g[6] })));
+  const nothingPlayed = !d.games.some((g) => g[6] === "f");
   const standingsNote = [
-    say("season.standingsNote", { basis }),
+    nothingPlayed && !asOf ? say("season.standingsNone") : say("season.standingsNote", { basis }),
     dateWanted && !dateAsked ? say("season.dateLate") : "",
     dateAsked && !asOf ? say("season.dateMissing") : "",
     view === "wildcard" ? say("season.wildCardNote") : "",
@@ -122,7 +125,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       cell: (r) => (
         <>
           <TeamLogo url={logoFor(brands, r.franchise_id, y)} />
-          <Link href={played.has(r.team_id) ? paths.teamSeason(lg, r.franchise_id, y) : paths.team(lg, r.franchise_id)} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, r.franchise_id, y, r.team)}</abbr></Link>
+          <Link href={played.has(r.team_id) || isIdleTeam(r.team_id) ? paths.teamSeason(lg, r.franchise_id, y) : paths.team(lg, r.franchise_id)} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, r.franchise_id, y, r.team)}</abbr></Link>
           {winner != null && r.franchise_id === winner ? (
             <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, y) })}>{say("season.winner")}</span>
           ) : null}
@@ -171,9 +174,16 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         </nav>
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1>{say("season.title", { label: d.label })}</h1>
-        {d.games.length === 0 && !champ && summary.seasons.some((s) => s.league === lg && s.year === y && leagueSat(s))
+        {d.games.length === 0 && !champ && !st.length && summary.seasons.some((s) => s.league === lg && s.year === y && leagueSat(s))
           ? <p><NoSeason /></p>
-          : <p className="lede">{say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}</p>}
+          : regular.length === 0 && !complete
+            ? <p className="lede">{say("season.noSchedule")}</p>
+            : (
+              <p className="lede">
+                {say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}
+                {startDay ? ` ${say("season.starts", { date: dt.full(atUtc(startDay)) })}` : ""}
+              </p>
+            )}
         <SeasonBar lg={lg} year={y}
           seasons={summary.seasons.filter((x) => x.league === lg).sort((a, b) => b.year - a.year).map((x) => ({ year: x.year, label: x.label }))}
           days={days} date={asOfDate} />

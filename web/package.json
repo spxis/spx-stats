@@ -18,7 +18,8 @@
     "test:i18n": "node --test scripts/i18n.test.ts",
     "test:auth": "node --test scripts/auth.test.ts",
     "test:revalidate": "node --test scripts/revalidate.test.ts",
-    "test:releases": "node --test scripts/releases.test.ts"
+    "test:releases": "node --test scripts/releases.test.ts",
+    "test:idle": "node --test scripts/idleTeams.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/chizu": "1.4.0",

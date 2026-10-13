@@ -18,8 +18,9 @@ import { getSeasonAlignment } from "@/lib/alignmentData";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
-import { getAbbrs, getBrands, getSeasonNotes, getSeasonStandings, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
-import { fmt3 } from "@/lib/format";
+import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSeasonStandings, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
+import { atUtc, fmt3 } from "@/lib/format";
+import { seasonStartDay } from "@/lib/idleTeams";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { parseLoc } from "@/lib/loc";
@@ -87,6 +88,33 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const dateSort = sort.find((s) => s.key === "date");
   const [d, t, summary, leagueSt, notes, alignment, venuePlaces] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y), getSeasonAlignment(lg, y), getVenuePlaces(lg)]);
   const [venueNames, venueFacts] = await Promise.all([getVenueNames(), getVenueFacts()]);
+  const hereSeason = summary.seasons.find((x) => x.league === lg && x.year === y);
+  if (!d.raw.length && hereSeason && !hereSeason.champion && !leagueSat(hereSeason)) {
+    // a season that is under way or still to start, and this club has no game yet
+    const all = await getSeason(lg, y);
+    const startDay = seasonStartDay((all?.games ?? []).map((g) => ({ date: g[0], phase: g[5], status: g[6] })));
+    const { dt } = await currentSpeaker();
+    const label = seasonLabel(lg, y);
+    return (
+      <>
+        <AccentStyle league={lg} team={d.brand?.primary_hex ? teamAccent(d.brand) : undefined} />
+        <section className="head fade">
+          <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
+          <div className="namerow">
+            <h1 className="teamname"><TeamLogo url={d.logo} size={56} />{all?.standings.find((r) => r.franchise_id === f)?.team || d.name}</h1>
+            <div className="seasonside">
+              <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label })}</Link>
+            </div>
+          </div>
+          <p className="lede">
+            {say("tseason.noGames")}{" "}
+            {startDay ? say("season.starts", { date: dt.full(atUtc(startDay)) }) : say("season.noSchedule")}{" "}
+            <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>
+          </p>
+        </section>
+      </>
+    );
+  }
   if (!d.raw.length) {
     return (
       <>

@@ -11,6 +11,7 @@ import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, T
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { isSpx } from "./leagues";
+import { withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
 /* ---------- home, leagues -------------------------------------------------------------- */
@@ -21,8 +22,25 @@ export const getSummary = cache(async (): Promise<{ seasons: SeasonSummaryRow[];
     rows("totals", "select=*", totalsSchema),
   ]);
   if (!totals[0]) throw new ApiError("totals: no row");
-  return { seasons, totals: totals[0] };
+  return { seasons: await withUpcomingClubs(seasons), totals: totals[0] };
 });
+
+/**
+ * The summary counts a season's clubs from its games, so a season that has its team seasons but no games yet reads as 0 clubs,
+ * the same as a season the league sat out. For the seasons after each league's last played one, count the clubs from the team
+ * seasons instead. A failed read leaves them as they were.
+ */
+async function withUpcomingClubs(seasons: SeasonSummaryRow[]): Promise<SeasonSummaryRow[]> {
+  const lastPlayed = new Map<string, number>();
+  for (const s of seasons) if (s.games > 0) lastPlayed.set(s.league, Math.max(lastPlayed.get(s.league) ?? -Infinity, s.year));
+  const later = seasons.filter((s) => s.games === 0 && !s.champion && s.year > (lastPlayed.get(s.league) ?? Infinity));
+  if (!later.length) return seasons;
+  const from = Math.min(...later.map((s) => s.year));
+  const clubs = await teamSeasonRows(`year=gte.${from}&select=league,year,franchise_id`, z.object({ league: z.string(), year: z.number(), franchise_id: z.number() })).catch(() => []);
+  const count = new Map<string, number>();
+  for (const c of clubs) count.set(`${c.league}|${c.year}`, (count.get(`${c.league}|${c.year}`) ?? 0) + 1);
+  return seasons.map((s) => (later.includes(s) ? { ...s, teams: count.get(`${s.league}|${s.year}`) ?? 0 } : s));
+}
 
 /** Every brand era of every franchise. A missing or empty view just means no logos or colours yet. */
 /** A league's team abbreviations, era by era (the database's own: core.franchise_identity.abbreviation). */
@@ -50,15 +68,30 @@ export interface SeasonData {
   games: GameTuple[];
 }
 
+const clubSchema = z.object({
+  league: z.string(), year: z.number(), franchise_id: z.number(), team: z.string().nullable(),
+  conference: z.string().nullish(), conference_short: z.string().nullish(), division: z.string().nullish(), division_short: z.string().nullish(),
+});
+
+/**
+ * Every team of a season that has no champion yet (one under way or still to start), from its team seasons. The standings views
+ * list only clubs with a final game, so these are what puts a club that has not played on the table at 0-0. A finished season is
+ * left alone: its team seasons without games are gaps in the old data, not clubs waiting to play.
+ */
+const getSeasonClubs = cache(async (lg: string, y: number) =>
+  teamSeasonRows(`league=eq.${lg}&year=eq.${y}&select=*`, clubSchema).catch(() => []));
+
 export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData | null> => {
   const q = `league=eq.${lg}&year=eq.${y}`;
-  const [summary, games, standings, awards] = await Promise.all([
+  const [summary, games, standingsPlayed, awards, clubs] = await Promise.all([
     rows("season_summary", `${q}&select=*`, seasonSummarySchema),
     rows("games", `${q}&select=*&order=game_date,game_id`, gameSchema),
     standingRows(`${q}&select=*`, standingSchema),
     rows("awards", `${q}&select=*`, awardSchema),
+    getSeasonClubs(lg, y),
   ]);
   if (!summary[0]) return null;
+  const standings = summary[0].champion ? standingsPlayed : withIdleTeams(standingsPlayed, clubs);
   const teams = new Map<number, ClubTeam>();
   for (const g of games) {
     teams.set(g.home_id, { id: g.home_id, f: g.home_f, name: g.home });
