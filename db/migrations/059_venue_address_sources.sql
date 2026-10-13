@@ -3,7 +3,7 @@
 --   wp_address: the street line of the English Wikipedia infobox's address or location field (CC BY-SA 4.0), a house number and street or two crossing streets.
 -- db/build/193_venue_names.sql takes the first that exists: legacy_franchise_info.place.address_street, P6375, P669 + P670, the infobox; an address from the
 -- infobox is marked in core.brand_venue_info.wikipedia_fields ('address') with its article and revision in wikipedia_key.
--- The legacy columns exist on DS1 and the working copy only; on production this file does nothing (the data arrives with the core.brand_venue_info release).
+-- The legacy columns exist on DS1 and the working copy only; on production only the attribution line applies (the addresses arrive with the core.brand_venue_info release).
 
 do $$
 begin
@@ -12,3 +12,6 @@ begin
     alter table legacy_wikidata_venues.venue add column if not exists wp_address text;
   end if;
 end $$;
+
+update meta.source set attribution = attribution || ' Street addresses of some venues from the infoboxes of English Wikipedia venue articles (CC BY-SA 4.0).'
+  where code = 'wikipedia' and attribution not like '%Street addresses of some venues%';

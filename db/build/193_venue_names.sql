@@ -3,7 +3,8 @@
 -- Names: Wikidata's dated names (P1448, P2561) and the infobox "former names" of the English Wikipedia article; a name both give is
 -- Wikidata's. A name with no year at all cannot be placed and is left out. The name now is the English Wikidata label: it keeps its row
 -- when a dated name is the same, else it is added, from the year the last former name ended. Facts come from the same items, with
--- legacy_franchise_info.place filling what the new fetch lacks; a street address from there wins over the one-line address.
+-- legacy_franchise_info.place filling what the new fetch lacks; a street address from there wins over the one-line address (P6375), then Wikidata's
+-- street and house number (P669, P670), then the street line of the English Wikipedia infobox (migration 059); the infobox is marked in wikipedia_fields.
 -- Postal code: Wikidata P281, taken from postal_checked (migration 058; run scripts/wikidata_venues/postal_check.py after load.py first).
 
 delete from core.brand_venue_name;
@@ -35,15 +36,17 @@ delete from core.brand_venue_info;
 insert into core.brand_venue_info (wikidata_id, capacity, opened_year, closed_year, owner, surface, roof, address, postal_code, source_id, source_key, wikipedia_key, wikipedia_fields)
 select v.qid, coalesce(v.capacity, p.capacity), extract(year from coalesce(v.opened_on, p.opened_on))::smallint,
        extract(year from coalesce(v.closed_on, p.closed_on))::smallint, v.owner, coalesce(v.surface, p.surface, v.wp_surface), coalesce(v.roof, p.roof, v.wp_roof),
-       coalesce(p.address_street, v.address), v.postal_checked, (select source_id from meta.source where code = 'wikidata'), v.qid,
+       coalesce(p.address_street, v.address, v.street_address, v.wp_address), v.postal_checked, (select source_id from meta.source where code = 'wikidata'), v.qid,
        case when (coalesce(v.surface, p.surface) is null and v.wp_surface is not null) or (coalesce(v.roof, p.roof) is null and v.wp_roof is not null)
+              or (coalesce(p.address_street, v.address, v.street_address) is null and v.wp_address is not null)
             then 'enwiki:' || v.wikipedia_title || '@' || v.wikipedia_revid end,
        nullif(concat_ws(',', case when coalesce(v.surface, p.surface) is null and v.wp_surface is not null then 'surface' end,
-                                 case when coalesce(v.roof, p.roof) is null and v.wp_roof is not null then 'roof' end), '')
+                                 case when coalesce(v.roof, p.roof) is null and v.wp_roof is not null then 'roof' end,
+                                 case when coalesce(p.address_street, v.address, v.street_address) is null and v.wp_address is not null then 'address' end), '')
 from legacy_wikidata_venues.venue v
 left join legacy_franchise_info.place p on p.qid = v.qid
 where coalesce(v.capacity, p.capacity) is not null or coalesce(v.opened_on, p.opened_on) is not null or v.owner is not null
-   or coalesce(v.surface, p.surface, v.wp_surface) is not null or coalesce(v.roof, p.roof, v.wp_roof) is not null or coalesce(p.address_street, v.address) is not null
+   or coalesce(v.surface, p.surface, v.wp_surface) is not null or coalesce(v.roof, p.roof, v.wp_roof) is not null or coalesce(p.address_street, v.address, v.street_address, v.wp_address) is not null
    or v.postal_checked is not null;
 
 -- Postal codes (P281) that scripts/wikidata_venues/postal_check.py refused (wrong shape, another country, another state or province, two codes,
@@ -67,5 +70,6 @@ union all select 'with owner', count(owner) from core.brand_venue_info
 union all select 'with surface', count(surface) from core.brand_venue_info
 union all select 'with roof', count(roof) from core.brand_venue_info
 union all select 'with address', count(address) from core.brand_venue_info
+union all select 'address from the Wikipedia infobox', count(*) from core.brand_venue_info where wikipedia_fields like '%address%'
 union all select 'with postal code', count(postal_code) from core.brand_venue_info
 union all select 'postal codes refused', count(*) from meta.data_issue where entity_kind = 'venue_postal_code';

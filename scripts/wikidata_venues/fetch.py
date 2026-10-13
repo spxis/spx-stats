@@ -59,7 +59,7 @@ else:
     qids = subprocess.run(["psql", "-At", "-v", "ON_ERROR_STOP=1", "-c", q], check=True, capture_output=True, text=True).stdout.split()
 print(len(qids), "venues")
 
-titles, refs = [], set()
+titles, refs, streets = [], set(), set()
 for i in range(0, len(qids), 50):
     r = fetch(f"wikidata/entities-{i // 50 + 1:03d}.json",
               wd(action="wbgetentities", ids="|".join(qids[i:i + 50]), props="claims|labels|sitelinks", languages="en", sitefilter="enwiki"))
@@ -67,6 +67,10 @@ for i in range(0, len(qids), 50):
         t = e.get("sitelinks", {}).get("enwiki", {}).get("title")
         if t:
             titles.append(t)
+        for c in e.get("claims", {}).get("P669", []):   # located on street: the street item, with the house number (P670) as a qualifier
+            v = c["mainsnak"].get("datavalue", {}).get("value")
+            if isinstance(v, dict) and "id" in v:
+                streets.add(v["id"])
         for p in ("P127", "P765", "P31", "P84", "P138"):
             for c in e.get("claims", {}).get(p, []):
                 v = c["mainsnak"].get("datavalue", {}).get("value")
@@ -78,10 +82,15 @@ for i in range(0, len(refs), 50):
     fetch(f"wikidata/labels-{i // 50 + 1:03d}.json",
           wd(action="wbgetentities", ids="|".join(refs[i:i + 50]), props="labels", languages="en", languagefallback=1))
 
+streets = sorted(streets)   # their own files, so a folder fetched before P669 was read only gains these
+for i in range(0, len(streets), 50):
+    fetch(f"wikidata/streets-{i // 50 + 1:03d}.json",
+          wd(action="wbgetentities", ids="|".join(streets[i:i + 50]), props="labels", languages="en", languagefallback=1))
+
 titles = sorted(set(titles))
 for i in range(0, len(titles), 20):
     fetch(f"wikipedia/pages-{i // 20 + 1:03d}.json",
           "https://en.wikipedia.org/w/api.php?" + urllib.parse.urlencode({
               "action": "query", "prop": "revisions", "rvprop": "ids|timestamp|content", "rvslots": "main", "redirects": 1,
               "titles": "|".join(titles[i:i + 20]), "format": "json", "formatversion": 2}))
-print("done:", len(qids), "venues,", len(refs), "linked items,", len(titles), "articles ->", out)
+print("done:", len(qids), "venues,", len(refs), "linked items,", len(streets), "streets,", len(titles), "articles ->", out)

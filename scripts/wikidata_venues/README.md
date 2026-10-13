@@ -31,6 +31,15 @@ first if a club moved. Raw files go outside the repo. On a Mac the DS1 steps go 
     # 4. production only through a data release (AGENTS.md section 8, item 5; John approves at /admin/data)
     python3 -I scripts/release/release.py prepare --title "Venue names and facts $day" --tables core.brand_venue_name,core.brand_venue_info
 
+Street addresses: `193_venue_names.sql` takes `legacy_franchise_info.place.address_street`, then Wikidata P6375 (`venue.address`), then P669 street with the
+P670 house number (`venue.street_address`, the street names are in `wikidata/streets-*.json`), then the street line of the English Wikipedia infobox's
+address or location field (`venue.wp_address`: a house number and street, or two crossing streets; an area or a corner description gives none). An
+address from the infobox is marked in `core.brand_venue_info.wikipedia_fields` (`address`). A venue with none stays empty.
+
+Home venue mapping: `db/build/175_team_brand.sql` gives a team the venues Wikidata dates; venues with no dates take the years of the venue itself
+(opened to closed), and a club item of another era (its `inception` and `dissolved`) gives an identity of the same name no venue. A statement known to
+be wrong is left out through `db/seed/venue_fix.csv` (team item, venue item, why) and logged in `meta.data_issue` (`team_home_venue`).
+
 Postal codes: Wikidata P281 is stored as given (`venue.postal_code`); `postal_check.py` keeps a code in `postal_checked` only when it is a US ZIP or
 Canadian postal code, matches the venue's country and belongs to its state or province; otherwise `postal_problem` says why, and the build step
 logs it in `meta.data_issue` (`entity_kind = 'venue_postal_code'`) and leaves `core.brand_venue_info.postal_code` empty. No code is ever guessed.

@@ -8,6 +8,13 @@
 -- Colours also come from Wikipedia's colour modules (legacy_team_brand.wikipedia_colour,
 -- CC BY-SA 4.0, source 'wikipedia'): see the last statement. Those rows carry the
 -- colours for the years the module dates them, one row per colour period of an identity.
+-- Home venue statements known to be wrong in Wikidata (db/seed/venue_fix.csv: team item, venue item, why) are left out, and logged below.
+-- A team's home venues that carry no dates take the years of the venue itself, from its opening to its closing (legacy_franchise_info.place),
+-- preferred rank first, the later opening next; so a stadium is never shown before it opened or after it closed.
+drop table if exists pg_temp.seed_venue_fix;
+create temp table seed_venue_fix (team_qid text, place_qid text, reason text);
+\copy seed_venue_fix from 'db/seed/venue_fix.csv' with (format csv, header true)
+
 delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikidata');
 delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikipedia');
 
@@ -40,15 +47,37 @@ with ident as (
   select p.*, (latitude is not null) as has_xy,
          (starts_on is not null or ends_on is not null) as dated
   from legacy_team_brand.team_place p where coalesce(rank, '') <> 'deprecated'
-), pick as (   -- the venue periods a team is given: dated home venues, else one undated home venue, else headquarters, else located-in
+    and not exists (select 1 from seed_venue_fix x where x.team_qid = p.qid and x.place_qid = p.place_qid)
+), und as (   -- undated home venues of a team with no dated one, with the years of the venue item itself (opened, closed)
+  select pl.qid, pl.place_qid, pl.label, pl.latitude, pl.longitude, pl.has_xy, (pl.rank = 'preferred') as pref,
+         p.opened_on as lo, p.closed_on as hi
+  from pl left join legacy_franchise_info.place p on p.qid = pl.place_qid
+  where pl.kind = 'home_venue' and not pl.dated
+    and not exists (select 1 from pl d where d.qid = pl.qid and d.kind = 'home_venue' and d.dated)
+), cuts as (   -- the dates at which a team's set of open venues changes
+  select qid, array_remove(array_agg(distinct d order by d), null) as b
+  from (select qid, lo as d from und union all select qid, hi from und) x group by qid
+), seg as (   -- the stretches between them, the first and the last open
+  select c.qid, case when i = 0 then null else c.b[i] end as s, case when i = coalesce(cardinality(c.b), 0) then null else c.b[i + 1] end as e
+  from cuts c cross join lateral generate_series(0, coalesce(cardinality(c.b), 0)) i
+), seg_venue as (   -- the venue of each stretch: one that was open for all of it, with coordinates, preferred, the latest opened
+  select distinct on (g.qid, g.s) g.qid, g.s, g.e, u.place_qid, u.label, u.latitude, u.longitude
+  from seg g join und u on u.qid = g.qid
+     and (u.lo is null or (g.s is not null and u.lo <= g.s))
+     and (u.hi is null or (g.e is not null and u.hi >= g.e))
+  order by g.qid, g.s nulls first, u.has_xy desc, u.pref desc, u.lo desc nulls last, u.place_qid
+), island as (   -- neighbouring stretches with the same venue become one period
+  select *, sum(case when place_qid is not distinct from lag_p and s is not distinct from lag_e then 0 else 1 end)
+              over (partition by qid order by s nulls first) as grp
+  from (select *, lag(place_qid) over w as lag_p, lag(e) over w as lag_e
+        from seg_venue window w as (partition by qid order by s nulls first)) y
+), pick as (   -- the venue periods a team is given: dated home venues, else its undated home venues by their own years, else headquarters, else located-in
   select qid, label, latitude, longitude, daterange(starts_on, ends_on) as vr from pl
    where kind = 'home_venue' and dated
   union all
-  select * from (
-    select distinct on (qid) qid, label, latitude, longitude, daterange(null, null)
-    from pl where kind = 'home_venue' and not dated
-      and not exists (select 1 from pl d where d.qid = pl.qid and d.kind = 'home_venue' and d.dated)
-    order by qid, has_xy desc, place_qid) h
+  select qid, label, latitude, longitude,
+         daterange(case when bool_or(s is null) then null else min(s) end, case when bool_or(e is null) then null else max(e) end)
+  from island group by qid, place_qid, label, latitude, longitude, grp
   union all
   select * from (
     select distinct on (qid) qid, label, latitude, longitude, daterange(null, null)
@@ -64,6 +93,7 @@ with ident as (
   cross join lateral (select daterange(case when i.is_first then null else lower(i.valid_during) end,
                                         case when i.is_last then null else upper(i.valid_during) end) as vd) x
   left join pick v on v.qid = t.qid and not isempty(x.vd * v.vr)
+                  and (t.inception is null and t.dissolved is null or daterange(t.inception, t.dissolved) && i.valid_during)   -- a club item of another era (Milwaukee Brewers 1901 and 1970) gives that identity no venue
   cross join lateral (select case when v.qid is null then x.vd else x.vd * v.vr end as rng) r
   left join colours c on c.qid = t.qid
   left join logo l on l.qid = t.qid and (not l.fallback or i.is_last)
@@ -143,3 +173,28 @@ insert into core.franchise_brand (franchise_id, valid_during, primary_hex, secon
 select fid, rng, primary_hex, secondary_hex, (select source_id from meta.source where code = 'wikipedia'), entry_key
 from piece
 on conflict (franchise_id, valid_during, source_id) do nothing;
+
+-- Home venue fixes, logged (rerunnable: last run's rows are replaced). A statement left out through db/seed/venue_fix.csv, and a team whose
+-- several home venues Wikidata gives no dates for, so that each is used only from its opening to its closing.
+delete from meta.data_issue where entity_kind = 'team_home_venue';
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'wikidata'), 'team_home_venue', x.team_qid,
+       'Wikidata home venue ' || coalesce(p.label, x.place_qid) || ' (' || x.place_qid || ') of ' || coalesce(t.label, x.team_qid) || ': ' || x.reason,
+       'Statement left out of core.franchise_brand (db/seed/venue_fix.csv); Wikidata is not changed.'
+from seed_venue_fix x
+left join legacy_team_brand.team t on t.qid = x.team_qid
+left join legacy_team_brand.team_place p on p.qid = x.team_qid and p.place_qid = x.place_qid and p.kind = 'home_venue';
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'wikidata'), 'team_home_venue', t.qid,
+       'Wikidata gives ' || t.label || ' ' || count(*) || ' home venue' || case when count(*) > 1 then 's' else '' end || ' with no dates (' ||
+       string_agg(p.label, ', ' order by pl.opened_on nulls first, p.label) || ')',
+       'Each is used only from its opening to its closing, the preferred one first, so no stadium is shown before it opened or after it closed.'
+from legacy_team_brand.team t
+join legacy_team_brand.team_place p on p.qid = t.qid and p.kind = 'home_venue' and coalesce(p.rank, '') <> 'deprecated'
+left join legacy_franchise_info.place pl on pl.qid = p.place_qid
+where p.starts_on is null and p.ends_on is null
+  and not exists (select 1 from legacy_team_brand.team_place d where d.qid = t.qid and d.kind = 'home_venue' and coalesce(d.rank, '') <> 'deprecated'
+                  and (d.starts_on is not null or d.ends_on is not null))
+  and not exists (select 1 from seed_venue_fix x where x.team_qid = p.qid and x.place_qid = p.place_qid)
+group by t.qid, t.label
+having count(*) > 1 and bool_or(pl.opened_on is not null or pl.closed_on is not null);

@@ -6,7 +6,8 @@ scripts/mac/ds1-apply.sh). Rerunnable: every venue in the raw files is deleted a
 Names come from Wikidata P1448 (official name) and P2561 (name), with their P580/P582 start and end, and from the
 "former names" of the English Wikipedia infobox. Facts: P1083 capacity, P1619/P571 opened, P3999/P576 closed, P127 owner,
 P765 surface, P31 (retractable or domed) roof, P6375 address, P281 postal code (as Wikidata gives it; postal_check.py then
-validates it, migration 058)."""
+validates it, migration 058), P669 + P670 street address (street_address) and the street line of the Wikipedia infobox (wp_address),
+migration 059."""
 import glob, html, json, os, re, subprocess, sys
 
 argv = sys.argv[1:]
@@ -20,7 +21,7 @@ n = lambda v: "null" if v is None else str(v)
 ents, labels, pages = {}, {}, {}
 for f in sorted(glob.glob(raw + "/wikidata/entities-*.json")):
     ents.update(json.load(open(f))["entities"])
-for f in sorted(glob.glob(raw + "/wikidata/labels-*.json")):
+for f in sorted(glob.glob(raw + "/wikidata/labels-*.json") + glob.glob(raw + "/wikidata/streets-*.json")):
     for k, e in json.load(open(f))["entities"].items():
         labels[k] = e.get("labels", {}).get("en", {}).get("value")
 for f in sorted(glob.glob(raw + "/wikipedia/pages-*.json")):
@@ -148,6 +149,38 @@ def wp_surface(wikitext):
     return None
 
 
+STREET = r"(?:Street|St|Avenue|Ave|Boulevard|Blvd|Road|Rd|Drive|Dr|Way|Place|Pl|Plaza|Parkway|Pkwy|Highway|Hwy|Lane|Court|Walk|Square|Terrace|Broadway|Trail|Circle|Mile)"
+
+
+def wp_address(wikitext):
+    """The street line of the infobox's address (else location) field: a house number and a street ("600 West Amelia Street", "One Tropicana
+    Drive" as "1 Tropicana Drive") or two crossing streets ("Findlay Street and Dalton Avenue"). The city, state and code after it are cut off.
+    An area ("Manhattan"), a corner description or a block ("bounded by ...") is not an address and gives None; nothing is guessed."""
+    for field in ("address", "location"):
+        m = re.search(r"\|\s*" + field + r"\s*=(.*?)(?=\n\s*\||\n\}\})", wikitext, re.I | re.S)
+        if not m:
+            continue
+        raw = m.group(1)
+        links = re.findall(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", re.sub(r"<ref[^>]*?/>|<ref[^>]*>.*?</ref>", "", raw, flags=re.S | re.I))
+        city = links[-1].split(",")[0].strip() if links else ""
+        text = unwrap(raw)
+        for line in re.split(r"<br\s*/?>|\n", text, flags=re.I):
+            line = re.sub(r"<[^>]+>|'{2,}", "", line)
+            line = re.sub(r"\s+", " ", line).strip(" \t,;")
+            if not line:
+                continue
+            line = line.split(",")[0].strip()
+            line = re.sub(r"\s*\([^)]*\)", "", line).strip()
+            if city and line.endswith(" " + city):
+                line = line[: -len(city)].strip()
+            line = re.sub(r"^(One)\b", "1", line)
+            cross = re.search(r"\s(?:&|and)\s", line) and re.search(r"\b" + STREET + r"\b", line) and not re.search(r"\b(bounded|corner|between|up to|near|at)\b", line, re.I)
+            if len(line) <= 80 and (re.match(r"^\d[\d\u2013-]*\s+[A-Za-z]", line) or (cross and not re.match(r"^\d", line))):
+                return line
+            break   # only the first line of a field is the street
+    return None
+
+
 def wp_roof(wikitext):
     t = (infobox(wikitext, "roof") or "").lower()
     if "retract" in t:
@@ -194,14 +227,21 @@ for qid, e in sorted(ents.items()):
     pc = [c for c in pc if c["rank"] == "preferred"] or pc
     # two different codes stay together and postal_check.py refuses them
     postal = "; ".join(dict.fromkeys(str(c["mainsnak"]["datavalue"]["value"]).strip() for c in pc)) or None
+    street = None
+    for c in sorted(live(cl, "P669"), key=lambda c: c["rank"] != "preferred"):
+        sid = c["mainsnak"]["datavalue"]["value"]["id"]
+        num = next((str(q["datavalue"]["value"]).strip() for q in c.get("qualifiers", {}).get("P670", []) if q.get("datavalue")), None)
+        if labels.get(sid) and num and re.match(r"^\d", num):
+            street = f"{num} {labels[sid]}"
+            break
     pg = pages.get(title) if title else None
     rev = pg["revisions"][0] if pg and pg.get("revisions") else None
     sql.append(f"delete from legacy_wikidata_venues.name where qid = {q(qid)};")
     sql.append(f"delete from legacy_wikidata_venues.venue where qid = {q(qid)};")
-    sql.append("insert into legacy_wikidata_venues.venue (qid, label, wikipedia_title, wikipedia_revid, wikipedia_on, capacity, opened_on, opened_prec, closed_on, owner, surface, roof, address, wp_surface, wp_roof, fetched_on, postal_code) values "
+    sql.append("insert into legacy_wikidata_venues.venue (qid, label, wikipedia_title, wikipedia_revid, wikipedia_on, capacity, opened_on, opened_prec, closed_on, owner, surface, roof, address, wp_surface, wp_roof, fetched_on, postal_code, street_address, wp_address) values "
                f"({q(qid)}, {q(label)}, {q(title)}, {n(rev['revid']) if rev else 'null'}, {q(rev['timestamp'][:10]) if rev else 'null'}, {n(cap)}, "
                f"{q(op[0]) if op else 'null'}, {n(op[1]) if op else 'null'}, {q(cl_[0]) if cl_ else 'null'}, {q(owner)}, {q(surf)}, {q(roof)}, {q(adr)}, "
-               f"{q(wp_surface(rev['slots']['main']['content'])) if rev else 'null'}, {q(wp_roof(rev['slots']['main']['content'])) if rev else 'null'}, {q(day)}, {q(postal)});")
+               f"{q(wp_surface(rev['slots']['main']['content'])) if rev else 'null'}, {q(wp_roof(rev['slots']['main']['content'])) if rev else 'null'}, {q(day)}, {q(postal)}, {q(street)}, {q(wp_address(rev['slots']['main']['content'])) if rev else 'null'});")
     stats["venues"] += 1
     for p, kind in (("P1448", "official"), ("P2561", "name")):
         for c in live(cl, p):
