@@ -47,6 +47,10 @@ Rules the build keeps:
 - Nothing is silently corrected: a change to what a source said is logged in `meta.data_issue`.
 - Anything that changes over time is a dated row, and exclusion constraints refuse overlaps.
 
+## Data
+
+How data gets from a source to spxn.com: [`docs/data-flow.md`](docs/data-flow.md).
+
 ## Rebuilding
 
 1. Apply `db/migrations/*.sql` in order (Postgres 17, `btree_gist`).

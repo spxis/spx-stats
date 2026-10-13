@@ -328,6 +328,8 @@ Then fix forward on `main`, redeploy, and tell John.
 
 ## 8. Data work
 
+The short, plain-language version of this section is [`docs/data-flow.md`](docs/data-flow.md).
+
 **Where data lives.**
 
 - **DS1** (Postgres in Docker on John's Synology NAS, reached on the home LAN or over Tailscale; the LAN and Tailscale addresses are in `scripts/mac/spx-checks.sh`) is the
@@ -401,8 +403,9 @@ core rebuild; the release runner runs `select api.refresh();` after each release
      committed and pushed first), then the same migration on production (item 4) before the release that fills it.
    - A nightly drift check compares every table, shows the result at `/admin/data` and proposes a fix release when
      production differs from DS1; it never approves anything.
-   - Emergency only, with John's OK in chat: a hand fix through the Supabase MCP `execute_sql`; afterwards put the same
-     change on DS1 so the next drift check is clean. Never `truncate`, never `load.py --replace`, never a full load.
+   - Emergency only, with John's OK in chat: fix DS1 first, then make the hand fix through the Supabase MCP
+     `execute_sql`, then run the drift check (`release.py drift`) and confirm it is clean. Never `truncate`, never
+     `load.py --replace`, never a full load.
    - `scripts/sync/compare.py` is still the read-only comparison (and what the release code reuses).
    - **Daily scores** (`scripts/daily`, later live scores) are reported to DS1, never written to `core.game` directly: they call
      `ingest.report_results(jsonb)` (migrations 044 and 046; login role `ingest_writer` can execute that one function and nothing
@@ -462,7 +465,7 @@ core rebuild; the release runner runs `select api.refresh();` after each release
      Connect with `psql -h 127.0.0.1 -p 55432 -U postgres -d spx_stats`. To refresh, apply any unsynced work to DS1
      first, then remove the container and the `spx-stats-pgdata` volume and run both blocks again.
 
-Ask John before deleting or overwriting data, and before any write to production that is not a routine load.
+Ask John before deleting or overwriting data. Production changes only through approved data releases; anything else needs John's OK.
 
 ## 9. The website
 
@@ -513,7 +516,7 @@ Ask John before deleting or overwriting data, and before any write to production
 - Never print or store passwords or tokens in files, logs or commits. Delete any credential file after use.
 - Do not open credential files kept in Dropbox in plain text; fetch values with the keychain commands in the private
   file instead.
-- Ask John before deleting or overwriting data, and before any write to production that is not a routine load.
+- Ask John before deleting or overwriting data. Production changes only through approved data releases; anything else needs John's OK.
 
 ## 12. Secrets and the environment
 
