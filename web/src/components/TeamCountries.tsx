@@ -19,7 +19,7 @@ const KEEP = 6;
  * "Where the players come from" on a club's season page: a donut of the roster by country, a world map of the counts (a country opens the roster
  * filtered to it), the club's share of each country against the league's that season, and the country ranker (which country's players did best for the club).
  * The roster is the players with statistics for the club, as the roster table; for a league with none, the counts come from api.country_team_season
- * (migration 067), and the section is left out while that view is missing.
+ * (migration 068), and the section is left out while that view is missing.
  */
 export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }: {
   lg: string; year: number; season: string; teamSeasonId: number; path: string; sp: Record<string, string | string[] | undefined>;

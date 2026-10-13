@@ -37,7 +37,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(soccer.status === "fulfilled" && soccer.value.length ? ["/soccer", "/worldcup", "/worldcup/teams", ...soccer.value.map((t) => tournamentPath(t.year))].map((p) => ({ url: url(p), lastModified })) : []),
     ...(soccerTeams.status === "fulfilled" ? soccerTeams.value.filter((t) => t.tournaments > 0).map((t) => ({ url: url(soccerTeamPath(t.slug)), lastModified })) : []),
   ];
-  // A country page exists for each country with a player on record (migration 067's views; none while they are missing).
+  // A country page exists for each country with a player on record (migration 068's views; none while they are missing).
   const countryUrls = countryData.status === "fulfilled" && countryData.value ? [...new Set(countryData.value.map((r) => r.country).filter((c) => c !== "ZZ"))].sort().map((c) => ({ url: url(`/country/${c}`), lastModified })) : [];
   const worldUrls = countryData.status === "fulfilled" && countryData.value ? [...new Set(countryData.value.map((r) => r.league))].map((l) => ({ url: url(`/${l}/world`), lastModified })) : [];
   return [

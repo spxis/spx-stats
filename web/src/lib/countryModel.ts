@@ -1,6 +1,6 @@
 /**
  * The country pages' numbers, worked out from the lists the database gives (no server code here, so a node script can test it):
- * api.country_team_season, api.country_season, api.country_league and api.country_franchise (migration 067), and the roster of one club's season.
+ * api.country_team_season, api.country_season, api.country_league and api.country_franchise (migration 068), and the roster of one club's season.
  * A player's country is his birth country, else his nationality; the code ZZ stands for "unknown" and is never counted as a country.
  */
 import type { PhraseKey } from "./i18n/phrases.constants.ts";
