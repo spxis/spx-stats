@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { formatVenueAddress } from "../src/lib/venueAddress.ts";
+import { formatVenueAddress, venueMapsUrl } from "../src/lib/venueAddress.ts";
 
 /** Run in web/: pnpm test:address */
 
@@ -60,4 +60,25 @@ test("street types are written address-plus's way, and a direction keeps its cap
 
 test("Washington, D.C. is written once", () => {
   assert.equal(formatVenueAddress({ street: "601 F St NW", city: "Washington, D.C.", region: "DC", countryCode: "US", country: "United States" })?.text, "601 F St NW, Washington, DC, United States");
+});
+
+const MAPS = "https://www.google.com/maps/search/?api=1&query=";
+
+test("the Google Maps link searches the address as written, url-encoded", () => {
+  const a = formatVenueAddress({ street: "10220 104 Ave NW", city: "Edmonton", region: "AB", postal: "T5J 0H6", countryCode: "CA", country: "Canada" });
+  assert.equal(venueMapsUrl(a, 53.54649, -113.49793), MAPS + encodeURIComponent("10220 104 Ave NW, Edmonton AB T5J 0H6, Canada"));
+  assert.ok(venueMapsUrl(a)?.includes("10220%20104%20Ave%20NW%2C%20Edmonton%20AB%20T5J%200H6%2C%20Canada"));
+});
+
+test("a partial address (no street line) links to the coordinates when they are known", () => {
+  const a = formatVenueAddress({ city: "Edmonton", region: "AB", countryCode: "CA", country: "Canada" });
+  assert.equal(a?.street, false);
+  assert.equal(venueMapsUrl(a, 53.54649, -113.49793), MAPS + "53.54649%2C-113.49793");
+  assert.equal(venueMapsUrl(a), MAPS + encodeURIComponent("Edmonton AB, Canada"));
+  assert.equal(venueMapsUrl(a, null, -113.4), MAPS + encodeURIComponent("Edmonton AB, Canada"));
+});
+
+test("no address, no link", () => {
+  assert.equal(venueMapsUrl(null, 1, 2), null);
+  assert.equal(venueMapsUrl(formatVenueAddress({})), null);
 });

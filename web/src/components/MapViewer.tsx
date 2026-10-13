@@ -7,6 +7,7 @@ import type { MapBox } from "@johnmorrisdotca/chizu";
 import { regionPoint, type RegionCountry } from "@/lib/regionProject";
 import { abbreviationLabels, chizu, NS, pinText, regionsOf, selectionOf, type Pin } from "./mapDraw";
 import { AddressCredit } from "./AddressCredit";
+import { AddressLink } from "./AddressLink";
 import { COUNTRY_KEY } from "./countryKey";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./mapviewer.css";
@@ -434,7 +435,9 @@ function Selection({ pin, here }: { pin: Pin; here: string }) {
           ? <a className="ext" href={s.wiki} target="_blank" rel="noopener noreferrer" aria-label={say("map.wikiOpens", { venue: s.venue })}>{s.venue}</a>
           : <span>{s.venue}</span>
       ) : null}
-      {s.rest.map((t) => <span key={t}>{t}</span>)}
+      {s.rest.map((t) => (t === s.address && s.addressHref
+        ? <span key={t}><AddressLink href={s.addressHref} label={say("address.openMap", { address: t })}>{t}</AddressLink></span>
+        : <span key={t}>{t}</span>))}
     </p>
   );
 }

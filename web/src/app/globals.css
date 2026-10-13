@@ -386,3 +386,8 @@
     .teamlist td.former { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   }
 }
+
+/* A venue address that opens Google Maps (components/AddressLink.tsx): the text as it was, a small arrow after it. */
+a.addresslink { color: inherit; text-decoration-line: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
+a.addresslink:hover { text-decoration-color: currentColor; }
+a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; text-decoration: none; display: inline-block; }

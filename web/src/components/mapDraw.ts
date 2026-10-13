@@ -33,15 +33,18 @@ export interface Pin {
   extra?: string[];
   /** The venue's address in one line (street, city and region, country), formatted with address-plus; it replaces the plain place in the panel. */
   address?: string | null;
+  /** The Google Maps link of that address (venueMapsUrl); the panel makes the address a link to it. */
+  addressHref?: string | null;
 }
 
 /** The words a dot says: abbreviation, name, venue (or years) and place, as in its label and its tooltip. */
 export const pinText = (t: Pin) => [t.abbr ? `${t.abbr} · ${t.name}` : t.name, t.venue, t.place].filter(Boolean).join(" · ");
 
 /** What the selection panel shows for a dot: the team and its page, the venue and its Wikipedia article, and the rest as plain text. */
-export function selectionOf(t: Pin): { team: string; teamHref?: string; venue?: string; wiki?: string | null; rest: string[] } {
-  if (t.team) return { team: t.team, teamHref: t.teamHref, venue: t.name, wiki: t.wiki, rest: [t.venue, t.address ?? t.place, ...(t.extra ?? [])].filter((x): x is string => !!x) };
-  return { team: t.name, teamHref: t.href, venue: t.venue ?? undefined, wiki: t.wiki, rest: [t.address ?? t.place, ...(t.extra ?? [])].filter((x): x is string => !!x) };
+export function selectionOf(t: Pin): { team: string; teamHref?: string; venue?: string; wiki?: string | null; rest: string[]; address?: string; addressHref?: string } {
+  const address = t.address ?? undefined, addressHref = (t.address && t.addressHref) || undefined;
+  if (t.team) return { team: t.team, teamHref: t.teamHref, venue: t.name, wiki: t.wiki, rest: [t.venue, t.address ?? t.place, ...(t.extra ?? [])].filter((x): x is string => !!x), address, addressHref };
+  return { team: t.name, teamHref: t.href, venue: t.venue ?? undefined, wiki: t.wiki, rest: [t.address ?? t.place, ...(t.extra ?? [])].filter((x): x is string => !!x), address, addressHref };
 }
 
 export type Chizu = {

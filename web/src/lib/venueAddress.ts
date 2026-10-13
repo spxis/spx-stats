@@ -15,8 +15,8 @@ export interface VenueAddressParts {
   country?: string | null;
 }
 
-/** A venue's address as lines (street, city and region with the code, country) and as one line. */
-export interface VenueAddress { lines: string[]; text: string }
+/** A venue's address as lines (street, city and region with the code, country) and as one line; `street` is whether it has a street line (else it is partial). */
+export interface VenueAddress { lines: string[]; text: string; street: boolean }
 
 /** Wikidata addresses now and then carry wiki markup after the street ("500 David J. Stern Walk<ref>{{Cite web …"): keep what comes before it. */
 function tidy(s: string | null | undefined): string {
@@ -69,5 +69,16 @@ export function formatVenueAddress(p: VenueAddressParts): VenueAddress | null {
   const regionCode = [region, postal].filter(Boolean).join(" ");
   const place = code === "CA" ? [city, regionCode].filter(Boolean).join(" ") : [city, regionCode].filter(Boolean).join(", ");
   const lines = [street, place, tidy(p.country)].filter(Boolean);
-  return lines.length ? { lines, text: lines.join(", ") } : null;
+  return lines.length ? { lines, text: lines.join(", "), street: !!street } : null;
+}
+
+/**
+ * The Google Maps link of a formatted venue address, one for every place the site shows one: a plain search link (no key, no embed) for the
+ * address as written, or, when the address is partial (no street line) and the venue's coordinates are known, for the coordinates, which
+ * point at the venue where "Edmonton AB, Canada" would point at the city. Null when there is no address.
+ */
+export function venueMapsUrl(a: VenueAddress | null | undefined, lat?: number | null, lon?: number | null): string | null {
+  if (!a) return null;
+  const query = !a.street && lat != null && lon != null && Number.isFinite(lat) && Number.isFinite(lon) ? `${lat},${lon}` : a.text;
+  return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }

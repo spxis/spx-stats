@@ -9,6 +9,8 @@ import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { TeamCharts } from "@/components/TeamCharts";
 import { AddressCredit } from "@/components/AddressCredit";
+import { AddressLink } from "@/components/AddressLink";
+import { venueMapsUrl } from "@/lib/venueAddress";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
@@ -214,7 +216,9 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         if (v.latitude == null || v.longitude == null) return "";
         const at = venuePlaces.get(placeKey(f, v.home_venue, v.latitude, v.longitude) ?? "");
         const address = placeAddress(at, at?.wid ? venueFacts.get(at.wid) : undefined, v.latitude, v.longitude, say);
-        return <>{address?.lines.map((l) => <Fragment key={l}>{l}<br /></Fragment>)}<span className="seasoncell">{`${Math.abs(v.latitude).toFixed(2)}°${v.latitude < 0 ? "S" : "N"} ${Math.abs(v.longitude).toFixed(2)}°${v.longitude < 0 ? "W" : "E"}`}</span></>;
+        const href = venueMapsUrl(address, v.latitude, v.longitude);
+        const lines = address?.lines.map((l) => <Fragment key={l}>{l}<br /></Fragment>);
+        return <>{href && address ? <AddressLink href={href} label={say("address.openMap", { address: address.text })}>{lines}</AddressLink> : lines}<span className="seasoncell">{`${Math.abs(v.latitude).toFixed(2)}°${v.latitude < 0 ? "S" : "N"} ${Math.abs(v.longitude).toFixed(2)}°${v.longitude < 0 ? "W" : "E"}`}</span></>;
       },
     },
   ], (r, i) => `${i}|${r.shown}`);

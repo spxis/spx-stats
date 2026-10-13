@@ -664,6 +664,7 @@ export const PHRASES = {
   "map.noneMatch": "No teams match this filter.",
   "map.hint": "Zoom with the + and − buttons, a pinch, or Ctrl or ⌘ and scroll; drag to move once zoomed.",
   "address.credit": "Addresses are formatted with {link}.",
+  "address.openMap": "{address} on Google Maps (opens in a new tab)",
   "venues.tabs": "Venue map",
   "venues.tabLeague": "League venues",
   "venues.tabHistory": "Historic venues",

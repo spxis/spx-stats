@@ -8,13 +8,14 @@ import { abbrFor, type AbbrMap } from "./abbr";
 import type { AlignmentRow } from "./alignment";
 import { getVenuePlaces, placeKey, type VenuePlace } from "./venuePlace";
 import type { Speaker } from "./i18n/i18n";
+import { venueMapsUrl } from "./venueAddress";
 import { getVenueFacts, getVenueNames, nameIn, placeAddress, venueExtra, type VenueFacts, type VenueSpan } from "./venueName";
 import { placeFor } from "./venue";
 import type { Pin } from "@/components/mapDraw";
 import type { TeamPaths } from "./slug";
 
 /** A venue a club used, with the years of the brand eras it was named in and where it stands. */
-export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null; wiki: string | null; extra: string[]; address: string | null }
+export interface VenueStop { venue: string; from: string | null; to: string | null; lat: number; lon: number; cc: string | null; place: string | null; wiki: string | null; extra: string[]; address: string | null; addressHref: string | null }
 /** A club with a venue on record: its address slug, its latest name and its venues, oldest first. */
 export interface VenueTeam { f: number; slug: string; href: string; name: string; venues: VenueStop[] }
 
@@ -45,9 +46,10 @@ export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPat
         const vp = places.get(placeKey(f, b.home_venue, b.latitude, b.longitude) ?? "");
         const sp = vp?.wid ? spans.get(vp.wid) : undefined;
         const shown = nameIn(sp, b.brand_from ? Number(b.brand_from.slice(0, 4)) : null, b.home_venue!);
+        const adr = placeAddress(vp, vp?.wid ? facts.get(vp.wid) : undefined, b.latitude, b.longitude, say);
         stops.set(key, { venue: shown, from: b.brand_from, to: b.brand_to, lat: b.latitude!, lon: b.longitude!, cc: countryAt(b.latitude, b.longitude),
           place: vp?.place ?? null, wiki: vp?.wiki ?? null, extra: venueExtra(sp, vp?.wid ? facts.get(vp.wid) : undefined, shown, say),
-          address: placeAddress(vp, vp?.wid ? facts.get(vp.wid) : undefined, b.latitude, b.longitude, say)?.text ?? null });
+          address: adr?.text ?? null, addressHref: venueMapsUrl(adr, b.latitude, b.longitude) });
       } else {
         s.to = s.to && b.brand_to ? (b.brand_to > s.to ? b.brand_to : s.to) : null;
       }
@@ -73,10 +75,11 @@ export function clubPins(o: {
     const vp = o.places.get(placeKey(c.franchise_id, b.home_venue, b.latitude, b.longitude) ?? "");
     const sp = vp?.wid ? o.names?.get(vp.wid) : undefined;
     const venue = b.home_venue ? nameIn(sp, o.year, b.home_venue) : b.home_venue;
+    const adr = placeAddress(vp, vp?.wid ? o.facts?.get(vp.wid) : undefined, b.latitude, b.longitude, o.say);
     return [{
       f: c.franchise_id, name: c.team ?? "", abbr: abbrFor(o.abbrs, c.franchise_id, o.year, c.team), lat: b.latitude, lon: b.longitude, venue,
       extra: venueExtra(sp, vp?.wid ? o.facts?.get(vp.wid) : undefined, venue ?? "", o.say),
-      address: placeAddress(vp, vp?.wid ? o.facts?.get(vp.wid) : undefined, b.latitude, b.longitude, o.say)?.text ?? null,
+      address: adr?.text ?? null, addressHref: venueMapsUrl(adr, b.latitude, b.longitude),
       place: vp?.place, wiki: vp?.wiki, slug: o.slug?.(c.franchise_id), href: o.href(c.franchise_id), me: c.franchise_id === o.me, cc: countryAt(b.latitude, b.longitude),
       conf: al?.conference_short ?? al?.conference, div: al?.division_short ?? al?.division, logo: logoFor(o.brands, c.franchise_id, o.year),
     }];
