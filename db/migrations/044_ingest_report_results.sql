@@ -14,7 +14,7 @@
 --   (the same observation reported again, or ingest.replay()).
 --
 --   The ingest schema is not exposed through PostgREST (production exposes only api); every grant is to ingest_writer
---   (migration 045), a NOLOGIN role that can execute report_results and nothing else.
+--   (migration 046), a NOLOGIN role that can execute report_results and nothing else.
 --
 -- GAME KEY. A game in an observation is identified by league, season, phase, date, the two clubs as FRANCHISE KEYS
 --   ('<meta.source code>:<core.franchise.source_key>', e.g. 'spx_database:26' for the Maple Leafs; immutable provenance that
@@ -500,7 +500,7 @@ begin
 end $$;
 
 -- ------------------------------------------------------------------------------------------------ privileges
--- Postgres grants EXECUTE on new functions to PUBLIC: take it back from every function in the schema. Migration 045 grants
+-- Postgres grants EXECUTE on new functions to PUBLIC: take it back from every function in the schema. Migration 046 grants
 -- ingest_writer the one function it may run. Roles that only exist on a Supabase project are cleaned if they are there.
 revoke all on all functions in schema ingest from public;
 do $$

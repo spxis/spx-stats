@@ -1,15 +1,15 @@
 #!/bin/bash
-# PHASE B. Gives the NOLOGIN role ingest_writer (migration 045) a way in, on DS1 or on production, with a password that is
+# PHASE B. Gives the NOLOGIN role ingest_writer (migration 046) a way in, on DS1 or on production, with a password that is
 # generated here, sent to the database and put in the Mac keychain, and never printed or written to a file or a log.
 # NOT RUN in phase A. Needs John's OK for production (a new login on the production database).
 #
 #   bash scripts/daily/ingest-writer-login.sh ds1           # DS1: needs the DS1 admin password from the keychain (as ds1.sh does)
 #   bash scripts/daily/ingest-writer-login.sh production    # production: needs SUPABASE_ACCESS_TOKEN (environment or keychain item
-#                                                           #   'spx-stats SUPABASE_ACCESS_TOKEN'); migrations 044 and 045 applied first
+#                                                           #   'spx-stats SUPABASE_ACCESS_TOKEN'); migrations 044 and 046 applied first
 #   add --rotate to replace an existing password (the old one stops working at once)
 #
 # What it does, in order, stopping at the first failure:
-#   1. checks migrations 044 and 045 are applied (the role and ingest.report_results exist)
+#   1. checks migrations 044 and 046 are applied (the role and ingest.report_results exist)
 #   2. makes a 40-character password with openssl in this process (never an argument, never echoed)
 #   3. ALTER ROLE ingest_writer LOGIN PASSWORD ... CONNECTION LIMIT 3 (DS1: psql on stdin; production: the Management API query endpoint)
 #   4. stores it in the Mac keychain: item 'spx-stats ingest_writer DS1 55440' or 'spx-stats ingest_writer production'
@@ -54,9 +54,9 @@ except urllib.error.HTTPError as e:
 # 1. migrations in place
 CHECK="select (to_regprocedure('ingest.report_results(jsonb)') is not null and exists (select 1 from pg_roles where rolname = 'ingest_writer'))::text"
 if [ "$TARGET" = ds1 ]; then
-  [ "$(echo "$CHECK;" | "$HERE/ds1.sh" -X -q -At -f -)" = "true" ] || { echo "FAIL: apply migrations 044 and 045 first" >&2; exit 1; }
+  [ "$(echo "$CHECK;" | "$HERE/ds1.sh" -X -q -At -f -)" = "true" ] || { echo "FAIL: apply migrations 044 and 046 first" >&2; exit 1; }
 else
-  echo "$CHECK;" | api_query | grep -q 'true' || { echo "FAIL: apply migrations 044 and 045 to production first" >&2; exit 1; }
+  echo "$CHECK;" | api_query | grep -q 'true' || { echo "FAIL: apply migrations 044 and 046 to production first" >&2; exit 1; }
 fi
 
 # 2-3. password, role

@@ -4,7 +4,7 @@ Once a day, collect the game scores of the NHL, NBA, MLB, NFL and CFL from sourc
 collection and reuse, without asking any league. **Stage 1** fetches, parses, cross-checks and compares with DS1 (`--dry-run`,
 read-only). **Stage 2** (`--rehearse`, `--apply`) writes to **DS1 only**: the raw pages to the archive, the parsed rows to
 `legacy_wikipedia_daily`, the seasons and team seasons to `core`, and the games' results through the database function
-`ingest.report_results` ([The ingest API](#the-ingest-api-migrations-044-and-045)), never directly into `core.game`. **Production is stage 3** and needs John's separate OK:
+`ingest.report_results` ([The ingest API](#the-ingest-api-migrations-044-and-046)), never directly into `core.game`. **Production is stage 3** and needs John's separate OK:
 nothing here knows production. Ticket: "Daily scores from Wikipedia and allowed sources".
 
 ## Run it
@@ -101,7 +101,7 @@ team name lands there), and the clubs that have no `core.team_season` for the se
 History is bulk (loads and `db/build` steps). **Daily scores are reported through one narrow database API**, `ingest.report_results`
 (below): the job calls a function, it does not write `core.game`. Order, each step stopping the run when it fails (`apply.py`):
 
-1. **Rehearsal** (always first; `--rehearse` stops here): one transaction that applies migrations `043`-`045` (rerunnable), the archive
+1. **Rehearsal** (always first; `--rehearse` stops here): one transaction that applies migrations `043`, `044` and `046` (rerunnable), the archive
    rows, the raw load, `db/build/152` (seasons and team seasons only), **reports every game as an observation, as the restricted role
    `ingest_writer`**, runs the bulk step for the games the report found no row for (`ingest.replay(true, true)`), reports everything a
    second time (it must add no row and change no game), prints before/after counts and the checks (`snapshot.sql`, `checks.sql`), and
@@ -119,7 +119,7 @@ Re-running is a no-op: a revision DS1 holds is neither archived nor loaded again
 `last_seen` and `seen_count`), and the state machine changes nothing it has already done. The output shows the second report of the same
 transaction: 0 new observations, 0 games changed.
 
-## The ingest API (migrations 044 and 045)
+## The ingest API (migrations 044 and 046)
 
 Decision (John, 2026-10-12): history stays bulk; **daily and later live scores go through a narrow API**, not through table privileges
 with exceptions. Production gets the same function from the same migration file, so both databases apply identical rules.
@@ -132,7 +132,7 @@ object schema-qualified. It (1) appends the observations, (2) matches each to a 
 that changed with `league`, `season`, `game_date`, `from`/`to` status, the score and a reason (for logs now, page refresh later).
 It does not run caller SQL, so AGENTS.md's "never build a public endpoint that runs SQL" is not touched; and it is not public.
 
-**Who may call it.** `ingest_writer` (migration 045), `NOLOGIN` here. It can execute that one function and nothing else: no table
+**Who may call it.** `ingest_writer` (migration 046), `NOLOGIN` here. It can execute that one function and nothing else: no table
 privilege, no other function, no create anywhere; `PUBLIC`, `anon`, `authenticated` and `service_role` are revoked; row level security is on
 for the table. `db/tests/run-ingest-tests.sh` proves it by running as the role. Giving it a login and a password is phase B
 (`ingest-writer-login.sh`, not run).
@@ -207,12 +207,12 @@ have added, in observation order), so every result, verification and flag comes 
 filled games of other sources back as they were, runs 152 and 153, and compares one signature of everything the daily source owns or
 touched, before and after (rolled back).
 
-**Tests.** `bash db/tests/run-ingest-tests.sh` (SQL, one rolled-back transaction on DS1, applies 044 and 045 first): every transition, the
+**Tests.** `bash db/tests/run-ingest-tests.sh` (SQL, one rolled-back transaction on DS1, applies 044 and 046 first): every transition, the
 terminal final, idempotency, unmatched, invalid input, the replay equivalence, and the privilege model as `ingest_writer`.
 
 ## Phase B (production): prepared, not run
 
-1. John's OK. Then apply `db/migrations/044_ingest_report_results.sql` and `045_ingest_writer_role.sql` to production (Supabase MCP
+1. John's OK. Then apply `db/migrations/044_ingest_report_results.sql` and `046_ingest_writer_role.sql` to production (Supabase MCP
    `apply_migration`, in that order; both are rerunnable). Check `ingest` is not in the project's exposed schemas (it must stay `api` only).
 2. The bulk copy brings the games, seasons, franchises and `meta.source` row `wikipedia_daily` to production (insert-only,
    `scripts/sync/compare.py`), so the franchise keys and games exist there before anything is reported.
@@ -250,7 +250,7 @@ the games it needs come from the insert-only bulk copy (`scripts/sync/compare.py
 `compare.py` DS1 comparison (SELECTs only) · `ds1.sh` DS1 `psql` (host and password found inside) · `apply.py` stage 2: rehearsal,
 archive, load, report, refresh (`observation()` builds what `ingest.report_results` takes) · `snapshot.sql` + `checks.sql` the report and the
 checks · `selftest.py` + `fixtures/` the tests · `ingest-writer-login.sh` phase B, not run ·
-`db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `044_ingest_report_results.sql` the API · `045_ingest_writer_role.sql` the
+`db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `044_ingest_report_results.sql` the API · `046_ingest_writer_role.sql` the
 role · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
 `db/tests/` (`run-ingest-tests.sh`, `run-rebuild-proof.sh`).
 Fixtures are excerpts of Wikipedia articles (CC BY-SA 4.0); the first line of each names the article and revision, and the

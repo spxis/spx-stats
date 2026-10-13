@@ -1,4 +1,4 @@
--- Tests for ingest.report_results (migrations 044 and 045). Run with db/tests/run-ingest-tests.sh: it applies both migrations inside one
+-- Tests for ingest.report_results (migrations 044 and 046). Run with db/tests/run-ingest-tests.sh: it applies both migrations inside one
 -- transaction, runs this file, prints the result and ROLLS BACK, so nothing stays in the database.
 -- Fixtures: MLB season 2099 (only the daily source holds games: "owned") and MLB season 2098 (games of another source: SPX).
 -- Every check is a row in _t; the last query prints the failures and one RESULT line.
