@@ -436,7 +436,13 @@ core rebuild; the release runner runs `select api.refresh();` after each release
      it re-checks the policy before applying. Anything else stays pending for John, with the reasons at `/admin/data`. John can
      Hold a release, or "Hold all auto-approvals" (migration 047); the runner also sets that switch itself when an automatic
      release fails or the drift check finds rows an automatic release wrote changed. Never approve a release yourself.
-6. **After every release:** the runner verifies and refreshes `api` (`api.refresh()`); look at one affected page on spxn.com.
+   - **Requests from `/admin/data`** (migration 053, `scripts/release/README.md`): an admin's "Request scores update" (Settings) or
+     "Check now" (Drift) writes one row in `meta.score_update_request`; the runner's once-a-minute run does the work. A scores request
+     runs `scripts/daily/run.py --apply` on DS1 under the shared lock (`scripts/release/daily_lock.py`) and approves the release it
+     prepares as `request:<admin>` only if the auto-approval policy passes and Hold is off. Never write to that table by hand.
+6. **After every release:** the runner verifies, refreshes `api` (`api.refresh()`), re-compares that release's tables into
+   `meta.sync_status` and makes one POST to the site's `/api/revalidate` (`REVALIDATE_URL`, `REVALIDATE_SECRET`) so the changed pages
+   refresh now; look at one affected page on spxn.com.
 7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
    read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
    empty for the whole league, else `<source code>:<source key>`; EN required, FR and JA when known; `source` is a

@@ -3,7 +3,9 @@
 A small container that sits next to DS1. Every 60 seconds it runs `release.py run` (applies the data releases John approved at
 `/admin/data`) and once a night `release.py drift` (compares DS1 and production). It needs DS1 on the local network and the
 internet (Supabase and GitHub). Production cannot reach DS1, so this is the only way data gets to production.
-It cannot approve anything: approval is a button on the site.
+It cannot approve anything on its own: approval is a button on the site. Two exceptions, both limited to `daily_scores` releases and
+re-checked against the policy and the Hold switch right before the apply: the automatic approval after a 10 minute hold, and the approval
+of the release prepared for an admin's **Request scores update** (below).
 
 ## Set up once (about 15 minutes)
 
@@ -22,6 +24,23 @@ It cannot approve anything: approval is a button on the site.
    `nothing approved` repeating. If you see `... is not set`, a name in `release-runner.env` is empty.
 6. Check DS1 access from the NAS once: in Container Manager open the container's Terminal and run
    `python3 -I /work/repo/scripts/release/release.py checks`. It prints one line per check, all `ok`.
+
+## Score update requests, drift checks and the site refresh
+
+- **Request scores update** (Settings tab) and **Check now** (Drift tab) at `/admin/data` write one request row in production. The same
+  once-a-minute run reads it (no new timer). A scores request runs `scripts/daily/run.py --apply` against DS1 from this container, using the
+  checkout and the `PG*` settings it already has, prepares a `daily_scores` release and approves it as `request:<admin>` if the policy
+  passes and Hold is off. It needs nothing new in `release-runner.env`; the job's downloads are kept in `data/daily/`. The first request
+  fetches every Wikipedia page (about 17 requests); later ones only what changed.
+- A requested run holds the shared DS1 lock (`scripts/release/daily_lock.py`) and waits while the daily job's heartbeat shows a run in
+  progress. While it runs (a few minutes at most; `RELEASE_DAILY_TIMEOUT`, 2400 s) the runner does nothing else.
+- **Site refresh.** After each committed release the runner makes one `POST` to the site's `/api/revalidate` so the changed pages rebuild now.
+  Add to `release-runner.env`: `REVALIDATE_URL=https://spxn.com/api/revalidate` and `REVALIDATE_SECRET=<the same value as the site's
+  REVALIDATE_SECRET, 32 or more characters>`. Without them nothing is sent and pages refresh within the hour. The secret only lets a caller
+  refresh cache tags; it cannot read or change data.
+- After each committed release the runner also compares that release's tables again and updates `meta.sync_status`.
+- Rebuild after pulling this change: Container Manager, Project, `spx-release-runner`, Action, Build (only needed for a new `Dockerfile` or
+  `entry.sh`; this change touches neither, so setting `RELEASE_REF` to the new sha and restarting is enough).
 
 ## What it does and where things are
 

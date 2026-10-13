@@ -42,6 +42,17 @@ The **runner** is a small program on the NAS that applies approved releases, onc
   final yet, no inserts or deletes, at most 500 games, all checks pass.
 - Anything else waits for John, with the reasons shown at `/admin/data`.
 
+## Asking for things from /admin/data
+
+- **Request scores update** (Settings tab): production cannot reach DS1, so the click only writes one request row. The runner (it already
+  looks every minute) runs the daily scores job on DS1, prepares the release and approves it for you if the auto-approval checks pass and
+  Hold is off. Otherwise it waits for you under Pending. One request at a time, about 10 minutes apart. Wikipedia often updates hours
+  after games end, so a request may find nothing new.
+- **Check now** (Drift tab): the same, for a drift check.
+- After every release the runner re-compares that release's tables, so the Drift tab shows when the comparison was taken and calls an older
+  result out of date. It also asks the site to refresh the changed pages right away, instead of within the hour.
+- Admins see a slim bar at the top of every page when a release is waiting, a drift fix is proposed or auto-approval is on Hold.
+
 ## Safety nets
 
 - **Checks:** `db/checks/*.sql` run on DS1 before every release. A failed check blocks it.
