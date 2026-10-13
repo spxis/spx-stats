@@ -119,11 +119,32 @@ where c.relkind in ('r', 'p') and not c.relispartition
 order by 1, 2
 """ % ",".join(ql(s) for s in SCHEMAS)
 
+# Every foreign key on the database, validated or NOT VALID (both are enforced on new writes), in any schema. Names are built from
+# nspname.relname, not from regclass::text: that prints "position" in quotes ('ref."position"') and drops the schema when the table
+# is on the search_path, so the edge never matched the plain "ref.position" names the release uses (release 2026.10.13-11 and -13).
 FK_SQL = """
-select conrelid::regclass::text as child, confrelid::regclass::text as parent
-from pg_constraint where contype = 'f'
-  and connamespace::regnamespace::text in (%s)
-""" % ",".join(ql(s) for s in SCHEMAS)
+select cn.nspname || '.' || cr.relname as child, pn.nspname || '.' || pr.relname as parent, c.conname as name,
+  c.convalidated as validated
+from pg_constraint c
+join pg_class cr on cr.oid = c.conrelid join pg_namespace cn on cn.oid = cr.relnamespace
+join pg_class pr on pr.oid = c.confrelid join pg_namespace pn on pn.oid = pr.relnamespace
+where c.contype = 'f'
+"""
+
+
+class FkCycle(RuntimeError):
+    """The tables of a release point at each other in a loop, so no order of statements can keep every foreign key true."""
+
+
+def fk_edges(*sides):
+    """{(child, parent): [constraint names]} from the foreign keys of every side given (DS1 and production), as schema.table."""
+    out = defaultdict(set)
+    for side in sides:
+        if side is None:
+            continue
+        for e in side.run(FK_SQL):
+            out[(e["child"], e["parent"])].add(e["name"])
+    return {k: sorted(v) for k, v in out.items()}
 
 
 def catalog(side):
@@ -335,25 +356,48 @@ def compare_table(ds1, prod, t, outdir, detail_limit):
     return result
 
 
-def apply_order(tables, ds1):
-    """Parents before children, from DS1's foreign keys."""
-    edges = ds1.run(FK_SQL)
-    deps = defaultdict(set)
-    for e in edges:
-        c, p = e["child"], e["parent"]
-        if c != p:
+def apply_order(tables, ds1, prod=None, strict=True):
+    """The tables in parents-first order: a table comes after every table of the list that it has a foreign key to, on DS1 or on
+    production (prod, when given), validated or not, in any schema. Deterministic and stable: tables that do not depend on each
+    other keep the order they were given in, and a round puts every table that became ready in that order. A foreign key from a table
+    to itself needs no order (it holds at the end of one statement). A loop between two or more tables of the list raises FkCycle
+    naming it (strict), or leaves the tables of the loop at the end in the given order (strict=False, for reports only).
+    Reverse the result for children first."""
+    edges = fk_edges(ds1, prod)
+    names = list(dict.fromkeys(tables))
+    inside = set(names)
+    deps = {x: set() for x in names}
+    for (c, p), _ in edges.items():
+        if c != p and c in inside and p in inside:
             deps[c].add(p)
-    done, order, left = set(), [], list(tables)
+    done, order, left = set(), [], names
     while left:
-        ready = [x for x in left if not (deps[x] & set(left) - done - {x})]
+        ready = [x for x in left if deps[x] <= done]
         if not ready:
+            if strict:
+                raise FkCycle(cycle_message(left, deps, edges))
             order += left
             break
-        for x in ready:
-            order.append(x)
-            done.add(x)
-            left.remove(x)
+        order += ready
+        done.update(ready)
+        left = [x for x in left if x not in done]
     return order
+
+
+def cycle_message(left, deps, edges):
+    """Name one loop among the tables that could not be placed: every one of them still depends on another of them."""
+    stuck = set(left)
+    node = left[0]
+    path = [node]
+    while True:
+        node = sorted(deps[node] & stuck)[0]
+        if node in path:
+            path = path[path.index(node):] + [node]
+            break
+        path.append(node)
+    keys = ["%s (%s)" % (a, ", ".join(edges[(a, b)])) for a, b in zip(path, path[1:])]
+    return ("foreign keys between the tables of this release form a loop, so no order can keep them true: %s. "
+            "Release the tables in separate steps, or change the keys: %s" % (" -> ".join(path), "; ".join(keys)))
 
 
 def main():
@@ -413,7 +457,7 @@ def main():
             for note in t.notes:
                 print("    note: " + note)
         if sql_files:
-            order = [x for x in apply_order(list(c1), ds1) if x in sql_files]
+            order = [x for x in apply_order(list(c1), ds1, strict=False) if x in sql_files]
             with open(os.path.join(a.out, "apply_order.txt"), "w") as f:
                 f.write("\n".join(x + ".to_prod.sql" for x in order) + "\n")
             print("apply order (parents first): " + " ".join(order))

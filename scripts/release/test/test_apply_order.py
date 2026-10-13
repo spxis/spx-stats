@@ -9,6 +9,10 @@ production, seeded with a tiny schema with the same shapes as the real failures:
   - core.conference / core.division / core.team_season: parents rebuilt with NEW ids on DS1, the child re-pointed (release 2026.10.13-8)
   - core.franchise_brand, core.team_note: rows replaced by new-id rows with the same unique natural key (release 2026.10.13-1)
   - core.rel_swap: rows that swap unique values
+  - the position release (2026.10.13-11 and -13): a new, empty parent code table (ref.position_code), a list table named with a keyword
+    (ref."position"), an alias table with a composite key to it, a person table with a NOT VALID key to the code table and a trigger that
+    reads it, a re-keyed stats child of person, removed persons, redirects, and a table that points at itself
+  - a foreign key loop, which must be refused at prepare, with the loop built from both databases' keys
 It runs the real publish_plan, stage_and_apply, snapshot and restore from release.py. Exit code: 0 all passed, 1 a check failed.
 """
 import importlib.util
@@ -121,17 +125,15 @@ def start_server():
     return tmp, lambda: subprocess.run(["docker", "stop", name], capture_output=True)
 
 
-def dump(db):
+def dump(db, tables=None):
     out = {}
-    for t in TABLES:
+    for t in (tables or TABLES):
         out[t] = psql(db, "select coalesce(string_agg(x::text, ';' order by x::text), '') from %s x" % t)
     return out
 
 
-def main():
-    snap = tempfile.mkdtemp(prefix="ordsnap-")
-    tmp, stop = start_server()
-    try:
+def scenario_divisions(snap):
+    if True:
         for db, seed in ((OLD, SEED_OLD), (NEW, SEED_NEW)):
             psql("postgres", "create database %s" % db)
             psql(db, DDL + seed)
@@ -155,8 +157,7 @@ def main():
 
         # the generated block, captured as it is sent
         sent = []
-        real_block = R.apply_block
-        R.apply_block = lambda steps: sent.append(real_block(steps)) or sent[-1]
+        R.apply_block = lambda steps: sent.append(REAL_BLOCK(steps)) or sent[-1]
         R.snapshot(ctx, 1, "2026.10.13-t", items)
         try:
             R.stage_and_apply(ctx, 1, plan)
@@ -208,9 +209,234 @@ def main():
         psql(NEW, "update core.team_season set division_id = 111 where team_season_id = 1")
         diffs2, _, _ = R.diff_tables(ctx, TABLES)
         items2 = [(n, diffs2[n][0], diffs2[n][1]) for n in R.ordered(ctx, TABLES)]
-        R.apply_block = real_block
+        R.apply_block = REAL_BLOCK
         R.stage_and_apply(ctx, 2, R.publish_plan(ctx, items2))
         ok("and commits again", dump(OLD) == dump(NEW))
+
+
+REAL_BLOCK = R.apply_block
+POS_TABLES = ["core.org_unit", "core.person", "core.person_redirect", "core.player_season_stat",
+              "ref.position", "ref.position_alias", "ref.position_code"]
+POS_DDL = """
+create schema core; create schema meta; create schema ref;
+create table ref.league (league_code text primary key);
+create table ref.position_code (code text primary key);
+create table ref."position" (league_code text not null references ref.league, code text not null references ref.position_code,
+  name_en text not null, primary key (league_code, code));
+create table ref.position_alias (source_code text not null, league_code text not null, raw_value text not null, code text not null,
+  primary key (source_code, league_code, raw_value),
+  foreign key (league_code, code) references ref."position" (league_code, code) on delete cascade);
+create table core.person (person_id bigint primary key, name text not null, primary_position text, positions text[]);
+create function core.check_person_positions() returns trigger language plpgsql as $$
+declare bad text;
+begin
+  select c into bad from unnest(new.positions) c where not exists (select 1 from ref.position_code k where k.code = c) limit 1;
+  if bad is not null then raise exception 'core.person.positions: % is not a position code', bad using errcode = '23503'; end if;
+  return new;
+end $$;
+create trigger person_positions_check before insert or update of positions on core.person
+  for each row when (new.positions is not null) execute function core.check_person_positions();
+create table core.person_redirect (old_person_id bigint primary key, person_id bigint not null references core.person on delete cascade);
+create table core.player_season_stat (stat_id bigint primary key, person_id bigint not null references core.person,
+  season int not null, goals int, unique (person_id, season));
+create table core.org_unit (unit_id int primary key, parent_id int references core.org_unit, name text);
+insert into ref.league values ('NHL');
+"""
+# added after the seed: the old rows hold free text, which a NOT VALID key allows (and the trigger only looks at positions)
+POS_KEY = "alter table core.person add constraint person_primary_position_fk foreign key (primary_position) references ref.position_code (code) not valid;"
+# production: the code tables exist and are empty; people still hold free text (allowed: the key is NOT VALID)
+POS_OLD = """
+insert into core.person values (1, 'A', 'Left Wing', null), (2, 'B', 'Center', null), (3, 'C', null, null), (4, 'D', 'Center', null),
+  (5, 'E', null, null), (6, 'F', 'Goalie', null);
+insert into core.player_season_stat values (1, 1, 2019, 5), (2, 2, 2019, 7), (3, 4, 2018, 3), (4, 5, 2018, 2);
+insert into core.org_unit values (1, null, 'root'), (2, 1, 'old child'), (3, 2, 'leaf');
+"""
+# DS1: codes, the list, the aliases; persons 4 and 5 merged into 1 and 2 (removed, redirected); every stats row re-keyed
+POS_NEW = """
+insert into ref.position_code values ('LW'), ('C'), ('G');
+insert into ref."position" values ('NHL', 'LW', 'Left Wing'), ('NHL', 'C', 'Center'), ('NHL', 'G', 'Goalie');
+insert into ref.position_alias values ('spx', 'NHL', 'left wing', 'LW'), ('spx', 'NHL', 'center', 'C'), ('spx', 'NHL', 'goalie', 'G');
+insert into core.person values (1, 'A', 'LW', '{LW}'), (2, 'B', 'C', '{C,LW}'), (3, 'C', null, null), (6, 'F', 'G', '{G}');
+insert into core.person_redirect values (4, 1), (5, 2);
+insert into core.player_season_stat values (11, 1, 2019, 5), (12, 2, 2019, 7), (13, 1, 2018, 3), (14, 2, 2018, 2);
+insert into core.org_unit values (1, null, 'root'), (10, 1, 'new child'), (3, 10, 'leaf');
+"""
+
+
+def block_index(block):
+    def at(pattern):
+        hits = [i for i, line in enumerate(block) if re.search(pattern, line)]
+        return hits[0] if hits else None
+    return at
+
+
+def scenario_positions(snap, free_text):
+    """free_text: production's people still hold the old free text in primary_position (the real state, NOT VALID key). Otherwise
+    those cells are empty, so the restore, which writes the old cells back, has nothing the key refuses."""
+    tag = "pos" if free_text else "posnull"
+    seed_old = POS_OLD if free_text else re.sub(r"'(Left Wing|Center|Goalie)'", "null", POS_OLD)
+    print("--- the position release, production's people hold %s" % ("free text" if free_text else "no old text"))
+    for db, seed in ((tag + "_prod", seed_old), (tag + "_ds1", POS_NEW)):
+        psql("postgres", "create database %s" % db)
+        psql(db, POS_DDL + seed + POS_KEY)
+    R.SNAP_DIR = snap
+    ds1 = C.PsqlSide("DS1", dsn(tag + "_ds1"))
+    ctx = types.SimpleNamespace(ds1=ds1, prod=Prod(tag + "_prod"), w=R.Ds1Writer(dsn(tag + "_ds1")))
+    P = POS_TABLES
+    before = dump(tag + "_prod", P)
+
+    edges = C.fk_edges(ds1)
+    ok("the keys are read as plain schema.table names, a keyword table included",
+       ("ref.position_alias", "ref.position") in edges and ("ref.position", "ref.position_code") in edges, sorted(edges))
+    ok("a NOT VALID key is an edge, and so is a key to the table itself",
+       ("core.person", "ref.position_code") in edges and ("core.org_unit", "core.org_unit") in edges, sorted(edges))
+
+    order = R.ordered(ctx, P)
+    ix = order.index
+    ok("position: the code table, then the list, then the aliases",
+       ix("ref.position_code") < ix("ref.position") < ix("ref.position_alias"), order)
+    ok("position: the code table comes before person (NOT VALID key and trigger)", ix("ref.position_code") < ix("core.person"), order)
+    ok("position: person comes before its redirects and its stats",
+       ix("core.person") < ix("core.person_redirect") and ix("core.person") < ix("core.player_season_stat"), order)
+    rev = R.ordered(ctx, list(reversed(P)))
+    ok("the order holds whatever order the tables are given in",
+       rev.index("ref.position_code") < rev.index("ref.position") < rev.index("ref.position_alias")
+       and rev.index("ref.position_code") < rev.index("core.person") < rev.index("core.person_redirect"), rev)
+    ok("the same input always gives the same order", R.ordered(ctx, P) == order)
+
+    diffs, blockers, _ = R.diff_tables(ctx, P)
+    ok("the position shape has no blockers from the comparison", not any(blockers.values()), blockers)
+    items = [(n, diffs[n][0], diffs[n][1]) for n in order]
+    ok("the shape is there: empty code table on production, persons removed, stats re-keyed",
+       len(diffs["ref.position_code"][1]["only1"]) == 3 and diffs["ref.position_code"][1]["prod"] == 0
+       and len(diffs["core.person"][1]["only2"]) == 2 and len(diffs["core.player_season_stat"][1]["only1"]) == 4
+       and len(diffs["core.player_season_stat"][1]["only2"]) == 4)
+
+    plan = R.publish_plan(ctx, items)
+    fresh = {p["t"].name: p["fresh"] for p in plan}
+    ok("position: referenced tables are not fresh (the self-referencing one included)",
+       fresh == {"core.org_unit": False, "core.person": False, "core.person_redirect": True, "core.player_season_stat": True,
+                 "ref.position": False, "ref.position_alias": True, "ref.position_code": False}, fresh)
+
+    sent = []
+    R.apply_block = lambda steps: sent.append(REAL_BLOCK(steps)) or sent[-1]
+    R.snapshot(ctx, 3, "2026.10.13-p", items)
+    try:
+        R.stage_and_apply(ctx, 3, plan)
+        committed, err = True, ""
+    except Exception as e:  # noqa: BLE001
+        committed, err = False, e
+    ok("position: the block commits (codes before list before aliases, person after the codes)", committed, err)
+    at = block_index(sent[0].splitlines())
+
+    def ins(table, schema="core"):
+        return at(r'^insert into "%s"\."%s"' % (schema, table))
+
+    def dele(table, schema="core", alias="d"):
+        return at(r'^delete from "%s"\."%s" t using \S+ %s ' % (schema, table, alias))
+
+    ok("position inserts: code, list, alias", ins("position_code", "ref") < ins("position", "ref") < ins("position_alias", "ref"))
+    ok("position inserts: the codes before person", ins("position_code", "ref") < ins("person"))
+    ok("person is written before its redirects and its stats", ins("person") < ins("person_redirect") and ins("person") < ins("player_season_stat"))
+    ok("the old stats are cleared before the removed persons go", dele("player_season_stat", alias="[du]") < dele("person"))
+    ok("the removed persons go after every insert", dele("person") > max(ins(t) for t in ("person", "person_redirect", "player_season_stat", "org_unit")))
+    ok("the self-referencing table: new parent inserted before the old one is deleted", ins("org_unit") < dele("org_unit"))
+    ok("position: production equals DS1 after the block", dump(tag + "_prod", P) == dump(tag + "_ds1", P), (dump(tag + "_prod", P), dump(tag + "_ds1", P)))
+    ok("production's key is still NOT VALID and the trigger is still there",
+       psql(tag + "_prod", "select convalidated from pg_constraint where conname = 'person_primary_position_fk'") == "f"
+       and psql(tag + "_prod", "select count(*) from pg_trigger where tgname = 'person_positions_check'") == "1")
+
+    # the restore goes through the same block: old rows back, then what the release inserted removed, children first
+    sent.clear()
+    try:
+        R.restore(ctx, 3, P, orig_rows={n: diffs[n][1]["prod"] for n in P})
+        restored, err = True, ""
+    except Exception as e:  # noqa: BLE001
+        restored, err = False, str(e)
+    if free_text:
+        # KNOWN LIMIT: the old free text is not a code, and the NOT VALID key refuses any write of it (the key is checked on every
+        # insert or change of the column, valid or not). The release never changes keys, so this restore cannot succeed; it must fail
+        # as a whole and leave production as the release made it.
+        ok("position (free text): the restore is refused by the NOT VALID key and changes nothing (known limit)",
+           not restored and "person_primary_position_fk" in err and dump(tag + "_prod", P) == dump(tag + "_ds1", P), err[:200])
+    else:
+        ok("position: restore commits through the same block", restored and len(sent) == 1, err)
+    if restored:
+        ok("position: restore puts production back exactly as it was", dump(tag + "_prod", P) == before, (dump(tag + "_prod", P), before))
+        at = block_index(sent[0].splitlines())
+        ok("position restore: aliases, then the list, then the codes are removed",
+           dele("position_alias", "ref", "[du]") is not None
+           and dele("position_alias", "ref", "[du]") < dele("position", "ref") < dele("position_code", "ref"))
+        ok("position restore: persons are written back before the codes are removed", ins("person") < dele("position_code", "ref"))
+    R.apply_block = REAL_BLOCK
+
+
+class StubSide:
+    def __init__(self, edges):
+        self.edges = edges
+
+    def run(self, sql):
+        return [{"child": c, "parent": p, "name": "%s_fk" % c.split(".")[1], "validated": True} for c, p in self.edges]
+
+
+def scenario_cycles(snap):
+    # ordering rules without a database
+    s = StubSide([("a.c", "a.b"), ("a.b", "a.a"), ("a.a", "a.a"), ("a.d", "a.x")])
+    got = C.apply_order(["a.d", "a.c", "a.b", "a.a"], s)
+    ok("order: parents first, ties keep the given order, a self key and a table outside the list add no edge",
+       got == ["a.d", "a.a", "a.b", "a.c"], got)
+    ok("order: duplicates in the list are ignored", C.apply_order(["a.a", "a.b", "a.a"], s) == ["a.a", "a.b"])
+    loop = StubSide([("a.x", "a.y"), ("a.y", "a.z"), ("a.z", "a.x"), ("a.w", "a.x")])
+    try:
+        C.apply_order(["a.w", "a.x", "a.y", "a.z"], loop)
+        msg = None
+    except C.FkCycle as e:
+        msg = str(e)
+    ok("a loop of three tables is reported with the loop and the keys", bool(msg) and all(x in msg for x in ("a.x", "a.y", "a.z", "x_fk", "loop")), msg)
+    ok("strict=False (the compare.py report) still returns every table",
+       sorted(C.apply_order(["a.w", "a.x", "a.y", "a.z"], loop, strict=False)) == ["a.w", "a.x", "a.y", "a.z"])
+    ok("a loop outside the list is not an error", C.apply_order(["a.w"], loop) == ["a.w"])
+
+    # against databases: the loop exists only when DS1's keys and production's keys are put together
+    for db in ("cyc_prod", "cyc_ds1"):
+        psql("postgres", "create database %s" % db)
+    base = ("create schema core; create schema meta; create schema ref;"
+            "create table core.a (id int primary key, b_id int); create table core.b (id int primary key, a_id int);"
+            "create table core.c (id int primary key, a_id int);"
+            "alter table core.c add foreign key (a_id) references core.a;")
+    psql("cyc_ds1", base + "alter table core.b add foreign key (a_id) references core.a;")
+    psql("cyc_prod", base + "alter table core.a add foreign key (b_id) references core.b;")
+    ds1 = C.PsqlSide("DS1", dsn("cyc_ds1"))
+    prod = Prod("cyc_prod")
+    ctx = types.SimpleNamespace(ds1=ds1, prod=prod, w=None)
+    names = ["core.a", "core.b", "core.c"]
+    ok("DS1's keys alone give an order", C.apply_order(names, ds1) == ["core.a", "core.b", "core.c"], C.apply_order(names, ds1))
+    ok("production's keys alone give an order", C.apply_order(names, prod) == ["core.b", "core.a", "core.c"], C.apply_order(names, prod))
+    try:
+        R.ordered(ctx, names)
+        refused = None
+    except R.Refused as e:
+        refused = str(e)
+    ok("the two sides together form a loop and the order is refused", bool(refused) and "core.a" in refused and "core.b" in refused, refused)
+    try:
+        R.prepare_publish(ctx, "loop", names)
+        pre = None
+    except R.Refused as e:
+        pre = str(e)
+    except Exception as e:  # noqa: BLE001
+        pre = "other error: %r" % e
+    ok("prepare refuses a loop before it checks anything or writes a release", bool(pre) and "loop" in pre and "other error" not in pre, pre)
+    ok("a table list without the loop still orders", R.ordered(ctx, ["core.a", "core.c"]) == ["core.a", "core.c"])
+
+
+def main():
+    snap = tempfile.mkdtemp(prefix="ordsnap-")
+    tmp, stop = start_server()
+    try:
+        scenario_divisions(snap)
+        scenario_positions(snap, True)
+        scenario_positions(snap, False)
+        scenario_cycles(snap)
     finally:
         stop()
         shutil.rmtree(tmp, ignore_errors=True)

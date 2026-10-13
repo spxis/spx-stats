@@ -374,6 +374,7 @@ def valid_tables(raw):
 
 def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, created_by=None, diff_cache=None, quiet=False,
                     kind="publish"):
+    ordered(ctx, names)  # a foreign key loop among the tables is refused now, not at the apply
     checks = run_checks(ctx.ds1)
     if diff_cache is None:
         diffs, blockers, warnings = diff_tables(ctx, names)
@@ -732,15 +733,19 @@ def snapshot(ctx, rid, number, items):
 
 
 def ordered(ctx, names):
-    return C.apply_order(list(names), ctx.ds1)
+    """The release's tables parents first, from the foreign keys of DS1 and production together (compare.apply_order). Used for the
+    inserts and upserts as given, for the deletes and the fresh-table pass reversed, and for the restore. A loop among the tables
+    is refused here, which prepare calls too, so it stops before the preview and not at the apply."""
+    try:
+        return C.apply_order(list(names), ctx.ds1, ctx.prod)
+    except C.FkCycle as e:
+        raise Refused(str(e))
 
 
 def referenced_tables(ctx):
-    """Tables some foreign key points at, on DS1 or on production. Any other table is "fresh" in apply_block."""
-    out = set()
-    for side in (ctx.ds1, ctx.prod):
-        out |= {e["parent"] for e in side.run(C.FK_SQL)}
-    return out
+    """Tables some foreign key points at (a table's own key to itself counts), on DS1 or on production, from any table. Any other
+    table is "fresh" in apply_block."""
+    return {p for (_, p) in C.fk_edges(ctx.ds1, ctx.prod)}
 
 
 def refresh_production(ctx):

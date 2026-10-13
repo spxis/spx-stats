@@ -41,7 +41,13 @@ Exit code: 0 ok, 1 refused or blocked or (drift) differences found, 2 error.
 
 Production's foreign keys are not deferrable and the release never changes them, so the block orders its statements so that every
 foreign key and unique key holds after each one. "Fresh" means a table no foreign key points at (checked on DS1 and on production);
-every other table in the release is "referenced". Tables are in parents-first order (`compare.apply_order`, from DS1's keys).
+every other table in the release is "referenced". Tables are in parents-first order (`compare.apply_order`): a table comes after
+every table of the release that it has a foreign key to, from the keys of DS1 and production put together, `NOT VALID` ones included,
+in any schema (names are read from `pg_namespace`/`pg_class`, not `regclass::text`, which quotes `ref."position"` and so never matched
+`ref.position`: releases 2026.10.13-11 and -13). Tables with no key between them keep the order they were given in. A key from a table to
+itself needs no order. A loop of keys between the tables of a release is refused by `prepare` (and by `run`) with the loop and the key
+names, because no order can satisfy it. A trigger that reads another table is not a key and is not seen: give it a key or check the
+order by hand.
 
 1. **Fresh tables, children first:** delete the listed removals, then delete the rows about to be written. A row replaced by one with
    another id but the same natural key (`franchise_brand`, `award_winner`), or rows that swap unique values, cannot collide, and nothing
@@ -54,7 +60,9 @@ every other table in the release is "referenced". Tables are in parents-first or
 One case cannot be ordered: a referenced table where a removed row and an incoming row share a unique natural key. The block then fails
 on that key, and production is unchanged (the release is failed with the error). The restore after a failed verification and the rollback
 build their plan from the snapshot and go through the same block, so a restore also inserts the old parents, re-points the children, and
-only then deletes the rows the release had inserted.
+only then deletes the rows the release had inserted. One restore cannot work: a table whose old rows hold a value that a `NOT VALID` key refuses
+(`core.person.primary_position` while it still holds free text instead of a position code), because the key is checked on every write of
+that column. The restore then fails as a whole and leaves production as the release made it (the release is marked failed with the error).
 
 ## Automatic approval (daily scores)
 
@@ -194,7 +202,7 @@ hashes for tables with float columns (`core.person`): prepare them again.
 
     python3 -I scripts/release/test/test_release.py
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
-    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 3150; stops it after)
+    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 3150; stops it after; includes the position-release shape and the foreign key loop refusal)
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
 
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies
