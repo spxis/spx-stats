@@ -20,8 +20,9 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
-import { parsePhase, PlayerSeasons, PlayerStatistics } from "@/components/PlayerStats";
+import { PlayerBoard } from "@/components/PlayerBoard";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
+import { buildBoard } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
 import { positionCodes, positionNames } from "@/lib/positions";
 import { ageOn, countryName, inches, positionsText } from "@/lib/people-format";
@@ -127,7 +128,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   for (const s of record.seasonTeams) if (s.team_champion && !titles.some((t) => t.league === s.league && t.year === s.year)) titles.push({ league: s.league, year: s.year, team: s.team });
   titles.sort((a, b) => b.year - a.year);
   const seasonsHeld = new Set(summary.seasons.map((s) => `${s.league}|${s.year}`));
-  const phase = parsePhase(sp.phase);
+  const board = await buildBoard({ name: p.name, position: p.position, record, brands, titles, awards, held: seasonsHeld });
 
   const facts: ReactNode[] = [];
   if (p.birth_date || p.birth_place || p.birth_country_code) {
@@ -196,8 +197,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           <p className="note">{say("player.titlesNote")}</p>
         </section>
       ) : null}
-      {record.seasonTeams.length ? <PlayerSeasons name={p.name} record={record} brands={brands} seasonsHeld={seasonsHeld} /> : null}
-      {record.stats.length ? <PlayerStatistics name={p.name} record={record} phase={phase} path={at.path} sp={sp} brands={brands} /> : null}
+      {board ? <PlayerBoard data={board} /> : null}
       <PlayerResume resume={record.resume} seasons={record.seasonTeams} brands={brands} />
       {awards.length ? (
         <section className="section">

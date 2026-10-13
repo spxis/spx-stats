@@ -559,6 +559,11 @@ Ask John before deleting or overwriting data. Production changes only through ap
   `ref.metro`, `core.team_season_city`, built by `db/build/197_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
+- **The player page's statistics board** (`components/PlayerBoard.tsx`, maths in `lib/playerBoard.ts`, tests `pnpm test:player`) is drawn in the
+  browser from the stat rows the page sends once: the season slider (`?from=&to=`), `?phase=p` and `?teams=` are read there (`lib/playerRange.ts`,
+  `PLAYER_CLIENT_KEYS` in `lib/routing.ts`), so the page stays the one static copy and a drag costs no request. The league figures behind the league
+  line, ranks and radar are `api.stat_reference` (migration 064); the board hides them until it exists. Hockey and baseball have statistics;
+  NBA, NFL and CFL players show the career path only until their statistics are loaded (add a group to `GROUPS` when they are).
 - **Shared components:**
   - `Flag` (`components/Flag.tsx`, over `FlagIcon`) for every country flag: one fixed 24x16 box, styled nowhere else (`scripts/flags.test.ts` checks it in a browser).
   - `SortTable` for every table.

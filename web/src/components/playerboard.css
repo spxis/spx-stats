@@ -1,0 +1,124 @@
+/* The player's statistics board: season slider, hero numbers, charts and the career path. Tokens come from globals.css. */
+.pboard { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+.pboard .seg button + button { border-left: 1px solid var(--rule); }
+.pboard .seg.scroll { max-width: 100%; overflow-x: auto; }
+.pboard .seg button { white-space: nowrap; }
+.pcontrols { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.psummary { margin: 0; }
+.pboard {
+  --s1: var(--accent);
+  --s2: color-mix(in srgb, var(--ink) 60%, var(--paper));
+  --s3: color-mix(in srgb, var(--accent) 45%, var(--paper));
+  --s4: color-mix(in srgb, var(--ink) 28%, var(--paper));
+}
+.pboard .linkish { border: 0; background: none; padding: 0; font: inherit; color: inherit; cursor: pointer; text-decoration: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; text-align: left; }
+.pboard .linkish:hover { text-decoration-color: currentColor; }
+.visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+
+/* Hero numbers */
+.phero { display: flex; flex-direction: column; gap: 14px; }
+.hgroup { display: flex; flex-direction: column; gap: 8px; }
+.hcards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 150px), 1fr)); gap: 0; border-block: 1px solid var(--rule); }
+.hcard { padding: 12px 14px 10px 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.hcard .hl { font: 600 13px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.hcard .hv { font: 600 38px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
+.hcard .hs, .hcard .hp, .hcard .hr { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.hcard .hp { color: var(--accent); font-weight: 600; }
+.hcard .hr { color: var(--ink); }
+@media (max-width: 480px) { .hcard .hv { font-size: 32px; } }
+
+/* Charts */
+.pcharts { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.pcharts-loading { min-height: 320px; display: grid; place-items: center; color: var(--muted); border: 1px dashed var(--rule); }
+.pchart { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pchart > h3 { font: 600 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: .05em; }
+.pstats button { min-width: 44px; }
+.pboard .chart text.glyph, .pboard b.glyph { fill: var(--muted); }
+.pboard .chart .glyph.star, .pboard b.glyph.star { fill: var(--warn); color: var(--warn); font-size: 14px; }
+.pboard .chart .glyph.dia, .pboard b.glyph.dia { fill: var(--muted); color: var(--muted); font-size: 11px; }
+.pboard .chart g.mark .hit, .pboard .chart g[data-heat] .hit { fill: transparent; stroke: none; }
+.pboard .chart g[data-heat] { outline: none; cursor: pointer; }
+.pboard .chart g[data-heat]:hover .hit { fill: color-mix(in srgb, var(--accent) 12%, transparent); }
+.pboard .chart g[data-heat]:focus-visible .hit { fill: color-mix(in srgb, var(--accent) 16%, transparent); stroke: var(--ink); stroke-width: 2; }
+.pboard .chart g.mark:hover .bar, .pboard .chart g.mark:focus-visible .bar { stroke: var(--ink); stroke-width: 1.2; }
+.pboard .chart .perline { fill: none; stroke: var(--ink); stroke-width: 2; stroke-linejoin: round; }
+.pboard .chart .avgline { fill: none; stroke: var(--muted); stroke-width: 1.6; stroke-dasharray: 5 4; }
+.pboard .chart .perdot { fill: var(--paper); stroke: var(--ink); stroke-width: 1.6; }
+.plegend { align-items: center; }
+.plegend > span, .plegend > li { display: inline-flex; align-items: center; gap: 4px; }
+.plegend i { margin-right: 2px; flex: none; }
+.plegend .logo { margin: 0 2px 0 0; }
+.plegend i.key-per { height: 0; width: 18px; border-top: 2px solid var(--ink); background: none; }
+.plegend i.key-avg { height: 0; width: 18px; border-top: 2px dashed var(--muted); background: none; }
+.tipclub { display: flex; align-items: center; gap: 4px; }
+.tipclub .logo { margin: 0; vertical-align: baseline; }
+.tiphint { margin-top: 4px; color: var(--muted); font-size: 12px; }
+.tipv { font-variant-numeric: tabular-nums; }
+
+/* Career line */
+.pboard .chart .careerfill { fill: color-mix(in srgb, var(--accent) 12%, transparent); stroke: none; }
+.pboard .chart .careerline { fill: none; stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
+.pboard .chart .careerdot { fill: var(--paper); stroke: var(--accent); stroke-width: 1.8; }
+.pboard .chart .hitdot { fill: transparent; }
+.pboard .chart g[data-heat]:focus-visible .hitdot { stroke: var(--ink); stroke-width: 2; }
+.pboard .chart .peakring { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-dasharray: 3 2; }
+.pboard .chart .mdot { fill: var(--ink); stroke: var(--paper); stroke-width: 2; }
+.pboard .chart .mstem { stroke: var(--ink); stroke-width: 1; stroke-dasharray: 2 3; }
+.pboard .chart .mlabel { fill: var(--ink); font: 600 12px var(--display); letter-spacing: .04em; }
+.pboard .chart .carried { font-size: 11px; }
+.pboard .chart .badge-dot { fill: var(--ink); }
+.pboard .chart .badge-t { fill: var(--paper); font: 700 8px var(--display); letter-spacing: .02em; }
+.pnote { margin: 0; }
+
+/* Donuts */
+.pdonuts .seg { align-self: flex-start; }
+.pdonut { align-items: stretch; }
+.pdonut > h3 { font: 600 15px/1.2 var(--display); text-transform: uppercase; letter-spacing: .04em; }
+.pdonut .chart.donut { max-width: 220px; margin-inline: auto; }
+.pdonut .chart .slice { stroke: var(--paper); stroke-width: 1.5; cursor: pointer; outline: none; }
+.pdonut .chart .slice:hover, .pdonut .chart .slice:focus-visible { stroke: var(--ink); stroke-width: 2; }
+.pdonut .chart text.big { fill: var(--ink); font: 600 24px var(--display); text-anchor: middle; font-variant-numeric: tabular-nums; }
+.pdonut .chart text.sub { text-anchor: middle; font-size: 11px; }
+.pdlegend { list-style: none; margin: 0; padding: 0; flex-direction: column; align-items: stretch; gap: 3px; }
+.pdlegend li { display: flex; align-items: center; gap: 4px; min-width: 0; }
+.pdlegend li a, .pdlegend li { color: var(--ink); }
+.pdlegend .pv { margin-left: auto; padding-left: 8px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+/* Radar */
+.radarwrap { display: grid; grid-template-columns: minmax(0, 440px) minmax(0, 1fr); gap: 12px 28px; align-items: center; }
+@media (max-width: 760px) { .radarwrap { grid-template-columns: minmax(0, 1fr); } }
+.pradar .chart .ring { fill: none; stroke: var(--rule); stroke-width: 1; }
+.pradar .chart .ring.median { stroke: var(--muted); stroke-dasharray: 4 3; }
+.pradar .chart .spoke { stroke: var(--rule); }
+.pradar .chart .shape { fill: color-mix(in srgb, var(--accent) 24%, transparent); stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.pradar .chart .rdot { fill: var(--accent); stroke: var(--paper); stroke-width: 1.5; }
+.pradar .chart .axlab { fill: var(--ink); font-size: 12px; }
+.pradar .chart .ringlab { font-size: 10px; }
+.rlist { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; }
+.rlist li { display: grid; grid-template-columns: minmax(0, 1.5fr) auto minmax(60px, 1fr) 2.2em; gap: 8px; align-items: center; padding: 6px 0; border-bottom: 1px solid var(--rule); font-size: 14px; }
+.rlist .rl { font-weight: 600; }
+.rlist .rv { font-variant-numeric: tabular-nums; color: var(--muted); }
+.rlist .rbar { display: block; height: 8px; background: var(--soft); }
+.rlist .rbar i { display: block; height: 100%; background: var(--accent); }
+.rlist .rp { text-align: right; font-variant-numeric: tabular-nums; }
+.rreading { margin: 0; }
+
+/* Career path */
+.ppathbox .chart { overflow-x: auto; padding-bottom: 4px; }
+.prow { display: flex; flex-direction: column; gap: 2px; min-width: min-content; }
+.plg { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pgrid { display: grid; grid-template-rows: auto auto 46px auto; gap: 0 2px; min-width: min-content; }
+.pstay { display: flex; align-items: center; gap: 4px; min-width: 0; font: 600 13px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; padding: 0 2px 4px; }
+.pstay span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.pstay .logo { margin: 0; flex: none; }
+.pev { display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 2px; min-height: 18px; padding-bottom: 3px; }
+.pbadge { display: inline-grid; place-items: center; min-width: 20px; height: 16px; padding: 0 3px; border-radius: 8px; background: var(--ink); color: var(--paper); font: 700 9px/1 var(--display); letter-spacing: .02em; }
+.pbadge.more { background: var(--muted); }
+.pcell { position: relative; display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.pcell.gap { background: var(--soft); border: 1px dashed var(--rule); }
+.pcell.none { background: transparent; }
+.pseg { flex: 1 1 0; min-height: 0; display: flex; align-items: center; justify-content: center; text-decoration: none; border: 1px solid color-mix(in srgb, var(--ink) 14%, transparent); outline: none; cursor: pointer; }
+.pseg .logo { margin: 0; }
+.pseg:hover, .pseg:focus-visible { box-shadow: inset 0 0 0 2px var(--ink); }
+.pcell.moved::before { content: "→"; position: absolute; left: -9px; top: 50%; transform: translateY(-50%); z-index: 1; font: 700 12px/1 var(--display); color: var(--ink); background: var(--paper); border-radius: 50%; width: 14px; height: 14px; display: grid; place-items: center; }
+.pyr { text-align: center; font: 500 11px/1.6 var(--mono); color: var(--muted); }

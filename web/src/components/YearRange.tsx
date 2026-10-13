@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
-import { grabAt, PAN_GRIP_MOUSE, PAN_GRIP_TOUCH, panByPixels, panRange, rangePresets } from "@/lib/yearRange";
+import { grabAt, PAN_GRIP_MOUSE, PAN_GRIP_TOUCH, panByPixels, panRange, rangePresets, type RangePreset } from "@/lib/yearRange";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./yearrange.css";
 
@@ -12,6 +12,8 @@ interface Props {
   to: number;
   /** `final` is false while a handle is being dragged (at most once per frame) and true when the change is settled. */
   onChange: (from: number, to: number, final: boolean) => void;
+  /** The one-tap ranges to offer instead of the site's usual ones (a player's page: all, last 10, peak 5). */
+  presets?: RangePreset[];
 }
 
 const PAD = 16; // half of a handle's hit area, in px: keeps the handles inside the track at both ends
@@ -20,7 +22,7 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 /** Two handles on one line that narrow a chart to the years from..to. A handle never crosses the other; one season is the least.
     The bar between the handles moves the whole range, its width unchanged, and stops at the first and last season. */
-export function YearRange({ min, max, from, to, onChange }: Props) {
+export function YearRange({ min, max, from, to, onChange, presets }: Props) {
   const { say } = useSpeaker();
   const track = useRef<HTMLDivElement | null>(null);
   const thumbs = useRef<{ start: HTMLDivElement | null; end: HTMLDivElement | null; pan: HTMLDivElement | null }>({ start: null, end: null, pan: null });
@@ -145,8 +147,8 @@ export function YearRange({ min, max, from, to, onChange }: Props) {
     );
   };
 
-  const labelOf = (p: ReturnType<typeof rangePresets>[number]) =>
-    p.id === "all" ? say("range.all") : p.id === "last10" ? say("range.last10") : p.id === "spx" ? say("range.spx") : say("range.since", { year: p.year ?? p.from });
+  const labelOf = (p: RangePreset) =>
+    p.id === "all" ? say("range.all") : p.id === "last10" ? say("range.last10") : p.id === "peak" ? say("range.peak") : p.id === "spx" ? say("range.spx") : say("range.since", { year: p.year ?? p.from });
 
   return (
     <div className="yr-wrap">
@@ -176,7 +178,7 @@ export function YearRange({ min, max, from, to, onChange }: Props) {
       <button type="button" className="yr-reset" disabled={full} onClick={() => onChange(min, max, true)}>{say("range.reset")}</button>
     </div>
     <div className="yr-presets" role="group" aria-label={say("range.presets")}>
-      {rangePresets(min, max).map((p) => (
+      {(presets ?? rangePresets(min, max)).map((p) => (
         <button key={`${p.from}-${p.to}`} type="button" className="yr-preset" aria-pressed={from === p.from && to === p.to} onClick={() => onChange(p.from, p.to, true)}>{labelOf(p)}</button>
       ))}
     </div>

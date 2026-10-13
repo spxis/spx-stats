@@ -3,8 +3,9 @@ import { cache } from "react";
 import { z } from "zod";
 import { ApiError, rows } from "./api/client";
 import { leagueAwardSchema, personAwardSchema, personSchema, personTeamSchema, teamAwardSchema } from "./api/people";
-import { personResumeSchema, personSeasonTeamSchema, personStatSchema, personTotalSchema } from "./api/player";
-import type { PersonResumeRow, PersonSeasonTeamRow, PersonStatRow, PersonTotalRow } from "./api/player";
+import { personResumeSchema, personSeasonTeamSchema, personStatSchema, statReferenceSchema } from "./api/player";
+import type { Phase, RefRow } from "./playerBoard";
+import type { PersonResumeRow, PersonSeasonTeamRow, PersonStatRow } from "./api/player";
 import type { LeagueAwardRow, PersonAwardRow, PersonRow, PersonTeamRow, TeamAwardRow } from "./api/people";
 import { isLeague } from "./leagues";
 
@@ -54,18 +55,30 @@ export const getLeagueAwards = cache(async (lg: string): Promise<LeagueAwardRow[
 export interface PlayerRecord {
   seasonTeams: PersonSeasonTeamRow[];
   stats: PersonStatRow[];
-  totals: PersonTotalRow[];
   resume: PersonResumeRow[];
 }
 
-/** A player's seasons, stats, career totals and resume. A page does not fail because these views are empty or not loaded yet. */
+/** A player's seasons, stats and resume (career totals are added up in the browser for the seasons shown). A page does not fail because these views are empty or not loaded yet. */
 export const getPlayerRecord = cache(async (id: number): Promise<PlayerRecord> => {
   const q = `person_id=eq.${id}`;
-  const [seasonTeams, stats, totals, resume] = await Promise.all([
+  const [seasonTeams, stats, resume] = await Promise.all([
     rows("person_season_teams", `${q}&select=*&order=year,league`, personSeasonTeamSchema).catch(() => []),
     rows("person_stats", `${q}&select=*&order=year,league,stat_group`, personStatSchema).catch(() => []),
-    rows("person_career_totals", `${q}&select=*`, personTotalSchema).catch(() => []),
     rows("person_resume", `${q}&select=*&order=start_year.nullslast,name`, personResumeSchema).catch(() => []),
   ]);
-  return { seasonTeams, stats, totals, resume };
+  return { seasonTeams, stats, resume };
+});
+
+/**
+ * The league around a player, per season (api.stat_reference): the rate figures of players of the same kind (`bucket`: forwards, defensemen or all)
+ * and the best season totals of everyone. A page does not fail because the view is empty or not loaded yet: the board then leaves out the league
+ * line, the ranks and the radar.
+ */
+export const getStatRefs = cache(async (league: string, group: string, bucket: string, from: number, to: number, phases: string): Promise<RefRow[]> => {
+  if (!isLeague(league) || !/^[a-z]+$/.test(group) || !/^(all|F|D)$/.test(bucket) || !/^(regular|playoffs)(,playoffs)?$/.test(phases)) return [];
+  const kinds = bucket === "all" ? "bucket=eq.all" : `or=(and(kind.eq.total,bucket.eq.all),and(kind.eq.rate,bucket.eq.${bucket}))`;
+  const q = `league=eq.${league}&stat_group=eq.${group}&phase=in.(${phases})&year=gte.${from}&year=lte.${to}&${kinds}&select=stat_group,phase,metric,year,kind,n,avg,q,top&order=year`;
+  const got = await rows("stat_reference", q, statReferenceSchema).catch(() => []);
+  return got.map((r) => ({ g: r.stat_group, p: r.phase as Phase, m: r.metric, y: r.year, n: r.n,
+    ...(r.kind === "rate" ? { a: r.avg ?? undefined, q: r.q ?? undefined } : { t: r.top ?? undefined }) }));
 });

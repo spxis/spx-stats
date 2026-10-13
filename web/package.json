@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.79.3",
+  "version": "0.80.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -38,7 +38,8 @@
     "test:flags": "node --test scripts/flags.test.ts",
     "test:review": "node --test scripts/personReview.test.ts",
     "test:looks": "node --test scripts/seriesLooks.test.ts",
-    "test:label": "node --test scripts/teamLabel.test.ts"
+    "test:label": "node --test scripts/teamLabel.test.ts",
+    "test:player": "node --test scripts/player.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",

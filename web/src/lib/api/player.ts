@@ -77,6 +77,23 @@ export const personTotalSchema = z.object({
   person_id: int, league: str, phase: str, stat_group: str, seasons: int, team_seasons: int, games_played: intN, stats,
 }) satisfies z.ZodType<PersonTotalRow>;
 
-export const personResumeSchema = z.object({
+/** The league around a player in one season (api.stat_reference, db/migrations/064_stat_reference.sql). */
+export interface StatReferenceRow {
+  stat_group: string;
+  phase: string;
+  metric: string;
+  year: number;
+  kind: string;
+  n: number;
+  avg: number | null;
+  q: number[] | null;
+  top: number[] | null;
+}
+
+export const statReferenceSchema = z.object({
+  stat_group: str, phase: str, metric: str, year: int, kind: str, n: int, avg: z.number().nullable(), q: z.array(z.number()).nullable(), top: z.array(z.number()).nullable(),
+}) satisfies z.ZodType<StatReferenceRow>;
+
+export const personResumeSchema =z.object({
   person_id: int, kind: str, name: str, level: strN, league: strN, start_year: intN, end_year: intN, detail: strN, club_qid: strN, source: str,
 }) satisfies z.ZodType<PersonResumeRow>;
