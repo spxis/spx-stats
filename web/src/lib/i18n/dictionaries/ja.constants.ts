@@ -63,6 +63,10 @@ export const JA: Dictionary = {
   "heatmap.aria": "リーグ別・シーズン別の、結果のある試合の割合",
   "heatmap.share": "レギュラーシーズン{games}試合のうち{finals}試合に結果あり",
   "heatmap.none": "まだ試合は開催されていません",
+  "range.aria": "表示する年",
+  "range.start": "開始年",
+  "range.end": "終了年",
+  "range.reset": "リセット",
 
   // league page
   "league.metaDesc": "{league}のシーズン、順位表、優勝チーム、各賞：開催{seasons}、記録上の{champions}。",

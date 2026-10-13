@@ -63,6 +63,10 @@ export const FR: Dictionary = {
   "heatmap.aria": "Part des matchs avec résultat, par ligue et par saison",
   "heatmap.share": "{finals} de {games} matchs de saison régulière avec résultat",
   "heatmap.none": "Aucun match disputé pour l’instant",
+  "range.aria": "Années affichées",
+  "range.start": "Année de début",
+  "range.end": "Année de fin",
+  "range.reset": "Réinitialiser",
 
   // league page
   "league.metaDesc": "Saisons, classements, champions et récompenses de la {league} : {seasons} disputées, {champions} au dossier.",

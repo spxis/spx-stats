@@ -1,0 +1,14 @@
+/* The two-handle year range above a chart: one slim line, ink on paper. */
+.yr { display: flex; align-items: center; gap: 4px 10px; margin-bottom: 8px; max-width: 520px; }
+.yr-v { flex: none; min-width: 3.2ch; font: 600 15px/1 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+.yr-track { position: relative; flex: 1 1 140px; min-width: 120px; height: 36px; touch-action: none; cursor: pointer; user-select: none; -webkit-user-select: none; }
+.yr-rail, .yr-fill { position: absolute; top: 50%; height: 4px; margin-top: -2px; }
+.yr-rail { left: 16px; right: 16px; background: var(--rule); }
+.yr-fill { left: calc(16px + (100% - 32px) * var(--a)); width: calc((100% - 32px) * (var(--b) - var(--a))); background: var(--ink); }
+.yr-thumb { position: absolute; top: 0; left: calc(16px + (100% - 32px) * var(--p)); width: 32px; height: 36px; margin-left: -16px; cursor: grab; outline: none; touch-action: none; }
+.yr-thumb::before { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--ink); transition: transform .12s; }
+.yr-thumb:hover::before, .yr-thumb:active::before { transform: scale(1.2); }
+.yr-thumb:focus-visible::before { box-shadow: 0 0 0 1px var(--ink), 0 0 0 4px color-mix(in srgb, var(--ink) 35%, transparent); }
+.yr-reset { flex: none; border: 0; background: none; padding: 8px 2px; color: var(--ink); font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }
+.yr-reset:disabled { visibility: hidden; }
+@media (prefers-reduced-motion: reduce) { .yr-thumb::before { transition: none; } }

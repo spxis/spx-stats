@@ -112,6 +112,10 @@ export const PHRASES = {
   "heatmap.aria": "Share of games with a result, by league and season",
   "heatmap.share": "{finals} of {games} regular-season games with a result",
   "heatmap.none": "No games held yet",
+  "range.aria": "Years shown",
+  "range.start": "Start year",
+  "range.end": "End year",
+  "range.reset": "Reset",
 
   // league page
   "league.metaDesc": "{league} seasons, standings, champions and awards: {seasons} held, {champions} on record.",
