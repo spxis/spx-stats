@@ -1,4 +1,5 @@
 import type { Dictionary } from "../dictionaries";
+import { MLS_JA } from "../mls.constants.ts";
 import { SOCCER_JA } from "../soccer.constants.ts";
 
 /** Japanese. Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
@@ -1533,6 +1534,7 @@ export const JA: Dictionary = {
   "venue.dataCredit": "基本情報：Wikidata（CC0）、競技面と屋根についてはWikipedia（CC BY-SA 4.0）。球団と年：SPXのアーカイブと出典ページに挙げた出典。",
   "credit.surfaces": "競技面：{kyogijo}。",
   ...SOCCER_JA,
+  ...MLS_JA,
   "nav.countries": "国別",
   "col.country": "国",
   "count.countries.one": "{count}か国",

@@ -1,3 +1,4 @@
+import { MLS_EN } from "./mls.constants.ts";
 import { SOCCER_EN } from "./soccer.constants.ts";
 /**
  * Every word of the site's own chrome, in English: one flat catalogue, dotted keys grouped by the area that owns them,
@@ -1723,6 +1724,7 @@ export const PHRASES = {
   "venue.dataCredit": "Facts: Wikidata (CC0) and, for surface and roof, Wikipedia (CC BY-SA 4.0). Clubs and years: the SPX archive and the sources listed on the sources page.",
   "credit.surfaces": "Playing surfaces: {kyogijo}.",
   ...SOCCER_EN,
+  ...MLS_EN,
   "nav.countries": "Countries",
   "col.country": "Country",
   "count.countries.one": "{count} country",

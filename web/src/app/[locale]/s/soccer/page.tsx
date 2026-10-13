@@ -6,7 +6,9 @@ import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
+import { getMlsSeasons } from "@/lib/mls";
 import { getTournaments, type Tournament } from "@/lib/soccer";
+import { MLS_PATH } from "@/lib/mlsPath";
 import { tournamentPath, WORLDCUP_PATH, WORLDCUP_TEAMS_PATH } from "@/lib/soccerPath";
 import "@/components/soccer.css";
 
@@ -20,7 +22,8 @@ export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
 /** The soccer landing page: the World Cup is the first competition. With no soccer data published yet it says so and links nowhere that would be empty. */
 export default guard(async function SoccerPage() {
   const { say, plural } = await currentSpeaker();
-  const all = await getTournaments();
+  const [all, mls] = await Promise.all([getTournaments(), getMlsSeasons().catch(() => [])]);
+  const lastCup = mls.filter((s) => s.champion).at(-1);
   const men = all.filter((t) => t.league === "wc");
   const women = all.filter((t) => t.league === "wwc");
   const goals = all.reduce((n, t) => n + t.goals, 0);
@@ -42,6 +45,18 @@ export default guard(async function SoccerPage() {
         <h1>{say("soccer.title")}</h1>
         <p className="lede">{say("soccer.lede")}</p>
       </section>
+      {mls.length ? (
+        <section className="section">
+          <h2>{say("soccer.leagues")}</h2>
+          <div className="cards">
+            <Link className="card" href={MLS_PATH} style={{ "--lg": "var(--soccer)" } as React.CSSProperties}>
+              <h3>{say("mls.title")}</h3>
+              <span className="span">{say("soccer.span", { from: mls[0].year, to: mls.at(-1)!.year, tournaments: plural("count.seasons", mls.length) })}</span>
+              {lastCup ? <span className="note">{say("soccer.latest", { year: lastCup.year, champion: lastCup.champion ?? "" })}</span> : null}
+            </Link>
+          </div>
+        </section>
+      ) : null}
       {all.length ? (
         <>
           <Figures items={[
@@ -67,7 +82,7 @@ export default guard(async function SoccerPage() {
             </ul>
           </section>
         </>
-      ) : (
+      ) : mls.length ? null : (
         <section className="section"><p className="note">{say("soccer.none")}</p></section>
       )}
       <section className="section"><SoccerCredit say={say} /></section>

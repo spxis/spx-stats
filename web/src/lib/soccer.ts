@@ -12,7 +12,7 @@ import { ApiError, rows as readRows } from "./api/client";
  * The same as client.rows, except that a view the database does not have yet (404: migration 066 not applied there) reads as no rows, so
  * a production without soccer shows the pages' "no data" wording and not the "Couldn't load" note. Any other failure still throws.
  */
-async function rows<S extends z.ZodType>(view: string, query: string, schema: S): Promise<z.infer<S>[]> {
+export async function rows<S extends z.ZodType>(view: string, query: string, schema: S): Promise<z.infer<S>[]> {
   try {
     return await readRows(view, query, schema);
   } catch (e) {
@@ -53,6 +53,8 @@ export const matchSchema = z.object({
   home_goals_90: nNum, away_goals_90: nNum, extra_time: z.boolean(), shootout: z.boolean(), home_penalties: nNum, away_penalties: nNum,
   winner_team_id: nText, is_replay: z.boolean(), venue_name: nText, venue_city: nText, venue_country: nText, venue_wikidata_id: nText, venue_id: nNum,
   lineup_players: num, goal_rows: num, source: nText, checked: nNum,
+  /** MLS (migration 076): the crowd, and 'mls' for the 1996-1999 regular-season shootout. Optional so a database without 076 still reads. */
+  attendance: nNum.optional(), shootout_style: nText.optional(),
 });
 export type Match = z.infer<typeof matchSchema>;
 
@@ -60,6 +62,8 @@ export const standingSchema = z.object({
   tournament_id: text, league: text, year: num, stage_number: num, stage_key: text, group_name: text, position: num, team_id: text, team: text,
   team_slug: text, flag_code: nText, played: nNum, wins: nNum, draws: nNum, losses: nNum, goals_for: nNum, goals_against: nNum, goal_difference: nNum,
   points: nNum, advanced: z.boolean().nullable(),
+  /** MLS (migration 076): the club's name that season, shootout wins (1996-1999) and what the table says the place earned. */
+  team_name: nText.optional(), shootout_wins: nNum.optional(), qualification: nText.optional(),
 });
 export type Standing = z.infer<typeof standingSchema>;
 
@@ -146,7 +150,7 @@ const TOURNAMENT = /^(?:wc|wwc)\d{4}$/;
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const id = (n: number) => Number.isInteger(n) && n > 0 && n < 1e9;
 
-export const getTournaments = cache(() => rows("soccer_tournaments", "order=year.asc", tournamentSchema));
+export const getTournaments = cache(() => rows("soccer_tournaments", "league=in.(wc,wwc)&order=year.asc", tournamentSchema));
 
 export const tournamentOfYear = cache(async (year: number): Promise<Tournament | null> =>
   (await getTournaments()).find((t) => t.year === year) ?? null);
@@ -185,7 +189,7 @@ export const getTeamTournaments = cache((team: string) =>
   /^[A-Z]-[a-z0-9-]+$/.test(team) ? rows("soccer_tournament_teams", `team_id=eq.${team}&order=year.asc`, tournamentTeamSchema) : Promise.resolve([]));
 
 export const getMatch = cache(async (matchId: number): Promise<Match | null> =>
-  id(matchId) ? ((await rows("soccer_matches", `match_id=eq.${matchId}`, matchSchema))[0] ?? null) : null);
+  id(matchId) ? ((await rows("soccer_matches", `match_id=eq.${matchId}&league=in.(wc,wwc)`, matchSchema))[0] ?? null) : null);
 
 /** Everything on one match page, read together. */
 export async function getMatchDetail(matchId: number) {

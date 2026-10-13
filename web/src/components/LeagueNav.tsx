@@ -30,7 +30,7 @@ export function LeagueNav() {
           {l.short}
         </Link>
       ))}
-      <Link href="/soccer" aria-current={current === "soccer" || current === "worldcup" ? "page" : undefined}>{say("nav.soccer")}</Link>
+      <Link href="/soccer" aria-current={current === "soccer" || current === "worldcup" || current === "mls" ? "page" : undefined}>{say("nav.soccer")}</Link>
       {LEAGUES.some((l) => l.code === current) ? (
         <>
           <Link className="sub" href={`/${current}/scores`} aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>

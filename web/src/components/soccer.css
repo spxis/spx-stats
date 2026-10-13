@@ -57,6 +57,10 @@
   .sc-kicks .ok { color: var(--ok); }
   .sc-kicks .miss { color: var(--bad); }
   details.sc-squad { border-bottom: 1px solid var(--rule); padding: 6px 0; }
+  .sc-mini { font-size: 14px; }
+  .sc-mini td, .sc-mini th { padding: 4px 7px; }
+  .sc-mini td.num, .sc-mini th.num { text-align: right; }
+  .sc-mini td.team { white-space: nowrap; }
   details.sc-squad summary { cursor: pointer; display: flex; gap: 10px; align-items: center; }
   details.sc-squad table { margin: 8px 0 12px; }
 }

@@ -84,6 +84,11 @@ test("an address with a query the pages read is drawn for the request; one with 
   assert.equal(route({ path: "/worldcup/2022", query: { sort_games: "date.desc" }, cookie: "spxn-locale=fr" }), "/fr/q/worldcup/2022");
   assert.equal(route({ path: "/worldcup", query: { sort_men: "year.asc" } }), "/en/s/worldcup");
   assert.equal(route({ path: "/soccer" }), "/en/s/soccer");
+  assert.equal(route({ path: "/mls" }), "/en/s/mls");
+  assert.equal(route({ path: "/mls", query: { sort_seasons: "year.asc" }, cookie: "spxn-locale=ja" }), "/ja/s/mls");
+  assert.equal(route({ path: "/mls/2019" }), "/en/s/mls/2019");
+  assert.equal(route({ path: "/mls/2019", query: { sort_games: "date.desc" } }), "/en/q/mls/2019");
+  assert.equal(route({ path: "/mls/team/la-galaxy", query: { sort_past: "year.asc" } }), "/en/q/mls/team/la-galaxy");
   assert.equal(route({ path: "/nhl/2012-13", query: { utm_source: "x", fbclid: "y" } }), "/en/s/nhl/2012-13");
   assert.equal(route({ path: "/nhl/2012-13", query: { _rsc: "abc" } }), "/en/s/nhl/2012-13");
   for (const key of QUERY_KEYS) assert.match(route({ path: "/nhl/2012-13/leaders", query: { [key]: "1" } }), /^\/en\/q\//, key);
@@ -114,7 +119,7 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.equal(route({ path: "/wp-login.php" }), "/en/q/wp-login.php");
   assert.equal(route({ path: "/xx/yy/zz", cookie: "spxn-locale=fr" }), "/fr/q/xx/yy/zz");
   assert.equal(route({ path: "/about/more" }), "/en/q/about/more");
-  assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue", "worldcup", "country"]);
+  assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue", "worldcup", "mls", "country"]);
 });
 
 test("the drawings of playing surfaces (app/surface/[file]) are no page: the 404 rule leaves them to their route handler", () => {

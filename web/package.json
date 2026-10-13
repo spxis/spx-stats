@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.84.3",
+  "version": "0.85.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -42,6 +42,7 @@
     "test:label": "node --test scripts/teamLabel.test.ts",
     "test:player": "node --test scripts/player.test.ts",
     "test:soccer": "node --test scripts/soccer.test.ts",
+    "test:mls": "node --test scripts/mls.test.ts",
     "test:playerlist": "node --test scripts/playerList.test.ts"
   },
   "dependencies": {
