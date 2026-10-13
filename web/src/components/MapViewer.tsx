@@ -6,6 +6,7 @@ import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactN
 import type { MapBox } from "@johnmorrisdotca/chizu";
 import { regionPoint, type RegionCountry } from "@/lib/regionProject";
 import { abbreviationLabels, chizu, NS, pinText, regionsOf, selectionOf, type Pin } from "./mapDraw";
+import { AddressCredit } from "./AddressCredit";
 import { COUNTRY_KEY } from "./countryKey";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./mapviewer.css";
@@ -416,7 +417,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         </ul>
       ) : null}
       {placedCount === 0 && filtered ? <p className="note">{say("map.noneMatch")}</p> : null}
-      <p className="note">{note ?? say("map.note", { placed: placedCount ?? shown.length, total: total ?? pins.length })} {say("map.hint")}</p>
+      <p className="note">{note ?? say("map.note", { placed: placedCount ?? shown.length, total: total ?? pins.length })} {say("map.hint")}{pins.some((p) => p.address) ? <>{" "}<AddressCredit text={say("address.credit")} /></> : null}</p>
     </div>
   );
 }

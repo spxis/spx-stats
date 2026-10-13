@@ -532,6 +532,7 @@ export const FR: Dictionary = {
   "map.zoomReset": "Voir toute la carte",
   "map.noneMatch": "Aucune équipe ne correspond à ce filtre.",
   "map.hint": "Zoomez avec les boutons + et −, un pincement, ou Ctrl ou ⌘ et la molette ; glissez pour déplacer la carte une fois zoomée.",
+  "address.credit": "Les adresses sont mises en forme avec {link}.",
   "venues.tabs": "Carte des enceintes",
   "venues.tabLeague": "Enceintes de la ligue",
   "venues.tabHistory": "Enceintes historiques",

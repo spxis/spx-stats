@@ -532,6 +532,7 @@ export const JA: Dictionary = {
   "map.zoomReset": "地図全体を表示",
   "map.noneMatch": "この条件に合うチームはありません。",
   "map.hint": "＋と−のボタン、ピンチ、Ctrl（または⌘）とスクロールで拡大縮小。拡大後はドラッグで動かせます。",
+  "address.credit": "住所の整形には{link}を使用しています。",
   "venues.tabs": "本拠地の地図",
   "venues.tabLeague": "リーグの本拠地",
   "venues.tabHistory": "過去の本拠地",

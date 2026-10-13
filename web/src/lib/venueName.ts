@@ -3,6 +3,10 @@ import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
 import type { Speaker } from "./i18n/i18n";
+import { COUNTRY_KEY } from "../components/countryKey";
+import { countryAt } from "./country";
+import { formatVenueAddress, type VenueAddress } from "./venueAddress";
+import type { VenuePlace } from "./venuePlace";
 
 type Say = Speaker["say"];
 
@@ -93,8 +97,18 @@ export function factsLine(f: VenueFacts | undefined, say: Say): string | null {
   return parts.length ? parts.join(" · ") : null;
 }
 
-/** The lines the map's selection panel adds under a venue: its other names, its facts and its address. */
+/**
+ * A home venue's address in the one format the site uses: the street line from Wikidata, the city and region from api.venue_place,
+ * and the country (from the place, else from the coordinates) in the reader's language. Null when none of it is known.
+ */
+export function placeAddress(at: VenuePlace | undefined, f: VenueFacts | undefined, lat: number | null | undefined, lon: number | null | undefined, say: Say): VenueAddress | null {
+  const cc = at?.cc ?? countryAt(lat, lon);
+  const key = cc ? COUNTRY_KEY[cc.toUpperCase()] : undefined;
+  return formatVenueAddress({ street: f?.address, city: at?.city, region: at?.region, countryCode: cc, country: key ? say(key) : null });
+}
+
+/** The lines the map's selection panel adds under a venue: its other names and its facts (the address comes apart, from placeAddress). */
 export function venueExtra(spans: VenueSpan[] | undefined, f: VenueFacts | undefined, shown: string, say: Say): string[] {
   const now = nowName(spans, shown);
-  return [now ? say("venues.now", { name: now }) : null, namesLine(spans), factsLine(f, say), f?.address ?? null].filter((x): x is string => !!x);
+  return [now ? say("venues.now", { name: now }) : null, namesLine(spans), factsLine(f, say)].filter((x): x is string => !!x);
 }

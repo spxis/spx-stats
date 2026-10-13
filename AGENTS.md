@@ -540,6 +540,9 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - `SortTable` for every table.
   - `NoSeason` (grey box, compact "–") for years with no games.
   - `DatePicker` for date choices.
+- **Venue addresses** are written one way everywhere: `placeAddress` (`web/src/lib/venueName.ts`) calls `formatVenueAddress`
+  (`web/src/lib/venueAddress.ts`, built on address-plus), which shows only the parts the archive holds and never works out a
+  postal code. A page that shows one carries the `AddressCredit` line (`address.credit`); `pnpm test:address` covers it.
 - **Logos** are shown small, under fair use, explained on `/logos`.
 - Never build a public endpoint that runs SQL.
 

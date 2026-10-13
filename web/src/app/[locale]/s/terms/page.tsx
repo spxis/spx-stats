@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { AddressCredit } from "@/components/AddressCredit";
 import { Rich } from "@/components/i18n/Rich";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
@@ -43,6 +44,7 @@ export default async function TermsPage() {
         </p>
         <p><Rich text={say("terms.lahman")} parts={{ sources: <Link href="/sources">{say("nav.sources")}</Link> }} /></p>
         <p>{say("terms.wikipedia")}</p>
+        <p><AddressCredit text={say("address.credit")} /></p>
         <p><Rich text={say("terms.fullList")} parts={{ sources: <Link href="/sources">{say("nav.sources")}</Link> }} /></p>
         <h2>{say("terms.logosTitle")}</h2>
         <p>

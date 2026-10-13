@@ -76,6 +76,7 @@ export const READBACK: Readonly<Record<string, string>> = {
     "For baseball data we also use the Lahman Baseball Database. Its licence and source are posted on {sources}.",
   "terms.wikipedia":
     "The notes about shortened seasons are made on the basis of Wikipedia (CC BY-SA 4.0). Each note has a link to the original Wikipedia article.",
+  "address.credit": "The addresses are formatted using {link}.",
   "terms.fullList":
     "The list of data sources, and the licence and source of each, are on {sources}.",
   "terms.logosTitle": "Logos and names.",

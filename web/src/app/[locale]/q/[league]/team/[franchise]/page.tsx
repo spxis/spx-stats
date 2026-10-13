@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
@@ -7,7 +8,7 @@ import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { TeamCharts } from "@/components/TeamCharts";
-import { COUNTRY_KEY } from "@/components/countryKey";
+import { AddressCredit } from "@/components/AddressCredit";
 import { TeamFlag } from "@/components/TeamFlag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
@@ -33,7 +34,7 @@ import { getLeagueClubs, getPaths, teamOf } from "@/lib/teamSlugs";
 import { TeamSwitch } from "@/components/TeamSwitch";
 import { clubPins, getVenueTeams } from "@/lib/venueMap";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
-import { factsLine, getVenueFacts, getVenueNames, nameIn, nowName } from "@/lib/venueName";
+import { factsLine, getVenueFacts, getVenueNames, nameIn, nowName, placeAddress } from "@/lib/venueName";
 import { idleYears } from "@/lib/noSeason";
 import { recShare, tableOf } from "@/lib/sort";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -211,11 +212,9 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       cell: (r) => {
         const v = r.v;
         if (v.latitude == null || v.longitude == null) return "";
-        const code = countryAt(v.latitude, v.longitude);
-        const key = code ? COUNTRY_KEY[code] : undefined;
         const at = venuePlaces.get(placeKey(f, v.home_venue, v.latitude, v.longitude) ?? "");
-        const address = at?.wid ? venueFacts.get(at.wid)?.address : null;
-        return <>{address ? <>{address}<br /></> : null}{at?.place ? <>{at.place}<br /></> : key ? <>{say(key)}<br /></> : null}<span className="seasoncell">{`${Math.abs(v.latitude).toFixed(2)}°${v.latitude < 0 ? "S" : "N"} ${Math.abs(v.longitude).toFixed(2)}°${v.longitude < 0 ? "W" : "E"}`}</span></>;
+        const address = placeAddress(at, at?.wid ? venueFacts.get(at.wid) : undefined, v.latitude, v.longitude, say);
+        return <>{address?.lines.map((l) => <Fragment key={l}>{l}<br /></Fragment>)}<span className="seasoncell">{`${Math.abs(v.latitude).toFixed(2)}°${v.latitude < 0 ? "S" : "N"} ${Math.abs(v.longitude).toFixed(2)}°${v.longitude < 0 ? "W" : "E"}`}</span></>;
       },
     },
   ], (r, i) => `${i}|${r.shown}`);
@@ -290,7 +289,8 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
               clubCount={clubCount} tab={spOne("map") === "history" ? "history" : "league"} team={spOne("team") ?? paths.slug(lg, f)}
             />
           ) : null}
-          <SortTable {...venueTable} param="sort_venues" />
+          <div className="scroll"><SortTable {...venueTable} param="sort_venues" /></div>
+          {venueTeams.length ? null : <p className="note"><AddressCredit text={say("address.credit")} /></p>}
         </section>
       ) : null}
     </>

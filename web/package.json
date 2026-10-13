@@ -22,9 +22,11 @@
     "test:idle": "node --test scripts/idleTeams.test.ts",
     "test:range": "node --test scripts/listRange.test.ts",
     "test:routing": "node --test scripts/routing.test.ts",
-    "test:streaks": "node --test scripts/streaks.test.ts"
+    "test:streaks": "node --test scripts/streaks.test.ts",
+    "test:address": "node --test scripts/venueAddress.test.ts"
   },
   "dependencies": {
+    "@johnmorrisdotca/address-plus": "1.6.0",
     "@johnmorrisdotca/chizu": "1.4.0",
     "@johnmorrisdotca/hata": "1.5.0",
     "d3": "7.9.0",
