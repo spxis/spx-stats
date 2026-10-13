@@ -3,6 +3,7 @@
 Soccer is the sixth sport on spxn.com (after hockey, basketball, baseball, American and Canadian football). John approved it on
 2026-10-13. The first competition is the FIFA World Cup: men's 1930-2022 and women's 1991-2019, with the 2026 men's tournament from
 openfootball. The women's 2023 tournament is not in any allowed source we hold (see "Not done").
+Major League Soccer (1996 to now), the first club competition, reuses these tables: see [docs/mls.md](mls.md).
 
 ## Data model (migration 066, `core.soccer_*`)
 
