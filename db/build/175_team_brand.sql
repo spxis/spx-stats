@@ -93,7 +93,8 @@ with ident as (
   cross join lateral (select daterange(case when i.is_first then null else lower(i.valid_during) end,
                                         case when i.is_last then null else upper(i.valid_during) end) as vd) x
   left join pick v on v.qid = t.qid and not isempty(x.vd * v.vr)
-                  and (t.inception is null and t.dissolved is null or daterange(t.inception, t.dissolved) && i.valid_during)   -- a club item of another era (Milwaukee Brewers 1901 and 1970) gives that identity no venue
+                  and (t.inception is null and t.dissolved is null or daterange(date_trunc('year', t.inception)::date, (date_trunc('year', t.dissolved) + interval '1 year')::date) && i.valid_during)
+                  -- a club item of another era (Milwaukee Brewers 1901 and 1970) gives that identity no venue; whole years, Wikidata dates are often a year
   cross join lateral (select case when v.qid is null then x.vd else x.vd * v.vr end as rng) r
   left join colours c on c.qid = t.qid
   left join logo l on l.qid = t.qid and (not l.fallback or i.is_last)
@@ -198,3 +199,15 @@ where p.starts_on is null and p.ends_on is null
   and not exists (select 1 from seed_venue_fix x where x.team_qid = p.qid and x.place_qid = p.place_qid)
 group by t.qid, t.label
 having count(*) > 1 and bool_or(pl.opened_on is not null or pl.closed_on is not null);
+-- A club item of another era that has the name of an identity of the franchise (the 1970 Milwaukee Brewers and the 1901 ones) gives that identity no venue.
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'wikidata'), 'team_home_venue', t.qid,
+       'Wikidata club item ' || t.label || ' (' || coalesce(extract(year from t.inception)::int::text, '?') || '-' || coalesce(extract(year from t.dissolved)::int::text, '') ||
+       ') has the name of identity ' || i.full_name || ' ' || i.valid_during || ' of franchise ' || i.franchise_id || ', which it does not overlap',
+       'The home venues of that club item are not given to this identity.'
+from legacy_team_brand.team t
+join core.franchise_identity i on pg_temp.norm(i.full_name) = pg_temp.norm(t.label)
+join (select distinct franchise_id, league_code from core.franchise_league) fl on fl.franchise_id = i.franchise_id and fl.league_code = t.league_code
+where (t.inception is not null or t.dissolved is not null)
+  and exists (select 1 from legacy_team_brand.team_place p where p.qid = t.qid and p.kind = 'home_venue' and coalesce(p.rank, '') <> 'deprecated')
+  and not daterange(date_trunc('year', t.inception)::date, (date_trunc('year', t.dissolved) + interval '1 year')::date) && i.valid_during;
