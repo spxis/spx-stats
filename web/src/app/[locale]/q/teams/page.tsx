@@ -74,7 +74,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/[loc
       <section className="head fade">
         <h1>{say("teams.title")}</h1>
         <p className="lede">{say("teams.lede")}</p>
-        <p className="note"><Link href="/teams/lineage" prefetch={false}>{say("lineage.link")}</Link></p>
+        <p className="note"><Link href="/teams/lineage" prefetch={false}>{say("lineage.link")}</Link> · <Link href="/teams/coaches" prefetch={false}>{say("coaches.link")}</Link></p>
       </section>
       <section className="section">
         <div className="controls">
