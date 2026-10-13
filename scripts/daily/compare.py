@@ -42,7 +42,17 @@ def match(games, ds1, roster):
     for d in ds1: by_pair[frozenset((d["hf"], d["af"]))].append(d)
     order = {"final": 0, "scheduled": 1, "suspended": 1, "postponed": 2, "cancelled": 2}
     pairs = []
+    # A game DS1 holds under this very game's key (the games stage 2 wrote: the key ends in the game's number within its day)
+    # is that game. Without this, the two games of a doubleheader pair by luck and their scores come out swapped.
+    exact = {}
+    bykey = {d["key"]: d for d in ds1}
+    for g in games:
+        d = bykey.get(g["source_key"])
+        if d is not None and not d["used"]:
+            d["used"] = True; exact[g["source_key"]] = d
     for g in sorted(games, key=lambda g: (order.get(g["status"], 1), g["date"])):
+        if g["source_key"] in exact:
+            pairs.append((g, exact[g["source_key"]])); continue
         k = frozenset(fid(t) for t in g["teams"])
         best = None
         for d in by_pair.get(k, []):
@@ -59,6 +69,7 @@ def match(games, ds1, roster):
 
 def classify(g, d, roster):
     """-> (kind, detail) for a matched pair."""
+    if d is None and g["status"] == "final" and g["confidence"] == "disputed": return ("new_disputed", "")   # held back on purpose
     if d is None: return ("new_final" if g["status"] == "final" else "new_scheduled" if g["status"] == "scheduled" else "new_" + g["status"], "")
     notes = []
     if g["date"] != d["date"]: notes.append("date %s vs DS1 %s" % (g["date"], d["date"]))
@@ -95,6 +106,7 @@ def report(all_games, rosters, seasons, since, verbose=False, unreadable=None):
         print("  DS1 has %d games (%d final); Wikipedia lists %d (%d final)" % (
             len(info["games"]), sum(1 for d in info["games"] if d["status"] == "final"), len(games), sum(1 for g in games if g["status"] == "final")))
         print("  new games (final)          %5d" % n("new_final"))
+        print("  new games (held: the sources disagree) %d" % n("new_disputed"))
         print("  new games (scheduled)      %5d" % n("new_scheduled"))
         print("  scheduled -> final         %5d" % n("scheduled_to_final"))
         print("  same result already in DS1 %5d (with a date/home note: %d)" % (n("same") + n("same_with_note"), n("same_with_note")))

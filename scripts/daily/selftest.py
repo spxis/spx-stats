@@ -40,7 +40,8 @@ MLB = roster("mlb", [("New York Yankees", "New York", "Yankees", "NYY"), ("San F
                      ("Baltimore Orioles", "Baltimore", "Orioles", "BAL"), ("Tampa Bay Rays", "Tampa Bay", "Rays", "TB"),
                      ("Boston Red Sox", "Boston", "Red Sox", "BOS"), ("Los Angeles Dodgers", "Los Angeles", "Dodgers", "LAD"),
                      ("Arizona Diamondbacks", "Arizona", "Diamondbacks", "ARI"), ("Cleveland Guardians", "Cleveland", "Guardians", "CLE"),
-                     ("Chicago White Sox", "Chicago", "White Sox", "CWS"), ("Houston Astros", "Houston", "Astros", "HOU")])
+                     ("Chicago White Sox", "Chicago", "White Sox", "CWS"), ("Houston Astros", "Houston", "Astros", "HOU"),
+                     ("Kansas City Royals", "Kansas City", "Royals", "KC"), ("Milwaukee Brewers", "Milwaukee", "Brewers", "MIL")])
 NFL = roster("nfl", [("Buffalo Bills", "Buffalo", "Bills", "BUF"), ("Houston Texans", "Houston", "Texans", "HOU"), ("Detroit Lions", "Detroit", "Lions", "DET"),
                      ("Los Angeles Chargers", "Los Angeles Chargers", "Chargers", "LAC"), ("New England Patriots", "New England", "Patriots", "NE"),
                      ("Los Angeles Rams", "Los Angeles Rams", "Rams", "LA"), ("Carolina Panthers", "Carolina", "Panthers", "CAR"),
@@ -158,6 +159,27 @@ def test_pairing():
     check(g[0]["source_key"].startswith("wpdaily:nhl:2026:regular:2026-10-10:X:Y:"), "source_key")
 
 
+def test_doubleheader():
+    import compare as C
+    cs, bad = P.parse_mlb(fx("mlb_doubleheader.wikitext"), 2026, "Kansas City Royals", MLB, "2026 Kansas City Royals season")
+    d1, d2 = [c for c in cs if c["date"] == D(2026, 4, 4)]
+    check(not bad and d1["dh"] == 1 and d2["dh"] == 2, "doubleheader fixture: two games on April 4, numbered 1 and 2")
+    check(d1["score"] == {"Kansas City Royals": 2, "Milwaukee Brewers": 5} and d2["score"] == {"Kansas City Royals": 8, "Milwaukee Brewers": 2}, "doubleheader fixture: game 1 lost 2-5, game 2 won 8-2")
+    other = [dict(c, page="2026 Milwaukee Brewers season", source="wp:2026 Milwaukee Brewers season") for c in (d1, d2)]
+    gs = G.build_games(cs + other, "mlb", 2026)
+    g4 = [g for g in gs if g["date"] == D(2026, 4, 4)]
+    check(len(g4) == 2 and [g["source_key"][-1] for g in g4] == ["0", "1"] and all(g["confidence"] == "confirmed" for g in g4), "doubleheader: two games, keys end :0 and :1")
+    names = {c["name"]: c["fid"] for c in MLB.clubs}
+    kc, mil = names["Kansas City Royals"], names["Milwaukee Brewers"]
+    mk_ds1 = lambda gid, key, hs, as_: dict(id=gid, phase="regular", date=D(2026, 4, 4), status="final", hf=kc, af=mil, hs=hs, as_=as_, ot=False, so=False, key=key, src="wikipedia_daily", used=False)
+    # DS1 lists the second game first, as a database may
+    ds1 = [mk_ds1(2, g4[1]["source_key"], 8, 2), mk_ds1(1, g4[0]["source_key"], 2, 5)]
+    pairs, left = C.match(g4, ds1, MLB)
+    kinds = [C.classify(g, d, MLB)[0] for g, d in pairs]
+    check(kinds == ["same", "same"] and not left, "doubleheader: each game matches its own DS1 row, no swapped scores (%r)" % kinds)
+    check([d["id"] for g, d in pairs] == [1, 2], "doubleheader: game 1 -> DS1 row 1, game 2 -> DS1 row 2")
+
+
 def test_stage2():
     import apply as A
     check(NHL.resolve("Colombus") and NHL.resolve("Colombus")["name"] == "Columbus Blue Jackets", "known typo Colombus resolves to Columbus")
@@ -178,6 +200,7 @@ def test_stage2():
 def run():
     test_parsers()
     test_pairing()
+    test_doubleheader()
     test_stage2()
     if FAILS:
         print("SELF-TEST FAILED:")

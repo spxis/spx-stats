@@ -1,0 +1,14 @@
+<!-- Excerpt of the English Wikipedia article "2026 Kansas City Royals season", revision 1377671432 (2026-09-30T13:32:52Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily: the April 4 doubleheader (a rain-out makeup). -->
+== Game log ==
+{{Game log start|style={{Baseball primary style|Kansas City Royals}};|title=2026 Game Log: 69–93 (Home: 41–40; Road: 28–53)}}
+{{Game log section start|hide=y|style={{Baseball secondary style|Kansas City Royals}};|title=March/April: 12–19 (Home: 9–7; Road: 3–12)|#|Date|Opponent|Score|Win|Loss|Save|Attendance|Record|Streak}}
+|-style="background:#bbb;"
+| - || April 3 || [[2026 Milwaukee Brewers season|Brewers]] ||colspan="8"|'''Postponed (rain)''' <small>''(Makeup date: April 4)''</small>
+|-style="background:#fbb;"
+| 7 || April 4 {{small|(1)}} || [[2026 Milwaukee Brewers season|Brewers]] || 2–5 || [[Chad Patrick|Patrick]] (1–0) || '''[[Luinder Avila|Avila]]''' (0–1) || [[Trevor Megill|Megill]] (2) || 17,055 || 3–4 || L2
+|-style="background:#bfb;"
+| 8 || April 4 {{small|(2)}} || [[2026 Milwaukee Brewers season|Brewers]] || 8–2 || '''[[Nick Mears|Mears]]''' (1–0) || [[Brandon Sproat|Sproat]] (0–1) || '''[[Eli Morgan|Morgan]]''' (1) || 12,732 || 4–4 || W1
+|-style="background:#fbb;"
+| 9 || April 5 || [[2026 Milwaukee Brewers season|Brewers]] || 5–8 || [[Kyle Harrison (baseball)|Harrison]] (1–0) || '''[[Kris Bubic|Bubic]]''' (1–1) || [[Trevor Megill|Megill]] (3) || 14,584 || 4–5 || L1
+{{Game log section end}}
+{{Game log end}}
