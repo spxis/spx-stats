@@ -65,26 +65,30 @@ class PsqlSide:
 class ApiSide:
     """Production through the Supabase Management API query endpoint, in small queries with retries."""
 
-    def __init__(self, ref, token, chunk_rows=100_000, drill_rows=10_000):
+    def __init__(self, ref, token, chunk_rows=100_000, drill_rows=10_000, url=None):
         self.label = "production"
-        self.url = "https://api.supabase.com/v1/projects/%s/database/query" % ref
+        self.url = url or "https://api.supabase.com/v1/projects/%s/database/query" % ref
         self.token = token
         self.chunk_rows, self.drill_rows = chunk_rows, drill_rows
 
     def run(self, sql):
         wrapped = "select coalesce(json_agg(q_), '[]'::json) as j from (\n%s\n) q_" % sql
-        body = json.dumps({"query": wrapped}).encode()
+        data = self.post(wrapped)
+        j = data[0]["j"]
+        return json.loads(j) if isinstance(j, str) else j
+
+    def post(self, query, attempts=5, timeout=90):
+        """Send one query text as is and return the parsed answer. A failed answer is retried only for transient errors."""
+        body = json.dumps({"query": query}).encode()
         last = None
-        for attempt in range(5):
+        for attempt in range(attempts):
             req = urllib.request.Request(
                 self.url, data=body, method="POST",
                 headers={"Authorization": "Bearer " + self.token, "Content-Type": "application/json",
                          "User-Agent": "spx-stats-sync/1"})
             try:
-                with urllib.request.urlopen(req, timeout=90) as resp:
-                    data = json.loads(resp.read().decode())
-                j = data[0]["j"]
-                return json.loads(j) if isinstance(j, str) else j
+                with urllib.request.urlopen(req, timeout=timeout) as resp:
+                    return json.loads(resp.read().decode() or "[]")
             except urllib.error.HTTPError as e:
                 text = e.read().decode(errors="replace")[:300]
                 last = "HTTP %s %s" % (e.code, text)
@@ -109,6 +113,8 @@ select c.relnamespace::regnamespace::text as s, c.relname as t,
 from pg_class c
 where c.relkind in ('r', 'p') and not c.relispartition
   and c.relnamespace::regnamespace::text in (%s)
+  and not (c.relnamespace = 'meta'::regnamespace
+           and (c.relname in ('data_release', 'sync_status', 'release_secret') or c.relname ~ '^r[sd]_[0-9]'))
 order by 1, 2
 """ % ",".join(ql(s) for s in SCHEMAS)
 
@@ -257,22 +263,30 @@ def tsv(*cells):
     return "\t".join(str(c).replace("\t", " ").replace("\n", "\\n") if c is not None else "\\N" for c in cells) + "\n"
 
 
-def compare_table(ds1, prod, t, outdir, detail_limit):
+def diff_table(ds1, prod, t):
+    """Both sides of one table compared by key. Returns counts, the bucket fingerprints and the key lists."""
     n1, n2 = count_rows(ds1, t), count_rows(prod, t)
     b1, b2 = bucket_pass(ds1, t, n1), bucket_pass(prod, t, n2)
     bad = [b for b in range(BUCKETS) if b1.get(b) != b2.get(b)]
-    result = {"ds1": n1, "prod": n2, "only_ds1": 0, "only_prod": 0, "diff": 0}
+    d = {"ds1": n1, "prod": n2, "b1": b1, "b2": b2, "only1": [], "only2": [], "differ": []}
+    if bad:
+        r1, r2 = drill(ds1, t, bad, b1), drill(prod, t, bad, b2)
+        d["only1"] = [k for k in r1 if k not in r2]
+        d["only2"] = [k for k in r2 if k not in r1]
+        d["differ"] = [k for k in r1 if k in r2 and r1[k] != r2[k]]
+    return d
+
+
+def compare_table(ds1, prod, t, outdir, detail_limit):
+    d = diff_table(ds1, prod, t)
+    n1, n2, only1, only2, differ = d["ds1"], d["prod"], d["only1"], d["only2"], d["differ"]
+    result = {"ds1": n1, "prod": n2, "only_ds1": len(only1), "only_prod": len(only2), "diff": len(differ)}
     base = os.path.join(outdir, t.name)
     for ext in (".to_prod.sql", ".prod_only.tsv", ".diff.tsv"):
         if os.path.exists(base + ext):
             os.remove(base + ext)
-    if not bad:
+    if not (only1 or only2 or differ):
         return result
-    r1, r2 = drill(ds1, t, bad, b1), drill(prod, t, bad, b2)
-    only1 = [k for k in r1 if k not in r2]
-    only2 = [k for k in r2 if k not in r1]
-    differ = [k for k in r1 if k in r2 and r1[k] != r2[k]]
-    result.update(only_ds1=len(only1), only_prod=len(only2), diff=len(differ))
     if only1:
         with open(base + ".to_prod.sql", "w") as f:
             f.write("-- %s: %d rows DS1 has and production lacks (insert-only)\n" % (t.name, len(only1)))

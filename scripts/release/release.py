@@ -1,0 +1,1038 @@
+#!/usr/bin/env python3
+"""Numbered, validated, logged data releases. DS1 is the only place data is written; production changes only here.
+
+  prepare   check DS1, compare DS1 with production, write a pending release (with a preview) on both sides
+  run       (the NAS runner calls this every minute) apply the releases John approved at /admin/data
+  rollback  prepare a release that restores the snapshot of an earlier one (it needs approval like any other)
+  drift     compare every table, write meta.sync_status, and propose one pending fix release when anything differs
+  checks    run db/checks/*.sql on DS1 and print the result
+  status    list the releases
+
+Kinds: publish (make production match DS1 for the listed tables: insert, update and delete), ds1_step (run one
+db/migrations or db/build file on DS1 in one transaction, at a pinned git sha), rollback.
+
+DS1: psql with the PG* environment (SPX_DS1_HOST fills in the defaults, as in scripts/sync/compare.py).
+Production: Supabase Management API with SUPABASE_ACCESS_TOKEN. The approval itself is made on production by the site
+through api.approve_release (migration 045); nothing here approves anything.
+Tests: --ds1-dsn points DS1 at any Postgres, --api-url points the production calls at a stand-in API.
+Exit code: 0 ok, 1 refused or blocked, 2 error.
+"""
+import argparse
+import datetime
+import fcntl
+import gzip
+import hashlib
+import json
+import os
+import re
+import subprocess
+import sys
+import time
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sync"))
+import compare as C  # noqa: E402
+
+REPO = os.environ.get("RELEASE_REPO") or os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
+SNAP_DIR = os.environ.get("RELEASE_SNAPSHOT_DIR") or os.path.join(os.getcwd(), "release-snapshots")
+MAX_DB_BYTES = int(float(os.environ.get("RELEASE_MAX_DB_MB", "450")) * 1024 * 1024)
+SHRINK_LIMIT = 0.05
+MAIN_REF = os.environ.get("RELEASE_MAIN_REF", "origin/main")
+TABLE_RE = re.compile(r"^(core|meta|ref)\.[a-z_][a-z0-9_]*$")
+RESERVED = {"meta.data_release", "meta.sync_status", "meta.release_secret"}
+STEP_FILE_RE = re.compile(r"^db/(migrations|build)/[A-Za-z0-9_.-]+\.sql$")
+REQUEST_BYTES = 900_000
+ROWS_PER_INSERT = 500
+RELEASE_FIELDS = ("id", "number", "kind", "title", "notes", "ticket", "tables", "options", "status", "digest", "preview",
+                  "checks", "result", "created_by", "created_at", "approved_by", "approved_at", "started_at",
+                  "finished_at", "git_sha", "error")
+
+
+class Refused(Exception):
+    """The release must not go ahead (a guardrail, a failed check, something changed). The message is for John."""
+
+
+def log(msg):
+    print("%s %s" % (datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"), msg), flush=True)
+
+
+def scrub(text):
+    text = str(text)
+    for name in ("SUPABASE_ACCESS_TOKEN", "PGPASSWORD"):
+        v = os.environ.get(name)
+        if v:
+            text = text.replace(v, "***")
+    return text[:1500]
+
+
+def lit(v):
+    if v is None:
+        return "null"
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, (int, float)):
+        return str(v)
+    if isinstance(v, (dict, list)):
+        return C.ql(json.dumps(v, sort_keys=True)) + "::jsonb"
+    return C.ql(v)
+
+
+def text_array(items):
+    return "array[%s]::text[]" % ",".join(C.ql(x) for x in items) if items else "'{}'::text[]"
+
+
+# ---------------------------------------------------------------------------------------------------- sides
+
+def ds1_env():
+    env = dict(os.environ)
+    env["PGCONNECT_TIMEOUT"] = "15"
+    if os.environ.get("SPX_DS1_HOST") and not env.get("PGHOST"):
+        env["PGHOST"] = os.environ["SPX_DS1_HOST"]
+        env.setdefault("PGPORT", "55440")
+        env.setdefault("PGUSER", "postgres")
+        env.setdefault("PGDATABASE", "spx_stats")
+    return env
+
+
+class Ds1Writer:
+    """DS1 with write access, through psql. Used only for the release tables, the backup schemas and ds1_step files."""
+
+    def __init__(self, dsn=None):
+        self.dsn = dsn
+
+    def sql(self, text, single_tx=True):
+        cmd = ["psql", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1"]
+        if single_tx:
+            cmd.append("-1")
+        if self.dsn:
+            cmd.append(self.dsn)
+        cmd += ["-f", "-"]
+        r = subprocess.run(cmd, input=text, capture_output=True, text=True, env=ds1_env(), timeout=3600)
+        if r.returncode != 0:
+            raise RuntimeError("DS1: psql failed: %s" % r.stderr.strip()[:600])
+        return r.stdout
+
+    def exec(self, text):
+        """Run statements in one transaction; if the last line printed is JSON, return it parsed."""
+        lines = [x for x in self.sql(text).splitlines() if x.strip()]
+        if not lines:
+            return None
+        try:
+            return json.loads(lines[-1])
+        except ValueError:
+            return None
+
+    def copy_in(self, target, cols, data):
+        self.sql("copy %s (%s) from stdin;\n%s\\.\n" % (target, ",".join(C.qi(c) for c in cols), data))
+
+
+def prod_exec(prod, text, attempts=5, timeout=300):
+    """Run one query text on production; if it returns a row with a column j, return that value."""
+    data = prod.post(text, attempts=attempts, timeout=timeout)
+    if isinstance(data, list) and data and isinstance(data[0], dict) and "j" in data[0]:
+        j = data[0]["j"]
+        return json.loads(j) if isinstance(j, str) else j
+    return None
+
+
+class Ctx:
+    def __init__(self, args):
+        self.ds1 = C.PsqlSide("DS1", args.ds1_dsn)
+        self.w = Ds1Writer(args.ds1_dsn)
+        if not args.ds1_dsn and not (os.environ.get("SPX_DS1_HOST") or os.environ.get("PGHOST")):
+            raise SystemExit("set SPX_DS1_HOST (or PGHOST) and PGPASSWORD for DS1")
+        token = os.environ.get("SUPABASE_ACCESS_TOKEN")
+        if not token:
+            raise SystemExit("SUPABASE_ACCESS_TOKEN is not set")
+        self.prod = C.ApiSide(args.project_ref, token, url=args.api_url)
+        self.by = getattr(args, "by", None) or "release.py"
+
+
+# ---------------------------------------------------------------------------------------------------- git
+
+def git(*a, check=True):
+    r = subprocess.run(["git", "-C", REPO] + list(a), capture_output=True, text=True)
+    if check and r.returncode != 0:
+        raise RuntimeError("git %s: %s" % (" ".join(a), r.stderr.strip()[:300]))
+    return r
+
+
+def head_sha():
+    r = git("rev-parse", "HEAD", check=False)
+    return r.stdout.strip() if r.returncode == 0 else None
+
+
+# ---------------------------------------------------------------------------------------------------- checks
+
+def run_checks(ds1):
+    """Every db/checks/*.sql returns zero rows when all is well. A check fails when it returns more rows than its baseline."""
+    out = []
+    folder = os.path.join(REPO, "db", "checks")
+    for fn in sorted(os.listdir(folder)):
+        if not fn.endswith(".sql"):
+            continue
+        text = open(os.path.join(folder, fn)).read()
+        m = re.search(r"^--\s*baseline:\s*(\d+)", text, re.M)
+        w = re.search(r"^--\s*what:\s*(.+)$", text, re.M)
+        body = "\n".join(x for x in text.splitlines() if not x.lstrip().startswith("--")).strip().rstrip(";")
+        sql = ("with q as (%s) select (select count(*) from q) as n, "
+               "(select coalesce(json_agg(x), '[]'::json) from (select * from q limit 5) x) as sample" % body)
+        r = ds1.run(sql)[0]
+        base = int(m.group(1)) if m else 0
+        out.append({"name": fn[:-4], "what": w.group(1).strip() if w else "", "baseline": base, "rows": r["n"],
+                    "ok": r["n"] <= base, "sample": r["sample"]})
+    return out
+
+
+def check_blockers(checks):
+    res = []
+    for c in checks:
+        if not c["ok"]:
+            res.append("check %s: %d problem rows (known: %d). %s" % (c["name"], c["rows"], c["baseline"], c["what"]))
+    return res
+
+
+# ---------------------------------------------------------------------------------------------------- tables, preview
+
+def fp(buckets):
+    return hashlib.md5(json.dumps(sorted((b, n, m) for b, (n, m) in buckets.items())).encode()).hexdigest()
+
+
+def table_sizes(side):
+    rows = side.run("select c.relnamespace::regnamespace::text || '.' || c.relname as n, pg_total_relation_size(c.oid) as b "
+                    "from pg_class c where c.relkind in ('r', 'p') and c.relnamespace::regnamespace::text in ('core', 'meta', 'ref')")
+    return {r["n"]: r["b"] for r in rows}
+
+
+def load_tables(ctx, names):
+    """{name: (Table or None, blockers, warnings)} from both catalogs."""
+    c1, c2 = C.catalog(ctx.ds1), C.catalog(ctx.prod)
+    out = {}
+    for n in names:
+        if n not in c1:
+            out[n] = (None, ["%s does not exist on DS1" % n], [])
+        elif n not in c2:
+            out[n] = (None, ["%s does not exist on production: run its migration there first" % n], [])
+        else:
+            t = C.Table(n, c1[n], c2[n])
+            bl, wa = [], []
+            for note in t.notes:
+                (wa if note.startswith("columns only on production") else bl).append(note)
+            if not t.pk:
+                bl.append("no usable primary key on both sides")
+            out[n] = (t, bl, wa)
+    return out
+
+
+def guardrails(per_table, replace, db_bytes):
+    problems = []
+    staged = 0
+    for n, p in per_table.items():
+        after = p["prod_rows"] + p["add"] - p["remove"]
+        if p["prod_rows"] > 0 and after < p["prod_rows"] * (1 - SHRINK_LIMIT) and not replace:
+            problems.append("%s would shrink from %d to %d rows (more than %d%%); a release must say replace to allow it"
+                            % (n, p["prod_rows"], after, round(SHRINK_LIMIT * 100)))
+        staged += max(p["bytes_delta_staged"], 0)
+    if db_bytes + staged > MAX_DB_BYTES:
+        problems.append("production would reach about %d MB while the release is applied (limit %d MB)"
+                        % ((db_bytes + staged) // 1048576, MAX_DB_BYTES // 1048576))
+    return problems
+
+
+def diff_tables(ctx, names):
+    """Compare each table. Returns ({name: (Table, diff)}, {name: blockers}, {name: warnings}); a table with a blocker has no diff."""
+    tabs = load_tables(ctx, names)
+    diffs, blockers, warnings = {}, {}, {}
+    for n in names:
+        t, bl, wa = tabs[n]
+        blockers[n], warnings[n] = bl, wa
+        if t is not None and t.pk and not bl:
+            diffs[n] = (t, C.diff_table(ctx.ds1, ctx.prod, t))
+    return diffs, blockers, warnings
+
+
+def build_preview(ctx, names, replace, diffs, blockers, warnings):
+    sd, sp = table_sizes(ctx.ds1), table_sizes(ctx.prod)
+    db_bytes = ctx.prod.run("select pg_database_size(current_database()) as b")[0]["b"]
+    per = {}
+    for n in names:
+        p = {"ds1_rows": None, "prod_rows": None, "add": 0, "change": 0, "remove": 0, "bytes_delta": 0, "bytes_delta_staged": 0,
+             "ds1_fp": None, "prod_fp": None, "blockers": list(blockers[n]), "warnings": list(warnings[n])}
+        if n in diffs:
+            t, d = diffs[n]
+            p.update(ds1_rows=d["ds1"], prod_rows=d["prod"], add=len(d["only1"]), change=len(d["differ"]), remove=len(d["only2"]),
+                     ds1_fp=fp(d["b1"]), prod_fp=fp(d["b2"]))
+            avg = (sp.get(n, 0) / d["prod"]) if d["prod"] else (sd.get(n, 0) / d["ds1"] if d["ds1"] else 200)
+            p["bytes_delta"] = int((p["add"] - p["remove"]) * avg)
+            p["bytes_delta_staged"] = int(2 * (p["add"] + p["change"]) * avg)
+        per[n] = p
+    problems = guardrails({n: p for n, p in per.items() if n in diffs}, replace, db_bytes)
+    all_blockers = ["%s: %s" % (n, b) for n, p in per.items() for b in p["blockers"]] + problems
+    preview = {
+        "tables": per, "blockers": all_blockers,
+        "warnings": ["%s: %s" % (n, w) for n, p in per.items() for w in p["warnings"]],
+        "totals": {k: sum(p[k] for p in per.values()) for k in ("add", "change", "remove", "bytes_delta")},
+        "db_bytes": db_bytes,
+    }
+    return preview
+
+
+def digest_of(kind, tables, options, git_sha, preview):
+    fps = {n: [p.get("ds1_fp"), p.get("prod_fp")] for n, p in (preview.get("tables") or {}).items()}
+    body = {"kind": kind, "tables": sorted(tables), "options": options, "git_sha": git_sha, "fps": fps,
+            "file_sha256": preview.get("file_sha256"), "rollback_of": options.get("rollback_of")}
+    return hashlib.sha256(json.dumps(body, sort_keys=True).encode()).hexdigest()
+
+
+# ---------------------------------------------------------------------------------------------------- release rows
+
+def insert_sql(row):
+    cols = [c for c in RELEASE_FIELDS if c in row]
+    vals = [text_array(row[c]) if c == "tables" else lit(row[c]) for c in cols]
+    return "insert into meta.data_release (%s) values (%s)" % (",".join(cols), ",".join(vals))
+
+
+def update_sql(rid, fields, from_status=None):
+    sets = []
+    for k, v in fields.items():
+        assert k in RELEASE_FIELDS and k != "id"
+        sets.append("%s = %s" % (k, "now()" if v == "NOW" else text_array(v) if k == "tables" else lit(v)))
+    where = "id = %d" % rid + (" and status = %s" % C.ql(from_status) if from_status else "")
+    return ("with u as (update meta.data_release set %s where %s returning id) select count(*) as j from u"
+            % (", ".join(sets), where))
+
+
+def set_release(ctx, rid, fields, from_status=None):
+    """Update the release on DS1, then on production; returns how many rows production changed."""
+    ctx.w.exec(update_sql(rid, fields, from_status))
+    return prod_exec(ctx.prod, update_sql(rid, fields, from_status))
+
+
+def release_by_id(side, rid):
+    r = side.run("select * from meta.data_release where id = %d" % rid)
+    return r[0] if r else None
+
+
+def create_release(ctx, row):
+    today = datetime.datetime.now(datetime.timezone.utc).strftime("%Y.%m.%d")
+    q = ("select coalesce(max(id), 0) as id, coalesce(max(split_part(number, '-', 2)::int) filter (where number like %s), 0) as seq "
+         "from meta.data_release" % C.ql(today + "-%"))
+    a, b = ctx.ds1.run(q)[0], ctx.prod.run(q)[0]
+    row["id"] = max(a["id"], b["id"]) + 1
+    row["number"] = "%s-%d" % (today, max(a["seq"], b["seq"]) + 1)
+    row.setdefault("created_by", ctx.by)
+    ctx.w.exec(insert_sql(row))
+    try:
+        prod_exec(ctx.prod, insert_sql(row), attempts=1)
+    except Exception:
+        ctx.w.exec("delete from meta.data_release where id = %d" % row["id"])
+        raise
+    return row
+
+
+# ---------------------------------------------------------------------------------------------------- prepare
+
+def valid_tables(raw):
+    names = sorted({x.strip() for x in raw.split(",") if x.strip()})
+    for n in names:
+        if not TABLE_RE.match(n) or n in RESERVED or re.match(r"^meta\.r[sd]_[0-9]", n):
+            raise SystemExit("not a table that can be released: %s (core, meta and ref tables only)" % n)
+    if not names:
+        raise SystemExit("--tables is required")
+    return names
+
+
+def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, created_by=None, diff_cache=None, quiet=False):
+    checks = run_checks(ctx.ds1)
+    if diff_cache is None:
+        diffs, blockers, warnings = diff_tables(ctx, names)
+    else:
+        diffs, blockers, warnings = diff_cache
+        diffs = {n: diffs[n] for n in names if n in diffs}
+        blockers = {n: blockers.get(n, []) for n in names}
+        warnings = {n: warnings.get(n, []) for n in names}
+    preview = build_preview(ctx, names, replace, diffs, blockers, warnings)
+    preview["blockers"] = check_blockers(checks) + preview["blockers"]
+    if preview["totals"]["add"] + preview["totals"]["change"] + preview["totals"]["remove"] == 0 and not preview["blockers"]:
+        raise Refused("DS1 and production already match for these tables: nothing to release")
+    options = {"replace": True} if replace else {}
+    sha = head_sha()
+    row = {"kind": "publish", "title": title, "notes": notes, "ticket": ticket, "tables": names, "options": options,
+           "status": "pending", "preview": preview, "checks": checks, "git_sha": sha,
+           "digest": digest_of("publish", names, options, sha, preview)}
+    if created_by:
+        row["created_by"] = created_by
+    row = create_release(ctx, row)
+    if not quiet:
+        print_preview(row)
+    return row
+
+
+def print_preview(row):
+    pv = row["preview"]
+    print("release %s (%s): %s" % (row["number"], row["kind"], row["title"]))
+    for n, p in (pv.get("tables") or {}).items():
+        print("  %-28s +%d ~%d -%d  (DS1 %s, production %s)" % (n, p["add"], p["change"], p["remove"], p["ds1_rows"], p["prod_rows"]))
+    if pv.get("file"):
+        print("  file %s at %s" % (pv["file"], (row.get("git_sha") or "")[:10]))
+        for k, v in (pv.get("after") or {}).items():
+            print("  %-28s %s -> %s" % (k, (pv.get("before") or {}).get(k), v))
+    for b in pv.get("blockers") or []:
+        print("  BLOCKER: " + b)
+    for w in pv.get("warnings") or []:
+        print("  warning: " + w)
+    print("  status: pending%s; approve it at /admin/data" % (" (blocked, cannot be approved)" if pv.get("blockers") else ""))
+
+
+def mentioned_tables(sql):
+    names = re.findall(r"\b(?:core|meta|ref|api|legacy_[a-z0-9_]+)\.[a-z_][a-z0-9_]*", sql, re.I)
+    return sorted({x.lower() for x in names})[:30]
+
+
+def clean_step_sql(body):
+    if re.search(r"^\s*\\", body, re.M):
+        raise Refused("the file contains a psql backslash command; a release file is plain SQL")
+    if re.search(r"^\s*(rollback|savepoint|release\s+savepoint)\b", body, re.I | re.M):
+        raise Refused("the file manages its own transaction")
+    return re.sub(r"^\s*(begin|commit)\s*;[ \t]*$", "", body, flags=re.I | re.M)
+
+
+def file_at(sha, path):
+    r = subprocess.run(["git", "-C", REPO, "show", "%s:%s" % (sha, path)], capture_output=True)
+    if r.returncode != 0:
+        subprocess.run(["git", "-C", REPO, "fetch", "--quiet", "origin", sha], capture_output=True)
+        r = subprocess.run(["git", "-C", REPO, "show", "%s:%s" % (sha, path)], capture_output=True)
+    if r.returncode != 0:
+        raise Refused("git cannot show %s at %s" % (path, sha[:10]))
+    return r.stdout
+
+
+def run_step(ctx, body_sql, checks, commit):
+    """Run the file on DS1 in one transaction, with table counts before and after and the checks before and after.
+    Rolls back (and says so) if any check has more problem rows afterwards than before. commit False = dry run."""
+    names = mentioned_tables(body_sql)
+    arr = "array[%s]::text[]" % ",".join(C.ql(n) for n in names) if names else "array[]::text[]"
+
+    def counts(tag):
+        return ("select '@@%s ' || coalesce(json_object_agg(n, c)::text, '{}') from (select n, "
+                "(xpath('/row/c/text()', query_to_xml('select count(*) as c from ' || n, false, true, '')))[1]::text::bigint as c "
+                "from unnest(%s) n where to_regclass(n) is not null and (select relkind from pg_class where oid = to_regclass(n)) in ('r', 'p', 'm')) q;"
+                % (tag, arr))
+    check_sql = []
+    for c in checks:
+        body = "\n".join(x for x in open(os.path.join(REPO, "db", "checks", c["name"] + ".sql")).read().splitlines()
+                         if not x.lstrip().startswith("--")).strip().rstrip(";")
+        check_sql.append(body)
+    s = ["\\set ON_ERROR_STOP on", "begin;", counts("before")]
+    for i, body in enumerate(check_sql):
+        s.append("select count(*) as pre%d from (%s) q \\gset" % (i, body))
+    s.append(body_sql)
+    s.append(counts("after"))
+    for i, body in enumerate(check_sql):
+        s.append("select count(*) > :pre%d as bad%d from (%s) q \\gset" % (i, i, body))
+    s.append("select (%s) as bad \\gset" % (" or ".join(":'bad%d'::boolean" % i for i in range(len(check_sql))) or "false"))
+    s.append("select '@@bad ' || :'bad';")
+    s.append("\\if :bad\nrollback;\nselect '@@result worse';\n\\else\n%s;\nselect '@@result %s';\n\\endif"
+             % ("commit" if commit else "rollback", "committed" if commit else "dry_run"))
+    cmd = ["psql", "-X", "-q", "-A", "-t", "-v", "ON_ERROR_STOP=1"] + ([ctx.w.dsn] if ctx.w.dsn else []) + ["-f", "-"]
+    r = subprocess.run(cmd, input="\n".join(s) + "\n", capture_output=True, text=True, env=ds1_env(), timeout=7200)
+    out = {"tables": names}
+    for line in r.stdout.splitlines():
+        m = re.match(r"^@@(before|after) (.*)$", line)
+        if m:
+            out[m.group(1)] = json.loads(m.group(2))
+        m = re.match(r"^@@result (\w+)$", line)
+        if m:
+            out["result"] = m.group(1)
+    if r.returncode != 0:
+        out["error"] = "psql failed: " + r.stderr.strip()[:600]
+    return out
+
+
+def prepare_step(ctx, title, path, notes=None, ticket=None):
+    if not STEP_FILE_RE.match(path or ""):
+        raise SystemExit("--file must be db/migrations/NAME.sql or db/build/NAME.sql")
+    sha = head_sha()
+    if not sha:
+        raise SystemExit("not a git checkout")
+    if git("ls-files", "--error-unmatch", path, check=False).returncode != 0 or git("diff", "--quiet", "HEAD", "--", path, check=False).returncode != 0:
+        raise SystemExit("%s must be committed and unchanged" % path)
+    blockers = []
+    if git("merge-base", "--is-ancestor", sha, MAIN_REF, check=False).returncode != 0:
+        blockers.append("commit %s is not on %s: push it first, then prepare again" % (sha[:10], MAIN_REF))
+    content = file_at(sha, path)
+    body = clean_step_sql(content.decode())
+    checks = run_checks(ctx.ds1)
+    blockers += check_blockers(checks)
+    dry = run_step(ctx, body, checks, commit=False)
+    if dry.get("error"):
+        blockers.append("the file fails on DS1: " + dry["error"])
+    elif dry.get("result") == "worse":
+        blockers.append("the file makes a check worse on DS1")
+    preview = {"file": path, "file_sha256": hashlib.sha256(content).hexdigest(), "git_sha": sha,
+               "before": dry.get("before"), "after": dry.get("after"), "dry_run": True, "blockers": blockers, "warnings": [],
+               "tables": {}, "totals": {}}
+    row = {"kind": "ds1_step", "title": title, "notes": notes, "ticket": ticket, "tables": dry.get("tables", []),
+           "options": {"file": path}, "status": "pending", "preview": preview, "checks": checks, "git_sha": sha,
+           "digest": digest_of("ds1_step", dry.get("tables", []), {"file": path}, sha, preview)}
+    row = create_release(ctx, row)
+    print_preview(row)
+    return row
+
+
+# ---------------------------------------------------------------------------------------------------- snapshot, stage, apply
+
+def tsv_cell(v):
+    if v is None:
+        return "\\N"
+    return v.replace("\\", "\\\\").replace("\t", "\\t").replace("\n", "\\n").replace("\r", "\\r")
+
+
+def tuple_expr(t):
+    return "'(' || concat_ws(',', %s) || ')'" % ",".join("quote_nullable(%s)" % C.vexpr(c) for c in t.insert_cols)
+
+
+def read_tuples(ds1, t, keys, source=None):
+    """VALUES tuples (as SQL text) for the given keys, read from a DS1 table, in key order."""
+    order = ",".join(C.cexpr(k, t.types[k]) + ' collate "C"' for k in t.pk)
+    keys = sorted(keys)
+    for i in range(0, len(keys), 2000):
+        part = keys[i:i + 2000]
+        for r in ds1.run("select %s as v from %s where %s order by %s" % (tuple_expr(t), source or t.fq, t.key_filter(part), order)):
+            yield r["v"]
+
+
+def read_all_tuples(ds1, t, source):
+    order = ",".join(C.qi(k) for k in t.pk)
+    off = 0
+    while True:
+        rows = ds1.run("select %s as v from %s order by %s limit 2000 offset %d" % (tuple_expr(t), source, order, off))
+        for r in rows:
+            yield r["v"]
+        if len(rows) < 2000:
+            return
+        off += 2000
+
+
+def key_literals(t, keys):
+    out = []
+    for k in keys:
+        out.append("(%s)" % ",".join(C.ql(v + "+00" if t.types[c].startswith("timestamp with time zone") else v) for c, v in zip(t.pk, k)))
+    return out
+
+
+def send_batches(prod, statements):
+    """Send statements in requests of about REQUEST_BYTES. Every statement is on conflict do nothing, so a retry is harmless."""
+    buf, size = [], 0
+    for st in statements:
+        if buf and size + len(st) > REQUEST_BYTES:
+            prod_exec(prod, ";\n".join(buf))
+            buf, size = [], 0
+        buf.append(st)
+        size += len(st)
+    if buf:
+        prod_exec(prod, ";\n".join(buf))
+
+
+def insert_statements(target, cols, tuples):
+    head = "insert into %s (%s) values\n" % (target, ",".join(C.qi(c) for c in cols))
+    batch = []
+    for tp in tuples:
+        batch.append(tp)
+        if len(batch) >= ROWS_PER_INSERT:
+            yield head + ",\n".join(batch) + "\non conflict do nothing"
+            batch = []
+    if batch:
+        yield head + ",\n".join(batch) + "\non conflict do nothing"
+
+
+class Stage:
+    """Staging tables on production for one release: the rows to insert or update, and the keys to delete. Dropped at the end."""
+
+    def __init__(self, prod, rid):
+        self.prod, self.rid, self.names = prod, rid, []
+
+    def create(self, kind, i, t, cols):
+        name = "meta.r%s_%d_%d" % (kind, self.rid, i)
+        self.names.append(name)
+        prod_exec(self.prod, "drop table if exists %s;\ncreate unlogged table %s as select %s from %s with no data;\nalter table %s add primary key (%s)"
+                  % (name, name, ",".join(C.qi(c) for c in cols), t.fq, name, ",".join(C.qi(k) for k in t.pk)))
+        return name
+
+    def drop(self):
+        try:
+            if self.names:
+                prod_exec(self.prod, ";\n".join("drop table if exists %s" % n for n in self.names))
+        except Exception as e:  # noqa: BLE001 - cleanup must not hide the real error
+            log("could not drop the staging tables %s: %s" % (self.names, scrub(e)))
+
+
+def apply_block(steps):
+    """One DO block: deletes (children first), then upserts (parents first), count checks, sequence resets, drop the stages.
+    A single statement, so it commits or rolls back as a whole whatever the API does with a multi-statement text."""
+    out = ["do $apply$ begin"]
+    for s in reversed(steps):
+        t = s["t"]
+        if s["del"]:
+            cond = " and ".join("t.%s = d.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
+            out.append("delete from %s t using %s d where %s;" % (t.fq, s["del"], cond))
+    for s in steps:
+        t = s["t"]
+        cols = ",".join(C.qi(c) for c in t.insert_cols)
+        pk = ",".join(C.qi(k) for k in t.pk)
+        rest = [c for c in t.insert_cols if c not in t.pk]
+        if rest:
+            sets = ", ".join("%s = excluded.%s" % (C.qi(c), C.qi(c)) for c in rest)
+            old = ", ".join("%s.%s::text" % (t.fq, C.qi(c)) for c in rest)
+            new = ", ".join("excluded.%s::text" % C.qi(c) for c in rest)
+            tail = "on conflict (%s) do update set %s where (%s) is distinct from (%s)" % (pk, sets, old, new)
+        else:
+            tail = "on conflict (%s) do nothing" % pk
+        if s["up"]:
+            out.append("insert into %s (%s) overriding system value select %s from %s %s;" % (t.fq, cols, cols, s["up"], tail))
+    for s in steps:
+        t = s["t"]
+        out.append("if (select count(*) from " + t.fq + ") <> " + str(s["expected"]) + " then raise exception 'row count of "
+                   + t.name + " does not match after the change'; end if;")
+        for c in t.identity_cols:
+            out.append("perform setval(pg_get_serial_sequence(%s, %s), coalesce((select max(%s) from %s), 1));"
+                       % (C.ql(t.fq), C.ql(c), C.qi(c), t.fq))
+    for s in steps:
+        for n in (s["up"], s["del"]):
+            if n:
+                out.append("drop table %s;" % n)
+    out.append("end $apply$")
+    return "\n".join(out)
+
+
+def stage_and_apply(ctx, rid, plan):
+    """plan: [{t, ups: iterable of VALUES tuples or None, dels: key list, expected: rows after}] in parents-first order."""
+    st = Stage(ctx.prod, rid)
+    try:
+        steps = []
+        for i, p in enumerate(plan):
+            t = p["t"]
+            step = {"t": t, "up": None, "del": None, "expected": p["expected"]}
+            if p["ups"] is not None:
+                step["up"] = st.create("s", i, t, t.insert_cols)
+                send_batches(ctx.prod, insert_statements(step["up"], t.insert_cols, p["ups"]))
+            if p["dels"]:
+                step["del"] = st.create("d", i, t, t.pk)
+                lits = key_literals(t, p["dels"])
+                head = "insert into %s (%s) values\n" % (step["del"], ",".join(C.qi(k) for k in t.pk))
+                send_batches(ctx.prod, (head + ",\n".join(lits[j:j + 1000]) + "\non conflict do nothing" for j in range(0, len(lits), 1000)))
+            steps.append(step)
+        prod_exec(ctx.prod, apply_block(steps), attempts=1, timeout=900)
+    finally:
+        st.drop()
+
+
+def write_gz(path, text):
+    with gzip.open(path, "wt", encoding="utf-8", newline="\n") as f:
+        f.write(text)
+
+
+def snapshot(ctx, rid, number, items):
+    """Save production's current rows for everything the release will update or delete, and the keys it will insert.
+    To a gzip TSV per table under SNAP_DIR/<number>/ and to DS1 schema backup_release_<id>. Never into production."""
+    folder = os.path.join(SNAP_DIR, number)
+    os.makedirs(folder, exist_ok=True)
+    schema = "backup_release_%d" % rid
+    ctx.w.exec("create schema %s" % schema)
+    manifest = {"number": number, "id": rid, "schema": schema, "tables": {}}
+    for name, t, d in items:
+        affected = sorted(d["differ"] + d["only2"])
+        cols = t.insert_cols
+        lines = []
+        for i in range(0, len(affected), 1000):
+            part = affected[i:i + 1000]
+            sql = "select json_build_array(%s) as r from %s where %s" % (",".join(C.vexpr(c) for c in cols), t.fq, t.key_filter(part))
+            for r in ctx.prod.run(sql):
+                lines.append("\t".join(tsv_cell(v) for v in r["r"]))
+        if len(lines) != len(affected):
+            raise RuntimeError("snapshot of %s: expected %d rows, production returned %d" % (name, len(affected), len(lines)))
+        data = "".join(x + "\n" for x in lines)
+        ins = "".join("\t".join(tsv_cell(v) for v in k) + "\n" for k in sorted(d["only1"]))
+        fn = name.replace(".", "_")
+        write_gz(os.path.join(folder, fn + ".tsv.gz"), data)
+        write_gz(os.path.join(folder, fn + ".inserted.tsv.gz"), ins)
+        bt, bi = "%s.%s" % (schema, C.qi(name)), "%s.%s" % (schema, C.qi(name + "__ins"))
+        ctx.w.exec("create table %s as select %s from %s with no data;\ncreate table %s as select %s from %s with no data"
+                   % (bt, ",".join(C.qi(c) for c in cols), t.fq, bi, ",".join(C.qi(k) for k in t.pk), t.fq))
+        if data:
+            ctx.w.copy_in(bt, cols, data)
+        if ins:
+            ctx.w.copy_in(bi, t.pk, ins)
+        manifest["tables"][name] = {"columns": cols, "pk": t.pk, "restore": len(lines), "inserted": len(d["only1"])}
+    with open(os.path.join(folder, "manifest.json"), "w") as f:
+        json.dump(manifest, f, indent=1)
+    return schema
+
+
+def ordered(ctx, names):
+    return C.apply_order(list(names), ctx.ds1)
+
+
+def verify_equal(ctx, name, t, want_buckets):
+    n = C.count_rows(ctx.prod, t)
+    return C.bucket_pass(ctx.prod, t, n) == want_buckets
+
+
+# ---------------------------------------------------------------------------------------------------- run: publish
+
+def run_publish(ctx, rel):
+    started = time.time()
+    names = list(rel["tables"])
+    options = rel["options"] or {}
+    replace = bool(options.get("replace"))
+    pv = rel["preview"]
+    checks = run_checks(ctx.ds1)
+    problems = check_blockers(checks)
+    if problems:
+        raise Refused("checks fail now: " + "; ".join(problems))
+    diffs, blockers, warnings = diff_tables(ctx, names)
+    for n in names:
+        if blockers[n]:
+            raise Refused("%s: %s" % (n, "; ".join(blockers[n])))
+    now = build_preview(ctx, names, replace, diffs, blockers, warnings)
+    for n in names:
+        a, b = pv["tables"][n], now["tables"][n]
+        if (a["ds1_fp"], a["prod_fp"]) != (b["ds1_fp"], b["prod_fp"]):
+            raise Refused("%s changed since the preview (DS1 or production moved): prepare the release again" % n)
+    if now["blockers"]:
+        raise Refused("; ".join(now["blockers"]))
+
+    order = ordered(ctx, names)
+    items = [(n, diffs[n][0], diffs[n][1]) for n in order]
+    schema = snapshot(ctx, rel["id"], rel["number"], items)
+    before_fp = {n: now["tables"][n]["prod_fp"] for n in names}
+
+    plan = []
+    for n, t, d in items:
+        ups = list(d["only1"]) + list(d["differ"])
+        plan.append({"t": t, "ups": read_tuples(ctx.ds1, t, ups) if ups else None,
+                     "dels": d["only2"], "expected": d["ds1"]})
+    try:
+        stage_and_apply(ctx, rel["id"], plan)
+    except Exception as e:
+        # the DO block is atomic; if the answer was lost, production may still have committed: look before calling it a failure
+        if all(verify_equal(ctx, n, t, d["b1"]) for n, t, d in items):
+            log("the answer was lost but production matches DS1: counting the release as applied (%s)" % scrub(e))
+        else:
+            raise
+    for n, t, d in items:
+        if not verify_equal(ctx, n, t, d["b1"]):
+            log("verification failed for %s: restoring the snapshot" % n)
+            try:
+                restore(ctx, rel["id"], names, before_fp=before_fp, orig_rows={x: now["tables"][x]["prod_rows"] for x in names})
+            except Exception as e2:  # noqa: BLE001
+                raise RuntimeError("production does not match DS1 after the release for %s and the automatic restore failed: %s" % (n, scrub(e2)))
+            raise RuntimeError("production did not match DS1 after the release for %s; the snapshot was restored" % n)
+    refresh = "ok"
+    try:
+        prod_exec(ctx.prod, "select api.refresh()")
+    except Exception as e:  # noqa: BLE001
+        refresh = "failed: " + scrub(e)[:200]
+    return {"tables": {n: {"add": now["tables"][n]["add"], "change": now["tables"][n]["change"], "remove": now["tables"][n]["remove"],
+                           "rows_before": now["tables"][n]["prod_rows"], "rows_after": now["tables"][n]["ds1_rows"]} for n in names},
+            "totals": {k: now["totals"][k] for k in ("add", "change", "remove")},
+            "backup_schema": schema, "before_fp": before_fp, "verified": True, "refresh": refresh,
+            "seconds": round(time.time() - started)}
+
+
+# ---------------------------------------------------------------------------------------------------- run: ds1_step
+
+def run_step_release(ctx, rel):
+    started = time.time()
+    path, sha = rel["options"]["file"], rel["git_sha"]
+    if not STEP_FILE_RE.match(path):
+        raise Refused("bad file name")
+    content = file_at(sha, path)
+    if hashlib.sha256(content).hexdigest() != rel["preview"]["file_sha256"]:
+        raise Refused("%s at %s is not the file that was previewed" % (path, sha[:10]))
+    body = clean_step_sql(content.decode())
+    checks = run_checks(ctx.ds1)
+    problems = check_blockers(checks)
+    if problems:
+        raise Refused("checks fail now: " + "; ".join(problems))
+    res = run_step(ctx, body, checks, commit=True)
+    if res.get("error"):
+        raise RuntimeError(res["error"])
+    if res.get("result") != "committed":
+        raise Refused("the file makes a check worse on DS1; nothing was changed")
+    return {"file": path, "git_sha": sha, "before": res.get("before"), "after": res.get("after"), "seconds": round(time.time() - started)}
+
+
+# ---------------------------------------------------------------------------------------------------- rollback
+
+def later_releases(ctx, orig):
+    return ctx.ds1.run("select number from meta.data_release where id > %d and status = 'done' and kind in ('publish', 'rollback') "
+                       "and tables && %s order by id" % (orig["id"], text_array(orig["tables"])))
+
+
+def prepare_rollback(ctx, number, title=None, notes=None, ticket=None):
+    r = ctx.ds1.run("select * from meta.data_release where number = %s" % C.ql(number))
+    if not r:
+        raise Refused("no release %s" % number)
+    orig = r[0]
+    blockers = []
+    if orig["kind"] != "publish" or orig["status"] != "done":
+        blockers.append("only a finished publish release can be rolled back")
+    later = later_releases(ctx, orig) if not blockers else []
+    if later:
+        blockers.append("later releases changed the same tables: %s; roll those back first" % ", ".join(x["number"] for x in later))
+    res = orig.get("result") or {}
+    if not blockers and not res.get("backup_schema"):
+        blockers.append("release %s has no snapshot" % number)
+    per = {}
+    for n, v in ((res.get("tables") or {}).items()):
+        per[n] = {"ds1_rows": None, "prod_rows": v["rows_after"], "add": v["remove"] + v["change"], "change": 0, "remove": v["add"],
+                  "bytes_delta": 0, "ds1_fp": None, "prod_fp": (res.get("before_fp") or {}).get(n), "blockers": [], "warnings": []}
+    preview = {"tables": per, "blockers": blockers, "warnings": [], "rollback_of": number,
+               "totals": {k: sum(p[k] for p in per.values()) for k in ("add", "change", "remove", "bytes_delta")}}
+    options = {"rollback_of": number}
+    row = {"kind": "rollback", "title": title or "Roll back %s" % number, "notes": notes, "ticket": ticket, "tables": orig["tables"],
+           "options": options, "status": "pending", "preview": preview, "git_sha": head_sha(),
+           "digest": digest_of("rollback", orig["tables"], options, head_sha(), preview)}
+    row["digest"] = hashlib.sha256((row["digest"] + orig["digest"]).encode()).hexdigest()
+    row = create_release(ctx, row)
+    print_preview(row)
+    return row
+
+
+def restore(ctx, rid, names, before_fp=None, orig_rows=None):
+    """Put production back from the snapshot of release id <rid>: restore updated and deleted rows, remove inserted ones."""
+    schema = "backup_release_%d" % rid
+    tabs = load_tables(ctx, names)
+    plan = []
+    order = ordered(ctx, names)
+    for n in order:
+        t, bl, _ = tabs[n]
+        if t is None or bl:
+            raise Refused("%s: %s" % (n, "; ".join(bl)))
+        bt, bi = "%s.%s" % (schema, C.qi(n)), "%s.%s" % (schema, C.qi(n + "__ins"))
+        cnt = ctx.ds1.run("select (select count(*) from %s) as r, (select count(*) from %s) as i" % (bt, bi))[0]
+        keys = [tuple(r["k"]) for r in ctx.ds1.run("select json_build_array(%s) as k from %s" % (",".join(C.cexpr(k, t.types[k]) for k in t.pk), bi))]
+        now_rows = C.count_rows(ctx.prod, t)
+        plan.append({"t": t, "ups": read_all_tuples(ctx.ds1, t, bt) if cnt["r"] else None, "dels": keys,
+                     "expected": (orig_rows or {}).get(n, now_rows), "_n": n})
+    stage_and_apply(ctx, rid * 1000 + 1, plan)
+    if before_fp:
+        for p in plan:
+            t = p["t"]
+            n2 = C.count_rows(ctx.prod, t)
+            if fp(C.bucket_pass(ctx.prod, t, n2)) != before_fp[p["_n"]]:
+                raise RuntimeError("after the restore %s does not match its state before the release" % p["_n"])
+
+
+def run_rollback(ctx, rel):
+    started = time.time()
+    number = rel["options"]["rollback_of"]
+    orig = ctx.ds1.run("select * from meta.data_release where number = %s" % C.ql(number))[0]
+    if orig["kind"] != "publish" or orig["status"] != "done":
+        raise Refused("release %s is not a finished publish release" % number)
+    later = later_releases(ctx, orig)
+    if later:
+        raise Refused("later releases changed the same tables: " + ", ".join(x["number"] for x in later))
+    res = orig["result"]
+    names = list(orig["tables"])
+    restore(ctx, orig["id"], names, before_fp=res["before_fp"],
+            orig_rows={n: v["rows_before"] for n, v in res["tables"].items()})
+    try:
+        prod_exec(ctx.prod, "select api.refresh()")
+    except Exception as e:  # noqa: BLE001
+        log("api.refresh failed: " + scrub(e))
+    set_release(ctx, orig["id"], {"status": "rolled_back"}, from_status="done")
+    return {"rolled_back": number, "verified": True, "seconds": round(time.time() - started)}
+
+
+# ---------------------------------------------------------------------------------------------------- run loop
+
+def cmd_run(ctx, args):
+    os.makedirs(SNAP_DIR, exist_ok=True)
+    lock = open(os.path.join(SNAP_DIR, ".run.lock"), "w")
+    try:
+        fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except OSError:
+        log("another run is in progress")
+        return 0
+    stale = ctx.ds1.run("select id from meta.data_release where status = 'running'")
+    for r in stale:
+        log("release id %d was left running by a runner that stopped: marking it failed" % r["id"])
+        set_release(ctx, r["id"], {"status": "failed", "finished_at": "NOW",
+                                   "error": "The runner stopped while this release was running. Check production with the drift report."})
+    asked = ctx.prod.run("select id, number, kind, status, digest, tables, options, approved_by, approved_at "
+                         "from meta.data_release where status in ('approved', 'rejected') order by id")
+    did = 0
+    for p in asked:
+        mine = release_by_id(ctx.ds1, p["id"])
+        if mine is None or mine["number"] != p["number"]:
+            log("production has release %s that DS1 does not know: refusing it" % p["number"])
+            prod_exec(ctx.prod, update_sql(p["id"], {"status": "failed", "finished_at": "NOW",
+                                                     "error": "DS1 has no such release; refused."}, "approved"))
+            continue
+        if mine["status"] != "pending":
+            # DS1 already moved on (for example it finished and production could not be told): make production agree
+            if p["status"] == "approved":
+                set_release(ctx, mine["id"], {k: mine[k] for k in ("status", "result", "error", "finished_at") if mine.get(k) is not None})
+            continue
+        if p["status"] == "rejected":
+            ctx.w.exec(update_sql(mine["id"], {"status": "rejected", "approved_by": p["approved_by"], "approved_at": p["approved_at"]}, "pending"))
+            continue
+        same = (p["digest"] == mine["digest"] and p["kind"] == mine["kind"] and sorted(p["tables"]) == sorted(mine["tables"])
+                and (p["options"] or {}) == (mine["options"] or {}))
+        if not same or digest_check(mine) is False:
+            log("release %s: production's copy does not match DS1's copy: refusing it" % p["number"])
+            set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW",
+                                          "error": "The approved release does not match the copy on DS1; refused."})
+            continue
+        if not prod_exec(ctx.prod, update_sql(p["id"], {"status": "running", "started_at": "NOW", "approved_by": p["approved_by"]}, "approved")):
+            continue
+        ctx.w.exec(update_sql(mine["id"], {"status": "running", "started_at": "NOW", "approved_by": p["approved_by"],
+                                           "approved_at": p["approved_at"]}))
+        log("running release %s (%s): %s" % (mine["number"], mine["kind"], mine["title"]))
+        try:
+            handler = {"publish": run_publish, "ds1_step": run_step_release, "rollback": run_rollback}[mine["kind"]]
+            result = handler(ctx, mine)
+            set_release(ctx, mine["id"], {"status": "done", "finished_at": "NOW", "result": result, "error": None})
+            log("release %s done" % mine["number"])
+        except Refused as e:
+            set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW", "error": "Refused: " + scrub(e)})
+            log("release %s refused: %s" % (mine["number"], scrub(e)))
+        except Exception as e:  # noqa: BLE001 - every failure is recorded
+            set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW", "error": scrub(e)})
+            log("release %s failed: %s" % (mine["number"], scrub(e)))
+        did += 1
+    if not did:
+        log("nothing approved")
+    return 0
+
+
+def digest_check(rel):
+    """True when the digest matches the content of the DS1 row, so a changed preview or option is noticed."""
+    if rel["kind"] == "rollback":
+        return True
+    return digest_of(rel["kind"], rel["tables"], rel["options"] or {}, rel["git_sha"], rel["preview"] or {}) == rel["digest"]
+
+
+# ---------------------------------------------------------------------------------------------------- drift
+
+def cmd_drift(ctx, args):
+    c1, c2 = C.catalog(ctx.ds1), C.catalog(ctx.prod)
+    names = sorted(set(c1) | set(c2))
+    status, fixable = [], []
+    diffs, blockers, warnings = {}, {}, {}
+    for n in names:
+        if n not in c2:
+            status.append((n, None, None, "differs", "missing in production: run its migration there"))
+            continue
+        if n not in c1:
+            status.append((n, None, None, "differs", "only in production (not on DS1)"))
+            continue
+        t = C.Table(n, c1[n], c2[n])
+        bl = [x for x in t.notes if not x.startswith("columns only on production")]
+        if not t.pk or bl:
+            status.append((n, None, None, "differs", "; ".join(bl) or "no usable primary key"))
+            blockers[n], warnings[n] = bl, []
+            continue
+        d = C.diff_table(ctx.ds1, ctx.prod, t)
+        diffs[n], blockers[n], warnings[n] = (t, d), [], []
+        if d["only1"] or d["only2"] or d["differ"]:
+            status.append((n, d["ds1"], d["prod"], "differs", "only in DS1 %d, only in production %d, different %d"
+                           % (len(d["only1"]), len(d["only2"]), len(d["differ"]))))
+            fixable.append(n)
+        else:
+            status.append((n, d["ds1"], d["prod"], "same", None))
+        log("%-30s %s" % (n, status[-1][3]))
+    rows = ",\n".join("(%s, %s, %s, %s, now(), %s)" % (C.ql(n), lit(a), lit(b), C.ql(s), lit(det)) for n, a, b, s, det in status)
+    sql = ("delete from meta.sync_status;\ninsert into meta.sync_status (table_name, ds1_rows, prod_rows, state, checked_at, detail) values\n%s" % rows)
+    ctx.w.exec(sql)
+    prod_exec(ctx.prod, sql)
+    if not fixable:
+        log("drift: nothing to propose")
+        return 0
+    old = ctx.ds1.run("select id from meta.data_release where status = 'pending' and created_by = 'drift'")
+    for o in old:
+        set_release(ctx, o["id"], {"status": "rejected", "approved_by": "drift", "approved_at": "NOW", "error": "Replaced by a newer drift proposal."})
+    day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+    try:
+        prepare_publish(ctx, "Drift fix %s" % day, fixable, notes="Proposed by the nightly drift check: %s." % ", ".join(fixable),
+                        created_by="drift", diff_cache=(diffs, blockers, warnings))
+    except Refused as e:
+        log("drift: %s" % e)
+    return 1
+
+
+# ---------------------------------------------------------------------------------------------------- commands
+
+def cmd_prepare(ctx, args):
+    if args.kind == "ds1_step":
+        if not args.file:
+            raise SystemExit("--file is required for a ds1_step")
+        prepare_step(ctx, args.title, args.file, args.notes, args.ticket)
+    else:
+        prepare_publish(ctx, args.title, valid_tables(args.tables or ""), args.notes, args.ticket, replace=args.replace)
+    return 0
+
+
+def cmd_rollback(ctx, args):
+    prepare_rollback(ctx, args.release, args.title, args.notes, args.ticket)
+    return 0
+
+
+def cmd_checks(ctx, args):
+    bad = 0
+    for c in run_checks(ctx.ds1):
+        print("%-34s %s  rows=%d baseline=%d  %s" % (c["name"], "ok  " if c["ok"] else "FAIL", c["rows"], c["baseline"], c["what"]))
+        bad += 0 if c["ok"] else 1
+    return 1 if bad else 0
+
+
+def cmd_status(ctx, args):
+    for r in ctx.ds1.run("select number, kind, status, title, created_by, approved_by from meta.data_release order by id desc limit 30"):
+        print("%-14s %-9s %-10s %s  (by %s, approved by %s)" % (r["number"], r["kind"], r["status"], r["title"], r["created_by"], r["approved_by"]))
+    return 0
+
+
+def main():
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--project-ref", default=C.PROJECT_REF)
+    ap.add_argument("--ds1-dsn", help="test only: psql connection string for DS1 instead of PG* env")
+    ap.add_argument("--api-url", help="test only: a stand-in for the Management API query endpoint")
+    ap.add_argument("--by", help="who prepared it (default release.py)")
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    p = sub.add_parser("prepare")
+    p.add_argument("--title", required=True)
+    p.add_argument("--tables", help="comma-separated schema.table list (publish)")
+    p.add_argument("--kind", choices=["publish", "ds1_step"], default="publish")
+    p.add_argument("--file", help="ds1_step: db/migrations/NNN.sql or db/build/NNN.sql, committed and pushed")
+    p.add_argument("--ticket")
+    p.add_argument("--notes")
+    p.add_argument("--replace", action="store_true", help="allow a table to shrink by more than 5 percent")
+    p.set_defaults(fn=cmd_prepare)
+    p = sub.add_parser("run")
+    p.set_defaults(fn=cmd_run)
+    p = sub.add_parser("rollback")
+    p.add_argument("--release", required=True, help="the number of the release to undo, e.g. 2026.10.12-1")
+    p.add_argument("--title")
+    p.add_argument("--ticket")
+    p.add_argument("--notes")
+    p.set_defaults(fn=cmd_rollback)
+    p = sub.add_parser("drift")
+    p.set_defaults(fn=cmd_drift)
+    p = sub.add_parser("checks")
+    p.set_defaults(fn=cmd_checks)
+    p = sub.add_parser("status")
+    p.set_defaults(fn=cmd_status)
+    a = ap.parse_args()
+    try:
+        return a.fn(Ctx(a), a)
+    except Refused as e:
+        print("REFUSED: %s" % e, file=sys.stderr)
+        return 1
+    except RuntimeError as e:
+        print("ERROR: %s" % scrub(e), file=sys.stderr)
+        return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())
