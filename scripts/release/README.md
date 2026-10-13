@@ -23,8 +23,8 @@ Exit code: 0 ok, 1 refused or blocked or (drift) differences found, 2 error.
    tables, options), re-runs the checks and the comparison and refuses if anything changed since the preview, saves the rows
    it will change (gzip TSV under `RELEASE_SNAPSHOT_DIR/<number>/` and DS1 schema `backup_release_<id>`; never in production),
    loads the changed rows into staging tables on production, then applies everything in ONE `do` block (one statement, so one
-   transaction whatever the API does): delete the listed removals (children first), upsert (parents first), check row counts,
-   reset identity sequences, drop the staging tables. It then verifies by bucket fingerprint that production equals DS1 and runs
+   transaction whatever the API does), in the order below, then check row counts, reset identity sequences and drop the staging
+   tables. It then verifies by bucket fingerprint that production equals DS1 and runs
    `api.refresh()`. If verification fails it restores the snapshot and marks the release failed. If the apply fails, production
    is unchanged and the release is failed with the error. Whenever an apply has committed (done, failed verification, after a
    restore, and a rollback) the runner runs `select api.refresh();` on production and records `refresh` in the result (`ok`, or
@@ -36,6 +36,25 @@ Exit code: 0 ok, 1 refused or blocked or (drift) differences found, 2 error.
    removed). It needs approval like any other, and is refused if a later release touched the same tables.
 6. **drift** (nightly) compares every `core`, `meta`, `ref` table, writes `meta.sync_status` on both sides and, if anything
    differs, proposes one pending fix release (replacing the previous proposal). It never approves.
+
+### The order inside the apply block
+
+Production's foreign keys are not deferrable and the release never changes them, so the block orders its statements so that every
+foreign key and unique key holds after each one. "Fresh" means a table no foreign key points at (checked on DS1 and on production);
+every other table in the release is "referenced". Tables are in parents-first order (`compare.apply_order`, from DS1's keys).
+
+1. **Fresh tables, children first:** delete the listed removals, then delete the rows about to be written. A row replaced by one with
+   another id but the same natural key (`franchise_brand`, `award_winner`), or rows that swap unique values, cannot collide, and nothing
+   references what is deleted. Fresh tables are then written with a plain insert.
+2. **All tables, parents first:** insert or update the changed rows. New parents (a rebuilt `division` with new ids) exist before the
+   children that point at them, and children (`team_season`) are re-pointed away from the rows about to go.
+3. **Referenced tables, children first:** delete the listed removals (old divisions, then old conferences). No kept row points at them now.
+
+(Release 2026.10.13-8 failed because removals were deleted before the upserts: `team_season` still pointed at the old `division` rows.)
+One case cannot be ordered: a referenced table where a removed row and an incoming row share a unique natural key. The block then fails
+on that key, and production is unchanged (the release is failed with the error). The restore after a failed verification and the rollback
+build their plan from the snapshot and go through the same block, so a restore also inserts the old parents, re-points the children, and
+only then deletes the rows the release had inserted.
 
 ## Automatic approval (daily scores)
 
@@ -168,13 +187,14 @@ Float columns are hashed and compared by their exact bits (`float8send` / `float
 with 15 digits while the stored value is the same. DS1 sessions set `extra_float_digits=3`; production rows read for a snapshot
 come back as bits and are written as exact text. A restore (after a failed verification, or a rollback) deletes and re-inserts the
 rows it restores in tables that no foreign key references, so natural unique keys that swap between rows cannot collide; tables
-that other tables reference are still upserted by primary key. Releases prepared before this change have different row
+that other tables reference are still upserted by primary key. A publish does the same (see "The order inside the apply block"). Releases prepared before this change have different row
 hashes for tables with float columns (`core.person`): prepare them again.
 
 ## Tests
 
     python3 -I scripts/release/test/test_release.py
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
+    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 3150; stops it after)
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
 
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies

@@ -608,16 +608,26 @@ class Stage:
 
 
 def apply_block(steps):
-    """One DO block: deletes (children first), then upserts (parents first; a "fresh" table, one nothing references, first
-    deletes the rows it is about to write and then inserts them, so natural-key swaps cannot collide), count checks, sequence resets, drop the stages.
-    A single statement, so it commits or rolls back as a whole whatever the API does with a multi-statement text."""
+    """One DO block, ordered so every foreign key and unique key holds after every statement (production's keys are not
+    deferrable, and the block must not change them). steps are in parents-first order. A "fresh" step is a table nothing
+    references; every other step is a referenced table. In order:
+      1. fresh tables, children first: delete the removals and the rows about to be written, so a row that is replaced by one with
+         another id but the same natural key (or rows that swap unique values) cannot collide. Nothing references these rows.
+      2. every table, parents first: insert or update the changed rows (new parents exist before the children that point at them,
+         and children are re-pointed away from the rows about to go).
+      3. referenced tables, children first: delete the removals. By now no kept row points at them.
+    Then count checks, sequence resets, drop the stages. A single statement, so it commits or rolls back as a whole whatever the
+    API does with a multi-statement text. A table that is both referenced and has a unique natural key that a removed row shares
+    with an incoming one cannot be ordered this way: the block fails on the unique key, and production is unchanged."""
     out = ["do $apply$ begin"]
     for s in reversed(steps):
+        if not s.get("fresh"):
+            continue
         t = s["t"]
         if s["del"]:
             cond = " and ".join("t.%s = d.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
             out.append("delete from %s t using %s d where %s;" % (t.fq, s["del"], cond))
-        if s.get("fresh") and s["up"]:
+        if s["up"]:
             cond = " and ".join("t.%s = u.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
             out.append("delete from %s t using %s u where %s;" % (t.fq, s["up"], cond))
     for s in steps:
@@ -636,6 +646,11 @@ def apply_block(steps):
             tail = "on conflict (%s) do nothing" % pk
         if s["up"]:
             out.append("insert into %s (%s) overriding system value select %s from %s %s;" % (t.fq, cols, cols, s["up"], tail))
+    for s in reversed(steps):
+        t = s["t"]
+        if s["del"] and not s.get("fresh"):
+            cond = " and ".join("t.%s = d.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
+            out.append("delete from %s t using %s d where %s;" % (t.fq, s["del"], cond))
     for s in steps:
         t = s["t"]
         out.append("if (select count(*) from " + t.fq + ") <> " + str(s["expected"]) + " then raise exception 'row count of "
@@ -718,6 +733,14 @@ def snapshot(ctx, rid, number, items):
 
 def ordered(ctx, names):
     return C.apply_order(list(names), ctx.ds1)
+
+
+def referenced_tables(ctx):
+    """Tables some foreign key points at, on DS1 or on production. Any other table is "fresh" in apply_block."""
+    out = set()
+    for side in (ctx.ds1, ctx.prod):
+        out |= {e["parent"] for e in side.run(C.FK_SQL)}
+    return out
 
 
 def refresh_production(ctx):
@@ -991,6 +1014,18 @@ def auto_drift_mismatch(ctx, diffs):
 
 # ---------------------------------------------------------------------------------------------------- run: publish
 
+def publish_plan(ctx, items):
+    """The stage_and_apply plan for a publish: items [(name, Table, diff)] in parents-first order. A table nothing references is
+    "fresh" (apply_block deletes its removals and the rows it writes before inserting)."""
+    plan = []
+    referenced = referenced_tables(ctx)
+    for n, t, d in items:
+        ups = list(d["only1"]) + list(d["differ"])
+        plan.append({"t": t, "ups": read_tuples(ctx.ds1, t, ups) if ups else None,
+                     "dels": d["only2"], "expected": d["ds1"], "fresh": n not in referenced})
+    return plan
+
+
 def run_publish(ctx, rel, pre=None):
     """pre: (diffs, now) from auto_gate, which has just done the checks and the comparison below on the same data."""
     started = time.time()
@@ -1022,13 +1057,8 @@ def run_publish(ctx, rel, pre=None):
     schema = snapshot(ctx, rel["id"], rel["number"], items)
     before_fp = {n: now["tables"][n]["prod_fp"] for n in names}
 
-    plan = []
-    for n, t, d in items:
-        ups = list(d["only1"]) + list(d["differ"])
-        plan.append({"t": t, "ups": read_tuples(ctx.ds1, t, ups) if ups else None,
-                     "dels": d["only2"], "expected": d["ds1"]})
     try:
-        stage_and_apply(ctx, rel["id"], plan)
+        stage_and_apply(ctx, rel["id"], publish_plan(ctx, items))
     except Exception as e:
         # the DO block is atomic; if the answer was lost, production may still have committed: look before calling it a failure
         if all(verify_equal(ctx, n, t, d["b1"]) for n, t, d in items):
@@ -1130,7 +1160,7 @@ def restore(ctx, rid, names, before_fp=None, orig_rows=None):
     tabs = load_tables(ctx, names)
     plan = []
     order = ordered(ctx, names)
-    referenced = {e["parent"] for e in ctx.ds1.run(C.FK_SQL)}
+    referenced = referenced_tables(ctx)
     for n in order:
         t, bl, _ = tabs[n]
         if t is None or bl:
