@@ -21,8 +21,8 @@ create table if not exists legacy_game_venue.venue (
   latitude        numeric(9, 6),            -- P625
   longitude       numeric(9, 6),
   capacity        integer,                  -- P1083, the latest
-  opened_on       date,                     -- P1619, else P571 (day precision only)
-  closed_on       date,                     -- P3999, else P576 (day precision only)
+  opened_on       date,                     -- P1619, else P571; a month or year is its first day
+  closed_on       date,                     -- P3999, else P576; a month or year is its last day
   city            text,                     -- the nearest city, town or municipality up the P131 chain
   region          text,                     -- ISO 3166-2 (P300) of the nearest state or province up the chain
   country_code    text,                     -- ISO alpha-2 (P297 of the country)

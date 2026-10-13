@@ -1,7 +1,7 @@
 """Raw Wikidata files (scripts/game_venue/fetch.py) -> SQL for legacy_game_venue.venue (migration 067).
 Usage: load.py <raw dir> <YYYY-MM-DD> --sql-out FILE        (apply FILE with scripts/mac/ds1-apply.sh; --dry-run first)
 Rerunnable: upserts by Wikidata id. Reads only the files; no network, no database."""
-import glob, json, os, sys
+import calendar, glob, json, os, sys
 raw, day = sys.argv[1], sys.argv[2]
 assert sys.argv[3] == "--sql-out"
 out = os.path.expanduser(sys.argv[4])
@@ -31,11 +31,20 @@ def ids(e, p):
 def types(e):
     return [labels.get(t) or t for t in ids(e, "P31")]
 
-def day_of(e, p):
+def day_of(e, p, end=False):
+    """A date statement as a day: exact when Wikidata has the day, else the first (or, for an end date, the last) day of its month or year."""
     for c in claims(e, p):
         t = c["mainsnak"]["datavalue"]["value"]
-        if t.get("precision", 0) >= 11 and not t["time"].startswith("-"):
-            return t["time"][1:11].replace("-00", "-01")
+        if t["time"].startswith("-"):
+            continue
+        y, m, d = (int(x) for x in t["time"][1:11].split("-"))
+        prec = t.get("precision", 0)
+        if prec >= 11 and m and d:
+            return f"{y:04d}-{m:02d}-{d:02d}"
+        if prec == 10 and m:
+            return f"{y:04d}-{m:02d}-{calendar.monthrange(y, m)[1] if end else 1:02d}"
+        if prec == 9:
+            return f"{y:04d}-12-31" if end else f"{y:04d}-01-01"
     return None
 
 def first_literal(e, p):
@@ -102,7 +111,7 @@ for qid, e in sorted(ents.items()):
     title = e.get("sitelinks", {}).get("enwiki", {}).get("title")
     chain_json = json.dumps([{"qid": cq, "label": label(ce), "types": types(ce)} for cq, ce in ch], ensure_ascii=False)
     rows.append(f"({q(qid)}, {q(label(e))}, {q('{' + ','.join(json.dumps(t) for t in types(e)) + '}')}, {q(title)}, {q(lat)}, {q(lon)}, {q(cap)}, "
-                f"{q(day_of(e, 'P1619') or day_of(e, 'P571'))}, {q(day_of(e, 'P3999') or day_of(e, 'P576'))}, {q(city)}, {q(region)}, {q(country)}, {q(chain_json)}::jsonb, {q(day)})")
+                f"{q(day_of(e, 'P1619') or day_of(e, 'P571'))}, {q(day_of(e, 'P3999', True) or day_of(e, 'P576', True))}, {q(city)}, {q(region)}, {q(country)}, {q(chain_json)}::jsonb, {q(day)})")
 with open(out, "w") as fo:
     fo.write("begin;\n")
     fo.write("insert into legacy_game_venue.venue (qid, label, instance_of, wikipedia_title, latitude, longitude, capacity, opened_on, closed_on, city, region, country_code, chain, fetched_on) values\n")

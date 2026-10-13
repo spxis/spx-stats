@@ -1,44 +1,204 @@
 league,franchise,qid,from,until,source,source_url,note
-cfl,Montreal Alouettes,Q2873035,1970-08-04,1970-11-29,wikipedia,https://en.wikipedia.org/wiki/Autostade,Autostade; limited to games in our data
-cfl,Montreal Alouettes,Q2873035,1974-07-24,1975-11-24,wikipedia,https://en.wikipedia.org/wiki/Autostade,Autostade 1973-76; limited to games in our data
-cfl,Montreal Alouettes,Q285467,1977-08-23,1986-11-10,wikipedia,https://en.wikipedia.org/wiki/1982_Montreal_Concordes_season,Olympic Stadium 1976-86 incl. Concordes 1982-85; first 1976 game not in our data
-cfl,Toronto Argonauts,Q1383747,1959-01-01,1989-01-01,wikipedia,https://en.wikipedia.org/wiki/1988_Toronto_Argonauts_season,Exhibition Stadium to 1988; start year-precision; SkyDome first game 1989-07-12
+cfl,B.C. Lions,Q3053249,2010-06-20,2011-09-30,wikipedia,https://en.wikipedia.org/wiki/2011_BC_Lions_season,Temporary Empire Field: first Lions home game 2010-06-20 (preseason); first five 2011 regular-season home games also here
+cfl,B.C. Lions,Q612227,2011-09-30,2024-08-31,wikipedia,https://en.wikipedia.org/wiki/2011_BC_Lions_season,Reopened BC Place: first Lions home game back 2011-09-30 vs Edmonton
+cfl,BC Lions,Q5374130,1960-01-01,1983-06-23,wikipedia,https://en.wikipedia.org/wiki/Empire_Stadium_(Vancouver),Lions home 1954-1982; start clipped to franchise identity start (first CFL data 1960-08-11)
+cfl,BC Lions,Q612227,1983-06-23,2010-06-20,wikipedia,https://en.wikipedia.org/wiki/1983_BC_Lions_season,First Lions home game at BC Place 1983-06-23 (1983 season page); stadium closed for roof work after 2009
+cfl,BC Lions,Q1517213,2024-08-31,2024-09-01,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Pacific (Victoria) vs Ottawa; game not in DB yet
+cfl,BC Lions,Q612227,2024-09-01,2026-06-27,wikipedia,https://en.wikipedia.org/wiki/BC_Place,BC Place resumes after a one-day exception at another venue
+cfl,BC Lions,Q4781136,2026-06-27,2026-06-28,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Home game moved to Kelowna (2026 World Cup) vs Calgary
+cfl,BC Lions,Q612227,2026-06-28,2026-07-04,wikipedia,https://en.wikipedia.org/wiki/BC_Place,BC Place resumes after a one-day exception at another venue
+cfl,BC Lions,Q4781136,2026-07-04,2026-07-05,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Home game moved to Kelowna (2026 World Cup) vs Edmonton
+cfl,BC Lions,Q612227,2026-07-05,,wikipedia,https://en.wikipedia.org/wiki/BC_Place,BC Place resumes after a one-day exception at another venue
+cfl,Baltimore CFLers,Q2748739,1994-06-29,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1994_Baltimore_CFLers_season,Baltimore CFLers/Stallions at Memorial Stadium 1994-1995; first home game 1994-06-29 (preseason)
+cfl,Birmingham Barracudas,Q3175504,1995-07-15,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1995_Birmingham_Barracudas_season,Barracudas at Legion Field 1995; first Legion Field home game 1995-07-15 (preseason 1995-06-24 was at Miami Orange Bowl)
+cfl,Calgary Stampeders,Q1810204,1960-08-15,,wikipedia,https://en.wikipedia.org/wiki/McMahon_Stadium,McMahon opened 1960-08-15 (first Stampeders home game); Mewata tenancy ended 1959 and has no DB games
+cfl,Edmonton Eskimos,Q5127504,1960-01-01,1978-08-23,wikipedia,https://en.wikipedia.org/wiki/1978_Edmonton_Eskimos_season,Eskimos at Clarke 1949-1978; start clipped to identity start; last Clarke home game 1978-08-01
+cfl,Edmonton Eskimos,Q130381,1978-08-23,2003-11-16,wikipedia,https://en.wikipedia.org/wiki/1978_Edmonton_Eskimos_season,First Eskimos home game at Commonwealth 1978-08-23 (first two 1978 home games were at Clarke)
+cfl,Edmonton Eskimos,Q130381,2003-11-17,2005-11-27,wikipedia,https://en.wikipedia.org/wiki/Commonwealth_Stadium_(Edmonton),Commonwealth Stadium resumes after a one-day exception at another venue
+cfl,Edmonton Eskimos,Q130381,2005-11-28,,wikipedia,https://en.wikipedia.org/wiki/Commonwealth_Stadium_(Edmonton),Commonwealth Stadium resumes after a one-day exception at another venue
+cfl,Hamilton Tiger-Cats,Q1978036,1961-01-01,2011-09-25,wikipedia,https://en.wikipedia.org/wiki/Ivor_Wynne_Stadium,Civic Stadium / Ivor Wynne Stadium to 2012; start clipped to identity start
+cfl,Hamilton Tiger-Cats,Q1944117,2011-09-25,2011-09-26,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Atlantic (Moncton) vs Calgary
+cfl,Hamilton Tiger-Cats,Q1978036,2011-09-26,2013-06-20,wikipedia,https://en.wikipedia.org/wiki/Ivor_Wynne_Stadium,Ivor Wynne Stadium resumes after a one-day exception at another venue
+cfl,Hamilton Tiger-Cats,Q4737469,2013-06-20,2013-09-21,wikipedia,https://en.wikipedia.org/wiki/2013_Hamilton_Tiger-Cats_season,Ivor Wynne demolished; 2013 home games in Guelph; first at Guelph 2013-06-20 (preseason)
+cfl,Hamilton Tiger-Cats,Q1944117,2013-09-21,2013-09-22,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Atlantic (Moncton) vs Montreal
+cfl,Hamilton Tiger-Cats,Q4737469,2013-09-22,2014-07-26,wikipedia,https://en.wikipedia.org/wiki/Alumni_Stadium_(Guelph),Alumni Stadium Guelph resumes after a one-day exception at another venue
+cfl,Hamilton Tiger-Cats,Q7364007,2014-07-26,2014-09-01,wikipedia,https://en.wikipedia.org/wiki/2014_Hamilton_Tiger-Cats_season,First three 2014 regular-season home games at McMaster (Jul 26 Jul 31 Aug 16)
+cfl,Hamilton Tiger-Cats,Q7008048,2014-09-01,,wikipedia,https://en.wikipedia.org/wiki/Hamilton_Stadium,Tim Hortons Field (Hamilton Stadium from 2025) opened 2014-09-01 with Labour Day Classic
+cfl,Las Vegas Posse,Q3470457,1994-06-29,1995-01-01,wikipedia,https://en.wikipedia.org/wiki/1994_Las_Vegas_Posse_season,Posse at Sam Boyd Stadium 1994; first home game 1994-06-29 (preseason)
+cfl,Memphis Mad Dogs,Q3237803,1995-06-17,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1995_Memphis_Mad_Dogs_season,Mad Dogs at Liberty Bowl Memorial Stadium 1995; first home game 1995-06-17 (preseason)
+cfl,Montreal Alouettes,Q2873035,1970-01-01,1976-01-01,wikipedia,https://en.wikipedia.org/wiki/Autostade,Autostade 1968-1976 (Molson in 1972 not in DB); 1976 home games left uncovered: move to Olympic was mid-1976 and no 1976 home games in DB
+cfl,Montreal Alouettes,Q285467,1977-01-01,1987-01-01,wikipedia,https://en.wikipedia.org/wiki/Olympic_Stadium_(Montreal),Olympic Stadium from mid-1976 (exact first game date not found); period starts 1977-01-01; until=identity end
+cfl,Montreal Alouettes,Q285467,1996-06-13,1997-11-02,wikipedia,https://en.wikipedia.org/wiki/1996_Montreal_Alouettes_season,Revived Alouettes at Olympic Stadium 1996-1997 (first home game 1996-06-13 preseason)
+cfl,Montreal Alouettes,Q732147,1997-11-02,1997-11-03,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,1997 playoff game moved from Olympic Stadium to Molson Stadium (U2 concert)
+cfl,Montreal Alouettes,Q285467,1997-11-03,1998-06-25,wikipedia,https://en.wikipedia.org/wiki/Olympic_Stadium_(Montreal),Olympic Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q732147,1998-06-25,1999-11-21,wikipedia,https://en.wikipedia.org/wiki/1998_Montreal_Alouettes_season,Alouettes back at Molson Stadium from 1998 (first home game 1998-06-25 preseason); see one-day rows for Olympic and other venues
+cfl,Montreal Alouettes,Q732147,1999-11-22,2000-11-19,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q732147,2000-11-20,2002-11-17,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2002-11-17,2002-11-18,wikipedia,https://en.wikipedia.org/wiki/2002_Toronto_Argonauts_season,East Final at Olympic Stadium (2002 Argonauts season page)
+cfl,Montreal Alouettes,Q732147,2002-11-18,2002-11-24,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q732147,2002-11-25,2003-11-09,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2003-11-09,2003-11-10,wikipedia,https://en.wikipedia.org/wiki/2003_Toronto_Argonauts_season,East Final at Olympic Stadium (2003 Argonauts season page)
+cfl,Montreal Alouettes,Q732147,2003-11-10,2004-10-23,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2004-10-23,2004-10-24,wikipedia,https://en.wikipedia.org/wiki/2004_Montreal_Alouettes_season,Regular-season home game at Olympic Stadium vs Ottawa
+cfl,Montreal Alouettes,Q732147,2004-10-24,2004-11-14,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2004-11-14,2004-11-15,wikipedia,https://en.wikipedia.org/wiki/2004_Toronto_Argonauts_season,East Final at Olympic Stadium (2004 Argonauts season page)
+cfl,Montreal Alouettes,Q732147,2004-11-15,2005-10-22,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2005-10-22,2005-10-23,wikipedia,https://en.wikipedia.org/wiki/2005_Montreal_Alouettes_season,Regular-season home game at Olympic Stadium vs Toronto
+cfl,Montreal Alouettes,Q732147,2005-10-23,2005-11-13,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q732147,2005-11-14,2006-10-21,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2006-10-21,2006-10-22,wikipedia,https://en.wikipedia.org/wiki/2006_Montreal_Alouettes_season,Regular-season home game at Olympic Stadium vs Edmonton
+cfl,Montreal Alouettes,Q732147,2006-10-22,2006-11-12,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2006-11-12,2006-11-13,wikipedia,https://en.wikipedia.org/wiki/2006_Montreal_Alouettes_season,East Final at Olympic Stadium
+cfl,Montreal Alouettes,Q732147,2006-11-13,2006-11-19,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q732147,2006-11-20,2007-10-20,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2007-10-20,2007-10-21,wikipedia,https://en.wikipedia.org/wiki/2007_Montreal_Alouettes_season,Regular-season home game at Olympic Stadium vs Toronto
+cfl,Montreal Alouettes,Q732147,2007-10-21,2008-11-15,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2008-11-15,2008-11-16,wikipedia,https://en.wikipedia.org/wiki/2008_Edmonton_Eskimos_season,East Semi-Final at Olympic Stadium (2008 Eskimos season page)
+cfl,Montreal Alouettes,Q732147,2008-11-16,2008-11-23,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q732147,2008-11-24,2009-11-22,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2009-11-22,2009-11-23,wikipedia,https://en.wikipedia.org/wiki/2009_Montreal_Alouettes_season,East Final at Olympic Stadium
+cfl,Montreal Alouettes,Q732147,2009-11-23,2010-11-21,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2010-11-21,2010-11-22,wikipedia,https://en.wikipedia.org/wiki/2010_Montreal_Alouettes_season,East Final at Olympic Stadium
+cfl,Montreal Alouettes,Q732147,2010-11-22,2011-11-13,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2011-11-13,2011-11-14,wikipedia,https://en.wikipedia.org/wiki/2011_Montreal_Alouettes_season,East Final at Olympic Stadium
+cfl,Montreal Alouettes,Q732147,2011-11-14,2012-11-18,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q285467,2012-11-18,2012-11-19,wikipedia,https://en.wikipedia.org/wiki/2012_Montreal_Alouettes_season,East Final at Olympic Stadium
+cfl,Montreal Alouettes,Q732147,2012-11-19,2019-08-25,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Montreal Alouettes,Q1944117,2019-08-25,2019-08-26,wikipedia,https://en.wikipedia.org/wiki/2019_Montreal_Alouettes_season,Touchdown Atlantic (Moncton) vs Toronto; DB has Montreal as home
+cfl,Montreal Alouettes,Q732147,2019-08-26,,wikipedia,https://en.wikipedia.org/wiki/Percival_Molson_Memorial_Stadium,Molson Stadium resumes after a one-day exception at another venue
+cfl,Ottawa Redblacks,Q1442809,2014-07-18,,wikipedia,https://en.wikipedia.org/wiki/2014_Ottawa_Redblacks_season,Redblacks first home game at rebuilt TD Place 2014-07-18
+cfl,Ottawa Renegades,Q1442809,2002-06-13,2005-11-06,wikipedia,https://en.wikipedia.org/wiki/2002_Ottawa_Renegades_season,Ottawa Renegades at Frank Clair Stadium 2002-2005; until=identity end
+cfl,Ottawa Rough Riders,Q1442809,1960-01-01,1997-01-01,wikipedia,https://en.wikipedia.org/wiki/TD_Place_Stadium,Lansdowne Park stadium (Frank Clair Stadium from 1993; same Wikipedia article as TD Place Stadium); start clipped; until=identity end
+cfl,Sacramento Gold Miners,Q9004779,1993-06-26,1995-01-01,wikipedia,https://en.wikipedia.org/wiki/1993_Sacramento_Gold_Miners_season,Gold Miners at Hornet Stadium 1993-1994; first home game 1993-06-26; until=identity end
+cfl,San Antonio Texans,Q1618347,1995-06-24,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1995_San_Antonio_Texans_season,Franchise moved to San Antonio as Texans 1995; first home game 1995-06-24 (preseason); until=identity end
+cfl,Saskatchewan Roughriders,Q3380246,1960-01-01,2009-11-29,wikipedia,https://en.wikipedia.org/wiki/Mosaic_Stadium_at_Taylor_Field,Taylor Field (Mosaic Stadium at Taylor Field from 2012) to 2016; start clipped to identity start
+cfl,Saskatchewan Roughriders,Q3380246,2009-11-30,2010-11-28,wikipedia,https://en.wikipedia.org/wiki/Mosaic_Stadium_at_Taylor_Field,Taylor Field resumes after a one-day exception at another venue
+cfl,Saskatchewan Roughriders,Q3380246,2010-11-29,2017-07-01,wikipedia,https://en.wikipedia.org/wiki/Mosaic_Stadium_at_Taylor_Field,Taylor Field resumes after a one-day exception at another venue
+cfl,Saskatchewan Roughriders,Q7011148,2017-07-01,,wikipedia,https://en.wikipedia.org/wiki/2017_Saskatchewan_Roughriders_season,New Mosaic Stadium opened 2017-07-01 (2017-06-10 preseason game also played there)
+cfl,Shreveport Pirates,Q3150014,1994-06-24,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1994_Shreveport_Pirates_season,Pirates at Independence Stadium 1994-1995; first home game 1994-06-24 (preseason)
+cfl,Toronto Argonauts,Q1383747,1960-01-01,1989-07-12,wikipedia,https://en.wikipedia.org/wiki/Exhibition_Stadium,Argonauts at Exhibition Stadium 1959-1988; start clipped to identity start
+cfl,Toronto Argonauts,Q76318,1989-07-12,2002-06-21,wikipedia,https://en.wikipedia.org/wiki/1989_Toronto_Argonauts_season,SkyDome (Rogers Centre from 2005): first Argonauts home game 1989-07-12
+cfl,Toronto Argonauts,Q7669911,2002-06-21,2002-06-22,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Preseason at TD Waterhouse Stadium (Western Alumni Stadium) London vs Hamilton
+cfl,Toronto Argonauts,Q76318,2002-06-22,2004-11-21,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q76318,2004-11-22,2010-09-26,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q1944117,2010-09-26,2010-09-27,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Atlantic (Moncton) vs Edmonton
+cfl,Toronto Argonauts,Q76318,2010-09-27,2015-06-27,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q76318,2015-06-28,2015-10-06,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q1442809,2015-10-06,2015-10-07,wikipedia,https://en.wikipedia.org/wiki/2015_Toronto_Argonauts_season,Home game vs Ottawa moved to Ottawa (Pan Am/Blue Jays conflict)
+cfl,Toronto Argonauts,Q76318,2015-10-07,2015-10-17,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q7008048,2015-10-17,2015-10-18,wikipedia,https://en.wikipedia.org/wiki/2015_Toronto_Argonauts_season,Home game vs Calgary played at Tim Hortons Field
+cfl,Toronto Argonauts,Q76318,2015-10-18,2015-10-23,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q7008048,2015-10-23,2015-10-24,wikipedia,https://en.wikipedia.org/wiki/2015_Toronto_Argonauts_season,Home game vs Montreal played at Tim Hortons Field
+cfl,Toronto Argonauts,Q76318,2015-10-24,2016-06-11,wikipedia,https://en.wikipedia.org/wiki/Rogers_Centre,SkyDome/Rogers Centre resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q796351,2016-06-11,2019-08-25,wikipedia,https://en.wikipedia.org/wiki/2016_Toronto_Argonauts_season,BMO Field: first Argonauts home game 2016-06-11 (preseason)
+cfl,Toronto Argonauts,Q1944117,2019-08-25,2019-08-26,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Atlantic (Moncton); Wikipedia lists Toronto as home but DB has Montreal as home so Montreal has the same row
+cfl,Toronto Argonauts,Q796351,2019-08-26,2022-07-16,wikipedia,https://en.wikipedia.org/wiki/BMO_Field,BMO Field resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q7298775,2022-07-16,2022-07-17,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Atlantic at Raymond Field Wolfville vs Saskatchewan
+cfl,Toronto Argonauts,Q796351,2022-07-17,2023-07-29,wikipedia,https://en.wikipedia.org/wiki/BMO_Field,BMO Field resumes after a one-day exception at another venue
+cfl,Toronto Argonauts,Q5949344,2023-07-29,2023-07-30,wikipedia,https://en.wikipedia.org/wiki/List_of_neutral_site_Canadian_Football_League_games,Touchdown Atlantic at Huskies Stadium Halifax vs Saskatchewan; game not in DB yet
+cfl,Toronto Argonauts,Q796351,2023-07-30,,wikipedia,https://en.wikipedia.org/wiki/BMO_Field,BMO Field resumes after a one-day exception at another venue
+cfl,Winnipeg Blue Bombers,Q3378622,1960-01-01,2007-11-25,wikipedia,https://en.wikipedia.org/wiki/Winnipeg_Stadium,Winnipeg Stadium (Canad Inns Stadium 1999-2012) to 2012; start clipped to identity start
+cfl,Winnipeg Blue Bombers,Q3378622,2007-11-26,2013-06-27,wikipedia,https://en.wikipedia.org/wiki/Winnipeg_Stadium,Winnipeg Stadium resumes after a one-day exception at another venue
+cfl,Winnipeg Blue Bombers,Q1671788,2013-06-27,,wikipedia,https://en.wikipedia.org/wiki/Princess_Auto_Stadium,First Bombers home game at Investors Group Field 2013-06-27 (now Princess Auto Stadium)
 nba,Anderson Packers,Q14688290,1949-11-03,1950-04-07,wikipedia,https://en.wikipedia.org/wiki/Anderson_Packers,Anderson High School Wigwam
+nba,Atlanta Hawks,Q1492102,1968-10-16,1972-10-15,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Alexander Memorial Coliseum (item label McCamish Pavilion) 1968-72; until = first Omni game in our data
+nba,Atlanta Hawks,Q1970067,1972-10-15,1997-11-01,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Omni Coliseum 1972-97; last game 1997-05-11; until = first Georgia Dome game
+nba,Atlanta Hawks,Q1058931,1997-11-01,1999-09-18,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Georgia Dome 1997-99 (home games split with Alexander Memorial Coliseum); until = Philips Arena opening (offseason)
 nba,Baltimore Bullets,Q4852825,1947-11-13,1954-03-11,wikipedia,https://en.wikipedia.org/wiki/Baltimore_Bullets_(1944%E2%80%931954),Baltimore Coliseum
 nba,Baltimore Bullets,Q2739940,1963-10-16,1973-10-20,wikipedia,https://en.wikipedia.org/wiki/Washington_Wizards,Baltimore Civic Center (CFG Bank Arena); some games at Cole Field House 1964-73
 nba,Boston Celtics,Q894567,1946-11-05,1995-11-03,wikidata,https://www.wikidata.org/wiki/Q131371,Boston Garden primary 1946-95; Boston Arena and Hartford only secondary
 nba,Boston Celtics,Q432105,1995-11-03,,wikidata,https://www.wikidata.org/wiki/Q131371,FleetCenter/TD Garden; first home game 1995-11-03
 nba,Brooklyn Nets,Q807966,2012-11-03,,wikipedia,https://en.wikipedia.org/wiki/Brooklyn_Nets,Barclays Center; first regular-season home game 2012-11-03
+nba,Buffalo Braves,Q2927640,1970-10-14,1978-10-15,wikipedia,https://en.wikipedia.org/wiki/Los_Angeles_Clippers,Buffalo Memorial Auditorium 1970-78 (Maple Leaf Gardens only occasional games 1971-75)
 nba,Capital Bullets,Q5142641,1973-10-20,1973-12-02,wikipedia,https://en.wikipedia.org/wiki/Washington_Wizards,Cole Field House (item label Jones-Hill House); until = Capital Centre opening game
 nba,Capital Bullets,Q3656844,1973-12-02,1997-12-02,wikipedia,https://en.wikipedia.org/wiki/Washington_Wizards,Capital Centre/US Airways Arena; 35 games at Baltimore 1989-97 (note only)
+nba,Charlotte Bobcats,Q632138,2004-10-14,2005-11-05,wikipedia,https://en.wikipedia.org/wiki/Charlotte_Coliseum,Charlotte Coliseum 2004-05 (Bobcats); until = first Charlotte Bobcats Arena game
 nba,Charlotte Hornets,Q632138,1988-11-04,2002-05-13,wikipedia,https://en.wikipedia.org/wiki/Charlotte_Hornets,Charlotte Coliseum; last home game 2002-05-12
+nba,Chicago Bulls,Q1666325,1966-10-18,1967-10-17,wikipedia,https://en.wikipedia.org/wiki/International_Amphitheatre,International Amphitheatre 1966-67
+nba,Chicago Bulls,Q2703852,1967-10-17,1994-11-04,wikipedia,https://en.wikipedia.org/wiki/Chicago_Stadium,Chicago Stadium 1967-94; until = first United Center regular-season home game (1994-11-04)
+nba,Chicago Packers,Q1666325,1961-10-27,1962-10-20,wikipedia,https://en.wikipedia.org/wiki/International_Amphitheatre,International Amphitheatre 1961-62
 nba,Chicago Stags,Q2703852,1946-11-02,1950-03-26,wikipedia,https://en.wikipedia.org/wiki/Chicago_Stags,Chicago Stadium
+nba,Chicago Zephyrs,Q2370898,1962-10-20,1963-10-16,wikipedia,https://en.wikipedia.org/wiki/Chicago_Coliseum,Chicago Coliseum 1962-63; until = first Baltimore home game
+nba,Cincinnati Royals,Q1092220,1957-10-26,1972-10-11,wikipedia,https://en.wikipedia.org/wiki/Cincinnati_Gardens,Cincinnati Gardens 1957-72
+nba,Cleveland Cavaliers,Q5132059,1970-10-28,1974-10-29,wikipedia,https://en.wikipedia.org/wiki/Cleveland_Arena,Cleveland Arena 1970-74; until = first Richfield home game; the 1974-10-18 game in our data was played in Portland
+nba,Cleveland Cavaliers,Q2982682,1974-10-29,1994-11-10,wikipedia,https://en.wikipedia.org/wiki/1974%E2%80%9375_Cleveland_Cavaliers_season,Richfield Coliseum 1974-94; first home game 1974-10-29 per 1974-75 season log; until = first Gund Arena game
 nba,Cleveland Rebels,Q5132059,1946-11-03,1947-04-03,wikipedia,https://en.wikipedia.org/wiki/Cleveland_Rebels,Cleveland Arena
+nba,Dallas Mavericks,Q1859962,1980-10-11,2001-10-30,wikipedia,https://en.wikipedia.org/wiki/Reunion_Arena,Reunion Arena 1980-2001; until = first American Airlines Center game
 nba,Denver Nuggets,Q5259672,1949-11-04,1950-03-19,wikipedia,https://en.wikipedia.org/wiki/Denver_Nuggets_(1948%E2%80%931950),Denver Auditorium Arena; Wikidata P115 1948-50
+nba,Denver Nuggets,Q2081796,1976-10-30,1999-11-02,wikipedia,https://en.wikipedia.org/wiki/McNichols_Sports_Arena,McNichols Sports Arena 1975-99 (NBA from 1976-77); until = first Pepsi Center game
 nba,Detroit Falcons,Q1201545,1946-11-02,1947-03-30,wikipedia,https://en.wikipedia.org/wiki/Detroit_Falcons_(basketball),Detroit Olympia
+nba,Detroit Pistons,Q1201545,1957-10-23,1961-10-25,wikipedia,https://en.wikipedia.org/wiki/Detroit_Olympia,Olympia Stadium 1957-61
+nba,Detroit Pistons,Q1104711,1961-10-25,1978-10-13,wikipedia,https://en.wikipedia.org/wiki/Huntington_Place,"Cobo Arena (inside Huntington Place, only Wikidata item) 1961-78; until = first Silverdome home game 1978-10-13"
+nba,Detroit Pistons,Q211662,1978-10-13,1988-08-13,wikipedia,https://en.wikipedia.org/wiki/Pontiac_Silverdome,Pontiac Silverdome 1978-88; first home game 1978-10-13; until = Palace opening (offseason)
+nba,Detroit Pistons,Q1327633,1988-08-13,2017-10-18,wikipedia,https://en.wikipedia.org/wiki/The_Palace_of_Auburn_Hills,Palace of Auburn Hills 1988-2017; from = Palace opening (offseason); until = first Little Caesars Arena game
 nba,Fort Wayne Pistons,Q7056750,1948-11-03,1952-11-02,wikipedia,https://en.wikipedia.org/wiki/Detroit_Pistons,North Side HS Gym 1948-52; Coliseum from 1952-53 season
+nba,Fort Wayne Pistons,Q1144284,1952-11-02,1957-10-23,wikipedia,https://en.wikipedia.org/wiki/Allen_County_War_Memorial_Coliseum,Allen County War Memorial Coliseum 1952-57; until = first Detroit home game
+nba,Golden State Warriors,Q261863,1996-11-01,1997-07-01,wikipedia,https://en.wikipedia.org/wiki/SAP_Center,San Jose Arena 1996-97 during Oakland renovation; first home game 1996-11-01; until = offseason (first 1997-98 home game in our data is 1997-11-12)
+nba,Golden State Warriors,Q1139021,1997-07-01,2019-10-24,wikipedia,https://en.wikipedia.org/wiki/Oakland_Arena,"Oakland Arena after the San Jose year, until = first Chase Center regular-season game 2019-10-24"
+nba,Houston Rockets,Q5876764,1971-10-14,1975-11-01,wikipedia,https://en.wikipedia.org/wiki/Fertitta_Center,Hofheinz Pavilion 1971-75 (interim facilities until The Summit opened); until = The Summit opening
+nba,Houston Rockets,Q2435324,1975-11-01,2003-10-10,wikipedia,https://en.wikipedia.org/wiki/Lakewood_Church_Central_Campus,The Summit 1975-2003; from = opening 1975-11-01; until = first Toyota Center game
+nba,Indiana Pacers,Q3294309,1976-10-26,1999-11-06,wikipedia,https://en.wikipedia.org/wiki/Market_Square_Arena,Market Square Arena (NBA from 1976-77); until = first Conseco/Gainbridge game
 nba,Indianapolis Jets,Q3785713,1948-11-01,1949-03-16,wikipedia,https://en.wikipedia.org/wiki/Indianapolis_Jets,Butler (Hinkle) Fieldhouse
 nba,Indianapolis Olympians,Q3785713,1949-11-01,1953-03-24,wikipedia,https://en.wikipedia.org/wiki/Indianapolis_Olympians,Butler (Hinkle) Fieldhouse
+nba,Kansas City Kings,Q1489399,1974-10-22,1979-06-04,wikipedia,https://en.wikipedia.org/wiki/Hy-Vee_Arena,Kemper Arena 1974-79; until = roof collapse 1979-06-04 (offseason)
+nba,Kansas City Kings,Q14704450,1979-06-04,1980-02-20,wikipedia,https://en.wikipedia.org/wiki/Hy-Vee_Arena,Municipal Auditorium for 1979-80 after the Kemper Arena roof collapsed 1979-06-04; Kemper reopened 1980-02-20
+nba,Kansas City Kings,Q1489399,1980-02-20,1985-09-20,wikipedia,https://en.wikipedia.org/wiki/Hy-Vee_Arena,Kemper Arena 1980-85; reopened 1980-02-20; until = ARCO Arena I opening (offseason)
+nba,Kansas City–Omaha Kings,Q14704450,1972-10-11,1974-10-22,wikipedia,"https://en.wikipedia.org/wiki/Municipal_Auditorium_(Kansas_City,_Missouri)",Kansas City Municipal Auditorium 1972-74 (home games split with Omaha Civic Auditorium)
+nba,Los Angeles Clippers,Q1571403,1984-07-01,1999-10-17,wikipedia,https://en.wikipedia.org/wiki/Los_Angeles_Clippers,Los Angeles Memorial Sports Arena 1984-99; until = Staples Center opening (offseason)
+nba,Los Angeles Clippers,Q54958436,2024-10-23,,wikipedia,https://en.wikipedia.org/wiki/Intuit_Dome,Intuit Dome from 2024-25; first regular-season home game 2024-10-23
+nba,Los Angeles Lakers,Q1571403,1960-10-24,1967-12-31,wikipedia,https://en.wikipedia.org/wiki/Los_Angeles_Memorial_Sports_Arena,Sports Arena Oct 1960 to Dec 1967; until = first Forum game 1967-12-31
+nba,Los Angeles Lakers,Q639129,1967-12-31,1999-10-17,wikipedia,https://en.wikipedia.org/wiki/Kia_Forum,The Forum 1967-99; first Lakers game 1967-12-31; last regular season game 1999-05-05; until = Staples Center opening
+nba,Memphis Grizzlies,Q2226897,2001-07-01,2004-09-06,wikipedia,https://en.wikipedia.org/wiki/Memphis_Pyramid,Pyramid Arena 2001-04; until = FedExForum opening (offseason)
+nba,Miami Heat,Q1857422,1988-11-05,2000-01-02,wikipedia,https://en.wikipedia.org/wiki/Miami_Arena,Miami Arena 1988-99; first game 1988-11-05; until = first American Airlines Arena game 2000-01-02
+nba,Milwaukee Bucks,Q1142808,1968-10-16,1988-10-01,wikipedia,https://en.wikipedia.org/wiki/UW%E2%80%93Milwaukee_Panther_Arena,Milwaukee Arena (MECCA) 1968-88; until = Bradley Center opening
+nba,Milwaukee Bucks,Q737976,1988-10-01,2018-10-19,wikipedia,https://en.wikipedia.org/wiki/Bradley_Center,Bradley Center 1988-2018 (opened 1988-10-01); until = first Fiserv Forum game
+nba,Milwaukee Hawks,Q1142808,1951-11-03,1955-11-05,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Milwaukee Arena (UW–Milwaukee Panther Arena) 1951-55; until = first St. Louis home game
 nba,Minneapolis Lakers,Q3315539,1947-01-01,1959-10-18,wikidata,https://www.wikidata.org/wiki/Q121783,Auditorium; start year-precision; duplicate item Q125537911
 nba,Minneapolis Lakers,Q745327,1959-10-18,1960-10-24,wikipedia,https://en.wikipedia.org/wiki/1959%E2%80%9360_Minneapolis_Lakers_season,Armory 22 of 25 home games 1959-60; until = first LA home game
+nba,Minnesota Timberwolves,Q1072186,1989-11-08,1990-10-13,wikipedia,https://en.wikipedia.org/wiki/Hubert_H._Humphrey_Metrodome,Metrodome 1989-90; home debut 1989-11-08; until = Target Center opening
 nba,New Jersey Nets,Q6686804,1977-10-21,1981-10-30,wikipedia,https://en.wikipedia.org/wiki/Brooklyn_Nets,Rutgers Athletic Center (Piscataway); item label Jersey Mike's Arena
 nba,New Jersey Nets,Q538218,1981-10-30,2010-10-27,wikipedia,https://en.wikipedia.org/wiki/Brooklyn_Nets,Meadowlands (Brendan Byrne/Continental Airlines/Izod); last game 2010-04-03
 nba,New Jersey Nets,Q849027,2010-10-27,2012-11-03,wikipedia,https://en.wikipedia.org/wiki/Brooklyn_Nets,"Prudential Center, Newark"
+nba,New Orleans Hornets,Q1515840,2002-10-12,2005-11-01,wikipedia,https://en.wikipedia.org/wiki/Smoothie_King_Center,New Orleans Arena 2002-05; until = first Oklahoma City home game
+nba,New Orleans Hornets,Q665434,2005-11-01,2007-10-31,wikipedia,https://en.wikipedia.org/wiki/New_Orleans_Pelicans,"Ford Center, Oklahoma City 2005-07 (most home games; a few at New Orleans Arena); until = return to New Orleans"
 nba,New Orleans Jazz,Q6936134,1974-10-24,1975-10-24,wikipedia,https://en.wikipedia.org/wiki/1974%E2%80%9375_New_Orleans_Jazz_season,"Municipal Auditorium (New Orleans); 25 games, Loyola Field House 15 games"
 nba,New Orleans Jazz,Q756452,1975-10-24,1979-10-15,wikipedia,https://en.wikipedia.org/wiki/Utah_Jazz,Superdome 1975-79; until = first Salt Palace game
+nba,New York Knicks,Q6728098,1946-11-11,1968-02-14,wikipedia,https://en.wikipedia.org/wiki/Madison_Square_Garden_(1925),MSG III 1946-68 (69th Regiment Armory only partial schedule to 1960); until = first MSG IV home game 1968-02-14
 nba,New York Nets,Q1048921,1976-10-27,1977-10-21,wikipedia,https://en.wikipedia.org/wiki/1976%E2%80%9377_New_York_Nets_season,Nassau Coliseum (Wikidata P115 1972-77)
+nba,Orlando Magic,Q481794,1989-11-04,2010-10-28,wikipedia,https://en.wikipedia.org/wiki/Amway_Arena,Orlando Arena / Amway Arena 1989-2010; until = first Amway Center home game
 nba,Philadelphia 76ers,Q3378843,1963-10-19,1967-10-18,wikipedia,https://en.wikipedia.org/wiki/Philadelphia_76ers,Convention Hall primary; Philadelphia Arena 9 games 1964-66; Spectrum first game 1967-10-18
+nba,Philadelphia 76ers,Q2085822,1967-10-18,1996-11-01,wikipedia,https://en.wikipedia.org/wiki/Spectrum_(arena),Spectrum 1967-96; until = first CoreStates Center game
 nba,Philadelphia Warriors,Q3378842,1946-11-07,1952-11-01,wikipedia,https://en.wikipedia.org/wiki/Golden_State_Warriors,Philadelphia Arena; Convention Hall primary from 1952-53
 nba,Philadelphia Warriors,Q3378843,1952-11-01,1962-10-23,wikipedia,https://en.wikipedia.org/wiki/Golden_State_Warriors,Convention Hall primary; Arena still used for some games to 1961
+nba,Phoenix Suns,Q670890,1968-10-18,1992-11-07,wikipedia,https://en.wikipedia.org/wiki/Arizona_Veterans_Memorial_Coliseum,Arizona Veterans Memorial Coliseum 1968-92; until = first America West Arena game 1992-11-07
 nba,Pittsburgh Ironmen,Q3041488,1946-11-04,1947-03-27,wikipedia,https://en.wikipedia.org/wiki/Pittsburgh_Ironmen,Duquesne Garden
+nba,Portland Trail Blazers,Q549437,1970-10-16,1995-11-03,wikipedia,"https://en.wikipedia.org/wiki/Veterans_Memorial_Coliseum_(Portland,_Oregon)",Memorial Coliseum 1970-95; until = first Rose Garden regular-season game 1995-11-03
 nba,Providence Steamrollers,Q7320897,1946-11-02,1949-03-13,wikipedia,https://en.wikipedia.org/wiki/Providence_Steamrollers,Rhode Island Auditorium
 nba,Rochester Royals,Q5337822,1948-11-06,1955-11-05,wikipedia,https://en.wikipedia.org/wiki/Edgerton_Park_Arena,Primary home 1945-55; first War Memorial game 1955-11-05
 nba,Rochester Royals,Q885674,1955-11-05,1957-10-26,wikipedia,https://en.wikipedia.org/wiki/Blue_Cross_Arena,War Memorial 1955-57; Edgerton used for several 1955-56 games; until = first Cincinnati game
+nba,Sacramento Kings,Q4653610,1985-09-20,1988-11-08,wikipedia,https://en.wikipedia.org/wiki/ARCO_Arena_(1985),ARCO Arena I 1985-88 (opened 1985-09-20); until = ARCO Arena II opening 1988-11-08
+nba,Sacramento Kings,Q93831,1988-11-08,2016-10-27,wikipedia,https://en.wikipedia.org/wiki/Sleep_Train_Arena,ARCO Arena II 1988-2016; until = first Golden 1 Center game
+nba,San Antonio Spurs,Q1145169,1976-10-27,1993-05-15,wikipedia,https://en.wikipedia.org/wiki/HemisFair_Arena,HemisFair Arena (NBA from 1976-77) to 1993; until = Alamodome opening (offseason)
+nba,San Antonio Spurs,Q1618347,1993-05-15,2002-10-18,wikipedia,https://en.wikipedia.org/wiki/Alamodome,Alamodome 1993-2002; until = first SBC Center game
+nba,San Diego Clippers,Q3106621,1978-10-15,1984-07-01,wikipedia,https://en.wikipedia.org/wiki/Los_Angeles_Clippers,"San Diego Sports Arena 1978-84; until = move to Los Angeles (offseason, start of Los Angeles identity)"
+nba,San Diego Rockets,Q3106621,1967-10-14,1971-10-14,wikipedia,https://en.wikipedia.org/wiki/Pechanga_Arena,San Diego Sports Arena 1967-71
+nba,San Francisco Warriors,Q604015,1962-10-23,1964-10-23,wikipedia,https://en.wikipedia.org/wiki/Golden_State_Warriors,Cow Palace 1962-64 (War Memorial Gym for occasional games)
+nba,San Francisco Warriors,Q4909197,1964-10-23,1966-10-21,wikipedia,https://en.wikipedia.org/wiki/Golden_State_Warriors,San Francisco Civic Auditorium 1964-66
+nba,San Francisco Warriors,Q604015,1966-10-21,1971-10-23,wikipedia,https://en.wikipedia.org/wiki/Golden_State_Warriors,Cow Palace 1966-71; until = first Oakland home game
+nba,Seattle SuperSonics,Q977529,1967-10-20,1978-10-13,wikipedia,https://en.wikipedia.org/wiki/Seattle_SuperSonics,Seattle Center Coliseum 1967-78
+nba,Seattle SuperSonics,Q990430,1978-10-13,1985-11-02,wikipedia,https://en.wikipedia.org/wiki/Seattle_SuperSonics,Kingdome 1978-85
+nba,Seattle SuperSonics,Q977529,1985-11-02,1994-11-05,wikipedia,https://en.wikipedia.org/wiki/Seattle_SuperSonics,Seattle Center Coliseum 1985-94
+nba,Seattle SuperSonics,Q1570942,1994-11-05,1995-11-04,wikipedia,https://en.wikipedia.org/wiki/Seattle_SuperSonics,Tacoma Dome 1994-95 during Coliseum rebuild
+nba,Seattle SuperSonics,Q977529,1995-11-04,2008-10-29,wikipedia,https://en.wikipedia.org/wiki/Seattle_SuperSonics,KeyArena 1995-2008; until = first Oklahoma City home game
 nba,St. Louis Bombers,Q3495282,1946-11-02,1950-03-20,wikipedia,https://en.wikipedia.org/wiki/St._Louis_Bombers,St. Louis Arena
+nba,St. Louis Hawks,Q3024991,1955-11-05,1968-10-16,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Kiel Auditorium 1955-68; St. Louis Arena used for some games; until = first Atlanta home game
 nba,Syracuse Nationals,Q7603208,1949-11-03,1951-11-01,wikipedia,https://en.wikipedia.org/wiki/Philadelphia_76ers,State Fair Coliseum (item label Toyota Coliseum); 1950-51 season article
 nba,Syracuse Nationals,Q3566224,1951-11-01,1963-10-19,wikipedia,https://en.wikipedia.org/wiki/Philadelphia_76ers,Onondaga County War Memorial; 1951-52 season article
 nba,Toronto Huskies,Q1814534,1946-11-01,1947-03-29,wikipedia,https://en.wikipedia.org/wiki/Toronto_Huskies,Maple Leaf Gardens
+nba,Toronto Raptors,Q76318,1995-11-03,1999-02-21,wikipedia,https://en.wikipedia.org/wiki/1998%E2%80%9399_Toronto_Raptors_season,SkyDome 1995-99; until = first Air Canada Centre game 1999-02-21
 nba,Tri-Cities Blackhawks,Q14688239,1949-10-29,1951-11-03,wikipedia,https://en.wikipedia.org/wiki/Atlanta_Hawks,Wharton Field House (Moline); until = first Milwaukee home game
+nba,Utah Jazz,Q17030210,1979-10-15,1991-11-07,wikipedia,https://en.wikipedia.org/wiki/Salt_Palace_(arena),Salt Palace 1979-91 (Thomas & Mack Center only 1983-84 partial); until = first Delta Center game
+nba,Vancouver Grizzlies,Q517318,1995-11-05,2001-07-01,wikipedia,https://en.wikipedia.org/wiki/Rogers_Arena,"General Motors Place 1995-2001; until = move to Memphis (offseason, start of Memphis identity)"
 nba,Washington Capitols,Q7971729,1946-11-20,1951-01-07,wikipedia,https://en.wikipedia.org/wiki/Washington_Capitols,"Uline Arena, now Washington Coliseum"
 nba,Washington Wizards,Q223240,1997-12-02,,wikipedia,https://en.wikipedia.org/wiki/Washington_Wizards,"MCI/Verizon Center, now Capital One Arena; first game 1997-12-02"
 nfl,Arizona Cardinals,Q320454,2005-10-02,2005-10-09,wikipedia,https://en.wikipedia.org/wiki/Estadio_Azteca,"one-off: international regular-season game vs 49ers at Estadio Azteca, Mexico City"

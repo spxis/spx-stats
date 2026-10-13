@@ -10,7 +10,12 @@
 --              Wikidata venue through db/seed/retrosheet_park.csv. A park with no Wikidata item leaves its games without a venue.
 --   nflverse   NFL 1999 on: the stadium of the nflverse schedule (CC BY 4.0), by name.
 --   nhlapi     NHL: the venue the NHL's web API names for the game, by name.
---   home       the home club's venue that day (core.franchise_home_venue, step 198), for every game with no better source and not marked neutral.
+--   home       the home club's venue that day (core.franchise_home_venue), for every game with no better source and not marked neutral, only
+--              when that venue had opened and not closed on that day (30 days of slack, as in db/checks/062_game_venue.sql); otherwise the game
+--              is left empty and logged.
+-- This step also finishes core.franchise_home_venue: it starts from the chain 198 built (legacy_game_venue.home_prelim) and puts in the periods
+-- the games themselves show (the venue most home games had in a season from the Retrosheet park, nflverse stadium or NHL API venue; seasons in a
+-- row with the same venue are one period), which replace the seed, brand and franchise_venue periods where they overlap.
 -- A venue name from nflverse or the NHL is matched to a venue by db/seed/venue_alias.csv, else by any name core.venue_name, core.brand_venue_name,
 -- core.brand_venue or legacy_game_venue.venue gives it (accents, case and punctuation ignored). A name that fits two venues is settled by the home
 -- club's venue that day; a name that fits none, and is not the start or end of a name of the home club's venue ("Madison Square Garden III"),
@@ -41,8 +46,14 @@ update core.game g set venue_id = null, is_neutral_site = coalesce(f.was_neutral
 from legacy_game_venue.filled f where f.game_id = g.game_id and g.venue_id = f.venue_id;
 delete from legacy_game_venue.filled;
 
+-- core.franchise_home_venue starts from the chain step 198 built (legacy_game_venue.home_prelim); this step then adds the periods the games
+-- themselves show (below), so a rerun of this step alone gives the same table.
+delete from core.franchise_home_venue;
+insert into core.franchise_home_venue (franchise_id, venue_id, valid_during, basis, source_id)
+select franchise_id, venue_id, valid_during, basis, source_id from legacy_game_venue.home_prelim;
+
 create temp table wd as select source_id from meta.source where code = 'wikidata';
-create temp table venue_of as select source_key as qid, venue_id, country_code from core.venue where source_id = (select source_id from wd);
+create temp table venue_of as select source_key as qid, venue_id, country_code, opened_on, closed_on from core.venue where source_id = (select source_id from wd);
 create temp table notv as
 select qid from seed_not_venue
 union select source_key from core.brand_venue where pg_temp.norm(venue_label) = pg_temp.norm(city);
@@ -55,9 +66,11 @@ join core.team_season hts on hts.team_season_id = g.home_team_season_id join cor
 where g.venue_id is null and s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl');
 create unique index on gm (game_id);
 
-create temp table hi as   -- the home club's venue that day
-select gm.game_id, h.venue_id from gm join core.franchise_home_venue h on h.franchise_id = gm.home_f and h.valid_during @> gm.game_date;
-create unique index on hi (game_id);
+create temp table hi0 as   -- the home club's venue that day by the chain 198 built, when that venue stood on that day (30 days of slack)
+select gm.game_id, h.venue_id from gm join core.franchise_home_venue h on h.franchise_id = gm.home_f and h.valid_during @> gm.game_date
+join venue_of vo on vo.venue_id = h.venue_id
+where (vo.opened_on is null or gm.game_date >= vo.opened_on - 30) and (vo.closed_on is null or gm.game_date <= vo.closed_on + 30);
+create unique index on hi0 (game_id);
 
 -- ---------------------------------------------------------------- events
 create temp table fn as
@@ -127,9 +140,9 @@ select distinct on (p.game_id) p.game_id, p.kind, p.val,
          when 'retrosheet' then (select nullif(sp.qid, '') from seed_park sp where sp.park_id = p.val)
          else case
            when array_length(s.qids, 1) = 1 then s.qids[1]
-           when array_length(s.qids, 1) > 1 then (select hv.source_key from hi join core.venue hv on hv.venue_id = hi.venue_id where hi.game_id = p.game_id and hv.source_key = any (s.qids))
-           else (select hv.source_key from hi join core.venue hv on hv.venue_id = hi.venue_id
-                  where hi.game_id = p.game_id and length(s.k) >= 6
+           when array_length(s.qids, 1) > 1 then (select hv.source_key from hi0 join core.venue hv on hv.venue_id = hi0.venue_id where hi0.game_id = p.game_id and hv.source_key = any (s.qids))
+           else (select hv.source_key from hi0 join core.venue hv on hv.venue_id = hi0.venue_id
+                  where hi0.game_id = p.game_id and length(s.k) >= 6
                     and exists (select 1 from al where al.qid = hv.source_key and length(al.k) >= 6 and (al.k like s.k || '%' or s.k like al.k || '%')))
          end
        end as qid,
@@ -142,6 +155,58 @@ from ps p left join sv s on s.kind = p.kind and s.val = p.val
 order by p.game_id, p.kind;
 create unique index on pq (game_id);
 
+-- ---------------------------------------------------------------- the periods the games themselves show
+-- A club's home venue in a season is the venue most of its home games had in the game-level sources (the Retrosheet park, the nflverse
+-- stadium, the NHL API venue; not neutral or event games). Seasons in a row with the same venue make one period, from the first of its games at
+-- that venue to the day after the last. These periods come before the seeds, brand and franchise_venue (they replace them where they overlap),
+-- so what the table says about a club agrees with where it played; a day no source covers stays without a venue.
+create temp table ge as   -- venue_id is null for a value no venue is known for: a season it wins gets no period, never a lesser venue's
+select gm.game_id, gm.home_f, gm.start_year, gm.game_date, v.venue_id
+from gm join pq on pq.game_id = gm.game_id left join venue_of v on v.qid = pq.qid
+where not gm.neutral and pq.kind in ('retrosheet', 'nflverse', 'nhlapi') and not exists (select 1 from ev_game e where e.game_id = gm.game_id);
+create temp table gmode as
+select distinct on (home_f, start_year) home_f, start_year, venue_id, d0, d1
+from (select home_f, start_year, venue_id, count(*) as n, min(game_date) as d0, max(game_date) as d1 from ge group by 1, 2, 3) x
+order by home_f, start_year, n desc, d0 desc;
+create temp table gl_raw as
+with m as (select *, lag(venue_id) over (partition by home_f order by start_year) as pv from gmode),
+     isl as (select *, sum((pv is distinct from venue_id)::int) over (partition by home_f order by start_year) as grp from m)
+select row_number() over () as rid, home_f as franchise_id, venue_id, daterange(min(d0), max(d1) + 1) as rng
+from isl where venue_id is not null group by home_f, venue_id, grp;
+create temp table gl as   -- no two overlap (the earlier start wins)
+select r.franchise_id, r.venue_id, piece as rng
+from gl_raw r, lateral unnest(datemultirange(r.rng) - coalesce((select range_agg(o.rng) from gl_raw o where o.franchise_id = r.franchise_id and o.rid <> r.rid
+        and (lower(o.rng) < lower(r.rng) or (lower(o.rng) = lower(r.rng) and o.rid < r.rid))), '{}'::datemultirange)) as piece
+where not isempty(piece);
+
+delete from core.franchise_home_venue;
+insert into core.franchise_home_venue (franchise_id, venue_id, valid_during, basis, source_id)
+select franchise_id, venue_id, rng, 'games', coalesce((select source_id from meta.source where code = 'spx_stats_derived'), (select source_id from wd)) from gl;
+insert into core.franchise_home_venue (franchise_id, venue_id, valid_during, basis, source_id)
+select p.franchise_id, p.venue_id, piece, p.basis, p.source_id
+from legacy_game_venue.home_prelim p,
+     lateral unnest(datemultirange(p.valid_during) - coalesce((select range_agg(g.rng) from gl g where g.franchise_id = p.franchise_id), '{}'::datemultirange)) as piece
+where not isempty(piece);
+-- periods of one venue that touch become one
+create temp table fhv_all as select * from core.franchise_home_venue;
+delete from core.franchise_home_venue;
+insert into core.franchise_home_venue (franchise_id, venue_id, valid_during, basis, source_id)
+select m.franchise_id, m.venue_id, m.rng,
+       (select a.basis from fhv_all a where a.franchise_id = m.franchise_id and a.venue_id = m.venue_id and a.valid_during <@ m.rng
+         order by coalesce(upper(a.valid_during) - lower(a.valid_during), 1000000) desc, case a.basis when 'games' then 0 when 'seed' then 1 when 'brand' then 2 else 3 end limit 1),
+       (select a.source_id from fhv_all a where a.franchise_id = m.franchise_id and a.venue_id = m.venue_id and a.valid_during <@ m.rng
+         order by coalesce(upper(a.valid_during) - lower(a.valid_during), 1000000) desc, case a.basis when 'games' then 0 when 'seed' then 1 when 'brand' then 2 else 3 end limit 1)
+from (select franchise_id, venue_id, unnest(range_agg(valid_during)) as rng from fhv_all group by 1, 2) m;
+
+-- the home club's venue that day from the final chain, only when that venue stood on that day (30 days of slack)
+create temp table hi_all as
+select gm.game_id, h.venue_id from gm join core.franchise_home_venue h on h.franchise_id = gm.home_f and h.valid_during @> gm.game_date;
+create unique index on hi_all (game_id);
+create temp table hi as
+select a.game_id, a.venue_id from hi_all a join gm using (game_id) join venue_of vo on vo.venue_id = a.venue_id
+where (vo.opened_on is null or gm.game_date >= vo.opened_on - 30) and (vo.closed_on is null or gm.game_date <= vo.closed_on + 30);
+create unique index on hi (game_id);
+
 -- ---------------------------------------------------------------- the answer for each game
 create temp table fin as
 select gm.game_id, coalesce(e.venue_id, v.venue_id, case when pq.game_id is null and not gm.neutral then hi.venue_id end) as venue_id,
@@ -151,13 +216,15 @@ select gm.game_id, coalesce(e.venue_id, v.venue_id, case when pq.game_id is null
        case when e.venue_id is not null or v.venue_id is not null then null
             when pq.game_id is not null then coalesce(pq.why, 'venue ' || pq.qid || ' is not in core.venue', pq.kind || ' names a venue that fits none the home club has used')
             when gm.neutral then 'neutral-site game; no source names the venue'
+            when hi.venue_id is null and hi_all.venue_id is not null then 'no source names the venue, and the home venue the chain gives (' || (select vo.qid from venue_of vo where vo.venue_id = hi_all.venue_id) || ') had not opened or had closed on that date'
             when hi.venue_id is null then 'no source names the venue and no home venue is known for the club on that date' end as why,
        pq.kind as src_kind, pq.val as src_val
 from gm
 left join ev_game e on e.game_id = gm.game_id
 left join pq on pq.game_id = gm.game_id
 left join venue_of v on v.qid = pq.qid
-left join hi on hi.game_id = gm.game_id;
+left join hi on hi.game_id = gm.game_id
+left join hi_all on hi_all.game_id = gm.game_id;
 create unique index on fin (game_id);
 
 -- ---------------------------------------------------------------- write
@@ -191,6 +258,7 @@ where f.venue_id is null and f.src_kind is not null
 group by f.src_kind, f.src_val, f.why;
 
 -- ---------------------------------------------------------------- counts
+-- (a venue not yet open, or already closed, on the game day: the 30 days of slack are the same as in db/checks/062_game_venue.sql)
 select 'games in scope (venue_id was empty)' as what, count(*) as n from gm
 union all select 'placed: ' || coalesce(basis, '-'), count(*) from fin where venue_id is not null group by basis
 union all select 'left empty', count(*) from fin where venue_id is null

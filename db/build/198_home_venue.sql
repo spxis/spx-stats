@@ -1,13 +1,19 @@
 -- core.franchise_home_venue: where each club played its home games, as one chain of periods with no overlap and no hole that a source can fill.
--- Run from the repo root (scripts/build_core.sh does), after 175, 176 and 193. Rerunnable: the table, the venues this step made and its
--- data_issue rows are rebuilt each time. 199_game_venue.sql reads the table to place every home game.
+-- Run from the repo root (scripts/build_core.sh does), after 175, 176 and 193, and always before 199_game_venue.sql, which adds the periods the
+-- games themselves show (basis 'games') and places every home game. Rerunnable: the table, the venues this step made and its data_issue rows
+-- are rebuilt each time; the chain as built here is kept in legacy_game_venue.home_prelim.
 --
 -- Where a period comes from, best first (a better source wins every day it covers; inside one source the earlier start wins, so a
 -- venue a club also used now and then, like the Celtics at Hartford from 1975, never hides the club's real home):
+--   0 games  (step 199) the venue most of a club's home games had in a season, from the Retrosheet park, nflverse stadium or NHL API venue.
 --   1 seed   db/seed/home_venue.csv: periods read from English Wikipedia (CC BY-SA 4.0) or dated Wikidata statements (CC0), checked by hand.
 --            They correct what the next two get wrong (Whalers, Celtics, the Nets 1977-2010, Oilers 1997-98, Panthers 1995-96 ...).
 --   2 brand  core.franchise_brand.home_venue (step 175), month precision.
 --   3 wikidata core.franchise_venue (step 176), year precision (a move in mid-season shows a season early or late).
+-- Wikidata dates a club's home venue by the club's whole name, so today's park covered years it did not exist. Every brand and franchise_venue
+-- period is therefore cut to the days its venue stood (core.venue.opened_on to closed_on; dates Wikidata lacks are filled from
+-- legacy_game_venue.venue, wrong ones corrected in db/seed/venue_dates.csv); what is cut off is logged ('home_venue_clipped') and left as a
+-- gap rather than an anachronism. Seed rows are not cut.
 -- A venue item that is a city (San Diego, Houston, Los Angeles, Miami: Wikidata's home venue for a few old teams) is not a venue: it is
 -- left out here, logged in meta.data_issue as 'home_venue_city', and the next source fills the days it would have covered.
 -- A venue Wikidata names that core.venue lacks (United Center, Meadowlands Arena ...: step 176 drops a venue with no city) is added to
@@ -22,6 +28,9 @@ create temp table seed_not_venue (qid text, why text);
 drop table if exists pg_temp.seed_park;
 create temp table seed_park (park_id text, qid text, label text, confidence text, note text);
 \copy seed_park from 'db/seed/retrosheet_park.csv' with (format csv, header true)
+drop table if exists pg_temp.seed_venue_dates;
+create temp table seed_venue_dates (qid text, opened_on date, closed_on date, why text);
+\copy seed_venue_dates from 'db/seed/venue_dates.csv' with (format csv, header true)
 drop table if exists pg_temp.seed_city;
 create temp table seed_city (wikidata_id text, city text, region text, country_code text);
 \copy seed_city from 'db/seed/venue_city.csv' with (format csv, header true)
@@ -29,7 +38,7 @@ create temp table seed_city (wikidata_id text, city text, region text, country_c
 create or replace function pg_temp.norm(t text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;
 
-delete from meta.data_issue where entity_kind in ('home_venue_city', 'home_venue_fix', 'home_venue_seed');
+delete from meta.data_issue where entity_kind in ('home_venue_city', 'home_venue_fix', 'home_venue_seed', 'home_venue_clipped');
 
 -- ---------------------------------------------------------------- items that are cities, not venues
 create temp table notv as
@@ -41,7 +50,7 @@ select source_key, 'the venue label is the name of the city' from core.brand_ven
 create temp table wd as select source_id from meta.source where code = 'wikidata';
 create temp table vsrc as
 select b.source_key as qid, b.venue_label as label, b.city, b.region, b.country_code, b.latitude::numeric(9, 6) as latitude, b.longitude::numeric(9, 6) as longitude,
-       i.capacity, make_date(i.opened_year, 1, 1) as opened_on, make_date(i.closed_year, 1, 1) as closed_on, i.surface, i.roof, i.address, i.postal_code, null::text as kind, 1 as rank
+       i.capacity, make_date(i.opened_year, 1, 1) as opened_on, make_date(i.closed_year, 12, 31) as closed_on, i.surface, i.roof, i.address, i.postal_code, null::text as kind, 1 as rank
 from core.brand_venue b left join core.brand_venue_info i on i.wikidata_id = b.source_key
 where b.source_key not in (select qid from notv)
 union all
@@ -96,6 +105,23 @@ with d as (
 )
 select venue_id, rng, name from t where not isempty(rng);
 
+-- ---------------------------------------------------------------- when each venue stood
+-- core.venue.opened_on and closed_on come from step 176 (Wikidata, only a statement with a day) and, for a venue this step made, from
+-- Wikidata or the brand tables. Fill what is empty from legacy_game_venue.venue (P1619 else P571 for the opening, P3999 else P576 for
+-- the closing; a month or year counts as its first day for an opening and its last for a closing), then from core.brand_venue_info
+-- (years), then apply db/seed/venue_dates.csv, which corrects a date Wikidata gets wrong (the old Yankee Stadium is dated closed in
+-- 1973, when it was shut for rebuilding, but was used until 2008). 'Closed' may be a demolition date, so it can only be too late.
+update core.venue v set opened_on = coalesce(v.opened_on, g.opened_on), closed_on = coalesce(v.closed_on, g.closed_on)
+from legacy_game_venue.venue g
+where v.source_id = (select source_id from wd) and v.source_key = g.qid
+  and ((v.opened_on is null and g.opened_on is not null) or (v.closed_on is null and g.closed_on is not null));
+update core.venue v set opened_on = coalesce(v.opened_on, make_date(i.opened_year, 1, 1)), closed_on = coalesce(v.closed_on, make_date(i.closed_year, 12, 31))
+from core.brand_venue_info i
+where v.source_id = (select source_id from wd) and v.source_key = i.wikidata_id
+  and ((v.opened_on is null and i.opened_year is not null) or (v.closed_on is null and i.closed_year is not null));
+update core.venue v set opened_on = coalesce(d.opened_on, v.opened_on), closed_on = coalesce(d.closed_on, v.closed_on)
+from seed_venue_dates d where v.source_id = (select source_id from wd) and v.source_key = d.qid;
+
 -- ---------------------------------------------------------------- which franchise each seed row is
 create temp table fn as
 select fl.league_code, i.franchise_id, i.full_name, i.valid_during
@@ -123,14 +149,29 @@ create temp table cand (rowid serial, franchise_id integer, venue_id integer, rn
 insert into cand (franchise_id, venue_id, rng, prio, source_id)
 select franchise_id, venue_id, rng, 1, source_id from sh
 where n_franchise = 1 and venue_id is not null and source_id is not null and rng is not null and not isempty(rng);
-insert into cand (franchise_id, venue_id, rng, prio, source_id)
+-- A brand or franchise_venue period is cut to the days its venue stood (opened_on to closed_on): Wikidata dates a club's home venue by the
+-- club's whole name, so today's park would otherwise cover years it did not exist. What is cut off is logged ('home_venue_clipped').
+create temp table raw_cand (franchise_id integer, venue_id integer, rng daterange, prio smallint, source_id smallint);
+insert into raw_cand
 select b.franchise_id, v.venue_id, b.valid_during, 2, (select source_id from wd)
 from core.franchise_brand b
 join core.brand_venue bv on bv.venue_label = b.home_venue and bv.latitude = b.latitude and bv.longitude = b.longitude
 join core.venue v on v.source_id = (select source_id from wd) and v.source_key = bv.source_key
 where bv.source_key not in (select qid from notv) and not isempty(b.valid_during);
-insert into cand (franchise_id, venue_id, rng, prio, source_id)
+insert into raw_cand
 select franchise_id, venue_id, valid_during, 3, source_id from core.franchise_venue where not isempty(valid_during);
+insert into cand (franchise_id, venue_id, rng, prio, source_id)
+select r.franchise_id, r.venue_id, r.rng * daterange(v.opened_on, case when v.closed_on is not null then v.closed_on + 1 end), r.prio, r.source_id
+from raw_cand r join core.venue v using (venue_id)
+where not isempty(r.rng * daterange(v.opened_on, case when v.closed_on is not null then v.closed_on + 1 end));
+delete from meta.data_issue where entity_kind = 'home_venue_clipped';
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from wd), 'home_venue_clipped', 'franchise:' || r.franchise_id || ':' || v.source_key || ':' || r.rng::text,
+       case r.prio when 2 then 'franchise_brand' else 'franchise_venue' end || ' gives ' || coalesce((select min(i.full_name) from core.franchise_identity i where i.franchise_id = r.franchise_id and i.valid_during && r.rng), 'franchise ' || r.franchise_id)
+         || ' the venue ' || v.source_key || ' for ' || r.rng::text || ', but it stood ' || coalesce(v.opened_on::text, '?') || ' to ' || coalesce(v.closed_on::text, 'now'),
+       'Period cut to the days the venue stood; the rest is covered by another source or left without a venue.'
+from raw_cand r join core.venue v using (venue_id)
+where r.rng <> r.rng * daterange(v.opened_on, case when v.closed_on is not null then v.closed_on + 1 end);
 
 -- a brand period that names a city is logged and left out
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
@@ -170,6 +211,9 @@ select franchise_id, venue_id, piece, case prio when 1 then 'seed' when 2 then '
 from cut, lateral unnest(left_over) as piece
 where not isempty(piece);
 
+delete from legacy_game_venue.home_prelim;
+insert into legacy_game_venue.home_prelim select franchise_id, venue_id, valid_during, basis, source_id from core.franchise_home_venue;
+
 select 'home venue periods' as what, count(*) as n from core.franchise_home_venue
 union all select '  from seed rows', count(*) from core.franchise_home_venue where basis = 'seed'
 union all select '  from franchise_brand', count(*) from core.franchise_home_venue where basis = 'brand'
@@ -177,4 +221,5 @@ union all select '  from franchise_venue', count(*) from core.franchise_home_ven
 union all select 'seed rows not used', count(*) from meta.data_issue where entity_kind = 'home_venue_seed'
 union all select 'city items left out', count(*) from meta.data_issue where entity_kind = 'home_venue_city'
 union all select 'seed fixes of another source', count(*) from meta.data_issue where entity_kind = 'home_venue_fix'
+union all select 'periods cut to the venue''s own dates', count(*) from meta.data_issue where entity_kind = 'home_venue_clipped'
 union all select 'venues in core.venue', count(*) from core.venue;
