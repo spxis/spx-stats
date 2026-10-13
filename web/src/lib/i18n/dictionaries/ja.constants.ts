@@ -66,6 +66,7 @@ export const JA: Dictionary = {
   "range.aria": "表示する年",
   "range.start": "開始年",
   "range.end": "終了年",
+  "range.move": "期間を移動",
   "range.reset": "リセット",
   "range.presets": "期間のショートカット",
   "range.all": "すべて",

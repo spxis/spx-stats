@@ -90,6 +90,33 @@ export function rangePresets(min: number, max: number): RangePreset[] {
   return out;
 }
 
+/** The range moved by `years` (rounded to a whole year), width unchanged. At either end of min..max the window stops there instead of
+    shrinking; a window as wide as min..max, or wider, does not move. */
+export function panRange(r: YearSpan, years: number, min: number, max: number): YearSpan {
+  const width = r.to - r.from;
+  const from = clamp(r.from + Math.round(years), min, Math.max(min, max - width));
+  return { from, to: from + width };
+}
+
+/** The range a drag has reached: it began as `start` and the pointer has since moved `dx` px along a line `lineWidth` px wide that spans min..max. */
+export function panByPixels(start: YearSpan, dx: number, lineWidth: number, min: number, max: number): YearSpan {
+  return panRange(start, lineWidth > 0 ? (dx / lineWidth) * (max - min) : 0, min, max);
+}
+
+/** The least width in px of the part of the bar a press moves as a whole: a finger needs more than a pointer, and a one-year range is only a pixel or two wide. */
+export const PAN_GRIP_TOUCH = 24;
+export const PAN_GRIP_MOUSE = 8;
+/** How far in px from a handle's centre a press still takes that handle (the visible knob is 14 px across). */
+export const KNOB_REACH = 10;
+
+/** What a press at `x` grabs, given the handles' px positions `a` <= `b` on the same line. The bar between the handles moves the whole range,
+    except KNOB_REACH next to each handle; a bar too narrow for that still has a middle of `grip` px (padded past the handles if need be).
+    Anywhere else the nearer handle is taken. */
+export function grabAt(x: number, a: number, b: number, grip: number = PAN_GRIP_TOUCH): "start" | "end" | "pan" {
+  const mid = (a + b) / 2, half = Math.max(grip, b - a - 2 * KNOB_REACH) / 2;
+  return Math.abs(x - mid) <= half ? "pan" : x < mid ? "start" : "end";
+}
+
 /** The range inside min..max with from <= to, or null for the full range. */
 export function parseRange(raw: string, min: number, max: number): YearSpan | null {
   const m = /^(\d*)-(\d*)$/.exec(raw);

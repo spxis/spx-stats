@@ -66,6 +66,7 @@ export const FR: Dictionary = {
   "range.aria": "Années affichées",
   "range.start": "Année de début",
   "range.end": "Année de fin",
+  "range.move": "Déplacer la période",
   "range.reset": "Réinitialiser",
   "range.presets": "Périodes rapides",
   "range.all": "Tout",

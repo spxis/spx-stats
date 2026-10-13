@@ -7,6 +7,11 @@
 .yr-fill { left: calc(16px + (100% - 32px) * var(--a)); width: calc((100% - 32px) * (var(--b) - var(--a))); background: var(--ink); }
 .yr-thumb { position: absolute; top: 0; left: calc(16px + (100% - 32px) * var(--p)); width: 32px; height: 36px; margin-left: -16px; cursor: grab; outline: none; touch-action: none; }
 .yr-thumb::before { content: ""; position: absolute; left: 50%; top: 50%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: var(--ink); border: 2px solid var(--paper); box-shadow: 0 0 0 1px var(--ink); transition: transform .12s; }
+/* The selected bar between the handles: grabbing it (or a narrow range between the handles) moves the whole range. Handles sit above it. */
+.yr-pan { position: absolute; top: 0; height: 36px; z-index: 1; left: calc(16px + (100% - 32px) * var(--a)); width: calc((100% - 32px) * (var(--b) - var(--a))); cursor: grab; outline: none; touch-action: none; }
+.yr-pan:focus-visible::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 10px; margin-top: -5px; box-shadow: 0 0 0 2px color-mix(in srgb, var(--ink) 35%, transparent); border-radius: 2px; }
+.yr-track[data-panning] { cursor: grabbing; }
+.yr-track[data-panning] .yr-pan, .yr-track[data-panning] .yr-thumb { cursor: grabbing; }
 .yr-thumb:hover::before, .yr-thumb:active::before { transform: scale(1.2); }
 .yr-thumb:focus-visible::before { box-shadow: 0 0 0 1px var(--ink), 0 0 0 4px color-mix(in srgb, var(--ink) 35%, transparent); }
 .yr-reset { flex: none; border: 0; background: none; padding: 8px 2px; color: var(--ink); font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; }

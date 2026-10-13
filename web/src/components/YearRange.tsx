@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, type KeyboardEvent, type PointerEvent } from "react";
-import { rangePresets } from "@/lib/yearRange";
+import { useEffect, useRef, useState, type KeyboardEvent, type PointerEvent } from "react";
+import { grabAt, PAN_GRIP_MOUSE, PAN_GRIP_TOUCH, panByPixels, panRange, rangePresets } from "@/lib/yearRange";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./yearrange.css";
 
@@ -18,13 +18,16 @@ const PAD = 16; // half of a handle's hit area, in px: keeps the handles inside 
 
 const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n));
 
-/** Two handles on one line that narrow a chart to the years from..to. A handle never crosses the other; one season is the least. */
+/** Two handles on one line that narrow a chart to the years from..to. A handle never crosses the other; one season is the least.
+    The bar between the handles moves the whole range, its width unchanged, and stops at the first and last season. */
 export function YearRange({ min, max, from, to, onChange }: Props) {
   const { say } = useSpeaker();
   const track = useRef<HTMLDivElement | null>(null);
-  const thumbs = useRef<{ start: HTMLDivElement | null; end: HTMLDivElement | null }>({ start: null, end: null });
+  const thumbs = useRef<{ start: HTMLDivElement | null; end: HTMLDivElement | null; pan: HTMLDivElement | null }>({ start: null, end: null, pan: null });
   const live = useRef({ from, to });
-  const drag = useRef<"start" | "end" | null>(null);
+  const drag = useRef<"start" | "end" | "pan" | null>(null);
+  const grip = useRef({ x: 0, from, to, moved: false }); // where a bar drag began: the pointer's x and the range it moved from
+  const [panning, setPanning] = useState(false);
   const raf = useRef(0);
   const full = from <= min && to >= max;
   useEffect(() => { if (!drag.current && !raf.current) live.current = { from, to }; }, [from, to]);
@@ -34,38 +37,77 @@ export function YearRange({ min, max, from, to, onChange }: Props) {
 
   function set(which: "start" | "end", value: number, final: boolean) {
     const cur = live.current;
-    const next = which === "start" ? { from: clamp(value, min, cur.to), to: cur.to } : { from: cur.from, to: clamp(value, cur.from, max) };
+    commit(which === "start" ? { from: clamp(value, min, cur.to), to: cur.to } : { from: cur.from, to: clamp(value, cur.from, max) }, final);
+  }
+
+  /** Takes the new range as the live one and passes it on: at most once a frame while dragging, at once when settled. */
+  function commit(next: { from: number; to: number }, final: boolean) {
+    const cur = live.current;
     if (next.from === cur.from && next.to === cur.to && !final) return;
     live.current = next;
     if (final) { cancelAnimationFrame(raf.current); raf.current = 0; onChange(next.from, next.to, true); return; }
     if (!raf.current) raf.current = requestAnimationFrame(() => { raf.current = 0; onChange(live.current.from, live.current.to, false); });
   }
 
-  function yearAt(clientX: number): number {
+  /** The line the handles run along: its left edge and width in px. */
+  function line() {
     const r = track.current!.getBoundingClientRect();
-    const w = Math.max(1, r.width - 2 * PAD);
-    return clamp(Math.round(min + ((clientX - r.left - PAD) / w) * (max - min)), min, max);
+    return { left: r.left + PAD, width: Math.max(1, r.width - 2 * PAD) };
+  }
+
+  function yearAt(clientX: number): number {
+    const l = line();
+    return clamp(Math.round(min + ((clientX - l.left) / l.width) * (max - min)), min, max);
   }
 
   function down(e: PointerEvent<HTMLDivElement>) {
     if (e.pointerType === "mouse" && e.button !== 0) return;
-    const v = yearAt(e.clientX), { from: f, to: t } = live.current;
-    const which = v < f ? "start" : v > t ? "end" : f === t ? (f >= max ? "start" : "end") : v - f <= t - v ? "start" : "end";
+    const { from: f, to: t } = live.current, l = line();
+    const which = grabAt(e.clientX, l.left + frac(f) * l.width, l.left + frac(t) * l.width, e.pointerType === "mouse" ? PAN_GRIP_MOUSE : PAN_GRIP_TOUCH);
     drag.current = which;
     e.currentTarget.setPointerCapture(e.pointerId);
-    thumbs.current[which]?.focus({ preventScroll: true });
     e.preventDefault();
-    set(which, v, false);
+    if (which === "pan") {
+      grip.current = { x: e.clientX, from: f, to: t, moved: false };
+      thumbs.current.pan?.focus({ preventScroll: true });
+      setPanning(true);
+      return;
+    }
+    thumbs.current[which]?.focus({ preventScroll: true });
+    set(which, yearAt(e.clientX), false);
   }
   function move(e: PointerEvent<HTMLDivElement>) {
-    if (drag.current) set(drag.current, yearAt(e.clientX), false);
+    if (drag.current === "pan") {
+      const g = grip.current, next = panByPixels(g, e.clientX - g.x, line().width, min, max);
+      if (next.from !== g.from) g.moved = true;
+      commit(next, false);
+    } else if (drag.current) set(drag.current, yearAt(e.clientX), false);
   }
   function up(e: PointerEvent<HTMLDivElement>) {
     if (!drag.current) return;
     const which = drag.current;
     drag.current = null;
     if (e.currentTarget.hasPointerCapture(e.pointerId)) e.currentTarget.releasePointerCapture(e.pointerId);
+    if (which === "pan") {
+      setPanning(false);
+      const cancelled = e.type === "pointercancel";
+      if (cancelled) commit({ from: grip.current.from, to: grip.current.to }, false); // a cancelled drag puts the range back
+      if (grip.current.moved || cancelled) commit(live.current, true);
+      return;
+    }
     set(which, which === "start" ? live.current.from : live.current.to, true);
+  }
+
+  function panKey(e: KeyboardEvent<HTMLDivElement>) {
+    const { from: f, to: t } = live.current, span = { from: f, to: t };
+    const step: Record<string, number> = { ArrowLeft: -1, ArrowDown: -1, ArrowRight: 1, ArrowUp: 1, PageDown: -10, PageUp: 10 };
+    let next: { from: number; to: number } | undefined;
+    if (e.key in step) next = panRange(span, step[e.key], min, max);
+    else if (e.key === "Home") next = panRange(span, min - f, min, max);
+    else if (e.key === "End") next = panRange(span, max - t, min, max);
+    if (!next) return;
+    e.preventDefault();
+    commit(next, true);
   }
 
   function key(which: "start" | "end", e: KeyboardEvent<HTMLDivElement>) {
@@ -110,10 +152,24 @@ export function YearRange({ min, max, from, to, onChange }: Props) {
     <div className="yr-wrap">
     <div className="yr" role="group" aria-label={say("range.aria")}>
       <span className="yr-v" aria-hidden="true">{from}</span>
-      <div ref={track} className="yr-track" onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
+      <div ref={track} className="yr-track" data-panning={panning || undefined} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         <span className="yr-rail" />
         <span className="yr-fill" style={{ "--a": frac(from), "--b": frac(to) } as React.CSSProperties} />
         {handle("start")}
+        <div
+          ref={(el) => { thumbs.current.pan = el; }}
+          className="yr-pan"
+          role="slider"
+          tabIndex={0}
+          aria-label={say("range.move")}
+          aria-orientation="horizontal"
+          aria-valuemin={min}
+          aria-valuemax={Math.max(min, max - (to - from))}
+          aria-valuenow={from}
+          aria-valuetext={`${from}–${to}`}
+          style={{ "--a": frac(from), "--b": frac(to) } as React.CSSProperties}
+          onKeyDown={panKey}
+        />
         {handle("end")}
       </div>
       <span className="yr-v" aria-hidden="true">{to}</span>

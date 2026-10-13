@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import vm from "node:vm";
 import { overlapFilters, readRange, readYear } from "../src/lib/listRange.ts";
-import { parseRange, RANGE_HOLD_SCRIPT, RANGE_PAGES, rangeFromQuery, rangePresets } from "../src/lib/yearRange.ts";
+import { grabAt, panByPixels, panRange, parseRange, RANGE_HOLD_SCRIPT, RANGE_PAGES, rangeFromQuery, rangePresets } from "../src/lib/yearRange.ts";
 
 /** Run in web/: pnpm test:range */
 
@@ -99,4 +99,70 @@ test("the head script holds each page on its own saved range", () => {
   assert.equal(held("/nhl", "?from=abc", {}), false);
   assert.equal(held("/nhl/scores", "?from=1990", {}), false);
   assert.equal(held("/about", "", { "spxn-range": "1990-2005", "spxn-range-players": "1990-2005" }), false);
+});
+
+test("panning keeps the width and stops at the ends", () => {
+  const r = { from: 1990, to: 2000 };
+  assert.deepEqual(panRange(r, 5, 1950, 2025), { from: 1995, to: 2005 });
+  assert.deepEqual(panRange(r, -5, 1950, 2025), { from: 1985, to: 1995 });
+  assert.deepEqual(panRange(r, 0, 1950, 2025), r);
+  // clamped: the window stops at the first and last season, still ten years wide
+  assert.deepEqual(panRange(r, -500, 1950, 2025), { from: 1950, to: 1960 });
+  assert.deepEqual(panRange(r, 500, 1950, 2025), { from: 2015, to: 2025 });
+  // a window that reaches an end already cannot go further that way
+  assert.deepEqual(panRange({ from: 2015, to: 2025 }, 3, 1950, 2025), { from: 2015, to: 2025 });
+  assert.deepEqual(panRange({ from: 1950, to: 1960 }, -3, 1950, 2025), { from: 1950, to: 1960 });
+  // one season, and the full span, which has nowhere to go
+  assert.deepEqual(panRange({ from: 2000, to: 2000 }, 7, 1950, 2025), { from: 2007, to: 2007 });
+  assert.deepEqual(panRange({ from: 1950, to: 2025 }, 9, 1950, 2025), { from: 1950, to: 2025 });
+  assert.deepEqual(panRange({ from: 1950, to: 2025 }, -9, 1950, 2025), { from: 1950, to: 2025 });
+});
+
+test("panning moves by whole years", () => {
+  const r = { from: 1990, to: 2000 };
+  assert.deepEqual(panRange(r, 2.4, 1950, 2025), { from: 1992, to: 2002 });
+  assert.deepEqual(panRange(r, 2.6, 1950, 2025), { from: 1993, to: 2003 });
+  assert.deepEqual(panRange(r, -2.6, 1950, 2025), { from: 1987, to: 1997 });
+  // 75 years drawn over 750 px: 10 px is one year
+  assert.deepEqual(panByPixels(r, 24, 750, 1950, 2025), { from: 1992, to: 2002 });
+  assert.deepEqual(panByPixels(r, 26, 750, 1950, 2025), { from: 1993, to: 2003 });
+  assert.deepEqual(panByPixels(r, -4, 750, 1950, 2025), r);
+  assert.deepEqual(panByPixels(r, 99999, 750, 1950, 2025), { from: 2015, to: 2025 });
+  assert.deepEqual(panByPixels(r, -99999, 750, 1950, 2025), { from: 1950, to: 1960 });
+  assert.deepEqual(panByPixels(r, 50, 0, 1950, 2025), r);
+  for (const dx of [-333, -17.5, 0, 3.3, 41, 640]) {
+    const p = panByPixels(r, dx, 412, 1950, 2025);
+    assert.ok(Number.isInteger(p.from) && Number.isInteger(p.to) && p.to - p.from === 10, String(dx));
+  }
+});
+
+test("a press grabs the bar between the handles and a handle at its ends", () => {
+  // a wide bar from x=100 to x=300: the middle pans, 10 px next to each handle takes it, outside takes the nearer one
+  assert.equal(grabAt(50, 100, 300), "start");
+  assert.equal(grabAt(350, 100, 300), "end");
+  assert.equal(grabAt(100, 100, 300), "start");
+  assert.equal(grabAt(108, 100, 300), "start");
+  assert.equal(grabAt(293, 100, 300), "end");
+  assert.equal(grabAt(111, 100, 300), "pan");
+  assert.equal(grabAt(200, 100, 300), "pan");
+  assert.equal(grabAt(289, 100, 300), "pan");
+  // a narrow bar pans at its middle, padded to a 24 px grip for a finger (8 px for a mouse)
+  assert.equal(grabAt(106, 100, 112), "pan");
+  assert.equal(grabAt(100, 100, 112), "pan");
+  assert.equal(grabAt(112, 100, 112), "pan");
+  assert.equal(grabAt(95, 100, 112), "pan");
+  assert.equal(grabAt(117, 100, 112), "pan");
+  assert.equal(grabAt(93, 100, 112), "start");
+  assert.equal(grabAt(119, 100, 112), "end");
+  assert.equal(grabAt(106, 100, 112, 8), "pan");
+  assert.equal(grabAt(99, 100, 112, 8), "start");
+  assert.equal(grabAt(113, 100, 112, 8), "end");
+  // a bar of 30 px: the 24 px middle pans, the rest goes to the handles
+  assert.equal(grabAt(115, 100, 130), "pan");
+  assert.equal(grabAt(102, 100, 130), "start");
+  assert.equal(grabAt(128, 100, 130), "end");
+  // no width at all: the middle still pans, either side of it a handle
+  assert.equal(grabAt(100, 100, 100), "pan");
+  assert.equal(grabAt(80, 100, 100), "start");
+  assert.equal(grabAt(120, 100, 100), "end");
 });

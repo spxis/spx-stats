@@ -115,6 +115,7 @@ export const PHRASES = {
   "range.aria": "Years shown",
   "range.start": "Start year",
   "range.end": "End year",
+  "range.move": "Move range",
   "range.reset": "Reset",
   "range.presets": "Quick ranges",
   "range.all": "All",
