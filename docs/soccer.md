@@ -26,7 +26,8 @@ People are matched to a person the archive already has only with a confirming fa
 the same folded name); never on the name alone. On DS1 on 2026-10-13 that matched 0 of 11,369; all became new `core.person` rows.
 
 **Venues.** The build writes no venue row and never touches `core.venue`, `core.game`, `core.team_season`, `franchise_brand` or `brand_venue_*`.
-`core.soccer_match.venue_id` is empty and is for the world stadium dataset to fill by `venue_wikidata_id` later (only where it is null).
+`core.soccer_match.venue_id` is filled later, by `venue_wikidata_id` and only where it is null, by `db/build/207_soccer_match_venue.sql` once the stadiums
+are in `core.venue` (`scripts/world_stadiums/README.md`: every World Cup and MLS ground, pitch sizes in `core.venue_pitch`).
 The site shows the stadium name as plain text until a venue page exists to link to.
 
 **Second check.** openfootball's own result for each men's match 1930-2022 is compared with jfjelstul's (date, score after extra time,
@@ -96,4 +97,4 @@ Production only through a data release (AGENTS.md section 8, item 5), after migr
 - Women's 2023: neither allowed source has it. A Wikipedia (CC BY-SA 4.0) load would be a separate ticket.
 - Lineups, cards and managers for 2026.
 - A country page for a nation across men's and women's merged with its predecessor (`continues_team_id` is stored, not yet used to merge records).
-- Linking stadium names to venue pages: waits for the world stadium dataset (join by `venue_wikidata_id`).
+- Linking stadium names to venue pages: the stadiums are `core.venue` rows (`scripts/world_stadiums/`); step 207 fills `venue_id` after the soccer data is on production, and the pages follow.
