@@ -1,4 +1,4 @@
--- Cities (migration 061): ref.metro, ref.city and ref.city_alias from the seed files, then the city of every team season. Run from the repo root,
+-- Cities (migration 062): ref.metro, ref.city and ref.city_alias from the seed files, then the city of every team season. Run from the repo root,
 -- as scripts/build_core.sh does. Rules and decisions: scripts/city/README.md. Rerunnable: every table is emptied and filled again.
 --
 -- The city of a team season, in this order:

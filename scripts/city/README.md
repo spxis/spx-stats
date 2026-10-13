@@ -2,7 +2,7 @@
 
 Which club played in which city in each season is **data**, decided by rules and seed files, not by code in the site.
 Tables: `ref.metro`, `ref.city`, `ref.city_alias` (all three from `db/seed/*.csv`) and `core.team_season_city`
-(worked out by `db/build/197_city.sql`); views `api.city` and `api.team_season_city` (migration 061). The site adds the
+(worked out by `db/build/197_city.sql`); views `api.city` and `api.team_season_city` (migration 062). The site adds the
 seasons up (`web/src/lib/cityModel.ts`, tested by `pnpm test:city`).
 
 ## Seed files (`db/seed/`)
@@ -59,7 +59,7 @@ Run from the repo root. Raw files go outside the repo; DS1 steps go through `scr
     python3 -I scripts/archive_raw.py wikidata_city $raw $day --sql-out archive.sql
     bash scripts/mac/ds1-apply.sh archive.sql --dry-run && bash scripts/mac/ds1-apply.sh archive.sql
     bash scripts/mac/spx-raw-export.sh --check && bash scripts/mac/spx-raw-export.sh     # the Dropbox copy
-    bash scripts/mac/ds1-apply.sh db/migrations/061_city.sql --dry-run    # once
+    bash scripts/mac/ds1-apply.sh db/migrations/062_city.sql --dry-run    # once
     bash scripts/mac/ds1-apply.sh db/build/197_city.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/197_city.sql
     # production only through a data release (AGENTS.md section 8; John approves at /admin/data), after the migration is applied there:
     python3 -I scripts/release/release.py prepare --title "Cities" --tables ref.metro,ref.city,ref.city_alias,core.team_season_city

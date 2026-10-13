@@ -32,7 +32,7 @@ export interface CityData {
 }
 
 /**
- * Every city, the city of every club season and the stays they add up to. The views come with migration 061; until it is on the server,
+ * Every city, the city of every club season and the stays they add up to. The views come with migration 062; until it is on the server,
  * or if a read fails, this throws and the pages show their inline "Couldn't load" note (or no city link).
  */
 export const getCityData = cache(async (): Promise<CityData> => {
