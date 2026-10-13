@@ -230,6 +230,16 @@ def main_script(workdir, with_archive, commit):
           "\\echo",
           "select case when ok then 'ok  ' else 'FAIL' end as result, name, detail from _checks where not ok or name like 'a second pass%' order by ok, name;",
           "select count(*) = 0 as all_ok from _checks where not ok \\gset",
+          # one machine-readable line for run.py (heartbeat and release hook): what the report did and which release tables this
+          # transaction wrote to (pg_stat_xact counts the rows inserted, updated and deleted so far in THIS transaction)
+          "\\pset tuples_only on", "\\pset format unaligned",
+          "select 'DAILY_SUMMARY ' || jsonb_build_object("
+          "'observations', (select (j ->> 'observations')::int from _res), 'new', (select (j ->> 'new')::int from _res), "
+          "'repeat', (select (j ->> 'repeat')::int from _res), 'games_changed', (select jsonb_array_length(j -> 'changed') from _res), "
+          "'games_made', (select (j ->> 'games_made')::int from _rep), 'games_changed_by_replay', (select (j ->> 'games_changed')::int from _rep), "
+          "'tables', coalesce((select jsonb_object_agg(schemaname || '.' || relname, jsonb_build_object('ins', n_tup_ins, 'upd', n_tup_upd, 'del', n_tup_del)) "
+          "from pg_stat_xact_all_tables where schemaname in ('core', 'meta', 'ref') and n_tup_ins + n_tup_upd + n_tup_del > 0), '{}'::jsonb))::text;",
+          "\\pset format aligned", "\\pset tuples_only off",
           "\\if :all_ok", "  \\if :commit", "    commit;", "    \\echo RESULT: committed", "  \\else", "    rollback;", "    \\echo RESULT: rolled back (rehearsal), every check passed", "  \\endif",
           "\\else", "  rollback;", "  \\echo RESULT: rolled back, a check failed", "\\endif"]
     path = os.path.join(workdir, "main.sql")
@@ -237,9 +247,20 @@ def main_script(workdir, with_archive, commit):
     return path
 
 
-def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False):
+def daily_summary(out):
+    """The DAILY_SUMMARY line main_script prints -> dict, or None."""
+    for ln in out.splitlines():
+        if ln.startswith("DAILY_SUMMARY "):
+            try: return json.loads(ln[len("DAILY_SUMMARY "):])
+            except ValueError: return None
+    return None
+
+
+def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False, result=None):
     """todo_pages: [dict(league, season, kind, title, team, path, claims)]; staged_games: staging rows; observations: what
-    ingest.report_results takes; nfl: dict or None."""
+    ingest.report_results takes; nfl: dict or None. `result`, if given, is filled in for the caller (heartbeat, release hook):
+    pages_new, archive_rows, committed, and the DAILY_SUMMARY of the committed load."""
+    if result is None: result = {}
     os.makedirs(log_dir, exist_ok=True)
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     log = os.path.join(log_dir, "%s-apply.log" % stamp)
@@ -247,6 +268,7 @@ def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_
     archive, pages, claims = plan_load(todo_pages, held, pages_state, raw_dir, nfl)
     print("\nDS1 holds %d page revisions; new to load: %d (%d claim rows); staged games: %d; observations to report: %d" % (
         len(held), len(pages), sum(len(c[3]) for c in claims), len(staged_games), len(observations)))
+    result.update(pages_new=len(pages), archive_rows=len(archive), committed=False)
     with tempfile.TemporaryDirectory(prefix="spx-daily-") as wd:
         open(os.path.join(wd, "archive.sql"), "w").write(archive_sql(archive))
         open(os.path.join(wd, "load.sql"), "w").write(load_sql(pages, claims, staged_games, leagues_seasons))
@@ -268,9 +290,11 @@ def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_
         rc, out = run_script(main_script(wd, False, True), "load", log)
         if rc or "RESULT: committed" not in out:
             print("\nLOAD DID NOT COMMIT: nothing was written by it."); return 1
+        result.update(committed=True, load=daily_summary(out))
     print("\n===== api.refresh() =====")
     rc, out = run_script_text("select api.refresh();", "refresh", log)
     print("api.refresh(): " + ("done" if rc == 0 else "FAILED (exit %d): %s" % (rc, out.strip()[-300:])))
+    result["refresh"] = "done" if rc == 0 else "failed"
     print("\nlog: " + log)
     return rc
 

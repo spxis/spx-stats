@@ -202,6 +202,22 @@ def main():
     a = ap.parse_args()
     if a.self_test:
         import selftest; return selftest.run()
+    if not a.apply: return run(a, {})
+    # --apply leaves a heartbeat row on DS1 (ingest.daily_run): 'running' now, 'ok' or 'failed' at the end
+    import heartbeat
+    hb = heartbeat.start()
+    result = {}
+    try:
+        rc = run(a, result)
+    except BaseException as e:
+        heartbeat.finish(hb, "failed", dict(result, error=("%s: %s" % (type(e).__name__, e))[:500]))
+        raise
+    heartbeat.finish(hb, "ok" if rc == 0 else "failed", dict(result, exit_code=rc))
+    return rc
+
+
+def run(a, result):
+    """The whole run for the parsed arguments. `result` collects what the heartbeat records."""
     writing = a.apply or a.rehearse
     if writing and a.no_ds1: sys.exit("--apply / --rehearse write to DS1: drop --no-ds1")
     today = datetime.date.today()
@@ -289,13 +305,16 @@ def main():
                 nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
                            claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
         if skipped: print("\nNOT applied: " + "; ".join(skipped))
-        rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply)
+        result.update(leagues=[lg for lg, _ in lseasons], skipped=skipped)
+        rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply, result=result)
+        if rc == 0 and result.get("committed"):
+            import release_hook
+            load = result.get("load") or {}
+            result["release"] = release_hook.prepare_release(load.get("tables"), datetime.date.today().isoformat(), load)
     reqs = [x for x in client.log]
     print("\n== Requests this run ==")
     print("Wikipedia API: %d (%s) | other: %d (nflverse, balldontlie)" % (client.requests, ", ".join("%s x%d" % (k, sum(1 for w, n in reqs if w == k)) for k in ("revisions", "content")), extra_req))
-
-
-
+    result.update(wikipedia_requests=client.requests, other_requests=extra_req)
     return rc
 
 

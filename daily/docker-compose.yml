@@ -1,0 +1,12 @@
+services:
+  daily-scores:
+    build:
+      context: .
+      network: host
+    network_mode: host
+    container_name: spx-daily-scores
+    init: true
+    restart: unless-stopped
+    env_file: ./daily.env
+    volumes:
+      - ./data:/data

@@ -6,3 +6,5 @@ __pycache__/
 runner/release-runner.env
 runner/data/
 release-snapshots/
+daily/daily.env
+daily/data/
