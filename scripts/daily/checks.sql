@@ -1,6 +1,6 @@
 -- The report and the checks of a daily load (run.py --apply), run inside the same transaction as the load, after
--- db/build/152_games_from_wikipedia_daily.sql (it needs that step's temp tables: src, scope, mm, sg, cand, matched).
--- Any check that fails makes run.py roll the whole transaction back. Read-only.
+-- db/build/152 (temp tables src, club, sg, scope, owned_season), the first ingest.report_results (temp tables _res, _rep) and the
+-- second one (_res2, _rep2); _checks and _run are made by the caller. Any check that fails makes run.py roll the whole transaction back. Read-only.
 
 \echo
 \echo '== Before / after (changed rows, and every season, team season and game row of the leagues loaded) =='
@@ -12,25 +12,26 @@ where coalesce(a.n, 0) <> coalesce(b.n, 0)
    or (coalesce(a.what, b.what) in ('seasons', 'team seasons', 'games by status') and coalesce(a.league, b.league) in (select league from scope))
 order by 1, 2, 3;
 
-create temp table _checks (name text not null, ok boolean not null, detail text);
-create temp table _fills as select game_id from mm where kind in ('fill', 'refill');
+create index on _gh (snap, game_id);
+analyze _gh;
+create temp table _changed as
+select (c ->> 'game_id')::bigint as game_id, c ->> 'league' as league, (c ->> 'season')::int as season, (c ->> 'game_date')::date as game_date,
+       c ->> 'from' as from_status, c ->> 'to' as to_status, c ->> 'reason' as reason, c ->> 'game_ref' as game_ref
+from (select j from _res union all select j from _rep) r, jsonb_array_elements(r.j -> 'changed') c;
 
--- games of other sources: not deleted, changed only where a result was filled in
+-- games of other sources: not deleted, a final never changed, changed only where a result was filled in
 insert into _checks
 select 'no game of another source deleted', count(*) = 0, count(*) || ' deleted'
 from _gh b where b.snap = 'before' and b.source_id <> (select source_id from src)
   and not exists (select 1 from _gh a where a.snap = 'after' and a.game_id = b.game_id);
 insert into _checks
-select 'games of other sources changed only by a fill', count(*) = 0, count(*) || ' changed without being a fill'
+select 'a final game of another source is never changed (confirmed or disputed, not overwritten)', count(*) = 0, count(*) || ' changed'
 from _gh b join _gh a on a.game_id = b.game_id and a.snap = 'after'
-where b.snap = 'before' and b.source_id <> (select source_id from src) and a.h <> b.h and b.game_id not in (select game_id from _fills);
+where b.snap = 'before' and b.source_id <> (select source_id from src) and b.st in ('final', 'forfeit') and a.h <> b.h;
 insert into _checks
-select 'every fill was a game with no result', count(*) = 0, count(*) || ' fills that were not scheduled before'
-from mm where kind = 'fill' and ds_status = 'final';
-insert into _checks
-select 'a final DS1 game never overwritten (confirmed, disputed, held)', count(*) = 0, count(*) || ' changed'
-from mm m join _gh b on b.game_id = m.game_id and b.snap = 'before' join _gh a on a.game_id = m.game_id and a.snap = 'after'
-where (m.kind in ('confirm', 'dispute') or (m.kind = 'hold' and not m.ours)) and a.h <> b.h;
+select 'games of other sources change only through the function (every change is in its list)', count(*) = 0, count(*) || ' changed without being reported'
+from _gh b join _gh a on a.game_id = b.game_id and a.snap = 'after'
+where b.snap = 'before' and b.source_id <> (select source_id from src) and a.h <> b.h and not exists (select 1 from _changed c where c.game_id = b.game_id);
 insert into _checks
 select 'SPX-era games untouched (SPX sources, or dated before 2013)', count(*) = 0, count(*) || ' of ' || (select count(*) from _gh where snap = 'before' and (source_id in (select source_id from meta.source where code like 'spx%') or game_date < date '2013-01-01')) || ' changed or gone'
 from _gh b where b.snap = 'before' and (b.source_id in (select source_id from meta.source where code like 'spx%') or b.game_date < date '2013-01-01')
@@ -39,6 +40,10 @@ insert into _checks
 select 'games of other sources: count before = after', (select count(*) from _gh where snap = 'before' and source_id <> (select source_id from src))
                                                      = (select count(*) from _gh where snap = 'after' and source_id <> (select source_id from src)),
        (select count(*) from _gh where snap = 'before' and source_id <> (select source_id from src)) || ' -> ' || (select count(*) from _gh where snap = 'after' and source_id <> (select source_id from src));
+insert into _checks
+select 'the report names every game that changed (own games included)', count(*) = 0, count(*) || ' own games changed that are not in the list'
+from _gh b join _gh a on a.game_id = b.game_id and a.snap = 'after'
+where b.snap = 'before' and b.source_id = (select source_id from src) and a.h <> b.h and not exists (select 1 from _changed c where c.game_id = b.game_id);
 
 -- the games themselves
 insert into _checks
@@ -56,14 +61,15 @@ select 'a game belongs to the season of both its team seasons', count(*) = 0, co
 from core.game g join core.team_season h on h.team_season_id = g.home_team_season_id join core.team_season a on a.team_season_id = g.away_team_season_id
 where g.source_id = (select source_id from src) and (h.season_id <> g.season_id or a.season_id <> g.season_id or h.franchise_id = a.franchise_id);
 insert into _checks
-select 'every result and cancelled game staged is a game', count(*) = 0, count(*) || ' missing' || coalesce(': ' || string_agg(c.source_key, '; ') filter (where true), '')
+select 'every result and cancelled game staged is a game', count(*) = 0, count(*) || ' missing' || coalesce(': ' || string_agg(c.source_key, '; '), '')
 from (select s.source_key from sg s where s.act in ('result', 'cancel')
         and not exists (select 1 from core.game g where g.source_key = s.source_key and g.source_id = (select source_id from src))
-        and not exists (select 1 from matched m where m.wid = s.source_key)) c;
+        and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = s.source_key)) c;
 insert into _checks
 select 'every staged scheduled game of a new season is a game', count(*) = 0, count(*) || ' missing'
 from sg s where s.act = 'schedule' and (s.league, s.season) in (select league, season from owned_season)
-  and not exists (select 1 from core.game g where g.source_key = s.source_key and g.source_id = (select source_id from src));
+  and not exists (select 1 from core.game g where g.source_key = s.source_key and g.source_id = (select source_id from src))
+  and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = s.source_key);
 insert into _checks
 select 'team seasons made here carry the club''s name', count(*) = 0, count(*) || ' without an identity'
 from core.team_season where source_id = (select source_id from src) and franchise_identity_id is null;
@@ -71,6 +77,23 @@ insert into _checks
 select 'raw archive holds each page as downloaded (sha256 of the bytes)', count(*) = 0, count(*) || ' of ' || (select count(*) from legacy_wikipedia_daily.page) || ' differ or are missing'
 from legacy_wikipedia_daily.page p left join legacy_files.raw_archive a on a.name = p.archive_name
 where a.name is null or encode(sha256(a.data), 'hex') <> p.sha256 or a.sha256 <> p.sha256;
+
+-- the ingest log
+insert into _checks
+select 'every observation reported this run has an outcome', count(*) = 0, count(*) || ' without'
+from ingest.game_observation where last_seen >= now() and outcome is null;
+insert into _checks
+select 'the log is append-only: no observation row went missing', (select count(*) from ingest.game_observation) >= (select n from _run), (select n from _run) || ' -> ' || (select count(*) from ingest.game_observation);
+insert into _checks
+select 'the first report added exactly the rows it says it did', (select count(*) from ingest.game_observation) - (select n from _run) = (select (j ->> 'new')::int from _res), (select (j ->> 'new') from _res) || ' new';
+insert into _checks
+select 'the same report a second time adds no observation and changes no game',
+       (select (j ->> 'new')::int = 0 and j -> 'changed' = '[]'::jsonb from _res2), (select (j - 'changed')::text from _res2);
+insert into _checks
+select 'the bulk step a second time makes no game', (select (j ->> 'games_made')::int = 0 from _rep2), (select j::text from _rep2);
+insert into _checks
+select 'the report ran as the restricted role (it holds no privilege on core.game)', not has_table_privilege('ingest_writer', 'core.game', 'select,insert,update,delete')
+       and not has_table_privilege('ingest_writer', 'ingest.game_observation', 'select,insert,update,delete'), 'ingest_writer';
 
 -- each club's games in core against the rows of its own article: the club mapped to the right franchise. A game held back
 -- because its sources disagree is missing from core on purpose, and a game only one article lists (single) may be missing from
@@ -80,8 +103,9 @@ select p.league, p.season, p.title, p.club, c.franchise_id,
        (select count(*) from legacy_wikipedia_daily.claim k where k.page_id = p.page_id and k.phase <> 'preseason' and k.status in ('final', 'scheduled', 'cancelled')) as page_rows,
        (select count(*) from core.game g join core.team_season t on t.team_season_id in (g.home_team_season_id, g.away_team_season_id)
         where t.franchise_id = c.franchise_id and g.season_id = s.season_id and g.status <> 'postponed' and g.phase in ('regular', 'playoffs')) as core_games,
-       (select count(*) from sg x where x.act = 'hold' and c.franchise_id in (x.hf, x.af) and not exists (select 1 from matched m where m.wid = x.source_key)
-                                    and not exists (select 1 from og where og.source_key = x.source_key)) as held,
+       (select count(*) from sg x where x.act = 'hold' and c.franchise_id in (x.hf, x.af)
+          and not exists (select 1 from core.game g where g.source_key = x.source_key and g.source_id = (select source_id from src))
+          and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = x.source_key)) as held,
        (select count(*) from sg x where x.confidence = 'single' and c.franchise_id in (x.hf, x.af)) as singles
 from (select distinct on (source, title) * from legacy_wikipedia_daily.page where kind = 'team' order by source, title, page_id desc) p
 join club c on c.league = p.league and c.name = p.club
@@ -119,15 +143,16 @@ select s.league_code as league, s.start_year as season, s.label, s.games_per_tea
 from core.season s where (s.league_code, s.start_year) in (select league, season from legacy_wikipedia_daily.page) order by 1, 2;
 
 \echo
-\echo '== What the step did with the staged games =='
-select s.league, coalesce(m.kind, case when s.source_key in (select source_key from og) then 'own (already ours)'
-                                       when s.act = 'note' then 'logged (postponed or suspended)'
-                                       when s.act in ('result', 'cancel') or (s.act = 'schedule' and (s.league, s.season) in (select league, season from owned_season)) then 'added'
-                                       else 'not added (' || s.act || ')' end) as outcome, s.confidence, count(*) as games
-from sg s left join mm m on m.source_key = s.source_key
-group by 1, 2, 3 order by 1, 2, 3;
-select 'unresolved clubs' as k, count(*) from legacy_wikipedia_daily.game g where not exists (select 1 from sg where sg.source_key = g.source_key);
+\echo '== The first ingest.report_results of this run =='
+select j ->> 'observations' as observations, j ->> 'new' as new_rows, j ->> 'repeat' as repeats, j ->> 'applied_now' as applied_now, j -> 'outcomes' as outcomes, j ->> 'issues_touched' as issues_touched,
+       jsonb_array_length(j -> 'changed') as games_changed from _res;
+\echo '   games changed by the report, by league and move'
+select league, coalesce(from_status, '(new)') as from_status, to_status, count(*) as games, min(game_date) as first_date, max(game_date) as last_date from _changed group by 1, 2, 3 order by 1, 2, 3;
+\echo '   games the bulk step made (ingest.replay(true, true)) and what it applied'
+select j::text as replay from _rep;
+\echo '   the second report in the same transaction (must add nothing and change nothing)'
+select j ->> 'observations' as observations, j ->> 'new' as new_rows, j ->> 'repeat' as repeats, jsonb_array_length(j -> 'changed') as games_changed from _res2;
 
 \echo
-\echo '== What changed (db/build/152 summary) =='
-select what, n from chg order by what;
+\echo '== Daily changes of the season/team season step (db/build/152) =='
+select what, n from _chg1 order by what;

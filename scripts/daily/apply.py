@@ -1,22 +1,27 @@
 #!/usr/bin/env python3
 """Stage 2: write what a run found to DS1. Only DS1: nothing here knows production.
 
-What `apply()` does, in this order, each step stopping the run if it fails:
+Daily scores go to the database through ONE function, ingest.report_results (migration 044), called as the restricted role
+ingest_writer (migration 045). History stays bulk. What `apply()` does, in this order, each step stopping the run if it fails:
   1. asks DS1 which page revisions it already holds (legacy_wikipedia_daily.page)
-  2. REHEARSAL: one transaction that ends in ROLLBACK: migration 043, archive rows, raw load, db/build/152, the checks
-     (scripts/daily/snapshot.sql + checks.sql). A failed check, or any error, means nothing was written.
+  2. REHEARSAL: one transaction that ends in ROLLBACK: migrations 043-045, archive rows, raw load, db/build/152 (seasons and
+     team seasons only), the report of every game as an observation (as ingest_writer), ingest.replay(true, true) for the games
+     the report found no row for, the same report again (it must add nothing), and the checks (snapshot.sql + checks.sql).
+     A failed check, or any error, means nothing was written.
   3. ARCHIVE: the raw wikitext of the new revisions into legacy_files.raw_archive (committed on its own, archive first)
-  4. LOAD: one transaction, the same SQL as the rehearsal: raw load, build step, checks, COMMIT only if every check passed
+  4. LOAD: one transaction, the same SQL as the rehearsal, COMMIT only if every check passed
   5. `select api.refresh();`
-Idempotent: a page revision DS1 holds is neither archived nor loaded again, the staged games are replaced by the same
-games, and the build step only changes rows that differ, so a second run reports "daily changes: 0".
+Idempotent: a page revision DS1 holds is neither archived nor loaded again, an observation already reported adds no row, and
+the game state machine changes nothing it has already done, so a second run reports 0 new observations and 0 changed games.
 """
 import datetime, hashlib, json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+if HERE not in sys.path: sys.path.insert(0, HERE)
+import games as G, teams as T
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DS1 = os.path.join(HERE, "ds1.sh")
-MIGRATION = os.path.join(REPO, "db", "migrations", "043_legacy_wikipedia_daily.sql")
+MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "045_ingest_writer_role.sql")]
 BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
@@ -83,6 +88,36 @@ def staging_row(g):
                 confidence=g["confidence"], dissent=statements(g) if g["confidence"] in ("resolved", "disputed") else [],
                 notes=g["notes"], sources=g["sources"],
                 provenance=["%s@%s" % (c["page"], c.get("revid")) for c in g["claims"]])
+
+
+def _ref(c):
+    return "%s@%s" % (c["page"], c.get("revid"))
+
+
+def observation(g, roster):
+    """One cross-checked game -> the observation ingest.report_results takes (see migration 044): clubs as franchise keys, the
+    verdict of the cross-check, and the evidence (references of the sources that agree, of those that conflict)."""
+    r = staging_row(g)
+    h, a = r["home_name"], r["away_name"]
+    fk = lambda name: roster.by_name[T.norm(name)]["fkey"]
+    claims = g["claims"]
+    finals = [c for c in claims if c["status"] == "final" and c["score"] is not None]
+    if g["status"] == "final" and finals:
+        best = sorted(finals, key=lambda c: G._rank(c, g["home"]))[0]
+        same = lambda c: c["score"] == best["score"]
+        agree = [_ref(c) for c in finals if same(c)]
+        conflict = [dict(ref=_ref(c), source=re.sub(r"^wp:", "", c["source"]), home_score=c["score"].get(h), away_score=c["score"].get(a)) for c in finals if not same(c)]
+        src, ref = ("nflverse" if best["source"] in G.SOURCE_RANK else "wikipedia"), _ref(best)
+        verdict = r["confidence"]
+    else:
+        agree, conflict, verdict = [_ref(c) for c in claims], [], "none"
+        src = "nflverse" if claims and all(c["source"] in G.SOURCE_RANK for c in claims) else "wikipedia"
+        ref = agree[0] if agree else None
+    return dict(game_ref=r["source_key"], league=r["league"], season=r["season"], phase=r["phase"], round=r["round"], game_date=r["game_date"],
+                game_no=int(r["source_key"].rsplit(":", 1)[1]), home_key=fk(h), away_key=fk(a), home_name=h, away_name=a,
+                home_known=r["home_known"], neutral=r["neutral"], status=r["status"], home_score=r["home_score"], away_score=r["away_score"],
+                overtime=r["overtime"], shootout=r["shootout"], ot_periods=r["ot_periods"], verdict=verdict, source=src, ref=ref,
+                agree=agree, conflict=conflict, dissent=r["dissent"], notes=r["notes"])
 
 
 def plan_load(todo, held, pages_state, raw_dir, nfl):
@@ -159,19 +194,40 @@ def run_script(script, label, log_path, show=True):
     return p.returncode, out
 
 
+def report_sql(observations):
+    """The call, as the restricted role: one statement, its answer kept in the psql variable :j."""
+    return "set local role ingest_writer;\nselect ingest.report_results(%s) as j \\gset\nreset role;\n" % jlit(observations)
+
+
 def main_script(workdir, with_archive, commit):
-    """The one transaction: snapshot, migration, [archive], raw load, build, snapshot, checks, commit or rollback."""
-    mig, bld = os.path.join(workdir, "migration.sql"), os.path.join(workdir, "build.sql")
-    open(mig, "w").write(strip_txn(MIGRATION)); open(bld, "w").write(strip_txn(BUILD))
+    """The one transaction: migrations, snapshot, [archive], raw load, 152, report, bulk step, report again, snapshot, checks, commit or rollback."""
+    mig = []
+    for i, m in enumerate(MIGRATIONS):
+        path = os.path.join(workdir, "migration%d.sql" % i)
+        open(path, "w").write(strip_txn(m)); mig.append(path)
+    bld = os.path.join(workdir, "build.sql")
+    open(bld, "w").write(strip_txn(BUILD))
+    rep = os.path.join(workdir, "report.sql")
     s = ["\\set ON_ERROR_STOP on", "\\set commit " + ("true" if commit else "false"), "begin;", "set client_min_messages = warning;",
          "create temp table _snap (snap text, what text, league text, k text, n bigint);",
-         "create temp table _gh (snap text, game_id bigint, source_id smallint, game_date date, h text);",
-         "\\set snap before", "\\i " + SNAPSHOT, "\\i " + mig]
+         "create temp table _gh (snap text, game_id bigint, source_id smallint, game_date date, st text, h text);",
+         "create temp table _checks (name text not null, ok boolean not null, detail text);"]
+    s += ["\\i " + p for p in mig]
     if with_archive: s.append("\\i " + os.path.join(workdir, "archive.sql"))
-    s += ["\\i " + os.path.join(workdir, "load.sql"), "\\i " + bld, "\\set snap after", "\\i " + SNAPSHOT, "\\i " + CHECKS,
-          "\\echo", "\\echo '== Second pass of db/build/152 in this same transaction: it must change nothing =='", "\\i " + bld,
+    s += ["\\set snap before", "\\i " + SNAPSHOT, "\\i " + os.path.join(workdir, "load.sql"), "\\i " + bld,
+          "create temp table _chg1 as select * from chg;",
+          "create temp table _run as select (select count(*) from ingest.game_observation) as n;",
+          "\\echo", "\\echo '== Reporting the games: ingest.report_results as ingest_writer =='",
+          "\\i " + rep, "create temp table _res as select :'j'::jsonb as j;",
+          "\\echo '== The bulk step for the games the report found no row for: ingest.replay(true, true) =='",
+          "select ingest.replay(true, true) as j \\gset", "create temp table _rep as select :'j'::jsonb as j;",
+          "\\echo '== The same report again, in the same transaction: it must change nothing =='",
+          "\\i " + bld,
           "insert into _checks select 'a second pass of db/build/152 changes nothing', coalesce(sum(n), 0) = 0, coalesce(sum(n), 0) || ' rows changed' from chg;",
-          "select what, n from chg where n <> 0 order by what;",
+          "\\i " + rep, "create temp table _res2 as select :'j'::jsonb as j;",
+          "select ingest.replay(true, true) as j \\gset", "create temp table _rep2 as select :'j'::jsonb as j;",
+          "\\set snap after", "\\i " + SNAPSHOT, "\\i " + CHECKS,
+          "\\echo",
           "select case when ok then 'ok  ' else 'FAIL' end as result, name, detail from _checks where not ok or name like 'a second pass%' order by ok, name;",
           "select count(*) = 0 as all_ok from _checks where not ok \\gset",
           "\\if :all_ok", "  \\if :commit", "    commit;", "    \\echo RESULT: committed", "  \\else", "    rollback;", "    \\echo RESULT: rolled back (rehearsal), every check passed", "  \\endif",
@@ -181,17 +237,20 @@ def main_script(workdir, with_archive, commit):
     return path
 
 
-def apply(todo_pages, pages_state, raw_dir, staged_games, leagues_seasons, nfl, log_dir, rehearse_only=False):
-    """todo_pages: [dict(league, season, kind, title, team, path, claims)]; staged_games: staging rows; nfl: dict or None."""
+def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False):
+    """todo_pages: [dict(league, season, kind, title, team, path, claims)]; staged_games: staging rows; observations: what
+    ingest.report_results takes; nfl: dict or None."""
     os.makedirs(log_dir, exist_ok=True)
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     log = os.path.join(log_dir, "%s-apply.log" % stamp)
     held = held_revisions()
     archive, pages, claims = plan_load(todo_pages, held, pages_state, raw_dir, nfl)
-    print("\nDS1 holds %d page revisions; new to load: %d (%d claim rows); staged games: %d" % (len(held), len(pages), sum(len(c[3]) for c in claims), len(staged_games)))
+    print("\nDS1 holds %d page revisions; new to load: %d (%d claim rows); staged games: %d; observations to report: %d" % (
+        len(held), len(pages), sum(len(c[3]) for c in claims), len(staged_games), len(observations)))
     with tempfile.TemporaryDirectory(prefix="spx-daily-") as wd:
         open(os.path.join(wd, "archive.sql"), "w").write(archive_sql(archive))
         open(os.path.join(wd, "load.sql"), "w").write(load_sql(pages, claims, staged_games, leagues_seasons))
+        open(os.path.join(wd, "report.sql"), "w").write(report_sql(observations))
         print("\n===== REHEARSAL (one transaction, ends in ROLLBACK; log %s) =====" % log)
         rc, out = run_script(main_script(wd, True, False), "rehearsal", log)
         if rc or "RESULT: rolled back (rehearsal)" not in out:
@@ -202,7 +261,7 @@ def apply(todo_pages, pages_state, raw_dir, staged_games, leagues_seasons, nfl, 
             print("\n===== ARCHIVE: %d raw files into legacy_files.raw_archive (committed first) =====" % len(archive))
             # the archive goes in on its own, before the load, with the migration's table in place
             ap = os.path.join(wd, "archive_run.sql")
-            open(ap, "w").write("\\set ON_ERROR_STOP on\nbegin;\n" + strip_txn(MIGRATION) + "\n\\i " + os.path.join(wd, "archive.sql") + "\nselect count(*) as archived_this_run, pg_size_pretty(sum(length(data))) as size from legacy_files.raw_archive where name in (" + ", ".join(lit(a["name"]) for a in archive) + ");\ncommit;\n")
+            open(ap, "w").write("\\set ON_ERROR_STOP on\nbegin;\n" + strip_txn(MIGRATIONS[0]) + "\n\\i " + os.path.join(wd, "archive.sql") + "\nselect count(*) as archived_this_run, pg_size_pretty(sum(length(data))) as size from legacy_files.raw_archive where name in (" + ", ".join(lit(a["name"]) for a in archive) + ");\ncommit;\n")
             rc, out = run_script(ap, "archive", log)
             if rc: print("\nARCHIVE FAILED; nothing loaded."); return 1
         print("\n===== LOAD (one transaction; commits only if every check passes) =====")

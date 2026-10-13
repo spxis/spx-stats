@@ -34,7 +34,7 @@ def unaccent(s):
 
 
 class Roster:
-    """The clubs of one league. Each club: dict(fid, name, location, nickname, abbr)."""
+    """The clubs of one league. Each club: dict(fid, name, location, nickname, abbr, fkey)."""
 
     def __init__(self, league, clubs):
         self.league = league
@@ -76,8 +76,10 @@ class Roster:
 
 def load_rosters(leagues, cache_path=None):
     """{league: Roster} from DS1 (current franchise names); written to / read back from `cache_path`."""
-    sql = ("select fl.league_code, fi.franchise_id, fi.full_name, fi.location, fi.nickname, coalesce(fi.abbreviation,'') abbr "
+    # fkey: the franchise key ('<source code>:<source key>', e.g. spx_database:26) that observations carry instead of database ids
+    sql = ("select fl.league_code, fi.franchise_id, fi.full_name, fi.location, fi.nickname, coalesce(fi.abbreviation,'') abbr, s.code || ':' || f.source_key as fkey "
            "from core.franchise_league fl join core.franchise_identity fi on fi.franchise_id = fl.franchise_id and fi.valid_during @> current_date "
+           "join core.franchise f on f.franchise_id = fl.franchise_id join meta.source s on s.source_id = f.source_id "
            "where fl.valid_during @> current_date and fl.league_code in (%s) order by 1, 3" % ",".join("'%s'" % x for x in leagues))
     try:
         rows = ds1_csv(sql)
@@ -88,9 +90,10 @@ def load_rosters(leagues, cache_path=None):
     except RuntimeError:
         if not cache_path or not os.path.exists(cache_path): raise
         with open(cache_path, encoding="utf-8") as f: rows = json.load(f)
+        if any("fkey" not in r for r in rows): raise RuntimeError("DS1 is needed once to cache the franchise keys (the cached club list predates them)")
         src = "cache"
     out = {}
     for lg in leagues:
-        out[lg] = Roster(lg, [dict(fid=int(r["franchise_id"]), name=r["full_name"], location=r["location"], nickname=r["nickname"], abbr=r["abbr"])
+        out[lg] = Roster(lg, [dict(fid=int(r["franchise_id"]), name=r["full_name"], location=r["location"], nickname=r["nickname"], abbr=r["abbr"], fkey=r["fkey"])
                               for r in rows if r["league_code"] == lg])
     return out, src

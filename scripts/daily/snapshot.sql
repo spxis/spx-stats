@@ -7,8 +7,9 @@ insert into _snap select :'snap', 'games by source', s.league_code, src.code, co
 insert into _snap select :'snap', 'verifications', '', src.code || ' ' || v.status::text, count(*) from meta.verification v join meta.source src on src.source_id = v.source_id group by 3, 4;
 insert into _snap select :'snap', 'data issues', '', coalesce(src.code, '(none)'), count(*) from meta.data_issue d left join meta.source src on src.source_id = d.source_id group by 3, 4;
 insert into _snap select :'snap', 'external ids (game)', '', src.code, count(*) from core.external_id e join meta.source src on src.source_id = e.source_id where e.entity_kind = 'game' group by 3, 4;
+insert into _snap select :'snap', 'observations', '', coalesce(outcome, '(none)'), count(*) from ingest.game_observation group by 4;
 insert into _gh
-select :'snap', game_id, source_id, game_date,
+select :'snap', game_id, source_id, game_date, status::text,
        md5(row(season_id, phase, game_date, starts_at, home_team_season_id, away_team_season_id, venue_id, is_neutral_site, status,
                home_score, away_score, went_to_overtime, decided_by_shootout, original_date, broadcaster, notes, source_id, source_key)::text)
 from core.game;

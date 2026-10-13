@@ -270,7 +270,7 @@ def main():
     rc = 0
     if writing:
         import apply as A
-        todo, staged, lseasons, skipped = [], [], [], []
+        todo, staged, observations, lseasons, skipped = [], [], [], [], []
         for lg in leagues:
             r = report[lg]
             if r["missing"]:
@@ -278,6 +278,7 @@ def main():
             for p in plans[lg]:
                 todo.append(dict(p, path=raw_path(a.raw_dir, p), claims=[c for c in league_claims[lg] if c["page"] == p["title"]]))
             staged += [A.staging_row(g) for g in all_games[lg]]
+            observations += [A.observation(g, rosters[lg]) for g in all_games[lg]]
             lseasons.append((lg, seasons[lg]))
         nfl = None
         if "nfl" in [lg for lg, _ in lseasons]:
@@ -288,7 +289,7 @@ def main():
                 nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
                            claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
         if skipped: print("\nNOT applied: " + "; ".join(skipped))
-        rc = A.apply(todo, state["pages"], a.raw_dir, staged, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply)
+        rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply)
     reqs = [x for x in client.log]
     print("\n== Requests this run ==")
     print("Wikipedia API: %d (%s) | other: %d (nflverse, balldontlie)" % (client.requests, ", ".join("%s x%d" % (k, sum(1 for w, n in reqs if w == k)) for k in ("revisions", "content")), extra_req))

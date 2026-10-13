@@ -20,7 +20,7 @@ def check(cond, what):
 def roster(league, names):
     clubs = []
     for i, (full, loc, nick, abbr) in enumerate(names):
-        clubs.append(dict(fid=i + 1, name=full, location=loc, nickname=nick, abbr=abbr))
+        clubs.append(dict(fid=i + 1, name=full, location=loc, nickname=nick, abbr=abbr, fkey="spx_database:%d" % (i + 1)))
     return T.Roster(league, clubs)
 
 
@@ -197,7 +197,29 @@ def test_stage2():
     check(A.strip_txn(A.BUILD).count("\nbegin;") == 0 and "commit;" not in "\n".join(l for l in A.strip_txn(A.BUILD).split("\n") if l.strip() == "commit;"), "build step runs inside the caller's transaction")
 
 
+def test_observation():
+    import apply as A
+    xy = roster("nfl", [("X", "X", "X", "XX"), ("Y", "Y", "Y", "YY")])
+    d = D(2026, 10, 10)
+    a, c = mk("A page", "X", "Y", 3, 2, d), mk("C page", "X", "Y", 2, 3, d)
+    a["revid"], c["revid"] = 11, 22
+    nv = dict(mk("nflverse", "X", "Y", 3, 2, d), source="nflverse", page="nflverse", revid="abc")
+    o = A.observation(G.build_games([a, c, nv], "nfl", 2026)[0], xy)
+    check(o["home_key"] == "spx_database:1" and o["away_key"] == "spx_database:2" and o["game_no"] == 0, "observation carries franchise keys, not database ids")
+    check(o["status"] == "final" and (o["home_score"], o["away_score"]) == (3, 2) and o["verdict"] == "resolved" and o["source"] == "nflverse" and o["ref"] == "nflverse@abc", "resolved final: best source, its reference")
+    check(sorted(o["agree"]) == ["A page@11", "nflverse@abc"] and len(o["conflict"]) == 1 and o["conflict"][0]["ref"] == "C page@22"
+          and (o["conflict"][0]["home_score"], o["conflict"][0]["away_score"]) == (2, 3) and o["dissent"], "evidence: who agrees, who conflicts, in the game's orientation")
+    s = A.observation(G.build_games([P.claim("A page", ("X", "Y"), None, "X", d, "scheduled", "regular")], "nfl", 2026)[0], xy)
+    check(s["status"] == "scheduled" and s["verdict"] == "none" and s["home_score"] is None and s["conflict"] == [], "a scheduled game has no verdict and no score")
+    json_ok = A.jlit([o, s]).startswith("$j$")
+    check(json_ok, "observations go to SQL as one dollar-quoted jsonb literal")
+    dh = [mk("A page", "X", "Y", 1, 0, d, dh=1), mk("A page", "X", "Y", 5, 4, d, dh=2), mk("B page", "X", "Y", 5, 4, d, dh=2), mk("B page", "X", "Y", 1, 0, d, dh=1)]
+    nums = sorted(A.observation(g, xy)["game_no"] for g in G.build_games(dh, "mlb", 2026))
+    check(nums == [0, 1], "a doubleheader's second game is game_no 1")
+
+
 def run():
+    test_observation()
     test_parsers()
     test_pairing()
     test_doubleheader()
@@ -206,7 +228,7 @@ def run():
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing and the stage 2 staging rows")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows and the ingest observations")
     return 0
 
 
