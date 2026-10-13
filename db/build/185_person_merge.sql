@@ -10,7 +10,9 @@
 --    source (two Lahman ids are two people, whatever their names), and a league in common;
 --  * and there is evidence beyond the name, one of
 --      - the same birth date;
---      - a club and season in common (a roster entry or statistics for the same team season);
+--      - a club and season in common (a roster entry, statistics, an award, or being the head coach or captain, for the same team season);
+--      - Wikidata (the person's own item, or the item a Wikipedia article title points to) lists a team he played for, the other record
+--        has him with that franchise, and the seasons fit his life (at least 15 years after his birth, not after his death);
 --      - a Wikidata hockey player and an NHL API player with the very same name once accents are ignored, each the only one of its
 --        source with that name (the rule 180 uses, with accents folded).
 -- A record in more than one such pair is left alone. Pairs that fit the names and contradict nothing but have no evidence are NOT
@@ -67,9 +69,18 @@ create index on lg (person_id);
 
 create temp table pts on commit drop as
 select distinct person_id, team_season_id from (
-  select person_id, team_season_id from core.roster_stint union all select person_id, team_season_id from core.player_season_stat) z;
+  select person_id, team_season_id from core.roster_stint
+  union all select person_id, team_season_id from core.player_season_stat
+  union all select person_id, team_season_id from core.award_winner where person_id is not null and team_season_id is not null
+  union all select head_coach_person_id, team_season_id from core.team_season where head_coach_person_id is not null
+  union all select captain_person_id, team_season_id from core.team_season where captain_person_id is not null) z;
 create index on pts (team_season_id);
 create index on pts (person_id);
+
+-- the franchise and starting year of each team season a person has
+create temp table pfy on commit drop as
+select p.person_id, ts.franchise_id, se.start_year as yr from pts p join core.team_season ts using (team_season_id) join core.season se using (season_id);
+create index on pfy (person_id, franchise_id);
 
 create temp table keys on commit drop as
 select x.entity_id as person_id, x.source_id, s.code as source, x.external_key
@@ -118,12 +129,53 @@ where (select count(*) from wd_hockey x where x.fn = w.fn) = 1 and (select count
   and not exists (select 1 from np a, np b where a.person_id = w.person_id and b.person_id = n.person_id
                    and (coalesce(a.birth_date <> b.birth_date, false) or (a.tos is not null and b.tos is not null and a.tos <> b.tos)));
 
+-- Wikidata lists a team the person played for (P54, no dates). The item is the person's own Wikidata item, or the one a Wikipedia article
+-- title points to (an award table's person); a title that is only a name ('name:...') is never used, it could be anyone of that name.
+create temp table pq on commit drop as
+select k.person_id, k.external_key as qid from keys k where k.source = 'wikidata'
+union
+select k.person_id, coalesce(i.qid, l.qid) from keys k
+left join legacy_people.item i on i.enwiki_title = k.external_key
+left join legacy_people.wikipedia_link l on l.title = k.external_key
+where k.source = 'wikipedia' and k.external_key not like 'name:%' and coalesce(i.qid, l.qid) is not null;
+create index on pq (person_id);
+
+create temp table fname on commit drop as
+select franchise_id, core.fold_text(full_name) as nm from core.franchise_identity;
+create index on fname (nm);
+
+create temp table wd_fr on commit drop as
+select distinct q.person_id, f.franchise_id
+from pq q join legacy_people.claim c on c.qid = q.qid and c.prop = 'P54'
+join legacy_people.item it on it.qid = c.value_qid
+join fname f on f.nm = core.fold_text(it.label);
+create index on wd_fr (person_id);
+
+-- the years of birth and death, from the record or from the item
+create temp table life on commit drop as
+select q.person_id,
+       coalesce(extract(year from p.birth_date), (select extract(year from min(c.value_on)) from legacy_people.claim c where c.qid = q.qid and c.prop = 'P569'))::int as born,
+       coalesce(extract(year from p.death_date), (select extract(year from min(c.value_on)) from legacy_people.claim c where c.qid = q.qid and c.prop = 'P570'))::int as died
+from pq q join core.person p using (person_id);
+create index on life (person_id);
+
+create temp table wd_club on commit drop as
+select f.a, f.b from fit f
+where exists (
+  select 1 from (select f.a as w, f.b as o union all select f.b, f.a) s
+  join wd_fr on wd_fr.person_id = s.w
+  join pfy on pfy.person_id = s.o and pfy.franchise_id = wd_fr.franchise_id
+  join life l on l.person_id = s.w
+  where (l.born is null or pfy.yr >= l.born + 15) and (l.died is null or pfy.yr <= l.died + 1));
+
 create temp table pair0 on commit drop as
 select least(a, b) as a, greatest(a, b) as b, case when birth_eq then 'the same birth date' else 'the same team in the same season' end as why,
        case when birth_eq then 1 else 2 end as rank
 from fit where birth_eq or overlap
 union all
-select least(a, b), greatest(a, b), 'the same name and sport, the only one of each source', 3 from name_pair;
+select least(a, b), greatest(a, b), 'Wikidata lists the same club and the seasons fit his life', 3 from wd_club
+union all
+select least(a, b), greatest(a, b), 'the same name and sport, the only one of each source', 4 from name_pair;
 -- the same two records found by more than one rule are one pair; the strongest evidence is the one named
 create temp table pair on commit drop as
 select distinct on (a, b) a, b, why from pair0 order by a, b, rank;
@@ -172,8 +224,7 @@ select (select source_id from meta.source where code = 'spx_stats_derived'), 'pe
        'Not merged; a person decides'
 from fit f join core.person na on na.person_id = f.a join core.person nb on nb.person_id = f.b
 where not f.birth_eq and not f.overlap
-  and not exists (select 1 from ok_pair o where (o.a, o.b) = (f.a, f.b))
-  and not exists (select 1 from name_pair n where (least(n.a, n.b), greatest(n.a, n.b)) = (f.a, f.b));
+  and not exists (select 1 from pair p where (p.a, p.b) = (f.a, f.b));
 -- pairs with evidence that were left alone because a record sits in two of them
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from meta.source where code = 'spx_stats_derived'), 'person',
