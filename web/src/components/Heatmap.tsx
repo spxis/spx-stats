@@ -36,24 +36,19 @@ export function Heatmap({ seasons, leagues }: { seasons: HeatSeason[]; leagues: 
     if (final) saveRange({ from, to }, y0, y1);
   }, [y0, y1]);
   const years = range(Math.max(span.from, y0), Math.min(span.to, y1) + 1);
+  // Each league label opens that league's page at the range on show (the full range leaves the address plain).
+  const query = span.from <= y0 && span.to >= y1 ? "" : `?from=${span.from}&to=${span.to}`;
+  const linkFor = useCallback((lg: string) => `/${lg}${query}`, [query]);
   return (
     <div className="yr-hold">
       <YearRange min={y0} max={y1} from={span.from} to={span.to} onChange={onRange} />
-      <HeatRows seasons={seasons} leagues={leagues} years={years} labels />
+      <HeatRows seasons={seasons} leagues={leagues} years={years} labels linkFor={linkFor} />
     </div>
   );
 }
 
-/** One league's row, for its own page: every season it has, no league label and no range (the season chips below list them). */
-export function LeagueHeat({ seasons, league }: { seasons: HeatSeason[]; league: string }) {
-  const rows = useMemo(() => seasons.filter((s) => s.league === league), [seasons, league]);
-  const y0 = min(rows, (s) => s.year) ?? 0, y1 = max(rows, (s) => s.year) ?? 0;
-  const years = useMemo(() => range(y0, y1 + 1), [y0, y1]);
-  const leagues = useMemo(() => [league], [league]);
-  return <HeatRows seasons={rows} leagues={leagues} years={years} />;
-}
-
-function HeatRows({ seasons, leagues, years, labels = false }: { seasons: HeatSeason[]; leagues: string[]; years: number[]; labels?: boolean }) {
+/** The rows of the chart: a square per season, a label per league (a link when `linkFor` gives its address). */
+export function HeatRows({ seasons, leagues, years, labels = false, linkFor }: { seasons: HeatSeason[]; leagues: string[]; years: number[]; labels?: boolean; linkFor?: (league: string) => string }) {
   const router = useRouter();
   const { say, fmt } = useSpeaker();
   const [ref, W] = useChartWidth(1180, 300);
@@ -85,12 +80,12 @@ function HeatRows({ seasons, leagues, years, labels = false }: { seasons: HeatSe
         <g>{ticks.map((y) => <line key={y} x1={x(y)} x2={x(y)} y1={top - 3} y2={top + rowH * leagues.length} stroke="var(--rule)" />)}</g>
         {leagues.map((lg, i) => (
           <g key={lg} transform={`translate(0,${top + i * rowH})`} style={{ "--accent-cell": `var(--${lg})` } as React.CSSProperties}>
-            {labels ? <text className="lab" x={0} y={rowH / 2 + 5}>{LG[lg as keyof typeof LG]}</text> : null}
+            {labels ? (linkFor ? <LeagueLabel name={LG[lg as keyof typeof LG]} href={linkFor(lg)} h={rowH} w={left} /> : <text className="lab" x={0} y={rowH / 2 + 5}>{LG[lg as keyof typeof LG]}</text>) : null}
             {years.map((yr) => {
               const s = byLeague.get(lg)?.get(yr);
               if (!s) return null;
               return (
-                <rect key={yr} x={x(yr) + 0.5} y={3} width={Math.max(1, cw - 1)} height={rowH - 6}
+                <rect key={yr} data-season={yr} x={x(yr) + 0.5} y={3} width={Math.max(1, cw - 1)} height={rowH - 6}
                   fill={s.games === 0 && !s.champion ? "var(--soft)" : shareColor(s.share)} stroke={s.share > 0 ? "none" : "var(--rule)"} strokeWidth={0.5} style={{ cursor: "pointer" }}
                   onClick={() => router.push(seasonPath(lg, s.year))}
                   onMouseMove={(ev) => tip.show(ev, <TipLines title={`${LG[lg as keyof typeof LG]} ${s.label}`} lines={[
@@ -104,5 +99,20 @@ function HeatRows({ seasons, leagues, years, labels = false }: { seasons: HeatSe
       </svg>
       {tip.element}
     </div>
+  );
+}
+
+/** A league's name at the head of its row, linking to its page; the clear box behind the text makes a bigger target. */
+function LeagueLabel({ name, href, h, w }: { name: string; href: string; h: number; w: number }) {
+  const router = useRouter();
+  return (
+    <a href={href} className="leaguelink" onClick={(ev) => {
+      if (ev.defaultPrevented || ev.button !== 0 || ev.metaKey || ev.ctrlKey || ev.shiftKey || ev.altKey) return;
+      ev.preventDefault();
+      router.push(href);
+    }}>
+      <rect x={0} y={0} width={w} height={h} fill="transparent" />
+      <text className="lab" x={0} y={h / 2 + 5}>{name}</text>
+    </a>
   );
 }

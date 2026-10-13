@@ -3,6 +3,8 @@
     full range, then the client switches to the address's range or the saved one in the same pass. The page holds the chart out of
     sight meanwhile (RANGE_HOLD_SCRIPT), so the full range is never painted when another one is wanted. */
 
+import { LEAGUE_CODES } from "./leagues.ts";
+
 const KEY = "spxn-range";
 
 /** The pages that keep a year range: where each is remembered (a key per page) and whether an address range also needs the hold. The home chart
@@ -14,10 +16,13 @@ export const RANGE_PAGES: Record<string, { key: string; holdForAddress: boolean 
   "/teams": { key: "spxn-range-teams", holdForAddress: false },
 };
 
+/** The league pages (/nhl, /nba ...) take a range from the address only, nothing is saved for them: they wait for an address range like the home chart. */
+const LEAGUE_ROOTS = LEAGUE_CODES.map((c) => `/${c}`);
+
 /** Runs in the document head, before the first paint. When the page holds a range the viewer wants (in the address, or saved) it sets
     data-yr-pending on <html>, and the stylesheet keeps the chart or list invisible (its height reserved) until it is drawn at that range.
-    With no script or no saved range nothing is set and the page shows as usual. The test mirrors readRaw below and runs on RANGE_PAGES only. */
-export const RANGE_HOLD_SCRIPT = `try{var P=${JSON.stringify(RANGE_PAGES)}[location.pathname];if(P){var q=new URLSearchParams(location.search),d=/^\\d{1,4}$/,u=d.test(q.get('from')||'')||d.test(q.get('to')||''),h=u&&P.holdForAddress;if(!u){try{h=/^\\d{1,4}-\\d{1,4}$/.test(localStorage.getItem(P.key)||'')}catch(e){}}if(h)document.documentElement.setAttribute('data-yr-pending','')}}catch(e){}`;
+    With no script or no saved range nothing is set and the page shows as usual. The test mirrors readRaw below and runs on RANGE_PAGES and the league pages only. */
+export const RANGE_HOLD_SCRIPT = `try{var P=${JSON.stringify(RANGE_PAGES)}[location.pathname]||(${JSON.stringify(LEAGUE_ROOTS)}.indexOf(location.pathname)>=0?{key:'',holdForAddress:true}:0);if(P){var q=new URLSearchParams(location.search),d=/^\\d{1,4}$/,u=d.test(q.get('from')||'')||d.test(q.get('to')||''),h=u&&P.holdForAddress;if(!u&&P.key){try{h=/^\\d{1,4}-\\d{1,4}$/.test(localStorage.getItem(P.key)||'')}catch(e){}}if(h)document.documentElement.setAttribute('data-yr-pending','')}}catch(e){}`;
 
 /** Holds the page's chart or list out of sight (see RANGE_HOLD_SCRIPT) for a visit made inside the site, which the head script never sees. */
 export function holdRange(): void {
@@ -125,4 +130,29 @@ export function savedRange(key: string = KEY): string {
     const m = /^(\d{1,4})-(\d{1,4})$/.exec(window.localStorage.getItem(key) ?? "");
     return m ? `${m[1]}-${m[2]}` : "";
   } catch { return ""; }
+}
+
+/** The range in the address alone ("from-to" text for parseRange, "" for none): the league pages keep nothing in storage, so a range
+    saved for the home chart never reaches them. */
+export function addressRange(): string {
+  try {
+    const q = new URLSearchParams(window.location.search);
+    const f = whole(q.get("from")), t = whole(q.get("to"));
+    return f || t ? `${f}-${t}` : "";
+  } catch { return ""; }
+}
+
+const addressListeners = new Set<() => void>();
+
+/** For useSyncExternalStore with addressRange: told when the range is chosen on the page and when history moves back or forward. */
+export function subscribeAddress(cb: () => void): () => void {
+  addressListeners.add(cb);
+  window.addEventListener("popstate", cb);
+  return () => { addressListeners.delete(cb); window.removeEventListener("popstate", cb); };
+}
+
+/** Puts the chosen range in the address and tells the subscribers; the address is the only place a league page keeps it. */
+export function chooseAddressRange(r: YearSpan, min: number, max: number): void {
+  writeAddress(r, min, max);
+  addressListeners.forEach((cb) => cb());
 }

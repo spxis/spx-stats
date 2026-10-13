@@ -29,9 +29,10 @@ export function SeasonBars({ list, lg }: { list: BarSeason[]; lg: string }) {
           <text key={s.year} x={(x(s.year) ?? 0) + x.bandwidth() / 2} y={H - 6} textAnchor="middle">{s.year}</text>
         ))}</g>
         <g>{list.map((s) => (
-          <g key={s.year} style={{ cursor: "pointer" }} onClick={() => router.push(seasonPath(lg, s.year))}
+          <g key={s.year} data-season={s.year} style={{ cursor: "pointer" }} onClick={() => router.push(seasonPath(lg, s.year))}
             onMouseMove={(ev) => tip.show(ev, <TipLines title={s.label} lines={s.none ? [say("noseason.league")] : [say("bars.tip", { games: fmt(s.games), finals: fmt(s.finals) }), s.champion ? say("tip.champion", { team: s.champion }) : null]} />)}
             onMouseLeave={tip.hide}>
+            <rect className="hit" x={(x(s.year) ?? 0) - x.step() * x.paddingInner() / 2} width={x.step()} y={m.t} height={H - m.b - m.t} fill="transparent" />
             {s.none ? <rect x={x(s.year)} width={x.bandwidth()} y={y(ticks[ticks.length - 1])} height={y(0) - y(ticks[ticks.length - 1])} fill="var(--soft)" stroke="var(--rule)" strokeDasharray="3 2" rx={2} /> : null}
             <rect x={x(s.year)} width={x.bandwidth()} y={y(s.games)} height={y(0) - y(s.games)} fill="var(--accent)" opacity={0.22} rx={2} />
             <rect x={x(s.year)} width={x.bandwidth()} y={y(s.finals)} height={y(0) - y(s.finals)} fill="var(--accent)" rx={2} />

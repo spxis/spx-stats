@@ -156,6 +156,10 @@
   .chart svg { display: block; width: 100%; height: auto; overflow: visible; }
   .chart text { font-family: var(--body); fill: var(--muted); font-size: 12px; }
   .chart .lab { fill: var(--ink); font: 600 14px var(--display); letter-spacing: .05em; }
+  .chart .leaguelink { cursor: pointer; }
+  .chart .leaguelink .lab { text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  .chart .leaguelink:hover .lab, .chart .leaguelink:focus-visible .lab { text-decoration-color: var(--ink); }
+  .chart .leaguelink:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
   .scroll { overflow-x: auto; }
   .tip { position: absolute; pointer-events: none; background: var(--panel); border: 1px solid var(--rule); box-shadow: 0 6px 20px rgba(0,0,0,.14); padding: 6px 10px; font-size: 13px; line-height: 1.4; max-width: 260px; z-index: 5; }
   .tip b { font-family: var(--display); font-size: 16px; letter-spacing: .02em; }
@@ -206,6 +210,16 @@
   .seasonlist { display: flex; flex-wrap: wrap; gap: 4px; }
   .seasonlist a { font: 500 13px/1 var(--mono); padding: 6px 7px; background: var(--panel); border: 1px solid var(--rule); text-decoration: none; }
   .seasonlist a.full { border-color: var(--accent); }
+  .seasonlist .out { opacity: .38; }
+  .seasonlist a:hover, .seasonlist .hl { border-color: var(--ink); background: color-mix(in srgb, var(--accent, var(--ink)) 22%, var(--panel)); }
+  .seasonlist .out:hover, .seasonlist .out.hl { opacity: 1; }
+  .seasonlist .noseason.hl { outline: 2px solid var(--ink); outline-offset: 1px; }
+  .leagueseasons { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
+  .leagueseasons .yr-wrap { margin-bottom: 0; }
+  .seasonsync { display: contents; }
+  .chart rect.hl { stroke: var(--ink); stroke-width: 2; }
+  .chart g.hl .hit { fill: color-mix(in srgb, var(--accent, var(--ink)) 16%, transparent); }
+  .chart g.hl rect:not(.hit) { stroke: var(--ink); stroke-width: 1.5; }
 
   .foot { max-width: 1180px; margin-inline: auto; border-top: 2px solid var(--ink); padding-block: 14px 24px; display: flex; flex-direction: column; gap: 4px; color: var(--muted); font-size: 14px; }
   .foot p { margin: 0; }

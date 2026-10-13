@@ -41,11 +41,11 @@ export const NO_SEASON_KEY = { league: "noseason.league", team: "noseason.team" 
  * `compact` is for chips, pickers and cells with no room: just the box (a dash, or the chip's own text as children), with the
  * wording only in the tooltip and the accessible name.
  */
-export function NoSeason({ kind = "league", compact = false, children }: { kind?: NoSeasonKind; compact?: boolean; children?: React.ReactNode }) {
+export function NoSeason({ kind = "league", compact = false, className, season, children }: { kind?: NoSeasonKind; compact?: boolean; className?: string; season?: number; children?: React.ReactNode }) {
   const { say } = useSpeaker();
   const label = say(NO_SEASON_KEY[kind]);
   return (
-    <span className={"noseason" + (compact ? " compact" : "")} title={label} role="img" aria-label={compact && children != null ? `${children}: ${label}` : label}>
+    <span className={"noseason" + (compact ? " compact" : "") + (className ? ` ${className}` : "")} data-season={season} title={label} role="img" aria-label={compact && children != null ? `${children}: ${label}` : label}>
       {compact ? (children ?? "–") : label}
     </span>
   );

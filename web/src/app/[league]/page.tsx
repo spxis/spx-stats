@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { LeagueHeat } from "@/components/Heatmap";
+import { LeagueSeasons } from "@/components/LeagueSeasons";
 import { SeasonBars } from "@/components/SeasonBars";
+import { SeasonSync } from "@/components/SeasonSync";
 import { LeagueAwards } from "@/components/LeagueAwards";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
 import { TeamLogo } from "@/components/TeamLogo";
 import { ChampionNote } from "@/components/ChampionNote";
 import { ChampionRow } from "@/components/ChampionRow";
-import { Badge, NoSeason, TeamLink } from "@/components/ui";
+import { Badge, TeamLink } from "@/components/ui";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
 import { logoFor } from "@/lib/brand";
@@ -70,28 +71,27 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[league]"
         <p className="note"><Link href={`/${lg}/all-time`}>{say("allTime.link")}</Link></p>
         <p className="note"><Link href={`/${lg}/alignment`}>{say("league.alignmentLink")}</Link></p>
       </section>
-      <section className="section">
-        <h2>{say("league.seasons")}</h2>
-        <LeagueHeat league={lg} seasons={list.map((x) => ({ league: x.league, year: x.year, label: x.label, games: x.games, finals: x.finals, share: x.share, champion: x.champion }))} />
-        <div className="seasonlist">
-          {list.map((x) => leagueSat(x) ? <NoSeason key={x.year} compact>{x.label}</NoSeason> : (
-            <Link key={x.year} prefetch={false} href={seasonPath(lg, x.year)} className={x.share >= 0.98 ? "full" : undefined}
-              title={x.games ? say("league.seasonTip", { finals: fmt(x.finals), games: fmt(x.games) }) : x.teams ? say("season.noSchedule") : say("league.awardsOnly")}>
-              {x.label}
-            </Link>
-          ))}
-        </div>
-      </section>
-      {withGames.length ? (
+      <SeasonSync>
         <section className="section">
-          <h2>{say("league.barsTitle")}</h2>
-          <div className="legend">
-            <span><i style={{ background: "var(--accent)" }} />{say("league.withResult")}</span>
-            <span><i style={{ background: "var(--accent)", opacity: 0.22 }} />{say("league.heldNoResult")}</span>
-          </div>
-          <SeasonBars lg={lg} list={list.filter((x) => x.games > 0 || leagueSat(x)).map((x) => ({ year: x.year, label: x.label, games: x.games, finals: x.finals, champion: x.champion, none: leagueSat(x) }))} />
+          <h2>{say("league.seasons")}</h2>
+          <LeagueSeasons league={lg}
+            seasons={list.map((x) => ({ league: x.league, year: x.year, label: x.label, games: x.games, finals: x.finals, share: x.share, champion: x.champion }))}
+            chips={list.map((x) => ({
+              year: x.year, label: x.label, href: seasonPath(lg, x.year), full: x.share >= 0.98, none: leagueSat(x),
+              title: x.games ? say("league.seasonTip", { finals: fmt(x.finals), games: fmt(x.games) }) : x.teams ? say("season.noSchedule") : say("league.awardsOnly"),
+            }))} />
         </section>
-      ) : null}
+        {withGames.length ? (
+          <section className="section">
+            <h2>{say("league.barsTitle")}</h2>
+            <div className="legend">
+              <span><i style={{ background: "var(--accent)" }} />{say("league.withResult")}</span>
+              <span><i style={{ background: "var(--accent)", opacity: 0.22 }} />{say("league.heldNoResult")}</span>
+            </div>
+            <SeasonBars lg={lg} list={list.filter((x) => x.games > 0 || leagueSat(x)).map((x) => ({ year: x.year, label: x.label, games: x.games, finals: x.finals, champion: x.champion, none: leagueSat(x) }))} />
+          </section>
+        ) : null}
+      </SeasonSync>
       <section className="section">
         <h2>{say("league.champions")}</h2>
         {champs.length ? (

@@ -92,5 +92,11 @@ test("the head script holds each page on its own saved range", () => {
   // junk and other paths
   assert.equal(held("/players", "", { "spxn-range-players": "abc" }), false);
   assert.equal(held("/players", "?from=abc", {}), false);
+  // a league page waits for an address range only: it has nothing saved, and the home range never reaches it
+  assert.equal(held("/nhl", "?from=1990&to=2005", {}), true);
+  assert.equal(held("/nfl", "?to=2005", {}), true);
+  assert.equal(held("/nhl", "", { "spxn-range": "1990-2005", "spxn-range-players": "1990-2005", "": "1990-2005" }), false);
+  assert.equal(held("/nhl", "?from=abc", {}), false);
+  assert.equal(held("/nhl/scores", "?from=1990", {}), false);
   assert.equal(held("/about", "", { "spxn-range": "1990-2005", "spxn-range-players": "1990-2005" }), false);
 });
