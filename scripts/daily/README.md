@@ -212,10 +212,17 @@ terminal final, idempotency, unmatched, invalid input, the replay equivalence, a
 
 ## Phase B (production): prepared, not run
 
-1. John's OK. Then apply `db/migrations/044_ingest_report_results.sql` and `046_ingest_writer_role.sql` to production (Supabase MCP
-   `apply_migration`, in that order; both are rerunnable). Check `ingest` is not in the project's exposed schemas (it must stay `api` only).
-2. The bulk copy brings the games, seasons, franchises and `meta.source` row `wikipedia_daily` to production (insert-only,
-   `scripts/sync/compare.py`), so the franchise keys and games exist there before anything is reported.
+Main now says production changes only through approved data releases (AGENTS.md section 8, item 5; `scripts/release/README.md`). Daily
+results on DS1 (`core.game`, `meta.verification`, `meta.data_issue`) are ordinary tables in a release, so **the default path to
+production needs nothing from this work**. `ingest` is not in the release schemas (core, meta, ref) and never leaves DS1 that way. What
+follows is the second option, the same function on production, prepared so John can choose; it adds a write path beside releases and is
+**not to be run without his decision**.
+
+1. John's decision, then apply `db/migrations/044_ingest_report_results.sql` and `046_ingest_writer_role.sql` to production (as `ds1_step`
+   style migrations or the Supabase MCP `apply_migration`, in that order; both are rerunnable). Check `ingest` is not in the project's
+   exposed schemas (it must stay `api` only).
+2. A release brings the games, seasons, franchises and the `meta.source` row `wikipedia_daily` to production first, so the franchise keys
+   and games exist there before anything is reported.
 3. `bash scripts/daily/ingest-writer-login.sh production` (needs `SUPABASE_ACCESS_TOKEN` and `SPX_PROD_POOLER_HOST`): makes a 40-character
    password with openssl, `alter role ingest_writer login password ... connection limit 3` through the Management API, stores it in the Mac
    keychain item `spx-stats ingest_writer production`, proves it by calling `report_results('[]')` and by failing a `select` on `core.game`.
@@ -224,7 +231,8 @@ terminal final, idempotency, unmatched, invalid input, the replay equivalence, a
    (mode 0600, mounted read-only as a Docker secret and read into `PGPASSWORD` by the entrypoint); the header of the script has the one
    command that copies it there from the keychain without showing it.
 5. Point `run.py` at production: a `--target production` that reports only (`report.sql` with a connection as `ingest_writer`, no archive,
-   no staging load, no `152`); the bulk path for new games stays a John-approved insert-only copy followed by `select ingest.replay(true, true)`.
+   no staging load, no `152`); games the report finds no row for need a release first, then `select ingest.replay(true, true)` as the owner.
+   Not written yet.
 
 ## Known gaps (stage 2)
 
@@ -239,9 +247,9 @@ terminal final, idempotency, unmatched, invalid input, the replay equivalence, a
 
 ## Stage 3 (not built)
 
-Runs once a day in Docker on DS1 (about 10:00 ET, re-checking the last 7 days for late edits), DS15 as watchdog. **Production** needs
-John's OK and is phase B of the ingest API (above): the same function, applied from the same migration file, called as `ingest_writer`;
-the games it needs come from the insert-only bulk copy (`scripts/sync/compare.py` finds what differs).
+Runs once a day in Docker on DS1 (about 10:00 ET, re-checking the last 7 days for late edits), DS15 as watchdog. **Production** gets the
+results like any other data, in a release of the tables DS1 changed (AGENTS.md section 8). Calling the same function on production is
+phase B of the ingest API (above), a second write path that needs John's decision.
 
 ## Files
 
