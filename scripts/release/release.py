@@ -38,7 +38,16 @@ MAX_DB_BYTES = int(float(os.environ.get("RELEASE_MAX_DB_MB", "450")) * 1024 * 10
 SHRINK_LIMIT = 0.05
 MAIN_REF = os.environ.get("RELEASE_MAIN_REF", "origin/main")
 TABLE_RE = re.compile(r"^(core|meta|ref)\.[a-z_][a-z0-9_]*$")
-RESERVED = {"meta.data_release", "meta.sync_status", "meta.release_secret"}
+RESERVED = {"meta.data_release", "meta.sync_status", "meta.release_secret", "meta.auto_approval"}
+PUBLISH_KINDS = ("publish", "daily_scores")
+AUTO_ACTOR = "auto:daily-scores"
+AUTO_HOLD_MINUTES = 10
+AUTO_TABLES = ("core.game", "meta.verification", "meta.data_issue")
+AUTO_GAME_COLUMNS = {"status", "home_score", "away_score", "went_to_overtime", "decided_by_shootout", "overtime_periods",
+                     "decided_by", "updated_at"}
+AUTO_MAX_GAMES = 500
+AUTO_MAX_SIDE_ROWS = 2000
+AUTO_DRIFT_DAYS = 14
 STEP_FILE_RE = re.compile(r"^db/(migrations|build)/[A-Za-z0-9_.-]+\.sql$")
 REQUEST_BYTES = 900_000
 ROWS_PER_INSERT = 500
@@ -292,12 +301,12 @@ def insert_sql(row):
     return "insert into meta.data_release (%s) values (%s)" % (",".join(cols), ",".join(vals))
 
 
-def update_sql(rid, fields, from_status=None):
+def update_sql(rid, fields, from_status=None, extra=None):
     sets = []
     for k, v in fields.items():
         assert k in RELEASE_FIELDS and k != "id"
         sets.append("%s = %s" % (k, "now()" if v == "NOW" else text_array(v) if k == "tables" else lit(v)))
-    where = "id = %d" % rid + (" and status = %s" % C.ql(from_status) if from_status else "")
+    where = "id = %d" % rid + (" and status = %s" % C.ql(from_status) if from_status else "") + (" and (%s)" % extra if extra else "")
     return ("with u as (update meta.data_release set %s where %s returning id) select count(*) as j from u"
             % (", ".join(sets), where))
 
@@ -342,7 +351,8 @@ def valid_tables(raw):
     return names
 
 
-def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, created_by=None, diff_cache=None, quiet=False):
+def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, created_by=None, diff_cache=None, quiet=False,
+                    kind="publish"):
     checks = run_checks(ctx.ds1)
     if diff_cache is None:
         diffs, blockers, warnings = diff_tables(ctx, names)
@@ -356,10 +366,12 @@ def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, c
     if preview["totals"]["add"] + preview["totals"]["change"] + preview["totals"]["remove"] == 0 and not preview["blockers"]:
         raise Refused("DS1 and production already match for these tables: nothing to release")
     options = {"replace": True} if replace else {}
+    if kind == "daily_scores":
+        preview["auto"] = auto_review(ctx, names, diffs, preview)
     sha = head_sha()
-    row = {"kind": "publish", "title": title, "notes": notes, "ticket": ticket, "tables": names, "options": options,
+    row = {"kind": kind, "title": title, "notes": notes, "ticket": ticket, "tables": names, "options": options,
            "status": "pending", "preview": preview, "checks": checks, "git_sha": sha,
-           "digest": digest_of("publish", names, options, sha, preview)}
+           "digest": digest_of(kind, names, options, sha, preview)}
     if created_by:
         row["created_by"] = created_by
     row = create_release(ctx, row)
@@ -381,6 +393,13 @@ def print_preview(row):
         print("  BLOCKER: " + b)
     for w in pv.get("warnings") or []:
         print("  warning: " + w)
+    auto = pv.get("auto")
+    if auto and auto.get("eligible"):
+        print("  auto-approval: eligible (%d games); approved by %s %d minutes after it was prepared unless held or paused"
+              % (auto.get("games", 0), AUTO_ACTOR, auto.get("hold_minutes", AUTO_HOLD_MINUTES)))
+    elif auto:
+        for why in auto.get("reasons") or []:
+            print("  NOT auto-approved: " + why)
     print("  status: pending%s; approve it at /admin/data" % (" (blocked, cannot be approved)" if pv.get("blockers") else ""))
 
 
@@ -685,29 +704,237 @@ def verify_equal(ctx, name, t, want_buckets):
     return C.bucket_pass(ctx.prod, t, n) == want_buckets
 
 
+# ---------------------------------------------------------------------------------------------------- automatic approval
+
+def short(ids, n=5):
+    ids = [str(i) for i in ids]
+    return ", ".join(ids[:n]) + (" and %d more" % (len(ids) - n) if len(ids) > n else "")
+
+
+def policy_reasons(ctx, names, diffs):
+    """Why a daily_scores release may NOT be approved automatically; an empty list means it meets the policy.
+    The policy: only core.game, meta.verification and meta.data_issue; games change only in status, score, overtime and
+    shootout fields (and updated_at), only games that are not final in production, no inserts, no deletes, at most 500
+    games; verification and data issue rows are inserts only and only about those games."""
+    why = []
+    outside = [n for n in names if n not in AUTO_TABLES]
+    if outside:
+        why.append("tables outside the policy: " + ", ".join(outside))
+    if "core.game" not in names:
+        why.append("core.game is not in the release")
+    for n in names:
+        if n in AUTO_TABLES and n not in diffs:
+            why.append("%s could not be compared" % n)
+    games = {}
+    if "core.game" in diffs:
+        t, d = diffs["core.game"]
+        if d["only1"]:
+            why.append("%d new games would be inserted (only updates are allowed)" % len(d["only1"]))
+        if d["only2"]:
+            why.append("%d games would be deleted" % len(d["only2"]))
+        if len(d["differ"]) > AUTO_MAX_GAMES:
+            why.append("%d games change (the limit is %d)" % (len(d["differ"]), AUTO_MAX_GAMES))
+        elif d["differ"]:
+            a, b = C.fetch_rows(ctx.ds1, t, d["differ"]), C.fetch_rows(ctx.prod, t, d["differ"])
+            final, other = [], {}
+            for k in sorted(d["differ"]):
+                ra, rb = a.get(k), b.get(k)
+                if ra is None or rb is None:
+                    why.append("game %s could not be read on both sides" % k[0])
+                    continue
+                games[k[0]] = ra.get("source_key")
+                if rb.get("status") == "final":
+                    final.append(k[0])
+                for c in t.common:
+                    if ra.get(c) != rb.get(c) and c not in AUTO_GAME_COLUMNS:
+                        other.setdefault(c, []).append(k[0])
+            if final:
+                why.append("%d games are already final in production (game ids %s)" % (len(final), short(final)))
+            for c, ids in sorted(other.items()):
+                why.append("column %s changes on %d games (game ids %s); only status, scores, overtime and shootout may change"
+                           % (c, len(ids), short(ids)))
+    for name, kind, field, allowed in (("meta.verification", "entity_kind", "entity_id", set(games)),
+                                       ("meta.data_issue", "entity_kind", "entity_key", {v for v in games.values() if v})):
+        if name not in diffs:
+            continue
+        t, d = diffs[name]
+        if d["only2"] or d["differ"]:
+            why.append("%s: %d rows would change or be removed (only new rows are allowed)" % (name, len(d["only2"]) + len(d["differ"])))
+        if len(d["only1"]) > AUTO_MAX_SIDE_ROWS:
+            why.append("%s: %d new rows (the limit is %d)" % (name, len(d["only1"]), AUTO_MAX_SIDE_ROWS))
+        elif d["only1"]:
+            rows = C.fetch_rows(ctx.ds1, t, d["only1"])
+            bad = [r for r in rows.values() if not (r.get(kind) == "game" and r.get(field) in allowed)]
+            if bad or len(rows) != len(d["only1"]):
+                why.append("%s: %d new rows are not about the games that change" % (name, len(bad) + len(d["only1"]) - len(rows)))
+    return why
+
+
+def auto_review(ctx, names, diffs, preview):
+    reasons = ["blocked: " + b for b in preview["blockers"]] + policy_reasons(ctx, names, diffs)
+    games = len(diffs["core.game"][1]["differ"]) if "core.game" in diffs else 0
+    return {"policy": "daily_scores", "eligible": not reasons, "reasons": reasons, "games": games,
+            "hold_minutes": AUTO_HOLD_MINUTES, "checked_at": datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S")}
+
+
+def auto_gate(ctx, rel):
+    """The policy now, on the live data: checks, comparison, unchanged since the preview, and the policy itself.
+    Returns (reasons, pre); no reasons means the release may be approved or applied automatically."""
+    if rel["kind"] != "daily_scores":
+        return ["only a daily_scores release can be approved automatically"], None
+    names = list(rel["tables"])
+    checks = run_checks(ctx.ds1)
+    diffs, blockers, warnings = diff_tables(ctx, names)
+    now = build_preview(ctx, names, False, diffs, blockers, warnings)
+    now["blockers"] = check_blockers(checks) + now["blockers"]
+    reasons = ["blocked: " + b for b in now["blockers"]]
+    pv = rel["preview"] or {}
+    for n in names:
+        a, b = (pv.get("tables") or {}).get(n) or {}, now["tables"].get(n) or {}
+        if (a.get("ds1_fp"), a.get("prod_fp")) != (b.get("ds1_fp"), b.get("prod_fp")):
+            reasons.append("%s changed since the preview (DS1 or production moved): prepare the release again" % n)
+    reasons += policy_reasons(ctx, names, diffs)
+    return reasons, (diffs, now)
+
+
+def read_flag(ctx):
+    """The global auto-approval switch on production. Raises when it cannot be read, and callers then do nothing."""
+    rows = ctx.prod.run("select paused, paused_at, paused_by, reason from meta.auto_approval")
+    if len(rows) != 1:
+        raise RuntimeError("meta.auto_approval has %d rows" % len(rows))
+    return rows[0]
+
+
+def mirror_flag(ctx, flag):
+    try:
+        ctx.w.exec("update meta.auto_approval set paused = %s, paused_at = %s, paused_by = %s, reason = %s"
+                   % (lit(flag["paused"]), lit(flag["paused_at"]), lit(flag["paused_by"]), lit(flag["reason"])))
+    except Exception as e:  # noqa: BLE001 - the mirror is only a record
+        log("could not mirror the auto-approval switch on DS1: " + scrub(e))
+
+
+def pause_auto(ctx, reason):
+    """Hold every automatic approval, as 'system'. Keeps the first reason when already paused."""
+    reason = scrub(reason)[:290]
+    log("pausing automatic approvals: " + reason)
+    sql = ("with u as (update meta.auto_approval set paused = true, paused_at = now(), paused_by = 'system', reason = %s "
+           "where id and not paused returning 1) select count(*) as j from u" % C.ql(reason))
+    try:
+        prod_exec(ctx.prod, sql)
+    except Exception as e:  # noqa: BLE001 - never hide the failure that caused the pause
+        log("COULD NOT PAUSE AUTOMATIC APPROVALS on production: " + scrub(e))
+        return
+    try:
+        mirror_flag(ctx, read_flag(ctx))
+    except Exception as e:  # noqa: BLE001
+        log("could not read the switch back: " + scrub(e))
+
+
+def mark_not_auto(ctx, rel, reasons):
+    pv = dict(rel["preview"] or {})
+    pv["auto"] = dict(pv.get("auto") or {}, eligible=False, reasons=reasons,
+                      checked_at=datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"))
+    set_release(ctx, rel["id"], {"preview": pv}, from_status="pending")
+    log("release %s is not auto-approved: %s" % (rel["number"], "; ".join(reasons)[:400]))
+
+
+def is_auto(approved_by):
+    return str(approved_by or "").lower().startswith("auto:")
+
+
+def same_release(p, mine):
+    return (p["digest"] == mine["digest"] and p["kind"] == mine["kind"] and sorted(p["tables"]) == sorted(mine["tables"])
+            and (p["options"] or {}) == (mine["options"] or {}))
+
+
+def auto_pass(ctx):
+    """Approve, as AUTO_ACTOR, the oldest pending daily_scores release that meets the policy now, is flagged eligible, was
+    not held by John, is older than the hold, and while automatic approvals are not paused. One release per run: the next
+    one is checked against the data after the first has been applied. The site never does this."""
+    flag = read_flag(ctx)
+    mirror_flag(ctx, flag)
+    if flag["paused"]:
+        log("automatic approvals are paused since %s by %s (%s)" % (flag["paused_at"], flag["paused_by"], flag["reason"]))
+        return
+    for mine in ctx.ds1.run("select * from meta.data_release where status = 'pending' and kind = 'daily_scores' "
+                            "and (preview #>> '{auto,eligible}') = 'true' order by id"):
+        p = ctx.prod.run("select id, number, kind, status, digest, tables, options, held_at, "
+                         "(created_at + interval '%d minutes' <= now()) as due from meta.data_release where id = %d"
+                         % (AUTO_HOLD_MINUTES, mine["id"]))
+        if not p or p[0]["status"] != "pending" or p[0]["held_at"] or not p[0]["due"]:
+            continue
+        if not same_release(p[0], mine) or digest_check(mine) is False:
+            log("release %s: production's copy does not match DS1's copy: not auto-approving" % mine["number"])
+            continue
+        reasons, _ = auto_gate(ctx, mine)
+        if reasons:
+            mark_not_auto(ctx, mine, reasons)
+            continue
+        guard = "held_at is null and digest = %s and (select paused is false from meta.auto_approval)" % C.ql(mine["digest"])
+        if prod_exec(ctx.prod, update_sql(mine["id"], {"status": "approved", "approved_by": AUTO_ACTOR, "approved_at": "NOW"}, "pending", guard)):
+            log("release %s approved automatically (%s)" % (mine["number"], AUTO_ACTOR))
+            return
+
+
+def row_hashes(side, t, keys):
+    """{key tuple: row hash} for the given keys, hashed as compare.py does."""
+    kj = "json_build_array(%s)" % ",".join(C.cexpr(k, t.types[k]) for k in t.pk)
+    h = "md5(row(%s)::text)" % ",".join(C.cexpr(c, t.types[c]) for c in t.common)
+    out = {}
+    keys = sorted(keys)
+    for i in range(0, len(keys), 500):
+        for r in side.run("select %s as k, %s as h from %s where %s" % (kj, h, t.fq, t.key_filter(keys[i:i + 500]))):
+            out[tuple(r["k"])] = r["h"]
+    return out
+
+
+def auto_drift_mismatch(ctx, diffs):
+    """Rows an automatic release wrote that production no longer holds as written, found by the drift comparison.
+    DS1 moving ahead of production is not a mismatch: production still holds what the release wrote."""
+    touched = {}
+    for r in ctx.ds1.run("select number, result from meta.data_release where kind = 'daily_scores' and status = 'done' "
+                         "and approved_by like 'auto:%%' and finished_at > now() - interval '%d days' order by id" % AUTO_DRIFT_DAYS):
+        for tbl, m in ((r["result"] or {}).get("touched") or {}).items():
+            for ks, h in m.items():
+                touched[(tbl, tuple(json.loads(ks)))] = (r["number"], h)
+    bad = []
+    for n, (t, d) in diffs.items():
+        drifting = set(d["only1"]) | set(d["only2"]) | set(d["differ"])
+        keys = [k for (tbl, k) in touched if tbl == n and k in drifting]
+        if not keys:
+            continue
+        now = row_hashes(ctx.prod, t, keys)
+        bad += [(touched[(n, k)][0], n, k) for k in keys if now.get(k) != touched[(n, k)][1]]
+    return bad
+
+
 # ---------------------------------------------------------------------------------------------------- run: publish
 
-def run_publish(ctx, rel):
+def run_publish(ctx, rel, pre=None):
+    """pre: (diffs, now) from auto_gate, which has just done the checks and the comparison below on the same data."""
     started = time.time()
     names = list(rel["tables"])
     options = rel["options"] or {}
     replace = bool(options.get("replace"))
     pv = rel["preview"]
-    checks = run_checks(ctx.ds1)
-    problems = check_blockers(checks)
-    if problems:
-        raise Refused("checks fail now: " + "; ".join(problems))
-    diffs, blockers, warnings = diff_tables(ctx, names)
-    for n in names:
-        if blockers[n]:
-            raise Refused("%s: %s" % (n, "; ".join(blockers[n])))
-    now = build_preview(ctx, names, replace, diffs, blockers, warnings)
-    for n in names:
-        a, b = pv["tables"][n], now["tables"][n]
-        if (a["ds1_fp"], a["prod_fp"]) != (b["ds1_fp"], b["prod_fp"]):
-            raise Refused("%s changed since the preview (DS1 or production moved): prepare the release again" % n)
-    if now["blockers"]:
-        raise Refused("; ".join(now["blockers"]))
+    if pre:
+        diffs, now = pre
+    else:
+        checks = run_checks(ctx.ds1)
+        problems = check_blockers(checks)
+        if problems:
+            raise Refused("checks fail now: " + "; ".join(problems))
+        diffs, blockers, warnings = diff_tables(ctx, names)
+        for n in names:
+            if blockers[n]:
+                raise Refused("%s: %s" % (n, "; ".join(blockers[n])))
+        now = build_preview(ctx, names, replace, diffs, blockers, warnings)
+        for n in names:
+            a, b = pv["tables"][n], now["tables"][n]
+            if (a["ds1_fp"], a["prod_fp"]) != (b["ds1_fp"], b["prod_fp"]):
+                raise Refused("%s changed since the preview (DS1 or production moved): prepare the release again" % n)
+        if now["blockers"]:
+            raise Refused("; ".join(now["blockers"]))
 
     order = ordered(ctx, names)
     items = [(n, diffs[n][0], diffs[n][1]) for n in order]
@@ -740,11 +967,17 @@ def run_publish(ctx, rel):
         prod_exec(ctx.prod, "select api.refresh()")
     except Exception as e:  # noqa: BLE001
         refresh = "failed: " + scrub(e)[:200]
-    return {"tables": {n: {"add": now["tables"][n]["add"], "change": now["tables"][n]["change"], "remove": now["tables"][n]["remove"],
-                           "rows_before": now["tables"][n]["prod_rows"], "rows_after": now["tables"][n]["ds1_rows"]} for n in names},
-            "totals": {k: now["totals"][k] for k in ("add", "change", "remove")},
-            "backup_schema": schema, "before_fp": before_fp, "verified": True, "refresh": refresh,
-            "seconds": round(time.time() - started)}
+    result = {"tables": {n: {"add": now["tables"][n]["add"], "change": now["tables"][n]["change"], "remove": now["tables"][n]["remove"],
+                             "rows_before": now["tables"][n]["prod_rows"], "rows_after": now["tables"][n]["ds1_rows"]} for n in names},
+              "totals": {k: now["totals"][k] for k in ("add", "change", "remove")},
+              "backup_schema": schema, "before_fp": before_fp, "verified": True, "refresh": refresh,
+              "seconds": round(time.time() - started)}
+    if rel["kind"] == "daily_scores":
+        result["touched"] = {}
+        for n, t, d in items:
+            keys = list(d["only1"]) + list(d["differ"])
+            result["touched"][n] = {json.dumps(list(k)): h for k, h in row_hashes(ctx.prod, t, keys).items()}
+    return result
 
 
 # ---------------------------------------------------------------------------------------------------- run: ds1_step
@@ -773,7 +1006,7 @@ def run_step_release(ctx, rel):
 # ---------------------------------------------------------------------------------------------------- rollback
 
 def later_releases(ctx, orig):
-    return ctx.ds1.run("select number from meta.data_release where id > %d and status = 'done' and kind in ('publish', 'rollback') "
+    return ctx.ds1.run("select number from meta.data_release where id > %d and status = 'done' and kind in ('publish', 'rollback', 'daily_scores') "
                        "and tables && %s order by id" % (orig["id"], text_array(orig["tables"])))
 
 
@@ -783,7 +1016,7 @@ def prepare_rollback(ctx, number, title=None, notes=None, ticket=None):
         raise Refused("no release %s" % number)
     orig = r[0]
     blockers = []
-    if orig["kind"] != "publish" or orig["status"] != "done":
+    if orig["kind"] not in PUBLISH_KINDS or orig["status"] != "done":
         blockers.append("only a finished publish release can be rolled back")
     later = later_releases(ctx, orig) if not blockers else []
     if later:
@@ -838,7 +1071,7 @@ def run_rollback(ctx, rel):
     started = time.time()
     number = rel["options"]["rollback_of"]
     orig = ctx.ds1.run("select * from meta.data_release where number = %s" % C.ql(number))[0]
-    if orig["kind"] != "publish" or orig["status"] != "done":
+    if orig["kind"] not in PUBLISH_KINDS or orig["status"] != "done":
         raise Refused("release %s is not a finished publish release" % number)
     later = later_releases(ctx, orig)
     if later:
@@ -865,11 +1098,17 @@ def cmd_run(ctx, args):
     except OSError:
         log("another run is in progress")
         return 0
-    stale = ctx.ds1.run("select id from meta.data_release where status = 'running'")
+    stale = ctx.ds1.run("select id, number, approved_by from meta.data_release where status = 'running'")
     for r in stale:
         log("release id %d was left running by a runner that stopped: marking it failed" % r["id"])
         set_release(ctx, r["id"], {"status": "failed", "finished_at": "NOW",
                                    "error": "The runner stopped while this release was running. Check production with the drift report."})
+        if is_auto(r["approved_by"]):
+            pause_auto(ctx, "Automatic release %s was left running by a runner that stopped." % r["number"])
+    try:
+        auto_pass(ctx)
+    except Exception as e:  # noqa: BLE001 - a missing migration or a network error must not stop the manual releases
+        log("automatic approval step skipped: " + scrub(e))
     asked = ctx.prod.run("select id, number, kind, status, digest, tables, options, approved_by, approved_at "
                          "from meta.data_release where status in ('approved', 'rejected') order by id")
     did = 0
@@ -877,6 +1116,8 @@ def cmd_run(ctx, args):
         mine = release_by_id(ctx.ds1, p["id"])
         if mine is None or mine["number"] != p["number"]:
             log("production has release %s that DS1 does not know: refusing it" % p["number"])
+            if is_auto(p["approved_by"]):
+                pause_auto(ctx, "Production has an automatically approved release (%s) that DS1 never prepared." % p["number"])
             prod_exec(ctx.prod, update_sql(p["id"], {"status": "failed", "finished_at": "NOW",
                                                      "error": "DS1 has no such release; refused."}, "approved"))
             continue
@@ -888,29 +1129,57 @@ def cmd_run(ctx, args):
         if p["status"] == "rejected":
             ctx.w.exec(update_sql(mine["id"], {"status": "rejected", "approved_by": p["approved_by"], "approved_at": p["approved_at"]}, "pending"))
             continue
-        same = (p["digest"] == mine["digest"] and p["kind"] == mine["kind"] and sorted(p["tables"]) == sorted(mine["tables"])
-                and (p["options"] or {}) == (mine["options"] or {}))
-        if not same or digest_check(mine) is False:
+        auto = is_auto(p["approved_by"])
+        if not same_release(p, mine) or digest_check(mine) is False:
             log("release %s: production's copy does not match DS1's copy: refusing it" % p["number"])
             set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW",
                                           "error": "The approved release does not match the copy on DS1; refused."})
+            if auto:
+                pause_auto(ctx, "Automatically approved release %s does not match DS1's copy." % p["number"])
             continue
-        if not prod_exec(ctx.prod, update_sql(p["id"], {"status": "running", "started_at": "NOW", "approved_by": p["approved_by"]}, "approved")):
+        pre, guard = None, None
+        if auto:
+            if mine["kind"] != "daily_scores" or p["approved_by"] != AUTO_ACTOR:
+                log("release %s: only daily_scores can be approved automatically: refusing it" % p["number"])
+                set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW",
+                                              "error": "Refused: automatic approval is only for daily_scores releases."})
+                pause_auto(ctx, "Release %s was approved automatically but is not a daily_scores release." % p["number"])
+                continue
+            try:
+                flag = read_flag(ctx)
+                reasons, pre = ([], None) if flag["paused"] else auto_gate(ctx, mine)
+            except Exception as e:  # noqa: BLE001 - cannot tell, so do not apply; it stays approved and is looked at again
+                log("release %s: could not check the automatic approval, leaving it: %s" % (p["number"], scrub(e)))
+                continue
+            if flag["paused"] or reasons:
+                prod_exec(ctx.prod, update_sql(p["id"], {"status": "pending", "approved_by": None, "approved_at": None}, "approved",
+                                               "approved_by like 'auto:%'"))
+                if flag["paused"]:
+                    log("release %s: automatic approvals are paused, so it goes back to pending" % p["number"])
+                else:
+                    mark_not_auto(ctx, mine, reasons)
+                continue
+            guard = "held_at is null and (select paused is false from meta.auto_approval)"
+        if not prod_exec(ctx.prod, update_sql(p["id"], {"status": "running", "started_at": "NOW", "approved_by": p["approved_by"]}, "approved", guard)):
             continue
         ctx.w.exec(update_sql(mine["id"], {"status": "running", "started_at": "NOW", "approved_by": p["approved_by"],
                                            "approved_at": p["approved_at"]}))
         log("running release %s (%s): %s" % (mine["number"], mine["kind"], mine["title"]))
         try:
-            handler = {"publish": run_publish, "ds1_step": run_step_release, "rollback": run_rollback}[mine["kind"]]
-            result = handler(ctx, mine)
+            handler = {"publish": run_publish, "daily_scores": run_publish, "ds1_step": run_step_release, "rollback": run_rollback}[mine["kind"]]
+            result = handler(ctx, mine, pre) if mine["kind"] in PUBLISH_KINDS else handler(ctx, mine)
             set_release(ctx, mine["id"], {"status": "done", "finished_at": "NOW", "result": result, "error": None})
             log("release %s done" % mine["number"])
         except Refused as e:
             set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW", "error": "Refused: " + scrub(e)})
             log("release %s refused: %s" % (mine["number"], scrub(e)))
+            if auto:
+                pause_auto(ctx, "Automatic release %s was refused: %s" % (mine["number"], scrub(e)))
         except Exception as e:  # noqa: BLE001 - every failure is recorded
             set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW", "error": scrub(e)})
             log("release %s failed: %s" % (mine["number"], scrub(e)))
+            if auto:
+                pause_auto(ctx, "Automatic release %s failed: %s" % (mine["number"], scrub(e)))
         did += 1
     if not did:
         log("nothing approved")
@@ -953,6 +1222,13 @@ def cmd_drift(ctx, args):
         else:
             status.append((n, d["ds1"], d["prod"], "same", None))
         log("%-30s %s" % (n, status[-1][3]))
+    try:
+        bad = auto_drift_mismatch(ctx, diffs)
+        if bad:
+            pause_auto(ctx, "Drift check: %d rows written by automatic releases differ in production (release %s, %s %s)"
+                       % (len(bad), bad[0][0], bad[0][1], "/".join(bad[0][2])))
+    except Exception as e:  # noqa: BLE001 - the drift report itself must still be written
+        log("could not compare the rows automatic releases wrote: " + scrub(e))
     rows = ",\n".join("(%s, %s, %s, %s, now(), %s)" % (C.ql(n), lit(a), lit(b), C.ql(s), lit(det)) for n, a, b, s, det in status)
     sql = ("delete from meta.sync_status;\ninsert into meta.sync_status (table_name, ds1_rows, prod_rows, state, checked_at, detail) values\n%s" % rows)
     ctx.w.exec(sql)
@@ -979,7 +1255,14 @@ def cmd_prepare(ctx, args):
         if not args.file:
             raise SystemExit("--file is required for a ds1_step")
         prepare_step(ctx, args.title, args.file, args.notes, args.ticket)
+    elif args.kind == "daily_scores":
+        if args.replace:
+            raise SystemExit("--replace is not allowed for a daily_scores release")
+        title = args.title or "Daily scores %s" % datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
+        prepare_publish(ctx, title, valid_tables(args.tables or ",".join(AUTO_TABLES)), args.notes, args.ticket, kind="daily_scores")
     else:
+        if not args.title:
+            raise SystemExit("--title is required")
         prepare_publish(ctx, args.title, valid_tables(args.tables or ""), args.notes, args.ticket, replace=args.replace)
     return 0
 
@@ -1011,9 +1294,10 @@ def main():
     ap.add_argument("--by", help="who prepared it (default release.py)")
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("prepare")
-    p.add_argument("--title", required=True)
+    p.add_argument("--title", help="required except for daily_scores (default: Daily scores <date>)")
     p.add_argument("--tables", help="comma-separated schema.table list (publish)")
-    p.add_argument("--kind", choices=["publish", "ds1_step"], default="publish")
+    p.add_argument("--kind", choices=["publish", "ds1_step", "daily_scores"], default="publish",
+                   help="daily_scores: tables default to core.game,meta.verification,meta.data_issue; approves itself when it meets the policy")
     p.add_argument("--file", help="ds1_step: db/migrations/NNN.sql or db/build/NNN.sql, committed and pushed")
     p.add_argument("--ticket")
     p.add_argument("--notes")
