@@ -190,6 +190,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       <section className="head fade">
         <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
           <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
+          <Link href={`${seasonPath(lg, y)}/world`} prefetch={false}>{say("country.seasonNavLink")}</Link>
           {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
         </>} />
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>

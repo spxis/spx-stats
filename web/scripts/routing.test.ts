@@ -46,6 +46,10 @@ test("a bare address is the static copy, in the reader's language", () => {
   assert.equal(route({ path: "/venues" }), "/en/s/venues");
   assert.equal(route({ path: "/venues", query: { league: "nhl", status: "former", nat: "CA" } }), "/en/s/venues");
   assert.equal(route({ path: "/city/vancouver" }), "/en/s/city/vancouver");
+  assert.equal(route({ path: "/countries" }), "/en/s/countries");
+  assert.equal(route({ path: "/country/CA" }), "/en/s/country/CA");
+  assert.equal(route({ path: "/mlb/world" }), "/en/s/mlb/world");
+  assert.equal(route({ path: "/nhl/2025-26/world" }), "/en/s/nhl/2025-26/world");
 });
 
 test("the language cookie decides first, then Accept-Language, then English", () => {
@@ -72,6 +76,9 @@ test("an address with a query the pages read is drawn for the request; one with 
   assert.equal(route({ path: "/nhl/2012-13", query: { sort_games: "date.desc" }, cookie: "spxn-locale=ja" }), "/ja/q/nhl/2012-13");
   assert.equal(route({ path: "/players", query: { q: "gretzky" } }), "/en/q/players");
   assert.equal(route({ path: "/city/vancouver", query: { from: "1990" } }), "/en/q/city/vancouver");
+  assert.equal(route({ path: "/country/CA", query: { sort_leagues: "players.desc" } }), "/en/q/country/CA");
+  assert.equal(route({ path: "/mlb/world", query: { sort_countries: "n.desc" } }), "/en/q/mlb/world");
+  assert.equal(route({ path: "/countries", query: { sort_countries: "n.desc" } }), "/en/s/countries");
   assert.equal(route({ path: "/cities", query: { from: "1990", sort: "x" } }), "/en/s/cities");
   assert.equal(route({ path: "/worldcup/2022" }), "/en/s/worldcup/2022");
   assert.equal(route({ path: "/worldcup/2022", query: { sort_games: "date.desc" }, cookie: "spxn-locale=fr" }), "/fr/q/worldcup/2022");
@@ -107,7 +114,7 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.equal(route({ path: "/wp-login.php" }), "/en/q/wp-login.php");
   assert.equal(route({ path: "/xx/yy/zz", cookie: "spxn-locale=fr" }), "/fr/q/xx/yy/zz");
   assert.equal(route({ path: "/about/more" }), "/en/q/about/more");
-  assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue", "worldcup"]);
+  assert.deepEqual([...PAGE_ROOTS], ["nhl", "nba", "mlb", "nfl", "cfl", "players", "teams", "city", "venue", "worldcup", "country"]);
 });
 
 test("a rewrite's own result is never rewritten again, and the language tree is closed to readers", () => {

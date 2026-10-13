@@ -54,6 +54,7 @@ export async function SiteFooter() {
             <Link href="/teams">{say("nav.teams")}</Link>
             <Link href="/players">{say("nav.players")}</Link>
             <Link href="/venues">{say("nav.venues")}</Link>
+            <Link href="/countries">{say("nav.countries")}</Link>
             <Link href="/sources">{say("nav.sources")}</Link>
             <Link href="/quality">{say("nav.quality")}</Link>
             <Link href="/logos">{say("nav.logos")}</Link>

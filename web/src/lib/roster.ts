@@ -20,7 +20,7 @@ export interface RosterPlayer {
   pos: string | null;
   /** Every position the player holds, each as short as it can be written, joined with "/" ("P/DH"); the main one alone when no list is known. */
   allPos: string | null;
-  /** The country code of the player's nationality, else of the birthplace; null when neither is known. */
+  /** The country code of the player's birthplace, else of his nationality (the same country api.player_index.country gives); null when neither is known. */
   nat: string | null;
   group: RosterGroup;
   /** The regular-season counting stats of the group's kind (skater, goalie, batting or pitching). */
@@ -46,7 +46,7 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
     const ids = [...new Set(stats.map((s) => s.person_id))];
     const people = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,positions,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
     const nats = new Map((await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code`, natSchema)
-      .catch((e) => { if (!(e instanceof ApiError)) throw e; return []; })).map((n) => [n.person_id, n.nationality_code ?? n.birth_country_code]));
+      .catch((e) => { if (!(e instanceof ApiError)) throw e; return []; })).map((n) => [n.person_id, n.birth_country_code ?? n.nationality_code]));
     const out: RosterPlayer[] = [];
     for (const id of ids) {
       const mine = stats.filter((s) => s.person_id === id);

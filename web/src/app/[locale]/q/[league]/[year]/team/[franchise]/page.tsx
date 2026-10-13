@@ -8,6 +8,7 @@ import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamFlow } from "@/components/TeamFlow";
+import { TeamCountries } from "@/components/TeamCountries";
 import { TeamRoster } from "@/components/TeamRoster";
 import { TeamStaff } from "@/components/TeamStaff";
 import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
@@ -210,6 +211,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
       {st ? <Suspense fallback={null}><TeamStaff lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}
+      {st ? <Suspense fallback={null}><TeamCountries lg={lg} year={y} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       <Suspense fallback={null}><TeamFlow lg={lg} year={y} f={f} name={name} /></Suspense>
       <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}

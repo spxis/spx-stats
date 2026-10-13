@@ -562,6 +562,13 @@ Ask John before deleting or overwriting data. Production changes only through ap
   `ALWAYS_STATIC`, `city` in `PAGE_ROOTS`, `q/city/[slug]` is the twin for an address with another page's query key). Which city a club season
   belongs to, the metro areas and the rank method are data and documented in `scripts/city/README.md` (tables `ref.city`, `ref.city_alias`,
   `ref.metro`, `core.team_season_city`, built by `db/build/197_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
+- **Where the players come from:** `/countries` (league against league: mix bars, table, trend by decade, firsts, cards), `/country/<code>` (one country in every league),
+  `/<league>/world` (world map of the league's players with a season slider, by team) and `/<league>/<season>/world` (one season, club by club); a club's season page and
+  a franchise page carry a "Where the players come from" section (donut, map dialog, ranker; the franchise also the countries over the seasons). A player's country is
+  `api.player_index.country` (birth country, else nationality; `ZZ` = unknown, never guessed). The aggregates are migration 065's four materialized views
+  (`api.country_team_season`, `country_season`, `country_league`, `country_franchise`, refreshed by `api.refresh()`); every page hides its country section while a view is
+  missing, and a club's roster section needs no view. The numbers are worked out in `web/src/lib/countryModel.ts` (`pnpm test:countries`). Where a league's countries are known
+  for under half of its players (NHL on 2026-10-13) the pages say so and hold back shares and comparisons.
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
 - **The player page's statistics board** (`components/PlayerBoard.tsx`, maths in `lib/playerBoard.ts`, tests `pnpm test:player`) is drawn in the

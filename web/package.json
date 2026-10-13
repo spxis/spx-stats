@@ -27,6 +27,7 @@
     "test:streaks": "node --test scripts/streaks.test.ts",
     "test:city": "node --test scripts/city.test.ts",
     "test:venues": "node --test scripts/venues.test.ts scripts/venueDataset.test.ts scripts/venueSlug.test.ts scripts/venuePark.test.ts scripts/venueVisits.test.ts",
+    "test:countries": "node --test scripts/countries.test.ts",
     "test:address": "node --test scripts/venueAddress.test.ts",
     "test:lineage": "node --test scripts/lineage.test.ts",
     "test:provenance": "node --test scripts/provenance.test.ts",

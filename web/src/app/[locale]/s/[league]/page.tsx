@@ -70,6 +70,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
         <p className="note"><Link href={`/${lg}/scores`}>{say("scores.link")}</Link></p>
         <p className="note"><Link href={`/${lg}/all-time`}>{say("allTime.link")}</Link></p>
         <p className="note"><Link href={`/${lg}/alignment`}>{say("league.alignmentLink")}</Link></p>
+        <p className="note"><Link href={`/${lg}/world`}>{say("country.leagueNavLink")}</Link></p>
       </section>
       <SeasonSync>
         <section className="section">

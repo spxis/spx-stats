@@ -1,0 +1,92 @@
+/* The country charts and maps (CountryDonut, CountryArea, CountryMap, LeagueWorld, the versus charts). Tokens come from globals.css.
+   The eight series colours are the categorical order of the site's data-viz palette (blue, orange, aqua, yellow, magenta, green, violet, red),
+   stepped for each theme; a country keeps its slot across the donut, the area chart and the legend of one section. */
+:root {
+  --k0: #2a78d6; --k1: #eb6834; --k2: #1baf7a; --k3: #eda100; --k4: #e87ba4; --k5: #008300; --k6: #6250d6; --k7: #e34948;
+  --kother: #8b95a0; --kunk: #c9ced3;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --k0: #3987e5; --k1: #d95926; --k2: #199e70; --k3: #c98500; --k4: #d55181; --k5: #008300; --k6: #9085e9; --k7: #e66767;
+    --kother: #77818c; --kunk: #3a434d;
+  }
+}
+:root[data-theme="dark"] {
+  --k0: #3987e5; --k1: #d95926; --k2: #199e70; --k3: #c98500; --k4: #d55181; --k5: #008300; --k6: #9085e9; --k7: #e66767;
+  --kother: #77818c; --kunk: #3a434d;
+}
+
+.kdot { display: inline-block; width: 12px; height: 12px; border-radius: 3px; flex: none; }
+.kdot.k-other { background: var(--kother); }
+.kdot.k-unknown { background: repeating-linear-gradient(135deg, var(--kunk) 0 3px, transparent 3px 6px); border: 1px solid var(--kunk); }
+
+.cdonut { display: grid; grid-template-columns: minmax(150px, 220px) minmax(0, 1fr); gap: 12px 24px; align-items: center; }
+.cdonut svg { width: 100%; height: auto; display: block; }
+.cdonut path { stroke: var(--paper); stroke-width: 1.5; }
+.cdonut text.big { fill: var(--ink); font: 700 28px var(--display); text-anchor: middle; }
+.cdonut text.sub { fill: var(--muted); font: 600 10px var(--display); letter-spacing: .1em; text-transform: uppercase; text-anchor: middle; }
+.clegend { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; font-size: 14px; min-width: 0; }
+.clegend li { display: flex; align-items: center; gap: 8px; min-width: 0; }
+.clegend li > .nm { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clegend li > .nm a { text-decoration: none; }
+.clegend li > .nm a:hover { text-decoration: underline; }
+.clegend li > .n { font-variant-numeric: tabular-nums; }
+.clegend li > .pc { color: var(--muted); font-variant-numeric: tabular-nums; min-width: 4.5ch; text-align: right; }
+@media (max-width: 520px) { .cdonut { grid-template-columns: 1fr; justify-items: center; } .clegend { width: 100%; } }
+
+.carea .guide { stroke: var(--muted); stroke-dasharray: 3 3; }
+.carea path.layer { stroke: var(--paper); stroke-width: 1; }
+.cmode { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+.ctable summary { cursor: pointer; font: 600 14px var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+.ctable .tablebox { max-height: 360px; overflow: auto; margin-top: 8px; }
+
+/* the world map of counts */
+.cmap { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+.cmap-host { position: relative; width: 100%; border: 1px solid var(--rule); overflow: hidden; background: var(--soft); }
+.cmap-host .cz-map, .cmap-host > div { height: 100%; }
+.cmap-scale { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.cmap-scale i { flex: 0 1 180px; height: 10px; border: 1px solid var(--rule); background: linear-gradient(90deg, var(--ramp0), var(--ramp1)); }
+.cmap-pick { min-height: 3em; display: flex; flex-wrap: wrap; gap: 4px 12px; align-items: baseline; }
+.cmap-pick b { font-family: var(--display); font-size: 18px; letter-spacing: .02em; }
+.cmap-off { margin: 0; }
+.cmap-list { columns: 3 200px; column-gap: 24px; list-style: none; margin: 0; padding: 0; font-size: 14px; }
+.cmap-list li { break-inside: avoid; padding-block: 2px; display: flex; gap: 6px; align-items: center; }
+.cmap-list .n { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
+.cmapthumb { position: relative; width: min(100%, 300px); }
+.cmapthumb > button { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); background: var(--soft); cursor: zoom-in; }
+.cmapthumb .thumbbox { aspect-ratio: 1.7; width: 100%; pointer-events: none; }
+.cmapthumb .thumbbox svg { display: block; width: 100%; height: 100%; }
+.cmapthumb .cap { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
+.cmapdlg .cmap-host { max-width: calc(62vh * 2.04); margin-inline: auto; }
+
+.ccards { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); gap: 12px; }
+.ccard { border: 1px solid var(--rule); background: var(--panel); padding: 12px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.ccard b { font: 700 32px/1 var(--display); color: var(--ink); }
+.ccard span { font-size: 14px; color: var(--muted); }
+.ccard .lg { font: 600 12px var(--display); letter-spacing: .1em; text-transform: uppercase; }
+
+.cbars { display: flex; flex-direction: column; gap: 10px; }
+.cbar { display: grid; grid-template-columns: 56px minmax(0, 1fr); gap: 10px; align-items: center; }
+.cbar > b { font: 700 18px var(--display); letter-spacing: .04em; }
+.cbar .track { display: flex; height: 26px; border: 1px solid var(--rule); background: var(--soft); }
+.cbar .track > i { display: block; height: 100%; border-right: 2px solid var(--paper); min-width: 0; }
+.cbar .track > i:last-child { border-right: 0; }
+.cbar .cov { grid-column: 2; font-size: 12px; color: var(--muted); margin-top: -6px; }
+
+.cline .guide { stroke: var(--muted); stroke-dasharray: 3 3; }
+.cline path.ln { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.cline circle { stroke: var(--paper); stroke-width: 2; }
+
+.cbest { font-weight: 700; }
+.cflagname { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
+.cnote-cov { border-left: 3px solid var(--warn); padding: 6px 10px; background: var(--soft); }
+
+/* a club's share of a country against the league's */
+.ccmp { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; max-width: 760px; }
+.ccmp li { display: grid; grid-template-columns: minmax(130px, 200px) minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; }
+.ccmp .bars { display: flex; flex-direction: column; gap: 3px; }
+.ccmp .bars i { display: block; height: 8px; min-width: 2px; border-radius: 0 2px 2px 0; }
+.ccmp .bars .mine { background: var(--accent); }
+.ccmp .bars .theirs { background: var(--kother); }
+.ccmp .vals { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
+@media (max-width: 520px) { .ccmp li { grid-template-columns: 1fr; } .ccmp .vals { text-align: left; } }

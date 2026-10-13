@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fragment } from "react";
+import { Fragment, Suspense } from "react";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
@@ -7,6 +7,7 @@ import { CompareControl } from "@/components/CompareControl";
 import { SortTable } from "@/components/SortTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
+import { FranchiseCountries } from "@/components/FranchiseCountries";
 import { TeamCharts } from "@/components/TeamCharts";
 import { Credits } from "@/components/Credits";
 import { AddressLink } from "@/components/AddressLink";
@@ -273,6 +274,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           <WinLine seasons={t.seasons} titles={t.titles} lg={lg} idle={[...idle]} />
         </section>
       )}
+      {rows.length ? <Suspense fallback={null}><FranchiseCountries lg={lg} f={f} name={now} /></Suspense> : null}
       {rows.length ? (
         <section className="section">
           <h2>{say("team.standings")}</h2>

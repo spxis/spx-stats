@@ -10,6 +10,17 @@ const regions = (locale: Locale) => {
   return names.get(locale) ?? null;
 };
 
+/** Items as a sentence list in the reader's language: "NHL, NBA and MLB", "NHL、NBA、MLB". */
+export function joinList(items: readonly string[], locale: Locale): string {
+  try { return new Intl.ListFormat(LOCALE_TAG[locale], { type: "conjunction" }).format(items); } catch { return items.join(", "); }
+}
+
+/** A share (0 to 1) as the reader's language writes a percentage: "12.5%", "12,5 %". Under 10% it keeps a decimal unless `digits` says otherwise. */
+export function pctText(v: number, locale: Locale, digits?: number): string {
+  const d = digits ?? (Math.abs(v) < 0.1 ? 1 : 0);
+  try { return new Intl.NumberFormat(LOCALE_TAG[locale], { style: "percent", minimumFractionDigits: d, maximumFractionDigits: d }).format(v); } catch { return `${(v * 100).toFixed(d)}%`; }
+}
+
 /** A country's name in the reader's language from its ISO code. */
 export function countryName(code: string, locale: Locale): string {
   const sub = subdivisionName(code, locale);
