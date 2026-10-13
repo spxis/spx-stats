@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { createRequire } from "node:module";
-import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, pageRewrites, PAGE_ROOTS, QUERY_KEYS } from "../src/lib/routing.ts";
+import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, QUERY_KEYS } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
 
@@ -140,6 +140,34 @@ test("the kept pages (app/[locale]/s) read no query: a query is read in q/", () 
     if (/\bsearchParams\b|useSearchParams|\bcookies\(|\bheaders\(|unstable_noStore|connection\(/.test(text)) offenders.push(relative(SRC, file));
   }
   assert.deepEqual(offenders, [], "a page that needs the query belongs in app/[locale]/q, with a twin in s (see lib/routing.ts)");
+});
+
+test(`no rewrite has more than ${MAX_CONDITIONS} has or missing conditions (Vercel refuses the build otherwise)`, () => {
+  const rules = pageRewrites();
+  assert.ok(rules.length > 0);
+  for (const r of rules) {
+    assert.ok((r.has?.length ?? 0) <= MAX_CONDITIONS, `has: ${r.source} -> ${r.destination}`);
+    assert.ok((r.missing?.length ?? 0) <= MAX_CONDITIONS, `missing: ${r.source} -> ${r.destination}`);
+  }
+});
+
+test("the routes Next wrote for the last build keep to that limit too (skipped when there is no build)", (t) => {
+  const file = join(import.meta.dirname, "..", ".next", "routes-manifest.json");
+  let manifest: { rewrites?: unknown; redirects?: unknown[]; headers?: unknown[] };
+  try {
+    manifest = JSON.parse(readFileSync(file, "utf8"));
+  } catch {
+    return t.skip("no .next/routes-manifest.json: run pnpm build first");
+  }
+  const rules = [
+    ...(Array.isArray(manifest.rewrites) ? manifest.rewrites : Object.values((manifest.rewrites ?? {}) as Record<string, unknown[]>).flat()),
+    ...(manifest.redirects ?? []), ...(manifest.headers ?? []),
+  ] as { has?: unknown[]; missing?: unknown[]; source: string }[];
+  assert.ok(rules.length > 0);
+  for (const r of rules) {
+    assert.ok((r.has?.length ?? 0) <= MAX_CONDITIONS, `has: ${r.source}`);
+    assert.ok((r.missing?.length ?? 0) <= MAX_CONDITIONS, `missing: ${r.source}`);
+  }
 });
 
 test("the signed-in pages stay out of the language tree", () => {

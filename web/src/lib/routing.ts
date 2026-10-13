@@ -64,20 +64,25 @@ export const isInternalPath = (path: string) => internal.test(path);
 /** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again). */
 const NOT_A_LOCALE = `(?!(?:${LOCALES.join("|")})(?:/|$))[^/]+`;
 
+/** Vercel refuses a route whose has or missing list holds more than this many items. */
+export const MAX_CONDITIONS = 16;
+
 export interface Rewrite { source: string; destination: string; has?: Cond[]; missing?: Cond[] }
 
 /** The rewrites, in order (first match wins). Page requests only: files, /api, /_next and the signed-in pages never reach them. */
 export function pageRewrites(): Rewrite[] {
   const out: Rewrite[] = [];
-  const queries: Cond[] = QUERY_KEYS.map((key) => ({ type: "query", key }));
   const each = (add: (lang: ReturnType<typeof languageRules>[number]) => void) => languageRules().forEach(add);
   // 1. The home page and the pages that read no query (a bare address, nothing after it): always the static copy.
   each((l) => out.push({ source: "/", destination: `/${l.locale}/s`, has: l.has, missing: l.missing }));
   each((l) => out.push({ source: `/:first(${ALWAYS_STATIC.join("|")})`, destination: `/${l.locale}/s/:first`, has: l.has, missing: l.missing }));
-  // 2. No query key on the address: the static copy.
-  each((l) => out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/s/:first/:rest*`, has: l.has, missing: [...l.missing, ...queries] }));
-  // 3. Otherwise: the copy drawn for this request.
-  each((l) => out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/q/:first/:rest*`, has: l.has, missing: l.missing }));
+  // 2. A query key on the address: the copy drawn for this request. One rule per key, because Vercel refuses a has or missing list of
+  //    more than MAX_CONDITIONS items, so "none of these keys" cannot be one rule. Inside each pass the language rules keep their order.
+  each((l) => {
+    for (const key of QUERY_KEYS) out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/q/:first/:rest*`, has: [...l.has, { type: "query", key }], missing: l.missing });
+  });
+  // 3. No rule above matched, so the address has none of the keys: the static copy.
+  each((l) => out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/s/:first/:rest*`, has: l.has, missing: l.missing }));
   // 4. Everything else is no page: the 404, drawn for this request and never kept, so addresses made up by a scanner leave nothing behind.
   each((l) => out.push({ source: `/:first(${NOT_A_LOCALE})/:rest*`, destination: `/${l.locale}/q/:first/:rest*`, has: l.has, missing: l.missing }));
   return out;
