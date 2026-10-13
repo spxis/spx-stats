@@ -192,6 +192,18 @@ export interface SeasonOutageRow {
   source_url: string | null;
 }
 
+/** A season whose championship was not awarded, and why (api.title_not_awarded, db/migrations/058_title_not_awarded.sql). */
+export interface TitleNotAwardedRow {
+  league: string;
+  year: number;
+  award: string;
+  reason_en: string;
+  reason_fr: string | null;
+  reason_ja: string | null;
+  source: string;
+  source_url: string | null;
+}
+
 /** A club's city and nickname in one season (api.team_season_identity, migration 057). */
 export interface TeamIdentityRow {
   league: string;

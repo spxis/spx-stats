@@ -20,7 +20,8 @@ import { abbrFor } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
-import { getOutage, getOutageYears } from "@/lib/outageData";
+import { getOutage, getOutageYears, getTitleNotAwarded } from "@/lib/outageData";
+import { NotAwarded } from "@/components/NotAwarded";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LEAGUES, LG, seasonLabel, srcName } from "@/lib/leagues";
@@ -69,7 +70,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const sp = await searchParams;
   if (!ys.canonical) permanentRedirect(withQuery(seasonPath(lg, y), sp));
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
-  const [d, brands, abbrs, summary, notes, paths, player, outageYears] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg)]);
+  const [d, brands, abbrs, summary, notes, paths, player, outageYears, notAwarded] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg), getTitleNotAwarded(lg, y)]);
   const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
   const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
   // The picker also offers the years the league sat out, so a reader can open them.
@@ -97,6 +98,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
             </p>
           ) : null}
         </section>
+        {notAwarded ? <NotAwarded row={notAwarded} /> : null}
         <SeasonOutage lg={lg} year={y} seasons={summary.seasons} />
       </>
     );
@@ -211,7 +213,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <span className="who"><TeamLogo url={logoFor(brands, champF, y)} size={40} shape="circle" /><TeamLink lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} /></span>
           <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} /></span>
         </section>
-      ) : null}
+      ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}
       {st.length ? (
         <section className="section">
           <h2>{say("season.standings")}</h2>

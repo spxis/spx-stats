@@ -156,6 +156,7 @@ export const PHRASES = {
   "season.basisSource": "As the {source} published them",
   "season.basisDerived": "Worked out from the final scores",
   "season.winner": "Champion",
+  "season.notAwarded": "Not awarded",
   "season.defending": "Defending champion",
   "season.defendingMany": "Defending {n}X champion",
   "season.wonTitle": "Won the {season} title",

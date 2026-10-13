@@ -100,6 +100,7 @@ export const JA: Dictionary = {
   "season.basisSpx": "SPXが公表したとおり",
   "season.basisSource": "{source}が公表したとおり",
   "season.basisDerived": "最終スコアから算出",
+  "season.notAwarded": "優勝チームなし",
   "season.defending": "前年王者",
   "season.defendingMany": "前年王者（{n}連覇）",
   "season.wonTitle": "{season}の優勝",

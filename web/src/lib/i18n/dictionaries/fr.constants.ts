@@ -100,6 +100,7 @@ export const FR: Dictionary = {
   "season.basisSpx": "Tel que publié par SPX",
   "season.basisSource": "Tel que publié par {source}",
   "season.basisDerived": "Calculé à partir des pointages finaux",
+  "season.notAwarded": "Titre non décerné",
   "season.defending": "Champion en titre",
   "season.defendingMany": "Champion en titre ({n}×)",
   "season.wonTitle": "A remporté le titre de {season}",

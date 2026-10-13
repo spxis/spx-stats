@@ -10,6 +10,7 @@ import type {
   StandingRow,
   SeasonCoachRow,
   SeasonNoteRow,
+  TitleNotAwardedRow,
   SeasonOutageRow,
   SeasonRosterRow,
   TeamAbbrRow,
@@ -93,6 +94,10 @@ export const seasonOutageSchema = z.object({
   league: str, year: int, kind: str, stopped_on: strN, cancelled_on: strN, resumed_on: strN, games_cancelled: intN,
   note_en: str, note_fr: strN, note_ja: strN, source: str, source_url: httpsUrl,
 }) satisfies z.ZodType<SeasonOutageRow>;
+
+export const titleNotAwardedSchema = z.object({
+  league: str, year: int, award: str, reason_en: str, reason_fr: strN, reason_ja: strN, source: str, source_url: httpsUrl,
+}) satisfies z.ZodType<TitleNotAwardedRow>;
 
 export const teamIdentitySchema = z.object({
   league: str, year: int, franchise_id: int, team_season_id: int, location: strN, nickname: strN, team: strN, region: strN, country_code: strN,

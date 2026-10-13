@@ -2,8 +2,8 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
-import { seasonCoachSchema, seasonOutageSchema, seasonRosterSchema, teamIdentitySchema } from "./api/schemas";
-import type { SeasonCoachRow, SeasonOutageRow, SeasonRosterRow, SeasonSummaryRow, TeamIdentityRow } from "./api/types";
+import { seasonCoachSchema, seasonOutageSchema, seasonRosterSchema, teamIdentitySchema, titleNotAwardedSchema } from "./api/schemas";
+import type { SeasonCoachRow, SeasonOutageRow, SeasonRosterRow, SeasonSummaryRow, TeamIdentityRow, TitleNotAwardedRow } from "./api/types";
 
 /*
  * Reads for the page of a season that was not played. Every read here is an extra: the views come from migration 057, so a
@@ -14,9 +14,25 @@ import type { SeasonCoachRow, SeasonOutageRow, SeasonRosterRow, SeasonSummaryRow
 export const getOutage = cache(async (lg: string, y: number): Promise<SeasonOutageRow | null> =>
   (await rows("season_outage", `league=eq.${lg}&year=eq.${y}&select=*`, seasonOutageSchema).catch(() => []))[0] ?? null);
 
-/** The years of a league that api.season_outage says were not played; empty when there are none (or the view is not there yet). */
-export const getOutageYears = cache(async (lg: string): Promise<number[]> =>
-  (await rows("season_outage", `league=eq.${lg}&select=year`, z.object({ year: z.number() })).catch(() => [])).map((r) => r.year));
+/** The seasons of a league whose championship was not awarded, with the title's name and the reason; empty when there are none (or the view is not there yet). */
+export const getNotAwarded = cache(async (lg: string): Promise<TitleNotAwardedRow[]> =>
+  rows("title_not_awarded", `league=eq.${lg}&select=*&order=year`, titleNotAwardedSchema).catch(() => []));
+
+/** Why a league's title was not awarded in a season, or null when it was (or nothing is on record). */
+export const getTitleNotAwarded = async (lg: string, y: number): Promise<TitleNotAwardedRow | null> =>
+  (await getNotAwarded(lg)).find((r) => r.year === y) ?? null;
+
+/**
+ * The years of a league with no champion because the season, or its final, was not played: the ones api.season_outage explains and
+ * the ones api.title_not_awarded lists. The last champion stays the defending one across them.
+ */
+export const getOutageYears = cache(async (lg: string): Promise<number[]> => {
+  const [outages, titles] = await Promise.all([
+    rows("season_outage", `league=eq.${lg}&select=year`, z.object({ year: z.number() })).catch(() => []),
+    getNotAwarded(lg),
+  ]);
+  return [...new Set([...outages.map((r) => r.year), ...titles.map((r) => r.year)])];
+});
 
 /** Each club's city and nickname in a season. */
 export const getIdentities = cache(async (lg: string, y: number): Promise<TeamIdentityRow[]> =>
