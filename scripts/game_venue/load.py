@@ -1,7 +1,7 @@
 """Raw Wikidata files (scripts/game_venue/fetch.py) -> SQL for legacy_game_venue.venue (migration 067).
 Usage: load.py <raw dir> <YYYY-MM-DD> --sql-out FILE        (apply FILE with scripts/mac/ds1-apply.sh; --dry-run first)
 Rerunnable: upserts by Wikidata id. Reads only the files; no network, no database."""
-import calendar, glob, json, os, sys
+import calendar, glob, json, os, re, sys
 raw, day = sys.argv[1], sys.argv[2]
 assert sys.argv[3] == "--sql-out"
 out = os.path.expanduser(sys.argv[4])
@@ -15,7 +15,7 @@ for p in sorted(glob.glob(f"{raw}/wikidata/labels-*.json")):
         labels[q] = e.get("labels", {}).get("en", {}).get("value")
 ALL = {**chain, **ents}
 CITY_WORDS = ("city", "town", "municipality", "village", "borough", "commune", "township", "hamlet", "locality", "ward", "census-designated place")
-NOT_CITY = ("county", "state", "province", "country", "metropolitan", "region", "district of", "territory", "prefecture")
+NOT_CITY = re.compile(r"\b(county|state|province|country|metropolitan|region|district of|territory|prefecture)\b")   # whole words: "city in the United States" is a city
 
 def label(e):
     return e.get("labels", {}).get("en", {}).get("value")
@@ -81,7 +81,7 @@ for qid, e in sorted(ents.items()):
     for words in (("city",), CITY_WORDS):
         for cq, ce in ch:
             t = [x.lower() for x in types(ce)]
-            if city is None and any(w in x for x in t for w in words) and not all(any(n in x for n in NOT_CITY) for x in t):
+            if city is None and any(w in x for x in t for w in words) and not all(NOT_CITY.search(x) for x in t):
                 city = label(ce)
     for cq, ce in ch:
         if region is None:

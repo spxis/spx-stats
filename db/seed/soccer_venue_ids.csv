@@ -1,0 +1,337 @@
+qid,origin,label
+Q1980,wc,Stade de Gerland
+Q2090,wc,Frankenstadion
+Q8507,"kyogijo,wc",Parc Olympique Lyonnais
+Q13205,"kyogijo,wc",Stade de France
+Q17484,wc,Estadio La Romareda
+Q22130,wc,Estadio Riazor
+Q28500,wc,Stadio La Favorita
+Q33993,wc,Kazan Arena
+Q43279,"kyogijo,wc",Wembley Stadium
+Q45671,kyogijo,Anfield
+Q48159,kyogijo,Etihad Stadium
+Q62149,kyogijo,Allianz Stadium
+Q76318,mls,Rogers Centre
+Q82709,wc,Stadio San Paolo
+Q83457,"kyogijo,wc",Old Trafford
+Q116601,"kyogijo,wc",International Stadium Yokohama
+Q124769,wc,Estadio Cuauhtémoc
+Q126844,wc,Estadio Benito Villamarín
+Q127372,wc,Allianz Riviera
+Q127429,"kyogijo,wc",Allianz Arena
+Q128468,kyogijo,Wembley Stadium
+Q129870,wc,Rhein-Neckar-Arena
+Q130381,wc,Commonwealth Stadium
+Q131610,"kyogijo,wc",Olympiastadion
+Q133566,"kyogijo,wc",San Siro
+Q138554,wc,Incheon Munhak Stadium
+Q150928,"kyogijo,wc",Westfalenstadion
+Q150933,wc,Volksparkstadion
+Q150961,wc,Arena AufShalke
+Q151374,"kyogijo,wc",Olympiastadion
+Q151816,wc,Estadio José Zorrilla
+Q151893,wc,RheinEnergieStadion
+Q152349,wc,Neckarstadion
+Q152599,fix,
+Q152633,wc,Niedersachsenstadion
+Q153312,"mls,wc",RFK Stadium
+Q154074,wc,Borussia-Park
+Q154298,wc,Fritz-Walter-Stadion
+Q155174,"kyogijo,wc",Estádio do Maracanã
+Q155603,wc,Volkswagen Arena
+Q156630,wc,BayArena
+Q157273,"kyogijo,wc",Waldstadion
+Q159848,"kyogijo,wc",Camp Nou
+Q159884,"kyogijo,wc",Stadio Olimpico
+Q163521,"kyogijo,wc",Soccer City
+Q163995,"kyogijo,mls",Emirates Stadium
+Q164027,"kyogijo,wc",Estadio Santiago Bernabéu
+Q167418,wc,Impuls Arena
+Q170154,wc,Rudolf-Harbig-Stadion
+Q171458,kyogijo,Stamford Bridge
+Q173559,wc,Cape Town Stadium
+Q175289,wc,Moses Mabhida Stadium
+Q175339,wc,Villa Park
+Q175477,"kyogijo,wc",Seoul World Cup Stadium
+Q175960,wc,Malmö Stadion
+Q176460,"fix,mls",BBVA Compass Stadium
+Q181398,wc,Loftus Versfeld Stadium
+Q181439,wc,Free State Stadium
+Q181445,wc,Nelson Mandela Bay Stadium
+Q182081,wc,Ellis Park Stadium
+Q187042,wc,Peter Mokaba Stadium
+Q187087,wc,Mbombela Stadium
+Q189337,wc,Royal Bafokeng Stadium
+Q190779,wc,Central Stadium
+Q193431,"kyogijo,wc",Parc des Princes
+Q193651,kyogijo,Hampden Park
+Q199359,"mls,wc",Citrus Bowl
+Q200684,"kyogijo,mls,wc",Home Depot Center
+Q201773,"kyogijo,wc",Hongkou Football Stadium
+Q202150,wc,Stade Vélodrome
+Q202163,"kyogijo,wc",Luzhniki Stadium
+Q202762,wc,Estadio Luis Casanova
+Q207109,kyogijo,Johan Cruyff Arena
+Q207626,wc,Vicente Calderón
+Q208709,kyogijo,Ibrox Stadium
+Q210466,wc,Zentralstadion
+Q211662,wc,Pontiac Silverdome
+Q214629,wc,Stadio Benito Mussolini
+Q215493,wc,Stadio delle Alpi
+Q216037,kyogijo,Celtic Park
+Q219462,wc,Stade Océane
+Q244592,wc,Estadio San Mamés
+Q259827,wc,Charmilles Stadium
+Q262291,"mls,wc",Civic Stadium
+Q270474,wc,Stadio Comunale
+Q271568,wc,Stadio Luigi Ferraris
+Q275429,wc,Estadio Ramón Sánchez Pizjuán
+Q276354,"kyogijo,wc",Estadio Monumental
+Q285467,"mls,wc",Olympic Stadium
+Q285531,wc,Al Janoub Stadium
+Q295886,kyogijo,Stadium Australia
+Q297924,wc,Örjans Vall
+Q298585,mls,AT&T Park
+Q320454,"kyogijo,wc,wc2026",Estadio Azteca
+Q328698,wc,Stadio San Nicola
+Q329812,mls,Sporting Kansas City
+Q336088,wc,Estádio Nacional
+Q339850,"mls,wc",Foxboro Stadium
+Q373355,"kyogijo,mls,wc,wc2026",Gillette Stadium
+Q373769,wc,Ruhrstadion
+Q374883,wc,Stade de la Meinau
+Q375365,"mls,wc",Giants Stadium
+Q386547,wc,Stade du Parc Lescure
+Q391353,mls,Real Salt Lake
+Q401643,wc,Ahmad bin Ali Stadium
+Q431094,mls,CommunityAmerica Ballpark
+Q482441,wc,Daegu World Cup Stadium
+Q482446,"kyogijo,wc",Saitama Stadium
+Q482581,wc,Ōita Stadium
+Q482585,wc,Jeju World Cup Stadium
+Q482589,wc,Busan Asiad Stadium
+Q482591,wc,Shizuoka Stadium ECOPA
+Q482598,wc,Daejeon World Cup Stadium
+Q482601,wc,Ulsan Munsu Football Stadium
+Q486472,mls,"Kansas City, Kansas"
+Q494749,wc,Niigata Stadium
+Q494758,wc,Gwangju World Cup Stadium
+Q494761,wc,Suwon World Cup Stadium
+Q494766,wc,Kobe Wing Stadium
+Q494769,"kyogijo,wc",Kashima Stadium
+Q494773,wc,Miyagi Stadium
+Q494832,wc,Nagai Stadium
+Q494860,wc,Sapporo Dome
+Q498245,"kyogijo,wc",Estadio Centenario
+Q499855,kyogijo,La Bombonera
+Q530735,wc,Stade Auguste-Delaune
+Q544553,"kyogijo,mls,wc2026",Arrowhead Stadium
+Q562072,wc,Jeonju World Cup Stadium
+Q571624,wc,Idrottsparken
+Q579997,wc,Estadio Tres de Marzo
+Q582280,"kyogijo,mls,wc",Rose Bowl
+Q583085,"mls,wc",Jack Kent Cooke Stadium
+Q589481,mls,Olympic Stadium
+Q594994,"kyogijo,wc",Estadio Nacional
+Q602392,wc,Ayresome Park
+Q604859,wc,La Bombonera
+Q606803,wc,Arena da Baixada
+Q612227,"kyogijo,mls,wc,wc2026",BC Place
+Q612736,"kyogijo,mls,wc2026",Lumen Field
+Q619322,mls,Estadio Nacional Chelato Uclés
+Q619512,mls,Orange Bowl
+Q638087,wc,Olympia
+Q640031,wc,Stadio Friuli
+Q641448,wc,Arena Pantanal
+Q641527,wc,Arena da Amazônia
+Q642557,wc,Hillsborough Stadium
+Q642958,"kyogijo,wc",Stadio Nazionale PNF
+Q655175,wc,Estádio do Pacaembu
+Q658351,wc,Estadio Sausalito
+Q666183,"kyogijo,wc2026",Estadio Akron
+Q668606,wc,Stade Olympique de la Pontaise
+Q671287,wc,Cornaredo Stadium
+Q676004,"kyogijo,wc",Wankdorf Stadium
+Q688780,wc,Hardturm Stadium
+Q692470,"mls,wc",Stanford Stadium
+Q695879,wc,Estadio La Rosaleda
+Q698429,wc,Arosvallen
+Q699555,wc,Rheinstadion
+Q700462,wc,Parkstadion
+Q713216,wc,Estadio La Corregidora
+Q713597,wc,Estadio Gigante de Arroyito
+Q713665,wc,Estadio Neza 86
+Q722970,wc,Krestovsky Stadium
+Q725623,"kyogijo,wc",Råsunda Stadium
+Q737093,wc,Stadio Marc'Antonio Bentegodi
+Q738044,wc,Stade de Toulouse
+Q741103,wc,Estadio Pocitos
+Q753529,mls,Yankee Stadium
+Q754200,wc,Stadio Sant'Elia
+Q754502,"kyogijo,wc",Stade Olympique de Colombes
+Q757182,wc,Stadio Renato Dall'Ara
+Q761682,mls,Red Bull Arena
+Q767558,wc,Estadio Olímpico Universitario
+Q771800,"mls,wc",Estadio Universitario
+Q772988,wc,Khalifa International Stadium
+Q774694,mls,Ohio Stadium
+Q786149,wc,Estadio Gran Parque Central
+Q796351,"kyogijo,mls,wc2026",BMO Field
+Q806673,mls,Bank of America Stadium
+Q814577,wc,Eyravallen
+Q815833,wc,Stade de la Mosson
+Q824352,wc,Ullevi
+Q834369,wc,Tianjin Olympic Center
+Q838284,"kyogijo,wc2026",AT&T Stadium
+Q849784,mls,Los Angeles Memorial Coliseum
+Q854122,wc,Stade Félix-Bollaert
+Q861000,wc,Stade Geoffroy-Guichard
+Q864339,"kyogijo,mls,wc2026",Hard Rock Stadium
+Q876286,wc,White City Stadium
+Q901844,wc,Stade Victor Boucquey
+Q909851,fix,
+Q910370,wc,Estádio Mineirão
+Q922761,mls,Rice-Eccles Stadium
+Q929126,"kyogijo,wc",Tainhe Stadium
+Q929315,wc,Estadio El Molinón
+Q938693,wc,St. Jakob Stadium
+Q941620,wc,Estadio Carlos Dittborn
+Q945070,wc,Estadio José Rico Pérez
+Q946007,wc,Stade du Fort Carré
+Q953600,wc,Nuevo Estadio
+Q958185,wc,Estádio Castelão
+Q968420,wc,Goodison Park
+Q986110,wc,Gaungdong Provincial Stadium
+Q991407,wc,Estadio El Teniente
+Q999392,mls,Buck Shaw Stadium
+Q999781,mls,Toyota Park
+Q1010594,wc,Stadio Giorgio Ascarelli
+Q1033076,mls,Candlestick Park
+Q1046135,mls,Invesco Field at Mile High
+Q1048774,wc,Education City Stadium
+Q1050220,wc,Al Bayt Stadium
+Q1050224,wc,Estádio Beira-Rio
+Q1052370,"kyogijo,mls,wc,wc2026",Lincoln Financial Field
+Q1053455,wc,Stade de la Beaujoire
+Q1058864,"kyogijo,mls,wc2026",NRG Stadium
+Q1059879,wc,Stade Jules Deschaseaux
+Q1062157,wc,Estadio Chateau Carreras
+Q1069950,wc,Chengdu Sports Center
+Q1072265,wc,Estadio Ciudad de Mendoza
+Q1072882,mls,Citi Field
+Q1100756,mls,Huntington Bank Field
+Q1112858,"mls,wc",Columbus Crew Stadium
+Q1121760,wc,Roazhon Park
+Q1132413,"mls,wc",Soldier Field
+Q1134439,wc,Stadium 974
+Q1136764,"fix,mls,wc",Cotton Bowl
+Q1140457,mls,Pizza Hut Park
+Q1141336,mls,M&T Bank Stadium
+Q1141343,mls,Raymond James Stadium
+Q1142992,mls,Nissan Stadium
+Q1147732,mls,McAfee Coliseum
+Q1149601,wc,Fisht Olympic Stadium
+Q1186333,"kyogijo,wc",Lusail Stadium
+Q1190634,wc,Otkritie Arena
+Q1194029,wc,Wuhan Sports Center
+Q1196603,wc,Estadio José Amalfitani
+Q1210268,mls,Colorado Rapids Stadium
+Q1302940,wc,Yellow Dragon Sports Center
+Q1325234,wc,Estadi de Sarrià
+Q1326578,wc,Balaídos
+Q1343986,wc,Arena das Dunas
+Q1346716,wc,Estadio Jalisco
+Q1362211,wc,Arena Pernambuco
+Q1362236,wc,Arena Corinthians
+Q1369282,wc,Estadio José María Minella
+Q1369510,wc,Estadio Nou Camp
+Q1369635,wc,Estadio Sergio León Chavez
+Q1369652,wc,Estadio Tecnológico
+Q1370663,wc,Estádio Vila Capanema
+Q1370676,wc,Estádio Ilha do Retiro
+Q1442809,wc,TD Place Stadium
+Q1514798,mls,Rio Tinto Stadium
+Q1517213,mls,Royal Athletic Park
+Q1541691,wc,Roker Park
+Q1593861,wc,Tunavallen
+Q1627980,wc,Stadio Littorio
+Q1631393,wc,Jernvallen
+Q1632955,mls,Robertson Stadium
+Q1637843,mls,PPL Park
+Q1671788,wc,Investors Group Field
+Q1787141,mls,Livestrong Sporting Park
+Q1849318,mls,Sun Devil Stadium
+Q1851916,wc,Rimnersvallen
+Q1867553,mls,Lockhart Stadium
+Q1934586,mls,Mile High Stadium
+Q1944117,wc,Moncton Stadium
+Q2093297,wc,Ryavallen
+Q2093647,mls,Stade Saputo
+Q2095984,mls,Houlihan's Stadium
+Q2165358,"mls,wc",Spartan Stadium
+Q2170686,mls,Dragon Stadium
+Q2299298,wc,Stade des Alpes
+Q2299919,wc,Stade du Hainaut
+Q2301634,wc,Strömvallen
+Q2556856,wc,Estádio dos Eucaliptos
+Q2628796,wc,Estadio Carlos Tartiere
+Q2682757,mls,Blackbaud Stadium
+Q2688256,mls,Cotton Bowl
+Q2907951,mls,Bobby Dodd Stadium
+Q2937412,mls,Citrus Bowl
+Q2974594,mls,Fort Lauderdale Stadium
+Q3046174,mls,ESPN Wide World of Sports Complex
+Q3046470,mls,Avaya Stadium
+Q3053249,mls,Empire Field
+Q3058827,"kyogijo,wc2026",Estadio BBVA
+Q3107495,mls,Ibn Batouta Stadium
+Q3113144,mls,Pratt & Whitney Stadium at Rentschler Field
+Q3197185,mls,Kino Stadium
+Q3271722,wc,Ying Tung Stadium
+Q3337331,mls,Navy–Marine Corps Memorial Stadium
+Q3342107,mls,Nippert Stadium
+Q3362725,mls,Cardinal Stadium
+Q3512039,mls,TCF Bank Stadium
+Q3544001,wc,Tingvalla IP
+Q4366184,wc,Volgograd Arena
+Q4439075,wc,Nizhny Novgorod Stadium
+Q4439098,wc,Kaliningrad Stadium
+Q4439099,wc,Samara Arena
+Q4439101,wc,Rostov Arena
+Q4533552,wc,Mordovia Arena
+Q4835088,mls,BBVA Compass
+Q4887216,mls,Cardinal Stadium
+Q5203387,mls,Audi Field
+Q5302957,mls,Maryland SoccerPlex
+Q5338957,mls,Edmonds Woodway High School
+Q5929803,wc,Zhongshan Stadium
+Q6499360,wc,Arena Fonte Nova
+Q6587494,mls,Titan Stadium
+Q6819814,mls,Merlo Field
+Q7007552,"kyogijo,mls,wc2026",Mercedes-Benz Stadium
+Q7306122,mls,Redmond High School
+Q7419343,"kyogijo,mls,wc2026",Levi's Stadium
+Q7601833,mls,Starfire Sports Complex
+Q7799103,mls,Thunderbird Stadium
+Q7875112,kyogijo,Estádio da Luz
+Q8842808,wc,Estádio Independência
+Q10862290,"kyogijo,wc2026",MetLife Stadium
+Q11869422,wc,Jiangmen Stadium
+Q12127138,wc,New Plaza Stadium
+Q14862239,kyogijo,Japan National Stadium
+Q16846942,mls,Orlando City Stadium
+Q17018920,mls,Nu Stadium
+Q19520501,"kyogijo,wc2026",SoFi Stadium
+Q21164193,mls,Nissan Stadium
+Q22096111,mls,Banc of California Stadium
+Q22096631,mls,Allianz Field
+Q30591730,mls,Citypark
+Q39049425,wc,Al Thumama Stadium
+Q47528203,mls,Geodis Park
+Q54465634,mls,TQL Stadium
+Q55074091,kyogijo,Tottenham Hotspur Stadium
+Q56278477,mls,Q2 Stadium
+Q64688028,wc,Stade du T.O.E.C.
+Q65045869,mls,Lower.com Field
+Q65240568,mls,Inter Miami CF Stadium
+Q100272042,mls,Snapdragon Stadium

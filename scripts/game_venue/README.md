@@ -51,3 +51,6 @@ brand or franchise_venue period runs outside its venue's days.
 
 A seed row that cannot be used (unknown club name, venue not in `core.venue`) is logged as `home_venue_seed` or `game_venue_event` and skipped.
 The Wikipedia pages the seed rows cite were read by hand (the URL of each is in the row); they are not archived.
+
+World Cup and MLS stadiums, and kyogijo's famous grounds, use this same path: `db/seed/soccer_venue_ids.csv` is read by `ids.py` (`ids.py --new <raw dirs>` lists only the items no
+earlier fetch holds), `fetch.py` and `load.py` run as above, and step 198 adds the venues. See `scripts/world_stadiums/README.md`.
