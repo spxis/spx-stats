@@ -1,0 +1,8 @@
+SELECT ?nhl ?person (SAMPLE(?bpLabel) AS ?birthPlace) (GROUP_CONCAT(DISTINCT ?cc; separator=",") AS ?countries) (SAMPLE(?bd) AS ?birthDate) WHERE {
+  ?person wdt:P3522 ?nhl .
+  ?person wdt:P19 ?bp .
+  OPTIONAL { ?bp wdt:P17 ?c . ?c wdt:P297 ?cc . }
+  OPTIONAL { ?person wdt:P569 ?bd . }
+  OPTIONAL { ?bp rdfs:label ?bpLabel . FILTER(LANG(?bpLabel) = "en") }
+}
+GROUP BY ?nhl ?person
