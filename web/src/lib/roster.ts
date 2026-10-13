@@ -4,6 +4,7 @@ import { z } from "zod";
 import { ApiError, rows } from "./api/client";
 import type { StatNumbers } from "./api/player";
 import { playerIndexSchema } from "./api/people";
+import { positionCode } from "./positions";
 
 const statSchema = z.object({ person_id: z.number(), stat_group: z.string(), games_played: z.number().nullable(), stats: z.record(z.string(), z.number()) });
 
@@ -28,16 +29,10 @@ export interface RosterPlayer {
   kind: "skater" | "goalie" | "batting" | "pitching";
 }
 
-const SHORT: Record<string, string> = {
-  d: "D", defenseman: "D", defender: "D", c: "C", centre: "C", center: "C", l: "L", lw: "L", "left wing": "L", "left winger": "L", winger: "W",
-  r: "R", rw: "R", "right wing": "R", "right winger": "R", g: "G", goaltender: "G", goalie: "G", forward: "F",
-  pitcher: "P", "starting pitcher": "SP", "relief pitcher": "RP", closer: "CL", catcher: "C", "first baseman": "1B", "second baseman": "2B",
-  "third baseman": "3B", shortstop: "SS", "left fielder": "LF", "center fielder": "CF", "right fielder": "RF", outfielder: "OF", infielder: "IF",
-  "designated hitter": "DH",
-};
-const short = (p: string | null): string | null => (p && p.trim() ? SHORT[p.trim().toLowerCase()] ?? p.trim() : null);
+/** A position as the short code a table shows: its code; older words become their codes. */
+const short = (p: string | null): string | null => (p && p.trim() ? positionCode(p) ?? p.trim() : null);
 
-const FORWARD = new Set(["C", "L", "R", "W", "F"]);
+const FORWARD = new Set(["C", "LW", "RW", "W", "F"]);
 
 /**
  * The players with statistics for one club's season (api.person_stats by team season), under their names and positions from api.player_index.

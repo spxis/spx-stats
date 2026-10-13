@@ -10,6 +10,7 @@ import { afterValues, nextCursor, parseListParams, parseSuggestParams } from "./
 import { fold, listQuery, searchWords } from "./listQuery";
 import { memo } from "./memo";
 import { positionsText } from "./people-format";
+import { positionCodes } from "./positions";
 import { playerOrder, PLAYER_SORTS, readPlayers } from "./playerIndex";
 import { getPlayerPaths } from "./playerLinks";
 import { readTeams, teamOrder, TEAM_SORTS, type TeamStatus } from "./teamIndex";
@@ -37,7 +38,7 @@ const lg = (code: string | undefined): string => (code && isLeague(code) ? LG[co
 /* ---------- players ------------------------------------------------------------------- */
 
 const playerItem = (p: PlayerIndexRow, url: (id: number, name: string, league?: string | null) => string) => ({
-  id: p.person_id, name: p.name, position: p.position, positions: p.positions ?? (p.position ? [p.position.toLowerCase()] : []), leagues: p.leagues ?? [], first_season: p.first_season, last_season: p.last_season,
+  id: p.person_id, name: p.name, position: p.position, positions: positionCodes(p.positions, p.position), leagues: p.leagues ?? [], first_season: p.first_season, last_season: p.last_season,
   seasons: p.seasons_played, awards: p.award_count, url: url(p.person_id, p.name, p.leagues?.[0]),
 });
 
@@ -72,7 +73,7 @@ export async function suggestPlayers(sp: URLSearchParams) {
       const place = url(p.person_id, p.name, p.leagues?.[0]);
       const home = /^\/([a-z]+)\//.exec(place)?.[1] ?? p.leagues?.[0];
       return {
-        id: p.person_id, name: p.name, league: lg(home), leagues: p.leagues ?? [], position: p.position, positions: p.positions ?? (p.position ? [p.position.toLowerCase()] : []), first_season: p.first_season, last_season: p.last_season,
+        id: p.person_id, name: p.name, league: lg(home), leagues: p.leagues ?? [], position: p.position, positions: positionCodes(p.positions, p.position), first_season: p.first_season, last_season: p.last_season,
         subtitle: [(p.leagues ?? []).map(lg).join("/"), positionsText(p.positions, p.position), years(p.first_season, p.last_season)].filter(Boolean).join(" · "), url: place,
       };
     }),

@@ -30,7 +30,8 @@
     "test:provenance": "node --test scripts/provenance.test.ts",
     "test:path": "node --test scripts/playoffPath.test.ts",
     "test:flow": "node --test scripts/rosterFlow.test.ts",
-    "test:coaches": "node --test scripts/coachMoves.test.ts"
+    "test:coaches": "node --test scripts/coachMoves.test.ts",
+    "test:positions": "node --test scripts/positions.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",

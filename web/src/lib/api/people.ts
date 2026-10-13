@@ -15,7 +15,7 @@ export interface PersonRow {
   nationality_code: string | null;
   height_cm: number | null;
   position: string | null;
-  /** Every position the player holds, lower case, the main one first (api.people, migration 049); absent before that migration. */
+  /** Every position the player holds, as codes (ref.position), the main one first (api.people, migrations 049 and 061); absent before 049. */
   positions?: string[] | null;
   hall_of_fame_year: number | null;
   debut: string | null;

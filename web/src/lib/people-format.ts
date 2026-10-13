@@ -1,4 +1,5 @@
 import { LOCALE_TAG, type Locale } from "@/lib/locale";
+import { positionsShort } from "@/lib/positions";
 
 const names = new Map<Locale, Intl.DisplayNames | null>();
 const regions = (locale: Locale) => {
@@ -16,10 +17,9 @@ export function countryName(code: string, locale: Locale): string {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const capFirst = cap;
 
-/** All of a person's positions, "Pitcher / Designated hitter"; the main one alone when no list is known; "" when none. */
+/** All of a person's positions as short codes, "P / DH"; the main one alone when no list is known; "" when none. The player page spells them out (lib/positions.ts). */
 export function positionsText(positions: readonly string[] | null | undefined, position?: string | null): string {
-  const list = positions?.length ? positions : position ? [position] : [];
-  return [...new Set(list.map((p) => p.trim()).filter(Boolean))].map(cap).join(" / ");
+  return positionsShort(positions, position);
 }
 
 export function inches(cm: number): string {

@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { rows } from "./api/client";
+import { z } from "zod";
+import { ApiError, rows } from "./api/client";
 import { leagueAwardSchema, personAwardSchema, personSchema, personTeamSchema, teamAwardSchema } from "./api/people";
 import { personResumeSchema, personSeasonTeamSchema, personStatSchema, personTotalSchema } from "./api/player";
 import type { PersonResumeRow, PersonSeasonTeamRow, PersonStatRow, PersonTotalRow } from "./api/player";
@@ -15,6 +16,17 @@ export interface PersonData {
 
 /** One person; null when there is no such person. A failed read throws ApiError. */
 export const getPersonRow = cache(async (id: number): Promise<PersonRow | null> => (await rows("people", `person_id=eq.${id}&select=*`, personSchema))[0] ?? null);
+
+/** The person whose record absorbed this one (a duplicate merged by db/build/185_person_merge.sql); null when the id was never merged or the view is missing. */
+export const getRedirect = cache(async (oldId: number): Promise<number | null> => {
+  try {
+    const hit = (await rows("person_redirect", `old_person_id=eq.${oldId}&select=person_id`, z.object({ person_id: z.number() })))[0];
+    return hit ? hit.person_id : null;
+  } catch (e) {
+    if (e instanceof ApiError) return null;
+    throw e;
+  }
+});
 
 /** One person with their awards and teams; null when there is no such person. A failed read throws ApiError. */
 export const getPerson = cache(async (id: number): Promise<PersonData | null> => {

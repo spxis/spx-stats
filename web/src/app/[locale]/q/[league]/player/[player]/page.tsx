@@ -21,7 +21,9 @@ import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
 import { parsePhase, PlayerSeasons, PlayerStatistics } from "@/components/PlayerStats";
-import { getPerson, getPlayerRecord } from "@/lib/people";
+import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
+import { getPositions } from "@/lib/positionData";
+import { positionCodes, positionNames } from "@/lib/positions";
 import { ageOn, countryName, inches, positionsText } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
@@ -50,7 +52,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const { d } = at;
   const { say, plural, locale } = await currentSpeaker();
   const p = d.person;
-  const bits = [positionsText(p.positions, p.position) || null, (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") || null,
+  const bits = [positionNames(positionCodes(p.positions, p.position), at.home, await getPositions(), locale) || null, (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") || null,
     p.award_count ? plural("count.awards", p.award_count) : null, p.championship_count ? plural("count.championships", p.championship_count) : null].filter(Boolean);
   const details = bits.length ? say("player.metaDetails", { list: bits.join(", ") }) : "";
   return pageMeta({ title: p.name, description: say("player.metaDesc", { name: p.name, details }), path: at.path, locale });
@@ -65,7 +67,15 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   const at = await locate(league, player);
   if (!at) {
     // An address with no id: the one player of that name, or a short list to choose from.
-    if (!isLeague(league) || playerIdOf(player) != null) notFound();
+    const oldId = playerIdOf(player);
+    if (!isLeague(league)) notFound();
+    if (oldId != null) {
+      // A record merged into another (db/build/185_person_merge.sql): the old address goes to the person who holds its data now.
+      const kept = await getRedirect(oldId);
+      const to = kept != null ? await locate(league, String(kept)) : null;
+      if (!to) notFound();
+      permanentRedirect(withQuery(to.path, sp));
+    }
     const found = await playersNamed(player);
     if (!found.length) notFound();
     const url = await getPlayerPaths();
@@ -133,7 +143,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (p.nationality_code && (p.nationality_code !== p.birth_country_code || !p.birth_country_code)) {
     facts.push(<Fact key="country" label={say("player.factCountry")}><Flag code={p.nationality_code} /> {countryName(p.nationality_code, locale)}</Fact>);
   }
-  const positions = positionsText(p.positions, p.position);
+  const positions = positionNames(positionCodes(p.positions, p.position), home, await getPositions(), locale);
   if (positions) facts.push(<Fact key="pos" label={say("player.factPosition")}>{positions}</Fact>);
   if (p.height_cm) facts.push(<Fact key="h" label={say("player.factHeight")}>{`${p.height_cm} cm (${inches(p.height_cm)})`}</Fact>);
   if (p.hall_of_fame_year) facts.push(<Fact key="hof" label={say("player.factHof")}>{say("player.hofInducted", { year: p.hall_of_fame_year })}</Fact>);

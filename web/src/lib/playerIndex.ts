@@ -6,6 +6,7 @@ import { readSpan, type Span } from "./listSpan";
 import { overlapFilters } from "./listRange";
 import { listQuery, orderOf, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
+import { positionCode } from "./positions";
 import { slugify } from "./slug";
 
 export { searchWords };
@@ -38,9 +39,9 @@ export const playerSpan = (league: string): Promise<Span> => readSpan("player_in
 export async function readPlayers(f: PlayerFilters, order: Order, win: { offset: number; limit: number; after?: readonly Val[] | null }): Promise<{ rows: PlayerIndexRow[]; total: number | null; more: boolean }> {
   const base = [
     isLeague(f.league) ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
-    // a player matches by the main position or by any other they hold (positions is lower case)
+    // a player matches by the main position or by any other they hold, by code; an older word ("Defenseman") is read as its code
     ...overlapFilters(f.from, f.to),
-    f.position ? `or=${encodeURIComponent(`(position.ilike.${f.position},positions.cs.{${f.position.toLowerCase()}})`)}` : "",
+    f.position ? `or=${encodeURIComponent(`(position.ilike.${positionCode(f.position) ?? f.position},positions.cs.{${positionCode(f.position) ?? f.position}})`)}` : "",
   ].filter(Boolean);
   const run = async (view: string, filters: string[]) => {
     const query = listQuery({ filters, select: PLAYER_SELECT, order, after: win.after });
