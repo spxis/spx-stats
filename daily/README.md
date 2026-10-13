@@ -71,6 +71,22 @@ tables DS1 changed (`scripts/release/README.md`):
   touched anything else (a new season, team seasons, external ids) prepares a normal release titled "Daily scores <date> (needs review)"
   that waits for John.
 
+## Working on it from a Mac
+
+A new or rebuilt Mac needs nothing for the daily job or the release runner (`/volume2/docker/spx-release-runner`, same pattern
+with `release-runner.env`) except `ssh ds1` (`zsh scripts/mac/spx-credentials.sh machine`, see `scripts/mac/README.md`).
+Both containers run on the NAS by themselves. To edit `daily.env`: `ssh ds1`, then `vi /volume2/docker/spx-daily-scores/daily.env`.
+
+To **write a secret into `daily.env` without showing it**, take the value from this Mac's keychain, pipe it over ssh stdin, replace the
+line on the NAS and print only a count (`1` means the name is there once, with a non-empty value). Set `n` to the variable name and
+use the matching keychain item (`PGPASSWORD` is `spx-stats-db DS1 55440`, `SUPABASE_ACCESS_TOKEN` is `spx-stats SUPABASE_ACCESS_TOKEN`):
+
+    security find-generic-password -s 'spx-stats SUPABASE_ACCESS_TOKEN' -w | ssh ds1 \
+      'f=/volume2/docker/spx-daily-scores/daily.env; n=SUPABASE_ACCESS_TOKEN; IFS= read -r T; { grep -v "^$n=" "$f"; printf "%s=%s\n" "$n" "$T"; } > "$f.new" && cat "$f.new" > "$f" && rm "$f.new"; unset T; grep -c "^$n=." "$f"'
+
+It is safe for values with quotes, spaces or `$` (tested against a dummy keychain item), keeps the file's owner and mode, and replaces rather than
+duplicates. The container reads `daily.env` when it starts, so then Container Manager, Project, `spx-daily-scores`, Action, Build (a plain restart can keep the old values).
+
 ## Safety
 
 - `daily.env` holds the DS1 password (and optionally the Supabase token). Keep it on the NAS only, never in git (it is in `.gitignore`).

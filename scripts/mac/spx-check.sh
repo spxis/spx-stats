@@ -11,7 +11,6 @@ OUT="$(mktemp -d)"
 trap 'rm -rf "$OUT"' EXIT
 
 # Each check writes one line to $OUT/<n>; they run side by side so the whole run takes as long as the slowest.
-limited() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 line() { echo "$2" > "$OUT/$1"; }
 
 check_prod() {
@@ -58,6 +57,27 @@ check_turso() {
   else line 8 "Turso CLI: installed, not logged in (optional: turso auth login)"; fi
 }
 
+# Key login to DS1 over ssh (alias ds1, set up by `spx-credentials.sh machine`); the route is whichever the config chose.
+check_ssh() {
+  local out addr
+  out=$(limited 14 ssh -o BatchMode=yes -o ConnectTimeout=6 -o ControlMaster=no -o ControlPath=none ds1 hostname 2>/dev/null | tail -n 1)
+  if [ -n "$out" ]; then
+    addr=$(limited 6 ssh -G ds1 2>/dev/null | awk '$1=="hostname"{print $2}')
+    if [ "$addr" = "$SPX_DS1_TAILSCALE_HOST" ]; then line 11 "ssh ds1: ok (Tailscale)"; else line 11 "ssh ds1: ok (home LAN)"; fi
+  else line 11 "ssh ds1: MISSING: no key login to DS1 (zsh scripts/mac/spx-credentials.sh machine)"; fi
+}
+# Keychain parity: every required item is on this Mac (names only; a value is never read).
+check_keychain() {
+  local miss="" i
+  while IFS= read -r i; do
+    kc_has "$i" || miss="${miss:+$miss, }'$i'"
+  done <<EOF
+$(spx_kc_required)
+EOF
+  if [ -z "$miss" ]; then line 12 "keychain items (required): ok"
+  else line 12 "keychain: MISSING: $miss (zsh scripts/mac/spx-credentials.sh copy-from $(spx_other_mac_alias); the DS1 password and board key can also come from 'zsh scripts/mac/spx-credentials.sh setup')"; fi
+}
+
 # Optional: DS1 is the truth, production a copy. Compares row counts of a few key tables; exact diffs: scripts/sync/compare.py.
 check_counts() {
   local token host pw q p d
@@ -87,12 +107,12 @@ check_migrations() {
   else line 10 "migration numbers: MISSING: fix the clash (git fetch && git rebase origin/main, renumber your file): $(echo "$out" | head -n 1)"; fi
 }
 
-for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations; do "$c" & done
+for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations check_ssh check_keychain; do "$c" & done
 wait
 
 echo "[spx-check] connections on this Mac (claude.ai connectors: the agent checks its own tool list)"
 n=0
-for i in 1 2 3 4 5 6 7 8 9 10; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
   l=$(cat "$OUT/$i" 2>/dev/null || echo "check $i: MISSING: check did not finish")
   echo "[spx-check] $l"
   case "$l" in *MISSING*) n=$((n + 1));; esac

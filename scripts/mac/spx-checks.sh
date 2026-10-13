@@ -61,3 +61,20 @@ ds1_missing() { printf 'not reachable on the home LAN (%s) or Tailscale (%s); jo
 ds1_ok() { [ -n "$1" ] && PGPASSWORD="$1" PGCONNECT_TIMEOUT=8 psql -h "${SPX_DS1_FOUND:-$(ds1_host)}" -p "$SPX_DS1_PORT" -U postgres -d spx_stats -Atc 'select 1' >/dev/null 2>&1; }
 node_ok() { node -e 'const [a,b]=process.versions.node.split(".").map(Number);process.exit(a>22||(a===22&&b>=18)?0:1)' 2>/dev/null; }
 prod_ok() { [ "$(curl -s -m 8 -o /dev/null -w '%{http_code}' -H "apikey: $SPX_PROD_KEY" -H "Accept-Profile: api" "$SPX_PROD_URL/rest/v1/season_summary?select=league&limit=1")" = 200 ]; }
+
+# --- Per-Mac setup (spx-credentials.sh machine | copy-from | copy-to | parity). Names only, no values. ---
+SPX_DS1_LAN_PRIMARY="${SPX_DS1_LAN_PRIMARY:-10.0.0.101}"   # the address the `ds1` hosts name and the ssh config use on the home LAN
+SPX_DS1_SSH_USER="spxis"
+# limited <seconds> <command...>: run with a time limit (perl alarm; macOS has no timeout).
+limited() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+# Keychain items every Mac must hold, and the optional ones (set up later on both Macs or neither). One name per line.
+spx_kc_required() { printf '%s\n' "spx-stats-db DS1 55440" "sumilabu board spx-stats" "spx-stats SUPABASE_ACCESS_TOKEN"; }
+spx_kc_optional() { printf '%s\n' "spx-stats dropbox app key" "spx-stats dropbox app secret" "spx-stats dropbox refresh token" "spx-stats tailscale authkey"; }
+# kc_has <item>: is the item in the login keychain? Never reads the value (no -w).
+kc_has() { security find-generic-password -s "$1" >/dev/null 2>&1; }
+# The two Macs reach each other with an ssh alias that differs by side: the Mac Studio calls the MacBook `laptop`,
+# the MacBook calls the Mac Studio `macstudio`.
+spx_this_mac() { scutil --get LocalHostName 2>/dev/null || hostname -s; }
+spx_other_mac_alias() { case "$(spx_this_mac)" in MacStudio*) printf 'laptop' ;; *) printf 'macstudio' ;; esac; }
+spx_other_mac_host() { case "$(spx_this_mac)" in MacStudio*) printf 'MacBookProM5Max.local' ;; *) printf 'MacStudioM1.local' ;; esac; }
+spx_other_mac_key() { printf 'id_ed25519_%s' "$(spx_other_mac_alias)"; }
