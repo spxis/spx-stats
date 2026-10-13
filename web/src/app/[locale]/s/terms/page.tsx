@@ -47,6 +47,7 @@ export default async function TermsPage() {
         <p><Credits say={say} use={["maps"]} /></p>
         <p><Credits say={say} use={["flags"]} /></p>
         <p><Credits say={say} use={["addresses"]} /></p>
+        <p><Credits say={say} use={["surfaces"]} /></p>
         <p><Rich text={say("terms.fullList")} parts={{ sources: <Link href="/sources">{say("nav.sources")}</Link> }} /></p>
         <h2>{say("terms.logosTitle")}</h2>
         <p>

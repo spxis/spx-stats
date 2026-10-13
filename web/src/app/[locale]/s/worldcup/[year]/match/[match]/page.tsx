@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { SoccerCredit } from "@/components/SoccerCredit";
+import { SoccerSurface } from "@/components/GameSurface";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -86,6 +87,12 @@ export default guard(async function MatchPage({ params }: Params) {
           <span className="nm"><SoccerTeamName slug={sides[1].slug} name={sides[1].name} flag={sides[1].flag} /></span>
         </div>
       </section>
+      <SoccerSurface
+        home={{ name: teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale), goals: m.home_goals }}
+        away={{ name: teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale), goals: m.away_goals }}
+        note={s.note} winner={m.winner_team_id === m.home_team_id ? "home" : m.winner_team_id === m.away_team_id ? "away" : "none"}
+        competition={`${title} · ${groupLabel(say, m)}`} date={dt.full(new Date(m.match_date))} wikidata={m.venue_wikidata_id}
+      />
       {m.checked === 1 ? <p className="note">{say("wc.m.confirmed")}</p> : null}
       {m.is_replay ? <p className="note">{say("wc.m.replay")}</p> : null}
 

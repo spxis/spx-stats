@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { ChampionNote } from "@/components/ChampionNote";
+import { ChampionSurface } from "@/components/ChampionSurface";
 import { SeasonPath } from "@/components/SeasonPath";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
 import { SeasonBar } from "@/components/SeasonBar";
@@ -208,12 +209,15 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         <SeasonBar days={days} date={asOfDate} />
       </section>
       {champ ? (
-        <section className="banner">
-          <span className="cup">{champ.award}</span>
-          <Badge src={champ.source} />
-          <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
-          <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} alone /></span>
-        </section>
+        <>
+          <section className="banner">
+            <span className="cup">{champ.award}</span>
+            <Badge src={champ.source} />
+            <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
+            <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} alone /></span>
+          </section>
+          <ChampionSurface lg={lg} year={y} champion={champF} />
+        </>
       ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}
       {st.length ? (
         <section className="section">

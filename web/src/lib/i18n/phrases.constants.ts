@@ -1867,6 +1867,16 @@ export const PHRASES = {
   "country.morePlayers": "All {league} players from {name}",
   "country.lowRoster": "The country is known for only {known} of {total} players, so the comparison with the league and the country ranker are held back until more is on record.",
   "country.pts": "pts",
+  "gs.aria": "{away} {awayScore}, {home} {homeScore}, {status}",
+  "gs.headDeciding": "The deciding game",
+  "gs.headLatest": "The latest game",
+  "gs.headGame": "The game",
+  "gs.park": "Played at {venue}, with its outfield fence drawn to scale.",
+  "gs.venue": "Played at {venue}. The surface follows the {league} rules of {season}, not this venue's own markings.",
+  "gs.std": "The {league} standard surface for {season}, drawn to scale.",
+  "gs.neutral": "Played at a neutral site, so the {league} standard surface for {season} is drawn, to scale.",
+  "gs.stdSoccer": "A standard pitch, 105 by 68 metres, drawn to scale.",
+  "gs.ground": "{venue}, with its pitch at its published size, drawn to scale.",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;

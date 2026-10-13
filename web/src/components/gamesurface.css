@@ -1,0 +1,9 @@
+/* A game's score on its playing surface (GameSurface.tsx). The drawing's own rules are in kyogijo.css. The box keeps the drawing's shape before it is parsed. */
+@layer components {
+  .gsurf { margin: 0 0 1.25rem; max-width: 760px; }
+  .gsurf[data-sport="mlb"] { max-width: 520px; }
+  .gsurf-art { border-radius: 10px; overflow: hidden; }
+  .gsurf-art > svg { display: block; width: 100%; height: auto; }
+  .gsurf figcaption { margin: .4rem 0 0; }
+  .banner + .gsurf { margin-top: 1rem; }
+}

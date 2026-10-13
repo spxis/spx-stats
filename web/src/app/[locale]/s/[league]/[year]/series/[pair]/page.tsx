@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
+import { GameSurface, type DrawnGame } from "@/components/GameSurface";
 import { SeriesCard } from "@/components/SeasonPlayoffs";
 import { SeriesCharts, type ChartWords } from "@/components/SeriesCharts";
 import { SeriesStyle } from "@/components/SeriesStyle";
@@ -186,6 +187,15 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   const extra = say(lg === "mlb" ? "extras" : "ot");
   const sources = [...new Set(s.games.map((g) => g.source))];
 
+  // The game the series was settled in (or, while it is on, the latest played), drawn on its surface.
+  const last = s.games.filter((g) => g.played && g.score[0] != null && g.score[1] != null).at(-1);
+  const drawnGame: DrawnGame | null = last ? {
+    id: last.id, date: last.date, phase: "playoffs", final: number === rounds && lastRound === 1, overtime: last.ot,
+    home: { f: s.sides[last.home].f, name: s.sides[last.home].name, score: last.score[last.home] },
+    away: { f: s.sides[last.home === 0 ? 1 : 0].f, name: s.sides[last.home === 0 ? 1 : 0].name, score: last.score[last.home === 0 ? 1 : 0] },
+  } : null;
+  const surfaceHead = single ? sp.say("gs.headGame") : settled && !s.live ? sp.say("gs.headDeciding") : sp.say("gs.headLatest");
+
   // Regular-season meetings of the two clubs.
   const meets = d.regular.filter((g) => g.status === "final" && g.home_score != null && g.away_score != null);
   const winsIn = (f: number) => meets.filter((g) => (g.home_f === f && g.home_score! > g.away_score!) || (g.away_f === f && g.away_score! > g.home_score!)).length;
@@ -257,6 +267,14 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
         </div>
         {side(1)}
       </section>
+
+      {drawnGame && last ? (
+        <section className="section">
+          <h2>{surfaceHead}</h2>
+          <GameSurface lg={lg} year={y} game={drawnGame} brands={d.brands} abbrs={d.abbrs}
+            competition={single ? roundTitle : `${roundTitle} · ${say("games.gameN", { n: fmt(last.n) })}`} />
+        </section>
+      ) : null}
 
       <section className="section">
         <h2>{say("games.title")}</h2>

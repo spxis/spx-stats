@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
+import { SoccerSurface } from "@/components/GameSurface";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
@@ -65,6 +66,12 @@ export default guard(async function MlsMatchPage({ params }: Params) {
         </div>
         <div className="side away"><span className="nm"><MlsClubName slug={m.away_slug} name={m.away} /></span></div>
       </section>
+      <SoccerSurface
+        home={{ name: m.home, goals: m.home_goals }}
+        away={{ name: m.away, goals: m.away_goals }}
+        note={sc.note} winner={m.winner_team_id === m.home_team_id ? "home" : m.winner_team_id ? "away" : "none"}
+        competition={`${say("mls.season", { year: m.year })} · ${mlsStageName(say, m.stage_key)}`} date={dt.full(new Date(m.match_date))} wikidata={m.venue_wikidata_id}
+      />
       {m.checked === 1 ? <p className="note">{say("mls.m.confirmed")}</p> : null}
       <p className="note">{say("mls.m.noDetail")} <Link href={MLS_PATH}>{say("mls.team.all")}</Link></p>
       <section className="section"><MlsCredit say={say} /></section>
