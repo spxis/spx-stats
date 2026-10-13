@@ -57,6 +57,14 @@ interface Props {
   unitPx?: number;
   /** Used instead of unitPx when the height should not depend on the values. */
   height?: number;
+  /** The narrowest a column may be drawn before the diagram scrolls inside its box (default 150). */
+  minPitch?: number;
+  /**
+   * The real routes through the diagram, each a list of block ids left to right. When the bands mix flows (a block that many routes pass
+   * through), these say which blocks and bands belong together, so choosing a block lights only routes that exist. Without them the
+   * whole path (everything upstream and downstream) is lit.
+   */
+  traces?: string[][];
   /** Extra content under the details (a note about holes in the data). */
   children?: ReactNode;
 }
@@ -96,14 +104,14 @@ const fit = (s: string, room: number): string => {
  * under the diagram. The whole path through a block (everything upstream and downstream) is lit while it is chosen. The diagram is as
  * wide as the page allows and scrolls inside its own box when its columns do not fit.
  */
-export default function Sankey({ nodes, links, columnTitles, labels, unitPx, height, children }: Props) {
+export default function Sankey({ nodes, links, columnTitles, labels, unitPx, height, minPitch = MIN_PITCH, traces, children }: Props) {
   const [ref, W] = useChartWidth(900, 280);
   const tip = useTooltip(ref);
   const [active, setActive] = useState<Active | null>(null);
   const [scroll, setScroll] = useState(0);
   const pointer = useRef<string>("mouse");
   const cols = Math.max(columnTitles.length, 1);
-  const innerW = Math.max(W, cols * MIN_PITCH);
+  const innerW = Math.max(W - 2, cols * minPitch);
   const room = Math.round(innerW / cols) - 12;
 
   const layout = useMemo(() => {
@@ -132,24 +140,34 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
     return { H, nodes: g.nodes as SankeyNode<N, L>[], links: g.links as SankeyLink<N, L>[] };
   }, [nodes, links, innerW, room, unitPx, height]);
 
-  // The path through the chosen block: everything it comes from and everything it leads to.
+  // The path through the chosen block: the routes that pass through it, or else everything it comes from and everything it leads to.
   const lit = useMemo(() => {
     if (!active) return null;
     const nodeSet = new Set<string>(), linkSet = new Set<string>();
-    const up = (n: SankeyNode<N, L>) => { for (const l of n.targetLinks ?? []) { linkSet.add(l.id as string); const s = l.source as SankeyNode<N, L>; if (!nodeSet.has(s.id)) { nodeSet.add(s.id); up(s); } } };
-    const down = (n: SankeyNode<N, L>) => { for (const l of n.sourceLinks ?? []) { linkSet.add(l.id as string); const t = l.target as SankeyNode<N, L>; if (!nodeSet.has(t.id)) { nodeSet.add(t.id); down(t); } } };
+    if (traces) {
+      const link = new Map(links.map((l) => [`${l.source}>${l.target}`, l.id]));
+      const chosen = active.kind === "node" ? null : links.find((l) => l.id === active.id);
+      for (const route of traces) {
+        const hit = active.kind === "node" ? route.includes(active.id) : chosen ? route.some((id, i) => id === chosen.source && route[i + 1] === chosen.target) : false;
+        if (!hit) continue;
+        route.forEach((id, i) => { nodeSet.add(id); const l = i ? link.get(`${route[i - 1]}>${id}`) : undefined; if (l) linkSet.add(l); });
+      }
+      return nodeSet.size ? { nodes: nodeSet, links: linkSet } : null;
+    }
+    const up = (n: SankeyNode<N, L>) => { for (const l of n.targetLinks ?? []) { linkSet.add(l.id); const s = l.source as SankeyNode<N, L>; if (!nodeSet.has(s.id)) { nodeSet.add(s.id); up(s); } } };
+    const down = (n: SankeyNode<N, L>) => { for (const l of n.sourceLinks ?? []) { linkSet.add(l.id); const t = l.target as SankeyNode<N, L>; if (!nodeSet.has(t.id)) { nodeSet.add(t.id); down(t); } } };
     if (active.kind === "node") {
       const n = layout.nodes.find((x) => x.id === active.id);
       if (!n) return null;
       nodeSet.add(n.id); up(n); down(n);
     } else {
-      const l = layout.links.find((x) => (x.id as string) === active.id);
+      const l = layout.links.find((x) => x.id === active.id);
       if (!l) return null;
       const s = l.source as SankeyNode<N, L>, t = l.target as SankeyNode<N, L>;
-      linkSet.add(l.id as string); nodeSet.add(s.id); nodeSet.add(t.id); up(s); down(t);
+      linkSet.add(l.id); nodeSet.add(s.id); nodeSet.add(t.id); up(s); down(t);
     }
     return { nodes: nodeSet, links: linkSet };
-  }, [active, layout]);
+  }, [active, layout, links, traces]);
 
   const detail = useMemo(() => {
     if (!active) return null;
@@ -202,7 +220,7 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
               const s = l.source as SankeyNode<N, L>, t = l.target as SankeyNode<N, L>;
               const x0 = s.x1!, x1 = t.x0!, xm = (x0 + x1) / 2;
               const d = `M${x0},${l.y0} C${xm},${l.y0} ${xm},${l.y1} ${x1},${l.y1}`;
-              const id = l.id as string;
+              const id = l.id;
               const path = <path d={d} strokeWidth={Math.max(l.width ?? 1, 1)} className="sk-band" />;
               return (
                 <g key={id} className={`sk-link${state("link", id)}`} style={{ "--sk": l.tone ?? s.tone } as React.CSSProperties}

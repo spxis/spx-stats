@@ -1,9 +1,11 @@
+import { FlowProvenance } from "@/components/FlowProvenance";
 import { SortTable } from "@/components/SortTable";
 import { getSources } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 import { guard } from "@/lib/loadGuard";
+import { getProvenance } from "@/lib/provenanceData";
 
 export const revalidate = 3600;
 
@@ -14,7 +16,7 @@ export async function generateMetadata() {
 
 export default guard(async function SourcesPage() {
   const { say, fmt } = await currentSpeaker();
-  const s = await getSources();
+  const [s, prov] = await Promise.all([getSources(), getProvenance().catch(() => null)]);
   // SPX's own row is made by the site (lib/data.ts), so its words are the site's; the others are the sources' own.
   const own = (code: string, field: "licence" | "notes", given: string | null) => (code === "spx" ? say(field === "licence" ? "sources.spxLicence" : "sources.spxNotes") : given);
   const table = tableOf(s.filter((x) => x.games || x.award_winners), [
@@ -38,6 +40,13 @@ export default guard(async function SourcesPage() {
       <section className="section scroll">
         <SortTable {...table} />
       </section>
+      {prov ? (
+        <section className="section">
+          <h2>{say("prov.title")}</h2>
+          <p className="lede">{say("prov.lede")}</p>
+          <FlowProvenance rows={prov.rows} sources={prov.sources} />
+        </section>
+      ) : null}
     </>
   );
 });
