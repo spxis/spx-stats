@@ -28,7 +28,8 @@
     "test:address": "node --test scripts/venueAddress.test.ts",
     "test:lineage": "node --test scripts/lineage.test.ts",
     "test:provenance": "node --test scripts/provenance.test.ts",
-    "test:path": "node --test scripts/playoffPath.test.ts"
+    "test:path": "node --test scripts/playoffPath.test.ts",
+    "test:flow": "node --test scripts/rosterFlow.test.ts"
   },
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",
