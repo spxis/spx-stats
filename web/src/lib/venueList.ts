@@ -9,6 +9,7 @@ import { LEAGUE_CODES } from "./leagues";
 import type { Speaker } from "./i18n/i18n";
 import { getPaths } from "./teamSlugs";
 import { getVenueTeams } from "./venueMap";
+import type { VenueDetail } from "./venueDataset";
 import type { VenueClub, VenueRow } from "./venueModel";
 import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
@@ -17,6 +18,8 @@ export interface VenueList {
   rows: VenueRow[];
   /** The leagues that have venues, in the order the page lists them. */
   leagues: string[];
+  /** What the open dataset adds to a row (by row id): Wikidata id, city, ISO 3166-2 region and every name with its years. */
+  detail: Map<string, VenueDetail>;
 }
 
 const at5 = (n: number) => n.toFixed(5);
@@ -62,6 +65,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
   for (const p of cityData?.placements ?? []) if (p.venueLat != null && p.venueLon != null && p.venueCity) cityAt.set(`${at5(p.venueLat)}|${at5(p.venueLon)}`, p.venueCity);
 
   const byVenue = new Map<string, { row: VenueRow; label: string }>();
+  const detail = new Map<string, VenueDetail>();
   for (const { lg, teams } of byLeague) {
     for (const t of teams) {
       for (const v of t.venues) {
@@ -82,6 +86,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
             },
           };
           byVenue.set(id, acc);
+          detail.set(id, { wid: v.wid, city: v.city, iso: v.iso, names: (sp ?? []).map((s) => ({ name: s.name, from: s.from, until: s.until })) });
         }
         const r = acc.row;
         if (!r.leagues.includes(lg)) r.leagues.push(lg);
@@ -112,5 +117,5 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
     out.push(r);
   }
   out.sort((a, b) => BY(a.name, b.name));
-  return { rows: out, leagues };
+  return { rows: out, leagues, detail };
 }

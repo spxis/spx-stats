@@ -40,6 +40,11 @@ const listSchemas = {
     nat: z.preprocess(blank, z.string().regex(/^[A-Za-z]{2}$/, "a two-letter country code, e.g. CA").optional()),
   }),
   teams: z.object({ ...common, status: z.preprocess(blank, z.enum(["all", "active", "defunct"]).default("all")) }),
+  venues: z.object({
+    ...common,
+    status: z.preprocess(blank, z.enum(["all", "current", "former"]).default("all")),
+    nat: z.preprocess(blank, z.string().regex(/^[A-Za-z]{2}$/, "a two-letter country code, e.g. CA").optional()),
+  }),
 };
 const suggestSchema = z.object({
   q: z.string({ error: "required" }).min(1, "required").max(60),
@@ -74,7 +79,7 @@ export function parseFieldsParam(raw: string | undefined, allowed: readonly stri
   return list;
 }
 
-export interface ListParams<K extends "players" | "teams"> {
+export interface ListParams<K extends keyof typeof listSchemas> {
   values: z.infer<(typeof listSchemas)[K]>;
   sort: SortKey[];
   sortText: string;
@@ -83,7 +88,7 @@ export interface ListParams<K extends "players" | "teams"> {
   range: { from: number | undefined; to: number | undefined };
 }
 
-export function parseListParams<K extends "players" | "teams">(kind: K, sp: URLSearchParams, o: { sorts: readonly string[]; fields: readonly string[]; defSort: string }): ListParams<K> {
+export function parseListParams<K extends keyof typeof listSchemas>(kind: K, sp: URLSearchParams, o: { sorts: readonly string[]; fields: readonly string[]; defSort: string }): ListParams<K> {
   const r = listSchemas[kind].safeParse(entries(sp));
   if (!r.success) return fail(r.error);
   const values = r.data as ListParams<K>["values"];

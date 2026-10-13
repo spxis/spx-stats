@@ -1562,6 +1562,11 @@ export const PHRASES = {
   "venuesPage.legendFormer": "Hollow ring: no club plays here now",
   "venuesPage.rangeNote": "Only venues a club used between {from} and {to}.",
   "venuesPage.none": "No venue matches these choices.",
+  "venuesPage.download": "Download the list: {csv} · {geojson} · {api}. Licence and columns: {sources}.",
+  "venuesData.title": "Open dataset: home venues",
+  "venuesData.lede": "The list on {venues} is free to download as {csv} and {geojson} (one row or feature per venue, rebuilt at most once an hour) and to read as JSON through {api}. The API takes league, q, status, nat, from, to, sort, limit, offset or after, and fields.",
+  "venuesData.licence": "Licence: venue identifiers, names, coordinates, places and facts come from Wikidata and are CC0 1.0. Surface and roof can come from the infobox of the venue's English Wikipedia article; treat them as CC BY-SA 4.0 and credit Wikipedia and its authors (the wikipedia_title column names the article). Clubs, leagues and years of use come from the SPX archive and the sources listed above. The GeoJSON carries this licence and credit inside the file; a CSV cannot, so this page is its licence notice.",
+  "venuesData.columns": "Columns: wikidata_id, name, former_names (name (from-to); ...), latitude, longitude, city, region (ISO 3166-2), country (ISO 3166-1 alpha-2), leagues (codes joined with ;), clubs (league:franchise_id name (from-to); ...), first_year, last_year (empty while a club still plays there), current, opened, closed, capacity, roof, surface, wikipedia_title. An empty value is unknown. Coordinates are WGS 84; a GeoJSON position is [longitude, latitude].",
   "count.venues.one": "{count} venue",
   "count.venues.other": "{count} venues",
 } as const satisfies Record<string, string>;

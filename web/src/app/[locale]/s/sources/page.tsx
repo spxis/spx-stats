@@ -1,3 +1,6 @@
+import Link from "next/link";
+import { Rich } from "@/components/i18n/Rich";
+import { venueDataParts } from "@/components/VenueDataLinks";
 import { FlowProvenance } from "@/components/FlowProvenance";
 import { SortTable } from "@/components/SortTable";
 import { getSources } from "@/lib/data";
@@ -39,6 +42,12 @@ export default guard(async function SourcesPage() {
       </section>
       <section className="section scroll">
         <SortTable {...table} />
+      </section>
+      <section className="section" id="venues-dataset">
+        <h2>{say("venuesData.title")}</h2>
+        <p className="lede"><Rich text={say("venuesData.lede")} parts={{ ...venueDataParts(), venues: <Link href="/venues">{say("nav.venues")}</Link> }} /></p>
+        <p className="note">{say("venuesData.licence")}</p>
+        <p className="note">{say("venuesData.columns")}</p>
       </section>
       {prov ? (
         <section className="section">

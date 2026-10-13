@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { VenueDownload } from "@/components/VenueDataLinks";
 import { VenueExplorer } from "@/components/VenueExplorer";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG } from "@/lib/leagues";
@@ -31,6 +32,7 @@ export default guard(async function VenuesPage() {
       <section className="head fade">
         <h1>{say("venuesPage.title")}</h1>
         <p className="lede">{say("venuesPage.lede")}</p>
+        <VenueDownload say={say} />
       </section>
       <section className="section">
         {rows.length ? <VenueExplorer wire={wire} leagues={leagues} labels={labels} min={min} max={max} /> : <p className="note">{say("venuesPage.none")}</p>}

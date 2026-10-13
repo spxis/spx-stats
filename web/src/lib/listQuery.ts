@@ -4,7 +4,7 @@
  * folded to letters and digits, sort keys must be in the view's list, and cursor values are quoted. Pure, so the pages, the route
  * handlers and a node script can all use it.
  */
-import { fold } from "./fold";
+import { fold } from "./fold.ts";
 import type { SortKey } from "./sort";
 
 export { fold };

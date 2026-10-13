@@ -1370,6 +1370,11 @@ export const JA: Dictionary = {
   "venuesPage.legendFormer": "白抜きの輪：現在は使われていない",
   "venuesPage.rangeNote": "{from}年から{to}年の間に球団が使用した本拠地のみ。",
   "venuesPage.none": "この条件に合う本拠地はありません。",
+  "venuesPage.download": "一覧をダウンロード：{csv} · {geojson} · {api}。ライセンスと項目：{sources}。",
+  "venuesData.title": "オープンデータ：本拠地一覧",
+  "venuesData.lede": "{venues}の一覧は{csv}と{geojson}でダウンロードでき（1か所につき1行または1地物、再生成は最大で1時間に1回）、{api}でJSONとしても読めます。APIはleague、q、status、nat、from、to、sort、limit、offsetまたはafter、fieldsを受け付けます。",
+  "venuesData.licence": "ライセンス：本拠地の識別子、名称、座標、所在地、基本情報はWikidata由来で、CC0 1.0です。路面と屋根は英語版Wikipediaの該当記事のインフォボックス由来の場合があり、CC BY-SA 4.0として扱い、Wikipediaとその執筆者をクレジットしてください（wikipedia_title列が記事名です）。球団、リーグ、使用年はSPXのアーカイブと上に挙げた出典によります。GeoJSONにはこのライセンスとクレジットがファイル内に含まれます。CSVにはファイル内に書けないため、このページがその表示にあたります。",
+  "venuesData.columns": "項目：wikidata_id、name、former_names（「名称（開始-終了）；…」）、latitude、longitude、city、region（ISO 3166-2）、country（ISO 3166-1 alpha-2）、leagues（コードを;でつなぐ）、clubs（「リーグ:franchise_id 球団名（開始-終了）；…」）、first_year、last_year（球団が今も使っている間は空）、current、opened、closed、capacity、roof、surface、wikipedia_title。空欄は不明を表します。座標はWGS 84で、GeoJSONの位置は[経度, 緯度]の順です。",
   "count.venues.one": "{count}か所",
   "count.venues.other": "{count}か所",
 };

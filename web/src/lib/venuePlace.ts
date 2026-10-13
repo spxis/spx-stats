@@ -4,7 +4,8 @@ import { z } from "zod";
 import { rows } from "./api/client";
 
 /** Where a home venue stands and its Wikipedia article, from api.venue_place; any part can be missing. */
-export interface VenuePlace { city: string | null; region: string | null; place: string | null; wiki: string | null; wid: string | null; cc: string | null }
+/** `region` is the state or province code alone ("QC"); `iso` is the whole ISO 3166-2 code ("CA-QC"). */
+export interface VenuePlace { city: string | null; region: string | null; iso: string | null; place: string | null; wiki: string | null; wid: string | null; cc: string | null }
 
 const placeRow = z.object({
   franchise_id: z.number(), home_venue: z.string(), latitude: z.number(), longitude: z.number(),
@@ -28,7 +29,7 @@ export const getVenuePlaces = cache(async (lg: string): Promise<Map<string, Venu
       if (!key) continue;
       const abbr = r.region?.split("-")[1] ?? null;
       out.set(key, {
-        wid: r.wikidata_id, cc: r.country_code ?? null, city: r.city, region: abbr, place: [r.city, abbr].filter(Boolean).join(", ") || null,
+        wid: r.wikidata_id, cc: r.country_code ?? null, city: r.city, region: abbr, iso: r.region, place: [r.city, abbr].filter(Boolean).join(", ") || null,
         wiki: r.wikipedia_title ? `https://en.wikipedia.org/wiki/${encodeURIComponent(r.wikipedia_title.replace(/ /g, "_"))}` : null,
       });
     }

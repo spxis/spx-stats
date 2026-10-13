@@ -176,6 +176,13 @@ test("the routes Next wrote for the last build keep to that limit too (skipped w
   }
 });
 
+test("the venue downloads are route handlers in app/, which Next serves before any rewrite (they are no pages)", () => {
+  for (const file of ["venues.csv", "venues.geojson"]) {
+    assert.ok(statSync(join(SRC, "app", file, "route.ts")).isFile(), file);
+    assert.ok(!(ALWAYS_STATIC as readonly string[]).includes(file) && !(PAGE_ROOTS as readonly string[]).includes(file), file);
+  }
+});
+
 test("the signed-in pages stay out of the language tree", () => {
   for (const dir of ["admin", "me", "login", "tickets"]) assert.ok(statSync(join(SRC, "app", "(dyn)", dir)).isDirectory(), dir);
 });

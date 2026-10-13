@@ -1370,6 +1370,11 @@ export const FR: Dictionary = {
   "venuesPage.legendFormer": "Anneau vide : aucun club n’y joue actuellement",
   "venuesPage.rangeNote": "Seulement les installations utilisées par un club entre {from} et {to}.",
   "venuesPage.none": "Aucune installation ne correspond à ces choix.",
+  "venuesPage.download": "Télécharger la liste : {csv} · {geojson} · {api}. Licence et colonnes : {sources}.",
+  "venuesData.title": "Données ouvertes : installations des clubs",
+  "venuesData.lede": "La liste de {venues} se télécharge en {csv} et en {geojson} (une ligne ou un objet par installation, reconstruite au plus une fois l’heure) et se lit en JSON avec {api}. L’API accepte league, q, status, nat, from, to, sort, limit, offset ou after, et fields.",
+  "venuesData.licence": "Licence : les identifiants, noms, coordonnées, lieux et caractéristiques des installations viennent de Wikidata et sont en CC0 1.0. La surface et le toit peuvent venir de l’infobox de l’article de Wikipédia en anglais; considérez-les comme CC BY-SA 4.0 et créditez Wikipédia et ses auteurs (la colonne wikipedia_title nomme l’article). Les clubs, les ligues et les années d’utilisation viennent de l’archive SPX et des sources énumérées plus haut. Le GeoJSON porte cette licence et ce crédit dans le fichier; un CSV ne le peut pas, cette page en tient lieu.",
+  "venuesData.columns": "Colonnes : wikidata_id, name, former_names (nom (début-fin); ...), latitude, longitude, city, region (ISO 3166-2), country (ISO 3166-1 alpha-2), leagues (codes séparés par ;), clubs (ligue:id_franchise nom (début-fin); ...), first_year, last_year (vide tant qu’un club y joue), current, opened, closed, capacity, roof, surface, wikipedia_title. Une valeur vide est inconnue. Les coordonnées sont en WGS 84; dans le GeoJSON, une position s’écrit [longitude, latitude].",
   "count.venues.one": "{count} installation",
   "count.venues.other": "{count} installations",
 };
