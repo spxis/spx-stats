@@ -1,0 +1,39 @@
+/* Sankey diagrams (components/Sankey.tsx). Colours come from the page's variables, so dark mode needs nothing of its own. */
+.sk { position: relative; display: grid; gap: 10px; min-width: 0; }
+.sk-scroll { overflow-x: auto; overscroll-behavior-x: contain; border: 1px solid var(--rule); background: var(--panel); }
+.sk-scroll svg { display: block; max-width: none; }
+.sk text { font-family: var(--body); }
+.sk a { text-decoration: none; }
+.sk-col { fill: var(--muted); font: 600 12px var(--display); letter-spacing: .1em; text-transform: uppercase; }
+
+.sk-band { fill: none; stroke: var(--sk); stroke-opacity: .3; transition: stroke-opacity .12s; }
+.sk-link a, .sk-link > g { cursor: pointer; }
+.sk-link:hover .sk-band { stroke-opacity: .6; }
+.sk[data-lit] .sk-link.on .sk-band { stroke-opacity: .7; }
+.sk[data-lit] .sk-link.off .sk-band { stroke-opacity: .06; }
+
+.sk-rect { fill: var(--sk); transition: opacity .12s; }
+.sk-node.muted .sk-rect { opacity: .5; }
+.sk-node a { outline: none; cursor: pointer; }
+.sk-node a:focus-visible .sk-rect, .sk-node g:focus-visible .sk-rect { stroke: var(--ink); stroke-width: 2.5; }
+.sk-node g { outline: none; }
+.sk[data-lit] .sk-node.off { opacity: .28; }
+.sk-label { fill: var(--ink); font-size: 12px; paint-order: stroke; stroke: var(--panel); stroke-width: 3px; stroke-linejoin: round; }
+.sk-sub { fill: var(--muted); font-size: 11px; }
+.sk-node a:hover .sk-label { text-decoration: underline; }
+
+.sk-pop { pointer-events: auto; max-width: min(300px, 92%); z-index: 6; font-size: 14px; padding: 8px 12px; border-left: 4px solid var(--accent); }
+.sk-pop b { display: block; font: 700 17px/1.2 var(--display); letter-spacing: .02em; }
+.sk-hint { color: var(--muted); font-size: 13px; margin: 0; max-width: 80ch; }
+.sk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+.sk-open { display: inline-block; margin-top: 6px; font-weight: 600; }
+
+.sk-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: end; margin: 0 0 12px; }
+.sk-controls label { display: grid; gap: 3px; font: 600 12px var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.sk-controls select { font-size: 15px; padding: 7px 10px; min-height: 40px; }
+.sk-controls .sk-check { display: flex; align-items: center; gap: 8px; min-height: 40px; font: 600 14px var(--body); letter-spacing: 0; text-transform: none; color: var(--ink); }
+.sk-controls .sk-check input { width: 18px; height: 18px; }
+.sk-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; max-width: 80ch; }
+.sk-skeleton { min-height: 360px; display: grid; place-items: center; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
+
+.sk-controls .seg button { min-height: 40px; padding: 8px 14px; }
