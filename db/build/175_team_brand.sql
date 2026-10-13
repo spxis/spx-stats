@@ -24,7 +24,8 @@ create or replace function pg_temp.norm(t text) returns text language sql immuta
 with ident as (
   select i.franchise_id, fl.league_code, pg_temp.norm(i.full_name) n, i.valid_during,
          i.valid_during = first_value(i.valid_during) over w as is_first,
-         i.valid_during = last_value(i.valid_during) over w as is_last
+         i.valid_during = last_value(i.valid_during) over w as is_last,
+         pg_temp.norm(i.full_name) = last_value(pg_temp.norm(i.full_name)) over w as is_last_name
   from core.franchise_identity i
   join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id)
   window w as (partition by i.franchise_id order by lower(i.valid_during) nulls first
@@ -97,15 +98,34 @@ with ident as (
                   -- a club item of another era (Milwaukee Brewers 1901 and 1970) gives that identity no venue; whole years, Wikidata dates are often a year
   cross join lateral (select case when v.qid is null then x.vd else x.vd * v.vr end as rng) r
   left join colours c on c.qid = t.qid
-  left join logo l on l.qid = t.qid and (not l.fallback or i.is_last)
+  left join logo l on l.qid = t.qid and (not l.fallback or i.is_last_name)   -- the Wikipedia picture is the current logo: only for the years the club has borne its current name
   where c.p is not null or l.thumb_url is not null or v.latitude is not null
   order by i.franchise_id, rng, (c.p is not null) desc, (l.thumb_url is not null) desc, (v.latitude is not null) desc, t.qid
 )
-insert into core.franchise_brand (franchise_id, valid_during, primary_hex, secondary_hex, logo_url, logo_licence, logo_page,
-                                  home_venue, latitude, longitude, source_id, source_key)
-select franchise_id, rng, p, s, thumb_url, licence, page_url, venue, latitude, longitude,
-       (select source_id from meta.source where code = 'wikidata'), qid
-from cand
+, spans as (   -- every identity a team with a logo matches, with the logo it would wear
+  select i.franchise_id, t.qid, x.vd, l.thumb_url, l.licence, l.page_url
+  from legacy_team_brand.team t
+  join ident i on i.league_code = t.league_code and i.n = pg_temp.norm(t.label)
+  cross join lateral (select daterange(case when i.is_first then null else lower(i.valid_during) end,
+                                        case when i.is_last then null else upper(i.valid_during) end) as vd) x
+  join logo l on l.qid = t.qid and (not l.fallback or i.is_last_name)
+), ins as (
+  insert into core.franchise_brand (franchise_id, valid_during, primary_hex, secondary_hex, logo_url, logo_licence, logo_page,
+                                    home_venue, latitude, longitude, source_id, source_key)
+  select franchise_id, rng, p, s, thumb_url, licence, page_url, venue, latitude, longitude,
+         (select source_id from meta.source where code = 'wikidata'), qid
+  from cand
+  on conflict (franchise_id, valid_during, source_id) do nothing
+  returning 1
+)
+-- A venue period only covers the years a dated home venue does; the logo of an identity belongs to all its years, so the years
+-- the venue periods leave are given the logo alone. A season is then shown the logo of its own name, or none.
+insert into core.franchise_brand (franchise_id, valid_during, logo_url, logo_licence, logo_page, source_id, source_key)
+select s.franchise_id, u.rng, s.thumb_url, s.licence, s.page_url, (select source_id from meta.source where code = 'wikidata'), s.qid
+from spans s
+left join lateral (select range_agg(c.rng) a from cand c where c.franchise_id = s.franchise_id and c.qid = s.qid and c.thumb_url is not null) g on true
+cross join lateral unnest(datemultirange(s.vd) - coalesce(g.a, '{}'::datemultirange)) u(rng)
+where not isempty(u.rng)
 on conflict (franchise_id, valid_during, source_id) do nothing;
 
 -- Team colours from Wikipedia's Lua colour modules. An identity (a name and its years)
