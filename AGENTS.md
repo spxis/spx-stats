@@ -339,6 +339,10 @@ Then fix forward on `main`, redeploy, and tell John.
 - **Ongoing scores** (the season in progress, all five leagues) come from English Wikipedia's club-season articles, with nflverse
   as the NFL's second check: `scripts/daily/run.py --apply` writes them to DS1 only (see `scripts/daily/README.md`). The NHL API
   and MLB statsapi are not used for new scores.
+- **Venue names and facts** (every name a home venue carried with its years, plus capacity, opened, owner, surface, roof, address) come
+  from Wikidata (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA). Refresh once a year (February) or after a
+  rename: the command list is in `scripts/wikidata_venues/README.md`; production gets `core.brand_venue_name` and
+  `core.brand_venue_info` through a data release (item 5), after migration 050 is on production.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
