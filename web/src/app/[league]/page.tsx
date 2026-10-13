@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { LeagueHeat } from "@/components/Heatmap";
 import { SeasonBars } from "@/components/SeasonBars";
 import { LeagueAwards } from "@/components/LeagueAwards";
 import { SortTable } from "@/components/SortTable";
@@ -71,6 +72,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[league]"
       </section>
       <section className="section">
         <h2>{say("league.seasons")}</h2>
+        <LeagueHeat league={lg} seasons={list.map((x) => ({ league: x.league, year: x.year, label: x.label, games: x.games, finals: x.finals, share: x.share, champion: x.champion }))} />
         <div className="seasonlist">
           {list.map((x) => leagueSat(x) ? <NoSeason key={x.year} compact>{x.label}</NoSeason> : (
             <Link key={x.year} prefetch={false} href={seasonPath(lg, x.year)} className={x.share >= 0.98 ? "full" : undefined}
