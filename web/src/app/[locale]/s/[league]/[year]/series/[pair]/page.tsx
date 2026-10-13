@@ -7,6 +7,7 @@ import { SeriesCard } from "@/components/SeasonPlayoffs";
 import { SeriesCharts, type ChartWords } from "@/components/SeriesCharts";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { SortTable } from "@/components/SortTable";
+import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { Badge } from "@/components/ui";
@@ -190,9 +191,9 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   const forIn = (f: number) => meets.reduce((t, g) => t + (g.home_f === f ? g.home_score! : g.away_f === f ? g.away_score! : 0), 0);
   const meetTable = tableOf(meets, [
     { key: "date", label: say("h2h.date"), cls: "seasoncell", get: (g: GameRow) => g.game_date, cell: (g: GameRow) => <Link href={datePath(lg, y, g.game_date, "regular")} prefetch={false}>{dt.dayName(atUtc(g.game_date))}</Link> },
-    { key: "away", label: say("h2h.away"), cls: "team", get: (g: GameRow) => g.away, cell: (g: GameRow) => <span className={g.away_score! > g.home_score! ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.away_f, y)} />{g.away}</span> },
+    { key: "away", label: say("h2h.away"), cls: "team", get: (g: GameRow) => g.away, cell: (g: GameRow) => <span className={g.away_score! > g.home_score! ? "won" : undefined}><TeamLabel lg={lg} f={g.away_f} name={g.away} year={y} logo={logoFor(d.brands, g.away_f, y)} /></span> },
     { key: "score", label: say("h2h.score"), num: true, get: (g: GameRow) => g.away_score! - g.home_score!, cell: (g: GameRow) => `${g.away_score}–${g.home_score}${g.overtime ? ` ${extra}` : ""}` },
-    { key: "home", label: say("h2h.home"), cls: "team", get: (g: GameRow) => g.home, cell: (g: GameRow) => <span className={g.home_score! > g.away_score! ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.home_f, y)} />{g.home}</span> },
+    { key: "home", label: say("h2h.home"), cls: "team", get: (g: GameRow) => g.home, cell: (g: GameRow) => <span className={g.home_score! > g.away_score! ? "won" : undefined}><TeamLabel lg={lg} f={g.home_f} name={g.home} year={y} logo={logoFor(d.brands, g.home_f, y)} /></span> },
   ], (g) => g.game_id);
 
   // Each team's other series of the playoffs, in the order played.
@@ -210,7 +211,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   const pastTable = tableOf(past ?? [], [
     { key: "season", label: sp.say("past.season"), cls: "seasoncell", get: (m: PastMeeting) => m.year, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
     { key: "round", label: sp.say("past.round"), cls: "team", get: (m: PastMeeting) => m.n, cell: (m: PastMeeting) => <Link href={roundPath(lg, m.year, m.n)} prefetch={false}>{m.round}</Link> },
-    { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? (m.s.live ? sp.say("past.inProgress") : "–") : <span className="won">{m.s.sides[0].name}</span>) },
+    { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? (m.s.live ? sp.say("past.inProgress") : "–") : <span className="won"><TeamLabel lg={lg} f={m.s.sides[0].f} name={m.s.sides[0].name} year={m.year} logo={logoFor(d.brands, m.s.sides[0].f, m.year)} /></span>) },
     { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
   ], (m) => `${m.year}-${m.s.meeting}`);
   const mets = metrics(say, unit, ra, rb);

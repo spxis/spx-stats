@@ -1,6 +1,9 @@
 import Link from "next/link";
 import { SortTable } from "@/components/SortTable";
+import { TeamLabel } from "@/components/TeamLabel";
 import type { LeagueAwardRow } from "@/lib/api/people";
+import { logoFor } from "@/lib/brand";
+import { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { seasonLabel } from "@/lib/leagues";
 import { getLeagueAwards } from "@/lib/people";
@@ -8,7 +11,6 @@ import { getPlayerPaths } from "@/lib/playerLinks";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { seasonPath } from "@/lib/slug";
-import { getPaths } from "@/lib/teamSlugs";
 import { guard } from "@/lib/loadGuard";
 
 interface Season { year: number; by: Map<string, LeagueAwardRow[]> }
@@ -16,7 +18,7 @@ const MANY = 4;
 
 /** Every award by season: a row a season, a column an award, a cell its winners (or how many, where there are many). */
 export const LeagueAwards = guard(async function LeagueAwards({ lg }: { lg: string }) {
-  const [list, paths, player] = await Promise.all([getLeagueAwards(lg), getPaths(), getPlayerPaths()]);
+  const [list, player, brands] = await Promise.all([getLeagueAwards(lg), getPlayerPaths(), getBrands()]);
   if (!list.length) return null;
   const { say, plural } = await currentSpeaker();
   const cols = new Map<string, { code: string; name: string; kind: string; n: number }>();
@@ -40,7 +42,7 @@ export const LeagueAwards = guard(async function LeagueAwards({ lg }: { lg: stri
         return w.map((x, i) => (
           <div key={i}>
             {x.person_id != null ? <Link href={player(x.person_id, x.winner ?? "", lg)} prefetch={false}>{x.winner}</Link>
-              : x.franchise_id != null ? <Link href={paths.team(lg, x.franchise_id)} prefetch={false}>{x.winner}</Link> : x.winner}
+              : x.franchise_id != null ? <TeamLabel lg={lg} f={x.franchise_id} name={x.winner} logo={logoFor(brands, x.franchise_id, x.year)} /> : x.winner}
           </div>
         ));
       },

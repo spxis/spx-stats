@@ -7,7 +7,8 @@
  */
 
 /** A club that plays or played at a venue, with the years it did (to is null while it still does). */
-export interface VenueClub { lg: string; f: number; name: string; href: string; from: number | null; to: number | null }
+/** A club that used a venue: `logo` is the one it wore when it left (its current one if it still plays there), or null if we hold none. */
+export interface VenueClub { lg: string; f: number; name: string; href: string; from: number | null; to: number | null; logo: string | null }
 
 /** One home venue, with every club that used it, as the page sends it to the browser. */
 export interface VenueRow {

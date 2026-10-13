@@ -18,9 +18,9 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
 .scoreboard { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
 .sgame { border: 1px solid var(--rule); background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }
 .srow { display: flex; align-items: center; gap: 8px; min-width: 0; min-height: 30px; }
-.srow .slogo { flex: none; width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; }
-.srow .logo { margin: 0; vertical-align: middle; }
-.srow .sname { flex: 1; min-width: 0; overflow-wrap: anywhere; }
+.srow .logo { vertical-align: middle; flex: none; }
+.srow .sname { flex: 1; min-width: 0; overflow-wrap: anywhere; display: flex; align-items: center; }
+.srow .sname .logo { margin-right: 8px; }
 .srow .sname a { text-decoration: none; }
 .srow .sname a:hover { text-decoration: underline; }
 .srow .sscore { font: 600 20px/1 var(--mono); min-width: 2ch; text-align: right; color: var(--muted); }

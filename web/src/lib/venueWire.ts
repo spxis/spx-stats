@@ -12,8 +12,11 @@ import type { VenueClub, VenueRow } from "./venueModel";
 
 type Say = Speaker["say"];
 
-/** [league index, franchise id, name, 1 when the address is the name's usual slug, else the slug (or the whole address when it is not under /<league>/team/)]. */
-export type WireClub = [number, number, string, string | 1];
+/**
+ * [league index, franchise id, name, 1 when the address is the name's usual slug, else the slug (or the whole address when it is not under /<league>/team/),
+ * logo (0 when none)]. A club that wore two logos at the venue is listed twice, once for each.
+ */
+export type WireClub = [number, number, string, string | 1, string | 0];
 /** [city and region, city page slug (0 when none)]. */
 export type WirePlace = [string, string | 0];
 /**
@@ -72,8 +75,8 @@ export function packVenues(rows: VenueRow[], leagues: string[], countryName: (cc
     }
     const flat: number[] = [];
     for (const c of r.clubs) {
-      const k = `${c.lg}|${c.f}`;
-      if (!clubs.has(k)) { clubs.set(k, clubList.length); clubList.push([leagues.indexOf(c.lg), c.f, c.name, tail(c)]); }
+      const k = `${c.lg}|${c.f}|${c.logo ?? ""}`;
+      if (!clubs.has(k)) { clubs.set(k, clubList.length); clubList.push([leagues.indexOf(c.lg), c.f, c.name, tail(c), c.logo ?? 0]); }
       flat.push(clubs.get(k)!, c.from ?? 0, c.to ?? 0);
     }
     const wiki = r.wiki === null ? 0 : r.wiki === `${WIKI}${wikiTitle(r.name)}` ? 1 : r.wiki.startsWith(WIKI) ? r.wiki.slice(WIKI.length) : r.wiki;
@@ -114,9 +117,9 @@ export function unpackVenues(w: VenueWire, leagues: string[], say: Say, countryN
     const flat = (x[16] as number[] | undefined) ?? [];
     const clubs: VenueClub[] = [];
     for (let j = 0; j < flat.length; j += 3) {
-      const [li, f, cn, t] = w.c[flat[j]];
+      const [li, f, cn, t, logo] = w.c[flat[j]];
       const lg = leagues[li];
-      clubs.push({ lg, f, name: cn, href: clubHref(lg, cn, t), from: flat[j + 1] || null, to: flat[j + 2] || null });
+      clubs.push({ lg, f, name: cn, href: clubHref(lg, cn, t), from: flat[j + 1] || null, to: flat[j + 2] || null, logo: logo || null });
     }
     const former = (x[1] as string) || null;
     const opened = (x[9] as number) || null, capacity = (x[11] as number) || null;

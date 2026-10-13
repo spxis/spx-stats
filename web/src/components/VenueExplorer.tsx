@@ -13,6 +13,7 @@ import { MapViewer } from "./MapViewer";
 import type { Pin } from "./mapDraw";
 import { createRowLink } from "./rowLink";
 import { SortTable } from "./SortTable";
+import { TeamLabel } from "./TeamLabel";
 import { YearRange } from "./YearRange";
 import "./team.css";
 import "./venues.css";
@@ -118,7 +119,7 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
     {
       key: "clubs", label: say("venuesPage.colClubs"), cls: "venueclubs", get: (v) => v.clubs[0]?.name,
       cell: (v) => v.clubs.map((c, i) => (
-        <span key={`${c.lg}${c.f}`}>{i ? ", " : ""}<Link href={c.href} prefetch={false} title={`${leagueName(c.lg)} · ${years(c.from, c.to)}`}>{c.name}</Link></span>
+        <span key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={c.logo} title={`${leagueName(c.lg)} · ${years(c.from, c.to)}`} /></span>
       )),
     },
     { key: "opened", label: say("venuesPage.colOpened"), num: true, get: (v) => v.opened, cell: (v) => (v.opened == null ? "" : String(v.opened)) },
@@ -229,7 +230,7 @@ function PlainList({ venues }: { venues: VenueRow[] }) {
         <li key={v.id}>
           {`${v.name}${v.place ? `, ${v.place}` : ""}: `}
           {v.clubs.map((c, i) => (
-            <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<Link href={c.href} prefetch={false}>{c.name}</Link></Fragment>
+            <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={c.logo} href={c.href} /></Fragment>
           ))}
         </li>
       ))}

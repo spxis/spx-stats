@@ -68,14 +68,14 @@ const say = ((key: string, vars?: Record<string, unknown>) => `${key}${vars ? JS
 const countryName = (cc: string) => (cc === "US" ? "United States" : cc === "CA" ? "Canada" : cc);
 
 test("packed rows come back exactly as they went in, whatever shortcut they could take", () => {
-  const club = (o: Partial<VenueRow["clubs"][number]>) => ({ lg: "nhl", f: 1, name: "Boston Bruins", href: "/nhl/team/boston-bruins", from: 1995, to: null, ...o });
+  const club = (o: Partial<VenueRow["clubs"][number]>) => ({ lg: "nhl", f: 1, name: "Boston Bruins", href: "/nhl/team/boston-bruins", from: 1995, to: null, logo: null, ...o });
   const rows: VenueRow[] = [
     venue({ name: "TD Garden", cc: "US", place: "Boston, MA", citySlug: "boston", wiki: "https://en.wikipedia.org/wiki/TD_Garden", address: "100 Legends Way, Boston, MA, United States",
       addressHref: "https://www.google.com/maps/search/?api=1&query=100%20Legends%20Way%2C%20Boston%2C%20MA%2C%20United%20States", clubs: [club({}), club({ lg: "nba", f: 9, name: "Boston Celtics", href: "/nba/team/boston-celtics" })],
       opened: 1995, capacity: 19156, surface: "hardwood", owner: "Delaware North", al: ["nhl|East|Atlantic"] }),
     // a partial address linked by coordinates, a Wikipedia title that is not the name, an address that does not end in the place, no place at all
     venue({ name: "Old Forum", former: "Forum 1920\u20131960", lat: 45.49, lon: -73.57, cc: "CA", place: "Montreal, QC", citySlug: null, wiki: "https://en.wikipedia.org/wiki/Montreal_Forum", address: "Montreal, QC, Canada",
-      addressHref: "https://www.google.com/maps/search/?api=1&query=45.49%2C-73.57", clubs: [club({ f: 2, name: "Montreal Canadiens", href: "/nhl/team/montreal-canadiens", from: 1926, to: 1996 })], roof: "dome" }),
+      addressHref: "https://www.google.com/maps/search/?api=1&query=45.49%2C-73.57", clubs: [club({ f: 2, name: "Montreal Canadiens", href: "/nhl/team/montreal-canadiens", from: 1926, to: 1996, logo: "https://example.com/habs.png" })], roof: "dome" }),
     venue({ name: "X/Y Park", cc: null, place: null, wiki: "https://example.com/x", address: "Somewhere else entirely", addressHref: "https://example.com/m", clubs: [club({ f: 3, name: "Odd FC", href: "/odd/path", from: null, to: 1930 })] }),
     venue({ name: "Bare", clubs: [club({})] }),
   ];

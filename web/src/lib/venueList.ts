@@ -3,6 +3,7 @@ import { z } from "zod";
 import { rows, rowsSlice } from "./api/client";
 import { alignmentSchema } from "./alignment";
 import { getCityData } from "./cityData";
+import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { LEAGUE_CODES } from "./leagues";
 import type { Speaker } from "./i18n/i18n";
@@ -84,7 +85,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
         }
         const r = acc.row;
         if (!r.leagues.includes(lg)) r.leagues.push(lg);
-        const club: VenueClub = { lg, f: t.f, name: t.name, href: t.href, from: year(v.from), to: v.to ? year(v.to) : null };
+        const club: VenueClub = { lg, f: t.f, name: t.name, href: t.href, from: year(v.from), to: v.to ? year(v.to) : null, logo: null };
         const had = r.clubs.find((c) => c.lg === lg && c.f === t.f);
         if (had) {
           had.from = had.from == null || club.from == null ? null : Math.min(had.from, club.from);
@@ -99,6 +100,8 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
   const out: VenueRow[] = [];
   for (const { row: r } of byVenue.values()) {
     r.clubs.sort((a, b) => (a.from ?? -1) - (b.from ?? -1) || BY(a.name, b.name));
+    // The logo a club wore in its last season here (a venue era ends on the first day of the year it left, hence the year before).
+    for (const c of r.clubs) c.logo = logoFor(brands, c.f, c.to == null ? undefined : c.to - 1);
     finishRow(r, leagues);
     for (const c of r.clubs) {
       if (c.to != null) continue;

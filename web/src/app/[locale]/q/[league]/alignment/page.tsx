@@ -3,17 +3,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { AlignmentSeasonSelect } from "@/components/AlignmentSeasonSelect";
+import { TeamLabel } from "@/components/TeamLabel";
 import { AlignmentTimeline, type TimelineLane } from "@/components/AlignmentTimeline";
 import "@/components/alignment.css";
 import { lanesOf, moveText, yearSchema, type AlignmentChangeRow, type AlignmentRow } from "@/lib/alignment";
 import { getAlignment, getAlignmentChanges } from "@/lib/alignmentData";
-import { getSummary } from "@/lib/data";
+import { logoFor } from "@/lib/brand";
+import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { pageMeta } from "@/lib/meta";
 import { seasonPath } from "@/lib/slug";
-import { getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 type Say = Speaker["say"];
@@ -60,7 +61,7 @@ export default guard(async function AlignmentPage({ params, searchParams }: Page
   if (!isLeague(lg)) notFound();
   const sp = await searchParams;
   const { say } = await currentSpeaker();
-  const [rows, changes, summary, paths] = await Promise.all([getAlignment(lg), getAlignmentChanges(lg), getSummary(), getPaths()]);
+  const [rows, changes, summary, brands] = await Promise.all([getAlignment(lg), getAlignmentChanges(lg), getSummary(), getBrands()]);
   const head = (
     <section className="head fade">
       <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
@@ -140,7 +141,7 @@ export default guard(async function AlignmentPage({ params, searchParams }: Page
                       const m = movedTo.get(r.franchise_id);
                       return (
                         <li key={r.team_id}>
-                          <Link href={paths.team(lg, r.franchise_id)} prefetch={false}>{r.team}</Link>
+                          <TeamLabel lg={lg} f={r.franchise_id} name={r.team} logo={logoFor(brands, r.franchise_id, selected)} />
                           {m ? <span className="moved">{moveText(say, m)}</span> : null}
                         </li>
                       );
@@ -160,7 +161,7 @@ export default guard(async function AlignmentPage({ params, searchParams }: Page
               <div className="change" key={c.franchise_id}>
                 <b>{c.from_year != null ? seasonLabel(lg, c.year) : ""}</b>
                 <span className="what">
-                  <Link href={paths.team(lg, c.franchise_id)} prefetch={false}>{c.team}</Link>{" "}{moveText(say, c)}
+                  <TeamLabel lg={lg} f={c.franchise_id} name={c.team} logo={logoFor(brands, c.franchise_id, selected)} />{" "}{moveText(say, c)}
                   {c.from_year != null && c.from_year !== c.year - 1 ? <span className="meta">{say("align.lastPlaced", { season: seasonLabel(lg, c.from_year) })}</span> : null}
                 </span>
               </div>

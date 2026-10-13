@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { MiniCup } from "@/components/TrophyIcon";
-import { TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
+import { logoFor, type BrandMap } from "@/lib/brand";
 import type { PersonResumeRow, PersonSeasonTeamRow } from "@/lib/api/player";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
@@ -29,7 +30,7 @@ function runsOf(seasons: PersonSeasonTeamRow[]) {
 const span = (a: number | null, b: number | null) => (a == null ? "" : b == null || b === a ? String(a) : `${a}–${b}`);
 
 /** The sports resume: where they studied, the clubs outside our five leagues, the draft, their seasons in the leagues, playoff appearances and titles, by year. */
-export async function PlayerResume({ resume, seasons }: { resume: PersonResumeRow[]; seasons: PersonSeasonTeamRow[] }) {
+export async function PlayerResume({ resume, seasons, brands }: { resume: PersonResumeRow[]; seasons: PersonSeasonTeamRow[]; brands: BrandMap }) {
   const { say, fmt } = await currentSpeaker();
   const entries: Entry[] = [];
   for (const r of resume) {
@@ -40,7 +41,7 @@ export async function PlayerResume({ resume, seasons }: { resume: PersonResumeRo
   }
   for (const u of runsOf(seasons)) {
     const lg = isLeague(u.league) ? LG[u.league] : u.league;
-    entries.push({ year: u.from, end: u.to, kind: "league", body: <><TeamLink lg={u.league} f={u.f} name={u.team} />
+    entries.push({ year: u.from, end: u.to, kind: "league", body: <><TeamLabel lg={u.league} f={u.f} name={u.team} logo={logoFor(brands, u.f, u.to)} />
       <span className="rmeta"> · {lg} · {u.to === u.from ? seasonLabel(u.league, u.from) : `${seasonLabel(u.league, u.from)} – ${seasonLabel(u.league, u.to)}`}</span></> });
   }
   entries.sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || (a.end ?? 9999) - (b.end ?? 9999));

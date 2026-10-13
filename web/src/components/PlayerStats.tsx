@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { NoSeason, TeamLink } from "@/components/ui";
-import { TeamLogo } from "@/components/TeamLogo";
+import { NoSeason } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
 import { PlayerChart, type SeasonPoint } from "@/components/PlayerChart";
 import { MiniCup } from "@/components/TrophyIcon";
 import { SortTable } from "@/components/SortTable";
 import { queryHref } from "@/components/ViewTabs";
 import type { PlayerRecord } from "@/lib/people";
 import type { BrandMap } from "@/lib/brand";
-import { brandFor } from "@/lib/brand";
+import { logoFor } from "@/lib/brand";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -43,7 +43,7 @@ export async function PlayerSeasons({ name, record, brands, seasonsHeld }: { nam
     { key: "season", label: say("col.season"), num: true, get: (r) => r.year * 10 + (r.gap ? 0 : 1),
       cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{many ? `${leagueName(r.league)} ${r.label}` : r.label}</Link> },
     { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => (r.gap ? gapNote(r) : <><TeamLogo url={brandFor(brands, r.f, r.year)?.logo_url} /><TeamLink lg={r.league} f={r.f} name={r.team ?? say("team.fallback", { id: r.f ?? 0 })} year={r.year} /></>) },
+      cell: (r) => (r.gap ? gapNote(r) : <TeamLabel lg={r.league} f={r.f} name={r.team ?? say("team.fallback", { id: r.f ?? 0 })} year={r.year} logo={logoFor(brands, r.f, r.year)} />) },
     { key: "reg", label: say("phase.regular"), get: (r) => (r.reg ? 1 : 0), cell: (r) => (r.reg ? "✓" : "") },
     { key: "po", label: say("phase.playoffs"), get: (r) => (r.po ? 2 : r.teamPo ? 1 : 0),
       cell: (r) => (r.po ? "✓" : r.teamPo ? <span title={say("player.teamPlayoffsTip")}>(✓)</span> : "") },
@@ -121,7 +121,7 @@ export async function PlayerStatistics({ name, record, phase, path, sp, brands }
         const seasonCol: ColumnSpec<PersonStatRow> = { key: "season", label: say("col.season"), num: true, get: (r) => r.year,
           cell: (r) => <Link href={`${queryHref(path, sp, { season: String(r.year) })}#statistics`} prefetch={false} scroll={false} title={say("player.statsView", { name, season: seasonLabel(r.league, r.year) })}>{many ? `${leagueName(r.league)} ${seasonLabel(r.league, r.year)}` : seasonLabel(r.league, r.year)}</Link> };
         const teamCol: ColumnSpec<PersonStatRow> = { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-          cell: (r) => <><TeamLogo url={brandFor(brands, r.franchise_id, r.year)?.logo_url} /><TeamLink lg={r.league} f={r.franchise_id} name={r.team ?? say("team.fallback", { id: r.franchise_id })} year={r.year} /></> };
+          cell: (r) => <TeamLabel lg={r.league} f={r.franchise_id} name={r.team ?? say("team.fallback", { id: r.franchise_id })} year={r.year} logo={logoFor(brands, r.franchise_id, r.year)} /> };
         const seasonTable = tableOf(seasons, statSpecs([...g.cols], say, fmt, [seasonCol, teamCol]), (r) => `${r.league}|${r.year}|${r.team_season_id}|${r.phase}`);
         const careerCol: ColumnSpec<PersonTotalRow> = { key: "season", label: say("player.career"), get: (r) => r.seasons,
           cell: (r) => `${many ? leagueName(r.league) + " · " : ""}${plural("player.careerSeasons", r.seasons)}` };

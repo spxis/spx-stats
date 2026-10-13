@@ -9,8 +9,8 @@ import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { loadScores } from "@/lib/scoresData";
 import { AccentStyle } from "./AccentStyle";
 import { ScoresBar } from "./ScoresBar";
-import { TeamLogo } from "./TeamLogo";
-import { Badge, TeamLink } from "./ui";
+import { TeamLabel } from "./TeamLabel";
+import { Badge } from "./ui";
 import "./scores.css";
 
 type Brands = Awaited<ReturnType<typeof getBrands>>;
@@ -26,8 +26,7 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
   const side = (id: number, f: number | null, name: string | null, score: number | null, won: boolean) => (
     <div className={"srow" + (won ? " won" : "")}>
-      <span className="slogo"><TeamLogo url={logoFor(brands, f, g.year)} size={32} shape="square" /></span>
-      <span className="sname"><TeamLink lg={lg} f={f} name={name || "—"} year={g.year} className={won ? "won" : undefined} /></span>
+      <span className="sname"><TeamLabel lg={lg} f={f} name={name || "—"} year={g.year} className={won ? "won" : undefined} logo={logoFor(brands, f, g.year)} size={32} shape="square" /></span>
       <b className="sscore">{final ? score : ""}</b>
     </div>
   );

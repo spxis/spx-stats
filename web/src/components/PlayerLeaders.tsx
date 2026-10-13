@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
-import { TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
 import { queryHref } from "@/components/ViewTabs";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { logoFor, type BrandMap } from "@/lib/brand";
@@ -127,8 +127,7 @@ export async function PlayerLeaders({ lg, year, teams, sp, brands, abbrs }: {
         key: "team", label: say("col.team"), cls: "team", get: (r) => clubName(club(r).f),
         cell: (r) => (
           <>
-            <TeamLogo url={logoFor(brands, club(r).f, year)} />
-            <TeamLink lg={lg} f={club(r).f} name={clubName(club(r).f)} year={year} abbr={clubAbbr(r)} />
+            <TeamLabel lg={lg} f={club(r).f} name={clubName(club(r).f)} year={year} abbr={clubAbbr(r)} logo={logoFor(brands, club(r).f, year)} />
             {r.player.clubs.length > 1 ? <span className="dim">{` +${r.player.clubs.length - 1}`}</span> : null}
           </>
         ),

@@ -8,6 +8,7 @@ import { H2hPicker } from "@/components/H2hPicker";
 import { H2hSeasonSelect } from "@/components/H2hSeasonSelect";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { SortTable } from "@/components/SortTable";
+import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
 import { queryHref } from "@/components/ViewTabs";
 import { Badge, Figures } from "@/components/ui";
@@ -149,7 +150,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   );
   const sides = (
     <p className="note">
-      <Link href={paths.team(lg, a)}>{name[0]}</Link>{" · "}<Link href={paths.team(lg, b)}>{name[1]}</Link>
+      <TeamLabel lg={lg} f={a} name={name[0]} logo={logoFor(d.brands, a, logoYear)} />{" · "}<TeamLabel lg={lg} f={b} name={name[1]} logo={logoFor(d.brands, b, logoYear)} />
     </p>
   );
 
@@ -332,7 +333,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const meetings: PlayoffMeeting[] = phase === "regular" ? [] : playoffMeetings(lg, d.history, a, b).filter((m) => year == null || m.year === year);
   const seriesTable = tableOf(meetings, [
     { key: "season", label: say("col.season"), cls: "seasoncell", get: (m: PlayoffMeeting) => m.year, cell: (m: PlayoffMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{seasonLabel(lg, m.year)}</Link> },
-    { key: "winner", label: say("past.winner"), cls: "team", get: (m: PlayoffMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PlayoffMeeting) => (m.s.winner == null ? (m.s.live ? say("past.inProgress") : "–") : <span className="won">{m.s.sides[0].name}</span>) },
+    { key: "winner", label: say("past.winner"), cls: "team", get: (m: PlayoffMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PlayoffMeeting) => (m.s.winner == null ? (m.s.live ? say("past.inProgress") : "–") : <span className="won"><TeamLabel lg={lg} f={m.s.sides[0].f} name={m.s.sides[0].name} year={m.year} logo={logoFor(d.brands, m.s.sides[0].f, m.year)} /></span>) },
     { key: "result", label: say("past.result"), num: true, get: (m: PlayoffMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PlayoffMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
     { key: "games", label: say("col.gp"), num: true, get: (m: PlayoffMeeting) => m.s.games.filter((g) => g.played).length },
   ], (m) => `${m.year}-${m.s.meeting}`);
@@ -351,7 +352,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
     },
     {
       key: "away", label: say("h2h.col.away"), cls: "team", get: (g: H2hGame) => g.awayName,
-      cell: (g: H2hGame) => <span className={g.awayScore > g.homeScore ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.aHome ? b : a, g.year)} /><Link href={paths.teamSeason(lg, g.aHome ? b : a, g.year)} prefetch={false}>{g.awayName}</Link></span>,
+      cell: (g: H2hGame) => <span className={g.awayScore > g.homeScore ? "won" : undefined}><TeamLabel lg={lg} f={g.aHome ? b : a} name={g.awayName} year={g.year} logo={logoFor(d.brands, g.aHome ? b : a, g.year)} /></span>,
     },
     {
       key: "score", label: say("col.score"), num: true, title: say("h2h.col.scoreTitle"), cls: "h2hscore", get: (g: H2hGame) => g.awayScore - g.homeScore,
@@ -359,7 +360,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
     },
     {
       key: "home", label: say("h2h.col.home"), cls: "team", get: (g: H2hGame) => g.homeName,
-      cell: (g: H2hGame) => <span className={g.homeScore > g.awayScore ? "won" : undefined}><TeamLogo url={logoFor(d.brands, g.aHome ? a : b, g.year)} /><Link href={paths.teamSeason(lg, g.aHome ? a : b, g.year)} prefetch={false}>{g.homeName}</Link></span>,
+      cell: (g: H2hGame) => <span className={g.homeScore > g.awayScore ? "won" : undefined}><TeamLabel lg={lg} f={g.aHome ? a : b} name={g.homeName} year={g.year} logo={logoFor(d.brands, g.aHome ? a : b, g.year)} /></span>,
     },
     { key: "res", label: say("h2h.col.result", { team: na }), get: (g: H2hGame) => g.res, cell: (g: H2hGame) => <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> },
     { key: "src", label: say("col.source"), get: (g: H2hGame) => g.src, cell: (g: H2hGame) => <Badge src={g.src} /> },

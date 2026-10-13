@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
-import { TeamLogo } from "@/components/TeamLogo";
+import { TeamLabel } from "@/components/TeamLabel";
 import { queryHref } from "@/components/ViewTabs";
 import { logoFor } from "@/lib/brand";
 import { getBrands } from "@/lib/data";
@@ -15,7 +15,6 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { formatSort, parseSort, tableOf } from "@/lib/sort";
 import { getTeamPage, TEAM_SORTS, teamSpan, type TeamStatus } from "@/lib/teamIndex";
-import { getPaths } from "@/lib/teamSlugs";
 import { rangeFromQuery } from "@/lib/yearRange";
 import type { TeamIndexRow } from "@/lib/api/teams";
 import "@/components/alignment.css";
@@ -46,7 +45,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/[loc
   const sortText = formatSort(sort);
   const span = await teamSpan(league).catch(() => null);
   const range = span ? rangeFromQuery(first(sp.from), first(sp.to), span.min, span.max) : null;
-  const [data, paths, brands] = await Promise.all([getTeamPage(league, q, status, sort, pageOf(first(sp.page)), range ?? {}).catch(() => null), getPaths(), getBrands()]);
+  const [data, brands] = await Promise.all([getTeamPage(league, q, status, sort, pageOf(first(sp.page)), range ?? {}).catch(() => null), getBrands()]);
   const keep = { league: league || null, q: q || null, status: status === "all" ? null : status, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
   const href = (changes: Record<string, string | null>) => queryHref("/teams", sp, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
@@ -55,9 +54,7 @@ export default guard(async function TeamsPage({ searchParams }: PageProps<"/[loc
     {
       key: "name", label: say("col.team"), cls: "team", rest: "name", get: (t: TeamIndexRow) => t.name,
       cell: (t: TeamIndexRow) => (
-        <Link href={paths.team(t.league, t.franchise_id)} prefetch={false}>
-          <TeamLogo url={logoFor(brands, t.franchise_id)} size={22} shape="square" />{t.name}
-        </Link>
+        <TeamLabel lg={t.league} f={t.franchise_id} name={t.name} logo={logoFor(brands, t.franchise_id, t.active ? undefined : (t.last_season ?? undefined))} />
       ),
     },
     { key: "league", label: say("col.league"), rest: "league", get: (t: TeamIndexRow) => (isLeague(t.league) ? LG[t.league] : t.league) },

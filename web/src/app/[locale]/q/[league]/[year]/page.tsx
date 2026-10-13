@@ -11,8 +11,8 @@ import { SeasonOutage } from "@/components/SeasonOutage";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
-import { TeamLogo } from "@/components/TeamLogo";
-import { Badge, NoSeason, TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
+import { Badge, NoSeason } from "@/components/ui";
 import { queryHref, ViewTabs } from "@/components/ViewTabs";
 import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
 import { getStandingsAsOf } from "@/lib/alignmentData";
@@ -94,7 +94,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           {holder && defending != null ? (
             <p className="lede holder">
               {streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}:{" "}
-              <span className="tm"><TeamLogo url={logoFor(brands, defending, holder.year)} /><TeamLink lg={lg} f={defending} name={holder.champion ?? ""} /></span>
+              <span className="tm"><TeamLabel lg={lg} f={defending} name={holder.champion ?? ""} logo={logoFor(brands, defending, holder.year)} /></span>
               <span className="meta"> · {say("season.wonTitle", { season: holder.label })}</span>
             </p>
           ) : null}
@@ -147,8 +147,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
       cell: (r) => (
         <>
-          <TeamLogo url={logoFor(brands, r.franchise_id, y)} />
-          <Link href={played.has(r.team_id) || isIdleTeam(r.team_id) ? paths.teamSeason(lg, r.franchise_id, y) : paths.team(lg, r.franchise_id)} prefetch={false}><span className="tn-long">{r.team}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, r.franchise_id, y, r.team)}</abbr></Link>
+          <TeamLabel lg={lg} f={r.franchise_id} name={r.team} year={played.has(r.team_id) || isIdleTeam(r.team_id) ? y : undefined} abbr={abbrFor(abbrs, r.franchise_id, y, r.team)} logo={logoFor(brands, r.franchise_id, y)} />
           {winner != null && r.franchise_id === winner ? (
             <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, y) })}>{say("season.winner")}</span>
           ) : null}
@@ -211,7 +210,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         <section className="banner">
           <span className="cup">{champ.award}</span>
           <Badge src={champ.source} />
-          <span className="who"><TeamLogo url={logoFor(brands, champF, y)} size={40} shape="circle" /><TeamLink lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} /></span>
+          <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
           <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} /></span>
         </section>
       ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}
@@ -240,7 +239,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
             {awards.map((a, i) => (
               <div className="award" key={i}>
                 <span className="name">{a.award}</span>
-                <span className="winner">{a.person_id != null ? <Link href={player(a.person_id, a.winner ?? "", lg)} prefetch={false}>{a.winner}</Link> : <TeamLink lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} />}</span>
+                <span className="winner">{a.person_id != null ? <Link href={player(a.person_id, a.winner ?? "", lg)} prefetch={false}>{a.winner}</Link> : <TeamLabel lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} logo={logoFor(brands, a.franchise_id, y)} />}</span>
                 <span className="note">{a.note || ""} <Badge src={a.source} /></span>
               </div>
             ))}

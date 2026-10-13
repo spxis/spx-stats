@@ -3,8 +3,7 @@ import type { ReactNode } from "react";
 import { MapViewer } from "@/components/MapViewer";
 import { OutageSlope } from "@/components/OutageSlope";
 import { SortTable } from "@/components/SortTable";
-import { TeamLogo } from "@/components/TeamLogo";
-import { TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
 import type { SeasonOutageRow, SeasonSummaryRow } from "@/lib/api/types";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { logoFor, type BrandMap } from "@/lib/brand";
@@ -131,7 +130,7 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
   for (const c of ca) nameOf.set(c.f, c.name);
   const labelB = seasonLabel(lg, before.year), labelA = seasonLabel(lg, after.year);
   const team = (f: number, y: number, text?: string) => (
-    <span className="tm"><TeamLogo url={logoFor(brands, f, y)} /><TeamLink lg={lg} f={f} name={text ?? nameOf.get(f) ?? ""} /></span>
+    <span className="tm"><TeamLabel lg={lg} f={f} name={text ?? nameOf.get(f) ?? ""} logo={logoFor(brands, f, y)} /></span>
   );
   const pLink = (p: Person) => <Link key={p.id} href={player(p.id, p.name, lg)} prefetch={false}>{p.name}</Link>;
   const list = (ps: Person[], n: number): ReactNode => ps.slice(0, n).flatMap((p, i) => (i ? [", ", pLink(p)] : [pLink(p)]));

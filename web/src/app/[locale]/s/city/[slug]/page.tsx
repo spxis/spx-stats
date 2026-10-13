@@ -8,7 +8,7 @@ import { Credits } from "@/components/Credits";
 import { MapViewer } from "@/components/MapViewer";
 import { RankBars, type RankItem } from "@/components/RankBars";
 import { SortTable } from "@/components/SortTable";
-import { TeamLogo } from "@/components/TeamLogo";
+import { TeamLabel } from "@/components/TeamLabel";
 import { MiniCup } from "@/components/TrophyIcon";
 import { Figures } from "@/components/ui";
 import { abbrFor } from "@/lib/abbr";
@@ -81,7 +81,9 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
   const accent = (f: number) => teamAccent(brandFor(brands, f));
   const years = (s: Stay) => s.runs.map(([a, b]) => (a === b ? seasonLabel(s.league, a) : `${seasonLabel(s.league, a)}–${s.active && b === s.last && s.runs.at(-1)?.[1] === b ? say("teams.now") : seasonLabel(s.league, b)}`)).join(", ");
   const record = (s: Stay) => `${s.w}–${s.l}${s.t ? `–${s.t}` : ""}${s.otl ? `–${s.otl}` : ""}`;
-  const clubLink = (s: Stay) => <Link href={paths.team(s.league, s.f)} prefetch={false}><TeamLogo url={logoFor(brands, s.f)} size={22} shape="square" />{s.name}</Link>;
+  // A club still playing wears its current logo; a former one the logo of its last season here (none, if we hold none for it).
+  const clubLogo = (s: Stay) => logoFor(brands, s.f, s.active ? undefined : s.last);
+  const clubLink = (s: Stay) => <TeamLabel lg={s.league} f={s.f} name={s.name} logo={clubLogo(s)} />;
 
   const built = tableOf(here, [
     { key: "club", label: say("col.team"), cls: "team", get: (s) => s.name, cell: clubLink },
@@ -98,7 +100,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
   const shareItems: RankItem[] = wins.map((s, i) => {
     const a = accent(s.f);
     return {
-      key: i, name: `${s.name} · ${LG[s.league as keyof typeof LG]}`, abbr: abbrFor(abbrs[s.league], s.f, s.last, s.name), href: paths.team(s.league, s.f), logo: logoFor(brands, s.f),
+      key: i, name: `${s.name} · ${LG[s.league as keyof typeof LG]}`, abbr: abbrFor(abbrs[s.league], s.f, s.last, s.name), href: paths.team(s.league, s.f), logo: clubLogo(s),
       tl: a.light, td: a.dark, value: s.share ?? 0, text: fmt3(s.share ?? 0), tip: `${record(s)} · ${plural("count.seasons", s.seasons)}`, gone: !s.active,
     };
   });
@@ -208,7 +210,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
             {members2.map(({ m, stays }) => (
               <li key={m.slug}>
                 <Link href={`/city/${m.slug}`} prefetch={false}><b>{nameOf(m)}</b>, {placeOf(m)}</Link>
-                <span>{[...new Map(stays.map((s) => [`${s.league}-${s.f}`, s])).values()].map((s, i) => <span key={`${s.league}-${s.f}`}>{i ? " · " : ""}<Link href={paths.team(s.league, s.f)} prefetch={false}>{s.name}</Link></span>)}</span>
+                <span>{[...new Map(stays.map((s) => [`${s.league}-${s.f}`, s])).values()].map((s, i) => <span key={`${s.league}-${s.f}`}>{i ? " · " : ""}<TeamLabel lg={s.league} f={s.f} name={s.name} logo={logoFor(brands, s.f, s.active ? undefined : s.last)} /></span>)}</span>
               </li>
             ))}
           </ul>

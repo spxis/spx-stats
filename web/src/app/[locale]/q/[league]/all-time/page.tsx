@@ -8,6 +8,7 @@ import { queryHref } from "@/components/ViewTabs";
 import { RankBars, teamVars, type RankItem } from "@/components/RankBars";
 import { SortTable } from "@/components/SortTable";
 import { Spark } from "@/components/Spark";
+import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Figures } from "@/components/ui";
 import "@/components/alignment.css";
@@ -127,9 +128,8 @@ export default async function AllTimePage({ params, searchParams }: PageProps<"/
       key: "team", label: say("col.team"), cls: "team", get: (t) => t.name,
       cell: (t) => (
         <span className="at-c" style={teamVars(colours(t.f))}>
-          <TeamLogo url={logoFor(brands, t.f)} size={22} />
           <span className="nm">
-            <Link href={paths.team(lg, t.f)} prefetch={false}><span className="tn-long">{t.name}</span><abbr className="tn-short" title={t.name}>{t.abbr}</abbr></Link>
+            <TeamLabel lg={lg} f={t.f} name={t.name} abbr={t.abbr} logo={logoFor(brands, t.f)} />
             {t.former.length ? <small className="former">{say("allTime.former", { names: t.former.join(", ") })}</small> : null}
           </span>
         </span>

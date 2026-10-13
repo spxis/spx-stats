@@ -2,10 +2,13 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { AccentStyle } from "@/components/AccentStyle";
 import { SortTable } from "@/components/SortTable";
+import { TeamLabel } from "@/components/TeamLabel";
 import { queryHref } from "@/components/ViewTabs";
 import { Figures } from "@/components/ui";
 import "@/components/h2h.css";
 import { getAlignment } from "@/lib/alignmentData";
+import { logoFor } from "@/lib/brand";
+import { getBrands } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { pairPath, parseH2hQuery, tally } from "@/lib/h2h";
 import { getTeamHistory } from "@/lib/h2hData";
@@ -22,8 +25,8 @@ import { getLeagueClubs, getPaths } from "@/lib/teamSlugs";
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
 async function load(lg: LeagueCode, f: number) {
-  const [history, alignment, clubs, paths] = await Promise.all([getTeamHistory(lg, f), getAlignment(lg).catch(() => []), getLeagueClubs(lg), getPaths()]);
-  return { history, places: placeIndex(alignment), clubs, paths };
+  const [history, alignment, clubs, paths, brands] = await Promise.all([getTeamHistory(lg, f), getAlignment(lg).catch(() => []), getLeagueClubs(lg), getPaths(), getBrands()]);
+  return { history, places: placeIndex(alignment), clubs, paths, brands };
 }
 
 export async function groupMeta(lg: string, f: number, group: GroupId, path: string): Promise<Metadata> {
@@ -132,7 +135,7 @@ export async function GroupPage({ lg, f, group, path, sp }: { lg: LeagueCode; f:
   const members = memberTallies(picked, lg);
   type M = (typeof members)[number];
   const memberTable = tableOf(members, [
-    { key: "opp", label: say("h2h.group.col.opp"), cls: "team", get: (m: M) => nameOf(m.f), cell: (m: M) => <Link href={pairPath(paths, lg, f, m.f).path} prefetch={false}>{nameOf(m.f)}</Link> },
+    { key: "opp", label: say("h2h.group.col.opp"), cls: "team", get: (m: M) => nameOf(m.f), cell: (m: M) => <TeamLabel lg={lg} f={m.f} name={nameOf(m.f)} href={pairPath(paths, lg, f, m.f).path} logo={logoFor(d.brands, m.f)} /> },
     { key: "gp", label: say("col.gp"), num: true, get: (m: M) => m.t.gp, cell: (m: M) => fmt(m.t.gp) },
     { key: "rec", label: say("h2h.col.record", { team }), num: true, title: say("h2h.col.recordTitle"), get: (m: M) => share(m.t.a), cell: (m: M) => recordText(m.t.a) },
     { key: "share", label: say("col.share"), num: true, get: (m: M) => share(m.t.a), cell: (m: M) => { const v = share(m.t.a); return v == null ? "" : fmt3(v); } },

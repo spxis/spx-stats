@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { TeamLogo } from "@/components/TeamLogo";
+import { TeamLabel } from "@/components/TeamLabel";
 import { logoFor } from "@/lib/brand";
 import { getBrands } from "@/lib/data";
 import { findFinal, parseChampionNote, pairSegment } from "@/lib/series";
@@ -27,8 +27,7 @@ export const ChampionNote = guard(async function ChampionNote({ lg, year, champ,
       {p.lead}
       <Link href={`${seasonPath(lg, year)}/series/${pairSegment(paths, lg, year, champ, found.opp, found.meeting)}`} prefetch={false} title="The whole series, game by game">{score}</Link>
       {p.mid}
-      <TeamLogo url={logoFor(brands, found.opp, year)} />
-      <Link href={paths.teamSeason(lg, found.opp, year)} prefetch={false}>{p.opp}</Link>
+      <TeamLabel lg={lg} f={found.opp} name={p.opp} year={year} logo={logoFor(brands, found.opp, year)} />
     </>
   );
 }, ({ note }) => <>{note ?? ""}</>);

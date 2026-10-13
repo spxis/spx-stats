@@ -7,10 +7,10 @@ import { SeasonSync } from "@/components/SeasonSync";
 import { LeagueAwards } from "@/components/LeagueAwards";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
-import { TeamLogo } from "@/components/TeamLogo";
+import { TeamLabel } from "@/components/TeamLabel";
 import { ChampionNote } from "@/components/ChampionNote";
 import { ChampionRow } from "@/components/ChampionRow";
-import { Badge, TeamLink } from "@/components/ui";
+import { Badge } from "@/components/ui";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
 import { logoFor } from "@/lib/brand";
@@ -56,7 +56,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
     x.champion_franchise != null ? x : { ...x, champion_franchise: await franchiseOfName(lg, x.champion) }));
   const champions = tableOf(champs, [
     { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (c) => c.year, cell: (c) => <Link href={seasonPath(lg, c.year)} prefetch={false}>{c.label}</Link> },
-    { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.champion, cell: (c) => <><TeamLogo url={logoFor(brands, c.champion_franchise, c.year)} /><TeamLink lg={lg} f={c.champion_franchise} name={c.champion} /></> },
+    { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.champion, cell: (c) => <TeamLabel lg={lg} f={c.champion_franchise} name={c.champion} logo={logoFor(brands, c.champion_franchise, c.year)} /> },
     { key: "final", label: say("col.final"), cls: "note", get: (c) => c.champion_note, cell: (c) => <ChampionNote lg={lg} year={c.year} champ={c.champion_franchise} note={c.champion_note} /> },
     { key: "source", label: say("col.source"), get: (c) => srcName(say, c.champion_source), cell: (c) => <Badge src={c.champion_source} /> },
   ], (c) => c.year);

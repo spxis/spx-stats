@@ -2,8 +2,8 @@ import Link from "next/link";
 import { LeaderSpark } from "@/components/LeaderSpark";
 import { LeaderTrend, type TrendPoint } from "@/components/LeaderTrend";
 import { SortTable } from "@/components/SortTable";
-import { TeamLogo } from "@/components/TeamLogo";
-import { TeamLink } from "@/components/ui";
+import { TeamLabel } from "@/components/TeamLabel";
+import { TeamLogo, type LogoShape } from "@/components/TeamLogo";
 import { queryHref } from "@/components/ViewTabs";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import type { LeaderStanding } from "@/lib/api/leaders";
@@ -82,10 +82,10 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
     const ever = all.map((r) => stat.get(r)).filter((v): v is number => v != null && Number.isFinite(v));
     const placeIn = (list: number[], v: number) => list.filter((o) => beats(stat, o, v)).length + 1;
     const best = rows[0].value, last = rows[rows.length - 1].value;
-    const link = (r: LeaderStanding, short = false) => <TeamLink lg={lg} f={r.franchise_id} name={name(r)} year={year} abbr={short ? abbrFor(abbrs, r.franchise_id, year, r.team) : undefined} />;
+    const club = (r: LeaderStanding, short = false, size?: number, shape?: LogoShape) => <TeamLabel lg={lg} f={r.franchise_id} name={name(r)} year={year} abbr={short ? abbrFor(abbrs, r.franchise_id, year, r.team) : undefined} logo={logoFor(brands, r.franchise_id, year)} size={size} shape={shape} />;
     const cols: ColumnSpec<(typeof rows)[number]>[] = [
       { key: "rk", label: say("leaders.col.rank"), num: true, cls: "rk", get: (r) => placeIn(thisSeason, r.value) },
-      { key: "team", label: say("col.team"), cls: "team", get: (r) => r.row.team, cell: (r) => <><TeamLogo url={logoFor(brands, r.row.franchise_id, year)} />{link(r.row, true)}{champion != null && r.row.franchise_id === champion ? <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, year) })}>{say("season.winner")}</span> : null}</> },
+      { key: "team", label: say("col.team"), cls: "team", get: (r) => r.row.team, cell: (r) => <>{club(r.row, true)}{champion != null && r.row.franchise_id === champion ? <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, year) })}>{say("season.winner")}</span> : null}</> },
       {
         key: "value", label: label(stat), num: true, title: perGame(stat) || undefined, get: (r) => r.value,
         cell: (r) => {
@@ -117,7 +117,7 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
             <span className="num">{showTeam(stat.kind, lead.value, fmt)}{perGame(stat) ? <small>{perGame(stat)}</small> : null}</span>
             <span className="name">
               {lead.teams.slice(0, 3).map((r, i) => (
-                <span key={r.team_id}>{i > 0 ? <span className="dim">{" / "}</span> : null}<TeamLogo url={logoFor(brands, r.franchise_id, year)} size={36} shape="square" />{link(r)}</span>
+                <span key={r.team_id}>{i > 0 ? <span className="dim">{" / "}</span> : null}{club(r, false, 36, "square")}</span>
               ))}
               {lead.teams.length > 3 ? <span className="dim">{`+${lead.teams.length - 3}`}</span> : null}
             </span>

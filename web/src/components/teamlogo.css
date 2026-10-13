@@ -1,0 +1,7 @@
+/* The one team-logo size. Keep the numbers in step with LOGO_SIZE in TeamLogo.tsx. A logo keeps its own proportions at a fixed
+   height (regular), or sits inside a square or round tile of the same box (square, circle). */
+@layer components {
+  .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; height: var(--s, 20px); width: auto; min-width: var(--s, 20px); max-width: calc(var(--s, 20px) * 2.2); }
+  .logo.square, .logo.circle { width: var(--s, 20px); min-width: 0; max-width: none; padding: calc(var(--s, 20px) * .1); background: var(--logo-tile); border: 1px solid var(--rule); border-radius: 4px; }
+  .logo.circle { padding: calc(var(--s, 20px) * .17); border-radius: 50%; }
+}

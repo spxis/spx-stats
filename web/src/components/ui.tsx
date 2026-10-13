@@ -19,17 +19,17 @@ export function Badge({ src }: { src: string | null | undefined }) {
 
 /**
  * A link to a team's page, or plain text where the franchise is unknown. Inside a season (`year`) it opens that team's
- * season, not the franchise. With `abbr` the name shortens to the abbreviation on a phone (the full name stays on its title).
+ * season, not the franchise; `href` opens another page about the team instead. With `abbr` the name shortens to the abbreviation on a phone (the full name stays on its title).
  */
-export function TeamLink({ lg, f, name, className, year, abbr }: {
-  lg: string; f: number | null | undefined; name: string | null | undefined; className?: string; year?: number; abbr?: string;
+export function TeamLink({ lg, f, name, className, year, abbr, title, href }: {
+  lg: string; f: number | null | undefined; name: string | null | undefined; className?: string; year?: number; abbr?: string; title?: string; href?: string;
 }) {
   const paths = usePaths();
   const text = abbr ? <><span className="tn-long">{name}</span><abbr className="tn-short" title={name ?? undefined}>{abbr}</abbr></> : name;
   return f != null ? (
-    <Link className={className} href={year != null ? paths.teamSeason(lg, f, year) : paths.team(lg, f)} prefetch={false}>{text}</Link>
+    <Link className={className} href={href ?? (year != null ? paths.teamSeason(lg, f, year) : paths.team(lg, f))} prefetch={false} title={title}>{text}</Link>
   ) : (
-    <span className={className}>{text}</span>
+    <span className={className} title={title}>{text}</span>
   );
 }
 

@@ -150,7 +150,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
     },
     {
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, f, r.year, r.team)}</abbr></>,
+      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><TeamLogo url={logoFor(brands, f, r.year)} /><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, f, r.year, r.team)}</abbr></>,
     },
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,

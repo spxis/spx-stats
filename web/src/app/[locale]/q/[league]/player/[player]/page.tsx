@@ -9,9 +9,8 @@ import type { Pin } from "@/components/mapDraw";
 import { Flag } from "@/components/Flag";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
-import { TeamLogo } from "@/components/TeamLogo";
-import { TeamLink } from "@/components/ui";
-import { brandFor } from "@/lib/brand";
+import { TeamLabel } from "@/components/TeamLabel";
+import { logoFor } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { getPaths } from "@/lib/teamSlugs";
@@ -164,13 +163,13 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   const awardTable = tableOf(awards, [
     { key: "season", label: say("col.season"), num: true, get: (r) => r.year, cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{`${leagueName(r.league)} ${seasonLabel(r.league, r.year)}`}</Link> },
     { key: "award", label: say("col.award"), cls: "team", get: (r) => r.award },
-    { key: "team", label: say("col.team"), get: (r) => r.team, cell: (r) => (r.team ? <TeamLink lg={r.league} f={r.franchise_id} name={r.team} /> : "") },
+    { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => (r.team ? <TeamLabel lg={r.league} f={r.franchise_id} name={r.team} logo={logoFor(brands, r.franchise_id, r.year)} /> : "") },
     { key: "note", label: say("col.note"), cls: "note", get: (r) => r.note, cell: (r) => r.note || "" },
   ], (r, i) => `${r.award_code}|${r.year}|${i}`);
   const teamTable = tableOf(teams, [
     { key: "from", label: say("col.from"), num: true, get: (t) => t.from_year, cell: (t) => <Link href={seasonPath(t.league, t.from_year)} prefetch={false}>{seasonLabel(t.league, t.from_year)}</Link> },
     { key: "to", label: say("col.to"), num: true, get: (t) => t.to_year, cell: (t) => (t.to_year === t.from_year ? "" : <Link href={seasonPath(t.league, t.to_year)} prefetch={false}>{seasonLabel(t.league, t.to_year)}</Link>) },
-    { key: "team", label: say("col.team"), cls: "team", get: (t) => t.team, cell: (t) => <><TeamLogo url={brandFor(brands, t.franchise_id, t.to_year)?.logo_url} /><TeamLink lg={t.league} f={t.franchise_id} name={t.team || say("team.fallback", { id: t.franchise_id })} /></> },
+    { key: "team", label: say("col.team"), cls: "team", get: (t) => t.team, cell: (t) => <TeamLabel lg={t.league} f={t.franchise_id} name={t.team || say("team.fallback", { id: t.franchise_id })} logo={logoFor(brands, t.franchise_id, t.to_year)} /> },
     { key: "league", label: say("col.league"), get: (t) => leagueName(t.league) },
   ], (t) => `${t.league}|${t.franchise_id}|${t.from_year}`);
 
@@ -199,7 +198,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
       ) : null}
       {record.seasonTeams.length ? <PlayerSeasons name={p.name} record={record} brands={brands} seasonsHeld={seasonsHeld} /> : null}
       {record.stats.length ? <PlayerStatistics name={p.name} record={record} phase={phase} path={at.path} sp={sp} brands={brands} /> : null}
-      <PlayerResume resume={record.resume} seasons={record.seasonTeams} />
+      <PlayerResume resume={record.resume} seasons={record.seasonTeams} brands={brands} />
       {awards.length ? (
         <section className="section">
           <h2>{say("player.awards")}</h2>
