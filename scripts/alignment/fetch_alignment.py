@@ -46,13 +46,13 @@ def cached(title):
 
 def plan(league):
     if league == "mlb":
-        for y in list(range(1969, 2002)) + [2003, 2007] + list(range(2011, 2026)):
+        for y in list(range(1969, 2002)) + [2003, 2007] + list(range(2011, 2027)):
             yield y, f"{y} Major League Baseball season", r"(\d{4} (?:AL|NL) (?:East|West|Central)[^{}|]*?)"
     elif league == "nfl":
         for y in list(range(1999, 2002)) + [2003, 2007] + list(range(2011, 2027)):
             yield y, f"{y} NFL season", r"(\d{4} (?:AFC|NFC) (?:East|West|North|South|Central)[^{}|]*?)"
     elif league == "nba":
-        for y in [2001, 2007, 2010, 2011, 2012] + list(range(2013, 2026)):
+        for y in [2001, 2007, 2010, 2011, 2012] + list(range(2013, 2027)):
             yield y, f"{y}{D}{str(y + 1)[-2:]} NBA season", r"(\d{4}" + D + r"\d{2} NBA [^{}|]*?[Ss]tandings)"
 
 def run(league):

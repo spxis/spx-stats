@@ -123,9 +123,13 @@ select distinct on (y, team) y, team, lg from (
   union all
   select extract(year from game_date)::int, visitor, visitor_league, count(*) from legacy_retrosheet.game_log where visitor_league is not null and visitor_league <> 'ML' group by 1, 2, 3) z
 order by y, team, n desc;
+-- A code names a club by the identity's abbreviation of that season or, once step 179 has replaced Retrosheet's codes with the
+-- fans' (CHN -> CHC), by the franchise the code was recorded against in core.external_id (step 140).
 insert into ev0
-select 'mlb', r.y, ts.franchise_id, 'retrosheet', 2, r.lg, null, null
-from rl r join ts on ts.lg = 'mlb' and ts.y = r.y and ts.abbr = r.team;
+select distinct 'mlb', r.y, ts.franchise_id, 'retrosheet', 2, r.lg, null, null
+from rl r
+left join core.external_id e on e.entity_kind = 'franchise' and e.source_id = (select source_id from src where code = 'retrosheet') and e.external_key = 'franchise:' || r.team
+join ts on ts.lg = 'mlb' and ts.y = r.y and (ts.abbr = r.team or ts.franchise_id = e.entity_id);
 
 -- 3. Wikipedia standings templates. A team named by a template is found by its full name, else by its nickname
 -- (the last words of the name) among that season's clubs of the league.
@@ -141,7 +145,13 @@ union all
 select 'nba', season, division,
        case when division ~ ' NBA (East|West) standings$' then 'conference' else 'division' end,
        substring(division from ' NBA (.+) standings$'), null, team, pg_temp.flat(team)
-from legacy_wikipedia_nba.standing;
+from legacy_wikipedia_nba.standing
+union all  -- the NFL before 1999: the season's standings templates (step 151 loads them as legacy_wikipedia_nfl.standing; "1991 AFC East standings",
+           -- and "1982 AFC standings" for the strike season, which was played without divisions)
+select 'nfl', season, division, case when division ~ ' (AFC|NFC) standings$' then 'conference' else 'division' end,
+       regexp_replace(regexp_replace(division, '^[0-9]{4} ', ''), ' standings$', ''), null, team, pg_temp.flat(team)
+from legacy_wikipedia_nfl.standing
+where season < 1999 and division ~ '^[0-9]{4} (AFC|NFC)( [A-Za-z]+)? standings$';
 create temp table wmatch as
 select w.*, coalesce(
     (select min(ts.franchise_id) from ts where ts.lg = w.lg and ts.y = w.y and pg_temp.flat(ts.full_name) = w.fl having count(*) = 1),

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """Read the raw standings templates in <raw dir>/{nba,nfl,mlb}.jsonl (fetch_alignment.py) into
-legacy_alignment.wikipedia_template / wikipedia_team. Rerunnable: replaces the rows of the leagues it reads.
+legacy_alignment.wikipedia_template / wikipedia_team. Rerunnable: replaces the rows of the leagues and seasons it reads (so one new season can be loaded on its own; ALIGNMENT_FETCHED sets the fetch date).
 Usage: load_wikipedia.py RAWDIR [psql args...]   (default psql args: -h /tmp -p 55432 -U postgres -d spx_stats)"""
 import csv, io, json, os, re, subprocess, sys
 
 D = "–"
-FETCHED = "2026-10-10"
+FETCHED = os.environ.get("ALIGNMENT_FETCHED", "2026-10-10")
 
 def nba(title, wt):
     m = re.match(r"(\d{4})" + D + r"\d{2} NBA (.+?) standings$", title)
@@ -90,7 +90,7 @@ def main():
         b = io.StringIO(); w = csv.writer(b, delimiter="\t", quoting=csv.QUOTE_MINIMAL, lineterminator="\n", quotechar='"')
         for r in rows: w.writerow(["\\N" if x is None else x for x in r])
         return b.getvalue()
-    sql = ["begin;", "delete from legacy_alignment.wikipedia_template where league_code in (%s);" % ",".join("'%s'" % l for l in leagues),
+    sql = ["begin;", "delete from legacy_alignment.wikipedia_template where league_code in (%s) and season in (%s);" % (",".join("'%s'" % l for l in leagues), ",".join(str(y) for y in sorted({r[1] for r in tpl} | {r[1] for r in team}))),
            "\\copy legacy_alignment.wikipedia_template (league_code, season, article, template, kind, grp, parent_grp, fetched_on) from stdin with (format csv, delimiter E'\\t', null '\\N')"]
     sql_in = "\n".join(sql) + "\n" + tsv(tpl) + "\\.\n"
     sql_in += "\\copy legacy_alignment.wikipedia_team (league_code, season, template, position, team_name) from stdin with (format csv, delimiter E'\\t', null '\\N')\n" + tsv(team) + "\\.\ncommit;\n"
