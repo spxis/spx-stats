@@ -3,8 +3,8 @@
 --   change), filled by db/build/193_venue_names.sql from Wikidata (CC0; official name P1448 and name P2561 with start and end time) and,
 --   where Wikidata has no dated names, the "Former names" of the English Wikipedia infobox (CC BY-SA 4.0). is_current marks the name now.
 -- core.brand_venue_info: capacity, year opened, owner, surface, roof and street address from the same Wikidata items.
--- About 700 and 300 rows (well under 1 MB). On production they are filled by the insert-only file scripts/venue_names/to_sql.py prints.
--- The legacy tables the build reads are migration 043 (working copy and DS1 only).
+-- About 700 and 300 rows (well under 1 MB). On production they are filled by a data release (AGENTS.md section 8, item 5): tables core.brand_venue_name and core.brand_venue_info.
+-- The legacy tables the build reads are migration 049 (working copy and DS1 only).
 
 create table if not exists core.brand_venue_name (
   wikidata_id  text not null,

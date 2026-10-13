@@ -8,7 +8,7 @@ request, one every 2.5 s; both back off on 429/503. Resumable: a file that exist
 import hashlib, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import date, datetime, timezone
 
-UA = {"User-Agent": "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@spxis.com) venue name history"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
 args = [a for a in sys.argv[1:]]
 qids_file = None
 if "--qids" in args:

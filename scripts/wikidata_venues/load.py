@@ -1,13 +1,18 @@
 #!/usr/bin/env python3
-"""Load the raw files of scripts/wikidata_venues/fetch.py into legacy_wikidata_venues (migration 043).
-Usage: load.py <raw dir> <YYYY-MM-DD>     e.g. load.py ~/spx-raw/wikidata_venues/2026-10-12 2026-10-12
-Reads PGHOST/PGPORT/PGUSER/PGDATABASE/PGPASSWORD. Rerunnable: every venue in the raw files is deleted and loaded again.
+"""Load the raw files of scripts/wikidata_venues/fetch.py into legacy_wikidata_venues (migration 049).
+Usage: load.py <raw dir> <YYYY-MM-DD> [--sql-out FILE]     e.g. load.py ~/spx-raw/wikidata_venues/2026-10-12 2026-10-12
+Reads PGHOST/PGPORT/PGUSER/PGDATABASE/PGPASSWORD. With --sql-out the SQL is written to FILE instead of run (apply it with
+scripts/mac/ds1-apply.sh). Rerunnable: every venue in the raw files is deleted and loaded again.
 Names come from Wikidata P1448 (official name) and P2561 (name), with their P580/P582 start and end, and from the
 "former names" of the English Wikipedia infobox. Facts: P1083 capacity, P1619/P571 opened, P3999/P576 closed, P127 owner,
 P765 surface, P31 (retractable or domed) roof, P6375 address."""
 import glob, html, json, os, re, subprocess, sys
 
-raw, day = os.path.expanduser(sys.argv[1]), sys.argv[2]
+argv = sys.argv[1:]
+sql_out = None
+if "--sql-out" in argv:
+    i = argv.index("--sql-out"); sql_out = os.path.expanduser(argv[i + 1]); del argv[i:i + 2]
+raw, day = os.path.expanduser(argv[0]), argv[1]
 q = lambda v: "null" if v is None else "'" + str(v).replace("'", "''") + "'"
 n = lambda v: "null" if v is None else str(v)
 
@@ -211,6 +216,10 @@ for qid, e in sorted(ents.items()):
                        f"({q(qid)}, {q(name)}, 'wikipedia', 'former', {n(fy)}, {n(uy)}, {q(item)}) on conflict do nothing;")
             stats["wp_names"] += 1
 sql.append("commit;")
+if sql_out:
+    open(sql_out, "w").write("\n".join(sql) + "\n")
+    print("wrote", sql_out, stats)
+    raise SystemExit(0)
 p = subprocess.run(["psql", "-v", "ON_ERROR_STOP=1", "-q", "-f", "-"], input="\n".join(sql), text=True, capture_output=True)
 print(p.stdout[-500:], p.stderr[-2000:])
 if p.returncode:

@@ -1,4 +1,4 @@
--- core.brand_venue_name and core.brand_venue_info (migration 044) from legacy_wikidata_venues (migration 043; scripts/wikidata_venues/).
+-- core.brand_venue_name and core.brand_venue_info (migration 050) from legacy_wikidata_venues (migration 049; scripts/wikidata_venues/).
 -- Run from the repo root, as scripts/build_core.sh does, after 176_venue_place.sql. Rerunnable: both tables are emptied and filled again.
 -- Names: Wikidata's dated names (P1448, P2561) and the infobox "former names" of the English Wikipedia article; a name both give is
 -- Wikidata's. A name with no year at all cannot be placed and is left out. The name now is the English Wikidata label: it keeps its row
