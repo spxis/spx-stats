@@ -222,7 +222,7 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
   );
 }
 
-/** The venues as a plain list, for a reader without scripts: the name, the city and each club, the clubs linked. */
+/** The venues as a plain list, for a reader without scripts: the name, the city and each club, the clubs linked. No logos here: they would be the largest part of the page for the few who read it. */
 function PlainList({ venues }: { venues: VenueRow[] }) {
   return (
     <ul className="venueplain">
@@ -230,7 +230,7 @@ function PlainList({ venues }: { venues: VenueRow[] }) {
         <li key={v.id}>
           {`${v.name}${v.place ? `, ${v.place}` : ""}: `}
           {v.clubs.map((c, i) => (
-            <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={c.logo} href={c.href} /></Fragment>
+            <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={null} href={c.href} /></Fragment>
           ))}
         </li>
       ))}

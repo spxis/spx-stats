@@ -14,7 +14,7 @@ type Say = Speaker["say"];
 
 /**
  * [league index, franchise id, name, 1 when the address is the name's usual slug, else the slug (or the whole address when it is not under /<league>/team/),
- * logo (0 when none)]. A club that wore two logos at the venue is listed twice, once for each.
+ * logo as `packLogo` writes it (0 when none)]. A club that wore two logos at the venue is listed twice, once for each.
  */
 export type WireClub = [number, number, string, string | 1, string | 0];
 /** [city and region, city page slug (0 when none)]. */
@@ -30,6 +30,33 @@ export interface VenueWire { c: WireClub[]; p: WirePlace[]; a: string[]; v: Wire
 const WIKI = "https://en.wikipedia.org/wiki/";
 const MAPS = "https://www.google.com/maps/search/?api=1&query=";
 const mapsAt = (query: string) => `${MAPS}${encodeURIComponent(query)}`;
+const LOGO_HOST: Record<string, string> = { T: "https://thumb.wikimedia.org/wikipedia/", U: "https://upload.wikimedia.org/wikipedia/" };
+const LOGO_CREDIT = "&utm_campaign=imageinfo&utm_content=thumbnail";
+const LOGO_SITE: Record<string, string> = { c: "?utm_source=commons.wikimedia.org", e: "?utm_source=en.wikipedia.org" };
+const unpackLogoBy = (s: string): string => {
+  if (s[0] === "=") return s.slice(1);
+  let rest = s.slice(2);
+  const star = Math.max(rest.lastIndexOf("*"), rest.lastIndexOf("+"));
+  if (star >= 0) { const dir = rest.slice(0, star), px = rest.slice(star + 1), file = dir.slice(dir.lastIndexOf("/") + 1); rest = `${dir}/${px}px-${file}${rest[star] === "+" ? ".png" : ""}`; }
+  return `${LOGO_HOST[s[0]]}${rest}${s[1] === "-" ? "" : `${LOGO_SITE[s[1]]}${LOGO_CREDIT}`}`;
+};
+/**
+ * A logo address in a few characters less: the Wikimedia host and the credit query become one letter each and the file name, which a
+ * thumbnail address writes twice, once (a vector file adds ".png" to the second). An address of any other shape (or one that would not come back identical) goes whole after "=".
+ */
+export function packLogo(url: string): string {
+  const m = /^https:\/\/(thumb|upload)\.wikimedia\.org\/wikipedia\/([^?]*?)(?:\?utm_source=(commons\.wikimedia\.org|en\.wikipedia\.org)&utm_campaign=imageinfo&utm_content=thumbnail)?$/.exec(url);
+  if (m) {
+    const site = m[3] ? (m[3].startsWith("commons") ? "c" : "e") : "-";
+    const dup = /^(.*\/([^/]+))\/(\d+)px-(.+)$/.exec(m[2]);
+    const marked = dup && !/[*+]/.test(dup[1]);
+    const rest = marked && dup[4] === dup[2] ? `${dup[1]}*${dup[3]}` : marked && dup[4] === `${dup[2]}.png` ? `${dup[1]}+${dup[3]}` : m[2];
+    const out = `${m[1] === "thumb" ? "T" : "U"}${site}${rest}`;
+    if (unpackLogoBy(out) === url) return out;
+  }
+  return `=${url}`;
+}
+export const unpackLogo = unpackLogoBy;
 const wikiTitle = (name: string) => encodeURIComponent(name.replace(/ /g, "_"));
 
 /** "65,500 seats · opened 2001 · lawn · retractable roof · owner …": the facts line of the map panel, in the reader's language. */
@@ -76,7 +103,7 @@ export function packVenues(rows: VenueRow[], leagues: string[], countryName: (cc
     const flat: number[] = [];
     for (const c of r.clubs) {
       const k = `${c.lg}|${c.f}|${c.logo ?? ""}`;
-      if (!clubs.has(k)) { clubs.set(k, clubList.length); clubList.push([leagues.indexOf(c.lg), c.f, c.name, tail(c), c.logo ?? 0]); }
+      if (!clubs.has(k)) { clubs.set(k, clubList.length); clubList.push([leagues.indexOf(c.lg), c.f, c.name, tail(c), c.logo ? packLogo(c.logo) : 0]); }
       flat.push(clubs.get(k)!, c.from ?? 0, c.to ?? 0);
     }
     const wiki = r.wiki === null ? 0 : r.wiki === `${WIKI}${wikiTitle(r.name)}` ? 1 : r.wiki.startsWith(WIKI) ? r.wiki.slice(WIKI.length) : r.wiki;
@@ -119,7 +146,7 @@ export function unpackVenues(w: VenueWire, leagues: string[], say: Say, countryN
     for (let j = 0; j < flat.length; j += 3) {
       const [li, f, cn, t, logo] = w.c[flat[j]];
       const lg = leagues[li];
-      clubs.push({ lg, f, name: cn, href: clubHref(lg, cn, t), from: flat[j + 1] || null, to: flat[j + 2] || null, logo: logo || null });
+      clubs.push({ lg, f, name: cn, href: clubHref(lg, cn, t), from: flat[j + 1] || null, to: flat[j + 2] || null, logo: logo ? unpackLogo(logo) : null });
     }
     const former = (x[1] as string) || null;
     const opened = (x[9] as number) || null, capacity = (x[11] as number) || null;

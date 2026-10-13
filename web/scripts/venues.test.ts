@@ -75,8 +75,8 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
       opened: 1995, capacity: 19156, surface: "hardwood", owner: "Delaware North", al: ["nhl|East|Atlantic"] }),
     // a partial address linked by coordinates, a Wikipedia title that is not the name, an address that does not end in the place, no place at all
     venue({ name: "Old Forum", former: "Forum 1920\u20131960", lat: 45.49, lon: -73.57, cc: "CA", place: "Montreal, QC", citySlug: null, wiki: "https://en.wikipedia.org/wiki/Montreal_Forum", address: "Montreal, QC, Canada",
-      addressHref: "https://www.google.com/maps/search/?api=1&query=45.49%2C-73.57", clubs: [club({ f: 2, name: "Montreal Canadiens", href: "/nhl/team/montreal-canadiens", from: 1926, to: 1996, logo: "https://example.com/habs.png" })], roof: "dome" }),
-    venue({ name: "X/Y Park", cc: null, place: null, wiki: "https://example.com/x", address: "Somewhere else entirely", addressHref: "https://example.com/m", clubs: [club({ f: 3, name: "Odd FC", href: "/odd/path", from: null, to: 1930 })] }),
+      addressHref: "https://www.google.com/maps/search/?api=1&query=45.49%2C-73.57", clubs: [club({ f: 2, name: "Montreal Canadiens", href: "/nhl/team/montreal-canadiens", from: 1926, to: 1996, logo: "https://thumb.wikimedia.org/wikipedia/commons/thumb/f/f8/Montreal_Canadiens.svg/120px-Montreal_Canadiens.svg.png?utm_source=commons.wikimedia.org&utm_campaign=imageinfo&utm_content=thumbnail" })], roof: "dome" }),
+    venue({ name: "X/Y Park", cc: null, place: null, wiki: "https://example.com/x", address: "Somewhere else entirely", addressHref: "https://example.com/m", clubs: [club({ f: 3, name: "Odd FC", href: "/odd/path", from: null, to: 1930, logo: "https://example.com/odd.png" }), club({ f: 4, name: "Two FC", href: "/nhl/team/two-fc", logo: "https://upload.wikimedia.org/wikipedia/en/9/9a/The_logo.gif?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail" }), club({ f: 5, name: "Three FC", href: "/nhl/team/three-fc", logo: "https://thumb.wikimedia.org/wikipedia/en/thumb/4/43/A_B.svg/250px-A_B.svg.png" }), club({ f: 6, name: "Four FC", href: "/nhl/team/four-fc", logo: "https://thumb.wikimedia.org/wikipedia/en/thumb/4/43/A_B.svg/250px-Other.svg.png" })] }),
     venue({ name: "Bare", clubs: [club({})] }),
   ];
   for (const r of rows) {
@@ -97,4 +97,6 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
     void id; void extra; void extra2;
   });
   assert.ok(JSON.stringify(wire).length < JSON.stringify(rows).length / 2, "the packed rows are much smaller");
+  const habs = wire.c.find((c: unknown[]) => c[2] === "Montreal Canadiens")[4] as string;
+  assert.ok(habs.length < 80 && !habs.includes("utm_"), `a Wikimedia logo goes short (${habs})`);
 });
