@@ -153,7 +153,7 @@ export const PHRASES = {
   "season.standings": "Standings",
   "season.standingsNote": "{basis}. Press a column to sort. Games played opens that team's whole season.",
   "season.basisSpx": "As SPX published them",
-  "season.basisSource": "As the {source} published them",
+  "season.basisSource": "As {source} published them",
   "season.basisDerived": "Worked out from the final scores",
   "season.winner": "Champion",
   "season.notAwarded": "Not awarded",
