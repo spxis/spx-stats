@@ -1,6 +1,13 @@
--- core.game.venue_id for the five leagues (nhl, nba, mlb, nfl, cfl). Run from the repo root (scripts/build_core.sh does), after 198_home_venue.sql
--- and after every step that writes games (120-156). Rerunnable. It fills only games whose venue_id is null, and takes back only its own earlier
--- work first (legacy_game_venue.filled), so a venue another step set is never overwritten.
+-- The venue of every game of the five leagues (nhl, nba, mlb, nfl, cfl). Run from the repo root (scripts/build_core.sh does), after
+-- 198_home_venue.sql and after every step that writes games (120-156). Rerunnable.
+-- core.game.venue_id is NOT written: production could not take a rewrite of 380,000 rows. The answer is split in two small tables:
+--   core.franchise_home_venue   the venue each club played its home games in, by period (finished here, see below), and
+--   core.game_venue             only the games whose venue differs from that, every event and neutral-site game, and the games this step
+--                               knows no venue for although the club's period would name one (venue_id null: unknown).
+-- api.game_venue gives every game its venue (a core.game_venue row if there is one, else the home period's venue), and api.venue_game lists
+-- the games at a venue (migration 075). The step also sets is_neutral_site, neutral_site_reason and is_international on the few hundred games
+-- an event row or a venue abroad changes, and remembers the old values in legacy_game_venue.filled so a rerun can restore them. An earlier
+-- version wrote venue_id too: the first run of this one sets those back to null.
 --
 -- Where a game's venue comes from, best first:
 --   event      db/seed/game_venue_event.csv: games played away from the club's usual home (Super Bowl, Grey Cup, bubbles, games abroad, a club
@@ -40,10 +47,11 @@ create or replace function pg_temp.norm(t text) returns text language sql immuta
 delete from meta.data_issue where entity_kind in ('game_venue_none', 'game_venue_park', 'game_venue_name', 'game_venue_event');
 
 -- ---------------------------------------------------------------- take back this step's own earlier work
-update core.game g set venue_id = null, is_neutral_site = coalesce(f.was_neutral, g.is_neutral_site),
+update core.game g set venue_id = case when f.wrote_venue and g.venue_id = f.venue_id then null else g.venue_id end,
+       is_neutral_site = coalesce(f.was_neutral, g.is_neutral_site),
        neutral_site_reason = case when f.basis = 'event' then f.was_reason else g.neutral_site_reason end,
        is_international = coalesce(f.was_international, g.is_international)
-from legacy_game_venue.filled f where f.game_id = g.game_id and g.venue_id = f.venue_id;
+from legacy_game_venue.filled f where f.game_id = g.game_id;
 delete from legacy_game_venue.filled;
 
 -- core.franchise_home_venue starts from the chain step 198 built (legacy_game_venue.home_prelim); this step then adds the periods the games
@@ -84,7 +92,7 @@ left join lateral (select fn.franchise_id from fn where fn.league_code = e.leagu
 left join lateral (select fn.franchise_id from fn where fn.league_code = e.league and fn.full_name = e.team_b and fn.valid_during @> e.game_date limit 1) b on true
 left join venue_of v on v.qid = e.qid;
 create temp table ev_game as
-select distinct on (gm.game_id) gm.game_id, ev.venue_id, ev.neutral, ev.international, ev.reason, ev.eid
+select distinct on (gm.game_id) gm.game_id, ev.venue_id, ev.neutral, ev.international, ev.reason, ev.eid, ev.source, ev.source_url
 from ev join gm on gm.lg = ev.league and gm.game_date = ev.game_date
  and ((gm.home_f = ev.fa and gm.away_f = ev.fb) or (gm.home_f = ev.fb and gm.away_f = ev.fa))
 where ev.venue_id is not null
@@ -228,23 +236,44 @@ left join hi_all on hi_all.game_id = gm.game_id;
 create unique index on fin (game_id);
 
 -- ---------------------------------------------------------------- write
-insert into legacy_game_venue.filled (game_id, venue_id, basis, was_neutral, was_international, was_reason)
-select f.game_id, f.venue_id, f.basis, g.is_neutral_site, g.is_international, g.neutral_site_reason
-from fin f join core.game g using (game_id) where f.venue_id is not null;
-update core.game g set venue_id = f.venue_id,
-       is_neutral_site = case when f.basis = 'event' and f.ev_neutral then true else g.is_neutral_site end,
-       neutral_site_reason = case when f.basis = 'event' then coalesce(f.ev_reason, g.neutral_site_reason) else g.neutral_site_reason end,
-       is_international = case when f.basis = 'event' and f.ev_international is not null then f.ev_international
-                               when vo.country_code not in ('US', 'CA') and gm.lg <> 'cfl' then true
-                               else g.is_international end
-from fin f join gm using (game_id) join venue_of vo on vo.venue_id = f.venue_id
-where g.game_id = f.game_id and f.venue_id is not null;
+-- core.game_venue: the games whose venue is not simply the home club's venue that day (hi_all, the chain as the view reads it), every event and
+-- neutral-site game, and the games left without a venue where the chain would name one (venue_id null, basis 'unknown').
+delete from core.game_venue;
+insert into core.game_venue (game_id, venue_id, basis, source_id, source_key)
+select f.game_id, f.venue_id, coalesce(f.basis, 'unknown'),
+       case f.basis when 'event' then (select source_id from meta.source where code = ev.source)
+                    when 'retrosheet' then (select source_id from meta.source where code = 'retrosheet')
+                    when 'nflverse' then (select source_id from meta.source where code = 'nflverse')
+                    when 'nhlapi' then (select source_id from meta.source where code = 'nhl_api') end,
+       case when f.basis = 'event' then ev.source_url when f.basis in ('retrosheet', 'nflverse', 'nhlapi') then f.src_val end
+from fin f join gm using (game_id)
+left join hi_all d on d.game_id = f.game_id
+left join ev_game ev on ev.game_id = f.game_id
+where f.basis = 'event' or gm.neutral or f.venue_id is distinct from d.venue_id;
+
+-- the few games whose flags change: an event row sets is_neutral_site, neutral_site_reason and is_international; a venue outside the US and
+-- Canada (CFL excepted) sets is_international. The old values are kept in legacy_game_venue.filled.
+create temp table flagchg as
+select g.game_id, f.venue_id, f.basis,
+       g.is_neutral_site as was_neutral, g.is_international as was_international, g.neutral_site_reason as was_reason,
+       case when f.basis = 'event' and f.ev_neutral then true else g.is_neutral_site end as new_neutral,
+       case when f.basis = 'event' then coalesce(f.ev_reason, g.neutral_site_reason) else g.neutral_site_reason end as new_reason,
+       case when f.basis = 'event' and f.ev_international is not null then f.ev_international
+            when vo.country_code not in ('US', 'CA') and gm.lg <> 'cfl' then true
+            else g.is_international end as new_intl
+from fin f join gm using (game_id) join core.game g using (game_id) join venue_of vo on vo.venue_id = f.venue_id
+where f.venue_id is not null;
+delete from flagchg where (new_neutral, new_reason, new_intl) is not distinct from (was_neutral, was_reason, was_international);
+insert into legacy_game_venue.filled (game_id, venue_id, basis, was_neutral, was_international, was_reason, wrote_venue)
+select game_id, venue_id, basis, was_neutral, was_international, was_reason, false from flagchg;
+update core.game g set is_neutral_site = c.new_neutral, neutral_site_reason = c.new_reason, is_international = c.new_intl
+from flagchg c where g.game_id = c.game_id;
 
 -- ---------------------------------------------------------------- what is left, logged
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from wd), 'game_venue_none', gm.lg || ':franchise ' || gm.home_f || ':' || gm.start_year || ':' || case when gm.neutral then 'neutral' else 'home' end,
        count(*) || case when count(*) > 1 then ' games' else ' game' end || ' of ' || gm.lg || ' ' || gm.start_year || ' (home club franchise ' || gm.home_f || case when count(*) > 1 then ') have' else ') has' end || ' no venue: ' || f.why,
-       'venue_id left empty; nothing is guessed. Add a period to db/seed/home_venue.csv or an event row to db/seed/game_venue_event.csv.'
+       'No venue; nothing is guessed. Add a period to db/seed/home_venue.csv or an event row to db/seed/game_venue_event.csv.'
 from fin f join gm using (game_id)
 where f.venue_id is null and f.why is not null and f.src_kind is null
 group by gm.lg, gm.home_f, gm.start_year, gm.neutral, f.why;
@@ -252,22 +281,26 @@ insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resoluti
 select (select source_id from wd), case when f.src_kind = 'retrosheet' then 'game_venue_park' else 'game_venue_name' end,
        f.src_kind || ':' || f.src_val,
        count(*) || ' game' || case when count(*) > 1 then 's' else '' end || ' with ' || f.src_kind || ' value "' || f.src_val || '": ' || f.why,
-       'venue_id left empty; add the value to db/seed/' || case when f.src_kind = 'retrosheet' then 'retrosheet_park.csv' else 'venue_alias.csv' end || '.'
+       'No venue; add the value to db/seed/' || case when f.src_kind = 'retrosheet' then 'retrosheet_park.csv' else 'venue_alias.csv' end || '.'
 from fin f
 where f.venue_id is null and f.src_kind is not null
 group by f.src_kind, f.src_val, f.why;
 
 -- ---------------------------------------------------------------- counts
 -- (a venue not yet open, or already closed, on the game day: the 30 days of slack are the same as in db/checks/062_game_venue.sql)
-select 'games in scope (venue_id was empty)' as what, count(*) as n from gm
+select 'games of the five leagues' as what, count(*) as n from gm
 union all select 'placed: ' || coalesce(basis, '-'), count(*) from fin where venue_id is not null group by basis
-union all select 'left empty', count(*) from fin where venue_id is null
+union all select 'left without a venue', count(*) from fin where venue_id is null
 union all select 'neutral-site games placed', count(*) from fin f join gm using (game_id) where f.venue_id is not null and gm.neutral
-union all select 'neutral-site games left empty', count(*) from fin f join gm using (game_id) where f.venue_id is null and gm.neutral
+union all select 'neutral-site games left without a venue', count(*) from fin f join gm using (game_id) where f.venue_id is null and gm.neutral
 union all select 'event rows used', count(distinct eid) from ev_game
 union all select 'event rows not used', count(*) from meta.data_issue where entity_kind = 'game_venue_event'
+union all select 'core.game_venue rows: ' || basis, count(*) from core.game_venue group by basis
+union all select 'core.game_venue rows in all', count(*) from core.game_venue
+union all select 'of which unknown (venue_id null)', count(*) from core.game_venue where venue_id is null
 union all select 'source venue differs from the home club''s venue (' || lg || ')', count(*)
   from fin f join gm using (game_id) join hi using (game_id) where f.venue_id is not null and f.basis in ('retrosheet', 'nflverse', 'nhlapi') and f.venue_id <> hi.venue_id group by lg
 union all select 'placed in ' || lg, count(*) from fin f join gm using (game_id) where f.venue_id is not null group by lg
-union all select 'left empty in ' || lg, count(*) from fin f join gm using (game_id) where f.venue_id is null group by lg
-union all select 'games marked international', count(*) from core.game where is_international and venue_id is not null;
+union all select 'left without a venue in ' || lg, count(*) from fin f join gm using (game_id) where f.venue_id is null group by lg
+union all select 'core.game rows this step changed (flags)', count(*) from legacy_game_venue.filled
+union all select 'core.game rows with a venue_id', count(*) from core.game where venue_id is not null;

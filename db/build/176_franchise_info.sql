@@ -28,7 +28,9 @@ delete from core.venue_feature where source_id = (select source_id from meta.sou
 delete from core.venue_name where venue_id in (select venue_id from core.venue where source_id = (select source_id from meta.source where code = 'wikidata'));
 delete from core.venue v where v.source_id = (select source_id from meta.source where code = 'wikidata')
   and not exists (select 1 from core.game g where g.venue_id = v.venue_id)
-  and not exists (select 1 from core.team_season t where t.home_venue_id = v.venue_id);
+  and not exists (select 1 from core.team_season t where t.home_venue_id = v.venue_id)
+  and not exists (select 1 from core.franchise_home_venue h where h.venue_id = v.venue_id)   -- steps 198 and 199 (rerun them after this one)
+  and not exists (select 1 from core.game_venue gv where gv.venue_id = v.venue_id);
 
 -- ---------------------------------------------------------------- match franchises to team items
 create temp table ident as

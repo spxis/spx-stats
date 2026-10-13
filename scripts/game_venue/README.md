@@ -9,12 +9,18 @@
   themselves show (basis `games`: the venue most of a club's home games had in a season in the Retrosheet, nflverse and NHL data). A Wikidata item that is a city (San Diego, Houston, Los Angeles,
   Miami: `db/seed/not_a_venue.csv`, plus any brand venue whose label is its city) is never a venue and is logged as `home_venue_city`. A venue
   missing from `core.venue` (step 176 drops a venue with no city) is added from `core.brand_venue` or `legacy_game_venue.venue`.
-- `db/build/199_game_venue.sql` fills `venue_id` of games that have none, best source first: an event row (`db/seed/game_venue_event.csv`: Super
-  Bowl, Grey Cup, bubbles, games abroad, a club that moved for a season), the Retrosheet park id (MLB, `db/seed/retrosheet_park.csv`), the nflverse
-  stadium (NFL 1999 on, CC BY 4.0), the NHL API venue (NHL), else the home club's venue that day. Names from nflverse and the NHL are matched to
-  venues by `db/seed/venue_alias.csv`, else by any name `core.venue_name`, `core.brand_venue_name`, `core.brand_venue` or `legacy_game_venue.venue`
-  holds. It takes back only its own earlier work (`legacy_game_venue.filled`), so a venue another step set is never overwritten. What it cannot
-  place is logged in `meta.data_issue` as `game_venue_none`, `game_venue_park`, `game_venue_name` and `game_venue_event`. Nothing is guessed.
+- `db/build/199_game_venue.sql` works out the venue of every game of the five leagues, best source first: an event row (`db/seed/game_venue_event.csv`:
+  Super Bowl, Grey Cup, bubbles, games abroad, a club that moved for a season), the Retrosheet park id (MLB, `db/seed/retrosheet_park.csv`), the
+  nflverse stadium (NFL 1999 on, CC BY 4.0), the NHL API venue (NHL), else the home club's venue that day. It does **not** write
+  `core.game.venue_id` (production cannot take a rewrite of 380,000 rows). It writes `core.game_venue`: only the games whose venue differs from the
+  home club's period that day, every event and neutral-site game, and the games it knows no venue for where the period would name one
+  (`venue_id` null, basis `unknown`). A game with no row is held at the venue of its home club's period (`core.franchise_home_venue`).
+  `api.game_venue` gives every game its venue; `api.venue_game` lists the games held at a venue (filter on `venue_id`; one index lookup per team season);
+  `core.game_venue_of(game_id)` is the same answer as a function (migration 075).
+  Names from nflverse and the NHL are matched to venues by `db/seed/venue_alias.csv`, else by any name `core.venue_name`, `core.brand_venue_name`,
+  `core.brand_venue` or `legacy_game_venue.venue` holds. It also sets `is_neutral_site`, `neutral_site_reason` and `is_international` on the few
+  hundred games an event row or a venue abroad changes, and remembers the old values in `legacy_game_venue.filled` so a rerun restores them first.
+  What it cannot place is logged in `meta.data_issue` as `game_venue_none`, `game_venue_park`, `game_venue_name` and `game_venue_event`. Nothing is guessed.
 
 Credits: Retrosheet (park list and game logs): "The information used here was obtained free of charge from and is copyrighted by Retrosheet.
 Interested parties may contact Retrosheet at www.retrosheet.org." nflverse: CC BY 4.0. Wikidata: CC0. Wikipedia: CC BY-SA 4.0 (text by the
@@ -29,6 +35,7 @@ NHL API's venue strings). From the repo root:
     python3 -I scripts/archive_raw.py game_venue $raw $day --sql-out archive.sql      # raw archive first
     bash scripts/mac/ds1-apply.sh archive.sql && bash scripts/mac/spx-raw-export.sh   # then the Dropbox copy
     bash scripts/mac/ds1-apply.sh db/migrations/067_game_venue.sql && bash scripts/mac/ds1-apply.sh db/migrations/073_game_venue_games.sql
+    bash scripts/mac/ds1-apply.sh db/migrations/075_game_venue_table.sql
     python3 -I scripts/retrosheet/parks.py $raw/retrosheet/ballparks.csv --sql-out parks.sql
     python3 -I scripts/game_venue/load.py $raw $day --sql-out venues.sql
     bash scripts/mac/ds1-apply.sh parks.sql && bash scripts/mac/ds1-apply.sh venues.sql
