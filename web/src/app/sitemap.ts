@@ -3,6 +3,7 @@ import { getCityData } from "@/lib/cityData";
 import { getSummary, getTeamIndex, getTeamSeasonIndex } from "@/lib/data";
 import { LEAGUES, SITE_URL } from "@/lib/leagues";
 import { getPaths } from "@/lib/teamSlugs";
+import { getVenueSlugs } from "@/lib/venueData";
 import { leadersPath } from "@/lib/leaderStats";
 import { scoresPath } from "@/lib/scores";
 import { withGaps } from "@/lib/coverage";
@@ -14,7 +15,7 @@ const url = (path: string) => `${SITE_URL}${path}`;
 
 // The sitemap is built at deploy time, so a failed read of the archive leaves that part out instead of failing the build.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [summary, teams, teamSeasons, paths, cityData] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData()]);
+  const [summary, teams, teamSeasons, paths, cityData, venues] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs()]);
   const seasons = summary.status === "fulfilled" ? summary.value.seasons : [];
   const lastModified = summary.status === "fulfilled" ? new Date(summary.value.totals.refreshed_at) : new Date();
   const held = new Set(seasons.filter((s) => s.games > 0).map((s) => `${s.league}|${s.year}`));
@@ -26,6 +27,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       : [];
   // A city page exists for each city with a club season in it.
   const cityUrls = cityData.status === "fulfilled" ? [...new Set(cityData.value.stays.map((s) => s.city))].sort().map((c) => ({ url: url(`/city/${c}`), lastModified })) : [];
+  // A venue page exists for each home venue of the /venues list.
+  const venueUrls = venues.status === "fulfilled" ? [...venues.value].sort().map((s) => ({ url: url(`/venue/${s}`), lastModified })) : [];
   return [
     { url: url("/"), lastModified },
     ...LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
@@ -37,6 +40,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...teamUrls,
     ...teamSeasonUrls,
     ...cityUrls,
+    ...venueUrls,
     ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/players", "/terms", "/privacy","/sources", "/quality", "/logos"].map((p) => ({ url: url(p), lastModified })),
   ];
 }

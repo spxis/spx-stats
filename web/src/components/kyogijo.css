@@ -1,0 +1,70 @@
+/* The stylesheet of @johnmorrisdotca/kyogijo 0.1.0, as the package ships it (KYOGIJO_STYLE), so the venue pages link it once instead of carrying it in every page. scripts/venuePark.test.ts fails if it differs from the installed package: copy it again when the package is updated. */
+:where(.kyogijo){--ky-ink:#1f2320;--ky-line:#fff;--ky-halo:rgba(255,255,255,.92);--ky-plate:rgba(18,24,21,.9);--ky-plate-ink:#fff;--ky-left:#2f6db0;--ky-right:#b5452c;--ky-left-ink:#fff;--ky-right-ink:#fff;--ky-apron:#dcd8c9;--ky-surface:#3f8f55;--ky-surface-alt:#3a864f;--ky-zone:#2d6a40;--ky-boards:#c8c1b0;--ky-red:#c8372d;--ky-blue:#2a5db0;--ky-dirt:#c28e5c;--ky-foul:#3a8148;--ky-infield:#58a05d;--ky-crease:#bfd3ec;--ky-key:#c25b3c;--ky-centre:transparent;--ky-post:#f2c230;--ky-pylon:#f26a1b;--ky-font:system-ui,-apple-system,"Segoe UI","Hiragino Sans","Noto Sans JP",sans-serif;display:block;width:100%;height:auto;font-family:var(--ky-font)}
+:where(.kyogijo[data-sport=nhl]){--ky-surface:#eef5fa;--ky-apron:#d3dbe1;--ky-boards:#9aa4ab;--ky-halo:rgba(255,255,255,.92)}
+:where(.kyogijo[data-sport=nba]){--ky-surface:#d9a766;--ky-surface-alt:#cf9c5b;--ky-apron:#c9c3b4;--ky-boards:#a97d46;--ky-baseline:#fff}
+:where(.kyogijo[data-sport=mlb]){--ky-surface:#4f9a55;--ky-surface-alt:#478f4e;--ky-apron:#bdb59f;--ky-boards:#2f4a36}
+@media (prefers-color-scheme:dark){:where(html:not([data-theme=light]) .kyogijo:not([data-theme=light])){--ky-ink:#ece8dc;--ky-line:#e9ece6;--ky-plate:rgba(0,0,0,.82);--ky-apron:#1b1f1c;--ky-surface:#2c6a3f;--ky-surface-alt:#296239;--ky-zone:#1f4a2d;--ky-boards:#4d5450;--ky-red:#d4574d;--ky-blue:#5584d4;--ky-dirt:#8a6040;--ky-foul:#275a31;--ky-infield:#367a42;--ky-crease:#8ea9cc;--ky-key:#8a3f2b}
+:where(html:not([data-theme=light]) .kyogijo[data-sport=nhl]:not([data-theme=light])){--ky-surface:#a9bccb;--ky-apron:#1a2025;--ky-boards:#4b5156}
+:where(html:not([data-theme=light]) .kyogijo[data-sport=nba]:not([data-theme=light])){--ky-surface:#8f6a3c;--ky-surface-alt:#876234;--ky-apron:#1a1c1b;--ky-boards:#5e4426}
+:where(html:not([data-theme=light]) .kyogijo[data-sport=mlb]:not([data-theme=light])){--ky-surface:#2f6b3a;--ky-surface-alt:#2b6336;--ky-apron:#1b1f1c;--ky-boards:#1c2b20}}
+:where(html[data-theme=dark] .kyogijo,.kyogijo[data-theme=dark]){--ky-ink:#ece8dc;--ky-line:#e9ece6;--ky-plate:rgba(0,0,0,.82);--ky-apron:#1b1f1c;--ky-surface:#2c6a3f;--ky-surface-alt:#296239;--ky-zone:#1f4a2d;--ky-boards:#4d5450;--ky-red:#d4574d;--ky-blue:#5584d4;--ky-dirt:#8a6040;--ky-foul:#275a31;--ky-infield:#367a42;--ky-crease:#8ea9cc;--ky-key:#8a3f2b}
+:where(html[data-theme=dark] .kyogijo[data-sport=nhl],.kyogijo[data-theme=dark][data-sport=nhl]){--ky-surface:#a9bccb;--ky-apron:#1a2025;--ky-boards:#4b5156}
+:where(html[data-theme=dark] .kyogijo[data-sport=nba],.kyogijo[data-theme=dark][data-sport=nba]){--ky-surface:#8f6a3c;--ky-surface-alt:#876234;--ky-apron:#1a1c1b;--ky-boards:#5e4426}
+:where(html[data-theme=dark] .kyogijo[data-sport=mlb],.kyogijo[data-theme=dark][data-sport=mlb]){--ky-surface:#2f6b3a;--ky-surface-alt:#2b6336;--ky-apron:#1b1f1c;--ky-boards:#1c2b20}
+.kyogijo .ky-apron{fill:var(--ky-apron)}
+.kyogijo .ky-text{fill:var(--ky-ink);font-family:var(--ky-font);font-weight:800;letter-spacing:0;font-variant-numeric:tabular-nums}
+.kyogijo .ky-surface{fill:var(--ky-surface)}
+.kyogijo .ky-stripe{fill:var(--ky-surface-alt)}
+.kyogijo .ky-ring circle{stroke:var(--ky-surface-alt)}
+.kyogijo .ky-zone{fill:var(--ky-zone)}
+.kyogijo .ky-zone-left{fill:var(--ky-left)}
+.kyogijo .ky-zone-right{fill:var(--ky-right)}
+.kyogijo .ky-boards{fill:var(--ky-boards)}
+.kyogijo .ky-line{stroke:var(--ky-line);fill:none}
+.kyogijo .ky-fill-line{fill:var(--ky-line)}
+.kyogijo .ky-band{stroke:var(--ky-line)}
+.kyogijo .ky-num{fill:var(--ky-line);font-family:var(--ky-font);font-weight:700}
+.kyogijo .ky-post{stroke:var(--ky-post)}
+.kyogijo .ky-post-end{fill:var(--ky-post)}
+.kyogijo .ky-pylon{fill:var(--ky-pylon)}
+.kyogijo .ky-red{stroke:var(--ky-red)}
+.kyogijo .ky-red-fill{fill:var(--ky-red)}
+.kyogijo .ky-blue{stroke:var(--ky-blue)}
+.kyogijo .ky-blue-fill{fill:var(--ky-blue)}
+.kyogijo .ky-dash{stroke:var(--ky-surface)}
+.kyogijo .ky-crease{fill:var(--ky-crease);stroke:var(--ky-red)}
+.kyogijo .ky-net{stroke:var(--ky-red)}
+.kyogijo .ky-key{fill:var(--ky-key)}
+.kyogijo .ky-key-left{fill:var(--ky-key-left,var(--ky-key))}
+.kyogijo .ky-key-right{fill:var(--ky-key-right,var(--ky-key))}
+.kyogijo .ky-centre{fill:var(--ky-centre)}
+.kyogijo .ky-board{stroke:var(--ky-line)}
+.kyogijo .ky-rim{stroke:#e8591a}
+.kyogijo .ky-baseline{fill:var(--ky-baseline,var(--ky-line))}
+.kyogijo .ky-foul{fill:var(--ky-foul)}
+.kyogijo .ky-track{fill:none;stroke:var(--ky-dirt)}
+.kyogijo .ky-dirt{fill:var(--ky-dirt)}
+.kyogijo .ky-infield{fill:var(--ky-infield)}
+.kyogijo .ky-fence{stroke:var(--ky-boards);stroke-linejoin:round}
+.kyogijo .ky-ink-left{fill:var(--ky-left-ink)}
+.kyogijo .ky-ink-right{fill:var(--ky-right-ink)}
+.kyogijo .ky-paint-left{fill:var(--ky-left);stroke:var(--ky-halo);stroke-width:.14em;paint-order:stroke;stroke-linejoin:round}
+.kyogijo .ky-paint-right{fill:var(--ky-right);stroke:var(--ky-halo);stroke-width:.14em;paint-order:stroke;stroke-linejoin:round}
+.kyogijo .ky-panel-left,.kyogijo .ky-block-left{fill:var(--ky-left)}
+.kyogijo .ky-panel-right,.kyogijo .ky-block-right{fill:var(--ky-right)}
+.kyogijo .ky-lose{opacity:.78}
+.kyogijo .ky-banner.ky-lose{opacity:1;filter:grayscale(.35) brightness(.92)}
+.kyogijo .ky-score.ky-lose{opacity:.62}
+.kyogijo .ky-plate-bg,.kyogijo .ky-badge-bg{fill:var(--ky-plate)}
+.kyogijo .ky-score{fill:var(--ky-plate-ink)}
+.kyogijo .ky-comp,.kyogijo .ky-foot,.kyogijo .ky-abbr,.kyogijo .ky-dash-text,.kyogijo .ky-badge-status{fill:var(--ky-plate-ink);text-anchor:middle}
+.kyogijo .ky-score{font-weight:800}
+.kyogijo .ky-abbr,.kyogijo .ky-comp,.kyogijo .ky-foot,.kyogijo .ky-badge-status{opacity:.82;font-weight:700}
+.kyogijo .ky-dash-text{opacity:.55;font-weight:600}
+.kyogijo .ky-winbar-left{fill:var(--ky-left)}
+.kyogijo .ky-winbar-right{fill:var(--ky-right)}
+.kyogijo .ky-glyph{stroke:var(--ky-plate-ink);stroke-width:1.4;opacity:.7;stroke-linejoin:round}
+.kyogijo .ky-badge-left .ky-score{fill:var(--ky-left-ink)}
+.kyogijo .ky-badge-right .ky-score{fill:var(--ky-right-ink)}
+.kyogijo .ky-badge-left .ky-name{fill:var(--ky-left-ink)}
+.kyogijo .ky-badge-right .ky-name{fill:var(--ky-right-ink)}

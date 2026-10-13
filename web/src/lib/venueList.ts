@@ -11,6 +11,7 @@ import { getPaths } from "./teamSlugs";
 import { getVenueTeams } from "./venueMap";
 import type { VenueDetail } from "./venueDataset";
 import type { VenueClub, VenueRow } from "./venueModel";
+import { venueSlugs } from "./venueSlug";
 import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
 
@@ -78,7 +79,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
           acc = {
             label: v.venue,
             row: {
-              id, name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
+              id, slug: "", name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
               wiki: v.wiki, address: v.address, addressHref: v.addressHref, leagues: [], clubs: [],
               opened: f?.opened ?? null, closed: f?.closed ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
               from: null, to: null, current: false, al: [],
@@ -117,5 +118,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
     out.push(r);
   }
   out.sort((a, b) => BY(a.name, b.name));
+  const slugs = venueSlugs(out.map((r) => ({ id: r.id, name: r.name, wid: detail.get(r.id)?.wid ?? null, city: r.citySlug ?? detail.get(r.id)?.city ?? r.place })));
+  for (const r of out) r.slug = slugs.get(r.id) ?? r.id;
   return { rows: out, leagues, detail };
 }

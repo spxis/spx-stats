@@ -98,9 +98,7 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
       key: "name", label: say("venuesPage.colVenue"), cls: "team venuename", get: (v) => v.name,
       cell: (v) => (
         <>
-          {v.wiki
-            ? <a className="ext" href={v.wiki} target="_blank" rel="noopener noreferrer" aria-label={say("map.wikiOpens", { venue: v.name })}>{v.name}</a>
-            : v.name}
+          <Link href={`/venue/${v.slug}`} prefetch={false}>{v.name}</Link>
           {!v.current ? <span className="venuetag"> {say("venuesPage.former")}</span> : null}
           {v.former ? <span className="sub venuenames">{v.former}</span> : null}
         </>
@@ -228,7 +226,7 @@ function PlainList({ venues }: { venues: VenueRow[] }) {
     <ul className="venueplain">
       {venues.map((v) => (
         <li key={v.id}>
-          {`${v.name}${v.place ? `, ${v.place}` : ""}: `}
+          <Link href={`/venue/${v.slug}`} prefetch={false}>{v.name}</Link>{`${v.place ? `, ${v.place}` : ""}: `}
           {v.clubs.map((c, i) => (
             <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={null} href={c.href} /></Fragment>
           ))}

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { slugify } from "../src/lib/slug.ts";
 import { packVenues, unpackVenues } from "../src/lib/venueWire.ts";
 import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueRow } from "../src/lib/venueModel.ts";
 
@@ -9,7 +10,7 @@ const B = { min: 1900, max: 2026 };
 const LEAGUES = ["nhl", "nba", "mls"];
 
 const venue = (o: Partial<VenueRow>): VenueRow => ({
-  id: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
+  id: "x", slug: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
   leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
 });
 
@@ -80,6 +81,7 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
     venue({ name: "Bare", clubs: [club({})] }),
   ];
   for (const r of rows) {
+    r.slug = r.name === "Old Forum" ? "old-forum-q1" : slugify(r.name);
     r.leagues = [...new Set(r.clubs.map((c) => c.lg))];
     r.current = r.clubs.some((c) => c.to == null);
     r.from = r.clubs.some((c) => c.from == null) ? null : Math.min(...r.clubs.map((c) => c.from as number));
@@ -96,6 +98,7 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
     assert.equal(id2, String(i));
     void id; void extra; void extra2;
   });
+  assert.deepEqual(wire.v.map((v: unknown[]) => v[17] ?? null), [null, "old-forum-q1", null, null], "a row carries its slug only when it is not the name's");
   assert.ok(JSON.stringify(wire).length < JSON.stringify(rows).length / 2, "the packed rows are much smaller");
   const habs = wire.c.find((c: unknown[]) => c[2] === "Montreal Canadiens")[4] as string;
   assert.ok(habs.length < 80 && !habs.includes("utm_"), `a Wikimedia logo goes short (${habs})`);

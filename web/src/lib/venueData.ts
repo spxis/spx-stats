@@ -12,11 +12,17 @@ import { queryVenues, RECORD_FIELDS, venueOrder, venueRecords, VENUE_SORTS, type
 const HOLD = 5 * 60_000;
 const en = speaker("en");
 
-/** Every venue as a record, kept a few minutes per server instance (the routes are also kept an hour by the CDN). */
-export const getVenueRecords = memo(HOLD, async (): Promise<VenueRecord[]> => {
-  const { rows, detail } = await getVenueList(await getPaths(), en.say);
+/** The list /venues draws, in English, kept a few minutes per server instance (the routes are also kept an hour by the CDN). */
+const getEnglishList = memo(HOLD, async () => getVenueList(await getPaths(), en.say));
+
+/** Every venue as a record. */
+export const getVenueRecords = async (): Promise<VenueRecord[]> => {
+  const { rows, detail } = await getEnglishList();
   return venueRecords(rows, detail);
-});
+};
+
+/** The address of every venue's page (/venue/<slug>), for the sitemap. */
+export const getVenueSlugs = async (): Promise<string[]> => (await getEnglishList()).rows.map((r) => r.slug);
 
 /** The page GET /api/venues answers: the query string checked (a bad value is a BadParams naming it), then the records filtered, sorted and cut. */
 export async function listVenues(sp: URLSearchParams): Promise<VenuePage> {

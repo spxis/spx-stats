@@ -34,7 +34,7 @@ export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season"] as 
 export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", ...LEAGUE_CODES] as const;
 
 /** The first path segments that start pages with more in their address: anything else is not a page (a typo, a scanner) and is answered, unkept, with the 404. */
-export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city"] as const;
+export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city", "venue"] as const;
 
 type Cond = { type: "header" | "cookie" | "query"; key: string; value?: string };
 

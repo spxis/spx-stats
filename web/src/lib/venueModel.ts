@@ -13,6 +13,8 @@ export interface VenueClub { lg: string; f: number; name: string; href: string; 
 /** One home venue, with every club that used it, as the page sends it to the browser. */
 export interface VenueRow {
   id: string;
+  /** The address of its page, /venue/<slug> (venueSlug.ts). */
+  slug: string;
   /** The name now (or the last one it had). */
   name: string;
   /** Every name with its years, when it has had more than one. */

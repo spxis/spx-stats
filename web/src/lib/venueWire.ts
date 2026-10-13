@@ -8,6 +8,7 @@
  * Pure and import-light (types only), so a node script can test it.
  */
 import type { Speaker } from "./i18n/i18n";
+import { slugify } from "./slug.ts";
 import type { VenueClub, VenueRow } from "./venueModel";
 
 type Say = Speaker["say"];
@@ -22,7 +23,8 @@ export type WirePlace = [string, string | 0];
 /**
  * One venue: 0 name, 1 other names, 2 lat, 3 lon, 4 country, 5 place (index + 1), 6 Wikipedia (1 = the name, else the title),
  * 7 address (text, or [street] when it is the street plus the place and country), 8 map link (1 = by coordinates, else the link itself),
- * 9 opened, 10 closed, 11 capacity, 12 roof, 13 surface, 14 owner, 15 conference/division (indexes), 16 clubs (club index, from, to, ... flat).
+ * 9 opened, 10 closed, 11 capacity, 12 roof, 13 surface, 14 owner, 15 conference/division (indexes), 16 clubs (club index, from, to, ... flat),
+ * 17 the page address when it is not just the name's slug (the name, a city or the Wikidata id came after it).
  */
 export type WireRow = (string | number | number[] | [string] | 0)[];
 export interface VenueWire { c: WireClub[]; p: WirePlace[]; a: string[]; v: WireRow[] }
@@ -122,7 +124,7 @@ export function packVenues(rows: VenueRow[], leagues: string[], countryName: (cc
       if (!alIdx.has(a)) { alIdx.set(a, alList.length); alList.push(a); }
       return alIdx.get(a)!;
     });
-    const row: WireRow = [r.name, r.former ?? 0, r.lat, r.lon, r.cc ?? 0, pi, wiki, address, href, r.opened ?? 0, r.closed ?? 0, r.capacity ?? 0, r.roof ?? 0, r.surface ?? 0, r.owner ?? 0, al, flat];
+    const row: WireRow = [r.name, r.former ?? 0, r.lat, r.lon, r.cc ?? 0, pi, wiki, address, href, r.opened ?? 0, r.closed ?? 0, r.capacity ?? 0, r.roof ?? 0, r.surface ?? 0, r.owner ?? 0, al, flat, r.slug === slugify(r.name) ? 0 : r.slug];
     while (row.length && (row[row.length - 1] === 0 || (Array.isArray(row[row.length - 1]) && (row[row.length - 1] as number[]).length === 0))) row.pop();
     return row;
   });
@@ -153,7 +155,7 @@ export function unpackVenues(w: VenueWire, leagues: string[], say: Say, countryN
     const roof = (x[12] as string) || null, surface = (x[13] as string) || null, owner = (x[14] as string) || null;
     const facts = factsText({ capacity, opened, surface, roof, owner }, say);
     const row: VenueRow = {
-      id: String(i), name, former, lat, lon, cc, place, citySlug: pl && pl[1] ? (pl[1] as string) : null, wiki, address, addressHref,
+      id: String(i), slug: typeof x[17] === "string" ? x[17] : slugify(name), name, former, lat, lon, cc, place, citySlug: pl && pl[1] ? (pl[1] as string) : null, wiki, address, addressHref,
       leagues: [], clubs, opened, closed: (x[10] as number) || null, capacity, roof, surface, owner, from: null, to: null, current: false,
       al: ((x[15] as number[] | undefined) ?? []).map((k) => w.a[k]), extra: [former, facts].filter((e): e is string => !!e),
     };
