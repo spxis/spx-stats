@@ -454,6 +454,14 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    `meta.source` code, `source_url` the page), run `scripts/build_core.sh` or just `psql -f db/build/183_season_notes.sql`
    from the repo root, then publish `core.season_note` to production with a data release (item 5). Check one page on
    spxn.com (pages cache for an hour). Migration `033` creates the table.
+   **After loading new seasons** (a new league, a new year, a backfill like the NFL before 1999) the load is not done until these
+   rerunnable steps have run on DS1, each through `scripts/mac/ds1-apply.sh`, and the load's report names each one that ran:
+   `165` champions from the games, `172` champion links, `175` team brands and logos, `178` alignment (conferences and divisions; a
+   new season needs its standings templates in `legacy_alignment`, fetched by `scripts/alignment/`), `183` season notes (add a row to
+   `db/seed/season_note.csv` for a short or cancelled season), `190`, `191` and `192` the indexes, then `refresh materialized view api.season_summary`
+   (`select api.refresh()` on production). Then run `db/checks/051` to `053` (finished season without a champion, team seasons without
+   a conference or division, a stale season summary): each must stay at its baseline. A load that skips one is how the NFL 1973-1998
+   seasons went live with no champions and no conferences.
 8. **DS1 and working copies.** DS1 is permanent; cloud and Mac copies are temporary. Work done on a working copy
    (the cloud agent holds a lot of it) is pushed to DS1 before the production load and before the copy is discarded.
    Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without
