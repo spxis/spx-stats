@@ -69,6 +69,16 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   machine, check, in order: can an agent or MCP tool (Vercel, Supabase, Dropbox, GitHub) do it; is the value already on
   his Mac (keychain, `.env` files) or in the private file. Then give him ONE command that fetches or builds it without
   printing a secret. Only then ask for a UI step, and say exactly where to click.
+- **One command, never a multi-step routine, and no web dashboards.** John hates being sent into Supabase, Vercel,
+  DSM or any other web console, and hates "copy this, then open that, then paste" sequences. If one Terminal command
+  can do the whole job through a CLI or API, give that single command. Examples:
+  - **Production SQL or a migration:** the Supabase Management API with the token from the keychain (`curl -X POST
+    https://api.supabase.com/v1/projects/<ref>/database/query`, body built from the file).
+  - **A secret onto the NAS:** `security … -w | ssh ds1 '…'`.
+  - **A redeploy:** the Vercel CLI.
+
+  Make it wait, check and print a short result by itself. A dashboard step is a last resort, and then you must say
+  why no command can do it.
 - Never ask him to paste a secret into chat. No wildcard or guessed paths: look every name up first. Test scripts
   before handing them over and say what is untested.
 - He is at his Mac Studio (Terminal) most of the time with Tailscale off, because it breaks his Dropbox sync. Do not
