@@ -254,7 +254,11 @@ coordinating session, put the ticket in a new create-only Dropbox file
 
     git worktree add ../<name> -b work/<name> origin/main     # or use your harness's worktree
     cd web && pnpm install --frozen-lockfile                  # about 10 seconds (tested)
-    pnpm dev                                                  # http://localhost:3000, no .env needed
+    pnpm dev                                                  # http://localhost:3100, no .env needed
+
+This project owns local ports **3100-3199** (John's port table): dev on 3100, worktrees and test servers 3101 and up
+(check `lsof -iTCP:<port> -sTCP:LISTEN` first). Never 3000-3099 or another project's block; give every server and
+headless-browser base URL an explicit port.
 
 No `.env` is needed: the defaults point at the live Supabase project's public read-only key.
 
