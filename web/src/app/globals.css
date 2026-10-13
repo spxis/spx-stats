@@ -111,6 +111,21 @@
   .dr-actions { display: flex; flex-wrap: wrap; gap: 10px; }
   .dr-actions .signin-btn { min-height: 44px; }
   .dr-actions .dr-reject { background: var(--panel); color: var(--ink); }
+  .cf-form { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .cf-nojs { display: flex; gap: 8px; align-items: flex-start; font-size: 15px; max-width: 46ch; }
+  dialog.cf { padding: 0; margin: auto; border: 2px solid var(--ink); background: var(--panel); color: var(--ink); width: min(540px, calc(100vw - 32px)); max-height: calc(100dvh - 32px); overflow: auto; }
+  dialog.cf::backdrop { background: rgb(0 0 0 / .6); }
+  .cf-body { display: flex; flex-direction: column; gap: 12px; padding: 20px; text-align: left; }
+  .cf-title { font-size: 21px; line-height: 1.2; text-transform: none; letter-spacing: 0; overflow-wrap: anywhere; }
+  .cf-body p { max-width: none; overflow-wrap: anywhere; }
+  .cf-what { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .cf-summary { display: flex; flex-direction: column; gap: 8px; max-height: 40dvh; overflow: auto; }
+  .cf-summary th, .cf-summary td { padding: 6px 8px; }
+  .cf-summary th { position: static; }
+  .cf-actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
+  .cf-actions .signin-btn { min-height: 44px; flex: 1 1 140px; align-self: auto; }
+  .cf-actions .cf-cancel { background: var(--panel); color: var(--ink); }
+  .cf-actions .cf-danger { background: var(--bad); border-color: var(--bad); color: var(--paper); }
   .dr-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 0 4px; border-bottom: 2px solid var(--ink); }
   .dr-tabs a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; text-decoration: none; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
   .dr-tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }

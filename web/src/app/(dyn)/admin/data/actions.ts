@@ -3,6 +3,7 @@
 import { updateTag } from "next/cache";
 import { headers } from "next/headers";
 import { sameOrigin } from "@/lib/auth/origin";
+import { NOT_CONFIRMED, isConfirmed } from "@/lib/confirm";
 import { requireAdmin } from "@/lib/auth/user";
 import { decideRelease, holdRelease, pauseAutoApprovals, releaseDashboard, releaseStatus, requestDriftCheck, requestScoreUpdate, resumeAutoApprovals } from "@/lib/releases/client";
 import { alreadyDecided, requestBlock } from "@/lib/releases/rules";
@@ -23,6 +24,7 @@ const success = (number: string, approve: boolean): DecideState => ({
 export async function decide(_previous: DecideState, form: FormData): Promise<DecideState> {
   const user = await requireAdmin();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
 
   const rawId = form.get("id");
   const decision = form.get("decision");
@@ -59,6 +61,7 @@ export async function decide(_previous: DecideState, form: FormData): Promise<De
 export async function hold(_previous: DecideState, form: FormData): Promise<DecideState> {
   const user = await requireAdmin();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
   const rawId = form.get("id");
   const id = typeof rawId === "string" && /^[0-9]{1,15}$/.test(rawId) ? Number(rawId) : 0;
   if (id < 1) return { ok: false, message: "That request was not valid." };
@@ -85,6 +88,7 @@ export async function hold(_previous: DecideState, form: FormData): Promise<Deci
 export async function setAutoPause(_previous: DecideState, form: FormData): Promise<DecideState> {
   const user = await requireAdmin();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
   const decision = form.get("decision");
   try {
     if (decision === "pause") {
@@ -110,9 +114,10 @@ export async function setAutoPause(_previous: DecideState, form: FormData): Prom
  * request at a time, about 10 minutes between requests); the runner on the NAS does the work. When it refuses, the reason is
  * worked out again from the current requests so the message is specific.
  */
-export async function requestUpdate(): Promise<DecideState> {
+export async function requestUpdate(_previous: DecideState, form: FormData): Promise<DecideState> {
   const user = await requireAdmin();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
   try {
     await requestScoreUpdate(user.email);
   } catch {
@@ -130,9 +135,10 @@ export async function requestUpdate(): Promise<DecideState> {
 }
 
 /** "Check now" on the Drift tab: queues one drift check for the runner. Same checks and the same one-at-a-time rule as requestUpdate. */
-export async function requestDrift(): Promise<DecideState> {
+export async function requestDrift(_previous: DecideState, form: FormData): Promise<DecideState> {
   const user = await requireAdmin();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
   try {
     await requestDriftCheck(user.email);
   } catch {

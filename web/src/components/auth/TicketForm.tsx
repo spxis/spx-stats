@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState } from "react";
+import { ConfirmAction } from "@/components/ConfirmAction";
 import { fileTicket, type FileState } from "@/app/(dyn)/admin/tickets/new/actions";
 
 export function TicketForm() {
@@ -24,7 +25,7 @@ export function TicketForm() {
           <option value="low">Low</option>
         </select>
       </label>
-      <button type="submit" className="signin-btn" disabled={pending}>{pending ? "Filing…" : "File ticket"}</button>
+      <ConfirmAction kind="ticket" className="signin-btn" disabled={pending}>{pending ? "Filing…" : "File ticket"}</ConfirmAction>
       {state ? <p className="note" role="status">{state.message}</p> : null}
     </form>
   );

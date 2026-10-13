@@ -1,9 +1,17 @@
 "use client";
 
 import { useActionState, type ReactNode } from "react";
+import { ConfirmAction } from "@/components/ConfirmAction";
+import { approveKind } from "@/lib/confirm";
 import { decide, hold, type DecideState } from "./actions";
 
-export function DecisionCard({ id, number, approveLabel, blocked, holdable = false, children }: { id: number; number: string; approveLabel: string; blocked: boolean; holdable?: boolean; children: ReactNode }) {
+/**
+ * One waiting release with its buttons. Approve, Reject and Hold each sit in their own form and ask for confirmation first
+ * (the dialog names the release and, for an approval, lists the tables it changes). Approve and Reject share one action state.
+ */
+export function DecisionCard({ id, number, title, kind, approveLabel, blocked, holdable = false, summary, children }: {
+  id: number; number: string; title: string; kind: string; approveLabel: string; blocked: boolean; holdable?: boolean; summary?: ReactNode; children: ReactNode;
+}) {
   const [state, action, pending] = useActionState<DecideState, FormData>(decide, null);
   const [holdState, holdAction, holding] = useActionState<DecideState, FormData>(hold, null);
   const done = state?.ok ? state : holdState?.ok ? holdState : null;
@@ -17,17 +25,22 @@ export function DecisionCard({ id, number, approveLabel, blocked, holdable = fal
   return (
     <article className="dr-card" aria-label={`Release ${number}`}>
       {children}
-      <form action={action} className="dr-actions">
-        <input type="hidden" name="id" value={id} />
-        <button type="submit" name="decision" value="approve" className="signin-btn" disabled={blocked || pending}>
-          {pending ? "Working…" : approveLabel}
-        </button>
-        <button type="submit" name="decision" value="reject" className="signin-btn dr-reject" disabled={pending}>Reject</button>
-      </form>
-      {holdable ? (
-        <form action={holdAction} className="dr-actions">
+      <div className="dr-actions">
+        <form action={action} className="cf-form">
           <input type="hidden" name="id" value={id} />
-          <button type="submit" className="signin-btn dr-reject" disabled={holding}>{holding ? "Working…" : "Hold: do not approve automatically"}</button>
+          <ConfirmAction kind={approveKind(kind)} number={number} title={title} details={summary} name="decision" value="approve" className="signin-btn" disabled={blocked || pending}>
+            {pending ? "Working…" : approveLabel}
+          </ConfirmAction>
+        </form>
+        <form action={action} className="cf-form">
+          <input type="hidden" name="id" value={id} />
+          <ConfirmAction kind="reject" number={number} title={title} name="decision" value="reject" className="signin-btn dr-reject" disabled={pending}>Reject</ConfirmAction>
+        </form>
+      </div>
+      {holdable ? (
+        <form action={holdAction} className="cf-form">
+          <input type="hidden" name="id" value={id} />
+          <ConfirmAction kind="hold" number={number} title={title} className="signin-btn dr-reject" disabled={holding}>{holding ? "Working…" : "Hold: do not approve automatically"}</ConfirmAction>
         </form>
       ) : null}
       {state ? <p className="dr-alert" role="alert">{state.message}</p> : null}

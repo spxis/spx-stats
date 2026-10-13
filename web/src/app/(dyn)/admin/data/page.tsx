@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { ConfirmSummary } from "@/components/ConfirmSummary";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
 import { ReleaseError, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
@@ -143,13 +144,26 @@ function AutoNote({ r, paused }: { r: Release; paused: boolean }) {
   );
 }
 
+/** The tables an approval changes, for the confirmation dialog. */
+function approvalSummary(r: Release) {
+  const pv = r.preview;
+  if (r.kind === "ds1_step" && pv) {
+    const rows = Object.keys(pv.after ?? {}).map((n) => ({ table: n, before: pv.before?.[n] ?? null, after: pv.after?.[n] ?? null }));
+    return <ConfirmSummary rows={rows} step file={pv.file ?? undefined} />;
+  }
+  const entries = Object.entries(pv?.tables ?? {});
+  const rows = entries.map(([n, x]) => ({ table: n, add: x.add, change: x.change, remove: x.remove }));
+  const bytes = entries.reduce((sum, [, x]) => sum + x.bytes_delta, 0);
+  return <ConfirmSummary rows={rows} size={rows.length ? bytesLabel(bytes) : undefined} />;
+}
+
 function PendingCard({ r, query, paused }: { r: Release; query: Query; paused: boolean }) {
   const blockers = r.preview?.blockers ?? [];
   const warnings = r.preview?.warnings ?? [];
   const { columns, rows } = previewRows(r);
   const param = `sort_r${r.id}`;
   return (
-    <DecisionCard id={r.id} number={r.number} approveLabel={r.kind === "ds1_step" ? "Approve and run on DS1" : "Approve and publish"} blocked={blockers.length > 0}
+    <DecisionCard id={r.id} number={r.number} title={r.title} kind={r.kind} summary={approvalSummary(r)} approveLabel={r.kind === "ds1_step" ? "Approve and run on DS1" : "Approve and publish"} blocked={blockers.length > 0}
       holdable={r.kind === "daily_scores" && r.preview?.auto?.eligible === true && !r.held_at && !paused}>
       <div>
         <strong>{r.title}</strong>{" "}

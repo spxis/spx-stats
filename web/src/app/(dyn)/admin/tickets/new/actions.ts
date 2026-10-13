@@ -4,6 +4,7 @@ import { headers } from "next/headers";
 import { boardCreate, boardGrade } from "@/lib/board/client";
 import { BOARD_KINDS, BOARD_PRIORITIES, draftProblems, type BoardKind, type BoardPriority } from "@/lib/board/rules";
 import { sameOrigin } from "@/lib/auth/origin";
+import { NOT_CONFIRMED, isConfirmed } from "@/lib/confirm";
 import { requireAdmin } from "@/lib/auth/user";
 
 export type FileState = { ok: boolean; message: string } | null;
@@ -15,6 +16,7 @@ export type FileState = { ok: boolean; message: string } | null;
 export async function fileTicket(_previous: FileState, form: FormData): Promise<FileState> {
   const user = await requireAdmin();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
+  if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
 
   const text = (name: string) => {
     const value = form.get(name);
