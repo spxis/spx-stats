@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
-import { LeaderSeasonSelect } from "@/components/LeaderSeasonSelect";
+import { LeagueSeasonNav } from "@/components/SeasonNav";
 import { PlayerLeaders } from "@/components/PlayerLeaders";
 import { TeamLeaders } from "@/components/TeamLeaders";
 import { NoSeason } from "@/components/ui";
 import { queryHref } from "@/components/ViewTabs";
 import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { withGaps } from "@/lib/coverage";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { cleanSeasons, leadersPath } from "@/lib/leaderStats";
 import { PLAYER_SPECS } from "@/lib/leaderPlayers";
@@ -55,11 +56,7 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
 
   const head = (
     <>
-      <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
-        {y > lo ? <Link href={leadersPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link> : null}
-        <LeaderSeasonSelect lg={lg} seasons={[...mine].sort((a, b) => b.year - a.year).map((s) => ({ year: s.year, label: s.label }))} value={y} />
-        {y < hi ? <Link href={leadersPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link> : null}
-      </nav>
+      <LeagueSeasonNav lg={lg} page="leaders" year={y} lo={lo} hi={hi} seasons={withGaps(summary.seasons).filter((s) => s.league === lg).sort((a, b) => b.year - a.year).map((s) => ({ year: s.year, label: s.label }))} />
       <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
       <h1>{say("leaders.title", { label })}</h1>
     </>

@@ -314,7 +314,7 @@
   .mapdlg::backdrop { background: rgba(0,0,0,.55); }
   .dlghead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
 
-  .seasonnav { position: absolute; top: 0; right: 0; display: flex; gap: 6px; }
+  .seasonnav { position: absolute; top: 0; right: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 100%; }
   .seasonnav a { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
   .seasonnav select { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 8px; border: 1px solid var(--rule); background: var(--panel); color: inherit; }
   .seasonnav a:hover { border-color: var(--accent); color: var(--accent); }
@@ -378,7 +378,8 @@
     .cell { min-height: 46px; padding: 3px 4px; }
     .cell .ct { font-size: 16px; }
     .cell .mk { font-size: 10px; }
-    .seasonnav { position: static; order: -1; }
+    .seasonnav { position: static; order: -1; justify-content: flex-start; }
+    .seasonnav a { padding: 9px 10px; }
     .mapbtn { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
     .scroll { background: linear-gradient(to right, var(--paper) 30%, transparent) left / 28px 100% no-repeat local, linear-gradient(to left, var(--paper) 30%, transparent) right / 28px 100% no-repeat local, linear-gradient(to right, rgba(0,0,0,.45), transparent) left / 12px 100% no-repeat scroll, linear-gradient(to left, rgba(0,0,0,.45), transparent) right / 12px 100% no-repeat scroll; }
     .teamlist td { height: 41px; vertical-align: middle; }

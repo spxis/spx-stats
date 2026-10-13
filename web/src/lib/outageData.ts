@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { z } from "zod";
 import { rows } from "./api/client";
 import { seasonCoachSchema, seasonOutageSchema, seasonRosterSchema, teamIdentitySchema } from "./api/schemas";
 import type { SeasonCoachRow, SeasonOutageRow, SeasonRosterRow, SeasonSummaryRow, TeamIdentityRow } from "./api/types";
@@ -12,6 +13,10 @@ import type { SeasonCoachRow, SeasonOutageRow, SeasonRosterRow, SeasonSummaryRow
 /** The article on why a season was not played; null when there is none (or the view is not there yet). */
 export const getOutage = cache(async (lg: string, y: number): Promise<SeasonOutageRow | null> =>
   (await rows("season_outage", `league=eq.${lg}&year=eq.${y}&select=*`, seasonOutageSchema).catch(() => []))[0] ?? null);
+
+/** The years of a league that api.season_outage says were not played; empty when there are none (or the view is not there yet). */
+export const getOutageYears = cache(async (lg: string): Promise<number[]> =>
+  (await rows("season_outage", `league=eq.${lg}&select=year`, z.object({ year: z.number() })).catch(() => [])).map((r) => r.year));
 
 /** Each club's city and nickname in a season. */
 export const getIdentities = cache(async (lg: string, y: number): Promise<TeamIdentityRow[]> =>

@@ -5,6 +5,7 @@ import { AccentStyle } from "@/components/AccentStyle";
 import { ChampionNote } from "@/components/ChampionNote";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
 import { SeasonBar } from "@/components/SeasonBar";
+import { LeagueSeasonNav } from "@/components/SeasonNav";
 import { SeasonOutage } from "@/components/SeasonOutage";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
@@ -19,7 +20,7 @@ import { abbrFor } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
-import { getOutage } from "@/lib/outageData";
+import { getOutage, getOutageYears } from "@/lib/outageData";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, isSpx, LEAGUES, LG, seasonLabel, srcName } from "@/lib/leagues";
@@ -68,25 +69,33 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const sp = await searchParams;
   if (!ys.canonical) permanentRedirect(withQuery(seasonPath(lg, y), sp));
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
-  const [d, brands, abbrs, summary, notes, paths, player] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths()]);
+  const [d, brands, abbrs, summary, notes, paths, player, outageYears] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg)]);
   const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
   const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
   // The picker also offers the years the league sat out, so a reader can open them.
   const pickable = withGaps(summary.seasons).filter((x) => x.league === lg).sort((a, b) => b.year - a.year).map((x) => ({ year: x.year, label: x.label }));
+  // The champion going into this season: the last one crowned, however many seasons the league sat out since.
+  const holders = titleHolders(summary.seasons, lg, outageYears);
+  const holder = holders.before(y);
+  const defending = holder?.champion_franchise;
+  const streak = holder && defending != null ? titleStreak(holders.byYear, defending, holder.year, holders.sat) : 0;
   if (!d) {
     if (!isGapYear(summary.seasons, lg, y)) notFound();
     return (
       <>
         <AccentStyle league={lg} />
         <section className="head fade">
-          <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
-            {y > lo ? <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link> : null}
-            {y < hi ? <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link> : null}
-          </nav>
+          <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} />
           <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
           <h1>{say("season.title", { label: seasonLabel(lg, y) })}</h1>
           <p className="lede"><NoSeason /> {say("outage.lede", { league: LG[lg] })}</p>
-          <SeasonBar lg={lg} year={y} seasons={pickable} days={[]} date="" />
+          {holder && defending != null ? (
+            <p className="lede holder">
+              {streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}:{" "}
+              <span className="tm"><TeamLogo url={logoFor(brands, defending, holder.year)} /><TeamLink lg={lg} f={defending} name={holder.champion ?? ""} /></span>
+              <span className="meta"> · {say("season.wonTitle", { season: holder.label })}</span>
+            </p>
+          ) : null}
         </section>
         <SeasonOutage lg={lg} year={y} seasons={summary.seasons} />
       </>
@@ -94,10 +103,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   }
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, d.standings, complete);
-  const holders = titleHolders(summary.seasons, lg);
-  const defending = holders.byYear.get(y - 1)?.champion_franchise;
   const winner = complete ? holders.byYear.get(y)?.champion_franchise : null;
-  const streak = defending != null ? titleStreak(holders.byYear, defending, y - 1) : 0;
   const selection = parseSelection(sp);
 
   const champs = d.awards.filter((x) => x.kind === "championship");
@@ -144,7 +150,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
             <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, y) })}>{say("season.winner")}</span>
           ) : null}
           {defending != null && r.franchise_id === defending ? (
-            <span className="defending" title={say("season.wonTitle", { season: seasonLabel(lg, y - 1) })}>{streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}</span>
+            <span className="defending" title={say("season.wonTitle", { season: holder?.label ?? seasonLabel(lg, y - 1) })}>{streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}</span>
           ) : null}
         </>
       ),
@@ -180,12 +186,10 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
     <>
       <AccentStyle league={lg} />
       <section className="head fade">
-        <nav className="seasonnav" aria-label={say("season.otherSeasons")}>
-          {y > lo ? <Link href={seasonPath(lg, y - 1)} rel="prev">{"← " + seasonLabel(lg, y - 1)}</Link> : null}
+        <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
           <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
           {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
-          {y < hi ? <Link href={seasonPath(lg, y + 1)} rel="next">{seasonLabel(lg, y + 1) + " →"}</Link> : null}
-        </nav>
+        </>} />
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1>{say("season.title", { label: d.label })}</h1>
         {d.games.length === 0 && !champ && !st.length && summary.seasons.some((s) => s.league === lg && s.year === y && leagueSat(s))
@@ -198,9 +202,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
                 {startDay ? ` ${say("season.starts", { date: dt.full(atUtc(startDay)) })}` : ""}
               </p>
             )}
-        <SeasonBar lg={lg} year={y}
-          seasons={pickable}
-          days={days} date={asOfDate} />
+        <SeasonBar days={days} date={asOfDate} />
       </section>
       {champ ? (
         <section className="banner">

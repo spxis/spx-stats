@@ -34,3 +34,6 @@
 .plists .note { margin: 0 0 8px; }
 
 td.names { min-width: 180px; font-size: 14px; }
+
+.lede.holder { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; color: var(--ink); }
+.lede.holder .meta { color: var(--muted); font-size: inherit; }

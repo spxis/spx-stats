@@ -39,6 +39,7 @@ import { getFigureRanks } from "@/lib/teamFigures";
 import { teamRanks } from "@/lib/teamRanks";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
 import { clubPins } from "@/lib/venueMap";
+import { SeasonNav } from "@/components/SeasonNav";
 import { getVenuePlaces } from "@/lib/venuePlace";
 import { getVenueFacts, getVenueNames } from "@/lib/venueName";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -171,11 +172,10 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   });
   const mePin = mapPins.find((p) => p.f === f);
   const seasonNav = prev != null || next != null || current != null ? (
-    <nav className="seasonnav" aria-label={say("tseason.otherSeasons")}>
-      {prev != null ? <Link href={paths.teamSeason(lg, f, prev)} rel="prev" prefetch={false}>{"← " + seasonLabel(lg, prev)}</Link> : null}
-      {next != null ? <Link href={paths.teamSeason(lg, f, next)} rel="next" prefetch={false}>{seasonLabel(lg, next) + " →"}</Link> : null}
-      {current != null ? <Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link> : null}
-    </nav>
+    <SeasonNav aria={say("tseason.otherSeasons")} prefetch={false}
+      prev={prev != null ? { href: paths.teamSeason(lg, f, prev), label: seasonLabel(lg, prev) } : null}
+      next={next != null ? { href: paths.teamSeason(lg, f, next), label: seasonLabel(lg, next) } : null}
+      extra={current != null ? <Link href={paths.teamSeason(lg, f, current)} prefetch={false}>{say("tseason.current")}</Link> : null} />
   ) : null;
   return (
     <>

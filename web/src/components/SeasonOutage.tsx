@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { MapViewer } from "@/components/MapViewer";
 import { OutageSlope } from "@/components/OutageSlope";
 import { SortTable } from "@/components/SortTable";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -7,6 +8,7 @@ import { TeamLink } from "@/components/ui";
 import type { SeasonOutageRow, SeasonSummaryRow } from "@/lib/api/types";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { logoFor, type BrandMap } from "@/lib/brand";
+import { getSeasonAlignment } from "@/lib/alignmentData";
 import { getAbbrs, getBrands, getSeasonStandings } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -20,6 +22,9 @@ import { getPlayerPaths } from "@/lib/playerLinks";
 import { seasonPath } from "@/lib/slug";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
 import { getPaths } from "@/lib/teamSlugs";
+import { clubPins } from "@/lib/venueMap";
+import { getVenuePlaces } from "@/lib/venuePlace";
+import { getVenueFacts, getVenueNames } from "@/lib/venueName";
 import "@/components/outage.css";
 
 const rec = (c: Club | null): string => (c ? `${c.w ?? 0}-${c.l ?? 0}${c.t ? `-${c.t}` : ""}${c.otl ? `-${c.otl}` : ""}` : "");
@@ -38,9 +43,34 @@ export async function SeasonOutage({ lg, year, seasons }: { lg: string; year: nu
   return (
     <>
       <Article outage={outage} />
+      {before ? <ClubMap lg={lg} before={before} brands={brands} abbrs={abbrs} paths={paths} /> : null}
       {before && after ? <BeforeAfter lg={lg} before={before} after={after} brands={brands} abbrs={abbrs} paths={paths} player={player} /> : null}
       {outage ? null : <p className="note">{say("outage.noArticle")}</p>}
     </>
+  );
+}
+
+/**
+ * Every club of the season before the gap on one map, each at the venue it used then: the same viewer as a team's season map, framed
+ * round the dots (Canada for the CFL, North America for the rest). A dot opens that club's season. Left out when no club can be placed.
+ */
+async function ClubMap({ lg, before, brands, abbrs, paths }: Pick<BAProps, "lg" | "brands" | "abbrs" | "paths"> & { before: SeasonSummaryRow }) {
+  const { say } = await currentSpeaker();
+  const [standings, alignment, places, names, facts] = await Promise.all([
+    getSeasonStandings(lg, before.year).catch(() => []), getSeasonAlignment(lg, before.year), getVenuePlaces(lg), getVenueNames(), getVenueFacts(),
+  ]);
+  const pins = clubPins({
+    year: before.year, me: -1, clubs: standings, brands, abbrs, alignment, places, names, facts, say, href: (f) => paths.teamSeason(lg, f, before.year),
+  });
+  if (!pins.length) return null;
+  const total = new Set(standings.map((r) => r.franchise_id)).size;
+  const label = say("map.label", { league: LG[lg as keyof typeof LG] ?? lg, season: before.label });
+  return (
+    <section className="section">
+      <h2>{say("outage.mapTitle")}</h2>
+      <p>{say("outage.mapLede", { season: before.label })}</p>
+      <MapViewer pins={pins} title={label} note={say("outage.mapNote", { n: pins.length, total })} />
+    </section>
   );
 }
 
