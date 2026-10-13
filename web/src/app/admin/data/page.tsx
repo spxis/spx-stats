@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
 import { ReleaseError, releaseDashboard, type Dashboard, type Release } from "@/lib/releases/client";
-import { RESULT_MESSAGES, bytesLabel, driftState, stamp } from "@/lib/releases/rules";
+import { bytesLabel, driftState, stamp } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
-import { decide } from "./actions";
+import { DecisionCard } from "./DecisionCard";
 
 /**
  * Data releases for admins: what is waiting for approval, what ran, whether DS1 and production agree, and how much space
@@ -96,7 +96,7 @@ function PendingCard({ r, query }: { r: Release; query: Query }) {
   const { columns, rows } = previewRows(r);
   const param = `sort_r${r.id}`;
   return (
-    <article className="dr-card" aria-label={`Release ${r.number}`}>
+    <DecisionCard id={r.id} number={r.number} approveLabel={r.kind === "ds1_step" ? "Approve and run on DS1" : "Approve and publish"} blocked={blockers.length > 0}>
       <div>
         <strong>{r.title}</strong>{" "}
         <span className="tk-badge">{r.kind === "ds1_step" ? "DS1 step" : r.kind}</span>
@@ -116,14 +116,7 @@ function PendingCard({ r, query }: { r: Release; query: Query }) {
       {rows.length ? (
         <div className="scroll"><SortTable columns={columns} rows={rows} param={param} initial={parseSort(query[param], keys(columns), "table.asc")} def="table.asc" label={`Preview of ${r.number}`} /></div>
       ) : null}
-      <form action={decide} className="dr-actions">
-        <input type="hidden" name="id" value={r.id} />
-        <button type="submit" name="decision" value="approve" className="signin-btn" disabled={blockers.length > 0}>
-          {r.kind === "ds1_step" ? "Approve and run on DS1" : "Approve and publish"}
-        </button>
-        <button type="submit" name="decision" value="reject" className="signin-btn dr-reject">Reject</button>
-      </form>
-    </article>
+    </DecisionCard>
   );
 }
 
@@ -223,7 +216,6 @@ function Report({ data, query }: { data: Dashboard; query: Query }) {
 export default async function AdminDataPage({ searchParams }: { searchParams: Promise<Query> }) {
   await requireAdmin();
   const query = await searchParams;
-  const result = typeof query.result === "string" ? RESULT_MESSAGES[query.result] : undefined;
 
   let data: Dashboard | null = null;
   let problem = "";
@@ -238,7 +230,6 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
       <section className="head fade">
         <h1>Data releases</h1>
         <p className="lede">Production changes only through numbered releases. Approve or reject each one here; the runner next to DS1 applies the approved ones and checks the result.</p>
-        {result ? <p role="status"><strong>{result}</strong></p> : null}
         {problem ? <p className="note" role="alert">{problem}</p> : null}
       </section>
       {data ? <Report data={data} query={query} /> : null}

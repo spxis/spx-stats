@@ -30,10 +30,7 @@ export function stamp(iso: string | null | undefined): string | null {
   return iso && !Number.isNaN(Date.parse(iso)) ? iso.slice(0, 16).replace("T", " ") : null;
 }
 
-export const RESULT_MESSAGES: Record<string, string> = {
-  approved: "Approved. The runner on the NAS picks it up within a minute.",
-  rejected: "Rejected.",
-  refused: "Request refused: it did not come from this site.",
-  invalid: "That request was not valid.",
-  error: "The database did not accept that. The release may no longer be waiting, or it has blockers.",
-};
+/** True when the release is already where the admin wanted it, so a repeated tap counts as success. */
+export function alreadyDecided(status: string, approve: boolean): boolean {
+  return approve ? ["approved", "running", "done", "failed", "rolled_back"].includes(status) : status === "rejected";
+}

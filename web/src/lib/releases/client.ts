@@ -102,9 +102,16 @@ export async function releaseDashboard(): Promise<Dashboard> {
   return parsed.data;
 }
 
-/** Approve or reject one waiting release. The actor is the signed-in admin's verified email. */
+/** Approve or reject one waiting release. The actor is the signed-in admin's verified email. Throws when the release is not waiting. */
 export async function decideRelease(id: number, approve: boolean, actor: string): Promise<void> {
   await rpc("approve_release", { p_secret: secret(), p_id: id, p_approve: approve, p_actor: actor });
+}
+
+/** The number and current status of one release, or null when the dashboard does not list it. */
+export async function releaseStatus(id: number): Promise<{ number: string; status: string } | null> {
+  const data = await releaseDashboard();
+  const found = [...data.pending, ...data.approved, ...data.recent].find((r) => r.id === id);
+  return found ? { number: found.number, status: found.status } : null;
 }
 
 const versionRow = z.array(z.object({ number: z.string().regex(/^\d{4}\.\d{2}\.\d{2}-\d+$/) }));
