@@ -5,6 +5,7 @@ at `/admin/data`. Release numbers look like `2026.10.12-1`. The runner on the NA
 
     python3 -I scripts/release/release.py prepare --title "NHL 2012 games" --tables core.game,core.team_season [--ticket ..] [--notes ..] [--replace]
     python3 -I scripts/release/release.py prepare --kind ds1_step --title "Add column" --file db/migrations/046_x.sql
+    python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores [--title ".."]   # the daily job; see "Automatic approval"
     python3 -I scripts/release/release.py rollback --release 2026.10.12-1
     python3 -I scripts/release/release.py checks | status | drift | run
 
@@ -34,6 +35,36 @@ Exit code: 0 ok, 1 refused or blocked or (drift) differences found, 2 error.
 6. **drift** (nightly) compares every `core`, `meta`, `ref` table, writes `meta.sync_status` on both sides and, if anything
    differs, proposes one pending fix release (replacing the previous proposal). It never approves.
 
+## Automatic approval (daily scores)
+
+`prepare --kind daily_scores` (default tables `core.game,meta.verification,meta.data_issue`; no `--replace`) writes an ordinary release
+with a policy verdict in `preview.auto` (`eligible`, `reasons`). Exit 1 with "nothing to release" means DS1 and production already match.
+
+Policy, checked at prepare, again by the runner right before it approves, and again right before it applies (on the same
+comparison it applies): only those three tables; `core.game` rows change only in `status`, `home_score`, `away_score`,
+`went_to_overtime`, `decided_by_shootout`, `overtime_periods`, `decided_by`, `updated_at`; only games that are not `final` in
+production; no inserts, no deletes, at most 500 games; `meta.verification` and `meta.data_issue` changes are new rows only
+(`entity_id` / `entity_key` of a changed game, at most 2000); no blocker (every check passes, size limit); and the release is
+unchanged since its preview. An update to an existing `meta.data_issue` row (for example `resolved_at`) makes a release ineligible.
+
+- **Eligible:** the runner approves it as `auto:daily-scores` once it is 10 minutes old (measured from `created_at` on production's
+  clock, never earlier), at most one release per run, oldest first, then applies it in the same run. Nothing else is ever approved
+  by the runner: at apply time an `auto:` approval is refused unless the release is `daily_scores` and approved as exactly
+  `auto:daily-scores`, and a release that no longer meets the policy (or changed since the preview) goes back to `pending`
+  with the reasons, untouched.
+- **Ineligible:** stays pending for John, reasons shown at `/admin/data`. John can approve it by hand as usual.
+- **Hold** (per release, `/admin/data`): `api.hold_release` puts an eligible pending release, or one the runner approved but has
+  not started, back to pending and sets `held_at`; the runner never auto-approves a held release.
+- **Hold all auto-approvals** (`meta.auto_approval`, migration 047, on production and mirrored to DS1): releases are still prepared
+  but stay pending. The runner reads production's switch before approving and the approval and the start of every automatic
+  release are conditional on it in the same SQL statement; a release approved but not started goes back to pending. A switch
+  that cannot be read stops the automatic step. Resume (`api.resume_auto_approvals`) only clears the switch; the runner then
+  re-checks and approves the queue, one release per run, oldest first. John's own approvals are never affected.
+- **Auto-pause** (actor `system`, reason recorded): an automatic release failed or was refused, an automatic approval is on a
+  release that is not a daily_scores or does not match DS1's copy, a runner stopped during an automatic release, or the nightly
+  drift check finds production rows that an automatic release wrote (row hashes are saved in the result's `touched`, kept 14 days)
+  changed or missing in production. DS1 moving ahead of production is not a mismatch.
+
 ## Checks
 
 `db/checks/*.sql` are single `select` statements that return the problem rows. A header `-- baseline: N` is the number of known
@@ -41,6 +72,10 @@ problem rows today: the check blocks a release only when it returns more than N.
 
 ## How the approval is secured
 
+- Migration 047 adds `meta.auto_approval` (the switch) with the same lock-down and three more functions, each needing the secret and
+  validating the change in SQL: `hold_release(p_secret, p_id, p_actor)`, `pause_auto_approvals(p_secret, p_actor, p_reason)` and
+  `resume_auto_approvals(p_secret, p_actor)`. `approve_release` and these refuse an actor that starts with `auto:` or is `system`,
+  so the site cannot imitate the runner. The site never approves automatically; only the runner (which holds the Supabase token) does.
 - `meta.data_release`, `meta.sync_status` and `meta.release_secret` have no grants for `anon` or `authenticated` and row level
   security on: the public key cannot read or write them. The only way in is three `security definer` functions in `api`
   (migration 045): `release_dashboard(p_secret)`, `approve_release(p_secret, p_id, p_approve, p_actor)` and the view `api.data_version`
@@ -61,10 +96,21 @@ One-time setup (the coordinator):
 
 Apply `db/migrations/045_data_releases.sql` on DS1 (`scripts/mac/ds1-apply.sh`) and on production first. To rotate the secret, repeat.
 
+## Exact values and restore
+
+Float columns are hashed and compared by their exact bits (`float8send` / `float4send`), because the Management API prints floats
+with 15 digits while the stored value is the same. DS1 sessions set `extra_float_digits=3`; production rows read for a snapshot
+come back as bits and are written as exact text. A restore (after a failed verification, or a rollback) deletes and re-inserts the
+rows it restores in tables that no foreign key references, so natural unique keys that swap between rows cannot collide; tables
+that other tables reference are still upserted by primary key. Releases prepared before this change have different row
+hashes for tables with float columns (`core.person`): prepare them again.
+
 ## Tests
 
     python3 -I scripts/release/test/test_release.py
+    python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
 
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies
 standing in for DS1 and production, and `mock_api.py` stands in for the Management API. Covers prepare, approval through the function,
-run, guardrail refusals, a failure mid-apply (production unchanged), a lost answer after commit, rollback, drift, ds1_step.
+run, guardrail refusals, a failure mid-apply (production unchanged), a lost answer after commit, rollback, drift, ds1_step, float
+values through an API that rounds them, a restore with swapped unique keys. `test_auto.py` simulates time by moving `created_at` back.

@@ -401,6 +401,14 @@ core rebuild; the release runner runs `select api.refresh();` after each release
      The function is not installed on production: production gets those results like any other data, in a release. The job's hook
      (`scripts/daily/release_hook.py`, off unless `DAILY_PREPARE_RELEASE=1`) prepares that release; otherwise the nightly drift check
      proposes it.
+   - **Automatic approval (daily scores only):** the daily job prepares with
+     `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores [--title ".."]` (tables default to
+     `core.game,meta.verification,meta.data_issue`). The runner approves it as `auto:daily-scores`, 10 minutes after it was
+     prepared, only if games change just in status, score and overtime/shootout fields, only on games not final in production,
+     no inserts or deletes, at most 500 games, verification/data issue rows are new rows about those games, and all checks pass;
+     it re-checks the policy before applying. Anything else stays pending for John, with the reasons at `/admin/data`. John can
+     Hold a release, or "Hold all auto-approvals" (migration 047); the runner also sets that switch itself when an automatic
+     release fails or the drift check finds rows an automatic release wrote changed. Never approve a release yourself.
 6. **After every release:** the runner verifies and refreshes `api` (`api.refresh()`); look at one affected page on spxn.com.
 7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
    read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`

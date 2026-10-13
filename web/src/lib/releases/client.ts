@@ -12,6 +12,8 @@ import { API_KEY, REST_URL } from "@/lib/api/config";
  * The browser never sees the secret: it is read in server code and sent from the server to the database. The public
  * key the rest of the site uses cannot read or write the release tables; it can only call these two functions, and
  * both refuse a wrong secret. The only write approve_release can make is pending -> approved or rejected.
+ * Migration 047 adds three more narrow functions: hold_release (an auto-approvable release goes back to pending),
+ * pause_auto_approvals and resume_auto_approvals. The site never approves automatically; the runner does.
  */
 export class ReleaseError extends Error {
   name = "ReleaseError";
@@ -59,12 +61,15 @@ const preview = z.object({
   file: z.string().optional(),
   before: z.record(z.string(), z.number()).nullish(),
   after: z.record(z.string(), z.number()).nullish(),
+  auto: z.object({
+    eligible: z.boolean(), reasons: z.array(z.string()).default([]), games: z.number().optional(), hold_minutes: z.number().optional(),
+  }).nullish(),
 }).passthrough();
 
 const release = z.object({
   id: z.number(),
   number: z.string(),
-  kind: z.enum(["publish", "ds1_step", "rollback"]),
+  kind: z.enum(["publish", "ds1_step", "rollback", "daily_scores"]),
   title: z.string(),
   notes: z.string().nullable(),
   ticket: z.string().nullable(),
@@ -79,6 +84,8 @@ const release = z.object({
   started_at: z.string().nullable(),
   finished_at: z.string().nullable(),
   error: z.string().nullable(),
+  held_by: z.string().nullish(),
+  held_at: z.string().nullish(),
 }).passthrough();
 
 const dashboard = z.object({
@@ -91,6 +98,10 @@ const dashboard = z.object({
   })),
   space: z.array(z.object({ table: z.string(), bytes: z.number() })),
   database_bytes: z.number(),
+  auto: z.object({
+    paused: z.boolean(), paused_at: z.string().nullable(), paused_by: z.string().nullable(), reason: z.string().nullable(),
+    resumed_at: z.string().nullable(), resumed_by: z.string().nullable(),
+  }).nullish(),
 });
 
 export type Release = z.infer<typeof release>;
@@ -105,6 +116,21 @@ export async function releaseDashboard(): Promise<Dashboard> {
 /** Approve or reject one waiting release. The actor is the signed-in admin's verified email. Throws when the release is not waiting. */
 export async function decideRelease(id: number, approve: boolean, actor: string): Promise<void> {
   await rpc("approve_release", { p_secret: secret(), p_id: id, p_approve: approve, p_actor: actor });
+}
+
+/** Put an automatically approvable release back to pending for John (migration 047). Throws when it cannot be held now. */
+export async function holdRelease(id: number, actor: string): Promise<void> {
+  await rpc("hold_release", { p_secret: secret(), p_id: id, p_actor: actor });
+}
+
+/** Pause every automatic approval. The reason is shown in the banner. */
+export async function pauseAutoApprovals(actor: string, reason: string): Promise<void> {
+  await rpc("pause_auto_approvals", { p_secret: secret(), p_actor: actor, p_reason: reason });
+}
+
+/** Clear the pause; the runner then approves the eligible queue, re-checking each release. */
+export async function resumeAutoApprovals(actor: string): Promise<void> {
+  await rpc("resume_auto_approvals", { p_secret: secret(), p_actor: actor });
 }
 
 /** The number and current status of one release, or null when the dashboard does not list it. */

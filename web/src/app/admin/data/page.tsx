@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
 import { ReleaseError, releaseDashboard, type Dashboard, type Release } from "@/lib/releases/client";
-import { bytesLabel, driftState, stamp } from "@/lib/releases/rules";
+import { autoApproveAt, bytesLabel, driftState, isAutoApproved, matchesAutoFilter, parseAutoFilter, stamp, type AutoFilter } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
+import { AutoSwitch } from "./AutoSwitch";
 import { DecisionCard } from "./DecisionCard";
 
 /**
@@ -61,6 +63,12 @@ const SPACE_COLUMNS: SortColumn[] = [
   { key: "size", label: "Size", num: true },
 ];
 
+const FILTERS: { key: AutoFilter; label: string }[] = [
+  { key: "all", label: "all" },
+  { key: "auto", label: "auto" },
+  { key: "manual", label: "manual" },
+];
+
 const keys = (c: SortColumn[]) => c.map((x) => x.key);
 const num = (n: number | null | undefined) => (n == null ? dash : n.toLocaleString("en-US"));
 
@@ -90,22 +98,46 @@ function previewRows(r: Release): { columns: SortColumn[]; rows: SortRow[] } {
   };
 }
 
-function PendingCard({ r, query }: { r: Release; query: Query }) {
+const kindLabel = (kind: string) => (kind === "ds1_step" ? "DS1 step" : kind === "daily_scores" ? "daily scores" : kind);
+
+function AutoNote({ r, paused }: { r: Release; paused: boolean }) {
+  const a = r.preview?.auto;
+  if (r.kind !== "daily_scores" || !a) return null;
+  if (r.held_at) return <p className="note">Held by {r.held_by} at {when(r.held_at)} UTC. It will not be approved automatically.</p>;
+  if (a.eligible) {
+    return (
+      <p className="note">
+        Meets the auto-approval policy ({a.games ?? 0} games).{" "}
+        {paused ? "Auto-approvals are paused, so it waits for you." : <>It approves itself after {when(autoApproveAt(r.created_at, a.hold_minutes))} UTC unless you hold it.</>}
+      </p>
+    );
+  }
+  return (
+    <>
+      <p className="note"><strong>Not auto-approved</strong>, so it waits for you:</p>
+      <ul className="note">{a.reasons.map((x) => <li key={x}>{x}</li>)}</ul>
+    </>
+  );
+}
+
+function PendingCard({ r, query, paused }: { r: Release; query: Query; paused: boolean }) {
   const blockers = r.preview?.blockers ?? [];
   const warnings = r.preview?.warnings ?? [];
   const { columns, rows } = previewRows(r);
   const param = `sort_r${r.id}`;
   return (
-    <DecisionCard id={r.id} number={r.number} approveLabel={r.kind === "ds1_step" ? "Approve and run on DS1" : "Approve and publish"} blocked={blockers.length > 0}>
+    <DecisionCard id={r.id} number={r.number} approveLabel={r.kind === "ds1_step" ? "Approve and run on DS1" : "Approve and publish"} blocked={blockers.length > 0}
+      holdable={r.kind === "daily_scores" && r.preview?.auto?.eligible === true && !r.held_at && !paused}>
       <div>
         <strong>{r.title}</strong>{" "}
-        <span className="tk-badge">{r.kind === "ds1_step" ? "DS1 step" : r.kind}</span>
+        <span className="tk-badge">{kindLabel(r.kind)}</span>
       </div>
       <p className="note">
         <code>{r.number}</code> · prepared by {r.created_by} · {when(r.created_at)}
         {r.ticket ? <> · {r.ticket}</> : null}
       </p>
       {r.notes ? <p>{r.notes}</p> : null}
+      <AutoNote r={r} paused={paused} />
       {r.kind === "ds1_step" && r.preview?.file ? <p className="note">Runs <code>{r.preview.file}</code> on DS1 only, in one transaction. Production is not touched.</p> : null}
       {blockers.length ? (
         <ul className="dr-alert" role="alert">
@@ -127,14 +159,14 @@ function recentRow(r: Release): SortRow {
     sort: { number: r.number, title: r.title.toLowerCase(), status: r.status, who: r.approved_by ?? r.created_by, when: r.finished_at ?? r.created_at, add: t.add ?? null, change: t.change ?? null, remove: t.remove ?? null, ticket: r.ticket },
     cells: {
       number: <code>{r.number}</code>,
-      title: <><strong>{r.title}</strong> <span className="tk-badge">{r.kind === "ds1_step" ? "DS1 step" : r.kind}</span></>,
+      title: <><strong>{r.title}</strong> <span className="tk-badge">{kindLabel(r.kind)}</span></>,
       status: (
         <>
           <span className={`tk-badge ${tone(r.status)}`}>{r.status.replace("_", " ")}</span>
           {r.error ? <div className="note">{r.error.slice(0, 240)}</div> : null}
         </>
       ),
-      who: <>{r.created_by}{r.approved_by ? <div className="note">approved by {r.approved_by}</div> : null}</>,
+      who: <>{r.created_by}{r.approved_by ? <div className="note">approved by {r.approved_by}{isAutoApproved(r.approved_by) ? " (automatic)" : ""}</div> : null}</>,
       when: when(r.finished_at ?? r.created_at),
       add: num(t.add), change: num(t.change), remove: num(t.remove),
       ticket: r.ticket ?? dash,
@@ -147,8 +179,24 @@ function Report({ data, query }: { data: Dashboard; query: Query }) {
   const recentSort = parseSort(query.sort, keys(RECENT_COLUMNS), "when.desc");
   const syncSort = parseSort(query.sort_sync, keys(SYNC_COLUMNS), "state.asc");
   const spaceSort = parseSort(query.sort_space, keys(SPACE_COLUMNS), "size.desc");
+  const filter = parseAutoFilter(query.show);
+  const recent = data.recent.filter((r) => matchesAutoFilter(r.kind, r.approved_by, filter));
+  const paused = data.auto?.paused === true;
   return (
     <>
+      {data.auto ? (
+        <section className="section">
+          {paused ? (
+            <p className="dr-alert" role="alert">
+              Auto-approval paused since {stamp(data.auto.paused_at)} UTC by {data.auto.paused_by} ({data.auto.reason}). Releases are still prepared but wait for you.
+            </p>
+          ) : (
+            <p className="note">Auto-approval is on. A daily scores release that meets the policy approves itself 10 minutes after it is prepared.</p>
+          )}
+          <AutoSwitch paused={paused} />
+        </section>
+      ) : null}
+
       {drift.differs.length > 0 || drift.stale ? (
         <p className="dr-alert" role="alert">
           {drift.differs.length > 0 ? <>Production differs from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"}: {drift.differs.map((d) => d.table_name).join(", ")}. </> : null}
@@ -160,22 +208,27 @@ function Report({ data, query }: { data: Dashboard; query: Query }) {
 
       <section className="section">
         <h2>Waiting for you</h2>
-        {data.pending.length === 0 ? <p className="note">Nothing is waiting.</p> : data.pending.map((r) => <PendingCard key={r.id} r={r} query={query} />)}
+        {data.pending.length === 0 ? <p className="note">Nothing is waiting.</p> : data.pending.map((r) => <PendingCard key={r.id} r={r} query={query} paused={paused} />)}
       </section>
 
       {data.approved.length ? (
         <section className="section">
           <h2>Approved or running</h2>
           {data.approved.map((r) => (
-            <p key={r.id}><code>{r.number}</code> {r.title} <span className={`tk-badge ${tone(r.status)}`}>{r.status}</span></p>
+            <p key={r.id}><code>{r.number}</code> {r.title} <span className={`tk-badge ${tone(r.status)}`}>{r.status}</span>{isAutoApproved(r.approved_by) ? <span className="note"> approved by {r.approved_by}</span> : null}</p>
           ))}
         </section>
       ) : null}
 
       <section className="section">
         <h2>Recent releases</h2>
-        {data.recent.length === 0 ? <p className="note">No release has run yet.</p> : (
-          <div className="scroll"><SortTable columns={RECENT_COLUMNS} rows={data.recent.map(recentRow)} def="when.desc" initial={recentSort} label="Recent releases" /></div>
+        <p className="dr-actions" role="group" aria-label="Filter releases">
+          {FILTERS.map((f) => (
+            <Link key={f.key} href={f.key === "all" ? "?" : `?show=${f.key}`} className={`tk-badge ${filter === f.key ? "live" : ""}`} aria-current={filter === f.key ? "true" : undefined}>{f.label}</Link>
+          ))}
+        </p>
+        {recent.length === 0 ? <p className="note">{data.recent.length === 0 ? "No release has run yet." : "No release matches this filter."}</p> : (
+          <div className="scroll"><SortTable columns={RECENT_COLUMNS} rows={recent.map(recentRow)} def="when.desc" initial={recentSort} label="Recent releases" /></div>
         )}
       </section>
 

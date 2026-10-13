@@ -34,3 +34,29 @@ export function stamp(iso: string | null | undefined): string | null {
 export function alreadyDecided(status: string, approve: boolean): boolean {
   return approve ? ["approved", "running", "done", "failed", "rolled_back"].includes(status) : status === "rejected";
 }
+
+export const AUTO_HOLD_MINUTES = 10;
+
+/** The runner approves with names that start with "auto:" (the site never can: the database refuses them as an actor). */
+export function isAutoApproved(approvedBy: string | null | undefined): boolean {
+  return (approvedBy ?? "").toLowerCase().startsWith("auto:");
+}
+
+/** When a waiting auto-eligible release approves itself: its hold counted from the time it was prepared. */
+export function autoApproveAt(createdAt: string, minutes: number = AUTO_HOLD_MINUTES): string | null {
+  const t = Date.parse(createdAt);
+  return Number.isNaN(t) ? null : new Date(t + minutes * 60_000).toISOString();
+}
+
+export type AutoFilter = "all" | "auto" | "manual";
+
+export function parseAutoFilter(value: string | string[] | undefined): AutoFilter {
+  const v = Array.isArray(value) ? value[0] : value;
+  return v === "auto" || v === "manual" ? v : "all";
+}
+
+/** True for releases that were approved by the runner, or are daily_scores releases (which can be). */
+export function matchesAutoFilter(kind: string, approvedBy: string | null | undefined, filter: AutoFilter): boolean {
+  const auto = kind === "daily_scores" || isAutoApproved(approvedBy);
+  return filter === "all" || (filter === "auto" ? auto : !auto);
+}
