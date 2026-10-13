@@ -126,5 +126,18 @@ export const playoffShapeSchema = z.object({
   game_id: int, year: int, game_date: str, status: str, away_score: intN, home_score: intN, away_f: intN, home_f: intN,
 });
 
-/** A franchise's team seasons: the ids the games view can be read by quickly (its franchise columns are worked out row by row, so filtering on them scans every game). */
-export const teamSeasonIdSchema = z.object({ team_season_id: int, franchise_id: int });
+/** A franchise's team seasons: the ids the games view can be read by quickly (its franchise columns are worked out row by row, so filtering on them scans every game), and the season each is for. */
+export const teamSeasonIdSchema = z.object({ team_season_id: int, franchise_id: int, year: int });
+
+/** The columns of a game the head-to-head pages use. The franchises are added from the team-season ids, so the view never works them out per row; the verification lookup (`checked`) is left out. */
+export const pairGameSchema = z.object({
+  game_id: int, year: int, game_date: str, phase: str, status: str,
+  away_id: int, away: strN, away_score: intN, home_id: int, home: strN, home_score: intN,
+  overtime: z.boolean().nullable(), source: str,
+});
+
+/** The same without the club names, for a club's whole history (the group pages), with the franchises as the view works them out for just these rows. */
+export const teamGameSchema = z.object({
+  game_id: int, year: int, game_date: str, phase: str, status: str,
+  away_score: intN, home_score: intN, overtime: z.boolean().nullable(), away_f: intN, home_f: intN,
+});

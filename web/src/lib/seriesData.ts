@@ -3,22 +3,17 @@ import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
 import { standingRows } from "./api/teamSeasons";
-import { gameSchema, playoffShapeSchema, standingSchema, teamSeasonIdSchema } from "./api/schemas";
+import { gameSchema, playoffShapeSchema, standingSchema } from "./api/schemas";
+import { getFranchiseSeasons } from "./h2hData";
 import type { GameRow, StandingRow } from "./api/types";
 
 /** Every playoff game of a season, in the order played. */
 export const getPlayoffGames = cache(async (lg: string, y: number): Promise<GameRow[]> =>
   rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema));
 
-const pairFilter = (a: number, b: number) => `or=(and(away_f.eq.${a},home_f.eq.${b}),and(away_f.eq.${b},home_f.eq.${a}))`;
-
-/** The games of one season's phase between two franchises, in the order played. a and b are validated integers. */
-export const getPairGames = cache(async (lg: string, y: number, a: number, b: number, phase: "playoffs" | "regular"): Promise<GameRow[]> =>
-  rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.${phase}&${pairFilter(a, b)}&select=*&order=game_date,game_id`, gameSchema));
-
 /** The team-season ids of two franchises in a league. a and b are validated integers. */
 const getTeamSeasonIds = cache(async (lg: string, a: number, b: number): Promise<[number[], number[]]> => {
-  const list = await rows("team_season_identity", `league=eq.${lg}&franchise_id=in.(${a},${b})&select=team_season_id,franchise_id`, teamSeasonIdSchema);
+  const list = await getFranchiseSeasons(lg, [a, b]);
   const of = (f: number) => list.filter((r) => r.franchise_id === f).map((r) => r.team_season_id);
   return [of(a), of(b)];
 });
