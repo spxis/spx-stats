@@ -85,6 +85,9 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   make him turn it on there: DS1 is still reachable from it over the home LAN. His MacBook runs with Tailscale on and Dropbox still syncs; there DS1 is reached directly.
 - He wants features published as they are finished, and work done by Sonnet agents.
 - When a command works, add it to the private file so the next session does not ask again.
+- **Check before you tell.** Before saying something is pending, waiting on John, not done or broken, check the live state
+  (the board, `meta.data_release`, production or DS1, git). Other sessions and John act in parallel, so your picture goes stale.
+- **Don't repeat.** Say a status or an ask once; after that only report what changed.
 
 ## 3. What the project is
 
