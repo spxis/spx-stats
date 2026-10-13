@@ -8,7 +8,7 @@
 -- and the overall table are core.soccer_group_standing rows. Nothing here touches core.game, core.team_season, core.franchise or any venue
 -- table: a match keeps the stadium as its source names it (venue_name, venue_city, venue_wikidata_id) and venue_id stays empty for the
 -- world stadium dataset to fill by Wikidata id. No people are created: season leaders are names (core.soccer_season_leader).
--- Rebuilt by db/build/204_mls.sql from legacy_mls (made by scripts/mls/load.py, DS1 only) and published by a data release.
+-- Rebuilt by db/build/205_mls.sql from legacy_mls (made by scripts/mls/load.py, DS1 only) and published by a data release.
 begin;
 
 -- ---------------------------------------------------------------- clubs

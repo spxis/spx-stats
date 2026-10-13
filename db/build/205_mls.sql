@@ -1,4 +1,4 @@
--- Major League Soccer: core.soccer_* from legacy_mls (made by scripts/mls/load.py; migration 076 first). Rerunnable, matched by stable keys:
+-- Major League Soccer: core.soccer_* from legacy_mls (made by scripts/mls/load.py; migration 078 first). Rerunnable, matched by stable keys:
 --   clubs     core.soccer_team.team_id = 'C-' + the club's English Wikipedia article after redirects (a renamed club is one row)
 --   seasons   core.soccer_tournament.tournament_id = mls<year>
 --   matches   core.soccer_match.source_key = 'mls-<yyyymmdd>-<home team_id>-<away team_id>'

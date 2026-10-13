@@ -4,7 +4,7 @@ import { z } from "zod";
 import { matchSchema, rows, standingSchema, teamMatchSchema, type Match } from "./soccer";
 
 /**
- * Major League Soccer, read from the api views of migration 076 and the soccer views of 066 (docs/mls.md). Like lib/soccer.ts, every function
+ * Major League Soccer, read from the api views of migration 078 and the soccer views of 066 (docs/mls.md). Like lib/soccer.ts, every function
  * returns [] / null when the archive holds no MLS yet (a production that has not had the data release) and throws ApiError when it cannot be read.
  */
 

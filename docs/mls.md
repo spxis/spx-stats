@@ -1,7 +1,7 @@
 # Soccer: Major League Soccer
 
 MLS 1996 to now, as the second competition of the soccer archive (the first is the World Cup, [docs/soccer.md](soccer.md)). It reuses the
-`core.soccer_*` tables of migration 066 and adds only what clubs and leagues need (migration 076, add-only).
+`core.soccer_*` tables of migration 066 and adds only what clubs and leagues need (migration 078, add-only).
 
 ## Data model
 
@@ -35,7 +35,7 @@ Soccer people keep an empty `leagues`, so `PLAYER_LISTED` is unaffected: this lo
   "harvest or otherwise collect information ... for any commercial purpose"; section 1 forbids reproducing, republishing, building on, modifying, posting or
   compiling its content. The terms page was read once by hand. Never FBref / Sports Reference, ESPN, Transfermarkt, NWSL / CPL sites or Kaggle FIFA ratings either.
 
-Rules the build follows (db/build/204_mls.sql, header and comments): a club's article does not always list the home side first (about a third of the
+Rules the build follows (db/build/205_mls.sql, header and comments): a club's article does not always list the home side first (about a third of the
 two-article pairs disagree), so the home side of a Wikipedia-only match is the club whose own stadium it was played in; where openfootball has a season in full
 (2005-2024: its match counts equal the seasons' own tables) a Wikipedia box with no openfootball line is another competition and is left out (a
 meta.data_issue row names it), unless both clubs' tables say they played more than openfootball gives them (one 2020 match).
@@ -76,7 +76,7 @@ club-seasons, clubs, seasons and data issues about 1.3 MB: about **12 MB** on pr
 
 ## Commands
 
-See `scripts/mls/README.md`. Production only through a data release (AGENTS.md section 8, item 5), after migration 076 is on production (add-only) and after
+See `scripts/mls/README.md`. Production only through a data release (AGENTS.md section 8, item 5), after migration 078 is on production (add-only) and after
 the World Cup release (both name `meta.source`, `ref.sport`, `ref.league`, `ref.league_name`, `core.soccer_*` and `meta.*`). Tables:
 `meta.source,ref.sport,ref.league,ref.league_name,core.soccer_team,core.soccer_tournament,core.soccer_tournament_team,core.soccer_group_standing,`
 `core.soccer_match,core.soccer_season_leader,meta.verification,meta.data_issue`.

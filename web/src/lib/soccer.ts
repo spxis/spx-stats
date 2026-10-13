@@ -53,7 +53,7 @@ export const matchSchema = z.object({
   home_goals_90: nNum, away_goals_90: nNum, extra_time: z.boolean(), shootout: z.boolean(), home_penalties: nNum, away_penalties: nNum,
   winner_team_id: nText, is_replay: z.boolean(), venue_name: nText, venue_city: nText, venue_country: nText, venue_wikidata_id: nText, venue_id: nNum,
   lineup_players: num, goal_rows: num, source: nText, checked: nNum,
-  /** MLS (migration 076): the crowd, and 'mls' for the 1996-1999 regular-season shootout. Optional so a database without 076 still reads. */
+  /** MLS (migration 078): the crowd, and 'mls' for the 1996-1999 regular-season shootout. Optional so a database without 078 still reads. */
   attendance: nNum.optional(), shootout_style: nText.optional(),
 });
 export type Match = z.infer<typeof matchSchema>;
@@ -62,7 +62,7 @@ export const standingSchema = z.object({
   tournament_id: text, league: text, year: num, stage_number: num, stage_key: text, group_name: text, position: num, team_id: text, team: text,
   team_slug: text, flag_code: nText, played: nNum, wins: nNum, draws: nNum, losses: nNum, goals_for: nNum, goals_against: nNum, goal_difference: nNum,
   points: nNum, advanced: z.boolean().nullable(),
-  /** MLS (migration 076): the club's name that season, shootout wins (1996-1999) and what the table says the place earned. */
+  /** MLS (migration 078): the club's name that season, shootout wins (1996-1999) and what the table says the place earned. */
   team_name: nText.optional(), shootout_wins: nNum.optional(), qualification: nText.optional(),
 });
 export type Standing = z.infer<typeof standingSchema>;

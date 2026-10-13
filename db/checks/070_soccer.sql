@@ -1,4 +1,4 @@
--- what: World Cup matches (the MLS has its own check, 076) whose goal rows do not add up to the score, whose teams are not in the tournament, or whose openfootball check disagrees
+-- what: World Cup matches (the MLS has its own check, 078) whose goal rows do not add up to the score, whose teams are not in the tournament, or whose openfootball check disagrees
 -- baseline: 0
 select 'goals/score: ' || m.source_key as problem
 from core.soccer_match m join core.soccer_tournament wt on wt.tournament_id = m.tournament_id and wt.league_code in ('wc', 'wwc')

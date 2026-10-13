@@ -28,12 +28,12 @@ Run, in this order (`day` is the folder name; everything is rerunnable and resum
     python3 -I scripts/archive_raw.py mls $raw $day --sql-out archive.sql
     bash scripts/mac/ds1-apply.sh archive.sql --dry-run && bash scripts/mac/ds1-apply.sh archive.sql
     bash scripts/mac/spx-raw-export.sh --check && bash scripts/mac/spx-raw-export.sh
-    # 3. migration 076 (add-only), the legacy load (makes the legacy_mls schema itself), the core build step, the checks
-    bash scripts/mac/ds1-apply.sh db/migrations/076_mls.sql --dry-run && bash scripts/mac/ds1-apply.sh db/migrations/076_mls.sql
+    # 3. migration 078 (add-only), the legacy load (makes the legacy_mls schema itself), the core build step, the checks
+    bash scripts/mac/ds1-apply.sh db/migrations/078_mls.sql --dry-run && bash scripts/mac/ds1-apply.sh db/migrations/078_mls.sql
     python3 -I scripts/mls/load.py $raw --sql-out load.sql
     bash scripts/mac/ds1-apply.sh load.sql --dry-run && bash scripts/mac/ds1-apply.sh load.sql
-    bash scripts/mac/ds1-apply.sh db/build/204_mls.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/204_mls.sql
-    bash scripts/mac/ds1-apply.sh db/checks/076_mls.sql --dry-run         # no problem rows
+    bash scripts/mac/ds1-apply.sh db/build/205_mls.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/205_mls.sql
+    bash scripts/mac/ds1-apply.sh db/checks/078_mls.sql --dry-run         # no problem rows
     # 4. production only through a data release (see docs/mls.md for the table list)
 
 Files: `fetch.py` (download), `wikihtml.py` (tables of a rendered page), `season.py` (what a season article gives), `wikibox.py` (match boxes),
