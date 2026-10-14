@@ -1,0 +1,44 @@
+name,league,club,appearance_club,franchise_source,franchise_key,city,note
+Berlin Dutchmen,,Berlin Dutchmen,,,,,Berlin (now Kitchener) in Ontario; no city page
+Brandon Wheat City,,Brandon Wheat City,Brandon Wheat City,,,,
+Calgary Tigers,,Calgary Tigers,,nhl_api,CAT,calgary,WCHL finalist 1924
+Dawson City Nuggets,,Dawson City Nuggets,,,,,
+Edmonton Eskimos,,Edmonton Eskimos,,nhl_api,EDE,edmonton,WCHL finalist 1923
+Edmonton HC,,Edmonton Hockey Club,Edmonton HC,,,edmonton,
+Galt Hockey Club,,Galt Hockey Club,Galt HC,,,,
+Halifax Crescents,,Halifax Crescents,,,,,
+Kenora Thistles,,Kenora Thistles,Rat Portage/Kenora Thistles,,,,Rat Portage until 1905; no city page
+Moncton Victorias,,Moncton Victorias,,,,,
+Montreal Canadiens,,Montreal Canadiens,,spx_database,14,montreal,
+Montreal Hockey Club,,Montreal Hockey Club,Montreal HC,,,montreal,Montreal HC / Montreal AAA
+Montreal Maroons,,Montreal Maroons,,nhl_api,MMR,montreal,
+Montreal Shamrocks,,Montreal Shamrocks,Montreal Shamrocks,,,montreal,
+Montreal Victorias,,Montreal Victorias,Montreal Victorias,,,montreal,
+Montreal Wanderers,,Montreal Wanderers,Montreal Wanderers,nhl_api,MWN,montreal,
+New Glasgow Cubs,,New Glasgow Cubs,,,,,
+Ottawa Capitals,,Ottawa Capitals,,,,ottawa,
+Ottawa Hockey Club,,Ottawa Hockey Club,Ottawa HC,nhl_api,SEN,ottawa,The original Senators (Silver Seven): the franchise the NHL's Senators of 1917-1934 continue
+Ottawa Senators,,Ottawa Hockey Club,Ottawa HC,nhl_api,SEN,ottawa,NHA 1911 and NHL 1920-1923: the original Senators
+Ottawa Silver Seven,,Ottawa Hockey Club,Ottawa HC,nhl_api,SEN,ottawa,
+Ottawa Victorias,,Ottawa Victorias,,,,ottawa,
+Port Arthur Bearcats,,Port Arthur Bearcats,,,,,
+Portland Rosebuds,,Portland Rosebuds,,,,portland,PCHA finalist 1916
+Quebec Bulldogs,,Quebec Bulldogs,Quebec Bulldogs,nhl_api,QBD,quebec-city,
+Queen's University,,Queen's University,Queen's University,,,,Kingston
+Rat Portage Thistles,,Kenora Thistles,Rat Portage/Kenora Thistles,,,,
+Seattle Metropolitans,,Seattle Metropolitans,,nhl_api,SMT,seattle,
+Smiths Falls Hockey Club,,Smiths Falls Hockey Club,,,,,
+Sydney Millionaires,,Sydney Millionaires,,,,,
+Toronto Hockey Club,NHA,Toronto Blueshirts,Toronto Blueshirts,,,toronto,The NHA club of 1914; not the club the NHL's Toronto Arenas and Maple Leafs continue
+Toronto Hockey Club,NHL,Toronto Maple Leafs,,spx_database,26,toronto,The NHL's Toronto Arenas of 1918
+Toronto Marlboros,,Toronto Marlboros,,,,toronto,
+Toronto Pros,,Toronto Pros,,,,toronto,
+Toronto St. Patricks,,Toronto Maple Leafs,,spx_database,26,toronto,
+Toronto Wellingtons,,Toronto Wellingtons,,,,toronto,
+Vancouver Millionaires,,Vancouver Millionaires,,nhl_api,VMI,vancouver,
+Victoria Aristocrats,,Victoria Cougars,,nhl_api,VIC,victoria,The Aristocrats became the Cougars
+Victoria Cougars,,Victoria Cougars,,nhl_api,VIC,victoria,
+Winnipeg Hockey Club,,Winnipeg Hockey Club,,,,winnipeg,
+Winnipeg Maple Leafs,,Winnipeg Maple Leafs,Winnipeg Maple Leafs,,,winnipeg,
+Winnipeg Rowing Club,,Winnipeg Rowing Club,,,,winnipeg,
+Winnipeg Victorias,,Winnipeg Victorias,Winnipeg Victorias,,,winnipeg,

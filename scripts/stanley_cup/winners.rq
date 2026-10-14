@@ -1,0 +1,12 @@
+# Stanley Cup finals and challenge series before 1927 and their winners on Wikidata (CC0): events whose English label mentions the
+# Stanley Cup, with a winner (P1346) and a date (P585) or start (P580) before 1927.
+SELECT ?event ?eventLabel ?class ?classLabel ?winner ?winnerLabel ?date ?start WHERE {
+  { ?event wdt:P31 wd:Q7599548 . } UNION { ?event wdt:P3450 wd:Q211872 . } UNION { ?event wdt:P361 wd:Q211872 . }
+  OPTIONAL { ?event wdt:P31 ?class }
+  OPTIONAL { ?event wdt:P1346 ?winner }
+  OPTIONAL { ?event wdt:P585 ?date }
+  OPTIONAL { ?event wdt:P580 ?start }
+  FILTER(!BOUND(?date) || ?date < "1927-01-01T00:00:00Z"^^xsd:dateTime)
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en" . }
+}
+ORDER BY ?date
