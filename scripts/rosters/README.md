@@ -14,6 +14,10 @@ sites' player ids in the nflverse files are dropped at download (`nflverse_fetch
 ## Run (on the Mac, in this order)
 
 Raw files live in `~/Projects/backups/spx-stats/raw/` (never in the checkout). Fetches are resumable and polite (one request every 2 s).
+The `.sql` load files below are written outside the repo, so `ds1-apply.sh` needs `--force` for them. First the two DS1 migrations (legacy schemas):
+
+    bash scripts/mac/ds1-apply.sh db/migrations/092_legacy_rosters.sql
+    bash scripts/mac/ds1-apply.sh db/migrations/094_legacy_nflverse_roster.sql
 
     R=~/Projects/backups/spx-stats/raw
     D=2026-10-14
@@ -21,16 +25,16 @@ Raw files live in `~/Projects/backups/spx-stats/raw/` (never in the checkout). F
     python3 -I scripts/rosters/wd_fetch.py nba $R/wikidata_rosters/$D/nba
     python3 -I scripts/rosters/wp_fetch.py nba $R/wikidata_rosters/$D/nba_team_seasons.tsv $R/wikidata_rosters/$D/nba all
     python3 -I scripts/rosters/load.py nba $R/wikidata_rosters/$D/nba ~/Projects/backups/spx-stats/rosters-$D-nba.sql
-    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-nba.sql      # archive + legacy_rosters on DS1
+    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-nba.sql --force      # archive + legacy_rosters on DS1
     # CFL (fetched the same day into $R/wikidata_rosters/$D/cfl, titles in cfl_team_seasons.tsv)
     python3 -I scripts/rosters/wd_fetch.py cfl $R/wikidata_rosters/$D/cfl
     python3 -I scripts/rosters/wp_fetch.py cfl $R/wikidata_rosters/$D/cfl_team_seasons.tsv $R/wikidata_rosters/$D/cfl all
     python3 -I scripts/rosters/load.py cfl $R/wikidata_rosters/$D/cfl ~/Projects/backups/spx-stats/rosters-$D-cfl.sql
-    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-cfl.sql
+    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-cfl.sql --force
     # NFL
     python3 -I scripts/rosters/nflverse_fetch.py $R/nflverse_rosters/$D
     python3 -I scripts/rosters/nflverse_load.py $R/nflverse_rosters/$D ~/Projects/backups/spx-stats/rosters-$D-nfl.sql
-    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-nfl.sql
+    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-nfl.sql --force
 
 `titles.tsv` (club seasons to read from Wikipedia) is `season<TAB>club name`, one line per club season. The NBA one above was generated from the club
 names of `db/build/147_nba_from_wikipedia.sql`; to top it up with DS1's own names, write one from DS1 and rerun `wp_fetch.py` (only the new lines are fetched):
