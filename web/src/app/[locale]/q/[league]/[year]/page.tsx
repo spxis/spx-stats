@@ -13,6 +13,7 @@ import { SeasonGames } from "@/components/SeasonGames";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
+import { TrophyBanner } from "@/components/TrophyBanner";
 import { Badge, NoSeason } from "@/components/ui";
 import { queryHref, ViewTabs } from "@/components/ViewTabs";
 import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
@@ -210,12 +211,12 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       </section>
       {champ ? (
         <>
-          <section className="banner">
+          <TrophyBanner lg={lg}>
             <span className="cup">{champ.award}</span>
             <Badge src={champ.source} />
             <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
             <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} alone /></span>
-          </section>
+          </TrophyBanner>
           <ChampionSurface lg={lg} year={y} champion={champF} />
         </>
       ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}

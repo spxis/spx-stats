@@ -11,7 +11,7 @@ import { Showdown, type ShowdownSide } from "@/components/Showdown";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
-import { BadgeCup } from "@/components/TrophyIcon";
+import { BadgeCup } from "@/components/TrophyMark";
 import { Badge } from "@/components/ui";
 import type { GameRow, StandingRow } from "@/lib/api/types";
 import { brandFor, logoFor } from "@/lib/brand";

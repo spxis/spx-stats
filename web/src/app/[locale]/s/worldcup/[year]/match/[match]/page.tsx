@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { BadgeCup } from "@/components/TrophyIcon";
+import { BadgeCup } from "@/components/TrophyMark";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
 import { positionBook, type PositionBook } from "@/components/PositionKey";

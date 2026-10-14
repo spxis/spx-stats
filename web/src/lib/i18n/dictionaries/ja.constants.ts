@@ -11,6 +11,13 @@ export const JA: Dictionary = {
   "sentence.end": "。",
   "tip.champion": "優勝：{team}",
   "trophy.champion": "優勝",
+  "trophy.name.nhl": "スタンレーカップ",
+  "trophy.name.nba": "ラリー・オブライエン・トロフィー",
+  "trophy.name.mlb": "コミッショナーズ・トロフィー",
+  "trophy.name.nfl": "ヴィンス・ロンバルディ・トロフィー",
+  "trophy.name.cfl": "グレイカップ",
+  "trophy.latest": "直近の優勝チーム",
+  "trophy.mostTitles": "最多優勝：{team}（{count}）",
   "source.derived": "試合結果から算出",
   "source.editorial": "編集部",
 

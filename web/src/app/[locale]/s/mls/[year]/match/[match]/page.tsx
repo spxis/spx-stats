@@ -4,7 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { MlsCredit } from "@/components/MlsCredit";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
-import { BadgeCup } from "@/components/TrophyIcon";
+import { BadgeCup } from "@/components/TrophyMark";
 import { StadiumName } from "@/components/StadiumName";
 import { SoccerSurface } from "@/components/GameSurface";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";

@@ -10,6 +10,7 @@ import { AccentStyle } from "@/components/AccentStyle";
 import { TeamLabel } from "@/components/TeamLabel";
 import { ChampionNote } from "@/components/ChampionNote";
 import { ChampionRow } from "@/components/ChampionRow";
+import { TrophyBanner } from "@/components/TrophyBanner";
 import { Badge } from "@/components/ui";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
@@ -69,6 +70,9 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
     { key: "league", label: say("col.league"), get: (c) => c.league ?? "" },
     { key: "wins", label: say("cup.wins"), num: true, get: (c) => c.wins },
   ], (c) => `${c.year}-${c.club}`);
+  const boxes = championRow(list, lg);
+  const latest = boxes.find((b) => b.kind === "recent");
+  const most = boxes.find((b) => b.kind === "most");
   return (
     <>
       <AccentStyle league={lg} />
@@ -81,6 +85,16 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
         <p className="note"><Link href={`/${lg}/alignment`}>{say("league.alignmentLink")}</Link></p>
         <p className="note"><Link href={`/${lg}/world`}>{say("country.leagueNavLink")}</Link></p>
       </section>
+      {latest ? (
+        <TrophyBanner lg={lg}>
+          <span className="cup">{say("trophy.latest")}</span>
+          <span className="who"><TeamLabel lg={lg} f={latest.f} name={latest.name} year={withGames.some((x) => x.year === latest.year) ? latest.year : undefined} logo={logoFor(brands, latest.f, latest.year)} size={40} shape="circle" /></span>
+          <span className="how">
+            <Link href={seasonPath(lg, latest.year)} prefetch={false}>{say("season.title", { label: latest.label })}</Link>
+            {most ? ` · ${say("trophy.mostTitles", { team: most.name, count: plural("count.championships", most.n) })}` : ""}
+          </span>
+        </TrophyBanner>
+      ) : null}
       <SeasonSync>
         <section className="section">
           <h2>{say("league.seasons")}</h2>
@@ -106,7 +120,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
         <h2>{say("league.champions")}</h2>
         {champs.length ? (
           <>
-            <ChampionRow lg={lg} boxes={championRow(list, lg)} brands={brands} paths={paths} withGames={new Set(withGames.map((x) => x.year))} />
+            <ChampionRow lg={lg} boxes={boxes} brands={brands} paths={paths} withGames={new Set(withGames.map((x) => x.year))} />
             <div className="tablebox"><SortTable {...champions} def="season.desc" /></div>
           </>
         ) :<p className="note">{say("league.noChampions")}</p>}

@@ -2,7 +2,13 @@
    John's package @johnmorrisdotca/dougu-sports (MIT), not from this site: its generic cups, which suggest the trophy rather
    than reproduce it. The markup is built at development time into trophies.generated.ts (scripts/trophyMarkup.ts,
    `pnpm trophies`), so the package's renderer stays out of the browser bundle. Credited on /terms. */
+import type { PhraseKey } from "./i18n/phrases.constants.ts";
 import { TROPHY_MARKUP } from "./trophies.generated.ts";
 
 /** Trusted, static SVG markup for a league's trophy (generated from fixed package drawings, never user input). */
 export const trophySvg = (lg: string): string => TROPHY_MARKUP[lg] || TROPHY_MARKUP.nhl;
+
+/** The phrase that names a league's trophy (shown beside it and as its label); the five leagues only. */
+export const TROPHY_NAME = {
+  nhl: "trophy.name.nhl", nba: "trophy.name.nba", mlb: "trophy.name.mlb", nfl: "trophy.name.nfl", cfl: "trophy.name.cfl",
+} as const satisfies Record<string, PhraseKey>;

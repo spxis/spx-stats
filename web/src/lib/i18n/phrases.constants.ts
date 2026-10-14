@@ -16,6 +16,13 @@ export const PHRASES = {
   "sentence.end": ".",
   "tip.champion": "Champion: {team}",
   "trophy.champion": "Champion",
+  "trophy.name.nhl": "Stanley Cup",
+  "trophy.name.nba": "Larry O'Brien Trophy",
+  "trophy.name.mlb": "Commissioner's Trophy",
+  "trophy.name.nfl": "Vince Lombardi Trophy",
+  "trophy.name.cfl": "Grey Cup",
+  "trophy.latest": "Latest champion",
+  "trophy.mostTitles": "Most titles: {team}, {count}",
   "source.derived": "From results",
   "source.editorial": "Editorial",
 

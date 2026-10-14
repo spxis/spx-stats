@@ -11,6 +11,13 @@ export const FR: Dictionary = {
   "sentence.end": ".",
   "tip.champion": "Champion : {team}",
   "trophy.champion": "Champion",
+  "trophy.name.nhl": "Coupe Stanley",
+  "trophy.name.nba": "Trophée Larry O'Brien",
+  "trophy.name.mlb": "Trophée du commissaire",
+  "trophy.name.nfl": "Trophée Vince Lombardi",
+  "trophy.name.cfl": "Coupe Grey",
+  "trophy.latest": "Dernier champion",
+  "trophy.mostTitles": "Plus de titres : {team}, {count}",
   "source.derived": "Tiré des résultats",
   "source.editorial": "Éditorial",
 

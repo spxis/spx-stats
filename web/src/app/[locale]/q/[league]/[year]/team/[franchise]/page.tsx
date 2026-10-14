@@ -16,7 +16,7 @@ import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/S
 import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
 import { TeamRanks } from "@/components/TeamRanks";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
-import { BadgeCup } from "@/components/TrophyIcon";
+import { BadgeCup } from "@/components/TrophyMark";
 import { Figures, NoSeason } from "@/components/ui";
 import { getSeasonAlignment } from "@/lib/alignmentData";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
@@ -24,6 +24,7 @@ import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSeasonStandings, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
+import { TROPHY_NAME } from "@/lib/trophies";
 import { seasonStartDay } from "@/lib/idleTeams";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -197,7 +198,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
             {ranks || figureRanks.length ? <TeamRanks lg={lg} year={y} ranks={ranks} figures={figureRanks} /> : null}
           </div>
         </div>
-        {isChamp ? <span className="reigning"><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
+        {isChamp ? <span className="reigning" title={lg in TROPHY_NAME ? say(TROPHY_NAME[lg as keyof typeof TROPHY_NAME]) : undefined}><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
         <p className="lede">
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
