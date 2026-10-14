@@ -5,6 +5,7 @@ import { Credits } from "@/components/Credits";
 import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
+import { positionBook } from "@/components/PositionKey";
 import { queryHref } from "@/components/ViewTabs";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LEAGUES, LG } from "@/lib/leagues";
@@ -49,11 +50,13 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
 
   // The country column only draws once the database has `country` (migration 063); before that the rows carry none.
-  const withCountry = !!data?.list.some((p) => p.country !== undefined);
+  const book = await positionBook();
+  const withCountry =!!data?.list.some((p) => p.country !== undefined);
   const table = data ? tableOf(data.list, [
     { key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PlayerIndexRow) => p.name, cell: (p: PlayerIndexRow) => <Link href={player(p.person_id, p.name, p.leagues?.[0])} prefetch={false}>{p.name}</Link> },
     { key: "league", label: say("col.league"), rest: "leagues", get: (p: PlayerIndexRow) => (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") },
-    { key: "position", label: say("player.factPosition"), rest: "position", get: (p: PlayerIndexRow) => positionsText(p.positions, p.position) },
+    // The league filter, when there is one, reads a code first (C is a centre in the NHL, a catcher in MLB); otherwise the player's own leagues in order.
+    { key: "position", label: say("player.factPosition"), rest: "position", get: (p: PlayerIndexRow) => positionsText(p.positions, p.position), cell: (p: PlayerIndexRow) => book.list(p.positions, p.position, [...(league ? [league] : []), ...(p.leagues ?? [])]) },
     ...(withCountry ? [{
       key: "country", label: say("players.colCountry"), title: say("players.countryTitle"), get: (p: PlayerIndexRow) => (p.country ? countryName(p.country, locale) : ""),
       cell: (p: PlayerIndexRow) => (p.country ? <Link href={href({ nat: p.country.toUpperCase() })} prefetch={false} title={say("players.byCountry", { name: countryName(p.country, locale) })}><Flag code={p.country} /></Link> : null),
@@ -94,6 +97,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
                 {data.page < data.pages ? <Link href={to(data.pages)} prefetch={false}>{say("players.last") + " »"}</Link> : null}
               </nav>
             ) : null}
+            {book.key()}
             <p className="note"><Credits say={say} use={["flags"]} /></p>
           </>
         ) : <p className="note">{say("players.none")}</p>}

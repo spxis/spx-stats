@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import { positionBook } from "@/components/PositionKey";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { SortTable } from "@/components/SortTable";
@@ -39,6 +40,7 @@ export default guard(async function SoccerPlayerPage({ params }: Params) {
   const canonical = soccerPlayerPath(p.person_id, p.name);
   if (`/worldcup/player/${player}` !== canonical) permanentRedirect(canonical);
   const { say, dt, plural } = await currentSpeaker();
+  const book = await positionBook();
   const [rows, teams] = await Promise.all([getPlayerTournaments(p.person_id), getSoccerTeams()]);
   const flag = new Map(teams.map((t) => [t.team_id, t.flag_code]));
   const sum = (f: (r: (typeof rows)[number]) => number) => rows.reduce((n, r) => n + f(r), 0);
@@ -47,7 +49,7 @@ export default guard(async function SoccerPlayerPage({ params }: Params) {
     { key: "comp", label: say("wc.col.competition"), cls: "team", get: (r) => r.league, cell: (r) => say(r.league === "wwc" ? "wc.womens" : "wc.mens") },
     { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => <SoccerTeamName slug={r.team_slug} name={r.team} flag={flag.get(r.team_id)} /> },
     { key: "no", label: say("wc.col.no"), num: true, get: (r) => r.shirt_number },
-    { key: "pos", label: say("wc.col.position"), get: (r) => r.position_code },
+    { key: "pos", label: say("wc.col.position"), get: (r) => r.position_code, cell: (r) => book.code(r.position_code, ["soccer"]) },
     { key: "p", label: say("wc.col.played"), num: true, get: (r) => r.played },
     { key: "s", label: say("wc.col.started"), num: true, get: (r) => r.started },
     { key: "g", label: say("wc.col.goals"), num: true, get: (r) => r.goals },
@@ -79,6 +81,7 @@ export default guard(async function SoccerPlayerPage({ params }: Params) {
       ) : null}
       {p.managed ? <section className="section"><p>{say("wc.p.managed", { n: plural("count.tournaments", p.managed) })}</p></section> : null}
       {!rows.length && !p.managed ? <section className="section"><p>{say("wc.p.refereed")}</p></section> : null}
+      {book.key()}
       <section className="section"><SoccerCredit say={say} /></section>
     </div>
   );

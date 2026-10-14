@@ -710,6 +710,8 @@ export const PHRASES = {
   "roster.title": "Roster",
   "roster.player": "Player",
   "roster.pos": "Pos",
+  "poskey.title": "Position key",
+  "poskey.note": "Each abbreviation on this page and what it stands for. Hover or focus a code to see its name.",
   "roster.nat": "Nat",
   "roster.filterPos": "Filter by position",
   "roster.filterNat": "Filter by nationality",

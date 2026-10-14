@@ -1,11 +1,13 @@
 import Link from "next/link";
 import { Flag } from "@/components/Flag";
+import { positionBook } from "@/components/PositionKey";
 import { SortTable } from "@/components/SortTable";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { showStat, STAT_GROUPS } from "@/lib/playerStats";
 import { getRoster, type RosterGroup, type RosterPlayer } from "@/lib/roster";
+import { positionsShort } from "@/lib/positions";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
 import { countryName } from "@/lib/people-format";
 import { queryHref } from "./ViewTabs";
@@ -31,6 +33,7 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
   if (!everyone.length) return null;
   const { say, fmt, locale } = await currentSpeaker();
   const playerPath = await getPlayerPaths();
+  const book = await positionBook();
   const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const poss = [...new Set(everyone.map((p) => p.pos).filter((x): x is string => !!x))].sort();
   const nats = [...new Set(everyone.map((p) => p.nat).filter((x): x is string => !!x))].sort((a, c) => countryName(a, locale).localeCompare(countryName(c, locale), locale));
@@ -47,8 +50,8 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
       <h2>{say("roster.title")}</h2>
       {poss.length > 1 ? (
         <nav className="seg views scroll" aria-label={say("roster.filterPos")}>
-          {[{ key: "", label: say("roster.allPos") }, ...poss.map((x) => ({ key: x, label: x }))].map((c) => (
-            <Link key={c.key} href={href({ pos: c.key || null })} prefetch={false} aria-current={c.key === pos ? "page" : undefined}>{c.label}</Link>
+          {[{ key: "", label: say("roster.allPos") }, ...poss.map((x) => ({ key: x, label: x.toUpperCase() }))].map((c) => (
+            <Link key={c.key} href={href({ pos: c.key || null })} prefetch={false} title={c.key ? book.name(c.key, [lg]) : undefined} aria-current={c.key === pos ? "page" : undefined}>{c.label}</Link>
           ))}
         </nav>
       ) : null}
@@ -69,7 +72,7 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
         const specs: ColumnSpec<RosterPlayer>[] = [
           ...(hasNat ? [{ key: "nat", label: say("roster.nat"), get: (p) => p.nat, cell: (p) => <Flag code={p.nat} /> } satisfies ColumnSpec<RosterPlayer>] : []),
           { key: "player", label: say("roster.player"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={playerPath(p.id, p.name, lg)} prefetch={false}>{p.name}</Link> },
-          ...(hasPos ? [{ key: "pos", label: say("roster.pos"), get: (p) => p.allPos } satisfies ColumnSpec<RosterPlayer>] : []),
+          ...(hasPos ? [{ key: "pos", label: say("roster.pos"), get: (p) => positionsShort(p.positions), cell: (p) => book.list(p.positions, null, [lg]) } satisfies ColumnSpec<RosterPlayer>] : []),
           ...cols.map((c): ColumnSpec<RosterPlayer> => ({
             key: c.key, label: say(c.label as PhraseKey), title: say(c.title as PhraseKey), num: true,
             get: (p) => c.get(p.stats), cell: (p) => showStat(c.kind, c.get(p.stats), fmt),

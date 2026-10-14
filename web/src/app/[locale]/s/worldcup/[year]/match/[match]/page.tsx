@@ -4,6 +4,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { BadgeCup } from "@/components/TrophyIcon";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
+import { positionBook, type PositionBook } from "@/components/PositionKey";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerCrest } from "@/components/SoccerCrest";
 import { SoccerSurface } from "@/components/GameSurface";
@@ -57,6 +58,7 @@ export default guard(async function MatchPage({ params }: Params) {
   const canonical = soccerMatchPath(m.year, m.match_id, m.home, m.away);
   if (`/worldcup/${year}/match/${match}` !== canonical) permanentRedirect(canonical);
   const { say, dt, locale } = await currentSpeaker();
+  const book = await positionBook();
   const [t, d, entries] = await Promise.all([tournamentOfYear(m.year), getMatchDetail(m.match_id), getTournamentTeams(m.tournament_id)]);
   const s = scoreLines(say, m);
   const title = say(m.league === "wwc" ? "wc.tournamentWomen" : "wc.tournamentMen", { year: m.year });
@@ -169,7 +171,7 @@ export default guard(async function MatchPage({ params }: Params) {
             {sides.map((sd) => (
               <div key={sd.id}>
                 <h3><SoccerTeamName slug={sd.slug} name={sd.name} flag={sd.flag} /></h3>
-                <Lineups rows={d.lineups.filter((l) => l.team_id === sd.id)} cards={cardsOf} say={say} />
+                <Lineups rows={d.lineups.filter((l) => l.team_id === sd.id)} cards={cardsOf} say={say} book={book} />
                 {managers.filter((x) => x.team_id === sd.id).map((x) => (
                   <p className="note" key={x.person_id}>{say("wc.m.manager")}: {x.name}</p>
                 ))}
@@ -190,6 +192,7 @@ export default guard(async function MatchPage({ params }: Params) {
           <Link href={tournamentPath(m.year)}>{title}</Link> · <Link href={soccerTeamPath(m.home_slug)}>{teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale)}</Link> · <Link href={soccerTeamPath(m.away_slug)}>{teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale)}</Link>
           {t ? <> · {stageName(say, m.stage_key)}</> : null}
         </p>
+        {book.key()}
         <SoccerCredit say={say} />
       </section>
     </div>
@@ -219,13 +222,13 @@ function GoalList({ goals, home, say }: { goals: Goal[]; home: string; say: (k: 
   );
 }
 
-function Lineups({ rows, cards, say }: { rows: Lineup[]; cards: (personId: number) => Card[]; say: (k: "wc.m.subOn" | "wc.m.subOff" | "wc.m.bench") => string }) {
+function Lineups({ rows, cards, say, book }: { rows: Lineup[]; cards: (personId: number) => Card[]; say: (k: "wc.m.subOn" | "wc.m.subOff" | "wc.m.bench") => string; book: PositionBook }) {
   const starters = rows.filter((r) => r.starter);
   const bench = rows.filter((r) => !r.starter);
   const line = (r: Lineup, isBench: boolean) => (
     <li key={r.person_id} className={isBench ? "bench" : undefined}>
       <span className="no">{r.shirt_number ?? ""}</span>
-      <span className="pos">{r.position_code ?? ""}</span>
+      <span className="pos">{book.code(r.position_code, ["soccer"])}</span>
       <span>
         <Link href={soccerPlayerPath(r.person_id, r.player)} prefetch={false}>{r.player}</Link>{" "}
         {cards(r.person_id).map((c) => <span key={c.booking_id} className={c.red_card || c.sending_off ? "sc-card-r" : "sc-card-y"} />)}

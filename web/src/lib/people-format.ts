@@ -31,7 +31,7 @@ export function countryName(code: string, locale: Locale): string {
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 export const capFirst = cap;
 
-/** All of a person's positions as short codes, "P / DH"; the main one alone when no list is known; "" when none. The player page spells them out (lib/positions.ts). */
+/** All of a person's positions as short codes joined by the one separator, "P/DH" (POSITION_SEP); the main one alone when no list is known; "" when none. The player page spells them out (lib/positions.ts). */
 export function positionsText(positions: readonly string[] | null | undefined, position?: string | null): string {
   return positionsShort(positions, position);
 }

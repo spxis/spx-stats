@@ -1,4 +1,5 @@
 import Link from "next/link";
+import type { PositionBook } from "@/components/PositionKey";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Squad } from "@/lib/soccer";
@@ -6,7 +7,7 @@ import { soccerPlayerPath } from "@/lib/soccerPath";
 import "./soccer.css";
 
 /** One expandable list per team of a tournament: shirt number, player, position, matches played, started, goals, cards. `flags` maps a team id to its flag code. */
-export async function SoccerSquads({ squads, flags }: { squads: Squad[]; flags: Map<string, string | null> }) {
+export async function SoccerSquads({ squads, flags, book }: { squads: Squad[]; flags: Map<string, string | null>; book: PositionBook }) {
   const { say } = await currentSpeaker();
   const teams = [...new Map(squads.map((s) => [s.team_id, s])).values()];
   return (
@@ -27,7 +28,7 @@ export async function SoccerSquads({ squads, flags }: { squads: Squad[]; flags: 
                 <tr key={s.person_id}>
                   <td className="num">{s.shirt_number ?? ""}</td>
                   <td className="team"><Link href={soccerPlayerPath(s.person_id, s.player)} prefetch={false}>{s.player}</Link></td>
-                  <td>{s.position_code ?? ""}</td><td className="num">{s.played}</td><td className="num">{s.started}</td><td className="num">{s.goals || ""}</td>
+                  <td>{book.code(s.position_code, ["soccer"])}</td><td className="num">{s.played}</td><td className="num">{s.started}</td><td className="num">{s.goals || ""}</td>
                   <td className="num">{s.yellow || ""}</td><td className="num">{s.red || ""}</td>
                 </tr>
               ))}

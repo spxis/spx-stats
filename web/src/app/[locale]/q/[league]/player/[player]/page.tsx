@@ -20,12 +20,13 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
+import { positionBook } from "@/components/PositionKey";
 import { PlayerBoard } from "@/components/PlayerBoard";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
 import { buildBoard } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
 import { positionCodes, positionNames } from "@/lib/positions";
-import { ageOn, countryName, inches, positionsText } from "@/lib/people-format";
+import { ageOn, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { getPlayerPaths, homeLeague } from "@/lib/playerLinks";
@@ -82,7 +83,9 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
     const url = await getPlayerPaths();
     if (found.length === 1) permanentRedirect(withQuery(url(found[0].person_id, found[0].name, found[0].leagues?.[0] ?? league), sp));
     const { say } = await currentSpeaker();
+    const pickBook = await positionBook();
     return (
+      <>
       <section className="head fade">
         <h1>{say("player.pickTitle", { name: found[0].name })}</h1>
         <p className="lede">{say("player.pickNote")}</p>
@@ -90,12 +93,15 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           {found.map((x) => (
             <li key={x.person_id}>
               <Link href={url(x.person_id, x.name, x.leagues?.[0] ?? league)} prefetch={false}>{x.name}</Link>
-              {" · "}{[(x.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", "), positionsText(x.positions, x.position) || null,
-                x.first_season != null ? (x.last_season != null && x.last_season !== x.first_season ? `${x.first_season}–${x.last_season}` : String(x.first_season)) : null].filter(Boolean).join(" · ")}
+              {" · "}{(x.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ")}
+              {x.positions?.length || x.position ? <>{" · "}{pickBook.list(x.positions, x.position, x.leagues ?? [])}</> : null}
+              {x.first_season != null ? <>{" · "}{x.last_season != null && x.last_season !== x.first_season ? `${x.first_season}–${x.last_season}` : String(x.first_season)}</> : null}
             </li>
           ))}
         </ul>
       </section>
+      {pickBook.key()}
+      </>
     );
   }
   if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
@@ -144,8 +150,9 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (p.nationality_code && (p.nationality_code !== p.birth_country_code || !p.birth_country_code)) {
     facts.push(<Fact key="country" label={say("player.factCountry")}><Flag code={p.nationality_code} /> {countryName(p.nationality_code, locale)}</Fact>);
   }
-  const positions = positionNames(positionCodes(p.positions, p.position), home, await getPositions(), locale);
-  if (positions) facts.push(<Fact key="pos" label={say("player.factPosition")}>{positions}</Fact>);
+  // The full names with the code beside each, linking to the key at the bottom; read in the page's league first, then the player's others.
+  const book = await positionBook();
+  if (positionCodes(p.positions, p.position).length) facts.push(<Fact key="pos" label={say("player.factPosition")}>{book.list(p.positions, p.position, [home, ...lgs], true)}</Fact>);
   if (p.height_cm) facts.push(<Fact key="h" label={say("player.factHeight")}>{`${p.height_cm} cm (${inches(p.height_cm)})`}</Fact>);
   if (p.hall_of_fame_year) facts.push(<Fact key="hof" label={say("player.factHof")}>{say("player.hofInducted", { year: p.hall_of_fame_year })}</Fact>);
   if (p.seasons_played && p.first_season != null && p.last_season != null) {
@@ -211,6 +218,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           <div className="tablebox"><SortTable {...teamTable} param="sort_teams" def="from.asc" /></div>
         </section>
       ) : null}
+      {book.key()}
       <p className="note">
         <Rich text={say("player.credit")} parts={{
           wikidata: <a href="https://www.wikidata.org">Wikidata</a>,

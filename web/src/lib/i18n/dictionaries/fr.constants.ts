@@ -1771,4 +1771,6 @@ export const FR: Dictionary = {
   "gs.neutral": "Match disputé sur terrain neutre : la surface de jeu standard de la {league} pour la saison {season} est donc dessinée à l’échelle.",
   "gs.stdSoccer": "Un terrain standard de 105 m sur 68 m, dessiné à l’échelle.",
   "gs.ground": "{venue}, avec son terrain aux dimensions publiées, dessiné à l’échelle.",
+  "poskey.title": "Légende des positions",
+  "poskey.note": "Chaque abréviation de cette page et sa signification. Survolez un code, ou placez-y le curseur au clavier, pour voir son nom.",
 };

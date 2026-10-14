@@ -1,0 +1,18 @@
+/* Position codes (components/PositionCode.tsx) and the key at the bottom of a page (PositionKey.tsx). */
+.poscode { position: relative; text-decoration: underline dotted; text-underline-offset: 3px; text-decoration-color: var(--muted); color: inherit; cursor: help; font-variant-numeric: tabular-nums; }
+.poscode:hover { text-decoration-color: currentColor; }
+/* The browser's own title shows on hover; keyboard focus gets this tip, since a title never shows on focus. */
+.poscode[data-name]:focus-visible::after {
+  content: attr(data-name); position: absolute; left: 0; bottom: 100%; margin-bottom: 4px; z-index: 5; white-space: nowrap;
+  padding: 3px 8px; border-radius: 4px; background: var(--ink); color: var(--paper); font: 500 12px/1.3 var(--font-body, inherit); text-decoration: none;
+}
+.possep { color: var(--muted); }
+.poslist { white-space: nowrap; }
+/* The player page spells the names out: a little air around the shared separator. */
+.poslist.full { white-space: normal; }
+.poslist.full .possep { margin: 0 .35em; }
+.poskey dl { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); gap: 4px 24px; margin: 0; }
+.poskey .poskey-row { display: flex; gap: 10px; align-items: baseline; min-width: 0; }
+.poskey dt { font-weight: 700; min-width: 3.2ch; }
+.poskey dd { margin: 0; color: var(--muted); }
+.poskey h3 { margin: 14px 0 6px; }

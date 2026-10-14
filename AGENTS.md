@@ -596,6 +596,10 @@ Ask John before deleting or overwriting data. Production changes only through ap
 - **Positions are codes from a fixed list per league** (`ref.position`, served by `api.position`; the raw-value map is `ref.position_alias`,
   seeded by `db/build/185_ref_position.sql`; `db/build/186_person_positions.sql` applies it to `core.person`). A raw value no map row covers is
   logged in `meta.data_issue` (`entity_kind = 'position'`), never guessed: complete the map in one place. Tables show the code, the player page the name.
+  **Draw a position only through `positionBook()` (`components/PositionKey.tsx`)**: `book.list(...)` / `book.code(...)` give upper-case `PositionCode`s
+  (hover name, link to `#positions-key`) joined by the one `POSITION_SEP` ("RW/LW", the order the database gives, main first), and `book.key()` at the
+  bottom of the page draws the key of exactly the codes drawn, grouped by league so colliding codes (C, G, P) are each explained. Never join positions by
+  hand or render a bare code; `pnpm test:positions` scans for both. Soccer's names are in `SOCCER_POSITIONS` (`lib/positions.ts`), not in `api.position`.
 - **One record per person:** `db/build/185_person_merge.sql` merges records that are the same human (never on name alone) and keeps
   `core.person_redirect`, which the player page uses to redirect an old id. Pairs it will not merge are logged as `possible-duplicate:` in `meta.data_issue`.
 - **Cities:** `/cities` (search, year-range slider, sortable table and map, all filtered in the browser) and `/city/<slug>` (every club that

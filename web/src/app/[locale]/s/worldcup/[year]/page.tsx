@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { positionBook } from "@/components/PositionKey";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerGroups } from "@/components/SoccerGroups";
 import { SoccerKnockout } from "@/components/SoccerKnockout";
@@ -49,6 +50,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
   const t = await tournamentOfYear(Number(year));
   if (!t) notFound();
   const { say, fmt, dt, locale } = await currentSpeaker();
+  const book = await positionBook();
   const [teams, matches, standings, scorers, awards, squads, allTeams] = await Promise.all([
     getTournamentTeams(t.tournament_id), getTournamentMatches(t.tournament_id), getStandings(t.tournament_id), getTopScorers(t.tournament_id),
     getAwards(t.tournament_id), getSquads(t.tournament_id), getSoccerTeams(),
@@ -201,9 +203,10 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       {squads.length ? (
         <section className="section" id="squads">
           <h2>{say("wc.t.squads")}</h2>
-          <SoccerSquads squads={squads} flags={new Map(allTeams.map((x) => [x.team_id, x.flag_code]))} />
+          <SoccerSquads squads={squads} flags={new Map(allTeams.map((x) => [x.team_id, x.flag_code]))} book={book} />
         </section>
       ) : null}
+      {book.key()}
       <section className="section"><SoccerCredit say={say} /></section>
     </div>
   );
