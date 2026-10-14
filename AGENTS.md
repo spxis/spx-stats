@@ -407,6 +407,10 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   from Wikidata (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA). Refresh once a year (February) or after a
   rename: the command list is in `scripts/wikidata_venues/README.md`; production gets `core.brand_venue_name` and
   `core.brand_venue_info` through a data release (item 5), after migration 052 is on production.
+- **Club rosters** (the players of each NBA, NFL and CFL club season, `core.roster_stint`): NBA and CFL from Wikidata P54 and the Roster tables of
+  club-season articles on English Wikipedia, NFL from nflverse's `roster_<season>.csv` (its ESPN and Pro Football Reference id columns are dropped at
+  download and never stored). Fetch, load and build order are in `scripts/rosters/README.md` (build steps 179 and 181; the roster table on a club's
+  season page reads `api.team_season_roster`, migration 093, for leagues with no player statistics).
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
