@@ -1,7 +1,7 @@
 /* The city pages (/city/<slug>) and the cities list (/cities). Tokens come from globals.css. */
 .cityhead .cityname { display: flex; align-items: center; flex-wrap: wrap; gap: 4px 14px; font-size: clamp(44px, 9vw, 96px); line-height: .95; overflow-wrap: anywhere; }
 .cityfind { margin-bottom: 4px; }
-.cityfind input[type="search"] { width: min(360px, 100%); min-height: 40px; }
+.cityfind input[type="search"] { width: min(360px, 100%); }
 .cityfind .note { margin: 0; }
 .citytable td.team, .cityclubs td.team { white-space: nowrap; }
 .citytable td.team .flag { margin-left: 6px; }

@@ -1361,6 +1361,8 @@ export const PHRASES = {
   "scores.metaDesc": "Every {league} game on {date}: {games}, with scores, teams and results.",
   "scores.dateLabel": "Scores date",
   "scores.daysAria": "Days around this one",
+  "scores.gamesWord.one": "game",
+  "scores.gamesWord.other": "games",
   "scores.final": "Final",
   "scores.finalExtra": "Final / {extra}",
   "scores.scheduled": "Scheduled",

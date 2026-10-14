@@ -1,10 +1,10 @@
 /* League alignment: the standings views, grouped tables and the alignment browser. */
-.seg.views a { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 12px; background: var(--panel); color: var(--muted); text-decoration: none; }
+.seg.views a { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; background: var(--panel); color: var(--muted); text-decoration: none; }
 .seg.views a + a { border-left: 1px solid var(--rule); }
 .seg.views a:hover { color: var(--ink); }
 .seg.views a[aria-current="page"] { background: var(--ink); color: var(--paper); }
 .seasonbar { align-items: center; }
-.seasonbar select { font-size: 15px; padding: 7px 10px; }
+.seasonbar select { font-size: 15px; padding-inline: 10px; }
 
 table .grouphead th { position: static; background: var(--soft); color: var(--ink); font: 700 16px/1.2 var(--display); letter-spacing: .05em; padding: 9px 10px 7px; border-bottom: 1px solid var(--ink); white-space: normal; }
 table .grouphead th .sub { margin-left: 10px; font: 500 13px/1 var(--body); text-transform: none; letter-spacing: 0; color: var(--muted); }

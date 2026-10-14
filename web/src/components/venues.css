@@ -3,7 +3,7 @@
 .venuefilters { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; margin-bottom: 6px; }
 .venuefilters select { max-width: 100%; }
 .venuefilters .chips { display: flex; flex-wrap: wrap; gap: 6px; }
-.venuefilters .chip { display: inline-flex; align-items: center; gap: 6px; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; }
+.venuefilters .chip { gap: 6px; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; }
 .venuefilters .chip i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; }
 .venuefilters .chip[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
 .venuefilters .chip[aria-pressed="true"] i { box-shadow: 0 0 0 1.5px var(--paper); }
@@ -22,7 +22,7 @@
 .venuetable .lgdot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 4px; }
 .venuetable a.ext::after { content: "\2197"; margin-left: 3px; font-size: .85em; }
 @media (max-width: 640px) {
-  .venuefilters select { flex: 1 1 130px; font-size: 14px; padding: 7px 8px; }
+  .venuefilters select { flex: 1 1 130px; font-size: 14px; padding-inline: 8px; }
 }
 .venuetable.pending { min-height: 60vh; }
 .venueplain { margin: 0; padding-left: 18px; }

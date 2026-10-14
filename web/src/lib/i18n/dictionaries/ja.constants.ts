@@ -46,6 +46,8 @@ export const JA: Dictionary = {
   "count.championships.other": "優勝{count}回",
   "count.games.one": "{count}試合",
   "count.games.other": "{count}試合",
+  "scores.gamesWord.one": "試合",
+  "scores.gamesWord.other": "試合",
   "count.regularGames.one": "レギュラーシーズン{count}試合",
   "count.regularGames.other": "レギュラーシーズン{count}試合",
   "count.regularSeasons.one": "{count}年分のレギュラーシーズン",

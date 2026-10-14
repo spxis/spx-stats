@@ -11,7 +11,7 @@
 
 .filters { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
 .monthchips { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; max-width: 100%; }
-.monthchips button { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.monthchips button { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
 .monthchips button[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
 
 .months { position: relative; }

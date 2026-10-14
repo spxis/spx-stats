@@ -46,6 +46,8 @@ export const FR: Dictionary = {
   "count.championships.other": "{count} titres",
   "count.games.one": "{count} match",
   "count.games.other": "{count} matchs",
+  "scores.gamesWord.one": "match",
+  "scores.gamesWord.other": "matchs",
   "count.regularGames.one": "{count} match de saison régulière",
   "count.regularGames.other": "{count} matchs de saison régulière",
   "count.regularSeasons.one": "{count} saison régulière",

@@ -30,13 +30,13 @@
 
 .sk-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: end; margin: 0 0 12px; }
 .sk-controls label { display: grid; gap: 3px; font: 600 12px var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
-.sk-controls select { font-size: 15px; padding: 7px 10px; min-height: 40px; }
+.sk-controls select { font-size: 15px; padding-inline: 10px; }
 .sk-controls .sk-check { display: flex; align-items: center; gap: 8px; min-height: 40px; font: 600 14px var(--body); letter-spacing: 0; text-transform: none; color: var(--ink); }
 .sk-controls .sk-check input { width: 18px; height: 18px; }
 .sk-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; max-width: 80ch; }
 .sk-skeleton { min-height: 360px; display: grid; place-items: center; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
 
-.sk-controls .seg button { min-height: 40px; padding: 8px 14px; }
+.sk-controls .seg button { padding: 0 14px; }
 
 /* The details panel under a diagram whose blocks and bands carry lists of links (components/Sankey.tsx, `panel`). */
 .sk-panel { border: 1px solid var(--rule); border-left: 4px solid var(--accent); background: var(--panel); padding: 10px 14px; min-height: 7.5em; font-size: 14px; scroll-margin-bottom: 12px; }

@@ -40,8 +40,8 @@
   .mapzoom { top: 6px; right: 6px; }
   .mapzoom button { width: 36px; height: 36px; }
   .mapbar { gap: 6px 8px; }
-  .mapbar .seg button { padding: 8px 9px; font-size: 13px; }
-  .mapbar select { flex: 1 1 130px; font-size: 14px; padding: 7px 8px; }
+  .mapbar .seg button { padding: 0 9px; font-size: 13px; }
+  .mapbar select { flex: 1 1 130px; font-size: 14px; padding-inline: 8px; }
 }
 
 .mapbtn.atfoot { top: auto; bottom: 0; }

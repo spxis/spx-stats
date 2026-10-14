@@ -92,7 +92,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
             aria-label={`${dt.full(atUtc(d))}: ${plural("count.games", n)}`}>
             <span className="wd">{dt.weekdays[atUtc(d).getUTCDay()]}</span>
             <span className="md">{dt.monthDayShort(atUtc(d))}</span>
-            <span className="ct">{n || "–"}</span>
+            {n ? <span className="ct"><b>{n}</b><span className="cw">{plural("scores.gamesWord", n)}</span></span> : <span className="ct none" aria-hidden="true">–</span>}
           </Link>
         ))}
       </nav>

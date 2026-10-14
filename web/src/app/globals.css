@@ -9,6 +9,8 @@
   --ok: #2f7d4f; --warn: #b07a12; --bad: #b3372b; --logo-tile: #ffffff;
   --nhl: #1f6fb2; --nba: #c8571b; --mlb: #b5283a; --nfl: #2f6b3c; --cfl: #9b2335;
   --accent: var(--ink);
+  /* One height for every form control and button (select, search box, segmented toggle, date picker, day arrows, chips), so a row of them lines up. */
+  --control-h: 40px;
   --display: var(--font-barlow), "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
   --body: var(--font-source), "Source Sans 3", "Segoe UI", system-ui, sans-serif;
   --mono: var(--font-jetbrains), "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
@@ -59,11 +61,23 @@
   table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
   th { text-align: left; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; position: sticky; top: 0; z-index: 2; background: var(--paper); }
   td { padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }
-  select, input[type="search"] { font: inherit; font-size: 15px; padding: 6px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); min-width: 0; border-radius: 0; }
+  select, input[type="search"] { font: inherit; font-size: 15px; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); min-width: 0; border-radius: 0; }
   button:not(:disabled) { cursor: pointer; }
 }
 
 @layer components {
+  /* The one control size (--control-h): height and a centred single line; the sideways padding stays with each control. */
+  select, input[type="search"], .theme, .signin-link, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a, .seasonnav select,
+  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visiteditor input, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .tk-filters input[type="search"], .tk-filters select {
+    box-sizing: border-box; height: var(--control-h); padding-block: 0; line-height: 1;
+  }
+  .theme, .signin-link, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a,
+  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a {
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  /* A segmented toggle is the same height: its frame plus buttons that fill it (a wrapped one keeps a full-height row each). */
+  .seg { box-sizing: border-box; min-height: var(--control-h); }
+  .seg > button, .seg > a { box-sizing: border-box; align-self: stretch; display: inline-flex; align-items: center; justify-content: center; min-height: calc(var(--control-h) - 2px); padding-block: 0; line-height: 1; }
   .top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding-block: 18px 14px; border-bottom: 2px solid var(--ink); max-width: 1180px; margin-inline: auto; }
   .brand { display: flex; align-items: baseline; gap: 8px; text-decoration: none; }
   .brand-mark { font: 700 28px/1 var(--display); letter-spacing: .04em; background: var(--ink); color: var(--paper); padding: 2px 8px 0; }
@@ -75,13 +89,13 @@
   .leagues a.sub[aria-current="page"] { color: var(--ink); }
   .aux { margin-left: auto; }
   .aux a { color: var(--muted); }
-  .theme { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 6px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+  .theme { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
   .theme:hover { border-color: var(--ink); }
   .aux { align-items: center; }
   /* Signed-out controls on a kept page: gone before the first paint for a browser that carries the sign-in hint (lib/auth/hint.ts). */
   .anon { display: contents; }
   html[data-in] .anon { display: none; }
-  .signin-link, .signin-btn { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 7px 12px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); text-decoration: none; }
+  .signin-link, .signin-btn { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 1px solid var(--ink); background: var(--ink); color: var(--paper); text-decoration: none; }
   .aux a.signin-link { color: var(--paper); border-bottom-width: 1px; }
   .signin-btn { align-self: flex-start; font-size: 16px; padding: 10px 16px; }
   .signin-btn:disabled { opacity: .6; }
@@ -89,12 +103,12 @@
   .ticketform label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
   .ticketform input, .ticketform textarea, .ticketform select { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
   .tk-chips { display: flex; flex-wrap: wrap; gap: 6px; }
-  .tk-chips a { display: inline-flex; gap: 6px; align-items: center; padding: 6px 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+  .tk-chips a { gap: 6px; padding: 0 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
   .tk-chips a span { font: 500 12px/1 var(--mono); color: var(--muted); }
   .tk-chips a.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
   .tk-chips a.on span { color: inherit; }
   .tk-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
-  .tk-filters input[type="search"], .tk-filters select { font: inherit; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
+  .tk-filters input[type="search"], .tk-filters select { font: inherit; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
   .tk-filters input[type="search"] { flex: 1 1 260px; max-width: 420px; }
   .tk-main { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 240px; max-width: 70ch; }
   .tk-detail { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
@@ -211,7 +225,7 @@
 
   .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
   .seg { display: inline-flex; border: 1px solid var(--rule); }
-  .seg button { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 12px; border: 0; background: var(--panel); color: var(--muted); cursor: pointer; }
+  .seg button { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 0; background: var(--panel); color: var(--muted); cursor: pointer; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 
   .games { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 330px), 1fr)); gap: 0 28px; }
@@ -280,10 +294,10 @@
 
   .cal { display: flex; flex-direction: column; gap: 10px; max-width: 760px; }
   .calhead { display: flex; align-items: center; gap: 8px; min-width: 0; }
-  .calhead .nav { font: 600 22px/1 var(--display); width: 36px; height: 36px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; flex: none; }
+  .calhead .nav { font: 600 22px/1 var(--display); width: var(--control-h); border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; flex: none; }
   .calhead .nav:disabled { opacity: .35; cursor: default; }
   .months { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; flex: 1; min-width: 0; }
-  .months .mo { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
+  .months .mo { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
   .months .mo[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
   .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .grid .wd { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: center; padding-bottom: 4px; }
@@ -327,8 +341,8 @@
   .dlghead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; }
 
   .seasonnav { position: absolute; top: 0; right: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 100%; }
-  .seasonnav a { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
-  .seasonnav select { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 9px 8px; border: 1px solid var(--rule); background: var(--panel); color: inherit; }
+  .seasonnav a { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
+  .seasonnav select { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 8px; border: 1px solid var(--rule); background: var(--panel); color: inherit; }
   .seasonnav a:hover { border-color: var(--accent); color: var(--accent); }
   .reigning { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font: 700 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; padding: 7px 12px; background: var(--accent); color: var(--paper); text-decoration: none; }
   .reigning .rcup { display: inline-block; width: 14px; height: 22px; }
