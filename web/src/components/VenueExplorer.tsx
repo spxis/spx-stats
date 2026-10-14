@@ -7,6 +7,7 @@ import { tableOf } from "@/lib/sort";
 import { replaceQuery } from "@/lib/urlQuery";
 import { venueCountryName } from "@/lib/venueCountry";
 import { isSoccerLeague } from "@/lib/venueSoccerRows";
+import { roofWord, stateWord, surfaceWord } from "@/lib/venueSurface";
 import { DEFAULT_SHOW, emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, VENUE_KINDS, type VenueFilter, type VenueRow, type VenueStatus } from "@/lib/venueModel";
 import { VisitBox, VisitCell, VisitControl } from "./VenueVisits";
 import { useVisits } from "./visitsStore";
@@ -21,7 +22,6 @@ import { YearRange } from "./YearRange";
 import "./team.css";
 import "./venues.css";
 
-const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", retractable: "venuesPage.roofRetractable" } as const;
 const KIND_KEY = { home: "venuesPage.kindHome", spring: "venuesPage.kindSpring", future: "venuesPage.kindFuture", soccer: "venuesPage.kindSoccer" } as const;
 const SPRING_KEY = { cactus: "venuesPage.springCactus", grapefruit: "venuesPage.springGrapefruit" } as const;
 const FUTURE_KEY = { proposed: "venuesPage.futureProposed", approved: "venuesPage.futureApproved", under_construction: "venuesPage.futureUnderConstruction" } as const;
@@ -151,14 +151,18 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
       )),
     },
     { key: "opened", label: say("venuesPage.colOpened"), num: true, get: (v) => v.opened, cell: (v) => (v.opened == null ? "" : String(v.opened)) },
-    { key: "closed", label: say("venuesPage.colClosed"), num: true, get: (v) => v.closed, cell: (v) => (v.closed == null ? "" : String(v.closed)) },
+    {
+      // A year when a source gives one; else "Demolished" for a venue a source says is gone with no year (status demolished, db/build/193).
+      key: "closed", label: say("venuesPage.colClosed"), num: true, get: (v) => v.closed,
+      cell: (v) => (v.closed != null ? String(v.closed) : v.state === "demolished" ? stateWord(v.state, say) ?? "" : ""),
+    },
     { key: "capacity", label: say("venuesPage.colCapacity"), num: true, get: (v) => v.capacity, cell: (v) => (v.capacity == null ? "" : fmt(v.capacity)) },
     { key: "games", label: say("venuesPage.colGames"), num: true, get: (v) => v.games, cell: (v) => (v.games == null ? "" : fmt(v.games)) },
     {
-      key: "roof", label: say("venuesPage.colRoof"), get: (v) => v.roof,
-      cell: (v) => (v.roof && v.roof in ROOF_KEY ? say(ROOF_KEY[v.roof as keyof typeof ROOF_KEY]) : v.roof ?? ""),
+      key: "roof", label: say("venuesPage.colRoof"), get: (v) => roofWord(v.roof, say),
+      cell: (v) => roofWord(v.roof, say) ?? "",
     },
-    { key: "surface", label: say("venuesPage.colSurface"), get: (v) => v.surface, cell: (v) => v.surface ?? "" },
+    { key: "surface", label: say("venuesPage.colSurface"), get: (v) => surfaceWord(v.surface, say), cell: (v) => surfaceWord(v.surface, say) ?? "" },
   ], (v) => v.id)),
   // eslint-disable-next-line react-hooks/exhaustive-deps -- the phrases follow the language
   [mounted, shown, say, fmt, labels, order, visits, editing]);

@@ -6,6 +6,7 @@
  * their own colour and filter chip).
  */
 
+import type { VenueState } from "./venueSurface";
 import { visitMatches, type Visits } from "./venueVisits.ts";
 
 /** A club that used a venue: `logo` is the one it wore when it left (its current one if it still plays there), or null if we hold none. */
@@ -36,8 +37,12 @@ export interface VenueRow {
   clubs: VenueClub[];
   opened: number | null;
   closed: number | null;
+  /** Closed (a closing year is known), demolished (a source says it is gone, with no year) or open; null when the database does not say (before migration 089). */
+  state: VenueState | null;
   capacity: number | null;
+  /** open, dome or retractable (the text a source gave, before migration 089). */
   roof: string | null;
+  /** A code from the fixed list (grass, artificial, hybrid, ice, wood, multi, other), or the text a source gave before migration 089. */
   surface: string | null;
   /** Who owns it, as the facts line says. */
   owner: string | null;

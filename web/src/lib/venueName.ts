@@ -7,19 +7,28 @@ import { COUNTRY_KEY } from "../components/countryKey";
 import { countryAt } from "./country";
 import { formatVenueAddress, type VenueAddress } from "./venueAddress";
 import type { VenuePlace } from "./venuePlace";
+import type { VenueState } from "./venueSurface";
 import { factsText } from "./venueWire";
 
 type Say = Speaker["say"];
 
 /** A name a venue carried and the years it applied; `until` is null for the name now. */
 export interface VenueSpan { name: string; from: number | null; until: number | null; current: boolean }
-/** Capacity, year opened, owner, surface, roof, street address and postal code of a venue; any part can be missing. */
-export interface VenueFacts { capacity: number | null; opened: number | null; closed: number | null; owner: string | null; surface: string | null; roof: string | null; address: string | null; postal: string | null }
+/**
+ * Capacity, year opened and closed, owner, surface (a code from the fixed list, else the source's text before migration 089), the surface text as the source gave it,
+ * roof, open/closed/demolished status, street address and postal code of a venue; any part can be missing.
+ */
+export interface VenueFacts {
+  capacity: number | null; opened: number | null; closed: number | null; owner: string | null; surface: string | null; surfaceRaw: string | null; roof: string | null;
+  state: VenueState | null; address: string | null; postal: string | null;
+}
 
 const nameRow = z.object({ wikidata_id: z.string(), name: z.string(), from_year: z.number().nullable(), until_year: z.number().nullable(), is_current: z.boolean() });
 const infoRow = z.object({
   wikidata_id: z.string(), capacity: z.number().nullable(), opened_year: z.number().nullable(), closed_year: z.number().nullable().optional(), owner: z.string().nullable(),
   surface: z.string().nullable(), roof: z.string().nullable(), address: z.string().nullable(), postal_code: z.string().nullable().optional(),
+  /** Migration 089; absent from a database without it. */
+  surface_raw: z.string().nullable().optional(), status: z.enum(["open", "closed", "demolished"]).nullable().optional(),
 });
 
 /** A name that starts before the next one ends is cut at the next one's start, so each year has one name. */
@@ -54,23 +63,25 @@ export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> =
 const INFO_COLUMNS = "wikidata_id,capacity,opened_year,closed_year,owner,surface,roof,address";
 
 /**
- * The facts of every home venue, by Wikidata id (api.venue_info, migration 052; its postal_code column is migration 058, and until that
- * is on the server the facts come without a postal code); empty if the view is missing.
+ * The facts of every home venue, by Wikidata id (api.venue_info, migration 052). Its postal_code column is migration 058, and surface_raw and status
+ * are migration 089: until a column is on the server the facts come without it (the surface then reads as the text the source gave); empty if the view is missing.
  */
 export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> => {
   const out = new Map<string, VenueFacts>();
   let list: z.infer<typeof infoRow>[] = [];
-  try {
-    list = await rows("venue_info", `select=${INFO_COLUMNS},postal_code&order=wikidata_id`, infoRow);
-  } catch {
+  for (const extra of [",postal_code,surface_raw,status", ",postal_code", ""]) {
     try {
-      list = await rows("venue_info", `select=${INFO_COLUMNS}&order=wikidata_id`, infoRow);
+      list = await rows("venue_info", `select=${INFO_COLUMNS}${extra}&order=wikidata_id`, infoRow);
+      break;
     } catch {
       list = [];
     }
   }
   for (const r of list) {
-    out.set(r.wikidata_id, { capacity: r.capacity, opened: r.opened_year, closed: r.closed_year ?? null, owner: r.owner, surface: r.surface, roof: r.roof, address: r.address, postal: r.postal_code ?? null });
+    out.set(r.wikidata_id, {
+      capacity: r.capacity, opened: r.opened_year, closed: r.closed_year ?? null, owner: r.owner, surface: r.surface, surfaceRaw: r.surface_raw ?? null, roof: r.roof,
+      state: r.status ?? null, address: r.address, postal: r.postal_code ?? null,
+    });
   }
   return out;
 });

@@ -121,7 +121,7 @@ test("counts: all, per league, and how many of the visited are gone", () => {
 const B = { min: 1900, max: 2026 };
 const venue = (key: string): VenueRow => ({
   id: "0", key, slug: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
-  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], kind: "home", tag: null, planned: null, games: null,
+  leagues: ["nhl"], clubs: [], opened: null, closed: null, state: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], kind: "home", tag: null, planned: null, games: null,
 });
 
 test("the visited filter: only visited, only the others, or both", () => {

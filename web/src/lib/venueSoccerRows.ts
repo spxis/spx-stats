@@ -151,7 +151,7 @@ export function soccerRows(list: readonly SoccerVenue[], shared: ReadonlySet<str
     const row: VenueRow = {
       id, key: venueKey(v.wid, placed ? lat : 0, placed ? lon : 0), slug: "", name: v.name, former, lat: placed ? lat : 0, lon: placed ? lon : 0,
       cc: v.cc ?? (placed ? ctx.country(lat, lon) : null), place: soccerPlace(v), citySlug: null, wiki: wikiUrl(v.wikiTitle),
-      address: adr?.text ?? null, addressHref: adr?.href ?? null, leagues: [], clubs, opened: v.opened, closed: v.closed, capacity: v.capacity, roof: v.roof, surface: v.surface, owner: null,
+      address: adr?.text ?? null, addressHref: adr?.href ?? null, leagues: [], clubs, opened: v.opened, closed: v.closed, state: v.closed != null ? "closed" : null, capacity: v.capacity, roof: v.roof, surface: v.surface, owner: null,
       from: null, to: null, current: false, al: [], extra: [former, facts].filter((e): e is string => !!e), kind: "soccer", tag: null, planned: null, games: matchCount(v) || null,
     };
     (placed ? rows : unplaced).push(row);

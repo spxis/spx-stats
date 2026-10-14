@@ -100,13 +100,13 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
             row: {
               id, key: venueKey(v.wid, v.lat, v.lon), slug: "", name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
               wiki: v.wiki, address: v.address, addressHref: v.addressHref, leagues: [], clubs: [],
-              opened: f?.opened ?? null, closed: f?.closed ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
+              opened: f?.opened ?? null, closed: f?.closed ?? null, state: f?.state ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
               from: null, to: null, current: false, al: [],
               extra: [namesLine(sp), factsLine(f, say)].filter((x): x is string => !!x), kind: "home", tag: null, planned: null, games: v.wid ? totals.get(v.wid.toUpperCase()) ?? null : null,
             },
           };
           byVenue.set(id, acc);
-          detail.set(id, { wid: v.wid, city: v.city, iso: v.iso, names: (sp ?? []).map((s) => ({ name: s.name, from: s.from, until: s.until })) });
+          detail.set(id, { wid: v.wid, city: v.city, iso: v.iso, names: (sp ?? []).map((s) => ({ name: s.name, from: s.from, until: s.until })), surfaceRaw: f?.surfaceRaw ?? null });
         }
         const r = acc.row;
         if (!r.leagues.includes(lg)) r.leagues.push(lg);

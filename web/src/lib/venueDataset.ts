@@ -14,7 +14,11 @@ import type { VenueKind, VenueRow } from "./venueModel";
 /** A name a venue carried with the years it applied; `until` is null for the name now (or when unknown). */
 export interface VenueNameSpan { name: string; from: number | null; until: number | null }
 /** What the record adds to a row of the /venues list: Wikidata id, city, ISO 3166-2 region and every name with its years. */
-export interface VenueDetail { wid: string | null; city: string | null; iso: string | null; names: VenueNameSpan[] }
+export interface VenueDetail {
+  wid: string | null; city: string | null; iso: string | null; names: VenueNameSpan[];
+  /** The surface as the source wrote it ("AstroTurf 3D Xtreme"), where the venue's page can show it beside the surface word; home venues only, and only once migration 089 is on the server. */
+  surfaceRaw?: string | null;
+}
 
 /** A club that played at the venue; `to` is null while it still does. */
 export interface VenueRecordClub { league: string; franchise_id: number; name: string; from: number | null; to: number | null }

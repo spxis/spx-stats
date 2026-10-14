@@ -66,8 +66,8 @@ const wikiUrl = (title: string | null) => (title ? `https://en.wikipedia.org/wik
 const abbr = (iso: string | null) => iso?.split("-")[1] ?? null;
 const placeOf = (city: string | null, region: string | null) => [city, abbr(region)].filter(Boolean).join(", ") || null;
 
-const blank = (): Pick<VenueRow, "citySlug" | "address" | "addressHref" | "roof" | "surface" | "owner" | "al" | "games"> =>
-  ({ citySlug: null, address: null, addressHref: null, roof: null, surface: null, owner: null, al: [], games: null });
+const blank = (): Pick<VenueRow, "citySlug" | "address" | "addressHref" | "roof" | "surface" | "owner" | "al" | "games" | "state"> =>
+  ({ citySlug: null, address: null, addressHref: null, roof: null, surface: null, owner: null, al: [], games: null, state: null });
 
 /** The spring training parks as rows, with the extra the dataset keeps for each (by row id). Clubs the archive has no franchise for are listed by name, with no page. */
 export function springRows(list: readonly SpringRow[], ctx: LayerContext): { rows: VenueRow[]; detail: Map<string, VenueDetail> } {
@@ -96,7 +96,7 @@ export function springRows(list: readonly SpringRow[], ctx: LayerContext): { row
     rows.push({
       ...blank(), id, key: venueKey(null, p.latitude, p.longitude), slug: "", name: p.name, former, lat: p.latitude, lon: p.longitude,
       cc: p.country_code ?? ctx.country(p.latitude, p.longitude), place, wiki: wikiUrl(p.wikipedia_title), leagues: clubs.length ? ["mlb"] : [], clubs,
-      opened: p.opened_year, closed: p.closed_year, capacity: p.capacity, from: p.first_year, to: p.in_use ? null : p.last_year, current: p.in_use,
+      opened: p.opened_year, closed: p.closed_year, state: p.closed_year != null ? "closed" : null, capacity: p.capacity, from: p.first_year, to: p.in_use ? null : p.last_year, current: p.in_use,
       extra: [former, facts].filter((e): e is string => !!e), kind: "spring", tag: p.league, planned: null,
     });
     detail.set(id, { wid: p.wikidata_id, city: p.city, iso: p.region, names: p.names.map((n) => ({ name: n.name, from: n.from, until: n.to })) });

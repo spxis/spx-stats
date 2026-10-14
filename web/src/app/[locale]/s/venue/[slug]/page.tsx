@@ -24,16 +24,17 @@ import { pitchDrawing, surfacesFor } from "@/lib/venueDraw";
 import { getVenueGames } from "@/lib/venueHome";
 import { getNames } from "@/lib/venueMap";
 import { findVenue, getVenueIndex } from "@/lib/venuePage";
+import { getVenuePeriods } from "@/lib/venuePeriod";
 import { getVenueMatches } from "@/lib/venueSoccer";
 import { summarizeGames } from "@/lib/venueSoccerGames";
 import { isSoccerLeague, matchCount, SOCCER_NAME_KEY, yearsOf } from "@/lib/venueSoccerRows";
+import { periodRaw, periodsOf, periodYears, roofWord, stateWord, surfaceWord, type VenuePeriod } from "@/lib/venueSurface";
 import "@/components/city.css";
 import "@/components/venue.css";
 
 // Nothing is drawn at build time: each venue is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];
 
-const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", retractable: "venuesPage.roofRetractable" } as const;
 const link = (href: string, text: string) => <a className="ext" href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/s/venue/[slug]">): Promise<Metadata> => {
@@ -76,6 +77,8 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
   if (held?.finals.length) {
     await Promise.all([...new Set(held.finals.map((g) => g.league))].map(async (lg) => { for (const n of await getNames(lg)) names.set(`${lg}|${n.franchise_id}`, n.name); }));
   }
+  // The surface and roof over the years: read for this venue only, empty while migration 089 is not on the server.
+  const periods = detail.wid && !soccerOnly ? await getVenuePeriods(detail.wid) : [];
   const yearOf = (d: string) => Number(d.slice(0, 4));
   const gamesTable = held ? tableOf(held.games.leagues, [
     { key: "league", label: say("col.league"), get: (l) => leagueName(l.league) },
@@ -103,12 +106,20 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
   };
 
   const formerNames = detail.names.length > 1 ? detail.names : [];
+  // The closing year, with "Demolished" beside it (or alone, when a source says the building is gone and gives no year).
+  const closedFact = [v.closed, v.state === "demolished" ? stateWord(v.state, say) : null].filter((x) => x != null).join(" · ") || null;
+  // "Artificial turf (AstroTurf 3D Xtreme)": the code as a word, and the source's own text beside it when it says more. The dated list below already names every product.
+  const surfaceWordNow = surfaceWord(v.surface, say);
+  const surfaceFact = surfaceWordNow && !periods.some((p) => p.kind === "surface") && periodRaw({ raw: detail.surfaceRaw ?? null }, surfaceWordNow)
+    ? `${surfaceWordNow} (${detail.surfaceRaw})` : surfaceWordNow;
+  const history = (kind: VenuePeriod["kind"]) => periodsOf(periods, kind);
+  const word = (p: VenuePeriod) => (p.kind === "surface" ? surfaceWord(p.value, say) : roofWord(p.value, say)) ?? p.value;
   const facts: [string, React.ReactNode][] = [
     [say("venuesPage.colCapacity"), v.capacity == null ? null : fmt(v.capacity)],
     [say("venuesPage.colOpened"), v.opened],
-    [say("venuesPage.colClosed"), v.closed],
-    [say("venuesPage.colRoof"), v.roof && v.roof in ROOF_KEY ? say(ROOF_KEY[v.roof as keyof typeof ROOF_KEY]) : v.roof],
-    [say("venuesPage.colSurface"), v.surface],
+    [say("venuesPage.colClosed"), closedFact],
+    [say("venuesPage.colRoof"), roofWord(v.roof, say)],
+    [say("venuesPage.colSurface"), surfaceFact],
     [say("venue.owner"), v.owner],
     [say("venue.address"), v.address ? (v.addressHref ? <AddressLink href={v.addressHref} label={say("address.openMap", { address: v.address })}>{v.address}</AddressLink> : v.address) : null],
     [say("venues.wikipedia"), v.wiki ? link(v.wiki, say("map.wikiOpens", { venue: v.name })) : null],
@@ -227,6 +238,29 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
               </figure>
             ))}
           </div>
+        </section>
+      ) : null}
+
+      {history("surface").length || history("roof").length ? (
+        <section className="section">
+          <h2>{say("venue.periodHead")}</h2>
+          {(["surface", "roof"] as const).map((kind) => history(kind).length ? (
+            <div key={kind}>
+              <h3>{say(kind === "surface" ? "venuesPage.colSurface" : "venuesPage.colRoof")}</h3>
+              <ul className="venuenameslist">
+                {history(kind).map((p) => {
+                  const raw = periodRaw(p, word(p)), years = periodYears(p, today);
+                  return (
+                    <li key={`${kind}-${p.seq}`}>
+                      <b>{word(p)}{raw ? `: ${raw}` : ""}</b>
+                      {years || p.sport ? <span>{[years, p.sport ? leagueName(p.sport) : null].filter(Boolean).join(" · ")}</span> : null}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null)}
+          <p className="note">{say("venue.periodNote")}</p>
         </section>
       ) : null}
 
