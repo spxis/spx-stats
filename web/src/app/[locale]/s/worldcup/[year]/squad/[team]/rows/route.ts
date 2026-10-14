@@ -9,7 +9,7 @@ import { squadLine } from "@/lib/soccerSquad";
 // One team's squad at a tournament as JSON (/worldcup/2022/squad/argentina/rows): what a closed list on the tournament page loads when it is
 // opened (components/LazySquad.tsx), so the page itself holds no squads. Kept like the page (an hour, drawn on its first request); the language
 // is the route's, like the page's, and only the position names depend on it. No query is read.
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

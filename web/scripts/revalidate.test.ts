@@ -80,14 +80,16 @@ test("every kept page, route and read lives a day (86400); only the signed-in pa
   for (const { f, text } of sourceFiles) {
     for (const m of text.matchAll(/export const revalidate = (\S+?);/g)) {
       seen.push(f);
-      const want = f.startsWith("app/(dyn)/") ? "0" : "86400";
-      assert.equal(m[1], want, `${f}: segment config revalidate must be the literal ${want}`);
+      if (f.startsWith("app/(dyn)/")) assert.equal(m[1], "0", `${f}: a signed-in page is drawn per request`);
+      // Static files that read no database (flags, drawings) may live longer than a day, never shorter.
+      else assert.ok(/^\d+$/.test(m[1] ?? "") && Number(m[1]) >= 86400, `${f}: segment config revalidate must be a literal of at least 86400, not ${m[1]}`);
     }
     assert.doesNotMatch(text, /revalidate:\s*3600\b/, `${f}: a one-hour read time`);
     assert.doesNotMatch(text, /revalidate\s*=\s*3600\b/, `${f}: a one-hour page time`);
   }
   assert.ok(seen.length > 20, "found the kept pages");
   assert.ok(seen.includes("app/[locale]/layout.tsx"));
+  assert.match(readFileSync(new URL("app/[locale]/layout.tsx", SRC), "utf8"), /export const revalidate = 86400;/);
   assert.equal(REVALIDATE, 86400);
 });
 
