@@ -151,8 +151,8 @@ export function YearRange({ min, max, from, to, onChange, presets }: Props) {
     p.id === "all" ? say("range.all") : p.id === "last10" ? say("range.last10") : p.id === "peak" ? say("range.peak") : p.id === "spx" ? say("range.spx") : say("range.since", { year: p.year ?? p.from });
 
   return (
-    <div className="yr-wrap">
-    <div className="yr" role="group" aria-label={say("range.aria")}>
+    <div className="yr-wrap" role="group" aria-label={say("range.aria")}>
+    <div className="yr">
       <span className="yr-v" aria-hidden="true">{from}</span>
       <div ref={track} className="yr-track" data-panning={panning || undefined} onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}>
         <span className="yr-rail" />
@@ -175,12 +175,14 @@ export function YearRange({ min, max, from, to, onChange, presets }: Props) {
         {handle("end")}
       </div>
       <span className="yr-v" aria-hidden="true">{to}</span>
-      <button type="button" className="yr-reset" disabled={full} onClick={() => onChange(min, max, true)}>{say("range.reset")}</button>
     </div>
     <div className="yr-presets" role="group" aria-label={say("range.presets")}>
       {(presets ?? rangePresets(min, max)).map((p) => (
         <button key={`${p.from}-${p.to}`} type="button" className="yr-preset" aria-pressed={from === p.from && to === p.to} onClick={() => onChange(p.from, p.to, true)}>{labelOf(p)}</button>
       ))}
+    </div>
+    <div className="yr-end">
+      <button type="button" className="yr-reset" disabled={full} onClick={() => onChange(min, max, true)}>{say("range.reset")}</button>
     </div>
     </div>
   );

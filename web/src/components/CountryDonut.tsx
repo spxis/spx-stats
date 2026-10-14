@@ -3,15 +3,21 @@
 import Link from "next/link";
 import { arc, pie, type PieArcDatum } from "d3";
 import { useRef } from "react";
+import { focused, sliceStates } from "@/lib/countryFocus";
 import { fillHref } from "@/lib/countryRamp";
 import { countryName, pctText } from "@/lib/people-format";
 import { FlagIcon } from "./FlagIcon";
+import { useCountryFocus } from "./CountryScope";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import "./country.css";
 
 /** One slice: a country (`slot` picks its colour, 0 to 7), all the smaller ones together, or the players whose country is not known. */
-export interface Slice { code: string; n: number; kind?: "country" | "other" | "unknown"; slot?: number }
+export interface Slice {
+  code: string; n: number; kind?: "country" | "other" | "unknown"; slot?: number;
+  /** For the "other" slice: the codes of the countries in it, so choosing or pointing at one of them marks this slice. */
+  members?: string[];
+}
 
 export const slotColor = (s: Slice) => (s.kind === "other" ? "var(--kother)" : s.kind === "unknown" ? "var(--kunk)" : `var(--k${(s.slot ?? 0) % 8})`);
 
@@ -34,12 +40,17 @@ export function SliceName({ s, flags, hrefTpl }: { s: Slice; flags: Record<strin
 
 /**
  * A donut of players by country, with the total in the middle and a legend that holds every figure (the legend is the chart's table).
- * Hovering a slice names it; a legend name links where `hrefFor` says (the roster filtered to that country).
+ * Hovering a slice names it; a slice and a legend name link where `hrefTpl` says (the list filtered to that country). Inside a CountryScope the chosen
+ * country and the one under the pointer or focus are drawn out and the other slices dimmed, the legend row is marked, and "Other countries" opens the
+ * scope's list of more countries. A slice is a link (so it is reached by keyboard and works without script); the unknown ones do nothing.
  */
-export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hrefTpl }: {
+export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hrefTpl, compact = false }: {
   title: string; sub?: string; slices: Slice[]; flags: Record<string, true>; centre: string; centreSub: string; hrefTpl?: string;
+  /** A small donut (about 170 px) with its legend beside it, and no heading drawn (the title still names the chart for a screen reader). */
+  compact?: boolean;
 }) {
   const { say, fmt, locale } = useSpeaker();
+  const scope = useCountryFocus();
   const box = useRef<HTMLDivElement | null>(null);
   const tip = useTooltip(box);
   const shown = slices.filter((s) => s.n > 0);
@@ -48,18 +59,44 @@ export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hre
   const slice = arc<PieArcDatum<Slice>>().innerRadius(60).outerRadius(96).padAngle(shown.length > 1 ? 0.015 : 0).cornerRadius(2);
   const parts = pie<Slice>().sort(null).value((s) => s.n)(shown);
   const nameOf = (s: Slice) => (s.kind === "other" ? say("country.other") : s.kind === "unknown" ? say("country.unknown") : countryName(s.code, locale));
+  const codes = focused(scope.chosen, scope.hover);
+  const states = sliceStates(shown, codes);
+  const stateOf = new Map(shown.map((s, i) => [s, states[i]]));
+  const openMore = () => {
+    scope.setMoreOpen(true);
+    box.current?.closest(".cscope")?.querySelector(".pchips")?.scrollIntoView({ block: "nearest", behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth" });
+  };
+  const inOther = (s: Slice) => (s.kind === "other" && s.members ? codes.filter((c) => s.members!.includes(c)) : []);
   return (
     <div className="donutbox" style={{ alignItems: "stretch" }}>
-      <h3>{title}</h3>
+      <h3 className={compact ? "cvh" : undefined}>{title}</h3>
       {sub ? <p className="note">{sub}</p> : null}
-      <div className="cdonut">
+      <div className={compact ? "cdonut compact" : "cdonut"}>
         <div className="chart" ref={box}>
-          <svg viewBox="0 0 200 200" role="img" aria-label={`${title}: ${shown.map((s) => `${nameOf(s)} ${fmt(s.n)}`).join(", ")}`}>
+          <svg viewBox="0 0 200 200" role="group" aria-label={`${title}: ${shown.map((s) => `${nameOf(s)} ${fmt(s.n)}`).join(", ")}`}>
             <g transform="translate(100,100)">
-              {parts.map((d) => (
-                <path key={`${d.data.kind}-${d.data.code}`} d={slice(d) ?? undefined} fill={slotColor(d.data)}
-                  onMouseMove={(ev) => tip.show(ev, <TipLines title={nameOf(d.data)} lines={[`${fmt(d.data.n)} · ${pc(d.data.n)}`]} />)} onMouseLeave={tip.hide} />
-              ))}
+              {parts.map((d) => {
+                const s = d.data;
+                const st = stateOf.get(s) ?? "";
+                const [cx, cy] = slice.centroid(d);
+                const len = Math.hypot(cx, cy) || 1;
+                const style = st === "on" ? { transform: `translate(${(cx / len) * 6}px, ${(cy / len) * 6}px)` } : undefined;
+                const attrs = { className: "dslice", style, "data-on": st === "on" ? "" : undefined, "data-dim": st === "dim" ? "" : undefined };
+                const path = (
+                  <path d={slice(d) ?? undefined} fill={slotColor(s)}
+                    onMouseMove={(ev) => tip.show(ev, <TipLines title={nameOf(s)} lines={[`${fmt(s.n)} · ${pc(s.n)}`]} />)} onMouseLeave={tip.hide} />
+                );
+                if (!s.kind && hrefTpl) {
+                  return <Link key={`${s.kind}-${s.code}`} href={fillHref(hrefTpl, s.code)} prefetch={false} data-country={s.code} aria-label={say("country.mapShow", { name: nameOf(s) })} {...attrs}>{path}</Link>;
+                }
+                if (s.kind === "other" && scope.hasMore) {
+                  return (
+                    <g key={`${s.kind}-${s.code}`} role="button" tabIndex={0} aria-label={say("country.otherOpen", { n: fmt(s.n) })} onClick={openMore}
+                      onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openMore(); } }} {...attrs}>{path}</g>
+                  );
+                }
+                return <g key={`${s.kind}-${s.code}`} {...attrs}>{path}</g>;
+              })}
             </g>
             <text className="big" x={100} y={104}>{centre}</text>
             <text className="sub" x={100} y={122}>{centreSub}</text>
@@ -67,14 +104,21 @@ export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hre
           {tip.element}
         </div>
         <ul className="clegend" aria-label={title}>
-          {shown.map((s) => (
-            <li key={`${s.kind}-${s.code}`}>
-              <KDot s={s} />
-              <span className="nm"><SliceName s={s} flags={flags} hrefTpl={hrefTpl} /></span>
-              <span className="n">{fmt(s.n)}</span>
-              <span className="pc">{pc(s.n)}</span>
-            </li>
-          ))}
+          {shown.map((s) => {
+            const st = stateOf.get(s) ?? "";
+            const holds = inOther(s);
+            return (
+              <li key={`${s.kind}-${s.code}`} data-country={s.kind ? undefined : s.code} data-on={st === "on" ? "" : undefined}>
+                <KDot s={s} />
+                <span className="nm">
+                  {s.kind === "other" && scope.hasMore ? <button type="button" className="linklike" onClick={openMore}>{nameOf(s)}</button> : <SliceName s={s} flags={flags} hrefTpl={hrefTpl} />}
+                  {holds.length ? <span className="note"> · {say("country.otherHas", { name: holds.map((c) => countryName(c, locale)).join(", ") })}</span> : null}
+                </span>
+                <span className="n">{fmt(s.n)}</span>
+                <span className="pc">{pc(s.n)}</span>
+              </li>
+            );
+          })}
         </ul>
       </div>
     </div>

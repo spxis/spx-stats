@@ -2,7 +2,9 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { colorsOf } from "@/lib/countryRamp";
+import { focusColors } from "@/lib/countryFocus";
 import { CountryMap } from "./CountryMap";
+import { useCountryFocus } from "./CountryScope";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { chizu } from "./mapDraw";
 import "./country.css";
@@ -21,15 +23,27 @@ export function CountryMapDialog({ counts, flags, hrefTpl, title, caption, unit,
   const dlg = useRef<HTMLDialogElement>(null);
   const [open, setOpen] = useState(false);
   const [hidden, setHidden] = useState(false);
+  const scope = useCountryFocus();
   const colors = useMemo(() => colorsOf(counts), [counts]);
+  const [drawn, setDrawn] = useState(0);
   useEffect(() => { if (open) dlg.current?.showModal(); }, [open]);
   useEffect(() => {
     let live = true;
     chizu().then(({ WORLD, drawChizu }) => {
-      if (live && thumb.current) thumb.current.innerHTML = drawChizu(WORLD, { colors, language: locale === "ja" ? "ja" : "en", style: true, label: title });
+      if (live && thumb.current) { thumb.current.innerHTML = drawChizu(WORLD, { colors, language: locale === "ja" ? "ja" : "en", style: true, label: title }); setDrawn((n) => n + 1); }
     }).catch(() => { if (live) setHidden(true); });
     return () => { live = false; };
   }, [colors, locale, title]);
+  // The chosen country and the one under the pointer, painted into the drawing already on the page (no redraw): each country's `--cz-color`.
+  useEffect(() => {
+    const el = thumb.current;
+    if (!el || !drawn) return;
+    const next = focusColors(colors, scope.chosen, scope.hover, scope.accent());
+    el.querySelectorAll<SVGGElement>("g.cz-region[data-code]").forEach((g) => {
+      const c = next[g.getAttribute("data-code") ?? ""];
+      if (c) g.style.setProperty("--cz-color", c); else g.style.removeProperty("--cz-color");
+    });
+  }, [drawn, colors, scope]);
   if (hidden) return null;
   return (
     <div className={wide ? "cmapthumb wide" : "cmapthumb"}>

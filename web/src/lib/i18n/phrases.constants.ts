@@ -1881,6 +1881,8 @@ export const PHRASES = {
   "country.total": "Total",
   "country.players": "players",
   "country.mapShow": "Show players from {name}",
+  "country.otherOpen": "Other countries ({n} players): show the list of countries",
+  "country.otherHas": "includes {name}",
   "country.mapNoPlayers": "No players from here.",
   "country.mapPress": "Press a country to see its players.",
   "country.mapEmpty": "No players with a known country.",

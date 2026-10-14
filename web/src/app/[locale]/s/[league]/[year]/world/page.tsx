@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CountryDonut, type Slice } from "@/components/CountryDonut";
+import { CountryScope } from "@/components/CountryScope";
 import { CountryMap } from "@/components/CountryMap";
 import { Credits } from "@/components/Credits";
 import { FlagIcon } from "@/components/FlagIcon";
@@ -63,7 +64,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
   const { top, other } = withOther(t.list, 6);
   const slices: Slice[] = [
     ...top.map((c, i) => ({ code: c.code, n: c.n, slot: i })),
-    ...(other ? [{ code: "other", n: other, kind: "other" as const }] : []),
+    ...(other ? [{ code: "other", n: other, kind: "other" as const, members: t.list.slice(6).map((c) => c.code) }] : []),
     ...(t.unknown ? [{ code: UNKNOWN, n: t.unknown, kind: "unknown" as const }] : []),
   ];
   const flags = flagCodes(t.list.map((c) => c.code));
@@ -97,6 +98,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
         [say("country.figKnown"), t.total ? pctText(t.known / t.total, locale, 0) : "—"],
       ]} />
       <section className="section">
+        <CountryScope>
         <div className="chartrow">
           <CountryDonut title={say("country.leagueDonut", { league: LG[lg], season })} slices={slices} flags={flags} centre={fmt(t.total)} centreSub={say("country.players")} hrefTpl={`/players?league=${lg}&nat={code}&from=${y}&to=${y}`} />
           <div>
@@ -104,6 +106,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
             <CountryMap counts={counts} flags={flags} hrefTpl={`/players?league=${lg}&nat={code}&from=${y}&to=${y}`} label={say("country.leagueMapLabel", { league: `${LG[lg]} ${season}` })} unit="players" />
           </div>
         </div>
+        </CountryScope>
       </section>
       <section className="section">
         <h2>{say("country.byTeamSeason", { season })}</h2>

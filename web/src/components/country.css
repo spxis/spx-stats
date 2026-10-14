@@ -55,7 +55,7 @@
 .cmapthumb { position: relative; width: min(100%, 300px); }
 .cmapthumb > button { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); background: var(--soft); cursor: zoom-in; }
 .cmapthumb.wide { width: 100%; }
-.cmapthumb .thumbbox { aspect-ratio: 1.7; width: 100%; pointer-events: none; }
+.cmapthumb .thumbbox { aspect-ratio: 1.7; width: 100%; }
 .cmapthumb .thumbbox svg { display: block; width: 100%; height: 100%; }
 .cmapthumb .cap { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
 .cmapdlg .cmap-host { max-width: calc(62vh * 2.04); margin-inline: auto; }
@@ -107,3 +107,38 @@
 .pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px 28px; align-items: start; }
 @media (max-width: 760px) { .pc-row { grid-template-columns: minmax(0, 1fr); } }
 @media (max-width: 480px) { .pchips a { padding: 0 8px; } }
+
+/* The highlight shared by chips, donut, legend and map (CountryScope): the chosen country (?nat=) and the one under the pointer or focus. */
+.cscope { min-width: 0; }
+.cdonut .dslice { transition: opacity .15s ease, transform .15s ease; cursor: pointer; outline: none; }
+.cdonut g.dslice:not([role="button"]) { cursor: default; }
+.cdonut .dslice[data-dim] { opacity: .3; }
+.cdonut .dslice:focus-visible path { stroke: var(--ink); stroke-width: 3px; }
+.clegend li { border-left: 3px solid transparent; padding-left: 5px; transition: background-color .15s ease, border-color .15s ease; }
+.clegend li[data-on] { border-left-color: var(--accent); background: color-mix(in srgb, var(--accent) 10%, transparent); font-weight: 600; }
+.clegend .linklike { all: unset; cursor: pointer; }
+.clegend .linklike:hover { text-decoration: underline; }
+.clegend .linklike:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.pchips a[data-hover]:not([aria-current]) { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 12%, var(--panel)); }
+@media (prefers-reduced-motion: reduce) { .cdonut .dslice, .clegend li { transition: none; } }
+
+/* /players: one block of filters (every control the one --control-h, one gap), the list, then a small strip of donut and map under it */
+.page > .head.tight { margin-bottom: -16px; }
+.plist { gap: 12px; }
+.pfilters { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.pfilters .controls { gap: 8px 12px; }
+.pfilters .azrow { margin-top: 0; gap: 8px 12px; }
+.pfilters .pchips { margin: 0; gap: 4px; }
+.pfilters .listrange { margin: 0; }
+.pfilters .yr-wrap { margin-bottom: 0; }
+.note.small { font-size: 13px; }
+.cvh { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0; }
+.pcountries { display: flex; flex-direction: column; gap: 10px; margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--rule); min-width: 0; }
+.pstrip { display: flex; flex-wrap: wrap; gap: 12px 40px; align-items: center; }
+.pstrip .donutbox { flex: 0 1 auto; }
+.pcountries .psub { font-size: 16px; margin-top: 4px; }
+.cdonut.compact { grid-template-columns: 170px minmax(0, 220px); gap: 8px 16px; }
+.cdonut.compact .clegend { font-size: 13px; gap: 0; }
+.cdonut.compact .clegend li { min-height: 20px; }
+.cdonut.compact .chart { width: 170px; max-width: 100%; }
+@media (max-width: 520px) { .cdonut.compact { grid-template-columns: 1fr; justify-items: start; } .pstrip { gap: 16px; } }

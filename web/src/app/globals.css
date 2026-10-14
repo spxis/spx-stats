@@ -167,7 +167,7 @@
   .usermenu-lang { padding: 8px 14px; border-top: 1px solid var(--rule); font-size: 14px; }
 
   .page { max-width: 1180px; margin-inline: auto; padding-block: 28px 40px; display: flex; flex-direction: column; gap: 32px; min-height: 60vh; }
-  .lede { color: var(--muted); font-size: 18px; }
+  .lede { color: var(--muted); font-size: 18px; max-width: min(100%, 120ch); }
   .eyebrow { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
   .head { display: flex; flex-direction: column; gap: 10px; position: relative; }
   .section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }

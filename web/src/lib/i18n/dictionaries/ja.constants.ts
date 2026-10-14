@@ -1670,6 +1670,8 @@ export const JA: Dictionary = {
   "country.total": "合計",
   "country.players": "選手",
   "country.mapShow": "{name}の選手を見る",
+  "country.otherOpen": "その他の国（{n}人）：国の一覧を表示",
+  "country.otherHas": "{name}を含む",
   "country.mapNoPlayers": "この国の選手はいません。",
   "country.mapPress": "国を押すと、その国の選手が表示されます。",
   "country.mapEmpty": "国がわかる選手はいません。",

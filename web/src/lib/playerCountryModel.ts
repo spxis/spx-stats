@@ -74,12 +74,12 @@ export function chipSplit(list: readonly Count[], chosen: string, keep = 8): { s
 }
 
 /** One slice of the donut: the `keep` biggest countries (each its own colour slot), the others together, and the unknown ones. */
-export interface PlayerSlice { code: string; n: number; kind?: "country" | "other" | "unknown"; slot?: number }
+export interface PlayerSlice { code: string; n: number; kind?: "country" | "other" | "unknown"; slot?: number; members?: string[] }
 export function slicesOf(t: Tally, keep = 6): PlayerSlice[] {
   const { top, other } = withOther(t.list, keep);
   return [
     ...top.map((c, i) => ({ code: c.code, n: c.n, slot: i })),
-    ...(other ? [{ code: "other", n: other, kind: "other" as const }] : []),
+    ...(other ? [{ code: "other", n: other, kind: "other" as const, members: t.list.slice(keep).map((c) => c.code) }] : []),
     ...(t.unknown ? [{ code: UNKNOWN, n: t.unknown, kind: "unknown" as const }] : []),
   ];
 }

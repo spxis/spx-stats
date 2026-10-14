@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { CountryArea } from "@/components/CountryArea";
 import { CountryDonut, type Slice } from "@/components/CountryDonut";
+import { CountryScope } from "@/components/CountryScope";
 import { CountryMapDialog } from "@/components/CountryMapDialog";
 import { CountryRanker } from "@/components/CountryRanker";
 import { Credits } from "@/components/Credits";
@@ -29,7 +30,7 @@ export async function FranchiseCountries({ lg, f, name }: { lg: string; f: numbe
   const { top, other } = withOther(t.list, KEEP);
   const slices: Slice[] = [
     ...top.map((c, i) => ({ code: c.code, n: c.n, slot: i })),
-    ...(other ? [{ code: "other", n: other, kind: "other" as const }] : []),
+    ...(other ? [{ code: "other", n: other, kind: "other" as const, members: t.list.slice(KEEP).map((c) => c.code) }] : []),
     ...(t.unknown ? [{ code: UNKNOWN, n: t.unknown, kind: "unknown" as const }] : []),
   ];
   const keep = top.map((c) => c.code);
@@ -47,6 +48,7 @@ export async function FranchiseCountries({ lg, f, name }: { lg: string; f: numbe
   const title = say("country.franchiseMapTitle", { name });
   return (
     <section className="section" id="countries">
+      <CountryScope>
       <h2>{say("country.teamTitle")}</h2>
       <p className="note">{say("country.franchiseLede", { known: plural("count.players", t.known), total: fmt(t.total), countries: plural("count.countries", t.list.length) })}</p>
       <div className="chartrow">
@@ -70,6 +72,7 @@ export async function FranchiseCountries({ lg, f, name }: { lg: string; f: numbe
       <p className="note">{say("country.noteSource")} <Credits say={say} use={["maps"]} /></p>
       {t.unknown ? <p className="note">{say("country.unknownNote", { n: plural("count.players", t.unknown) })}</p> : null}
       <p className="note"><Link href={`/${lg}/world`} prefetch={false}>{say("country.leagueLink", { league: lg.toUpperCase() })}</Link> · <Link href="/countries" prefetch={false}>{say("country.allLink")}</Link></p>
+      </CountryScope>
     </section>
   );
 }

@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.106.0",
+  "version": "0.107.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -52,6 +52,7 @@
     "test:letters": "node --test scripts/letters.test.ts",
     "test:playercountries": "node --test scripts/playerCountries.test.ts",
     "test:playerteams": "node --test scripts/playerTeams.test.ts",
+    "test:countryfocus": "node --test scripts/countryFocus.test.ts",
     "test:player": "node --test scripts/player.test.ts",
     "test:soccer": "node --test scripts/soccer.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",

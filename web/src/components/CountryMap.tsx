@@ -4,7 +4,9 @@ import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { ChizuMount } from "@johnmorrisdotca/chizu/mount";
 import { colorsOf, fillHref, RAMP } from "@/lib/countryRamp";
+import { focusColors } from "@/lib/countryFocus";
 import { countryName, joinList } from "@/lib/people-format";
+import { useCountryFocus } from "./CountryScope";
 import { FlagIcon } from "./FlagIcon";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./country.css";
@@ -24,7 +26,10 @@ export function CountryMap({ counts, flags, hrefTpl, label, unit, empty }: {
   const mount = useRef<ChizuMount | null>(null);
   const [picked, setPicked] = useState<string | null>(null);
   const [off, setOff] = useState<string[]>([]);
-  const colors = useMemo(() => colorsOf(counts), [counts]);
+  const scope = useCountryFocus();
+  const base = useMemo(() => colorsOf(counts), [counts]);
+  // The ramp, with the chosen country in the accent (the others greyed) and the one under the pointer lightened.
+  const colors = useMemo(() => focusColors(base, scope.chosen, scope.hover, scope.accent()), [base, scope]);
   const latest = useRef(colors);
   useEffect(() => { latest.current = colors; mount.current?.set({ colors }); }, [colors]);
   const entries = useMemo(() => Object.entries(counts).filter(([, n]) => n > 0).sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])), [counts]);

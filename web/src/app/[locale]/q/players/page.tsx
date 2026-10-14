@@ -3,7 +3,8 @@ import Link from "next/link";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
 import { LetterBar } from "@/components/LetterBar";
-import { PlayerCountries } from "@/components/PlayerCountries";
+import { CountryScope } from "@/components/CountryScope";
+import { moreChips, PlayerCountries } from "@/components/PlayerCountries";
 import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
@@ -17,7 +18,7 @@ import { countryName, positionsText } from "@/lib/people-format";
 import { readLetter } from "@/lib/listQuery";
 import { getLetterCounts, getPlayerPage, PLAYER_SORTS, playerSpan, searchWords } from "@/lib/playerIndex";
 import { getPlayerCountries, getReferenceCountries } from "@/lib/playerCountries";
-import { referenceOf, type CountryFilters } from "@/lib/playerCountryModel";
+import { coverage, referenceOf, type CountryFilters } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { getPlayerTeams, playerTeamsReady } from "@/lib/playerTeams";
 import { split, stintLine } from "@/lib/playerTeamModel";
@@ -123,13 +124,13 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
     { key: "awards", label: say("players.colAwards"), num: true, rest: "award_count", get: (p: PlayerIndexRow) => p.award_count, cell: (p: PlayerIndexRow) => fmt(p.award_count) },
   ], (p) => p.person_id) : null;
 
-  return (
+  // The country filter is a row of chips among the other filters; the donut and the map are a small strip under the list. They share one scope, so a country
+  // pointed at or chosen is lit in both. Without the chips (the country is known for too few players) a chosen country still needs a line to say so.
+  const chipsShown = !!countries && coverage(countries) !== "none";
+  const reference = refKind && refTally ? { kind: refKind, tally: refTally } : null;
+  const body = (
     <>
-      <section className="head fade">
-        <h1>{say("players.title")}</h1>
-        <p className="lede">{say("players.lede")}</p>
-      </section>
-      <section className="section">
+      <div className="pfilters">
         <div className="controls">
           <nav className="seg views" aria-label={say("players.leagueAria")}>
             {[{ code: "", short: say("phase.all") }, ...LEAGUES].map((l) => (
@@ -140,11 +141,11 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
           <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(teamSlug ? { team: teamSlug } : {}), ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
         </div>
         <LetterBar say={say} plural={plural} letter={letter} by={letterBy} counts={counts} href={href} />
-        {team !== undefined ? <p className="note">{say("players.teamOnly", { name: slugs?.leagues[league]?.clubs.get(team)?.name ?? teamSlug })} · <Link href={href({ team: null })} prefetch={false}>{say("players.teamAll")}</Link></p> : null}
-        {nat ? <p className="note"><Flag code={nat} shape="round" /> {say("players.countryOnly", { name: countryName(nat, locale) })} · <Link href={href({ nat: null })} prefetch={false}>{say("players.countryClear")}</Link></p> : null}
+        {countries ? <PlayerCountries part="chips" t={countries} reference={reference} league={league} chosen={nat} href={href} /> : null}
+        {nat && !chipsShown ? <p className="note"><Flag code={nat} shape="round" /> {say("players.countryOnly", { name: countryName(nat, locale) })} · <Link href={href({ nat: null })} prefetch={false}>{say("players.countryClear")}</Link></p> : null}
         {span ? <ListRange page="/players" min={span.min} max={span.max} from={range?.from ?? span.min} to={range?.to ?? span.max} inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))} /> : null}
-        {countries ? <PlayerCountries t={countries} reference={refKind && refTally ? { kind: refKind, tally: refTally } : null} league={league} chosen={nat} href={href} /> : null}
-        <div className="yr-hold">
+      </div>
+      <div className="yr-hold">
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>
             <p className="note">{plural("count.players", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
@@ -158,11 +159,23 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
                 {data.page < data.pages ? <Link href={to(data.pages)} prefetch={false}>{say("players.last") + " »"}</Link> : null}
               </nav>
             ) : null}
+            {countries ? <PlayerCountries part="strip" t={countries} reference={reference} league={league} chosen={nat} href={href} /> : null}
             {book.key()}
-            <p className="note"><Credits say={say} use={["flags"]} /></p>
+            <p className="note small"><Credits say={say} use={["flags"]} /></p>
           </>
         ) : <p className="note">{say("players.none")}</p>}
-        </div>
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <section className="head fade tight">
+        <h1>{say("players.title")}</h1>
+        <p className="lede">{say("players.lede")}</p>
+      </section>
+      <section className="section plist">
+        {chipsShown ? <CountryScope chosen={nat} more={moreChips(countries!, nat) > 0}>{body}</CountryScope> : body}
       </section>
     </>
   );

@@ -1,9 +1,10 @@
 /* The teams list (/teams): its filters, the conference and division bar, the table's own columns and the map in the corner. Tokens come from globals.css. */
 .teamfind input[type="search"] { width: min(300px, 100%); }
-.teamshead .lede { max-width: 70ch; }
 /* The small map sits in the top-right corner of the heading (city.css gives it its box); the heading text keeps clear of it. */
 @media (min-width: 641px) {
   .teamshead:has(.citymap) h1, .teamshead:has(.citymap) .lede, .teamshead:has(.citymap) .note { max-width: calc(100% - 240px); }
+  /* the map's own caption is a .note inside the heading: it is not held clear of itself */
+  .teamshead .citymap .note { max-width: none; }
 }
 
 /* Conferences and divisions of the league on show: a labelled row of choices each, wrapping on a narrow screen. */

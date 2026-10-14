@@ -1670,6 +1670,8 @@ export const FR: Dictionary = {
   "country.total": "Total",
   "country.players": "joueurs",
   "country.mapShow": "Voir les joueurs : {name}",
+  "country.otherOpen": "Autres pays ({n} joueurs) : afficher la liste des pays",
+  "country.otherHas": "comprend {name}",
   "country.mapNoPlayers": "Aucun joueur de ce pays.",
   "country.mapPress": "Touchez un pays pour voir ses joueurs.",
   "country.mapEmpty": "Aucun joueur dont le pays est connu.",

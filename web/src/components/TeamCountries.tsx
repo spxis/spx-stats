@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Flag } from "@/components/Flag";
 import { CountryDonut, type Slice } from "@/components/CountryDonut";
+import { CountryScope } from "@/components/CountryScope";
 import { CountryMapDialog } from "@/components/CountryMapDialog";
 import { CountryRanker } from "@/components/CountryRanker";
 import { Credits } from "@/components/Credits";
@@ -45,7 +46,7 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
   const { top, other } = withOther(t.list, KEEP);
   const slices: Slice[] = [
     ...top.map((c, i) => ({ code: c.code, n: c.n, slot: i })),
-    ...(other ? [{ code: "other", n: other, kind: "other" as const }] : []),
+    ...(other ? [{ code: "other", n: other, kind: "other" as const, members: t.list.slice(KEEP).map((c) => c.code) }] : []),
     ...(t.unknown ? [{ code: UNKNOWN, n: t.unknown, kind: "unknown" as const }] : []),
   ];
 
@@ -58,6 +59,9 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
   const flags = flagCodes(t.list.map((c) => c.code));
   const countsRecord = Object.fromEntries(t.list.map((c) => [c.code, c.n]));
   const pc = (v: number) => pctText(v, locale);
+  // The country the roster below is filtered to (?nat=) stays highlighted in the donut and the map.
+  const natParam = Array.isArray(sp.nat) ? sp.nat[0] : sp.nat;
+  const chosen = natParam && /^[A-Za-z]{2}$/.test(natParam) ? natParam.toUpperCase() : null;
 
   const kinds = STAT_GROUP_ORDER.filter((k) => roster.some((p) => p.kind === k));
   const ranked = (limited ? [] : kinds).map((k) => {
@@ -71,6 +75,7 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
   const mapTitle = say("country.teamMapTitle", { season });
   return (
     <section className="section" id="countries">
+      <CountryScope chosen={chosen}>
       <h2>{say("country.teamTitle")}</h2>
       <p className="note">{say("country.teamLede", { known: plural("count.players", t.known), total: fmt(t.total), countries: plural("count.countries", t.list.length) })}</p>
       <div className="chartrow">
@@ -110,6 +115,7 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
       <p className="note">{say("country.noteSource")} <Credits say={say} use={["maps"]} /></p>
       {t.unknown ? <p className="note">{say("country.unknownNote", { n: plural("count.players", t.unknown) })}</p> : null}
       <p className="note"><Link href="/countries" prefetch={false}>{say("country.allLink")}</Link></p>
+      </CountryScope>
     </section>
   );
 }
