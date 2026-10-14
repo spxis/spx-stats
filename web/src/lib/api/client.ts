@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { z } from "zod";
 import { queuedAtBuild } from "./buildShare";
 import { API_KEY, PAGE_SIZE, REST_URL, RETRY_REVALIDATE, REVALIDATE } from "./config";
+import { isTransient } from "./failure";
 import { tagsFor } from "./tags";
 
 /** A failed read of the archive (a busy or slow database, a bad answer). Pages show the inline "Couldn't load" note for it, not a 404 or 500. */
@@ -10,9 +11,12 @@ export class ApiError extends Error {
   name = "ApiError";
   /** The HTTP status the database answered with, when it answered. */
   status?: number;
-  constructor(message: string, status?: number) {
+  /** The database could not answer (5xx, timeout, network): see failure.ts for what a page does with it. */
+  transient: boolean;
+  constructor(message: string, status?: number, transient = false) {
     super(message);
     this.status = status;
+    this.transient = transient;
   }
 }
 
@@ -29,6 +33,7 @@ const TIMEOUT_MS = 8000;
  */
 const fetchPage = cache(async (view: string, query: string, from: number, size: number, count: boolean): Promise<Response> => {
   let last = "";
+  let threw = false;
   for (let attempt = 0; attempt < 2; attempt++) {
     if (attempt) await new Promise((r) => setTimeout(r, 300));
     try {
@@ -42,12 +47,15 @@ const fetchPage = cache(async (view: string, query: string, from: number, size: 
       const res = await queuedAtBuild(`${view}?${query}|${from}|${size}|${count}`, send);
       if (res.ok || (count && res.status === 416)) return res;
       last = String(res.status);
+      threw = false;
       if (res.status < 500) break;
     } catch (e) {
       last = e instanceof Error ? e.message : "network error";
+      threw = true;
     }
   }
-  throw new ApiError(`${view}: ${last}`, Number(last) || undefined);
+  const status = threw ? undefined : Number(last) || undefined;
+  throw new ApiError(`${view}: ${last}`, status, isTransient(status, threw));
 });
 
 async function get(view: string, query: string, from: number, size = PAGE_SIZE, count = false): Promise<Response> {

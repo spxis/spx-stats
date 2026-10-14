@@ -526,6 +526,8 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - Read `web/node_modules/next/dist/docs/` before writing Next.js code: this version differs from older ones.
   - Data comes from PostgREST (`Accept-Profile: api`) through server fetches with `next: { revalidate: 3600 }`,
     validated with Zod. A failed fetch shows an inline "Couldn't load" message.
+  - **A read the database could not answer** (5xx, timeout, network; `ApiError.transient`) makes the page throw in production, not draw "Couldn't load": Next keeps the last good copy of a kept page when its regeneration throws and retries on the next request (a build fails instead of baking the note). A path with no copy yet gets `error.tsx`, the same note with a retry button. 4xx answers and schema errors keep the inline note, as does `next dev` (`lib/api/failure.ts`, `pnpm test:failure`). Next cannot tell a first render from a regeneration, hence this rule.
+  - **Every read of `games` carries a season** (`year=eq.`): `api.games` reaches its league only through a join, so one without it scans all ~386k games and outlasts the 8 s limit. `getGameDay`, `getGameBounds` and `getGamesBetween` take the seasons from `season_summary` (`lib/gameSeasons.ts`, `pnpm test:seasons`).
   - `next build` draws pages in ~19 worker processes that do not share Next's data cache while it is cold, so each read used to
     go out once per worker. `web/src/lib/api/buildShare.ts` makes the workers queue per read (lock files under `.next/cache`) so
     it goes out once per build; it only acts while `NEXT_PHASE` is the production build (`SPX_BUILD_QUEUE=off` disables it).
