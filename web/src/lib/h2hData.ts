@@ -44,7 +44,7 @@ const TEAM_COLS = "game_id,year,game_date,phase,status,away_score,home_score,ove
 
 /**
  * Every regular-season and playoff game two franchises played each other, in slices of seasons (the seasons both played), each slice one
- * request that holds the ids of both clubs' seasons on both sides: a game is only ever between the two clubs of one season, so the slice
+ * request that holds the years and the ids of both clubs' seasons on both sides (the year bounds the read to those seasons' games): a game is only ever between the two clubs of one season, so the slice
  * returns exactly their meetings, whichever of them was at home. The page then filters by season, part of the season and venue.
  * a and b are validated integers.
  */
@@ -60,7 +60,7 @@ export const getPairHistory = cache(async (lg: string, a: number, b: number): Pr
   const years = [...ya.keys()].filter((y) => yb.has(y)).sort((p, q) => p - q);
   const slices = await limited(slicesOf(years, PAIR_SLICE).map((ys) => async () => {
     const ids = ys.flatMap((y) => [...ya.get(y)!, ...yb.get(y)!]).join(",");
-    const list = await rows("games", `league=eq.${lg}&phase=in.(regular,playoffs)&away_id=in.(${ids})&home_id=in.(${ids})&select=${PAIR_COLS}&order=game_date,game_id`, pairGameSchema);
+    const list = await rows("games", `league=eq.${lg}&year=in.(${ys.join(",")})&phase=in.(regular,playoffs)&away_id=in.(${ids})&home_id=in.(${ids})&select=${PAIR_COLS}&order=game_date,game_id`, pairGameSchema);
     return list.map((g): GameRow => ({ ...g, league: lg, checked: null, away_f: franchise.get(g.away_id) ?? null, home_f: franchise.get(g.home_id) ?? null }));
   }), SLICES_AT_ONCE);
   return slices.flat();
@@ -75,7 +75,7 @@ export const getTeamHistory = cache(async (lg: string, f: number): Promise<GameR
   const size = Math.max(1, Math.floor(900 / (SEASON_GAMES[lg as keyof typeof SEASON_GAMES] ?? 100)));
   const slices = await limited(slicesOf(seasons, size).map((ss) => async () => {
     const ids = ss.map((s) => s.team_season_id).join(",");
-    const list = await rows("games", `league=eq.${lg}&phase=in.(regular,playoffs)&or=(away_id.in.(${ids}),home_id.in.(${ids}))&select=${TEAM_COLS}&order=game_date,game_id`, teamGameSchema);
+    const list = await rows("games", `league=eq.${lg}&year=in.(${ss.map((s) => s.year).join(",")})&phase=in.(regular,playoffs)&or=(away_id.in.(${ids}),home_id.in.(${ids}))&select=${TEAM_COLS}&order=game_date,game_id`, teamGameSchema);
     return list.map((g): GameRow => ({ ...g, league: lg, away_id: 0, away: null, home_id: 0, home: null, source: "", checked: null }));
   }), SLICES_AT_ONCE);
   return slices.flat();

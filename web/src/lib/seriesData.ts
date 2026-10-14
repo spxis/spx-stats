@@ -11,17 +11,24 @@ import type { GameRow, StandingRow } from "./api/types";
 export const getPlayoffGames = cache(async (lg: string, y: number): Promise<GameRow[]> =>
   rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema));
 
-/** The team-season ids of two franchises in a league. a and b are validated integers. */
-const getTeamSeasonIds = cache(async (lg: string, a: number, b: number): Promise<[number[], number[]]> => {
+/** The team-season ids of two franchises in a league, in the seasons both played before `before`, and those seasons. a and b are validated integers. */
+const getSharedSeasons = cache(async (lg: string, a: number, b: number, before: number): Promise<{ ia: number[]; ib: number[]; years: number[] }> => {
   const list = await getFranchiseSeasons(lg, [a, b]);
-  const of = (f: number) => list.filter((r) => r.franchise_id === f).map((r) => r.team_season_id);
-  return [of(a), of(b)];
+  const of = (f: number) => list.filter((r) => r.franchise_id === f && r.year < before);
+  const [sa, sb] = [of(a), of(b)];
+  const both = new Set(sa.map((r) => r.year).filter((y) => sb.some((r) => r.year === y)));
+  return {
+    ia: sa.filter((r) => both.has(r.year)).map((r) => r.team_season_id),
+    ib: sb.filter((r) => both.has(r.year)).map((r) => r.team_season_id),
+    years: [...both].sort((p, q) => p - q),
+  };
 });
 
 /**
  * Every playoff game, before season `before`, of each season in which two franchises met in the playoffs, grouped by season (newest first,
  * each in the order played). The games between the two are whole rows; the others are only the columns that fix the shape of the bracket,
- * which is all the round of a series needs. Three small reads, none of which scans the league's games:
+ * which is all the round of a series needs. Three small reads, none of which scans the league's games (each is also bounded by the seasons it
+ * concerns, `year=in.(...)`, so the database does not look through the games of every other season):
  * - The games view works out each game's franchises row by row (a correlated lookup), so asking it for `away_f` and `home_f` reads every
  *   game of the league first (20 seconds when the cache is cold, and a statement timeout when the database is busy). Asking by team-season id
  *   (`away_id`, `home_id`) uses the indexes on those columns instead, one direction at a time so the two indexes can be combined.
@@ -29,11 +36,12 @@ const getTeamSeasonIds = cache(async (lg: string, a: number, b: number): Promise
  *   answer in parallel, and without the names and the per-row verification lookup.
  */
 export const getPastMeetingGames = cache(async (lg: string, a: number, b: number, before: number): Promise<Map<number, GameRow[]>> => {
-  const [ia, ib] = await getTeamSeasonIds(lg, a, b);
+  const { ia, ib, years: shared } = await getSharedSeasons(lg, a, b, before);
   const out = new Map<number, GameRow[]>();
   if (!ia.length || !ib.length) return out;
+  // The year list bounds the read to the seasons both clubs played: a game is only ever between two clubs of one season.
   const side = (x: number[], y: number[]) =>
-    rows("games", `league=eq.${lg}&year=lt.${before}&phase=eq.playoffs&away_id=in.(${x.join(",")})&home_id=in.(${y.join(",")})&select=*&order=game_date,game_id`, gameSchema);
+    rows("games", `league=eq.${lg}&year=in.(${shared.join(",")})&phase=eq.playoffs&away_id=in.(${x.join(",")})&home_id=in.(${y.join(",")})&select=*&order=game_date,game_id`, gameSchema);
   const pair = (await Promise.all([side(ia, ib), side(ib, ia)])).flat();
   const years = [...new Set(pair.map((g) => g.year))].sort((p, q) => q - p);
   if (!years.length) return out;
@@ -79,12 +87,14 @@ export const getLeaguePlayoffTeams = cache(async (lg: string, year?: number): Pr
   ]);
   const champOf = new Map(champs.map((c) => [c.year, c.champion_franchise]));
   const club = new Map<number, { franchise_id: number; team: string | null }>(clubs.map((c) => [c.team_id, c]));
-  const ids = clubs.filter((c) => champOf.get(c.year) === c.franchise_id).map((c) => c.team_id);
+  const yearOf = new Map<number, number>();
+  const ids = clubs.filter((c) => champOf.get(c.year) === c.franchise_id).map((c) => { yearOf.set(c.team_id, c.year); return c.team_id; });
   // A champion from outside the league's own table (the 1925 Victoria Cougars) is not in the standings: find its team season directly.
   const listed = new Set(clubs.filter((c) => champOf.get(c.year) === c.franchise_id).map((c) => c.year));
   const missing = [...champOf].filter(([y]) => !listed.has(y));
   const found = await limited(missing.map(([y, f]) => () =>
     rows("team_season_identity", `league=eq.${lg}&year=eq.${y}&franchise_id=eq.${f}&select=team_season_id,franchise_id,team`, identitySchema)), 3);
+  for (const [i, rs] of found.entries()) for (const r of rs) yearOf.set(r.team_season_id, missing[i][0]);
   for (const r of found.flat()) {
     club.set(r.team_season_id, r);
     ids.push(r.team_season_id);
@@ -92,7 +102,7 @@ export const getLeaguePlayoffTeams = cache(async (lg: string, year?: number): Pr
   if (!ids.length) return [];
   const jobs = slicesOf(ids, CHAMPS_PER_SLICE).flatMap((slice) =>
     (["away_id", "home_id"] as const).map((side) => () =>
-      rows("games", `league=eq.${lg}&phase=eq.playoffs&${side}=in.(${slice.join(",")})&select=year,game_date,away_id,home_id&order=game_id`, champGameSchema)));
+      rows("games", `league=eq.${lg}&year=in.(${[...new Set(slice.map((id) => yearOf.get(id)))].join(",")})&phase=eq.playoffs&${side}=in.(${slice.join(",")})&select=year,game_date,away_id,home_id&order=game_id`, champGameSchema)));
   const games = (await limited(jobs, 2)).flat();
   const unnamed = [...new Set(games.flatMap((g) => [g.away_id, g.home_id]))].filter((id) => !club.has(id));
   for (const slice of slicesOf(unnamed, 100)) {
