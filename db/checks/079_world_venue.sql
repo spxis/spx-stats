@@ -1,5 +1,5 @@
 -- what: world soccer stadiums (scripts/world_stadiums/): a pitch size for an item that is not a venue, a pitch size that a football pitch cannot have, a venue
---       that closed before it opened, a soccer match with a venue_id but no Wikidata id, and a match whose venue_id is not the venue of its Wikidata id (or of
+--       that closed before it opened, a soccer match with a venue_id but no Wikidata id whose venue has no exact name of the match's stadium (db/build/207 fills those by name) or is in another city, and a match whose venue_id is not the venue of its Wikidata id (or of
 --       the item in the VALUES list below, the same four pairs as db/seed/soccer_venue_fix.csv). One plain query, as release.py needs.
 -- baseline: 0
 select 'pitch for an item that is not a venue: ' || p.wikidata_id as problem
@@ -14,9 +14,14 @@ select 'venue closed before it opened: ' || v.source_key
 from core.venue v
 where v.opened_on is not null and v.closed_on is not null and v.closed_on < v.opened_on
 union all
-select 'soccer match venue_id without a Wikidata id: ' || m.source_key
+select 'soccer match venue_id without a Wikidata id or an exact venue name: ' || m.source_key
 from core.soccer_match m
 where m.venue_id is not null and m.venue_wikidata_id is null
+  and not exists (select 1 from core.venue_name n where n.venue_id = m.venue_id and core.fold_text(n.name) = core.fold_text(m.venue_name))
+union all
+select 'soccer match venue_id in another city than the match: ' || m.source_key || ' ' || m.venue_city || ' -> ' || v.city
+from core.soccer_match m join core.venue v on v.venue_id = m.venue_id
+where m.venue_wikidata_id is null and nullif(core.fold_text(m.venue_city), '') is not null and core.fold_text(v.city) <> core.fold_text(m.venue_city)
 union all
 select 'soccer match venue_id of another item: ' || m.source_key || ' ' || m.venue_wikidata_id || ' -> ' || v.source_key
 from core.soccer_match m
