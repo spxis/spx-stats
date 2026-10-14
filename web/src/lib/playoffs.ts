@@ -3,7 +3,7 @@ import { getSeasonAlignment } from "./alignmentData";
 import { buildBracket } from "./bracket";
 import { getBrands } from "./data";
 import type { Say } from "./seriesCopy";
-import { describeRounds, deriveSeries, roundTitle, type Series } from "./series";
+import { describeRounds, deriveSeries, roundTitle, seriesTies, type Series } from "./series";
 import { getPastMeetingGames, getPlayoffGames } from "./seriesData";
 
 /** A season's playoff series, their rounds and the shape of the bracket (halves by conference where the alignment gives them). */
@@ -12,7 +12,7 @@ export async function loadPlayoffs(lg: string, year: number, say: Say) {
   const series = deriveSeries(lg, year, games);
   const { round, names, final } = describeRounds(lg, year, series, say);
   const conf = new Map(align.filter((a) => a.conference).map((a) => [a.franchise_id, { name: a.conference!, short: a.conference_short }]));
-  const bracket = buildBracket(series, round, (f) => conf.get(f) ?? null);
+  const bracket = buildBracket(seriesTies(series), round, (f) => conf.get(f) ?? null);
   return { series, round, names, final, bracket, brands, align };
 }
 

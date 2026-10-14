@@ -20,8 +20,8 @@
 
 /* ---- the bracket: one half down each side, the final in the middle; a row is --row tall, a box sits on a row ---- */
 .bkwrap { overflow-x: auto; padding-bottom: 6px; }
-.bk { --gap: 10px; display: flex; align-items: flex-start; min-width: calc(var(--n) * 224px + 150px); }
-.bk.solo { min-width: calc(var(--n) * 112px); }
+.bk { --gap: 10px; --colw: 112px; display: flex; align-items: flex-start; min-width: calc(var(--n) * var(--colw) * 2 + 150px); }
+.bk.solo { min-width: calc(var(--n) * var(--colw)); }
 .bkside { display: flex; flex-direction: column; min-width: 0; flex: var(--n, 1) 1 0; }
 .bkfinal { flex: 1.25 1 0; }
 .bkconf { font: 700 15px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; text-align: center; padding: 0 0 8px; margin: 0 0 8px; border-bottom: 2px solid var(--ink); }
@@ -42,6 +42,10 @@
 .bxr + .bxr { border-top: 1px solid var(--rule); }
 .bxr .logo { margin: 0; flex: none; }
 .bxr .nm { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/* A tie decided on goals (soccer): the score at the right of each row, and a note line (after extra time, penalties, replay) under the rows. */
+.bxr .sc { margin-left: auto; flex: none; font: 700 14px/1 var(--display); color: var(--ink); }
+.bxr .sc small { font: 500 11px/1 var(--body); color: var(--muted); margin-left: 2px; }
+.bxn { flex: none; font-size: 11px; line-height: 1; color: var(--muted); text-align: center; padding: 3px 4px 3px; border-top: 1px solid var(--rule); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .bxr.won { color: var(--ink); font-weight: 700; }
 .bx::before, .bx::after { content: ""; position: absolute; width: var(--gap); border: 0 solid var(--muted); opacity: .6; pointer-events: none; }
 .bx.fed::before { top: 50%; right: 100%; border-top-width: 1px; }
@@ -57,7 +61,7 @@
 }
 @media (max-width: 900px) {
   .bk { flex-direction: column; align-items: stretch; min-width: 0; gap: 18px; }
-  .bkside { flex: none; min-width: calc(var(--n, 1) * 112px); }
+  .bkside { flex: none; min-width: calc(var(--n, 1) * var(--colw)); }
   .bkfinal { order: -1; min-width: 0; width: 100%; max-width: 260px; }
   .bkfinal .bx::before, .bx.last::after { display: none; }
 }

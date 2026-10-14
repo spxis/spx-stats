@@ -1,9 +1,21 @@
 /**
- * The shape of a season's playoff bracket, worked out from its series: which series feeds which (a winner goes on to the
- * next series its club plays), and so which half of the bracket each sits in. Where the clubs' conferences (the alignment
- * data) split the halves cleanly the halves carry the conference names; otherwise they are plain halves. Pure.
+ * The shape of a knockout bracket, worked out from its ties: which tie feeds which (a winner goes on to the next tie its
+ * side plays), and so which half of the bracket each sits in. Where the sides' conferences split the halves cleanly the
+ * halves carry the conference names; otherwise they are plain halves. A tie is a playoff series, a knockout match or
+ * anything else two sides contest and one wins (see `Tie`), so one layout draws a hockey playoff and a World Cup.
+ * Pure and sport-agnostic: no imports, no site code (it is to become an open-source bracket package).
  */
-import type { Series } from "./series";
+
+/**
+ * One tie, as the layout needs it. `teams` are the two sides' keys (a franchise id, a team code), `winner` the key of the side
+ * that went through (null while undecided or when nothing settles it), `start` a sortable date that orders ties of one round.
+ * The order of `teams` is the order the final's two sides are drawn in (the first side's half is on the left).
+ */
+export interface Tie<K extends string | number = number> {
+  teams: readonly [K, K];
+  winner: K | null;
+  start: string;
+}
 
 export interface Conf { name: string; short: string | null }
 
@@ -44,21 +56,25 @@ export interface Bracket {
 /** Western sides read first (left), Eastern last; any other pair by name (American before National, AFC before NFC). */
 const rank = (c: Conf) => (/west/i.test(`${c.short} ${c.name}`) ? 0 : /east/i.test(`${c.short} ${c.name}`) ? 2 : 1);
 
-export function buildBracket(list: readonly Series[], round: readonly number[], confOf: (f: number) => Conf | null): Bracket {
+/**
+ * `round` is each tie's round (1 = the first knockout round, rising to the final; 0 = a round-robin game, kept out of the tree),
+ * in the order of `list`; `confOf` names a side's conference (or null for none: the halves are then plain halves).
+ */
+export function buildBracket<K extends string | number>(list: readonly Tie<K>[], round: readonly number[], confOf: (side: K) => Conf | null): Bracket {
   const idx = list.map((_, i) => i).filter((i) => round[i] > 0);
   const robin = list.map((_, i) => i).filter((i) => round[i] === 0);
   const last = Math.max(0, ...round);
   const parent = new Map<number, number>();
   for (const i of idx) {
     if (list[i].winner == null) continue;
-    const w = list[i].sides[0].f;
+    const w = list[i].winner;
     let best = -1;
-    for (const j of idx) if (round[j] > round[i] && list[j].sides.some((t) => t.f === w) && (best < 0 || round[j] < round[best])) best = j;
+    for (const j of idx) if (round[j] > round[i] && list[j].teams.includes(w as K) && (best < 0 || round[j] < round[best])) best = j;
     if (best >= 0) parent.set(i, best);
   }
   const children = new Map<number, number[]>();
   for (const [c, p] of parent) children.set(p, [...(children.get(p) ?? []), c]);
-  const first = (a: number, b: number) => (list[a].start < list[b].start ? -1 : list[a].start > list[b].start ? 1 : list[a].sides[0].f - list[b].sides[0].f);
+  const first = (a: number, b: number) => (list[a].start < list[b].start ? -1 : list[a].start > list[b].start ? 1 : list[a].teams[0] < list[b].teams[0] ? -1 : list[a].teams[0] > list[b].teams[0] ? 1 : 0);
   for (const l of children.values()) l.sort(first);
 
   const finals = idx.filter((i) => round[i] === last);
@@ -87,15 +103,15 @@ export function buildBracket(list: readonly Series[], round: readonly number[], 
   if (fin != null) {
     place.set(fin, "f");
     const f = list[fin];
-    const feeders = f.sides.map((t) => (children.get(fin) ?? []).find((c) => list[c].sides[0].f === t.f) ?? null);
-    const confs = feeders.map((c, k) => (c == null ? null : confOf(f.sides[k].f)));
+    const feeders = f.teams.map((t) => (children.get(fin) ?? []).find((c) => list[c].winner === t) ?? null);
+    const confs = feeders.map((c, k) => (c == null ? null : confOf(f.teams[k])));
     // A half is a conference when at most one club in it (a crossover) and fewer than half come from elsewhere.
-    const teamsIn = (c: number) => [...new Set(inTree(c).flatMap((i) => list[i].sides.map((t) => t.f)))];
+    const teamsIn = (c: number) => [...new Set(inTree(c).flatMap((i) => list[i].teams))];
     const clean =
       feeders.every((c) => c != null) && confs[0] && confs[1] && confs[0].name !== confs[1].name &&
-      feeders.every((c, k) => { const ts = teamsIn(c!); const out = ts.filter((f) => confOf(f)?.name !== confs[k]!.name).length; return out <= 1 && out * 2 < ts.length; });
+      feeders.every((c, k) => { const ts = teamsIn(c!); const out = ts.filter((t) => confOf(t)?.name !== confs[k]!.name).length; return out <= 1 && out * 2 < ts.length; });
     let order = [0, 1];
-    const [ca, cb] = f.sides.map((t) => confOf(t.f));
+    const [ca, cb] = f.teams.map((t) => confOf(t));
     if (ca && cb && ca.name !== cb.name && (rank(ca) > rank(cb) || (rank(ca) === rank(cb) && ca.name > cb.name))) order = [1, 0];
     const built = order.map((k, n) => (feeders[k] == null ? null : { ...lay(feeders[k]!, "l"), root: feeders[k]!, label: clean ? confs[k]!.name : null, n }));
     const present = built.filter((x): x is NonNullable<typeof x> => x != null);

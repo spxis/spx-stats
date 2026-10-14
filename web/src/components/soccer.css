@@ -20,9 +20,8 @@
   .sc-group td.num, .sc-group th.num { text-align: right; }
   .sc-group td.team { white-space: nowrap; }
 
-  .sc-rounds { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(210px, 1fr); gap: 14px; overflow-x: auto; padding-bottom: 8px; }
-  .sc-round { display: flex; flex-direction: column; gap: 10px; justify-content: space-around; }
-  .sc-round h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .sc-apart { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 250px), 1fr)); gap: 14px 18px; margin: 18px 0; align-items: start; }
+  .sc-apart h3 { font-size: 15px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin-bottom: 6px; }
   .sc-tie { display: block; background: var(--panel); border: 1px solid var(--rule); padding: 6px 10px; text-decoration: none; }
   .sc-tie:hover { border-color: var(--soccer); }
   .sc-tie .row { display: flex; justify-content: space-between; gap: 10px; align-items: center; padding: 2px 0; }

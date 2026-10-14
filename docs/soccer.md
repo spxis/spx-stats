@@ -55,9 +55,13 @@ the results by points, goal difference and goals scored (not FIFA's full tie-bre
 `/soccer` (sport page), `/worldcup` (every tournament: host, champion, runner-up, final, top scorer), `/worldcup/<year>` (groups, knockout rounds,
 teams, matches, top scorers, awards, stadiums, squads), `/worldcup/<year>/match/<id>-<slug>` (goals, shootout, cards, lineups with substitutions,
 referee), `/worldcup/teams`, `/worldcup/team/<slug>` (record, every tournament, every match), `/worldcup/player/<slug>-<id>` (a person's tournaments).
+`/worldcup/head-to-head/<a>-vs-<b>` (every World Cup meeting of two national teams, men's and women's apart: record with shootouts noted, goals, widest wins,
+first and last meeting, stages met in; slugs alphabetical, the other order redirects; worked out from `api.soccer_matches` in `web/src/lib/soccerH2H.ts`, no view of its own;
+linked from each match page and from the opponents table of a team page; the sitemap lists the pairs that have met).
 `/players/<id>` of a person with no league of the five goes to their World Cup page. All are kept pages (`app/[locale]/s`, with `q/` twins under
-`/worldcup`); the Soccer link is in the header, the footer and on the home page. Flags are Hata's, drawn once in `/soccer-flags.svg` (some
-drawings with a coat of arms are over 100 KB). Stadium names are plain text until the world stadium dataset has a page to link to
+`/worldcup`); the Soccer link is in the header, the footer and on the home page. Flags are Hata's round frames (18px in lists, 56px in the heading of a match, pairing or team), drawn once in `/soccer-flags-round.svg`
+(`/soccer-flags.svg` holds the rectangles; some drawings with a coat of arms are over 100 KB). The knockout rounds are the same bracket the playoff pages draw
+(`web/src/lib/bracket.ts` takes ties of any sport; `soccerBracket.ts` makes them from the matches, a replayed draw being one tie; the third-place match is shown apart). Stadium names are plain text until the world stadium dataset has a page to link to
 (`/venue/Q<venue_wikidata_id>`, see the comment in `worldcup/[year]/match/[match]/page.tsx`). With no soccer data in production the pages say
 so and nothing breaks.
 

@@ -44,6 +44,7 @@
     "test:player": "node --test scripts/player.test.ts",
     "test:soccer": "node --test scripts/soccer.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",
+    "test:bracket": "node --test scripts/bracket.test.ts",
     "test:playerlist": "node --test scripts/playerList.test.ts",
     "test:buildshare": "node --conditions=react-server --test scripts/buildShare.test.ts"
   },

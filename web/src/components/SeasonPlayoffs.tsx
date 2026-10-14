@@ -4,11 +4,12 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { roundSay } from "@/lib/roundWords";
 import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
-import type { Bracket, Box } from "@/lib/bracket";
+import type { Bracket } from "@/lib/bracket";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { nickname, roundPath, scoreWords, seriesPath, type Series } from "@/lib/series";
+import { BracketFrame } from "./BracketFrame";
 import { TeamLogo } from "./TeamLogo";
 import { queryHref } from "./ViewTabs";
 import "./alignment.css";
@@ -65,8 +66,6 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
   if (!series.length) return null;
   const rounds = names.length;
   const b: Bracket = bracket;
-  const fin = b.final ? series[b.final.i] : null;
-  const labelled = b.sides.some((s) => s.label);
   const heading = (r: number, name: string) => <h4><Link href={roundPath(lg, year, r)} prefetch={false} title={sp.say("playoffs.round.title", { round: name })}>{name}</Link></h4>;
   const extra = b.other;
   const slug = (label: string | null) => (label ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -92,24 +91,6 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
     : [];
   const chosen = divChoices.find((c) => c.key === div);
   const dims = (s: Series) => !!chosen && !s.sides.some((t) => chosen.ids.has(t.f));
-  const left = b.sides.find((s) => s.key === "l" && shown(s)), right = b.sides.find((s) => s.key === "r" && shown(s));
-  const sideEl = (side: Bracket["sides"][number]) => (
-    <div key={side.key} className={`bkside ${side.key}`} style={{ "--n": b.columns.length } as React.CSSProperties}>
-      {labelled ? <h3 className="bkconf">{side.label ?? "\u00a0"}</h3> : null}
-      <div className="bkcols">
-        {b.columns.map((r) => (
-          <div key={r} className="bkcol">
-            {heading(r, names[r - 1])}
-            <div className="bkarea" style={{ height: `calc(var(--row) * ${b.rows})` }}>
-              {side.boxes.filter((x: Box) => x.round === r).map((x: Box) => (
-                <BracketBox paths={paths} key={x.i} lg={lg} year={year} s={series[x.i]} brands={brands} say={say} pos={{ y: x.y, to: x.to, fed: x.fed, last: r === b.columns.at(-1) }} dim={dims(series[x.i])} />
-              ))}
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
   return (
     <section className="section" id="playoffs">
       <h2>{say("bracket.title")}</h2>
@@ -130,25 +111,10 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
         </nav>
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
-      <div className="bkwrap">
-        <div className={`bk${fin ? "" : " solo"}${fin && !left !== !right ? " half" : ""}`} style={{ "--row": "56px", "--n": b.columns.length } as React.CSSProperties}>
-          {left ? sideEl(left) : null}
-          {fin && b.final ? (
-            <div className="bkside bkfinal">
-              {labelled ? <h3 className="bkconf" aria-hidden="true">{"\u00a0"}</h3> : null}
-              <div className="bkcols">
-                <div className="bkcol">
-                  {heading(rounds, names[rounds - 1])}
-                  <div className="bkarea" style={{ height: `calc(var(--row) * ${b.rows})` }}>
-                    <BracketBox paths={paths} lg={lg} year={year} s={fin} brands={brands} say={say} pos={{ y: b.final.y, to: null, fed: b.sides.length > 0, final: true }} top={b.final.order[0] === 1 ? 1 : 0} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : null}
-          {right ? sideEl(right) : null}
-        </div>
-      </div>
+      <BracketFrame
+        bracket={b} show={shown} heading={(r) => heading(r, names[r - 1])} finalHeading={heading(rounds, names[rounds - 1])}
+        box={(i, pos, top) => <BracketBox paths={paths} key={i} lg={lg} year={year} s={series[i]} brands={brands} say={say} pos={pos} top={top} dim={pos.final ? undefined : dims(series[i])} />}
+      />
       {extra.length ? (
         <>
           <h3>{sp.say("playoffs.other")}</h3>
