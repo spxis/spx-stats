@@ -16,7 +16,7 @@ import "./soccer.css";
 /**
  * The knockout rounds as a bracket drawn by Taisen Brackets (lib/bracketDraw.ts, components/Knockout.tsx; layout in lib/bracketLayout.ts, ties from
  * lib/soccerBracket.ts): one half down each side or, on a phone, the rounds as rows, the final in the middle with the champion and the cup above it, a line
- * from each match to the one its winner plays next, the third-place match below. Each box shows both teams' round flags (the site's flag files, so a page
+ * from each match to the one its winner plays next, the third-place match below. Each box shows both teams' round flags (the site's flag files, named by `flagHref`, so a page
  * does not carry Spain's 80 KB coat of arms twice), names and goals, with the penalties in brackets and a note for extra time or a replay, and opens the match
  * (a replayed tie opens the replay). Any match the tree has no place for the package draws apart, with a heading.
  *
@@ -42,13 +42,14 @@ export async function SoccerKnockout({ matches }: { matches: Match[] }) {
   const look = (id: string) => {
     const { m, home } = sideOf.get(id)!;
     const t = home ? { name: m.home, slug: m.home_slug, flag: m.home_flag } : { name: m.away, slug: m.away_slug, flag: m.away_flag };
-    const mark = soccerFlagAddress(t.flag), colour = SOCCER_LOOK[id];
-    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ...(mark ? { mark } : {}), ...(colour ? { color: `#${colour[1]}` } : {}) };
+    const colour = SOCCER_LOOK[id];
+    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ...(t.flag ? { flag: t.flag } : {}), ...(colour ? { color: `#${colour[1]}` } : {}) };
   };
   const rounds = [...ko.round, ko.stages.length];
   const layout = buildBracket(ties, rounds, () => null, look);
   const art = drawKnockout(layout, {
     locale, roundNames: ko.stages.map((s) => stageName(say, s)),
+    flagHref: soccerFlagAddress,
     href: (t) => { const m = matchOf(t.index); return soccerMatchPath(m.year, m.match_id, m.home, m.away); },
     trophy: trophySvg(["worldcup", "wwc", "mls"].includes(league) ? league : "soccer"),
   });

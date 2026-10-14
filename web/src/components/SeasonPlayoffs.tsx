@@ -71,18 +71,15 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
     : [];
   const chosen = divChoices.find((c) => c.key === div);
   const dims = (s: Series) => !!chosen && !s.sides.some((t) => chosen.ids.has(t.f));
-  // The drawing's boxes are links: a division fades the boxes of the series with no club of it, picked out by their address (the final is always shown in full).
-  const finalAt = b.finalIndex != null ? seriesPath(paths, lg, year, series[b.finalIndex]) : null;
-  const dim = chosen
-    ? series.map((s) => (dims(s) ? seriesPath(paths, lg, year, s) : null)).filter((h): h is string => !!h && h !== finalAt)
-      .map((h) => `.kobracket a.tb-link[href="${h.replace(/[^\w\-/]/g, "")}"]{opacity:.4}`).join("")
-    : "";
+  // A division fades the ties with no club of it (class `ko-dim`, knockout.css); the final is always shown in full.
+  const finalSeries = b.finalIndex != null ? series[b.finalIndex] : null;
   const shownLayout = keep ? layoutOf(keep) : b;
   const tieAt = (k: number) => series[keep ? keep[k] : k];
   const lastRound = Math.max(0, ...(keep ?? []).map((i) => b.ties[i].round));
   const art = drawKnockout(shownLayout, {
     locale: sp.locale, roundNames: keep ? names.slice(0, lastRound) : names,
     href: (t) => seriesPath(paths, lg, year, tieAt(t.index)),
+    tieClass: (t) => (dims(tieAt(t.index)) && tieAt(t.index) !== finalSeries ? "ko-dim" : null),
     ...(keep ? { champion: false } : { trophy: trophySvg(lg) }),
   });
   return (
@@ -105,7 +102,7 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
         </nav>
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
-      <Knockout art={art} dim={dim} />
+      <Knockout art={art} />
       <p className="note">
         {names.map((n, i) => (
           <Fragment key={n + i}>{i ? " · " : null}<Link href={roundPath(lg, year, i + 1)} prefetch={false} title={sp.say("playoffs.round.title", { round: n })}>{n}</Link></Fragment>

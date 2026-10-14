@@ -157,3 +157,17 @@ test("a bracket is drawn twice, the desk's and the phone's, with a real link on 
   assert.ok(/quarter-finals/i.test(art.wide), "the round names are the ones given");
   assert.ok(art.wide.includes(">Team E<") || art.wide.includes(">E<"), "a team is its name or its short name");
 });
+
+test("a team's mark is written once for the page: the phone's drawing uses the desk's symbols, and a flag is named by its file", () => {
+  const ko = knockoutOf(eight);
+  const ties: Tie<string>[] = [...ko.ties, { teams: ["C", "G"], winner: "C", start: "2000-06-07", third: true }];
+  const layout = buildBracket(ties, [...ko.round, 3], () => null, (id) => ({ name: `Team ${id}`, abbr: id, flag: id === "A" ? "gb-eng" : "ES" }));
+  const art = drawKnockout(layout, { href: (t) => `/match/${t.index}`, flagHref: (c) => `/soccer-flag/${c.toUpperCase()}.svg`, tieClass: (t) => (t.index === 0 ? "ko-dim" : null) });
+  assert.equal((art.wide.match(/<symbol /g) ?? []).length, 2, "one symbol for each flag in the desk's drawing");
+  assert.equal((art.phone.match(/<symbol /g) ?? []).length, 0, "none in the phone's");
+  const symbols = [...art.wide.matchAll(/<symbol id="([^"]+)"/g)].map((x) => x[1]);
+  const used = [...art.phone.matchAll(/<use href="#([^"]+)"/g)].map((x) => x[1]);
+  assert.ok(used.length > 0 && used.every((id) => symbols.includes(id)), "every mark the phone draws is a symbol of the desk's drawing");
+  assert.ok(art.wide.includes('href="/soccer-flag/GB-ENG.svg"') && art.wide.includes('href="/soccer-flag/ES.svg"'), "a flag is the site's file for its code");
+  for (const svg of [art.wide, art.phone]) assert.equal((svg.match(/class="tb-tie ko-dim/g) ?? []).length, 1, "the tie the page picked carries its class");
+});

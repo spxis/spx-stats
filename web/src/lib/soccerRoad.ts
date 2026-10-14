@@ -14,8 +14,8 @@ import type { Match } from "./soccer.ts";
  * 1950 included, because Taisen draws the group stage as one row of small marks.
  */
 
-/** How a team is drawn on the chart: its name in the reader's language, its three-letter code, its round flag's address and its colour. */
-export type RoadTeam = { name: string; abbr: string; logo?: string; color?: string; ref?: TeamRef };
+/** How a team is drawn on the chart: its name in the reader's language, its three-letter code, its flag's country code (the chart loads the round flag file for it) and its colour. */
+export type RoadTeam = { name: string; abbr: string; flag?: string; color?: string; ref?: TeamRef };
 
 /** A team as the site names it in a list: the name before translation, its page and its flag (SoccerTeamName draws all three). */
 export interface TeamRef { name: string; slug: string; flag: string | null }

@@ -11,7 +11,7 @@ import { stageName } from "./soccerView.ts";
  * A tournament's road to the final, drawn with Taisen Brackets in the reader's language: the SVG for the file the page loads (app/soccer-road/[file]), and what the page
  * itself writes (the table that stands for the drawing, the labels, the drawing's shape). One function for both, so the file and the table never disagree. Pure.
  *
- * The phone size is used at every width: one drawing about 17 KB, which the page does not carry in its HTML (a string given to a page is sent twice, once as
+ * The phone size is used at every width: one drawing about 25 KB, which the page does not carry in its HTML (a string given to a page is sent twice, once as
  * markup and once as data) but fetches when it comes into view. The flags are files of their own (/soccer-flag/<CODE>.svg), as the pitch's marks are.
  */
 export interface RoadChart {
@@ -31,8 +31,8 @@ export function roadChartFor(matches: readonly Match[], year: number, league: st
   const team = (m: Match, id: string): RoadTeam => {
     const home = m.home_team_id === id;
     const t = home ? { name: m.home, slug: m.home_slug, flag: m.home_flag } : { name: m.away, slug: m.away_slug, flag: m.away_flag };
-    const logo = soccerFlagAddress(t.flag), look = SOCCER_LOOK[id];
-    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ref: { name: t.name, slug: t.slug, flag: t.flag }, ...(logo ? { logo } : {}), ...(look ? { color: `#${look[1]}` } : {}) };
+    const look = SOCCER_LOOK[id];
+    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ref: { name: t.name, slug: t.slug, flag: t.flag }, ...(t.flag ? { flag: t.flag } : {}), ...(look ? { color: `#${look[1]}` } : {}) };
   };
   const words = (kind: "aet" | "pens" | "replay", pens?: readonly [number, number]) =>
     kind === "aet" ? say("wc.aetShort") : kind === "replay" ? say("wc.ko.replay") : say("wc.road.pens", { a: pens?.[0] ?? "", b: pens?.[1] ?? "" });
@@ -47,7 +47,7 @@ export function roadChartFor(matches: readonly Match[], year: number, league: st
   for (const r of road.rounds) if (r.replay) labels[r.key] = `${stageName(say, r.stage)} · ${say("wc.ko.replay")}`;
   const groups = road.secondGroups ? say("wc.road.groupsMulti") : say("wc.road.groups");
   const chart = roadToFinal(road.finalists, {
-    locale, size: "phone", theme: "auto", id: `road-${league}-${year}`, title,
+    locale, size: "phone", theme: "auto", flagHref: soccerFlagAddress, id: `road-${league}-${year}`, title,
     subtitle: road.finalRound ? say("wc.road.decider") : say("wc.t.road"), final: road.final, labels, groupLabel: groups,
   });
   const svg = chart.draw()

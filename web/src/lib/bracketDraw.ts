@@ -12,7 +12,7 @@ export interface Knockout {
 }
 
 /** What the pages choose; the rest is the same everywhere. */
-export type KnockoutOptions = Pick<DrawOptions, "locale" | "roundNames" | "href" | "trophy" | "champion" | "highlightPath" | "thirdPlace">;
+export type KnockoutOptions = Pick<DrawOptions, "locale" | "roundNames" | "href" | "trophy" | "champion" | "highlightPath" | "thirdPlace" | "flagHref" | "tieClass">;
 
 const CLASS = /class="taisen (tb-[a-z0-9]+)/;
 const STYLE = /<style>([\s\S]*?)<\/style>\n?/;
@@ -29,8 +29,27 @@ export function shareStyle(wide: string, phone: string): string {
   return phone.replace(STYLE, "").replace(CLASS, `class="taisen $1 ${a}`);
 }
 
+const SYMBOL = /<symbol id="([^"]+)"([^>]*)>([\s\S]*?)<\/symbol>/g;
+
+/**
+ * Each drawing writes every team's mark once, as a `<symbol>` (the package does that itself), and the two drawings of a bracket hold the same marks under
+ * ids of their own. The phone's drops the symbols the desk's already holds and points at the desk's instead, so a mark's address is in the page once and not
+ * twice (a `<use>` reads an id of the page wherever its drawing is). A symbol the desk's does not have stays in the phone's.
+ */
+export function shareMarks(wide: string, phone: string): string {
+  const held = new Map<string, string>();
+  for (const [, id, attrs, body] of wide.matchAll(SYMBOL)) held.set(attrs + body, id);
+  let out = phone;
+  for (const [whole, id, attrs, body] of phone.matchAll(SYMBOL)) {
+    const same = held.get(attrs + body);
+    if (!same) continue;
+    out = out.replace(whole, "").split(`href="#${id}"`).join(`href="#${same}"`);
+  }
+  return out;
+}
+
 export function drawKnockout(layout: BracketLayout, options: KnockoutOptions): Knockout {
   const base: DrawOptions = { look: "road", theme: "auto", ...options };
   const wide = drawBracket(layout, { ...base, size: "wide" });
-  return { wide, phone: shareStyle(wide, drawBracket(layout, { ...base, size: "phone" })) };
+  return { wide, phone: shareMarks(wide, shareStyle(wide, drawBracket(layout, { ...base, size: "phone" }))) };
 }
