@@ -38,6 +38,8 @@ import { seasonPath } from "@/lib/slug";
 import { getLeagueClubs, getPaths, teamOf } from "@/lib/teamSlugs";
 import { TeamSwitch } from "@/components/TeamSwitch";
 import { getClubCity } from "@/lib/cityData";
+import { cupTitlesOf } from "@/lib/cup";
+import { getCupTitles } from "@/lib/cupData";
 import "@/components/city.css";
 import { clubPins, getVenueTeams } from "@/lib/venueMap";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
@@ -58,7 +60,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   if (!t) return {};
   const { say, plural, locale } = await currentSpeaker();
   const name = t.names.at(-1)?.name || say("team.fallback", { id: f });
-  const n = t.titles.length;
+  const n = t.titles.length + (league === "nhl" ? cupTitlesOf(await getCupTitles(), f).length : 0);
   return pageMeta({
     title: `${name} · ${LG[league]}`,
     description: t.seasons.length || !t.unrecorded.length
@@ -105,6 +107,9 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const [t, rows, brands, abbrs, summary, venuePlaces] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getAbbrs(lg), getSummary(), getVenuePlaces(lg)]);
   const [venueNames, venueFacts, outageYears] = await Promise.all([getVenueNames(), getVenueFacts(), getOutageYears(lg)]);
   if (!t) notFound();
+  // Stanley Cup titles the club won before the NHL's first season (lib/cup.ts): listed with the championships, not linked (there is no NHL season to open).
+  const cup = lg === "nhl" ? cupTitlesOf(await getCupTitles(), f) : [];
+  const nTitles = t.titles.length + cup.length;
   // A club with no recorded name span (the early Stanley Cup challengers) gets the years of its seasons, so a club that is gone does not read "until today".
   const seasonYears = [...t.seasons.map((x) => x[0]), ...t.unrecorded.map((x) => x[0])];
   const latestYear = Math.max(0, ...summary.seasons.filter((x) => x.league === lg).map((x) => x.year));
@@ -252,7 +257,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
   const city = await getClubCity(lg, f);
-  const titlesPart = t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "";
+  const titlesPart = nTitles ? say("team.titlesSuffix", { titles: plural("count.championships", nTitles) }) : "";
   const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: titlesPart })
     : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })
       : say("team.ledeBareOnly", { seasons: plural("count.seasons", bare.size), titles: titlesPart });
@@ -279,12 +284,13 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         <CompareControl lg={lg} f={f} name={now} />
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
-      {t.titles.length ? (
+      {nTitles ? (
         <div className="trophyrow fade">
-          <div className="trophies"><b>{t.titles.length}</b>{t.titles.length > 1 && t.titles.length <= 5 ? <span className="cups">{t.titles.map((y) => <Trophy key={y} league={lg} className="cup" />)}</span> : <Trophy league={lg} className="cup" />}</div>
+          <div className="trophies"><b>{nTitles}</b>{nTitles > 1 && nTitles <= 5 ? <span className="cups">{[...cup.map((c) => c.year), ...t.titles].map((y) => <Trophy key={y} league={lg} className="cup" />)}</span> : <Trophy league={lg} className="cup" />}</div>
           <div className="champs">
             <h2>{say("team.championships")}</h2>
             <div className="seasonlist">
+              {cup.map((c) => <span key={`cup${c.year}`} className="full" title={`${say("cup.name")} (${say("cup.before")}) · ${c.team}${c.league ? ` (${c.league})` : ""}`}>{c.year} {say("cup.name")}{c.league ? ` · ${c.league}` : ""}</span>)}
               {t.titles.map((y) => <Link key={y} className="full" href={seasonPath(lg, y)}><TeamLogo url={logoFor(brands, f, y)} size={16} />{seasonLabel(lg, y)}</Link>)}
             </div>
           </div>

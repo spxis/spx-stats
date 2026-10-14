@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fold } from "../src/lib/fold.ts";
+import { withCupTitles } from "../src/lib/cup.ts";
 import { buildStays, clipStay, MIN_RANKED_SEASONS, rankOf, titlesByDecade, totalsOf, unitOf, unitTotals, winShare, type CityRef, type ClubSeason, type Placement } from "../src/lib/cityModel.ts";
 
 /** Run in web/: pnpm test:city */
@@ -196,4 +197,35 @@ test("a metro area adds up its cities and ranks as one", () => {
   assert.equal(units.get("metro")?.clubs, 2);
   assert.equal(units.get("metro")?.titles, 1);
   assert.equal(units.has("lone"), false);
+});
+
+test("Stanley Cup titles before the NHL join the NHL franchise's stay, or make a club of the city with no seasons", () => {
+  const stays = buildStays([place("nhl", 1917, 7, "vancouver"), place("nhl", 1919, 7, "vancouver")], [season("nhl", 1917, 7, null, null, false, "Vancouver Millionaires"), season("nhl", 1919, 7, null, null)]);
+  const cup = [
+    { year: 1915, team: "Vancouver Millionaires", league: "PCHA", club: "Vancouver Millionaires", franchise: 7, city: "vancouver", wins: 1 },
+    { year: 1899, team: "Montreal Shamrocks", league: "CAHL", club: "Montreal Shamrocks", franchise: null, city: "montreal", wins: 2 },
+    { year: 1900, team: "Montreal Shamrocks", league: "CAHL", club: "Montreal Shamrocks", franchise: null, city: "montreal", wins: 3 },
+    { year: 1914, team: "Toronto Hockey Club", league: "NHA", club: "Toronto Blueshirts", franchise: null, city: null, wins: 2 },
+  ];
+  const finalists = [{ year: 1916, team: "Portland Rosebuds", league: "PCHA", club: "Portland Rosebuds", franchise: null, city: "portland" }, { year: 1915, team: "Vancouver Millionaires", league: "PCHA", club: "x", franchise: 7, city: "vancouver" }];
+  const all = withCupTitles(stays, cup, finalists);
+  const van = all.find((s) => s.f === 7)!;
+  assert.deepEqual(van.titles, [1915]);
+  assert.deepEqual(van.before, [1915]);
+  assert.equal(van.first, 1915, "the stay now starts with the title");
+  assert.equal(van.seasons, 2, "the title is not a season");
+  assert.deepEqual(van.runs, [[1917, 1919]], "runs are of seasons only");
+  const mtl = all.find((s) => s.city === "montreal")!;
+  assert.ok(mtl.cup && mtl.f < 0 && mtl.seasons === 0 && mtl.rows.length === 0);
+  assert.deepEqual(mtl.titles, [1899, 1900]);
+  assert.equal(all.find((s) => s.city === "portland")!.titles.length, 0, "a finalist has a club but no title");
+  assert.deepEqual(all.find((s) => s.city === "portland")!.finals, [1916]);
+  assert.equal(all.filter((s) => s.cup).length, 2, "no city, no club; a finalist that is a franchise with a stay adds none");
+  const totals = totalsOf(all.filter((s) => s.city === "vancouver"));
+  assert.equal(totals.titles, 1);
+  // a range that holds only the title still shows the club; one that misses it does not
+  assert.equal(clipStay(van, 1910, 1916)?.titles.length, 1);
+  assert.equal(clipStay(van, 1918, 1919)?.titles.length, 0);
+  assert.equal(clipStay(mtl, 1890, 1899)?.titles.length, 1);
+  assert.equal(clipStay(mtl, 1901, 1990), null);
 });

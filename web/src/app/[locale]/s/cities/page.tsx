@@ -27,6 +27,12 @@ export default guard(async function CitiesPage() {
       cur[0] += 1; cur[1] += champ; cur[2] += Math.max(w, 0); cur[3] += Math.max(l, 0); cur[4] += t; cur[5] += o;
       per.set(y, cur);
     }
+    // A Stanley Cup title before the NHL counts in its year though the club played no season then (lib/cup.ts): a title, no club season.
+    for (const s of mine) for (const y of s.before ?? []) {
+      const cur = per.get(y) ?? [0, 0, 0, 0, 0, 0];
+      cur[1] += 1;
+      per.set(y, cur);
+    }
     return [{
       slug: c.slug, name: c.name, nameFr: c.nameFr, region: c.region.split("-")[1] ?? c.region, cc: c.country, lat: c.lat, lon: c.lon,
       metroName: c.metroName, metroNameFr: c.metroNameFr,

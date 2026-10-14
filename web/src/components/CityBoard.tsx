@@ -77,11 +77,11 @@ export function CityBoard({ stays, rank, children }: { stays: BoardStay[]; rank:
   const total = useMemo(() => totalsOf(here), [here]);
 
   // Years like "1972–now"; "now" only when the range reaches the club's last season.
-  const years = (s: BoardStay) => s.runs.map(([a, b]) => (a === b ? seasonLabel(s.league, a) : `${seasonLabel(s.league, a)}–${s.active && b === s.last && s.runs.at(-1)?.[1] === b && b === fullLast.get(`${s.league}-${s.f}`) ? say("teams.now") : seasonLabel(s.league, b)}`)).join(", ");
+  const years = (s: BoardStay) => s.cup ? [...s.titles, ...(s.finals ?? [])].sort((a, b) => a - b).join(", ") : s.runs.map(([a, b]) => (a === b ? seasonLabel(s.league, a) : `${seasonLabel(s.league, a)}–${s.active && b === s.last && s.runs.at(-1)?.[1] === b && b === fullLast.get(`${s.league}-${s.f}`) ? say("teams.now") : seasonLabel(s.league, b)}`)).join(", ");
   const record = (s: Stay) => `${s.w}–${s.l}${s.t ? `–${s.t}` : ""}${s.otl ? `–${s.otl}` : ""}`;
   const built = useMemo(() => tableOf(here, [
-    { key: "club", label: say("col.team"), cls: "team", get: (s) => s.name, cell: (s) => <TeamLabel lg={s.league} f={s.f} name={s.name} logo={s.logo} /> },
-    { key: "league", label: say("col.league"), get: (s) => LG[s.league as keyof typeof LG] },
+    { key: "club", label: say("col.team"), cls: "team", get: (s) => s.name, cell: (s) => <TeamLabel lg={s.league} f={s.cup ? null : s.f} name={s.name} logo={s.logo} /> },
+    { key: "league", label: say("col.league"), get: (s) => (s.cup ? s.leagueLabel ?? "" : LG[s.league as keyof typeof LG]) },
     { key: "years", label: say("city.colYears"), cls: "seasoncell", get: (s) => s.first, cell: years },
     { key: "seasons", label: say("col.seasons"), num: true, get: (s) => s.seasons, cell: (s) => fmt(s.seasons) },
     { key: "titles", label: say("col.titles"), num: true, get: (s) => s.titles.length, cell: (s) => fmt(s.titles.length) },
@@ -92,7 +92,7 @@ export function CityBoard({ stays, rank, children }: { stays: BoardStay[]; rank:
   [here, say, fmt]);
   const tableRows = built.rows.map((r, i) => ({ ...r, group: here[i].active ? "active" : "former" }));
 
-  const timeline = useMemo<TimelineClub[]>(() => here.map((s) => ({ key: `${s.league}-${s.f}`, league: s.league, f: s.f, name: s.name, seasons: s.rows })), [here]);
+  const timeline = useMemo<TimelineClub[]>(() => here.filter((s) => s.rows.length).map((s) => ({ key: `${s.league}-${s.f}`, league: s.league, f: s.f, name: s.name, seasons: s.rows })), [here]);
 
   const decades = titlesByDecade(here);
   const leagues = LEAGUE_CODES.filter((l) => here.some((s) => s.league === l));
@@ -137,7 +137,11 @@ export function CityBoard({ stays, rank, children }: { stays: BoardStay[]; rank:
                 <CityTitles decades={decadeRows} leagues={byLeagueTitles.map((x) => x.l)} />
               </div>
               <div className="seasonlist citytitlelist">
-                {titleList.map(({ s, y, team }) => (
+                {titleList.map(({ s, y, team }) => s.before?.includes(y) ? (
+                  <span key={`${s.league}-${s.f}-${y}`} className="full" title={`${say("cup.name")} (${say("cup.before")}) ${y} · ${team}`}>
+                    <MiniCup league={s.league} />{y} {say("cup.name")} · {team}
+                  </span>
+                ) : (
                   <Link key={`${s.league}-${s.f}-${y}`} className="full" href={seasonPath(s.league, y)} prefetch={false} title={`${LG[s.league as keyof typeof LG]} ${seasonLabel(s.league, y)} · ${team}`}>
                     <MiniCup league={s.league} />{seasonLabel(s.league, y)} {LG[s.league as keyof typeof LG]} · {team}
                   </Link>

@@ -24,6 +24,14 @@ export interface Stay {
   titles: number[];
   /** The name it wore in each of those title seasons, in the same order. */
   titleTeams: string[];
+  /** The years in `titles` that fall before the franchise's first NHL season (Stanley Cup titles of its earlier leagues, lib/cup.ts): they have no season page. */
+  before?: number[];
+  /** A club of the city that won the Stanley Cup, or lost a final, before the NHL and never played an NHL season (lib/cup.ts): a stay with no seasons, no link and no record. */
+  cup?: boolean;
+  /** For a `cup` stay: the league it played in, as Wikipedia prints it (AHAC, PCHA...). */
+  leagueLabel?: string | null;
+  /** For a `cup` stay: the years it lost a final. */
+  finals?: number[];
   /** Each season there: [year, champion (0 or 1), wins, losses, ties, overtime losses], a missing record as -1. */
   rows: [number, number, number, number, number, number][];
   w: number; l: number; t: number; otl: number;
@@ -114,13 +122,16 @@ export function titlesByDecade(stays: Stay[]): Map<number, Record<string, number
 export function clipStay(s: Stay, from: number, to: number): Stay | null {
   if (from <= s.first && to >= s.last) return s;
   const rows = s.rows.filter((r) => r[0] >= from && r[0] <= to);
-  if (!rows.length) return null;
-  const runs = s.runs.flatMap(([a, b]): [number, number][] => { const x = Math.max(a, from), y = Math.min(b, to); return x <= y ? [[x, y]] : []; });
   const keep = s.titles.map((y, i) => [y, i] as const).filter(([y]) => y >= from && y <= to);
+  const finals = (s.finals ?? []).filter((y) => y >= from && y <= to);
+  // a Stanley Cup title or final before the NHL keeps the club in range though it has no season there
+  if (!rows.length && !(s.before && keep.some(([y]) => s.before!.includes(y))) && !finals.length) return null;
+  const runs = s.runs.flatMap(([a, b]): [number, number][] => { const x = Math.max(a, from), y = Math.min(b, to); return x <= y ? [[x, y]] : []; });
+  const yrs = [...rows.map((r) => r[0]), ...keep.map(([y]) => y), ...finals];
   let w = 0, l = 0, t = 0, otl = 0;
   for (const r of rows) { w += Math.max(0, r[2]); l += Math.max(0, r[3]); t += r[4]; otl += r[5]; }
   return {
-    ...s, runs, rows, first: rows[0][0], last: rows[rows.length - 1][0], seasons: rows.length,
+    ...s, runs, rows, first: Math.min(...yrs), last: Math.max(...yrs), seasons: rows.length, finals, before: s.before?.filter((y) => y >= from && y <= to),
     titles: keep.map(([y]) => y), titleTeams: keep.map(([, i]) => s.titleTeams[i]),
     w, l, t, otl, share: winShare(w, l, t, otl),
   };

@@ -59,7 +59,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
   const here = data.stays.filter((s) => s.city === slug);
   const unit = unitOf(city);
   const members = data.cities.filter((c) => unitOf(c) === unit);
-  const around = data.stays.filter((s) => s.city !== slug && members.some((m) => m.slug === s.city));
+  const around = data.stays.filter((s) => !s.cup && s.city !== slug && members.some((m) => m.slug === s.city));
   const total = totalsOf(here);
 
   // How the city and its metro area stand among all the others.

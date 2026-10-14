@@ -15,6 +15,7 @@ import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
 import { logoFor } from "@/lib/brand";
 import { championRow } from "@/lib/champions";
+import { getCupTitles } from "@/lib/cupData";
 import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LEAGUE_CODES, LEAGUES, srcName } from "@/lib/leagues";
@@ -60,6 +61,14 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
     { key: "final", label: say("col.final"), cls: "note", get: (c) => c.champion_note, cell: (c) => <ChampionNote lg={lg} year={c.year} champ={c.champion_franchise} note={c.champion_note} /> },
     { key: "source", label: say("col.source"), get: (c) => srcName(say, c.champion_source), cell: (c) => <Badge src={c.champion_source} /> },
   ], (c) => c.year);
+  // The NHL's Stanley Cup was won before the NHL existed (1893-1917) by clubs of other leagues: listed under the champions, not as NHL seasons (docs/stanley-cup-pre-nhl.md).
+  const cup = lg === "nhl" ? await getCupTitles() : [];
+  const cupRows = tableOf([...cup].reverse(), [
+    { key: "year", label: say("col.season"), num: true, cls: "seasoncell", get: (c) => c.year },
+    { key: "champion", label: say("col.champion"), cls: "team", get: (c) => c.team, cell: (c) => <TeamLabel lg={lg} f={c.franchise} name={c.team} logo={logoFor(brands, c.franchise, c.year)} /> },
+    { key: "league", label: say("col.league"), get: (c) => c.league ?? "" },
+    { key: "wins", label: say("cup.wins"), num: true, get: (c) => c.wins },
+  ], (c) => `${c.year}-${c.club}`);
   return (
     <>
       <AccentStyle league={lg} />
@@ -102,6 +111,13 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           </>
         ) :<p className="note">{say("league.noChampions")}</p>}
       </section>
+      {cup.length ? (
+        <section className="section">
+          <h2>{say("cup.name")} ({say("cup.before")})</h2>
+          <p className="note">{say("cup.note", { first: String(cup[0].year), last: String(cup[cup.length - 1].year) })}</p>
+          <div className="tablebox"><SortTable {...cupRows} def="year.desc" /></div>
+        </section>
+      ) : null}
       <LeagueAwards lg={lg} />
     </>
   );
