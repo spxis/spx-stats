@@ -45,7 +45,7 @@ td.h2hscore .ot { margin-left: 6px; }
 .pickbtn .logo, .pickpop .logo { margin: 0; flex: none; }
 .pickbtn .caret { flex: none; width: 7px; height: 7px; margin: 0 2px 3px 4px; border: solid currentColor; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .pickbtn[aria-expanded="true"] .caret { transform: rotate(-135deg); margin-bottom: -2px; }
-.pickpop { position: absolute; z-index: 30; top: calc(100% + 4px); left: 0; width: min(380px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--ink); box-shadow: 0 10px 28px rgb(0 0 0 / .28); }
+.pickpop { position: absolute; z-index: var(--z-pop); top: calc(100% + 4px); left: 0; width: min(380px, calc(100vw - 32px)); display: flex; flex-direction: column; background: var(--panel); border: 1px solid var(--ink); box-shadow: 0 10px 28px rgb(0 0 0 / .28); }
 .pickwrap.end .pickpop { left: auto; right: 0; }
 .pickpop input { width: 100%; height: auto; border-width: 0 0 1px; padding: 12px 12px; font-size: 16px; }
 .pickpop ul { list-style: none; margin: 0; padding: 0; overflow-y: auto; overscroll-behavior: contain; max-height: min(340px, 45dvh); }
@@ -60,7 +60,6 @@ td.h2hscore .ot { margin-left: 6px; }
 .pickpop .nv { flex: none; padding: 3px 6px 2px; border: 1px solid var(--rule); color: var(--muted); font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
 .pickpop .nv.cu { border-color: var(--accent); color: var(--ink); }
 .pickpop .pnone { margin: 0; padding: 14px 12px; color: var(--muted); }
-.head:has(.h2hpick) { z-index: 5; }
 @media (max-width: 560px) {
   .h2hpick .pk { flex-basis: 100%; }
   .h2hpick .pvs { display: none; }
@@ -81,7 +80,6 @@ td.h2hscore .ot { margin-left: 6px; }
 .cmppop li a { display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 12px; color: var(--ink); text-decoration: none; }
 .cmppop li a:hover, .cmppop li a:focus-visible { background: color-mix(in srgb, var(--accent) 14%, var(--panel)); outline: none; }
 .cmprow.plain .val { white-space: normal; }
-.head:has(.cmpctl) { z-index: 5; }
 @media (max-width: 560px) { .cmpctl .cmppop { width: calc(100vw - 32px); } .cmpctl .cmpbtn { width: auto; } }
 
 /* The pair's summary: the two clubs side by side with the series count between them (under them on a phone). Colours are --ca/--cb (SeriesStyle). */
