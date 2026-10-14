@@ -1,0 +1,18 @@
+{
+  "name": "spx-stats-ops",
+  "private": true,
+  "description": "Everyday Mac jobs for this project, run from the repo root: pnpm run <name>. The site itself lives in web/.",
+  "packageManager": "pnpm@10.28.0",
+  "scripts": {
+    "pull": "git pull -q --ff-only origin main && git log --oneline -1",
+    "preview": "bash scripts/mac/ds1-preview.sh --status",
+    "preview:update": "git pull -q --ff-only origin main && bash scripts/mac/ds1-preview.sh --update",
+    "preview:install": "bash scripts/mac/ds1-preview.sh --install",
+    "preview:uninstall": "bash scripts/mac/ds1-preview.sh --uninstall",
+    "deploy": "git pull -q --ff-only origin main && bash scripts/mac/deploy-prebuilt.sh",
+    "deploy:check": "bash scripts/mac/deploy-prebuilt.sh --check-only",
+    "harvest": "python3 -I scripts/harvest/status.py",
+    "check": "bash scripts/mac/spx-check.sh",
+    "task": "pnpm -s --dir web task"
+  }
+}
