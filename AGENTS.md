@@ -436,6 +436,28 @@ migrations with grants apply unchanged.
 materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
 core rebuild; the release runner runs `select api.refresh();` after each release).
 
+**Materialized views never block reads** (migration 097; on 2026-10-13 a rebuild of `api.player_index` locked its reads for about 4 minutes,
+and production's anon role times out at 8 s). A plain `refresh materialized view`, and a `drop` + `create` in place, both hold an ACCESS
+EXCLUSIVE lock for the whole rebuild. So:
+- **Every `api` materialized view has a unique index on its natural key** (`db/checks/081_matview_unique_index.sql` returns one row per view
+  without one; baseline 0). Create the unique index in the same migration that creates the view.
+- **Refresh only with `refresh materialized view concurrently`**, or through `api.refresh()`, which does exactly that for every `api` view
+  (found from the catalog, so a new view needs no edit), one at a time, dependencies first then smallest first. A failed view is a WARNING and
+  does not stop the rest; `select api.refresh_all()` returns the per-view jsonb (mode, ms, ok or failed). A statement_timeout set inside a
+  function is not applied (tested), so to limit each view call `api.refresh_one('api.<name>')` per view under its own `set statement_timeout`.
+  A `concurrently` refresh takes 1 to 4 times a plain one and writes only the rows that changed; that is the price of open reads.
+- **Changing a view's definition: build beside it, then swap.** Never `drop materialized view` + `create materialized view` in place.
+  1. `create materialized view api.<name>_new as <new query>;` then `create unique index <name>_new_key on api.<name>_new (<key>);` and the
+     other indexes, all named `<name>_new_*`; `analyze api.<name>_new;`. This can be slow: it locks only `<name>_new`. Do it in its own file or
+     transaction, and not while a release is running.
+  2. In a second, short transaction: `select api.swap_matview('<name>', '<name>_new');`. It renames, drops the old copy, renames the
+     `_new_` indexes, copies the comment and grants select to `anon` and `authenticated`. It takes its locks for milliseconds, gives up after
+     5 s (`lock_timeout`) instead of queueing behind a refresh, and refuses if a view is built from the old one (drop and recreate those after).
+  3. Apply to DS1 first, then production, like any migration. Add the migration number to the view's comment. `api.refresh()` needs no change.
+- A step in `db/build` that refreshes a view uses `concurrently` (190, 191, 192, 194 do).
+- A plain `create unique index` on a view takes a SHARE lock (it blocks a refresh, not reads), which is fine for small views in a migration
+  file; `create index concurrently` cannot run in the transaction `ds1-apply.sh` and the Supabase query API wrap a file in.
+
 1. **Archive first.** Every raw download goes into DS1's `legacy_files.raw_archive` (name, saved_on, sha256, data bytea)
    before it is loaded, and a hard copy goes to Dropbox, both before anything is loaded to production. The Mac export
    script (`scripts/mac/spx-raw-export.sh`, section 12) copies DS1's archive rows into the local Dropbox folder;
