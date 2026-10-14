@@ -1,5 +1,5 @@
 /** Where a page's year range is remembered: the address (?from=&to=) and, as the default for later visits, localStorage (a key per page,
-    RANGE_PAGES). The players and teams lists (ListRange) read it themselves; this is about the home chart. The range lives in a small store so React can read it with useSyncExternalStore: the server and the first hydration draw the
+    RANGE_PAGES). The players list (ListRange) reads it itself, and the teams list (TeamsBoard) in the browser; this is about the home chart. The range lives in a small store so React can read it with useSyncExternalStore: the server and the first hydration draw the
     full range, then the client switches to the address's range or the saved one in the same pass. The page holds the chart out of
     sight meanwhile (RANGE_HOLD_SCRIPT), so the full range is never painted when another one is wanted. */
 
@@ -8,12 +8,12 @@ import { LEAGUE_CODES } from "./leagues.ts";
 const KEY = "spxn-range";
 
 /** The pages that keep a year range: where each is remembered (a key per page) and whether an address range also needs the hold. The home chart
-    draws in the browser, so it waits for an address range as well as a saved one; the players and teams lists are drawn by the server, which
-    reads an address range itself, so only a saved range (one the server cannot see) holds them back. */
+    draws in the browser, so it waits for an address range as well as a saved one; the players list is drawn by the server, which
+    reads an address range itself, so only a saved range (one the server cannot see) holds it back; the teams list is drawn in the browser like the home chart. */
 export const RANGE_PAGES: Record<string, { key: string; holdForAddress: boolean }> = {
   "/": { key: KEY, holdForAddress: true },
   "/players": { key: "spxn-range-players", holdForAddress: false },
-  "/teams": { key: "spxn-range-teams", holdForAddress: false },
+  "/teams": { key: "spxn-range-teams", holdForAddress: true },
 };
 
 /** The league pages (/nhl, /nba ...) take a range from the address only, nothing is saved for them: they wait for an address range like the home chart. */

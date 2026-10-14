@@ -3,6 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { createRequire } from "node:module";
+import { TEAMS_CLIENT_KEYS } from "../src/lib/teamBoard.ts";
 import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
@@ -116,7 +117,17 @@ test("a city page reads its years in the browser, so from and to leave it the st
   assert.equal(route({ path: city, query: { from: "1990", sort: "years.asc" } }), `/en/q${city}`);
   assert.match(route({ path: city, query: { phase: "p" } }), /^\/en\/q\//);
   assert.match(route({ path: "/players", query: { from: "1990" } }), /^\/en\/q\//);
-  assert.match(route({ path: "/teams", query: { to: "1990" } }), /^\/en\/q\//);
+  assert.equal(route({ path: "/teams", query: { to: "1990" } }), "/en/s/teams");
+});
+
+test("the teams list reads every choice in the browser, so none of them asks the server for a copy; its sub-pages still can", () => {
+  for (const key of TEAMS_CLIENT_KEYS) {
+    assert.equal(route({ path: "/teams", query: { [key]: "1" } }), "/en/s/teams", key);
+    assert.equal(route({ path: "/teams", query: { [key]: "1" }, cookie: "spxn-locale=fr" }), "/fr/s/teams", key);
+  }
+  assert.equal(route({ path: "/teams", query: { league: "nhl", conf: "East", div: "Atlantic", titles: "3", from: "1990", to: "2005", sort: "titles.desc", page: "2", q: "bruins", status: "active" } }), "/en/s/teams");
+  assert.match(route({ path: "/teams/lineage", query: { league: "nhl" } }), /^\/en\/q\/teams\/lineage/);
+  assert.match(route({ path: "/teams/coaches", query: { league: "nhl" } }), /^\/en\/q\/teams\/coaches/);
 });
 
 test("the home page and the pages that read no query stay static whatever the query is", () => {

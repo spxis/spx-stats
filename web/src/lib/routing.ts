@@ -34,8 +34,8 @@ export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season"] as 
 export const CITY_CLIENT_KEYS = ["from", "to"] as const;
 
 /** Pages that read no query at all, even on the server: always the static copy, whatever the address carries (the home page and
-    the league pages keep their year range and the like in the browser). */
-export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", "countries", "soccer", "worldcup", "mls", ...LEAGUE_CODES] as const;
+    the league pages keep their year range and the like in the browser; so does /teams, whose keys are TEAMS_CLIENT_KEYS in lib/teamBoard.ts). */
+export const ALWAYS_STATIC = ["about", "cities", "teams", "logos", "privacy", "quality", "sources", "terms", "venues", "countries", "soccer", "worldcup", "mls", ...LEAGUE_CODES] as const;
 
 /** The first path segments that start pages with more in their address: anything else is not a page (a typo, a scanner) and is answered, unkept, with the 404. */
 export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city", "venue", "worldcup", "mls", "country"] as const;

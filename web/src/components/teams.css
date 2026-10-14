@@ -1,0 +1,30 @@
+/* The teams list (/teams): its filters, the conference and division bar, the table's own columns and the map in the corner. Tokens come from globals.css. */
+.teamfind input[type="search"] { width: min(300px, 100%); }
+.teamshead .lede { max-width: 70ch; }
+/* The small map sits in the top-right corner of the heading (city.css gives it its box); the heading text keeps clear of it. */
+@media (min-width: 641px) {
+  .teamshead:has(.citymap) h1, .teamshead:has(.citymap) .lede, .teamshead:has(.citymap) .note { max-width: calc(100% - 240px); }
+}
+
+/* Conferences and divisions of the league on show: a labelled row of choices each, wrapping on a narrow screen. */
+.groupbar { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px 24px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--rule); }
+.groupset { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.grouplabel { font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.seg.wrap { flex-wrap: wrap; max-width: 100%; }
+.groupnote { flex: 1 1 100%; margin: 0; font-size: 14px; }
+
+/* The least number of titles. */
+.mintitles { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin: 6px 0 10px; max-width: 520px; }
+.mintitles label { font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.mintitles input[type="range"] { flex: 1 1 160px; min-width: 120px; min-height: 36px; accent-color: var(--ink); }
+.mintitles output { flex: none; min-width: 7ch; font: 600 15px/1 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+
+/* The columns this page adds. */
+.teamlist td.country { white-space: nowrap; }
+.teamlist td.country .cc { margin-left: 4px; font-variant-numeric: tabular-nums; }
+.teamlist td.place { white-space: nowrap; }
+.teamlist td.place .moved { margin-left: 6px; color: var(--muted); cursor: help; }
+.teamlist td.former { max-width: min(340px, 42vw); overflow: hidden; }
+.formerlist { display: flex; align-items: center; gap: 0 14px; margin: 0; padding: 0; list-style: none; white-space: nowrap; }
+.formerlist li { display: inline-flex; align-items: center; flex: none; font-size: 14px; color: var(--muted); }
+.formerlist .logo { margin-right: 5px; vertical-align: 0; }

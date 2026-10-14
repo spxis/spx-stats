@@ -37,21 +37,27 @@ export interface CityData {
  * Every city, the city of every club season and the stays they add up to. The views come with migration 062; until it is on the server,
  * or if a read fails, this throws and the pages show their inline "Couldn't load" note (or no city link).
  */
+/** Every city (api.city). The teams list reads this and the placements without the club seasons, so it asks for exactly what the city pages ask for and shares their cached reads. */
+export const getCities = cache(async (): Promise<CityRef[]> =>
+  (await rows("city", "select=slug,name,name_fr,region,country_code,latitude,longitude,metro_slug,metro_name,metro_name_fr&order=slug", cityRow)).map((c) => ({
+    slug: c.slug, name: c.name, nameFr: c.name_fr, region: c.region, country: c.country_code, lat: c.latitude, lon: c.longitude,
+    metro: c.metro_slug, metroName: c.metro_name, metroNameFr: c.metro_name_fr,
+  })));
+
+/** The city of every club season (api.team_season_city). */
+export const getPlacements = cache(async (): Promise<Placement[]> =>
+  (await rows("team_season_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id", placementRow)).map((p) => ({
+    league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
+  })));
+
 export const getCityData = cache(async (): Promise<CityData> => {
-  const [cityRows, placed, seasons, cup, finalists] = await Promise.all([
-    rows("city", "select=slug,name,name_fr,region,country_code,latitude,longitude,metro_slug,metro_name,metro_name_fr&order=slug", cityRow),
-    rows("team_season_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id", placementRow),
+  const [cities, placements, seasons, cup, finalists] = await Promise.all([
+    getCities(),
+    getPlacements(),
     teamSeasonRows("select=league,year,franchise_id,team,w,l,t,otl,champion&order=league,year,franchise_id", seasonRow),
     getCupTitles(),
     getCupFinalists(),
   ]);
-  const cities: CityRef[] = cityRows.map((c) => ({
-    slug: c.slug, name: c.name, nameFr: c.name_fr, region: c.region, country: c.country_code, lat: c.latitude, lon: c.longitude,
-    metro: c.metro_slug, metroName: c.metro_name, metroNameFr: c.metro_name_fr,
-  }));
-  const placements: Placement[] = placed.map((p) => ({
-    league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
-  }));
   const club: ClubSeason[] = seasons.map((s) => ({ league: s.league, year: s.year, f: s.franchise_id, team: s.team, w: s.w, l: s.l, t: s.t, otl: s.otl, champion: !!s.champion }));
   return { cities, byslug: new Map(cities.map((c) => [c.slug, c])), placements, stays: withCupTitles(buildStays(placements, club), cup, finalists) };
 });

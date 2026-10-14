@@ -85,9 +85,9 @@ test("the head script holds each page on its own saved range", () => {
   // another page's saved range does not hold this one
   assert.equal(held("/players", "", { "spxn-range-teams": "1990-2005", "spxn-range": "1990-2005" }), false);
   assert.equal(held("/teams", "", { "spxn-range-players": "1990-2005" }), false);
-  // an address range: the server draws a list from it, so only the home chart waits
+  // an address range: the server draws the players list from it, so only the pages drawn in the browser (the home chart, the teams list) wait
   assert.equal(held("/players", "?from=1990&to=2005", { "spxn-range-players": "1990-2005" }), false);
-  assert.equal(held("/teams", "?to=2005", {}), false);
+  assert.equal(held("/teams", "?to=2005", {}), true);
   assert.equal(held("/", "?from=1990", {}), true);
   // junk and other paths
   assert.equal(held("/players", "", { "spxn-range-players": "abc" }), false);

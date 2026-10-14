@@ -55,6 +55,8 @@ interface Props {
   groups?: { id: string; title: string; sub?: string }[];
   /** Ties each row to a mark on a chart by row id: the row under the pointer or focus is announced to the chart, and the point the chart marks lights its row. */
   link?: RowLink;
+  /** The page keeps the sort itself (it sorts and pages the whole list before giving this table a page of it): a press calls this with the new sort, and nothing is written to the address here. Pair it with `initial`, the sort the page holds. */
+  onSort?: (sort: SortKey[]) => void;
 }
 
 /**
@@ -63,7 +65,7 @@ interface Props {
  * and blanks come last whichever way the sort runs. The rows arrive already drawn (the page makes the links), so the
  * table is server-rendered and crawlable.
  */
-export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link }: Props) {
+export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort }: Props) {
   const router = useRouter();
   const { say } = useSpeaker();
   const known = useMemo(() => columns.map((c) => c.key), [columns]);
@@ -89,7 +91,8 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
     const dir = first && first.key === c.key ? (first.dir === "desc" ? "asc" : "desc") : c.num ? "desc" : "asc";
     const next: SortKey[] = [{ key: c.key, dir }];
     setPicked(next);
-    if (remote && c.rest) startTransition(() => router.replace(hrefWith({ [param]: formatSort(next), page: null }), { scroll: false }));
+    if (onSort) onSort(next);
+    else if (remote && c.rest) startTransition(() => router.replace(hrefWith({ [param]: formatSort(next), page: null }), { scroll: false }));
     else replaceQuery({ [param]: formatSort(next) });
   }
 
