@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.98.0",
+  "version": "0.98.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -14,6 +14,8 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "task": "node scripts/task.ts",
+    "trophies": "node scripts/trophyMarkup.ts",
+    "test:trophies": "node --test scripts/trophies.test.ts",
     "i18n:review": "node scripts/i18n-review.ts",
     "test:i18n": "node --test scripts/i18n.test.ts",
     "test:auth": "node --test scripts/auth.test.ts",
@@ -56,7 +58,6 @@
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",
     "@johnmorrisdotca/chizu": "1.4.0",
-    "@johnmorrisdotca/dougu-sports": "0.1.0",
     "@johnmorrisdotca/hata": "1.5.0",
     "@johnmorrisdotca/kyogijo-stadiums": "0.4.0",
     "d3": "7.9.0",
@@ -69,6 +70,7 @@
     "zod": "^4.6.5"
   },
   "devDependencies": {
+    "@johnmorrisdotca/dougu-sports": "0.1.0",
     "@tailwindcss/postcss": "^4.3.3",
     "@types/d3": "^7.4.3",
     "@types/d3-sankey": "0.12.5",

@@ -20,7 +20,7 @@ import { teamName } from "@/lib/soccerNames";
 import { isYearSeg, soccerMatchPath, soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPath";
 import { groupLabel, reachRank, reached, scoreLines } from "@/lib/soccerView";
 import { tableOf } from "@/lib/sort";
-import { PlaceMedal } from "@/components/TrophyIcon";
+import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
 
 export const revalidate = 3600;

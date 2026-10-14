@@ -15,7 +15,7 @@ import { getMlsLeaders, getMlsMatches, getMlsSeasonTeams, getMlsStandings, mlsSe
 import { MLS_PATH, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
 import { mlsReachRank, mlsReached, mlsScoreLines, mlsStageName } from "@/lib/mlsView";
 import { tableOf } from "@/lib/sort";
-import { PlaceMedal } from "@/components/TrophyIcon";
+import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
 
 export const revalidate = 3600;

@@ -14,9 +14,6 @@ importers:
       '@johnmorrisdotca/chizu':
         specifier: 1.4.0
         version: 1.4.0
-      '@johnmorrisdotca/dougu-sports':
-        specifier: 0.1.0
-        version: 0.1.0
       '@johnmorrisdotca/hata':
         specifier: 1.5.0
         version: 1.5.0
@@ -48,6 +45,9 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
+      '@johnmorrisdotca/dougu-sports':
+        specifier: 0.1.0
+        version: 0.1.0
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
