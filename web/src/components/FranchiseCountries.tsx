@@ -4,7 +4,8 @@ import { CountryDonut, type Slice } from "@/components/CountryDonut";
 import { CountryMapDialog } from "@/components/CountryMapDialog";
 import { CountryRanker } from "@/components/CountryRanker";
 import { Credits } from "@/components/Credits";
-import { flagsFor, getFranchiseCountries, getFranchiseSeasons } from "@/lib/countryData";
+import { getFranchiseCountries, getFranchiseSeasons } from "@/lib/countryData";
+import { flagCodes } from "@/lib/flagCodes";
 import { MIN_PLAYERS, rankCountries, stackSeries, tally, UNKNOWN, withOther, type RankKind } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { STAT_GROUP_ORDER } from "@/lib/playerStats";
@@ -33,7 +34,7 @@ export async function FranchiseCountries({ lg, f, name }: { lg: string; f: numbe
   ];
   const keep = top.map((c) => c.code);
   const stack = stackSeries(seasons, keep);
-  const flags = await flagsFor(t.list.map((c) => c.code));
+  const flags = flagCodes(t.list.map((c) => c.code));
   const counts = Object.fromEntries(t.list.map((c) => [c.code, c.n]));
   const tpl = "/country/{code}";
   const href = (code: string) => `/country/${code}`;

@@ -6,7 +6,8 @@ import { KDot } from "@/components/CountryDonut";
 import { Credits } from "@/components/Credits";
 import { FlagIcon } from "@/components/FlagIcon";
 import { SortTable } from "@/components/SortTable";
-import { flagsFor, getLeagueCounts, getSeasonCounts } from "@/lib/countryData";
+import { getLeagueCounts, getSeasonCounts } from "@/lib/countryData";
+import { flagCodes } from "@/lib/flagCodes";
 import { coolCards, isKnown, shareSeries, tally, versus } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUE_CODES, LG, seasonLabel } from "@/lib/leagues";
@@ -42,7 +43,7 @@ export default guard(async function CountriesPage() {
   const cover = leagues.map((l) => { const r = leagueRows.find((x) => x.league === l)!; return { league: l, all: r.league_players, known: r.league_known, countries: leagueRows.filter((x) => x.league === l && isKnown(x.country)).length }; });
   const overall = tally(leagueRows.map((r) => [r.country, r.players] as [string, number]));
   const barCodes = overall.list.slice(0, BAR_COUNTRIES).map((c) => c.code);
-  const flags = await flagsFor(overall.list.map((c) => c.code));
+  const flags = flagCodes(overall.list.map((c) => c.code));
   const cards = coolCards(seasonRows, leagueRows);
   const rows = versus(leagueRows);
 
@@ -54,7 +55,7 @@ export default guard(async function CountriesPage() {
   }) : null;
 
   const lead = (code: string) => (
-    <span className="cflagname">{flags[code] ? <FlagIcon svg={flags[code]} /> : null}<Link href={`/country/${code}`} prefetch={false}>{countryName(code, locale)}</Link></span>
+    <span className="cflagname">{flags[code] ? <FlagIcon code={code} /> : null}<Link href={`/country/${code}`} prefetch={false}>{countryName(code, locale)}</Link></span>
   );
   const table = tableOf(rows, [
     { key: "country", label: say("col.country"), cls: "team", get: (r) => countryName(r.code, locale), cell: (r) => lead(r.code) },
@@ -118,7 +119,7 @@ export default guard(async function CountriesPage() {
           })}
         </div>
         <div className="legend">
-          {barCodes.map((code, i) => <span key={code}><KDot s={{ code, n: 0, slot: i }} />{flags[code] ? <FlagIcon svg={flags[code]} /> : null}{countryName(code, locale)}</span>)}
+          {barCodes.map((code, i) => <span key={code}><KDot s={{ code, n: 0, slot: i }} />{flags[code] ? <FlagIcon code={code} /> : null}{countryName(code, locale)}</span>)}
           <span><KDot s={{ code: "other", n: 0, kind: "other" }} />{say("country.other")}</span>
           <span><KDot s={{ code: "ZZ", n: 0, kind: "unknown" }} />{say("country.unknown")}</span>
         </div>

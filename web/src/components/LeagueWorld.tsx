@@ -33,7 +33,7 @@ export interface LeagueWorldData {
  * and the map, the figures and the table follow. Counts are player-seasons: a player is counted once for each season he played, so for one season
  * they are players. Everything is added up in the browser from the one list the page was drawn with, so the page stays a kept, static copy.
  */
-export function LeagueWorld({ data, flags, min, max }: { data: LeagueWorldData; flags: Record<string, string>; min: number; max: number }) {
+export function LeagueWorld({ data, flags, min, max }: { data: LeagueWorldData; flags: Record<string, true>; min: number; max: number }) {
   const { say, fmt, plural, locale } = useSpeaker();
   const [range, setRange] = useState({ from: min, to: max });
   const r = useDeferredValue(range);
@@ -62,7 +62,7 @@ export function LeagueWorld({ data, flags, min, max }: { data: LeagueWorldData; 
   const table = tableOf(rows, [
     {
       key: "country", label: say("col.country"), cls: "team", get: (x) => nameOf(x.code),
-      cell: (x) => <span className="cflagname">{flags[x.code] ? <FlagIcon svg={flags[x.code]} /> : null}<Link href={hrefFor(x.code)} prefetch={false}>{nameOf(x.code)}</Link></span>,
+      cell: (x) => <span className="cflagname">{flags[x.code] ? <FlagIcon code={x.code} /> : null}<Link href={hrefFor(x.code)} prefetch={false}>{nameOf(x.code)}</Link></span>,
     },
     { key: "n", label: say("country.colPlayerSeasons"), title: say("country.playerSeasonsTitle"), num: true, get: (x) => x.n, cell: (x) => fmt(x.n) },
     { key: "share", label: say("country.colShare"), title: say("country.shareTitle"), num: true, get: (x) => x.n / Math.max(view.known, 1), cell: (x) => pctText(x.n / Math.max(view.known, 1), locale) },

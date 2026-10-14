@@ -5,7 +5,8 @@ import { CountryMapDialog } from "@/components/CountryMapDialog";
 import { CountryRanker } from "@/components/CountryRanker";
 import { Credits } from "@/components/Credits";
 import { queryHref } from "@/components/ViewTabs";
-import { flagsFor, getClubSeasonCountries, getSeasonCounts } from "@/lib/countryData";
+import { getClubSeasonCountries, getSeasonCounts } from "@/lib/countryData";
+import { flagCodes } from "@/lib/flagCodes";
 import { MIN_PLAYERS, rankCountries, sumStats, tally, UNKNOWN, withOther, type RankKind } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { countryName, pctText } from "@/lib/people-format";
@@ -52,7 +53,7 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
   const against = leagueKnown ? t.list.slice(0, 5).map((c) => ({ code: c.code, mine: c.n / t.known, theirs: (league!.find((r) => r.country === c.code)?.players ?? 0) / leagueKnown })) : [];
   const top100 = Math.max(0.01, ...against.flatMap((r) => [r.mine, r.theirs]));
 
-  const flags = await flagsFor(t.list.map((c) => c.code));
+  const flags = flagCodes(t.list.map((c) => c.code));
   const countsRecord = Object.fromEntries(t.list.map((c) => [c.code, c.n]));
   const pc = (v: number) => pctText(v, locale);
 

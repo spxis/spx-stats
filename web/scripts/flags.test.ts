@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { FLAG_HEIGHT, FLAG_ROUND_HERO, FLAG_ROUND_LARGE, FLAG_SIDE, FLAG_WIDTH, HATA_SHAPE, sizeFlagSvg } from "../src/lib/flagSvg.ts";
+import { FLAG_HEIGHT, FLAG_ROUND_HERO, FLAG_ROUND_LARGE, FLAG_SIDE, FLAG_FILE, FLAG_WIDTH, HATA_SHAPE, flagAddress, sizeFlagSvg } from "../src/lib/flagSvg.ts";
 
 /**
  * Run in web/: pnpm test:flags
@@ -32,6 +32,17 @@ test("sizeFlagSvg gives the round and square shapes the 18px box", () => {
 
 test("the round and square shapes are Hata's own frames, never clipped by hand", () => {
   assert.deepEqual(HATA_SHAPE, { rect: undefined, round: { shape: "round" }, square: { shape: "1:1" } });
+});
+
+test("a flag is an image of its own file, named by code and shape, and the file name reads back", () => {
+  assert.equal(flagAddress("ca"), "/flag/CA.svg");
+  assert.equal(flagAddress("es", "round"), "/flag/ES.round.svg");
+  assert.equal(flagAddress("gb-eng", "square"), "/flag/GB-ENG.square.svg");
+  for (const shape of ["rect", "round", "square"] as const) {
+    const m = FLAG_FILE.exec(flagAddress("gb-eng", shape).slice("/flag/".length));
+    assert.deepEqual([m?.[1], m?.[2] ?? "rect"], ["GB-ENG", shape]);
+  }
+  for (const bad of ["../x.svg", "CA.png", "CANADA.svg", "CA.round.round.svg", "C.svg"]) assert.equal(FLAG_FILE.test(bad), false, bad);
 });
 
 test("flag.css uses the same numbers as flagSvg.ts", () => {
@@ -103,8 +114,8 @@ test("every flag on the page is the same fixed size at desktop and phone width",
         const found = await page.evaluate(() => {
           const box = (e: Element) => { const r = e.getBoundingClientRect(); return [Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; };
           return {
-            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg") ? box(e.querySelector("svg")!) : null, shaped: e.classList.contains("flag-round") || e.classList.contains("flag-square"), large: e.classList.contains("flag-lg"), hero: e.classList.contains("flag-hero") })),
-            stray: document.querySelectorAll("svg[data-hata]:not(.flag svg)").length,
+            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg, img") ? box(e.querySelector("svg, img")!) : null, shaped: e.classList.contains("flag-round") || e.classList.contains("flag-square"), large: e.classList.contains("flag-lg"), hero: e.classList.contains("flag-hero") })),
+            stray: document.querySelectorAll("svg[data-hata]:not(.flag svg), img[src^=\"/flag/\"]:not(.flag img)").length,
           };
         });
         // The players list is only required to be tidy once the country column exists; the others must show flags.

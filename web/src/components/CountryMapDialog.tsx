@@ -12,7 +12,7 @@ import "./country.css";
  * and go to its players. Chizu and its outlines load only here, in the browser. Nothing is drawn if the map cannot be made.
  */
 export function CountryMapDialog({ counts, flags, hrefTpl, title, caption, unit }: {
-  counts: Record<string, number>; flags: Record<string, string>; hrefTpl?: string; title: string; caption: string; unit: "players" | "playerSeasons";
+  counts: Record<string, number>; flags: Record<string, true>; hrefTpl?: string; title: string; caption: string; unit: "players" | "playerSeasons";
 }) {
   const { say, locale } = useSpeaker();
   const thumb = useRef<HTMLDivElement>(null);

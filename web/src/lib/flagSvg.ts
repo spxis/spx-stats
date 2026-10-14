@@ -24,6 +24,17 @@ export function flagBox(shape: FlagShape = "rect"): { width: number; height: num
 }
 
 /**
+ * Where a flag's own file is (app/flag/[file]): `/flag/CA.svg`, `/flag/CA.round.svg`, `/flag/CA.square.svg`. A page draws a flag as an image of this
+ * address, so the drawing (up to 100 KB) is fetched once per browser and never repeated in a page's markup or payload.
+ */
+export function flagAddress(code: string, shape: FlagShape = "rect"): string {
+  return `/flag/${code.toUpperCase()}${shape === "rect" ? "" : `.${shape}`}.svg`;
+}
+
+/** What a name under /flag/ may be: a country's or subdivision's code, then optionally the shape. */
+export const FLAG_FILE = /^([A-Za-z]{2}(?:-[A-Za-z0-9]{1,3})?)(?:\.(round|square))?\.svg$/;
+
+/**
  * Hata's drawings carry a viewBox but no width or height, so left alone they stretch to fill whatever holds them.
  * This gives the drawing the fixed box; the viewBox keeps its own shape inside (contained, never stretched).
  */

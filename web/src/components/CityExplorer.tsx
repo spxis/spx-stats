@@ -47,7 +47,7 @@ function count(c: CityListRow, from: number, to: number): Counted {
  * one list the page was drawn with, so the page stays a kept, static copy. The range narrows the cities to those with a club season in it
  * and adds their clubs, seasons, titles and win share up for those years only.
  */
-export function CityExplorer({ cities, min, max, flags }: { cities: CityListRow[]; min: number; max: number; flags: Record<string, string> }) {
+export function CityExplorer({ cities, min, max, flags }: { cities: CityListRow[]; min: number; max: number; flags: Record<string, true> }) {
   const { say, fmt, plural, locale } = useSpeaker();
   const uid = useId();
   const [q, setQ] = useState("");
@@ -70,7 +70,7 @@ export function CityExplorer({ cities, min, max, flags }: { cities: CityListRow[
       cell: ({ c }) => (
         <>
           <Link href={`/city/${c.slug}`} prefetch={false}>{nameOf(c)}</Link>
-          <span className="seasoncell"> {c.region}{flags[c.cc] ? <FlagIcon svg={flags[c.cc]} /> : null}</span>
+          <span className="seasoncell"> {c.region}{flags[c.cc] ? <FlagIcon code={c.cc} /> : null}</span>
         </>
       ),
     },

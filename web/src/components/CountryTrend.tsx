@@ -8,7 +8,7 @@ import { ShareLines, type ShareSeries } from "./ShareLines";
 import "./country.css";
 
 /** A country picker over the trend chart: the country's share of each league's players, decade by decade. `data` holds every offered country's lines. */
-export function CountryTrend({ data, flags, initial }: { data: Record<string, ShareSeries[]>; flags: Record<string, string>; initial: string }) {
+export function CountryTrend({ data, flags, initial }: { data: Record<string, ShareSeries[]>; flags: Record<string, true>; initial: string }) {
   const { say, locale } = useSpeaker();
   const id = useId();
   const [code, setCode] = useState(initial);
@@ -21,7 +21,7 @@ export function CountryTrend({ data, flags, initial }: { data: Record<string, Sh
         <select id={id} value={code} onChange={(e) => setCode(e.target.value)}>
           {codes.map((c) => <option key={c} value={c}>{countryName(c, locale)}</option>)}
         </select>
-        {flags[code] ? <FlagIcon svg={flags[code]} /> : null}
+        {flags[code] ? <FlagIcon code={code} /> : null}
       </div>
       <ShareLines series={data[code] ?? []} label={say("country.trendAria", { name })} tableLabel={say("country.showTable")} />
     </div>

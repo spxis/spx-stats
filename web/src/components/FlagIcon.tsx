@@ -1,12 +1,20 @@
-import { sizeFlagSvg, type FlagShape } from "@/lib/flagSvg";
+import { flagAddress, flagBox, type FlagShape } from "@/lib/flagSvg";
 import "./flag.css";
 
 /**
  * The one place a flag is drawn: Hata's SVG (MIT; the drawings are from Wikimedia Commons) in the site's fixed flag box.
- * Plain markup with no server-only code, so a client component can use it; pages use the async Flag instead.
- * Without `name` the flag is decoration (the country is named beside it). `shape` must be the one the svg was loaded for.
+ * The page carries only the address of the flag's own file (app/flag/[file], kept and cached by the browser), never the drawing: some of
+ * Hata's drawings are over 100 KB and a page used to hold each one in its markup and again in its payload. No server-only code, so a
+ * client component can use it; pages use the async Flag, which also checks that Hata has the flag.
+ * Without `name` the flag is decoration (the country is named beside it). A code Hata has no flag for must not reach here (flagCodes() in lib/flagCodes.ts).
  */
-export function FlagIcon({ svg, name, label, shape = "rect" }: { svg: string; name?: string; label?: string; shape?: FlagShape }) {
+export function FlagIcon({ code, name, label, shape = "rect" }: { code: string; name?: string; label?: string; shape?: FlagShape }) {
   const a11y = name ? { role: "img", "aria-label": label ?? name, title: name } : { "aria-hidden": true as const };
-  return <span className={shape === "rect" ? "flag" : `flag flag-${shape}`} {...a11y} dangerouslySetInnerHTML={{ __html: sizeFlagSvg(svg, shape) }} />;
+  const { width, height } = flagBox(shape);
+  return (
+    <span className={shape === "rect" ? "flag" : `flag flag-${shape}`} {...a11y}>
+      {/* eslint-disable-next-line @next/next/no-img-element -- a small SVG file, not a photo: next/image has nothing to resize */}
+      <img src={flagAddress(code, shape)} width={width} height={height} alt="" loading="lazy" decoding="async" draggable={false} />
+    </span>
+  );
 }

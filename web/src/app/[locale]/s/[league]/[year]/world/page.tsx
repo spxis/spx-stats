@@ -10,7 +10,8 @@ import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
 import { Figures } from "@/components/ui";
 import { logoFor } from "@/lib/brand";
-import { flagsFor, getLeagueSeasonClubs, getSeasonCounts } from "@/lib/countryData";
+import { getLeagueSeasonClubs, getSeasonCounts } from "@/lib/countryData";
+import { flagCodes } from "@/lib/flagCodes";
 import { tally, UNKNOWN, withOther } from "@/lib/countryModel";
 import { getBrands, getSeasonStandings } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -65,7 +66,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
     ...(other ? [{ code: "other", n: other, kind: "other" as const }] : []),
     ...(t.unknown ? [{ code: UNKNOWN, n: t.unknown, kind: "unknown" as const }] : []),
   ];
-  const flags = await flagsFor(t.list.map((c) => c.code));
+  const flags = flagCodes(t.list.map((c) => c.code));
   const counts = Object.fromEntries(t.list.map((c) => [c.code, c.n]));
   const names = new Map((await getSeasonStandings(lg, y).catch(() => [])).map((r) => [r.franchise_id, r.team]));
 
@@ -83,7 +84,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
     })),
     {
       key: "top", label: say("country.colTop"), get: (x) => (x.t.list[0] ? countryName(x.t.list[0].code, locale) : null),
-      cell: (x) => (x.t.list[0] ? <span className="cflagname">{flags[x.t.list[0].code] ? <FlagIcon svg={flags[x.t.list[0].code]} /> : null}{countryName(x.t.list[0].code, locale)}</span> : ""),
+      cell: (x) => (x.t.list[0] ? <span className="cflagname">{flags[x.t.list[0].code] ? <FlagIcon code={x.t.list[0].code} /> : null}{countryName(x.t.list[0].code, locale)}</span> : ""),
     },
   ], (x) => x.f);
 

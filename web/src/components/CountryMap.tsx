@@ -15,7 +15,7 @@ import "./country.css";
  * depends on the map being seen. A country Chizu has no outline for is named under the map instead.
  */
 export function CountryMap({ counts, flags, hrefTpl, label, unit, empty }: {
-  counts: Record<string, number>; flags: Record<string, string>; hrefTpl?: string; label: string;
+  counts: Record<string, number>; flags: Record<string, true>; hrefTpl?: string; label: string;
   /** What the counts are: players, or player-seasons. */
   unit: "players" | "playerSeasons"; empty?: string;
 }) {
@@ -49,7 +49,7 @@ export function CountryMap({ counts, flags, hrefTpl, label, unit, empty }: {
   const count = (c: string) => counts[c] ?? 0;
   const noun = (n: number) => (unit === "players" ? plural("count.players", n) : plural("count.playerSeasons", n));
   const name = (c: string) => countryName(c, locale);
-  const flag = (c: string) => (flags[c] ? <FlagIcon svg={flags[c]} /> : null);
+  const flag = (c: string) => (flags[c] ? <FlagIcon code={c} /> : null);
   const offKnown = off.filter((c) => count(c) > 0);
 
   return (

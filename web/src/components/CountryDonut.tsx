@@ -23,12 +23,12 @@ export function KDot({ s }: { s: Slice }) {
 }
 
 /** The name of a slice in the reader's language, with its flag. */
-export function SliceName({ s, flags, hrefTpl }: { s: Slice; flags: Record<string, string>; hrefTpl?: string }) {
+export function SliceName({ s, flags, hrefTpl }: { s: Slice; flags: Record<string, true>; hrefTpl?: string }) {
   const { say, locale } = useSpeaker();
   if (s.kind === "other") return <>{say("country.other")}</>;
   if (s.kind === "unknown") return <>{say("country.unknown")}</>;
   const name = countryName(s.code, locale);
-  const inner = <>{flags[s.code] ? <FlagIcon svg={flags[s.code]} /> : null} {hrefTpl ? <Link href={fillHref(hrefTpl, s.code)} prefetch={false}>{name}</Link> : name}</>;
+  const inner = <>{flags[s.code] ? <FlagIcon code={s.code} /> : null} {hrefTpl ? <Link href={fillHref(hrefTpl, s.code)} prefetch={false}>{name}</Link> : name}</>;
   return inner;
 }
 
@@ -37,7 +37,7 @@ export function SliceName({ s, flags, hrefTpl }: { s: Slice; flags: Record<strin
  * Hovering a slice names it; a legend name links where `hrefFor` says (the roster filtered to that country).
  */
 export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hrefTpl }: {
-  title: string; sub?: string; slices: Slice[]; flags: Record<string, string>; centre: string; centreSub: string; hrefTpl?: string;
+  title: string; sub?: string; slices: Slice[]; flags: Record<string, true>; centre: string; centreSub: string; hrefTpl?: string;
 }) {
   const { say, fmt, locale } = useSpeaker();
   const box = useRef<HTMLDivElement | null>(null);

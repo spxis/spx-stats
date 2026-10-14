@@ -1,10 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { flag } from "@johnmorrisdotca/hata/load";
 import { ApiError, rows } from "./api/client";
 import type { FranchiseCount, LeagueCount, SeasonCount, TeamSeasonCount } from "./countryModel";
-import { HATA_SHAPE, type FlagShape } from "./flagSvg";
 
 /**
  * The reads behind the country pages (api.country_team_season, country_season, country_league, country_franchise: migration 068).
@@ -57,17 +55,3 @@ export const getFranchiseCountries = cache(async (league: string, franchise: num
 /** Every franchise of a league: who was on the club by country (stat group all). */
 export const getLeagueFranchises = cache(async (league: string): Promise<FranchiseCount[] | null> =>
   rows("country_franchise", `${lg(league)}&stat_group=eq.all&select=league,franchise_id,stat_group,country,players,seasons,stats`, franchiseSchema).catch(missing));
-
-/**
- * Hata's flags for the first `limit` of these countries (pass them biggest first), as the SVG text the client components draw with FlagIcon.
- * Some flags are big drawings (Spain's is 110 kB) and a page draws each one several times, so the small countries go without: their names stand alone.
- * A code Hata has no flag for is left out.
- */
-export async function flagsFor(codes: Iterable<string>, limit = 16, shape: FlagShape = "rect"): Promise<Record<string, string>> {
-  const out: Record<string, string> = {};
-  await Promise.all([...new Set(codes)].slice(0, limit).map(async (c) => {
-    const svg = await flag(c.toUpperCase(), HATA_SHAPE[shape]).catch(() => null);
-    if (svg) out[c] = svg;
-  }));
-  return out;
-}

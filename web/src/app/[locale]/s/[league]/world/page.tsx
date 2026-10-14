@@ -10,7 +10,8 @@ import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
 import { logoFor } from "@/lib/brand";
 import { getBrands } from "@/lib/data";
-import { flagsFor, getLeagueCounts, getLeagueFranchises, getSeasonCounts } from "@/lib/countryData";
+import { getLeagueCounts, getLeagueFranchises, getSeasonCounts } from "@/lib/countryData";
+import { flagCodes } from "@/lib/flagCodes";
 import { coolCards, isKnown, stackSeries, tally } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG } from "@/lib/leagues";
@@ -70,7 +71,7 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
   };
   const best = tally(leagueRows.map((r) => [r.country, r.players] as [string, number])).list.slice(0, 6).map((c) => c.code);
   const stack = stackSeries(seasonRows, best);
-  const flags = await flagsFor(tally(leagueRows.map((r) => [r.country, r.players] as [string, number])).list.map((c) => c.code));
+  const flags = flagCodes(tally(leagueRows.map((r) => [r.country, r.players] as [string, number])).list.map((c) => c.code));
   const cards = coolCards(seasonRows, leagueRows);
 
   // by team: everyone who was on the club, by country
@@ -87,7 +88,7 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
     { key: "countries", label: say("country.colCountries"), num: true, get: (x) => x.t.list.length, cell: (x) => fmt(x.t.list.length) },
     {
       key: "top", label: say("country.colTop"), get: (x) => countryName(x.t.list[0].code, locale),
-      cell: (x) => <span className="cflagname">{flags[x.t.list[0].code] ? <FlagIcon svg={flags[x.t.list[0].code]} /> : null}{countryName(x.t.list[0].code, locale)}</span>,
+      cell: (x) => <span className="cflagname">{flags[x.t.list[0].code] ? <FlagIcon code={x.t.list[0].code} /> : null}{countryName(x.t.list[0].code, locale)}</span>,
     },
     { key: "topshare", label: say("country.colTopShare"), num: true, get: (x) => x.t.list[0].n / x.t.known, cell: (x) => pctText(x.t.list[0].n / x.t.known, locale, 0) },
     {

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { flag } from "@johnmorrisdotca/hata/load";
+import { flagCodes } from "@/lib/flagCodes";
 import { CityExplorer, type CityListRow } from "@/components/CityExplorer";
 import { getCityData } from "@/lib/cityData";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -42,8 +42,7 @@ export default guard(async function CitiesPage() {
     }];
   });
   const years = rows.flatMap((r) => r.yr.filter((_, i) => i % 7 === 0));
-  const flags: Record<string, string> = {};
-  for (const cc of ["CA", "US"]) { const svg = await flag(cc).catch(() => null); if (svg) flags[cc] = svg; }
+  const flags = flagCodes(["CA", "US"]);
   return (
     <>
       <section className="head fade">
