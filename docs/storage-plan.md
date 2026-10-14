@@ -149,6 +149,19 @@ go (memory "Add-only migrations pre-approved"). Keep the constraints on DS1, whe
 DS1", and have `db/checks` ignore these constraint names. Rollback: `create unique index concurrently` on production, which takes
 about a minute for `game`.
 
+**Index audit, 2026-10-14** (counters 2026-10-02 18:01 to 2026-10-14 00:07 UTC, 11.2 days; Supabase performance advisors and
+`pg_stat_statements` read the same evening, nothing changed). Migration `084_drop_unused_indexes.sql` (production only, not applied):
+
+| | MB |
+|---|---|
+| Freed: the three unique constraints of step 2 (`core.game` 25.8, `meta.verification` 3.7, `core.betting_line` 2.7) | 32.2 |
+| Added: no new index qualified (the slow PostgREST queries are view shapes, not missing indexes: `api.standings` and `api.team_seasons` aggregate every game through `core.standing_from_games` on each call, and `api.person_career_totals` materialises all 267,459 stat rows in a CTE; the existing `game_home_idx`, `game_away_idx` and `player_season_stat_pkey` serve them once the key is pushed into the view) | 0 |
+| Net | -32.2 |
+
+Everything else is hot or too new to judge. Indexes of tables created or released since 2026-10-12 (venues, spring training, future
+venues, batted ball, pass/run, soccer) show no scans only because they are new; the advisor's "unused index" list is mostly those and
+is not a drop list. DS1 keeps the three constraints (the ingest function and loaders use them).
+
 **Headroom after steps 0 to 2 plus soccer and MLS:** about 332 MB, 168 MB under the plan, 118 MB under the release stop. At today's
 growth (about 8 MB a year for scores and new seasons) that is more than ten years. The real consumers of that headroom are:
 NBA, NFL and CFL player stats (40 to 60 MB, fits), then one more league with player stats (fits after step 4), then event-level
