@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.97.0",
+  "version": "0.97.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -24,6 +24,8 @@
     "test:champions": "node --test scripts/champions.test.ts",
     "test:range": "node --test scripts/listRange.test.ts",
     "test:routing": "node --test scripts/routing.test.ts",
+    "test:seasons": "node --test scripts/gameSeasons.test.ts",
+    "test:failure": "node --test scripts/apiFailure.test.ts",
     "test:streaks": "node --test scripts/streaks.test.ts",
     "test:city": "node --test scripts/city.test.ts",
     "test:surface": "node --test scripts/gameSurface.test.ts",

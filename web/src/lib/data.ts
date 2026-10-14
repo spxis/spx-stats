@@ -10,6 +10,7 @@ import {
 import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
+import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons";
 import { isSpx } from "./leagues";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
@@ -183,22 +184,42 @@ export const getTeamGames = cache(async (lg: string, y: number, f: number, dir: 
 
 const gameDaySchema = z.object({ game_date: z.string(), year: z.number() });
 type GameDay = z.infer<typeof gameDaySchema>;
+const seasonCountsSchema = z.object({ year: z.number(), games: z.number(), finals: z.number(), playoff_finals: z.number() });
+
+/**
+ * The start years of a league's seasons that have games, one small cached read. Every read of `games` that is not already
+ * inside one season carries a `year=eq.` taken from here: without it the view scans every game of every league (it reaches
+ * its league only through a join to the season) and a cold read outlasts the database's 8 s limit.
+ */
+const getLeagueYears = cache(async (lg: string): Promise<number[]> =>
+  playedYears(await rows("season_summary", `league=eq.${lg}&select=year,games,finals,playoff_finals&order=year`, seasonCountsSchema)));
 
 /** Every game of a league between two days (both included), for the scoreboard and the days around it. */
-export const getGamesBetween = cache(async (lg: string, first: string, last: string): Promise<GameRow[]> =>
-  rows("games", `league=eq.${lg}&game_date=gte.${first}&game_date=lte.${last}&select=*&order=game_date,game_id`, gameSchema));
+export const getGamesBetween = cache(async (lg: string, first: string, last: string): Promise<GameRow[]> => {
+  const years = windowSteps(await getLeagueYears(lg), first, last);
+  const parts = await Promise.all(years.map((y) => rows("games", `league=eq.${lg}&year=eq.${y}&game_date=gte.${first}&game_date=lte.${last}&select=*&order=game_date,game_id`, gameSchema)));
+  return parts.flat().sort((a, b) => (a.game_date < b.game_date ? -1 : a.game_date > b.game_date ? 1 : a.game_id - b.game_id));
+});
+
+/** The first row of these seasons (tried in the order given) that has a game matching `filter`, read in `order`. */
+async function firstGameDay(lg: string, steps: number[], filter: string, order: string): Promise<GameDay | null> {
+  for (const y of steps) {
+    const [r] = await rows("games", `league=eq.${lg}&year=eq.${y}${filter}&select=game_date,year&order=${order}&limit=1`, gameDaySchema);
+    if (r) return r;
+  }
+  return null;
+}
 
 /** The league's game day nearest a day on one side of it (strictly before or after), or null. */
-export const getGameDay = cache(async (lg: string, day: string, side: "before" | "after"): Promise<GameDay | null> => {
-  const [r] = await rows("games", `league=eq.${lg}&game_date=${side === "before" ? "lt" : "gt"}.${day}&select=game_date,year&order=game_date.${side === "before" ? "desc" : "asc"}&limit=1`, gameDaySchema);
-  return r ?? null;
-});
+export const getGameDay = cache(async (lg: string, day: string, side: "before" | "after"): Promise<GameDay | null> =>
+  firstGameDay(lg, seasonSteps(await getLeagueYears(lg), day, side), `&game_date=${side === "before" ? "lt" : "gt"}.${day}`, `game_date.${side === "before" ? "desc" : "asc"}`));
 
 /** A league's first and last game day. */
 export const getGameBounds = cache(async (lg: string): Promise<{ first: GameDay; last: GameDay } | null> => {
-  const [[first], [last]] = await Promise.all([
-    rows("games", `league=eq.${lg}&select=game_date,year&order=game_date.asc&limit=1`, gameDaySchema),
-    rows("games", `league=eq.${lg}&select=game_date,year&order=game_date.desc&limit=1`, gameDaySchema),
+  const years = await getLeagueYears(lg);
+  const [first, last] = await Promise.all([
+    firstGameDay(lg, edgeSteps(years, "first"), "", "game_date.asc"),
+    firstGameDay(lg, edgeSteps(years, "last"), "", "game_date.desc"),
   ]);
   return first && last ? { first, last } : null;
 });
