@@ -89,14 +89,16 @@ unset ENC
 say "starting PostgREST ($NAME) on 127.0.0.1:$PORT against DS1 $HOST:$SPX_DS1_PORT"
 docker run -d --name "$NAME" -p "127.0.0.1:$PORT:3000" --memory 512m \
   -e PGRST_DB_URI -e "PGOPTIONS=-c default_transaction_read_only=on -c statement_timeout=120000" -e PGRST_DB_SCHEMAS=api -e PGRST_DB_ANON_ROLE=anon -e PGRST_DB_MAX_ROWS=1000 -e PGRST_DB_POOL=8 \
-  -e PGRST_DB_EXTRA_SEARCH_PATH=public,extensions -e PGRST_DB_CONFIG=false -e PGRST_SERVER_HOST=0.0.0.0 -e PGRST_LOG_LEVEL=error \
+  -e PGRST_DB_EXTRA_SEARCH_PATH=public,extensions -e PGRST_DB_CONFIG=false -e PGRST_DB_CHANNEL_ENABLED=false -e PGRST_SERVER_HOST=0.0.0.0 -e PGRST_LOG_LEVEL=error \
   "$IMAGE" >/dev/null || die "docker could not start PostgREST"
 unset PGRST_DB_URI
 
 LOCAL="http://127.0.0.1:$PORT/"
 ready=0
-for _ in $(seq 1 60); do
-  code="$(curl -s -m 3 -o /dev/null -w '%{http_code}' -H 'Accept-Profile: api' "${LOCAL}season_summary?select=league&limit=1")"
+code=""
+# A read the anon role may make (one season of one league: the root answers 401/403 for anon); 200 only. PostgREST answers 503 while it loads DS1's schema.
+for _ in $(seq 1 90); do
+  code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' -H 'Accept-Profile: api' "${LOCAL}games?league=eq.nhl&year=eq.2010&select=game_id&limit=1")"
   if [ "$code" = 200 ]; then ready=1; break; fi
   docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null | grep -q true || break
   sleep 1
@@ -106,7 +108,7 @@ if [ "$ready" != 1 ]; then
   docker logs --tail 15 "$NAME" 2>&1 | sed 's#postgres://[^ ]*#postgres://***#g'
   die "no PostgREST on DS1"
 fi
-say "PostgREST healthy: api.season_summary answers from DS1"
+say "PostgREST healthy: api.games answers from DS1"
 
 # ---- 2. same data as production? ---------------------------------------------------------------------------------------------------
 PROD="${SPX_SAME_DATA_PROD:-$SPX_PROD_URL/rest/v1/}"   # SPX_SAME_DATA_PROD: tests only
