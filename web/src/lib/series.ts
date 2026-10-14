@@ -3,7 +3,7 @@
  * franchises played in a season; the wins of each side, the running score and the winner are counted here.
  * Pure (no server-only imports) so the pages, the charts and the checks all use the same counting.
  */
-import type { Tie } from "./bracket.ts";
+import type { Tie } from "./bracketLayout.ts";
 import type { GameRow } from "./api/types";
 import { LG, type LeagueCode } from "./leagues.ts";
 import { bestOfFromGames, bestOfIn, roundKeys, winsNeeded, type RoundKey } from "./playoffFormat.ts";
@@ -406,6 +406,6 @@ export function rankIn(rows: readonly { franchise_id: number; pct: number | null
   return { place, of: pool.length };
 }
 
-/** The series as the bracket layout takes them (lib/bracket.ts): the franchises of each, the winner's franchise, the start date. */
+/** The series as the bracket layout takes them (lib/bracketLayout.ts): the franchises of each, the winner's franchise, the start date. */
 export const seriesTies = (list: readonly Series[]): Tie[] =>
   list.map((s) => ({ teams: [s.sides[0].f, s.sides[1].f] as const, winner: s.winner == null ? null : s.sides[s.winner].f, start: s.start }));

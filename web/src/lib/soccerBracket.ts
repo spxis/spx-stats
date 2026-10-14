@@ -1,8 +1,8 @@
-import type { Tie } from "./bracket.ts";
+import type { Tie } from "./bracketLayout.ts";
 import type { Match } from "./soccer.ts";
 
 /**
- * A tournament's knockout rounds as ties for the bracket layout (lib/bracket.ts). A tie is the match two teams played in a stage; a drawn
+ * A tournament's knockout rounds as ties for the bracket layout (lib/bracketLayout.ts). A tie is the match two teams played in a stage; a drawn
  * match that was replayed (1934 and 1938) is one tie of two matches, decided by the replay, so the bracket draws one box for it. The
  * third-place match leads nowhere, so it is returned apart and the bracket never sees it. Pure.
  */
@@ -15,7 +15,7 @@ export interface SoccerTie extends Tie<string> {
 
 export interface Knockout {
   ties: SoccerTie[];
-  /** The round of each tie (1 = the first knockout round, rising to the final), as lib/bracket.ts takes them. */
+  /** The round of each tie (1 = the first knockout round, rising to the final), as lib/bracketLayout.ts takes them. */
   round: number[];
   /** The stage of each round: round r is `stages[r - 1]`. */
   stages: string[];

@@ -64,7 +64,7 @@ export default guard(async function PlayoffRoundPage({ params }: PageProps<"/[lo
   const next = r === 0 ? (d.names.length ? 1 : null) : r < d.names.length ? r + 1 : null;
   const labelOf = (key: string) => d.bracket.sides.find((s) => s.key === key)?.label ?? null;
   const groups = (["l", "f", "r", "o"] as const)
-    .map((key) => ({ key, label: key === "l" || key === "r" ? labelOf(key) : null, list: members.filter((i) => d.bracket.place.get(i) === key) }))
+    .map((key) => ({ key, label: key === "l" || key === "r" ? labelOf(key) : null, list: members.filter((i) => d.bracket.place[i] === key) }))
     .filter((g) => g.list.length);
   const titled = groups.some((g) => g.label);
 

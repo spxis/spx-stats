@@ -1,6 +1,6 @@
 import "server-only";
 import { getSeasonAlignment } from "./alignmentData";
-import { buildBracket } from "./bracket";
+import { buildBracket } from "./bracketLayout";
 import { getBrands } from "./data";
 import type { Say } from "./seriesCopy";
 import { describeRounds, deriveSeries, roundTitle, seriesTies, type Series } from "./series";

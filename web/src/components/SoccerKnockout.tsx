@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { BracketFrame, type BoxPos } from "@/components/BracketFrame";
+import { Credits } from "@/components/Credits";
 import { SoccerFlag } from "@/components/SoccerFlag";
-import { buildBracket } from "@/lib/bracket";
+import { buildBracket } from "@/lib/bracketLayout";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Match } from "@/lib/soccer";
 import { goalsOf } from "@/lib/soccerH2H";
@@ -12,7 +13,7 @@ import { scoreLines, stageName } from "@/lib/soccerView";
 import "./soccer.css";
 
 /**
- * The knockout rounds as the bracket the playoff pages draw (components/BracketFrame.tsx, layout in lib/bracket.ts, ties from lib/soccerBracket.ts): one half
+ * The knockout rounds as the bracket the playoff pages draw (components/BracketFrame.tsx, layout in lib/bracketLayout.ts, ties from lib/soccerBracket.ts): one half
  * down each side, the final in the middle, a line from each match to the one its winner plays next. Each box shows both teams' round flags, names and goals,
  * with the penalties in brackets and a note under it for extra time or a replay; the box opens the match (a replayed tie opens the replay). The third-place
  * match leads nowhere, so it is shown apart below, and so is any match the tree has no place for.
@@ -86,6 +87,7 @@ export async function SoccerKnockout({ matches }: { matches: Match[] }) {
           box={box}
         />
       ) : null}
+      {ko.ties.length ? <p className="note"><Credits say={say} use={["brackets"]} /></p> : null}
       {ko.third || loose.length ? (
         <div className="sc-apart">
           {ko.third ? <div><h3>{stageName(say, "third_place")}</h3>{card(ko.third)}</div> : null}

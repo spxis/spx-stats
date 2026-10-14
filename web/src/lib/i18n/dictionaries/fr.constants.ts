@@ -1625,6 +1625,7 @@ export const FR: Dictionary = {
   "venue.gamesNote": "Les totaux comptent les matchs de l’archive dont l’installation est connue. Quelques matchs des plus anciennes saisons n’ont pas d’installation connue et ne sont pas comptés.",
   "credit.surfaces": "Surfaces de jeu : {kyogijo}.",
   "credit.emblems": "Trophées et médailles : {dougu}.",
+  "credit.brackets": "Disposition du tableau : {taisen}.",
   ...SOCCER_FR,
   ...MLS_FR,
   ...GAME_FR,

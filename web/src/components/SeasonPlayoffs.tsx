@@ -4,12 +4,13 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { roundSay } from "@/lib/roundWords";
 import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
-import type { Bracket } from "@/lib/bracket";
+import type { Bracket } from "@/lib/bracketLayout";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { nickname, roundPath, scoreWords, seriesPath, type Series } from "@/lib/series";
 import { BracketFrame } from "./BracketFrame";
+import { Credits } from "./Credits";
 import { TeamLogo } from "./TeamLogo";
 import { queryHref } from "./ViewTabs";
 import "./alignment.css";
@@ -115,6 +116,7 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
         bracket={b} show={shown} heading={(r) => heading(r, names[r - 1])} finalHeading={heading(rounds, names[rounds - 1])}
         box={(i, pos, top) => <BracketBox paths={paths} key={i} lg={lg} year={year} s={series[i]} brands={brands} say={say} pos={pos} top={top} dim={pos.final ? undefined : dims(series[i])} />}
       />
+      <p className="note"><Credits say={sp.say} use={["brackets"]} /></p>
       {extra.length ? (
         <>
           <h3>{sp.say("playoffs.other")}</h3>

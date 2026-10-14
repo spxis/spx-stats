@@ -20,6 +20,9 @@ importers:
       '@johnmorrisdotca/kyogijo-stadiums':
         specifier: 0.4.0
         version: 0.4.0
+      '@johnmorrisdotca/taisen-brackets':
+        specifier: 0.3.0
+        version: 0.3.0(@johnmorrisdotca/dougu-sports@0.1.0)
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -407,6 +410,15 @@ packages:
       '@resvg/resvg-js': '>=2.6.0'
     peerDependenciesMeta:
       '@resvg/resvg-js':
+        optional: true
+
+  '@johnmorrisdotca/taisen-brackets@0.3.0':
+    resolution: {integrity: sha512-zbgepmQvOXNvE5Ax/cc6OJuI1/5AvqzHbKAuJGtxCIcpfim94B/Y5KjWkNUWOgfAl5FXrJLqkQVfWqJLiXQx7g==}
+    engines: {node: '>=22'}
+    peerDependencies:
+      '@johnmorrisdotca/dougu-sports': '>=0.1.0 <1'
+    peerDependenciesMeta:
+      '@johnmorrisdotca/dougu-sports':
         optional: true
 
   '@jridgewell/gen-mapping@0.3.13':
@@ -2704,6 +2716,10 @@ snapshots:
   '@johnmorrisdotca/hata@1.5.0': {}
 
   '@johnmorrisdotca/kyogijo-stadiums@0.4.0': {}
+
+  '@johnmorrisdotca/taisen-brackets@0.3.0(@johnmorrisdotca/dougu-sports@0.1.0)':
+    optionalDependencies:
+      '@johnmorrisdotca/dougu-sports': 0.1.0
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

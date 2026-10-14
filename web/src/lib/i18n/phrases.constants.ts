@@ -1832,6 +1832,7 @@ export const PHRASES = {
   "venue.gamesNote": "Counts are the games on record where this venue is known. A few games of the older seasons have no venue on record and are not counted.",
   "credit.surfaces": "Playing surfaces: {kyogijo}.",
   "credit.emblems": "Trophies and medals: {dougu}.",
+  "credit.brackets": "Bracket layout: {taisen}.",
   ...SOCCER_EN,
   ...MLS_EN,
   ...GAME_EN,

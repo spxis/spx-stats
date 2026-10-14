@@ -1625,6 +1625,7 @@ export const JA: Dictionary = {
   "venue.gamesNote": "会場が分かっている試合のみを数えています。古いシーズンの一部の試合は会場の記録がなく、含まれていません。",
   "credit.surfaces": "競技面：{kyogijo}。",
   "credit.emblems": "トロフィーとメダル：{dougu}。",
+  "credit.brackets": "トーナメント表のレイアウト：{taisen}。",
   ...SOCCER_JA,
   ...MLS_JA,
   ...GAME_JA,

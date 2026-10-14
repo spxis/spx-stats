@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { buildBracket, type Tie } from "../src/lib/bracket.ts";
+import { buildBracket, type Tie } from "../src/lib/bracketLayout.ts";
 import type { Match } from "../src/lib/soccer.ts";
 import { knockoutOf } from "../src/lib/soccerBracket.ts";
 
-/** Run in web/: pnpm test:bracket (the layout is sport-agnostic: ties of any two sides, here string teams as in a World Cup). */
+/** Run in web/: pnpm test:bracket (the layout is Taisen Brackets', which is sport-agnostic: ties of any two sides, here string teams as in a World Cup). */
 
 const m = (id: number, stage: string, order: number, home: string, away: string, hg: number, ag: number, extra: Partial<Match> = {}): Match => ({
   match_id: id, source_key: "", league: "wc", year: 2000, tournament_id: "wc2000", stage_key: stage, stage_order: order, group_name: null, match_number: null,
@@ -75,4 +76,34 @@ test("two halves take the conferences' names when the conferences split them cle
   const conf = (t: string) => (["A", "B", "C", "D"].includes(t) ? { name: "West", short: null } : { name: "East", short: null });
   const b = buildBracket(ko.ties, ko.round, conf);
   assert.deepEqual(b.sides.map((s) => s.label), ["West", "East"]);
+});
+
+test("a round-robin game (round 0) stays out of the tree, and a tie outside the final's tree is drawn apart", () => {
+  const ties: Tie[] = [
+    { teams: [1, 2], winner: 1, start: "1" }, { teams: [3, 4], winner: 3, start: "1" }, { teams: [1, 3], winner: 1, start: "2" },
+    { teams: [7, 8], winner: 7, start: "1" }, // a tie nobody's winner goes on from
+    { teams: [5, 6], winner: 5, start: "0" },
+  ];
+  const b = buildBracket(ties, [1, 1, 2, 1, 0], () => null);
+  assert.equal(b.final?.i, 2);
+  assert.deepEqual(b.robin, [4]);
+  assert.deepEqual(b.other, [3]);
+  assert.deepEqual([b.place[0], b.place[2], b.place[3], b.place[4]], ["l", "f", "o", "o"], "the places are an array, by tie");
+});
+
+test("a final nothing feeds is still drawn in the middle, with the western side on top", () => {
+  const ties: Tie[] = [{ teams: [1, 2], winner: 2, start: "1" }];
+  const conf = (t: number) => (t === 1 ? { name: "Eastern Conference", short: "E" } : { name: "Western Conference", short: "W" });
+  const b = buildBracket(ties, [1], conf);
+  assert.equal(b.final?.i, 0);
+  assert.deepEqual(b.final?.order, [1, 0]);
+  assert.equal(b.sides.length, 0);
+});
+
+test("Taisen Brackets is pinned at an exact version and credited with both links", () => {
+  const pkg = JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf8")) as { dependencies: Record<string, string> };
+  assert.match(pkg.dependencies["@johnmorrisdotca/taisen-brackets"] ?? "", /^\d+\.\d+\.\d+$/);
+  const credits = readFileSync(new URL("../src/components/Credits.tsx", import.meta.url), "utf8");
+  assert.match(credits, /"taisen-brackets"/);
+  assert.match(credits, /credit\.brackets/);
 });

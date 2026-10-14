@@ -1,8 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
-import type { Bracket, BracketSide, Box } from "@/lib/bracket";
+import type { Bracket, BracketSide, Box } from "@/lib/bracketLayout";
 import "./series.css";
 
-/** Where a box sits (lib/bracket.ts), as the box component takes it. */
+/** Where a box sits (lib/bracketLayout.ts), as the box component takes it. */
 export interface BoxPos { y: number; to: number | null; fed: boolean; last?: boolean; final?: boolean }
 
 /**

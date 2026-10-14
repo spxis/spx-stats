@@ -9,7 +9,7 @@ import { Rich } from "./i18n/Rich";
  */
 
 /** John's libraries. */
-export type Lib = "chizu" | "hata" | "address-plus" | "kyogijo-stadiums" | "dougu-sports";
+export type Lib = "chizu" | "hata" | "address-plus" | "kyogijo-stadiums" | "dougu-sports" | "taisen-brackets";
 
 const SCOPE = "@johnmorrisdotca";
 export const npmUrl = (lib: Lib) => `https://www.npmjs.com/package/${SCOPE}/${lib}`;
@@ -21,16 +21,16 @@ export const COMMONS_URL = "https://commons.wikimedia.org";
 
 const link = (href: string, text: string) => <a href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
 
-/** How a library is named in a credit: its package name, except Kyogijo Stadiums and Dougu Sports, which are product names. */
-const LIB_NAME: Partial<Record<Lib, string>> = { "kyogijo-stadiums": "Kyogijo Stadiums", "dougu-sports": "Dougu Sports" };
+/** How a library is named in a credit: its package name, except Kyogijo Stadiums, Dougu Sports and Taisen Brackets, which are product names. */
+const LIB_NAME: Partial<Record<Lib, string>> = { "kyogijo-stadiums": "Kyogijo Stadiums", "dougu-sports": "Dougu Sports", "taisen-brackets": "Taisen Brackets" };
 
 /** One library as "name (npm · GitHub)". The link labels are the names of those sites, so they are the same in every language. */
 export function LibCredit({ lib }: { lib: Lib }) {
   return <>{LIB_NAME[lib] ?? lib} ({link(npmUrl(lib), "npm")} · {link(githubUrl(lib), "GitHub")})</>;
 }
 
-/** What a page can credit: the map (Chizu and Natural Earth), the flags (Hata and Wikimedia Commons), the formatted addresses (address-plus), the playing surfaces (Kyogijo Stadiums), the trophy and medal icons (Dougu Sports). */
-export type CreditKind = "maps" | "flags" | "addresses" | "surfaces" | "emblems";
+/** What a page can credit: the map (Chizu and Natural Earth), the flags (Hata and Wikimedia Commons), the formatted addresses (address-plus), the playing surfaces (Kyogijo Stadiums), the trophy and medal icons (Dougu Sports), the bracket layout (Taisen Brackets). */
+export type CreditKind = "maps" | "flags" | "addresses" | "surfaces" | "emblems" | "brackets";
 
 /** The credit sentences for `use`, side by side, in the reader's language. Put it in a `<p className="note">`. */
 export function Credits({ say, use }: { say: Speaker["say"]; use: readonly CreditKind[] }) {
@@ -40,6 +40,7 @@ export function Credits({ say, use }: { say: Speaker["say"]; use: readonly Credi
     addresses: <Rich text={say("address.credit")} parts={{ link: <LibCredit lib="address-plus" /> }} />,
     surfaces: <Rich text={say("credit.surfaces")} parts={{ kyogijo: <LibCredit lib="kyogijo-stadiums" /> }} />,
     emblems: <Rich text={say("credit.emblems")} parts={{ dougu: <LibCredit lib="dougu-sports" /> }} />,
+    brackets: <Rich text={say("credit.brackets")} parts={{ taisen: <LibCredit lib="taisen-brackets" /> }} />,
   };
   return (
     <>
