@@ -1,0 +1,55 @@
+# The always-on local copy of the site, reading DS1 (scripts/mac/ds1-preview.sh --install | --update | --status | --uninstall).
+# Project name spx-ds1-preview; both containers restart unless stopped; ports are published on SPX_PREVIEW_BIND only (127.0.0.1 unless a
+# caller says otherwise). Nothing here is Mac-only: the script passes the variables below, and the same file runs under /usr/local/bin/docker
+# compose on DS1 (only the env file path, the bind address and the DS1 host in that env file would differ). No cpus limits (the Synology
+# kernel rejects NanoCPUs), only mem_limit.
+#
+# Variables (all set by the script; defaults are for a hand-run `docker compose config`):
+#   PGRST_IMAGE             the pinned PostgREST image (scripts/mac/lib/ds1-pgrst.sh holds the one copy)
+#   SPX_PREVIEW_ENV_FILE    the 600-permission file with PGRST_DB_URI (the DS1 password); outside the repository
+#   SPX_PREVIEW_SRC         build context: a clean git archive of the commit, with this directory copied over it
+#   SPX_PREVIEW_SHA         the commit's short sha (image label, footer)
+#   SPX_PREVIEW_BIND / _SITE_PORT / _PGRST_PORT   where the two services are published (127.0.0.1, 3150, 3180)
+#   SPX_REVALIDATE          seconds before a page is rebuilt from DS1 (300)
+name: spx-ds1-preview
+
+services:
+  pgrst:
+    image: ${PGRST_IMAGE:?set by ds1-preview.sh}
+    restart: unless-stopped
+    mem_limit: 512m
+    env_file:
+      - ../lib/ds1-pgrst.env
+      - ${SPX_PREVIEW_ENV_FILE:?set by ds1-preview.sh}
+    ports:
+      - "${SPX_PREVIEW_BIND:-127.0.0.1}:${SPX_PREVIEW_PGRST_PORT:-3180}:3000"
+
+  site:
+    build:
+      context: ${SPX_PREVIEW_SRC:-.}
+      dockerfile: scripts/mac/ds1-preview/Dockerfile
+      args:
+        SPX_SHA: ${SPX_PREVIEW_SHA:-unknown}
+        SPX_REVALIDATE: ${SPX_REVALIDATE:-300}
+    image: spx-ds1-preview-site:local
+    restart: unless-stopped
+    mem_limit: ${SPX_PREVIEW_SITE_MEM:-3g}
+    depends_on:
+      - pgrst
+    environment:
+      SPX_REST_URL: http://pgrst:3000/
+      SPX_PREVIEW: "1"
+      SPX_REVALIDATE: ${SPX_REVALIDATE:-300}
+    volumes:
+      - next:/app/web/.next
+    ports:
+      - "${SPX_PREVIEW_BIND:-127.0.0.1}:${SPX_PREVIEW_SITE_PORT:-3150}:3000"
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('net').connect(3000, '127.0.0.1').on('connect', () => process.exit(0)).on('error', () => process.exit(1))"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 900s
+
+volumes:
+  next:

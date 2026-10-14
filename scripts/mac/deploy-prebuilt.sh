@@ -21,16 +21,14 @@
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 . "$HERE/spx-checks.sh"
+. "$HERE/lib/ds1-pgrst.sh"
 set -u
 
 SCOPE="spxis-projects-0d6306b4"
 PROJECT="spx-stats"
 PIN="spx-stats-1p836thn0"   # a known-good deployment John keeps
-IMAGE="postgrest/postgrest:v12.2.12@sha256:5f4ce744539bbba786b4e24dbbd95bdb2a956dcf568c5374995a0ff4a68f5bd2"
 PORT="${SPX_BUILD_PGRST_PORT:-3190}"   # John's port block for spx-stats is 3100-3199
 NAME="spx-build-pgrst-$$"
-DB_USER="${SPX_DS1_DB_USER:-postgres}"
-DB_NAME="${SPX_DS1_DB_NAME:-spx_stats}"
 
 SHA="" CHECK_ONLY=0 NO_DEPLOY=0 NO_PRUNE=0 FORCE=0 KEEP=0 TMP=""
 while [ $# -gt 0 ]; do
@@ -49,7 +47,7 @@ done
 
 say() { printf '%s deploy-prebuilt: %s\n' "$(date '+%H:%M:%S')" "$*"; }
 die() { say "STOP: $*"; exit 1; }
-stop_pgrst() { docker rm -f "$NAME" >/dev/null 2>&1 || true; }
+stop_pgrst() { ds1_pgrst_stop "$NAME"; }
 cleanup() {
   stop_pgrst
   if [ -n "$TMP" ] && [ -d "$TMP" ]; then
@@ -75,40 +73,8 @@ fi
 lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 && die "port $PORT is in use (SPX_BUILD_PGRST_PORT picks another in 3100-3199)"
 
 # ---- 1. PostgREST on DS1 -----------------------------------------------------------------------------------------------------------
-HOST="${SPX_DS1_HOST:-}"
-[ -n "$HOST" ] || HOST="$(ds1_host)" || die "DS1 $(ds1_missing)"
-PW="${SPX_DS1_DB_PASSWORD:-}"
-[ -n "$PW" ] || PW="$(kc_get 'spx-stats-db DS1 55440')"
-[ -n "$PW" ] || die "no DS1 password: the keychain item 'spx-stats-db DS1 55440' is missing here (zsh scripts/mac/spx-credentials.sh parity)"
-ENC="$(printf '%s' "$PW" | python3 -I -c 'import sys, urllib.parse; print(urllib.parse.quote(sys.stdin.read(), safe=""))')"
-unset PW
-# The connection string (with the password) goes to docker through the environment, not the command line.
-# PGOPTIONS makes every session read-only with a statement limit (a ?options= in the URI is ignored by PostgREST; libpq's variable works).
-export PGRST_DB_URI="postgres://${DB_USER}:${ENC}@${HOST}:${SPX_DS1_PORT}/${DB_NAME}"
-unset ENC
-say "starting PostgREST ($NAME) on 127.0.0.1:$PORT against DS1 $HOST:$SPX_DS1_PORT"
-docker run -d --name "$NAME" -p "127.0.0.1:$PORT:3000" --memory 512m \
-  -e PGRST_DB_URI -e "PGOPTIONS=-c default_transaction_read_only=on -c statement_timeout=120000" -e PGRST_DB_SCHEMAS=api -e PGRST_DB_ANON_ROLE=anon -e PGRST_DB_MAX_ROWS=1000 -e PGRST_DB_POOL=8 \
-  -e PGRST_DB_EXTRA_SEARCH_PATH=public,extensions -e PGRST_DB_CONFIG=false -e PGRST_DB_CHANNEL_ENABLED=false -e PGRST_SERVER_HOST=0.0.0.0 -e PGRST_LOG_LEVEL=error \
-  "$IMAGE" >/dev/null || die "docker could not start PostgREST"
-unset PGRST_DB_URI
-
-LOCAL="http://127.0.0.1:$PORT/"
-ready=0
-code=""
-# A read the anon role may make (one season of one league: the root answers 401/403 for anon); 200 only. PostgREST answers 503 while it loads DS1's schema.
-for _ in $(seq 1 90); do
-  code="$(curl -s -m 10 -o /dev/null -w '%{http_code}' -H 'Accept-Profile: api' "${LOCAL}games?league=eq.nhl&year=eq.2010&select=game_id&limit=1")"
-  if [ "$code" = 200 ]; then ready=1; break; fi
-  docker inspect -f '{{.State.Running}}' "$NAME" 2>/dev/null | grep -q true || break
-  sleep 1
-done
-if [ "$ready" != 1 ]; then
-  say "PostgREST did not become healthy (last HTTP $code). Its log:"
-  docker logs --tail 15 "$NAME" 2>&1 | sed 's#postgres://[^ ]*#postgres://***#g'
-  die "no PostgREST on DS1"
-fi
-say "PostgREST healthy: api.games answers from DS1"
+# (shared with ds1-preview.sh: scripts/mac/lib/ds1-pgrst.sh; sets LOCAL, calls die on failure)
+ds1_pgrst_start "$NAME" "$PORT"
 
 # ---- 2. same data as production? ---------------------------------------------------------------------------------------------------
 PROD="${SPX_SAME_DATA_PROD:-$SPX_PROD_URL/rest/v1/}"   # SPX_SAME_DATA_PROD: tests only

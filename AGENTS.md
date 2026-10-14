@@ -263,13 +263,23 @@ coordinating session, put the ticket in a new create-only Dropbox file
     cd web && pnpm install --frozen-lockfile                  # about 10 seconds (tested)
     pnpm dev                                                  # http://localhost:3100, no .env needed
 
-This project owns local ports **3100-3199** (John's port table): dev on 3100, worktrees and test servers 3101 and up
-(check `lsof -iTCP:<port> -sTCP:LISTEN` first). Never 3000-3099 or another project's block; give every server and
-headless-browser base URL an explicit port.
+This project owns local ports **3100-3199** (John's port table). Check `lsof -iTCP:<port> -sTCP:LISTEN` first. Never 3000-3099 or
+another project's block; give every server and headless-browser base URL an explicit port. The map:
+
+- 3100: the main dev server
+- 3101-3149: worktrees, agents' test servers, scratch databases (`ds1-preview.sh` on demand takes 3101-3119 for the site, 3120-3149 for its PostgREST)
+- 3150: the always-on DS1 preview site (`ds1-preview.sh --install`)
+- 3180: its PostgREST
+- 3190: the temporary PostgREST of `deploy-prebuilt.sh`
+- everything else: free
 Several sessions run servers in this block at once: stop only your own server by its PID (`kill <pid>`), never
 `pkill -f next-server` or any other pattern kill.
 
 No `.env` is needed: the defaults point at the live Supabase project's public read-only key.
+
+**Preview with DS1 data** (nothing reaches production): `bash scripts/mac/ds1-preview.sh` runs this checkout's site on the first free port
+from 3101 against a read-only PostgREST on DS1, and stops both on Ctrl-C (`--start` for a production-like build, `--detach` and `--stop` for the background).
+Always on at http://localhost:3150 (Docker, restarts with Docker, pages refresh every 5 minutes): `bash scripts/mac/ds1-preview.sh --install`, then `--update`, `--status`, `--uninstall` (scripts/mac/README.md).
 
 **Checks before every push**, in `web/`, in this order (all tested green, about two minutes in total):
 
