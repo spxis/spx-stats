@@ -158,7 +158,7 @@ test("no rewrite touches the API, the build's files, the drawings or the signed-
     "/api/auth/providers", "/api/auth/session", "/api/auth/csrf", "/api/auth/signin", "/api/auth/signout", "/api/auth/error", "/api/auth/callback/google", "/api/auth/callback/github",
     "/api/me", "/api/locale", "/api/revalidate", "/api/players", "/api/players/suggest", "/api/teams", "/api/teams/suggest", "/api/venues", "/api/anything/at/all", "/api",
     "/_next/static/chunks/main.js", "/_next/image", "/surface/nfl.en.svg", "/surface/nhl.fr.svg",
-    "/sitemap.xml", "/robots.txt", "/venues.csv", "/venues.geojson", "/soccer-flags.svg", "/soccer-flags-round.svg", "/soccer-flag/ES.svg", "/soccer-flag/GB-ENG.svg",
+    "/sitemap.xml", "/robots.txt", "/venues.csv", "/venues.geojson", "/soccer-flags.svg", "/soccer-flags-round.svg", "/soccer-flag/ES.svg", "/soccer-flag/GB-ENG.svg", "/soccer-road/2022.en.svg", "/soccer-road/2019.fr.svg",
     "/admin", "/admin/data", "/admin/people", "/admin/tickets", "/admin/tickets/new", "/admin/tickets/abc", "/me", "/me/profile", "/me/settings", "/login", "/tickets", "/tickets/abc",
     ...found.map(([, address]) => address),
   ]);

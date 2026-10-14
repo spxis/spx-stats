@@ -1,4 +1,4 @@
-import { drawKyogijo, groundByWikidata, parkById } from "@johnmorrisdotca/kyogijo-stadiums";
+import { drawKyogijo, groundByWikidata, parkById, type ScoreOptions } from "@johnmorrisdotca/kyogijo-stadiums";
 import type { BrandMap } from "./brand.ts";
 import { parkIdFor, SURFACE_SPORT, type SurfaceSport } from "./venuePark.ts";
 
@@ -50,8 +50,34 @@ const side = (s: GameSide) => ({
   ...(hex(s.color) ? { color: hex(s.color) } : {}), ...(hex(s.ink) ? { textColor: hex(s.ink) } : {}), ...(s.logo ? { logo: s.logo } : {}),
 });
 
+/**
+ * Everything kyogijo is told about a SOCCER match, in this one function. The pitch is the "full" size, whose ends carry each side's name and round mark (a
+ * national team's flag from /soccer-flag/<CODE>.svg in a ring, or, for a club with no picture, its code on its banner colour), with the score in the middle;
+ * home is on the left (soccer is written "home first", as the match page's banner is) and the codes are the explicit FIFA ones. kyogijo 0.5.0's "pageant"
+ * (flag carpets for each half, or a crest stage with a centre emblem) is a switch made here and nowhere else: change the options below, not the callers.
+ */
+function soccerOptions(g: GameDrawing, plain: boolean): ScoreOptions {
+  const mark = (s: GameSide) => ({ ...side(s), mark: "round" as const });
+  return {
+    sport: "soccer" as const,
+    language: g.language,
+    size: "full" as const,
+    style: "none" as const,
+    winner: g.winner ?? ("leader" as const),
+    homeSide: "left" as const,
+    markShape: "round" as const,
+    away: mark(g.away),
+    home: mark(g.home),
+    status: g.status,
+    ...(g.competition ? { competition: g.competition } : {}),
+    ...(g.date ? { date: g.date } : {}),
+    ...(!plain && g.ground ? { ground: g.ground } : {}),
+  };
+}
+
 /** The options kyogijo draws a game from. A football field leaves out its hash marks, as the venue pages' drawings do (half the size). */
-export function gameOptions(g: GameDrawing, plain = false) {
+export function gameOptions(g: GameDrawing, plain = false): ScoreOptions {
+  if (g.sport === "soccer") return soccerOptions(g, plain);
   const park = !plain && g.sport === "mlb" ? g.park : null;
   return {
     sport: g.sport,
@@ -66,10 +92,7 @@ export function gameOptions(g: GameDrawing, plain = false) {
     ...(g.date ? { date: g.date } : {}),
     ...(g.sport === "nfl" || g.sport === "cfl" ? { detail: "simple" as const } : {}),
     ...(park ? { park } : {}),
-    ...(!plain && g.sport === "soccer" && g.ground ? { ground: g.ground } : {}),
-    // Soccer is written "home first" (Spain 2–1 Belgium), as the match page's banner is; kyogijo's own default is the North American "away at home".
-    ...(g.sport === "soccer" ? { homeSide: "left" as const } : {}),
-    ...(g.sport !== "soccer" && g.year != null ? { year: g.year } : {}),
+    ...(g.year != null ? { year: g.year } : {}),
   };
 }
 

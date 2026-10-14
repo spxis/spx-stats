@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerGroups } from "@/components/SoccerGroups";
 import { SoccerKnockout } from "@/components/SoccerKnockout";
+import { SoccerRoad } from "@/components/SoccerRoad";
 import { SoccerSquads } from "@/components/SoccerSquads";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { SortTable } from "@/components/SortTable";
@@ -156,6 +157,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
           <SoccerKnockout matches={knockout} />
         </section>
       ) : null}
+      <SoccerRoad matches={matches} year={t.year} league={t.league} />
       {teams.length ? (
         <section className="section scroll" id="teams">
           <h2>{say("wc.t.teams")}</h2>

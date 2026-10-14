@@ -63,4 +63,13 @@
   .sc-mini td.team { white-space: nowrap; }
   details.sc-squad summary { cursor: pointer; display: flex; gap: 10px; align-items: center; }
   details.sc-squad table { margin: 8px 0 12px; }
+  /* The road to the final (SoccerRoad.tsx): one drawing at every width, as wide as a phone chart reads well; its table under it. */
+  .sc-road { margin: 0 0 1.25rem; max-width: 30rem; }
+  .sc-road-art { border-radius: 10px; overflow: hidden; }
+  .sc-road-art > svg { display: block; width: 100%; height: auto; }
+  .sc-road figcaption { margin: .4rem 0 0; }
+  .sc-road-table { margin-top: .5rem; }
+  .sc-road-table summary { cursor: pointer; }
+  .sc-road-table .tablebox { margin-top: .5rem; }
+  .sc-road-table th { padding: 8px 10px; }
 }

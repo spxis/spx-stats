@@ -4,7 +4,7 @@ import { test } from "node:test";
 import type { BrandMap } from "../src/lib/brand.ts";
 import type { TeamBrandRow } from "../src/lib/api/types.ts";
 import { drawGame, gameOptions, groundOf, homeVenueIn, neutralSite, parkFits, parkOf, sportOf, type GameDrawing, type VenueLookup } from "../src/lib/gameSurface.ts";
-import { kyogijoCss } from "./kyogijoCss.ts";
+import { kyogijoCss, kyogijoRoadCss } from "./kyogijoCss.ts";
 
 /** Run in web/: pnpm test:surface */
 
@@ -17,6 +17,8 @@ const game = (over: Partial<GameDrawing> = {}): GameDrawing => ({
 
 test("kyogijo.css is the stylesheet the installed kyogijo writes (run: node scripts/kyogijoCss.ts)", () => {
   assert.equal(readFileSync(new URL("../src/components/kyogijo.css", import.meta.url), "utf8"), kyogijoCss());
+  assert.equal(readFileSync(new URL("../src/components/kyogijo-road.css", import.meta.url), "utf8"), kyogijoRoadCss());
+  assert.ok(kyogijoCss().includes(".ky-mark-bg"), "the round team mark's rules are in the stylesheet the pitch's marks use");
 });
 
 test("a drawing has no stylesheet, no title and no description: it is aria-hidden, and the score is in it as text", () => {
@@ -67,7 +69,7 @@ test("soccer draws a pitch, on a ground kyogijo knows by its Wikidata id, with t
   assert.ok(d.svg.includes("Final · 4–2 on penalties"));
 });
 
-test("a soccer strip puts the home side first and writes the codes it is given, with the flags as logos", () => {
+test("a soccer pitch carries each side's round mark at its end, home first, with the codes it is given and the flags as pictures", () => {
   const soccer = game({
     sport: "soccer", year: null, winner: "home", status: "Final",
     home: { name: "Spain", abbr: "ESP", score: 2, color: "c60b1e", ink: "ffffff", logo: "/soccer-flag/ES.svg" },
@@ -79,6 +81,12 @@ test("a soccer strip puts the home side first and writes the codes it is given, 
   assert.ok(svg.indexOf(">ESP<") < svg.indexOf(">ARG<"), "home first");
   assert.ok(!svg.includes(">SPA<"));
   assert.ok(svg.includes("/soccer-flag/ES.svg") && svg.includes("/soccer-flag/AR.svg"));
+  assert.ok(svg.includes('data-size="full"') && svg.includes("ky-banner"), "the marks are over the pitch, at its ends");
+  assert.equal((svg.match(/class="ky-mark-ring"/g) ?? []).length, 2, "one ring for each side's round mark");
+  assert.equal(gameOptions(soccer).markShape, "round");
+  // A club with no picture (MLS) is its code on its banner colour.
+  const club = drawGame({ ...soccer, home: { ...soccer.home, logo: null, abbr: "LAG" }, away: { ...soccer.away, logo: null, abbr: "NYRB" } })!.svg;
+  assert.ok(club.includes('class="ky-mark-i"') && club.includes(">LAG<") && club.includes(">NYRB<") && !club.includes("<image"));
 });
 
 test("a game only known by its home club claims no venue at a neutral site or in a bubble season", () => {

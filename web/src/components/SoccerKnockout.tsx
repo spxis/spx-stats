@@ -17,9 +17,7 @@ import "./soccer.css";
  * with the penalties in brackets and a note under it for extra time or a replay; the box opens the match (a replayed tie opens the replay). The third-place
  * match leads nowhere, so it is shown apart below, and so is any match the tree has no place for.
  *
- * Where kyogijo's coming `roadToFinal` plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, which waits for the next kyogijo version; not built here): it
- * would draw a champion's or finalist's path round by round with round team marks, from the same `matches` these boxes are made of. The tournament
- * page would show it above or instead of this bracket for the final's two teams; the round flags drawn here are the marks it would reuse.
+ * Under it the tournament page draws the two finalists' roads with kyogijo's `roadToFinal` (components/SoccerRoad.tsx, from the same matches).
  */
 export async function SoccerKnockout({ matches }: { matches: Match[] }) {
   const { say, locale } = await currentSpeaker();

@@ -85,3 +85,8 @@
 .kyogijo .ky-cm{stroke:none}
 .kyogijo .ky-lt{fill:var(--c,var(--ky-layer-ink));stroke:var(--ky-layer-halo);stroke-width:.18em;paint-order:stroke;stroke-linejoin:round;font-family:var(--ky-font);font-weight:700;font-variant-numeric:tabular-nums}
 .kyogijo .ky-lt.ky-nh{stroke:none}
+.kyogijo .ky-mark-bg{fill:var(--c,var(--ky-mark-plain,#d9dde0))}
+.kyogijo .ky-mark-light{fill:var(--ky-mark-plain,#f4f5f6)}
+.kyogijo .ky-mark-ring{fill:none;stroke:var(--ky-mark-ring,#fff)}
+.kyogijo .ky-mark-edge{fill:none;stroke:var(--ky-mark-edge,rgba(0,0,0,.32))}
+.kyogijo .ky-mark-i{fill:var(--ci,#fff);font-family:var(--ky-font,system-ui,sans-serif);font-weight:800;text-anchor:middle;font-variant-numeric:tabular-nums}

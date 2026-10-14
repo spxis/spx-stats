@@ -73,7 +73,7 @@ export const isInternalPath = (path: string) => internal.test(path);
     files, the playing-surface drawings (app/surface/[file]) and the signed-in pages (app/(dyn)). Next matches a route with a dynamic segment AFTER the rewrites,
     so rule 4 below must leave these alone, or it wraps them in the language tree and answers the 404 page (sign-in broke that way). scripts/routing.test.ts
     reads app/ and fails when a first segment found there is missing from this list. */
-export const RESERVED_ROOTS = ["api", "_next", "surface", "admin", "me", "login", "tickets", "sitemap.xml", "robots.txt", "venues.csv", "venues.geojson", "soccer-flags.svg", "soccer-flags-round.svg", "soccer-flag"] as const;
+export const RESERVED_ROOTS = ["api", "_next", "surface", "admin", "me", "login", "tickets", "sitemap.xml", "robots.txt", "venues.csv", "venues.geojson", "soccer-flags.svg", "soccer-flags-round.svg", "soccer-flag", "soccer-road"] as const;
 
 /** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again) or one of RESERVED_ROOTS. */
 const NOT_A_LOCALE = `(?!(?:${[...LOCALES, ...RESERVED_ROOTS.map((r) => r.replace(/\./g, "\\."))].join("|")})(?:/|$))[^/]+`;

@@ -97,13 +97,11 @@ export interface SoccerSide { name: string; abbr: string; goals: number; logo?: 
 
 /**
  * A soccer match on its pitch: the ground when the stadium is one kyogijo knows by its Wikidata id (the pitch at its published size), else a standard pitch.
- * The strip puts the home side first, on the left, as the page's banner does (gameSurface.ts sets kyogijo's `homeSide`), and writes each side's three-letter
- * code (the FIFA code of a national team, lib/soccerLook.ts). The sides take the banner's colours, and a national team its round flag as its logo (a file,
- * /soccer-flag/ES.svg, as the NHL strip passes a club's logo; a club has none, its emblem is not ours to draw). `note` is what follows "Final" ("after extra
- * time", "4–2 on penalties"), written in the status; `winner` is given because a shoot-out settles a level score.
- *
- * Where kyogijo's coming "round team mark over the pitch" plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, which waits for the next kyogijo version; not
- * built here): it would take the same flag file as a mark next to `logo`; until then the flag is the strip's logo.
+ * Each end carries a side's name and round mark and the middle the score, home first on the left as the page's banner does, with each side's three-letter code (the
+ * FIFA code of a national team, lib/soccerLook.ts) and the banner's colours. A national team's mark is its round flag (a file, /soccer-flag/ES.svg, which kyogijo
+ * clips and rings); a club has no picture (its emblem is not ours to draw), so its mark is its code on its banner colour. `note` is what follows "Final" ("after
+ * extra time", "4–2 on penalties"), written in the status; `winner` is given because a shoot-out settles a level score. The options kyogijo gets for soccer are
+ * built in one place, soccerOptions in lib/gameSurface.ts.
  */
 export async function SoccerSurface({ home, away, note, winner, competition, date, wikidata }: {
   home: SoccerSide; away: SoccerSide;
