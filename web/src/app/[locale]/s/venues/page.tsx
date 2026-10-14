@@ -22,7 +22,8 @@ export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
 export default guard(async function VenuesPage() {
   const { say } = await currentSpeaker();
   const { rows, leagues } = await getVenueList(await getPaths(), say);
-  const known = rows.flatMap((v) => [v.from, v.to]).filter((y): y is number => y != null);
+  // The year slider spans the years venues were used; a venue not built yet has none.
+  const known = rows.filter((v) => v.kind !== "future").flatMap((v) => [v.from, v.to]).filter((y): y is number => y != null);
   const min = known.length ? Math.min(...known) : 1900;
   const max = Math.max(new Date().getFullYear(), ...known);
   const wire = packVenues(rows, leagues, (cc) => (COUNTRY_KEY[cc] ? say(COUNTRY_KEY[cc]) : cc));

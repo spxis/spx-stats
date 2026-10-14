@@ -33,6 +33,7 @@ export async function getVenueIndex(): Promise<VenueIndex> {
       const bySlug = new Map<string, VenueEntry>();
       const byWid = new Map<string, string>();
       for (const row of rows) {
+        if (row.kind !== "home") continue;
         const d = detail.get(row.id) ?? { wid: null, city: null, iso: null, names: [] };
         bySlug.set(row.slug, { row, detail: d });
         if (d.wid) byWid.set(d.wid.toUpperCase(), row.slug);

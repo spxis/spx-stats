@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { slugify } from "../src/lib/slug.ts";
 import { packVenues, unpackVenues } from "../src/lib/venueWire.ts";
 import { venueKey } from "../src/lib/venueVisits.ts";
-import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueRow } from "../src/lib/venueModel.ts";
+import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueKind, type VenueRow } from "../src/lib/venueModel.ts";
 
 /** Run in web/: pnpm test:venues */
 
@@ -12,7 +12,7 @@ const LEAGUES = ["nhl", "nba", "mls"];
 
 const venue = (o: Partial<VenueRow>): VenueRow => ({
   id: "x", key: "geo:0.00000,0.00000", slug: "x", name: "X", former: null, lat: 0, lon: 0, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
-  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
+  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], kind: "home", tag: null, planned: null, games: null, ...o,
 });
 
 test("no filter keeps everything, even a venue with no known years", () => {
@@ -51,8 +51,8 @@ test("the address round-trips and bad values are ignored", () => {
   assert.equal(f.cc, "CA");
   assert.deepEqual([f.from, f.to], [1970, 1990]);
   const q = filterQuery(f, B);
-  assert.deepEqual(q, { league: "nhl,mls", status: "former", visited: null, nat: "CA", conf: null, div: null, from: "1970", to: "1990" });
-  assert.deepEqual(filterQuery(emptyFilter(B), B), { league: null, status: null, visited: null, nat: null, conf: null, div: null, from: null, to: null });
+  assert.deepEqual(q, { league: "nhl,mls", status: "former", visited: null, nat: "CA", conf: null, div: null, show: null, from: "1970", to: "1990" });
+  assert.deepEqual(filterQuery(emptyFilter(B), B), { league: null, status: null, visited: null, nat: null, conf: null, div: null, show: null, from: null, to: null });
   const bad = readFilter("?status=x&nat=USA&from=2000&to=1990&league=", B, LEAGUES);
   assert.deepEqual(bad, emptyFilter(B));
 });
@@ -106,4 +106,43 @@ test("packed rows come back exactly as they went in, whatever shortcut they coul
   assert.ok(JSON.stringify(wire).length < JSON.stringify(rows).length / 2, "the packed rows are much smaller");
   const habs = wire.c.find((c: unknown[]) => c[2] === "Montreal Canadiens")[4] as string;
   assert.ok(habs.length < 80 && !habs.includes("utm_"), `a Wikimedia logo goes short (${habs})`);
+});
+
+test("spring training parks and future venues show only when asked, and a future venue has no years to filter", () => {
+  const spring = venue({ kind: "spring", tag: "cactus", leagues: ["mlb"], from: 1990, to: 2000, current: false });
+  const future = venue({ kind: "future", tag: "approved", planned: 2029, from: 2029, to: null, current: false });
+  assert.ok(!venueMatches(spring, emptyFilter(B), B), "home venues are what the page opens with");
+  assert.ok(!venueMatches(future, emptyFilter(B), B));
+  const all = { ...emptyFilter(B), show: ["home", "spring", "future"] as VenueKind[] };
+  assert.ok(venueMatches(spring, all, B) && venueMatches(future, all, B));
+  assert.ok(!venueMatches(spring, { ...all, from: 2005, to: 2010 }, B), "a spring park is used in years");
+  assert.ok(venueMatches(future, { ...all, from: 2005, to: 2010 }, B), "a future venue is not");
+  assert.ok(venueMatches(future, { ...all, status: "current" }, B) && venueMatches(future, { ...all, status: "former" }, B), "a future venue is neither current nor former");
+  assert.ok(!venueMatches(spring, { ...all, status: "current" }, B));
+  assert.ok(!venueMatches(venue({}), { ...emptyFilter(B), show: ["spring"] }, B));
+});
+
+test("the show choice is kept in the address, in a fixed order, and home alone is not written", () => {
+  const f = readFilter("?show=future,home,zzz", B, LEAGUES);
+  assert.deepEqual(f.show, ["home", "future"]);
+  assert.equal(filterQuery(f, B).show, "home,future");
+  assert.equal(filterQuery(readFilter("?show=home", B, LEAGUES), B).show, null);
+  assert.deepEqual(readFilter("?show=zzz", B, LEAGUES).show, ["home"]);
+});
+
+test("spring training parks and future venues survive the wire, with a club that has no franchise", () => {
+  const c = (o: Partial<VenueRow["clubs"][number]>) => ({ lg: "mlb", f: 7, name: "Houston Astros", href: "/mlb/team/houston-astros", from: 1985, to: null, logo: null, ...o });
+  const rows: VenueRow[] = [
+    venue({ name: "Fenway Park", slug: "fenway-park", kind: "home", games: 9123, leagues: ["mlb"], clubs: [c({})] }),
+    venue({ name: "Osceola County Stadium", kind: "spring", tag: "grapefruit", leagues: ["mlb"], from: 1985, to: 2000, current: false, clubs: [c({ to: 2000 }), c({ f: 0, name: "Unknown Club", href: "", from: 1960, to: 1965 }), c({ f: 0, name: "Other Club", href: "", from: 1970, to: 1971 })] }),
+    venue({ name: "New Arena", kind: "future", tag: "under_construction", planned: 2028, leagues: ["nhl"], from: 2028, to: null, current: false, clubs: [c({ lg: "nhl", f: 3, name: "Ottawa Senators", href: "/nhl/team/ottawa-senators", from: 2028 })] }),
+  ];
+  const order = ["nhl", "mlb"];
+  const wire = JSON.parse(JSON.stringify(packVenues(rows, order, countryName)));
+  const back = unpackVenues(wire, order, say, countryName);
+  assert.deepEqual(back.map((b) => [b.kind, b.tag, b.planned, b.games, b.slug]), [["home", null, null, 9123, "fenway-park"], ["spring", "grapefruit", null, null, ""], ["future", "under_construction", 2028, null, ""]]);
+  assert.deepEqual(back[1].clubs.map((x) => [x.f, x.name, x.href]), [[7, "Houston Astros", "/mlb/team/houston-astros"], [0, "Unknown Club", ""], [0, "Other Club", ""]]);
+  assert.deepEqual(back[2].clubs.map((x) => [x.lg, x.f, x.from, x.to]), [["nhl", 3, 2028, null]]);
+  assert.equal(back[2].current, false);
+  assert.equal(back[2].to, null);
 });

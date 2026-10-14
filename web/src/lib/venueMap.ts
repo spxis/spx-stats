@@ -21,7 +21,8 @@ export interface VenueTeam { f: number; slug: string; href: string; name: string
 
 const nameRow = z.object({ franchise_id: z.number(), name: z.string(), name_from: z.string().nullable() });
 
-const getNames = cache(async (lg: string) =>
+/** The names of a league's franchises, oldest first (the last is the latest). */
+export const getNames = cache(async (lg: string) =>
   rows("franchise_names", `league=eq.${lg}&select=franchise_id,name,name_from&order=franchise_id,name_from.nullsfirst`, nameRow).catch(() => []));
 
 /**

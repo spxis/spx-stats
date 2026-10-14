@@ -22,13 +22,13 @@ export const getVenueRecords = async (): Promise<VenueRecord[]> => {
 };
 
 /** The address of every venue's page (/venue/<slug>), for the sitemap. */
-export const getVenueSlugs = async (): Promise<string[]> => (await getEnglishList()).rows.map((r) => r.slug);
+export const getVenueSlugs = async (): Promise<string[]> => (await getEnglishList()).rows.filter((r) => r.kind === "home").map((r) => r.slug);
 
 /** The page GET /api/venues answers: the query string checked (a bad value is a BadParams naming it), then the records filtered, sorted and cut. */
 export async function listVenues(sp: URLSearchParams): Promise<VenuePage> {
   const { values: v, sort, sortText, fields, range } = parseListParams("venues", sp, { sorts: VENUE_SORTS, fields: RECORD_FIELDS, defSort: "name.asc" });
   const order = venueOrder(sort);
   const after = afterValues(v.after, sortText, order);
-  const query: VenueQuery = { league: v.league, words: searchWords(v.q ?? ""), status: v.status, nat: v.nat, ...range };
+  const query: VenueQuery = { kind: v.kind, league: v.league, words: searchWords(v.q ?? ""), status: v.status, nat: v.nat, ...range };
   return queryVenues(await getVenueRecords(), query, { order, sortText, fields, limit: v.limit, offset: v.offset, after });
 }

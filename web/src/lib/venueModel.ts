@@ -50,28 +50,44 @@ export interface VenueRow {
   al: string[];
   /** The lines the map panel adds: its other names and its facts. */
   extra: string[];
+  /** What kind of place it is: a home venue (the list's subject), a spring training park or a stadium planned for a club. */
+  kind: VenueKind;
+  /** A spring training park's league ("cactus" or "grapefruit"), or a future venue's status ("proposed", "approved" or "under_construction"). */
+  tag: string | null;
+  /** The year a future venue is planned to open, as its source says; null when the source gives none. */
+  planned: number | null;
+  /** Games played there in all (the archive's), or null when the count is not known. */
+  games: number | null;
 }
+
+export type VenueKind = "home" | "spring" | "future";
+export const VENUE_KINDS: readonly VenueKind[] = ["home", "spring", "future"];
 
 export type VenueStatus = "" | "current" | "former";
 
 /** The visited list's filter: only the venues the reader marked, only the others, or both. The list is the reader's own, kept in the browser. */
 export type VenueVisited = "" | "yes" | "no";
 
-export interface VenueFilter { leagues: string[]; status: VenueStatus; visited: VenueVisited; cc: string; conf: string; div: string; from: number; to: number }
+export interface VenueFilter { leagues: string[]; status: VenueStatus; visited: VenueVisited; cc: string; conf: string; div: string; from: number; to: number; show: VenueKind[] }
 export interface YearBounds { min: number; max: number }
 
-export const emptyFilter = (b: YearBounds): VenueFilter => ({ leagues: [], status: "", visited: "", cc: "", conf: "", div: "", from: b.min, to: b.max });
+/** Home venues are what the page shows until the reader adds the spring training parks or the future venues. */
+export const DEFAULT_SHOW: readonly VenueKind[] = ["home"];
+
+export const emptyFilter = (b: YearBounds): VenueFilter => ({ leagues: [], status: "", visited: "", cc: "", conf: "", div: "", from: b.min, to: b.max, show: [...DEFAULT_SHOW] });
 
 /** Whether a venue passes the filter. A range that spans the whole bounds filters nothing, so venues with no known years stay. `visits` is the reader's list; left out, the visited filter filters nothing. */
 export function venueMatches(v: VenueRow, f: VenueFilter, b: YearBounds, visits?: Visits): boolean {
   if (visits && !visitMatches(f.visited, v.key, visits)) return false;
+  if (!f.show.includes(v.kind)) return false;
   if (f.leagues.length && !v.leagues.some((l) => f.leagues.includes(l))) return false;
-  if (f.status === "current" && !v.current) return false;
-  if (f.status === "former" && v.current) return false;
+  // A venue still to be built is neither current nor former, and has no years of use to put in a range.
+  if (v.kind !== "future" && f.status === "current" && !v.current) return false;
+  if (v.kind !== "future" && f.status === "former" && v.current) return false;
   if (f.cc && v.cc !== f.cc) return false;
   if (f.conf && !v.al.some((a) => a.startsWith(`${f.conf}|`))) return false;
   if (f.div && !v.al.includes(f.div)) return false;
-  if (f.from > b.min || f.to < b.max) {
+  if (v.kind !== "future" && (f.from > b.min || f.to < b.max)) {
     if (v.from != null && v.from > f.to) return false;
     if (v.to != null && v.to < f.from) return false;
   }
@@ -80,7 +96,7 @@ export function venueMatches(v: VenueRow, f: VenueFilter, b: YearBounds, visits?
 
 const whole = (s: string | null): number | null => (s !== null && /^\d{1,4}$/.test(s) ? Number(s) : null);
 
-/** The filter an address asks for (?league=nhl,nba&status=current&nat=CA&conf=..&div=..&from=&to=), read leniently: anything unknown is ignored. */
+/** The filter an address asks for (?league=nhl,nba&status=current&nat=CA&conf=..&div=..&from=&to=&show=home,spring,future), read leniently: anything unknown is ignored. */
 export function readFilter(search: string, b: YearBounds, leagues: readonly string[]): VenueFilter {
   const q = new URLSearchParams(search);
   const out = emptyFilter(b);
@@ -96,6 +112,8 @@ export function readFilter(search: string, b: YearBounds, leagues: readonly stri
   if (from !== null) out.from = Math.min(Math.max(from, b.min), b.max);
   if (to !== null) out.to = Math.min(Math.max(to, b.min), b.max);
   if (out.from > out.to) { out.from = b.min; out.to = b.max; }
+  const show = (q.get("show") ?? "").split(",").map((x) => x.trim().toLowerCase()).filter((x): x is VenueKind => (VENUE_KINDS as readonly string[]).includes(x));
+  if (show.length) out.show = VENUE_KINDS.filter((k) => show.includes(k));
   return out;
 }
 
@@ -109,6 +127,7 @@ export function filterQuery(f: VenueFilter, b: YearBounds): Record<string, strin
     nat: f.cc || null,
     conf: f.conf || null,
     div: f.div || null,
+    show: f.show.join(",") === DEFAULT_SHOW.join(",") ? null : f.show.join(","),
     from: full ? null : String(f.from),
     to: full ? null : String(f.to),
   };

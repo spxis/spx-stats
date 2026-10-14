@@ -15,6 +15,7 @@ import { venueMapsUrl } from "@/lib/venueAddress";
 import { Flag } from "@/components/Flag";
 import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
+import { FranchiseVenueNotes } from "@/components/FranchiseVenueNotes";
 import { VenueMap } from "@/components/VenueMap";
 import { BadgeCup, MiniCup, Trophy } from "@/components/TrophyIcon";
 import { Figures, NoSeason } from "@/components/ui";
@@ -300,6 +301,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
             />
           ) : null}
           <div className="scroll"><SortTable {...venueTable} param="sort_venues" /></div>
+          <FranchiseVenueNotes lg={lg} f={f} />
           {venueTeams.length ? null : <p className="note"><Credits say={say} use={["addresses"]} /></p>}
         </section>
       ) : null}

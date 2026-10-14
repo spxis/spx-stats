@@ -10,6 +10,8 @@
 .venuelegend { margin-top: 2px; }
 .venuelegend i.filled { background: var(--ink); }
 .venuelegend i.ring { background: transparent; border: 2px solid var(--ink); }
+.venuelegend i.square { background: var(--ink); border: 0; }
+.venuelegend i.plan { background: transparent; border: 2px dashed var(--ink); }
 .venuetable { margin-top: 14px; }
 .venuetable td.venuename { white-space: normal; min-width: 180px; }
 .venuetable td.venuecity { white-space: nowrap; }
@@ -24,3 +26,8 @@
 .venuetable.pending { min-height: 60vh; }
 .venueplain { margin: 0; padding-left: 18px; }
 .venuetable td.venuevisit { white-space: nowrap; min-width: 64px; }
+.venuefilters .seg button.kind { display: inline-flex; align-items: center; gap: 6px; }
+.venuefilters .seg button.kind i { width: 10px; height: 10px; display: inline-block; flex: none; }
+.venuefilters .seg button.kind i.filled { background: currentColor; border-radius: 50%; }
+.venuefilters .seg button.kind i.square { background: currentColor; }
+.venuefilters .seg button.kind i.plan { border: 2px dashed currentColor; border-radius: 50%; }

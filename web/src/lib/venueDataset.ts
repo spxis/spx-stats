@@ -9,7 +9,7 @@
 import { fold } from "./fold.ts";
 import { cursorOf, orderOf, valuesOf, type Col, type Order, type Val } from "./listQuery.ts";
 import type { SortKey } from "./sort";
-import type { VenueRow } from "./venueModel";
+import type { VenueKind, VenueRow } from "./venueModel";
 
 /** A name a venue carried with the years it applied; `until` is null for the name now (or when unknown). */
 export interface VenueNameSpan { name: string; from: number | null; until: number | null }
@@ -45,11 +45,21 @@ export interface VenueRecord {
   roof: string | null;
   surface: string | null;
   wikipedia_title: string | null;
+  /** home: a venue a club played its home games at; spring: a spring training park; future: a venue planned for a club (not built yet). */
+  kind: VenueKind;
+  /** A future venue's status: proposed, approved or under_construction; null for every other kind. */
+  status: string | null;
+  /** A spring training park's league: cactus (Arizona) or grapefruit (Florida); null for every other kind. */
+  spring_league: string | null;
+  /** The year a future venue is planned to open, as its source says; null when the source gives none (and for every other kind). */
+  planned_open_year: number | null;
+  /** Games played there in all, on record in the archive; null when none are (spring and future venues have none). */
+  games: number | null;
 }
 
 export const RECORD_FIELDS = [
   "wikidata_id", "name", "former_names", "latitude", "longitude", "city", "region", "country", "leagues", "clubs", "first_year", "last_year", "current",
-  "opened", "closed", "capacity", "roof", "surface", "wikipedia_title",
+  "opened", "closed", "capacity", "roof", "surface", "wikipedia_title", "kind", "status", "spring_league", "planned_open_year", "games",
 ] as const satisfies readonly (keyof VenueRecord)[];
 
 const WIKI = "https://en.wikipedia.org/wiki/";
@@ -91,6 +101,11 @@ export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<stri
       roof: r.roof,
       surface: r.surface,
       wikipedia_title: wikipediaTitle(r.wiki),
+      kind: r.kind,
+      status: r.kind === "future" ? r.tag : null,
+      spring_league: r.kind === "spring" ? r.tag : null,
+      planned_open_year: r.kind === "future" ? r.planned : null,
+      games: r.games,
     };
   });
 }
@@ -99,7 +114,7 @@ export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<stri
 
 export const DATASET = {
   name: "SPX Stats Network: home venues",
-  description: "Every home venue of the NHL, NBA, MLB, NFL and CFL clubs on record, current and former, with its clubs, former names, place and basic facts.",
+  description: "Every home venue of the NHL, NBA, MLB, NFL and CFL clubs on record, current and former, with its clubs, former names, place and basic facts, and with it the spring training parks of the major-league clubs (kind spring) and the venues planned for a club (kind future).",
   url: "https://spxn.com/venues",
   licence:
     "Venue identifiers, names, coordinates, places and facts from Wikidata are CC0 1.0. Surface and roof may come from the infobox of the venue's English Wikipedia article and are then CC BY-SA 4.0: credit Wikipedia and its authors (wikipedia_title names the article) and share alike. Clubs, leagues and years of use come from the SPX Stats archive; each source's licence is on https://spxn.com/sources.",
@@ -133,7 +148,7 @@ export function venuesCsv(records: readonly VenueRecord[]): string {
   for (const r of records) {
     lines.push([
       r.wikidata_id, r.name, formerNamesText(r.former_names), r.latitude, r.longitude, r.city, r.region, r.country, r.leagues.join(";"), clubsText(r.clubs),
-      r.first_year, r.last_year, r.current, r.opened, r.closed, r.capacity, r.roof, r.surface, r.wikipedia_title,
+      r.first_year, r.last_year, r.current, r.opened, r.closed, r.capacity, r.roof, r.surface, r.wikipedia_title, r.kind, r.status, r.spring_league, r.planned_open_year, r.games,
     ].map(csvField).join(","));
   }
   return `${lines.join("\r\n")}\r\n`;
@@ -169,6 +184,7 @@ export const VENUE_COLS: Record<string, Col> = {
   league: { field: "league_key" },
   years: { field: "first_year", num: true, nullable: true },
   opened: { field: "opened", num: true, nullable: true },
+  games: { field: "games", num: true, nullable: true },
   closed: { field: "closed", num: true, nullable: true },
   capacity: { field: "capacity", num: true, nullable: true },
   clubs: { field: "club_count", num: true },
@@ -179,6 +195,8 @@ export const venueOrder = (sort: readonly SortKey[]): Order => orderOf(sort, VEN
 
 export type VenueStatus = "all" | "current" | "former";
 export interface VenueQuery {
+  /** Only this kind (home, spring or future); left out, every kind. */
+  kind?: VenueKind;
   league?: string;
   words: string[];
   status: VenueStatus;
@@ -189,6 +207,7 @@ export interface VenueQuery {
 
 /** Whether a venue passes a query. A venue whose years are unknown is kept by any range, as on the page. */
 export function venueFits(r: VenueRecord, q: VenueQuery, text: string): boolean {
+  if (q.kind && r.kind !== q.kind) return false;
   if (q.league && !r.leagues.includes(q.league)) return false;
   if (q.status === "current" && !r.current) return false;
   if (q.status === "former" && r.current) return false;
@@ -201,7 +220,7 @@ export function venueFits(r: VenueRecord, q: VenueQuery, text: string): boolean 
 const searchText = (r: VenueRecord) => fold([r.name, ...r.former_names.map((n) => n.name), r.city, ...r.clubs.map((c) => c.name)].filter(Boolean).join(" "));
 const sortRow = (r: VenueRecord): Record<string, unknown> => ({
   id: r.id, name_key: fold(r.name), city_key: r.city ? fold(r.city) : null, country: r.country, league_key: r.leagues.join(","), first_year: r.first_year,
-  opened: r.opened, closed: r.closed, capacity: r.capacity, club_count: r.clubs.length,
+  opened: r.opened, closed: r.closed, capacity: r.capacity, club_count: r.clubs.length, games: r.games,
 });
 
 /** Compares two rows' sort values by the order: empty values last either way, strings and numbers in plain order. */

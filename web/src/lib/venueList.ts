@@ -3,18 +3,22 @@ import { z } from "zod";
 import { rows, rowsSlice } from "./api/client";
 import { alignmentSchema } from "./alignment";
 import { getCityData } from "./cityData";
+import { countryAt } from "./country";
 import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { LEAGUE_CODES } from "./leagues";
 import type { Speaker } from "./i18n/i18n";
 import { getPaths } from "./teamSlugs";
-import { getVenueTeams } from "./venueMap";
+import { getNames, getVenueTeams } from "./venueMap";
 import type { VenueDetail } from "./venueDataset";
 import type { VenueClub, VenueRow } from "./venueModel";
 import { venueSlugs } from "./venueSlug";
 import { venueKey } from "./venueVisits";
 import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
+import { getGameTotals, getTenancies } from "./venueHome";
+import { getFutureVenues, getSpringParks } from "./venueLayers";
+import { futureRows, springRows, type LayerContext } from "./venueLayerRows";
 
 export interface VenueList {
   rows: VenueRow[];
@@ -57,9 +61,9 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
   // the leagues the site already knows keep their usual order; any other league follows, by code
   const rank = (l: string) => { const i = (LEAGUE_CODES as readonly string[]).indexOf(l); return i < 0 ? LEAGUE_CODES.length : i; };
   const leagues = [...seen].sort((a, b) => rank(a) - rank(b) || BY(a, b));
-  const [byLeague, spans, facts, align, cityData] = await Promise.all([
+  const [byLeague, spans, facts, align, cityData, tenancies, totals, springList, futureList] = await Promise.all([
     Promise.all(leagues.map(async (lg) => ({ lg, teams: await getVenueTeams(lg, brands, paths, say).catch(() => []) }))),
-    getVenueNames(), getVenueFacts(), currentAlignment(), getCityData().catch(() => null),
+    getVenueNames(), getVenueFacts(), currentAlignment(), getCityData().catch(() => null), getTenancies(), getGameTotals(), getSpringParks(), getFutureVenues(),
   ]);
 
   // The city page of a venue is the one the database placed club seasons at, for those coordinates.
@@ -84,7 +88,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
               wiki: v.wiki, address: v.address, addressHref: v.addressHref, leagues: [], clubs: [],
               opened: f?.opened ?? null, closed: f?.closed ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
               from: null, to: null, current: false, al: [],
-              extra: [namesLine(sp), factsLine(f, say)].filter((x): x is string => !!x),
+              extra: [namesLine(sp), factsLine(f, say)].filter((x): x is string => !!x), kind: "home", tag: null, planned: null, games: v.wid ? totals.get(v.wid.toUpperCase()) ?? null : null,
             },
           };
           byVenue.set(id, acc);
@@ -101,6 +105,22 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
           r.clubs.push(club);
         }
       }
+    }
+  }
+
+  // Who played at each venue, from the home-venue periods: they hold clubs the brand layer's logo eras miss (the Blue Jays at Exhibition Stadium), with their years.
+  const franchiseNames = new Map<string, string>();
+  if (tenancies.size) {
+    await Promise.all(leagues.map(async (lg) => { for (const n of await getNames(lg)) franchiseNames.set(`${lg}|${n.franchise_id}`, n.name); }));
+  }
+  for (const { row: r } of byVenue.values()) {
+    const wid = detail.get(r.id)?.wid;
+    for (const t of (wid ? tenancies.get(wid.toUpperCase()) : undefined) ?? []) {
+      if (!leagues.includes(t.lg)) continue;
+      const had = r.clubs.find((c) => c.lg === t.lg && c.f === t.f);
+      if (had) { had.from = t.from; had.to = t.to; continue; }
+      const name = franchiseNames.get(`${t.lg}|${t.f}`);
+      if (name) r.clubs.push({ lg: t.lg, f: t.f, name, href: paths.team(t.lg, t.f), from: t.from, to: t.to, logo: null });
     }
   }
 
@@ -121,5 +141,15 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
   out.sort((a, b) => BY(a.name, b.name));
   const slugs = venueSlugs(out.map((r) => ({ id: r.id, name: r.name, wid: detail.get(r.id)?.wid ?? null, city: r.citySlug ?? detail.get(r.id)?.city ?? r.place })));
   for (const r of out) r.slug = slugs.get(r.id) ?? r.id;
+
+  // The spring training parks and the future venues follow the home venues: they are drawn on the same map and listed in the same table, behind their own filter.
+  const ctx: LayerContext = {
+    leagues, href: (lg, f) => paths.team(lg, f), logo: (f, year) => logoFor(brands, f, year),
+    country: (lat, lon) => countryAt(lat, lon), say,
+  };
+  for (const layer of [springRows(springList, ctx), futureRows(futureList, ctx)]) {
+    layer.rows.sort((a, b) => BY(a.name, b.name));
+    for (const r of layer.rows) { finishRow(r, leagues); out.push(r); detail.set(r.id, layer.detail.get(r.id)!); }
+  }
   return { rows: out, leagues, detail };
 }

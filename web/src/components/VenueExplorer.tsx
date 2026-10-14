@@ -5,7 +5,7 @@ import { Fragment, useDeferredValue, useEffect, useId, useMemo, useRef, useState
 import { fold } from "@/lib/fold";
 import { tableOf } from "@/lib/sort";
 import { replaceQuery } from "@/lib/urlQuery";
-import { emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, type VenueFilter, type VenueRow, type VenueStatus } from "@/lib/venueModel";
+import { DEFAULT_SHOW, emptyFilter, filterQuery, leagueColor, readFilter, venueColor, venueMatches, VENUE_KINDS, type VenueFilter, type VenueRow, type VenueStatus } from "@/lib/venueModel";
 import { VisitBox, VisitCell, VisitControl } from "./VenueVisits";
 import { useVisits } from "./visitsStore";
 import { unpackVenues, type VenueWire } from "@/lib/venueWire";
@@ -21,6 +21,9 @@ import "./team.css";
 import "./venues.css";
 
 const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", retractable: "venuesPage.roofRetractable" } as const;
+const KIND_KEY = { home: "venuesPage.kindHome", spring: "venuesPage.kindSpring", future: "venuesPage.kindFuture" } as const;
+const SPRING_KEY = { cactus: "venuesPage.springCactus", grapefruit: "venuesPage.springGrapefruit" } as const;
+const FUTURE_KEY = { proposed: "venuesPage.futureProposed", approved: "venuesPage.futureApproved", under_construction: "venuesPage.futureUnderConstruction" } as const;
 
 /**
  * The venues page: filters (league, current or former, country, conference and division, years used), a map of the venues that pass and
@@ -29,7 +32,8 @@ const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", ret
  * The reader's own "visited" list (VenueVisits.tsx) lives in the browser only: the server never draws any of it, and the page reads it once it is on screen.
  *
  * Dots are coloured by league (grey for a venue several leagues used) and a venue no club plays at now is a hollow ring, so the
- * difference does not rest on colour. The leagues, and their colours, are whatever the rows carry.
+ * difference does not rest on colour. The leagues, and their colours, are whatever the rows carry. A spring training park is a square
+ * and a venue not built yet a dashed ring: the kinds differ in shape, and the "Show" choice (?show=home,spring,future) adds them to the home venues.
  */
 export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: VenueWire; leagues: string[]; labels: Record<string, string>; min: number; max: number }) {
   const { say, fmt, plural } = useSpeaker();
@@ -99,6 +103,15 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
   }, [venues, f.leagues, f.conf, leagues, labels]);
 
   const years = (a: number | null, b: number | null) => `${a ?? "…"}–${b ?? say("team.today")}`;
+  /** What kind of place a non-home row is, in words: the park's league, or the status of the plan and its year. */
+  const tagText = (v: VenueRow): string | null => {
+    if (v.kind === "spring") return say(v.tag === "grapefruit" ? SPRING_KEY.grapefruit : SPRING_KEY.cactus);
+    if (v.kind !== "future") return null;
+    const status = v.tag && v.tag in FUTURE_KEY ? say(FUTURE_KEY[v.tag as keyof typeof FUTURE_KEY]) : null;
+    return [status, v.planned ? say("venuesPage.planned", { year: v.planned }) : null].filter(Boolean).join(" · ") || null;
+  };
+  /** The years a club used a venue; a club of a venue not built yet has none, only the year the venue is planned. */
+  const usedText = (v: VenueRow, c: VenueRow["clubs"][number]) => `${leagueName(c.lg)}${v.kind === "future" ? "" : ` · ${years(c.from, c.to)}`}`;
 
   const table = useMemo(() => (!mounted ? null : tableOf(shown, [
     {
@@ -109,8 +122,9 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
       key: "name", label: say("venuesPage.colVenue"), cls: "team venuename", get: (v) => v.name,
       cell: (v) => (
         <>
-          <Link href={`/venue/${v.slug}`} prefetch={false}>{v.name}</Link>
-          {!v.current ? <span className="venuetag"> {say("venuesPage.former")}</span> : null}
+          {v.kind === "home" ? <Link href={`/venue/${v.slug}`} prefetch={false}>{v.name}</Link> : v.wiki ? <a className="ext" href={v.wiki} target="_blank" rel="noopener noreferrer">{v.name}</a> : v.name}
+          {v.kind !== "future" && !v.current ? <span className="venuetag"> {say("venuesPage.former")}</span> : null}
+          {v.kind !== "home" ? <span className="venuetag"> {tagText(v)}</span> : null}
           {v.former ? <span className="sub venuenames">{v.former}</span> : null}
         </>
       ),
@@ -128,12 +142,13 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
     {
       key: "clubs", label: say("venuesPage.colClubs"), cls: "venueclubs", get: (v) => v.clubs[0]?.name,
       cell: (v) => v.clubs.map((c, i) => (
-        <span key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={c.logo} title={`${leagueName(c.lg)} · ${years(c.from, c.to)}`} /></span>
+        <span key={`${c.lg}${c.f}${c.name}`}>{i ? ", " : ""}{c.f ? <TeamLabel lg={c.lg} f={c.f} name={c.name} logo={c.logo} title={usedText(v, c)} /> : <span title={usedText(v, c)}>{c.name}</span>}</span>
       )),
     },
     { key: "opened", label: say("venuesPage.colOpened"), num: true, get: (v) => v.opened, cell: (v) => (v.opened == null ? "" : String(v.opened)) },
     { key: "closed", label: say("venuesPage.colClosed"), num: true, get: (v) => v.closed, cell: (v) => (v.closed == null ? "" : String(v.closed)) },
     { key: "capacity", label: say("venuesPage.colCapacity"), num: true, get: (v) => v.capacity, cell: (v) => (v.capacity == null ? "" : fmt(v.capacity)) },
+    { key: "games", label: say("venuesPage.colGames"), num: true, get: (v) => v.games, cell: (v) => (v.games == null ? "" : fmt(v.games)) },
     {
       key: "roof", label: say("venuesPage.colRoof"), get: (v) => v.roof,
       cell: (v) => (v.roof && v.roof in ROOF_KEY ? say(ROOF_KEY[v.roof as keyof typeof ROOF_KEY]) : v.roof ?? ""),
@@ -147,10 +162,12 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
   const pins = useMemo<Pin[]>(() => shown.map((v) => {
     const clubs = v.clubs.map((c) => c.name);
     return {
-      f: index.get(v) ?? 0, name: v.name, lat: v.lat, lon: v.lon, cc: v.cc, wiki: v.wiki, place: v.place, tone: venueColor(v, order), defunct: !v.current,
+      f: index.get(v) ?? 0, name: v.name, lat: v.lat, lon: v.lon, cc: v.cc, wiki: v.wiki, place: v.place, tone: venueColor(v, order), defunct: v.kind === "future" ? false : !v.current,
+      shape: v.kind === "spring" ? "square" : v.kind === "future" ? "plan" : undefined,
       team: clubs.slice(0, 4).join(", ") + (clubs.length > 4 ? ` +${clubs.length - 4}` : ""),
-      teamHref: v.clubs.length === 1 ? v.clubs[0].href : undefined,
-      venue: `${v.leagues.map(leagueName).join(" · ")} · ${v.current ? years(v.from, null) : `${years(v.from, v.to)} · ${say("venuesPage.former")}`}`,
+      teamHref: v.clubs.length === 1 && v.clubs[0].href ? v.clubs[0].href : undefined,
+      venue: v.kind === "future" ? [v.leagues.map(leagueName).join(" · "), tagText(v)].filter(Boolean).join(" · ")
+        : `${v.leagues.map(leagueName).join(" · ")}${v.kind === "spring" ? ` · ${tagText(v)}` : ""} · ${v.current ? years(v.from, null) : `${years(v.from, v.to)} · ${say("venuesPage.former")}`}`,
       extra: v.extra, address: v.address, addressHref: v.addressHref,
     };
   }),
@@ -181,6 +198,17 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
             return (
               <button key={l} type="button" className="chip" aria-pressed={on} onClick={() => change({ leagues: on ? f.leagues.filter((x) => x !== l) : [...f.leagues, l], conf: "", div: "" })}>
                 <i style={{ background: leagueColor(l, order.get(l) ?? 0) }} aria-hidden="true" />{leagueName(l)}
+              </button>
+            );
+          })}
+        </div>
+        <div className="seg" role="group" aria-label={say("venuesPage.show")}>
+          {VENUE_KINDS.map((k) => {
+            const on = f.show.includes(k);
+            const next = on ? f.show.filter((x) => x !== k) : VENUE_KINDS.filter((x) => x === k || f.show.includes(x));
+            return (
+              <button key={k} type="button" className="kind" aria-pressed={on} disabled={on && f.show.length === 1} onClick={() => change({ show: next.length ? next : [...DEFAULT_SHOW] })}>
+                <i className={k === "spring" ? "square" : k === "future" ? "plan" : "filled"} aria-hidden="true" />{say(KIND_KEY[k])}
               </button>
             );
           })}
@@ -222,6 +250,8 @@ export function VenueExplorer({ wire, leagues, labels, min, max }: { wire: Venue
             {shown.some((v) => v.leagues.length > 1) ? <li><i style={{ background: "var(--muted)" }} />{say("venuesPage.legendSeveral")}</li> : null}
             <li><i className="filled" />{say("venuesPage.legendCurrent")}</li>
             <li><i className="ring" />{say("venuesPage.legendFormer")}</li>
+            {shown.some((v) => v.kind === "spring") ? <li><i className="square" />{say("venuesPage.legendSpring")}</li> : null}
+            {shown.some((v) => v.kind === "future") ? <li><i className="plan" />{say("venuesPage.legendFuture")}</li> : null}
           </ul>
           <div className={`scroll venuetable${table ? "" : " pending"}`}>
             {table
@@ -241,9 +271,9 @@ function PlainList({ venues }: { venues: VenueRow[] }) {
     <ul className="venueplain">
       {venues.map((v) => (
         <li key={v.id}>
-          <Link href={`/venue/${v.slug}`} prefetch={false}>{v.name}</Link>{`${v.place ? `, ${v.place}` : ""}: `}
+          {v.kind === "home" ? <Link href={`/venue/${v.slug}`} prefetch={false}>{v.name}</Link> : v.name}{`${v.place ? `, ${v.place}` : ""}: `}
           {v.clubs.map((c, i) => (
-            <Fragment key={`${c.lg}${c.f}`}>{i ? ", " : ""}<TeamLabel lg={c.lg} f={c.f} name={c.name} logo={null} href={c.href} /></Fragment>
+            <Fragment key={`${c.lg}${c.f}${c.name}`}>{i ? ", " : ""}{c.f ? <TeamLabel lg={c.lg} f={c.f} name={c.name} logo={null} href={c.href} /> : c.name}</Fragment>
           ))}
         </li>
       ))}

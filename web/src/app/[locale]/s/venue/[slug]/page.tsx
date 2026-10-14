@@ -12,12 +12,14 @@ import { TeamLabel } from "@/components/TeamLabel";
 import { VisitControl } from "@/components/VenueVisits";
 import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { LG } from "@/lib/leagues";
+import { LEAGUE_CODES, LG } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { countryName } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import { surfacesFor } from "@/lib/venueDraw";
+import { getVenueGames } from "@/lib/venueHome";
+import { getNames } from "@/lib/venueMap";
 import { findVenue, getVenueIndex } from "@/lib/venuePage";
 import "@/components/city.css";
 import "@/components/venue.css";
@@ -55,6 +57,24 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
   const span = (a: number | null, b: number | null) => `${a ?? "…"}–${b ?? today}`;
   const surfaces = surfacesFor(v, detail, locale === "ja" ? "ja" : "en");
 
+  // The games played here (counts by league and season, the latest finals): read in one request, empty while the views are not on the server.
+  const held = detail.wid ? await getVenueGames(detail.wid, [...v.leagues, ...LEAGUE_CODES]) : null;
+  const names = new Map<string, string>();
+  if (held?.finals.length) {
+    await Promise.all([...new Set(held.finals.map((g) => g.league))].map(async (lg) => { for (const n of await getNames(lg)) names.set(`${lg}|${n.franchise_id}`, n.name); }));
+  }
+  const yearOf = (d: string) => Number(d.slice(0, 4));
+  const gamesTable = held ? tableOf(held.games.leagues, [
+    { key: "league", label: say("col.league"), get: (l) => leagueName(l.league) },
+    { key: "seasons", label: say("venue.colSeasons"), num: true, get: (l) => l.seasons.length },
+    { key: "games", label: say("venuesPage.colGames"), num: true, get: (l) => l.games, cell: (l) => fmt(l.games) },
+    { key: "regular", label: say("venue.colRegular"), num: true, get: (l) => l.regular, cell: (l) => fmt(l.regular) },
+    { key: "playoffs", label: say("venue.colPlayoffs"), num: true, get: (l) => l.playoffs, cell: (l) => fmt(l.playoffs) },
+    { key: "finals", label: say("venue.colFinals"), num: true, get: (l) => l.finals, cell: (l) => fmt(l.finals) },
+    { key: "first", label: say("venue.colFirstGame"), get: (l) => l.firstDate },
+    { key: "last", label: say("venue.colLastGame"), get: (l) => l.lastDate },
+  ], (l) => l.league) : null;
+
   const built = tableOf(v.clubs, [
     { key: "club", label: say("col.team"), cls: "team", get: (c) => c.name, cell: (c) => <TeamLabel lg={c.lg} f={c.f} name={c.name} logo={c.logo} /> },
     { key: "league", label: say("col.league"), get: (c) => leagueName(c.lg) },
@@ -69,7 +89,7 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
     extra: v.extra, address: v.address, addressHref: v.addressHref,
   };
 
-  const names = detail.names.length > 1 ? detail.names : [];
+  const formerNames = detail.names.length > 1 ? detail.names : [];
   const facts: [string, React.ReactNode][] = [
     [say("venuesPage.colCapacity"), v.capacity == null ? null : fmt(v.capacity)],
     [say("venuesPage.colOpened"), v.opened],
@@ -99,8 +119,9 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
       <Figures items={[
         [say("city.figClubs"), v.clubs.length],
         [say("venuesPage.colLeagues"), v.leagues.length],
-        [say("venue.figFirst"), v.from ?? "—"],
-        [say("venue.figLast"), v.current ? today : v.to ?? "—"],
+        [say("venue.figFirst"), v.from == null ? "—" : String(v.from)],
+        [say("venue.figLast"), v.current ? today : v.to == null ? "—" : String(v.to)],
+        ...(held ? [[say("venue.figGames"), held.games.games] as [string, number]] : []),
       ]} />
 
       <section className="section">
@@ -111,14 +132,52 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
         <p className="note">{say("venue.clubsNote")}</p>
       </section>
 
-      {names.length ? (
+      {formerNames.length ? (
         <section className="section">
           <h2>{say("venue.namesHead")}</h2>
           <ul className="venuenameslist">
-            {names.map((n, i) => (
-              <li key={`${n.name}-${n.from}`}><b>{n.name}</b><span>{span(n.from, n.until ?? (i === names.length - 1 && v.current ? null : n.until))}</span></li>
+            {formerNames.map((n, i) => (
+              <li key={`${n.name}-${n.from}`}><b>{n.name}</b><span>{span(n.from, n.until ?? (i === formerNames.length - 1 && v.current ? null : n.until))}</span></li>
             ))}
           </ul>
+        </section>
+      ) : null}
+
+      {held && gamesTable ? (
+        <section className="section">
+          <h2>{say("venue.gamesHead")}</h2>
+          <p className="note">{say("venue.gamesLede", { games: plural("count.games", held.games.games), first: String(yearOf(held.games.firstDate)), last: String(yearOf(held.games.lastDate)) })}</p>
+          <div className="scroll venuegames">
+            <SortTable columns={gamesTable.columns} rows={gamesTable.rows} def="games.desc" label={say("venue.gamesHead")} />
+          </div>
+          <details className="venueseasons">
+            <summary>{say("venue.seasonsHead")}</summary>
+            {held.games.leagues.map((l) => (
+              <div key={l.league}>
+                {held.games.leagues.length > 1 ? <h3>{leagueName(l.league)}</h3> : null}
+                <p>{l.seasons.map((x) => `${x.year} (${x.games})`).join(", ")}</p>
+              </div>
+            ))}
+          </details>
+          {held.finals.length ? (
+            <>
+              <h3>{say("venue.finalsHead")}</h3>
+              <ul className="venuefinals">
+                {held.finals.map((g) => {
+                  const home = names.get(`${g.league}|${g.home_franchise_id}`) ?? "", away = names.get(`${g.league}|${g.away_franchise_id}`) ?? "";
+                  return (
+                    <li key={g.game_id}>
+                      <Link href={`/${g.league}/scores/${g.game_date}`} prefetch={false}>{g.game_date}</Link>
+                      <span>{`${leagueName(g.league)} ${g.year}`}</span>
+                      <span>{g.away_score != null && g.home_score != null ? `${away} ${g.away_score}, ${home} ${g.home_score}` : `${away} / ${home}`}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+              <p className="note">{say("venue.finalsNote", { n: fmt(held.games.finals) })}</p>
+            </>
+          ) : null}
+          <p className="note">{say("venue.gamesNote")}</p>
         </section>
       ) : null}
 

@@ -9,7 +9,7 @@
  */
 import type { Speaker } from "./i18n/i18n";
 import { slugify } from "./slug.ts";
-import type { VenueClub, VenueRow } from "./venueModel";
+import type { VenueClub, VenueKind, VenueRow } from "./venueModel";
 import { venueKey } from "./venueVisits.ts";
 
 type Say = Speaker["say"];
@@ -26,10 +26,17 @@ export type WirePlace = [string, string | 0];
  * 7 address (text, or [street] when it is the street plus the place and country), 8 map link (1 = by coordinates, else the link itself),
  * 9 opened, 10 closed, 11 capacity, 12 roof, 13 surface, 14 owner, 15 conference/division (indexes), 16 clubs (club index, from, to, ... flat),
  * 17 the page address when it is not just the name's slug (the name, a city or the Wikidata id came after it),
- * 18 the Wikidata id when the venue has one (else its key is made from the coordinates: venueVisits.ts).
+ * 18 the Wikidata id when the venue has one (else its key is made from the coordinates: venueVisits.ts),
+ * 19 games played there (0 when not known), 20 the kind (1 spring training park, 2 future venue; a home venue leaves it out),
+ * 21 its tag (see TAGS), 22 the year a future venue is planned to open.
+ * A spring training park or a future venue has no page of its own, so it has no page address (17).
  */
 export type WireRow = (string | number | number[] | [string] | 0)[];
 export interface VenueWire { c: WireClub[]; p: WirePlace[]; a: string[]; v: WireRow[] }
+
+/** The words a spring training park's league or a future venue's status is sent as, by kind (the number is the position plus one). */
+const TAGS: Record<"spring" | "future", readonly string[]> = { spring: ["cactus", "grapefruit"], future: ["proposed", "approved", "under_construction"] };
+const KIND_CODE = { spring: 1, future: 2 } as const;
 
 const WIKI = "https://en.wikipedia.org/wiki/";
 const MAPS = "https://www.google.com/maps/search/?api=1&query=";
@@ -78,16 +85,18 @@ export function factsText(f: { capacity: number | null; opened: number | null; s
 /** Leagues, years and "current" of a venue, from its clubs. `order` is the page's league order. */
 export function finishRow(r: VenueRow, order: readonly string[]): void {
   r.leagues = [...new Set(r.clubs.map((c) => c.lg))].sort((a, b) => order.indexOf(a) - order.indexOf(b));
-  r.current = r.clubs.some((c) => c.to == null);
+  // A venue still to be built has no club playing there yet.
+  r.current = r.kind !== "future" && r.clubs.some((c) => c.to == null);
+  if (!r.clubs.length) { r.from = r.to = null; return; }
   r.from = r.clubs.some((c) => c.from == null) ? null : Math.min(...r.clubs.map((c) => c.from as number));
-  r.to = r.current ? null : Math.max(...r.clubs.map((c) => c.to as number));
+  r.to = r.current || r.kind === "future" ? null : r.clubs.some((c) => c.to == null) ? null : Math.max(...r.clubs.map((c) => c.to as number));
 }
 
 /** A club's address slug as it is usually made from the name ("Boston Bruins" is boston-bruins). */
 const slugOf = (name: string) => name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
 /** 1 when the club's address is /<league>/team/<slug made from the name>, else the slug after /<league>/team/, else the whole address. */
 const tail = (c: VenueClub): string | 1 => (c.href === `/${c.lg}/team/${slugOf(c.name)}` ? 1 : c.href.startsWith(`/${c.lg}/team/`) ? c.href.slice(`/${c.lg}/team/`.length) : c.href);
-const clubHref = (lg: string, name: string, t: string | 1) => (t === 1 ? `/${lg}/team/${slugOf(name)}` : t.startsWith("/") ? t : `/${lg}/team/${t}`);
+const clubHref = (lg: string, name: string, t: string | 1) => (t === "" ? "" : t === 1 ? `/${lg}/team/${slugOf(name)}` : t.startsWith("/") ? t : `/${lg}/team/${t}`);
 
 /** The address written as the server writes it when the street line is the only part that varies. */
 const composed = (street: string, place: string | null, cc: string | null, countryName: (cc: string) => string) =>
@@ -106,7 +115,7 @@ export function packVenues(rows: VenueRow[], leagues: string[], countryName: (cc
     }
     const flat: number[] = [];
     for (const c of r.clubs) {
-      const k = `${c.lg}|${c.f}|${c.logo ?? ""}`;
+      const k = `${c.lg}|${c.f}|${c.logo ?? ""}${c.f ? "" : `|${c.name}`}`;
       if (!clubs.has(k)) { clubs.set(k, clubList.length); clubList.push([leagues.indexOf(c.lg), c.f, c.name, tail(c), c.logo ? packLogo(c.logo) : 0]); }
       flat.push(clubs.get(k)!, c.from ?? 0, c.to ?? 0);
     }
@@ -126,7 +135,10 @@ export function packVenues(rows: VenueRow[], leagues: string[], countryName: (cc
       if (!alIdx.has(a)) { alIdx.set(a, alList.length); alList.push(a); }
       return alIdx.get(a)!;
     });
-    const row: WireRow = [r.name, r.former ?? 0, r.lat, r.lon, r.cc ?? 0, pi, wiki, address, href, r.opened ?? 0, r.closed ?? 0, r.capacity ?? 0, r.roof ?? 0, r.surface ?? 0, r.owner ?? 0, al, flat, r.slug === slugify(r.name) ? 0 : r.slug, r.key.startsWith("Q") ? r.key : 0];
+    const kind = r.kind === "home" ? 0 : KIND_CODE[r.kind];
+    const tag = r.kind !== "home" && r.tag ? TAGS[r.kind].indexOf(r.tag) + 1 : 0;
+    const row: WireRow = [r.name, r.former ?? 0, r.lat, r.lon, r.cc ?? 0, pi, wiki, address, href, r.opened ?? 0, r.closed ?? 0, r.capacity ?? 0, r.roof ?? 0, r.surface ?? 0, r.owner ?? 0, al, flat,
+      r.kind !== "home" || r.slug === slugify(r.name) ? 0 : r.slug, r.key.startsWith("Q") ? r.key : 0, r.games ?? 0, kind, tag, r.planned ?? 0];
     while (row.length && (row[row.length - 1] === 0 || (Array.isArray(row[row.length - 1]) && (row[row.length - 1] as number[]).length === 0))) row.pop();
     return row;
   });
@@ -146,6 +158,7 @@ export function unpackVenues(w: VenueWire, leagues: string[], say: Say, countryN
     const h = x[8];
     const addressHref = typeof h === "string" ? h : address ? mapsAt(h === 1 ? `${lat},${lon}` : address) : null;
     const flat = (x[16] as number[] | undefined) ?? [];
+    const kind: VenueKind = x[20] === 1 ? "spring" : x[20] === 2 ? "future" : "home";
     const clubs: VenueClub[] = [];
     for (let j = 0; j < flat.length; j += 3) {
       const [li, f, cn, t, logo] = w.c[flat[j]];
@@ -157,9 +170,10 @@ export function unpackVenues(w: VenueWire, leagues: string[], say: Say, countryN
     const roof = (x[12] as string) || null, surface = (x[13] as string) || null, owner = (x[14] as string) || null;
     const facts = factsText({ capacity, opened, surface, roof, owner }, say);
     const row: VenueRow = {
-      id: String(i), key: venueKey(typeof x[18] === "string" ? x[18] : null, x[2] as number, x[3] as number), slug: typeof x[17] === "string" ? x[17] : slugify(name), name, former, lat, lon, cc, place, citySlug: pl && pl[1] ? (pl[1] as string) : null, wiki, address, addressHref,
+      id: String(i), key: venueKey(typeof x[18] === "string" ? x[18] : null, x[2] as number, x[3] as number), slug: kind !== "home" ? "" : typeof x[17] === "string" ? x[17] : slugify(name), name, former, lat, lon, cc, place, citySlug: pl && pl[1] ? (pl[1] as string) : null, wiki, address, addressHref,
       leagues: [], clubs, opened, closed: (x[10] as number) || null, capacity, roof, surface, owner, from: null, to: null, current: false,
       al: ((x[15] as number[] | undefined) ?? []).map((k) => w.a[k]), extra: [former, facts].filter((e): e is string => !!e),
+      kind, tag: kind === "home" || !x[21] ? null : TAGS[kind][(x[21] as number) - 1] ?? null, planned: (x[22] as number) || null, games: (x[19] as number) || null,
     };
     finishRow(row, leagues);
     return row;

@@ -12,7 +12,7 @@ import type { VenueRow } from "../src/lib/venueModel.ts";
 
 const row = (o: Partial<VenueRow>): VenueRow => ({
   id: "x", key: "Q1", slug: "x", name: "X", former: null, lat: 40, lon: -75, cc: "US", place: null, citySlug: null, wiki: null, address: null, addressHref: null,
-  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], ...o,
+  leagues: ["nhl"], clubs: [], opened: null, closed: null, capacity: null, roof: null, surface: null, owner: null, from: 1950, to: null, current: true, al: [], extra: [], kind: "home", tag: null, planned: null, games: null, ...o,
 });
 
 /** What listParams.ts afterValues does with a cursor, without its zod and Next imports. */
@@ -24,7 +24,8 @@ const sortOf = (text: string) => ({ order: venueOrder(text.split(",").map((p) =>
 
 const rec = (o: Partial<VenueRecord>): VenueRecord => ({
   id: "Q1", wikidata_id: "Q1", name: "A", former_names: [], latitude: 40, longitude: -75, city: null, region: null, country: "US", leagues: ["nhl"], clubs: [],
-  first_year: 1950, last_year: null, current: true, opened: null, closed: null, capacity: null, roof: null, surface: null, wikipedia_title: null, ...o,
+  first_year: 1950, last_year: null, current: true, opened: null, closed: null, capacity: null, roof: null, surface: null, wikipedia_title: null,
+  kind: "home", status: null, spring_league: null, planned_open_year: null, games: null, ...o,
 });
 
 /** A small RFC 4180 reader, to check that what the CSV writes is what a program reads back. */

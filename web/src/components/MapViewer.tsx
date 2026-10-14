@@ -34,7 +34,7 @@ interface Scene {
   placed: Placed[];
   base: MapBox;
   bounds: MapBox;
-  dots: { t: Placed; tone?: string; c: SVGCircleElement; hit: SVGCircleElement; img?: SVGImageElement }[];
+  dots: { t: Placed; tone?: string; c: SVGGraphicsElement; hit: SVGCircleElement; img?: SVGImageElement }[];
   /** A ring drawn over the dots at the chosen one, so a dot hidden under its neighbours still shows. */
   halo: SVGCircleElement;
 }
@@ -53,12 +53,13 @@ function fitBox(pts: [number, number][], bounds: MapBox, hostWidth: number, host
 }
 
 /** The class of a dot: a hollow ring for a defunct one, bigger and ink-filled when it is the chosen one. */
-const pinClass = (t: Pin) => `pin${t.me ? " me" : ""}${t.defunct ? " closed" : ""}`;
+const pinClass = (t: Pin) => `pin${t.me ? " me" : ""}${t.defunct ? " closed" : ""}${t.shape ? ` ${t.shape}` : ""}`;
 /** The colour of a dot: its own tone, else the conference tone. A defunct dot draws it as the ring's outline instead of the fill. */
-function paint(c: SVGCircleElement, t: Pin, tone?: string) {
+function paint(c: SVGGraphicsElement, t: Pin, tone?: string) {
   const color = t.tone ?? tone;
-  c.style.fill = t.defunct || t.me ? "" : color ?? "";
-  c.style.stroke = t.defunct && color && !t.me ? color : "";
+  const hollow = t.defunct || t.shape === "plan";
+  c.style.fill = hollow || t.me ? "" : color ?? "";
+  c.style.stroke = hollow && color && !t.me ? color : "";
 }
 
 const toneKey = (t: Pin) => `${t.conf ?? ""}|${t.div ?? ""}`;
@@ -156,8 +157,9 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         a.setAttribute("aria-label", pinText(t));
         const hit = document.createElementNS(NS, "circle"); hit.setAttribute("class", "hit");
         hit.setAttribute("cx", String(t.p[0])); hit.setAttribute("cy", String(t.p[1]));
-        const c = document.createElementNS(NS, "circle"); c.setAttribute("class", pinClass(t));
-        c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1]));
+        // A spring training park is a square (a rect), every other dot a circle: the kind is in the shape, not only in the colour.
+        const c = document.createElementNS(NS, t.shape === "square" ? "rect" : "circle") as SVGGraphicsElement; c.setAttribute("class", pinClass(t));
+        if (t.shape !== "square") { c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1])); }
         const tone = tones.get(toneKey(t));
         paint(c, t, tone);
         a.append(hit, c);
@@ -207,7 +209,13 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     const hitPx = window.matchMedia("(pointer: coarse)").matches ? 20 : 13;
     const asLogo = (d: Scene["dots"][number]) => logosOn.current && !!d.img && !d.img.dataset.failed;
     for (const d of s.dots) {
-      d.c.setAttribute("r", String(d.t.me ? r * 1.5 : r)); d.hit.setAttribute("r", String((box.width * hitPx) / px));
+      const rr = d.t.me ? r * 1.5 : r;
+      if (d.t.shape === "square") {
+        const side = rr * 1.7;
+        d.c.setAttribute("x", String(d.t.p[0] - side / 2)); d.c.setAttribute("y", String(d.t.p[1] - side / 2));
+        d.c.setAttribute("width", String(side)); d.c.setAttribute("height", String(side));
+      } else d.c.setAttribute("r", String(rr));
+      d.hit.setAttribute("r", String((box.width * hitPx) / px));
       if (d.img) {
         const size = r * (d.t.me ? 6 : 4.5);
         d.img.setAttribute("x", String(d.t.p[0] - size / 2)); d.img.setAttribute("y", String(d.t.p[1] - size / 2));

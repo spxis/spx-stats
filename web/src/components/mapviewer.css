@@ -12,6 +12,9 @@
 .teammap.viewer .pin.me { vector-effect: non-scaling-stroke; stroke-width: 2px; }
 .teammap.viewer .pin.closed { fill: var(--paper); stroke: var(--accent); stroke-width: 2.5px; }
 .teammap.viewer .pin.closed.me { fill: var(--paper); stroke: var(--ink); stroke-width: 3px; }
+.teammap.viewer .pin.plan { fill: var(--paper); stroke: var(--accent); stroke-width: 2.5px; stroke-dasharray: 3 2.5; }
+.teammap.viewer .pin.plan.me { stroke: var(--ink); stroke-width: 3px; }
+.teammap.viewer .pin.square { stroke-linejoin: miter; }
 .teammap.viewer .hit { fill: transparent; stroke: none; pointer-events: fill; }
 .teammap.viewer a { outline: none; }
 .teammap.viewer a:focus-visible .pin { stroke: var(--ink); stroke-width: 3px; }
@@ -31,6 +34,8 @@
 .maplegend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 14px; font-size: 13px; color: var(--muted); }
 .maplegend li { display: flex; align-items: center; gap: 6px; }
 .maplegend i { width: 10px; height: 10px; border-radius: 50%; display: inline-block; border: 1px solid var(--paper); }
+.maplegend i.square { border-radius: 0; }
+.maplegend i.plan { background: transparent; border: 2px dashed var(--ink); }
 @media (max-width: 640px) {
   .mapzoom { top: 6px; right: 6px; }
   .mapzoom button { width: 36px; height: 36px; }
