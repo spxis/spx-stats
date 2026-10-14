@@ -86,4 +86,18 @@ group by s.cup_year, s.winner_club, s.winner_franchise_id;
 
 comment on view api.cup_title is 'Stanley Cup titles won outside an NHL season (1893-1917): one row per club and year.';
 
-grant select on api.cup_series, api.cup_title to anon, authenticated;
+-- The clubs that lost a final outside any NHL season (the Portland Rosebuds of 1916): one row per club and year. Challengers that lost a
+-- challenge-era series are not finalists and are left out.
+create or replace view api.cup_finalist as
+select s.cup_year as year,
+       s.loser_name as team,
+       s.loser_league as league,
+       s.loser_club as club,
+       s.loser_franchise_id as franchise,
+       s.loser_city_slug as city
+from core.cup_series s
+where s.kind = 'final' and s.nhl_season_id is null and s.loser_name is not null;
+
+comment on view api.cup_finalist is 'Stanley Cup finalists outside an NHL season (1915-1917).';
+
+grant select on api.cup_series, api.cup_title, api.cup_finalist to anon, authenticated;
