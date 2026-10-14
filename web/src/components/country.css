@@ -54,6 +54,7 @@
 .cmap-list .n { margin-left: auto; font-variant-numeric: tabular-nums; color: var(--muted); }
 .cmapthumb { position: relative; width: min(100%, 300px); }
 .cmapthumb > button { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); background: var(--soft); cursor: zoom-in; }
+.cmapthumb.wide { width: 100%; }
 .cmapthumb .thumbbox { aspect-ratio: 1.7; width: 100%; pointer-events: none; }
 .cmapthumb .thumbbox svg { display: block; width: 100%; height: 100%; }
 .cmapthumb .cap { display: block; font-size: 13px; color: var(--muted); margin-top: 4px; }
@@ -90,3 +91,19 @@
 .ccmp .bars .theirs { background: var(--kother); }
 .ccmp .vals { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; text-align: right; }
 @media (max-width: 520px) { .ccmp li { grid-template-columns: 1fr; } .ccmp .vals { text-align: left; } }
+
+/* /players: the country chips, and the donut beside a large map */
+.pchips { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-block: 10px; }
+.pchips a { box-sizing: border-box; display: inline-flex; align-items: center; gap: 6px; height: var(--control-h); padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 14px/1 var(--display); letter-spacing: .04em; text-decoration: none; white-space: nowrap; }
+.pchips a:hover { border-color: var(--ink); }
+.pchips a[aria-current="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+.pchips a .n { font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.pchips a[aria-current="true"] .n { color: inherit; opacity: .8; }
+.pchips .pall { text-transform: uppercase; letter-spacing: .06em; }
+.pmore { box-sizing: border-box; height: var(--control-h); padding: 0 10px; border: 1px dashed var(--rule); background: transparent; color: var(--muted); font: 600 14px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; cursor: pointer; }
+.pmore:hover, .pmore[aria-expanded="true"] { border-color: var(--ink); color: var(--ink); }
+.pchips .pmore-list { flex-basis: 100%; margin-block: 0; max-height: 280px; overflow-y: auto; padding: 2px; }
+.pmore-list[hidden] { display: none; }
+.pc-row { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); gap: 16px 28px; align-items: start; }
+@media (max-width: 760px) { .pc-row { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 480px) { .pchips a { padding: 0 8px; } }

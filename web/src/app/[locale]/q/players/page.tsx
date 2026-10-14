@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
 import { LetterBar } from "@/components/LetterBar";
+import { PlayerCountries } from "@/components/PlayerCountries";
 import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
@@ -15,6 +16,8 @@ import type { PlayerIndexRow } from "@/lib/api/people";
 import { countryName, positionsText } from "@/lib/people-format";
 import { readLetter } from "@/lib/listQuery";
 import { getLetterCounts, getPlayerPage, PLAYER_SORTS, playerSpan, searchWords } from "@/lib/playerIndex";
+import { getPlayerCountries, getReferenceCountries } from "@/lib/playerCountries";
+import { referenceOf, type CountryFilters } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
@@ -50,9 +53,14 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
   const letter = readLetter(first(sp.letter)) ?? "";
   const letterBy = first(sp.letter_by) === "first" ? "first" : "last";
   const others = { ...(range ?? {}), ...(nat ? { nat } : {}), letterBy } as const;
-  const [data, counts] = await Promise.all([
+  // The countries are counted under every choice but the country itself, so the chips and the map keep offering them all.
+  const choices: CountryFilters = { league, words: searchWords(q), ...(range ?? {}), ...(letter ? { letter } : {}), letterBy };
+  const refKind = referenceOf(choices);
+  const [data, counts, countries, refTally] = await Promise.all([
     getPlayerPage(league, q, sort, pageOf(first(sp.page)), { ...others, ...(letter ? { letter } : {}) }).catch(() => null),
     getLetterCounts({ league, words: searchWords(q), ...others }),
+    getPlayerCountries(choices),
+    getReferenceCountries(choices),
   ]);
   const keep = { league: league || null, nat: nat || null, q: q || null, letter: letter ? letter.toUpperCase() : null, letter_by: letterBy === "first" ? "first" : null, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
   const href = (changes: Record<string, string | null>) => queryHref("/players", sp, { ...keep, page: null, ...changes });
@@ -93,6 +101,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
         <LetterBar say={say} plural={plural} letter={letter} by={letterBy} counts={counts} href={href} />
         {nat ? <p className="note"><Flag code={nat} shape="round" /> {say("players.countryOnly", { name: countryName(nat, locale) })} · <Link href={href({ nat: null })} prefetch={false}>{say("players.countryClear")}</Link></p> : null}
         {span ? <ListRange page="/players" min={span.min} max={span.max} from={range?.from ?? span.min} to={range?.to ?? span.max} inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))} /> : null}
+        {countries ? <PlayerCountries t={countries} reference={refKind && refTally ? { kind: refKind, tally: refTally } : null} league={league} chosen={nat} href={href} /> : null}
         <div className="yr-hold">
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>
