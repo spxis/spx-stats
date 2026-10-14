@@ -72,7 +72,7 @@ export default guard(async function MlsMatchPage({ params }: Params) {
     return {
       crest: <span className="crest"><span className="mono">{abbrs[i]}</span></span>,
       name: <Link href={mlsClubPath(slug)} prefetch={false}>{names[i]}</Link>,
-      tag: winner === i && m.stage_key === "final" ? <><BadgeCup league="soccer" />{say("mls.sd.champions")}</> : null,
+      tag: winner === i && m.stage_key === "final" ? <><BadgeCup league="mls" />{say("mls.sd.champions")}</> : null,
       meta: record ? [record] : [],
       links: [
         <Link key="club" href={mlsClubPath(slug)} prefetch={false}>{say("mls.sd.team", { club: names[i] })}</Link>,

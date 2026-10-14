@@ -83,7 +83,7 @@ export default guard(async function MatchPage({ params }: Params) {
     return {
       crest: <SoccerCrest code={sd.flag} name={names[i]} abbr={abbrs[i]} />,
       name: <Link href={soccerTeamPath(sd.slug)} prefetch={false}>{names[i]}</Link>,
-      tag: champion ? <><BadgeCup league="soccer" />{say(m.league === "wwc" ? "wc.sd.championsWomen" : "wc.sd.champions")}</> : null,
+      tag: champion ? <><BadgeCup league="worldcup" />{say(m.league === "wwc" ? "wc.sd.championsWomen" : "wc.sd.champions")}</> : null,
       meta: entry ? [say("wc.sd.record", { year: m.year, w: entry.won, d: entry.drawn, l: entry.lost, gf: entry.goals_for, ga: entry.goals_against })] : [],
       links: [
         <Link key="team" href={soccerTeamPath(sd.slug)} prefetch={false}>{say("wc.sd.team", { team: names[i] })}</Link>,

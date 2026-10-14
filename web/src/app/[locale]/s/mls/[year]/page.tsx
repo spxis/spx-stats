@@ -15,6 +15,7 @@ import { getMlsLeaders, getMlsMatches, getMlsSeasonTeams, getMlsStandings, mlsSe
 import { MLS_PATH, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
 import { mlsReachRank, mlsReached, mlsScoreLines, mlsStageName } from "@/lib/mlsView";
 import { tableOf } from "@/lib/sort";
+import { PlaceMedal } from "@/components/TrophyIcon";
 import "@/components/soccer.css";
 
 export const revalidate = 3600;
@@ -119,8 +120,8 @@ export default guard(async function MlsSeasonPage({ params }: Params) {
         <section className="section">
           <h2>{say("wc.t.result")}</h2>
           <ul className="sc-list">
-            {s.champion && s.champion_slug ? <li><b>{say("mls.cupWinner")}</b> <MlsClubName slug={s.champion_slug} name={s.champion} /></li> : null}
-            {s.runner_up && s.runner_up_slug ? <li><b>{say("wc.reach.runnerUp")}</b> <MlsClubName slug={s.runner_up_slug} name={s.runner_up} /></li> : null}
+            {s.champion && s.champion_slug ? <li><PlaceMedal place={1} /><b>{say("mls.cupWinner")}</b> <MlsClubName slug={s.champion_slug} name={s.champion} /></li> : null}
+            {s.runner_up && s.runner_up_slug ? <li><PlaceMedal place={2} /><b>{say("wc.reach.runnerUp")}</b> <MlsClubName slug={s.runner_up_slug} name={s.runner_up} /></li> : null}
             {s.shield && s.shield_slug ? <li><b>{say("mls.shieldWinner")}</b> <MlsClubName slug={s.shield_slug} name={s.shield} /></li> : null}
             {!s.complete ? <li>{say("mls.inProgress")}</li> : null}
           </ul>

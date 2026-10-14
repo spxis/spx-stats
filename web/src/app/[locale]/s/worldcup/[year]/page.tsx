@@ -20,6 +20,7 @@ import { teamName } from "@/lib/soccerNames";
 import { isYearSeg, soccerMatchPath, soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPath";
 import { groupLabel, reachRank, reached, scoreLines } from "@/lib/soccerView";
 import { tableOf } from "@/lib/sort";
+import { PlaceMedal } from "@/components/TrophyIcon";
 import "@/components/soccer.css";
 
 export const revalidate = 3600;
@@ -114,13 +115,14 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
     { key: "n", label: say("wc.col.matches"), num: true, get: (s) => s.n },
   ], (s) => s.name);
 
-  const podium: [string, string | null, string | null, string | null][] = [
-    [say("wc.reach.champions"), t.winner, t.winner_slug, t.winner_flag],
-    [say("wc.reach.runnerUp"), t.runner_up, t.runner_up_slug, t.runner_up_flag],
+  // the place leads each row so the first three get their medal
+  const podium: [number, string, string | null, string | null, string | null][] = [
+    [1, say("wc.reach.champions"), t.winner, t.winner_slug, t.winner_flag],
+    [2, say("wc.reach.runnerUp"), t.runner_up, t.runner_up_slug, t.runner_up_flag],
   ];
   const third = teams.find((x) => x.final_position === 3), fourth = teams.find((x) => x.final_position === 4);
-  if (third) podium.push([say("wc.reach.third"), third.team, third.team_slug, third.flag_code]);
-  if (fourth) podium.push([say("wc.reach.fourth"), fourth.team, fourth.team_slug, fourth.flag_code]);
+  if (third) podium.push([3, say("wc.reach.third"), third.team, third.team_slug, third.flag_code]);
+  if (fourth) podium.push([4, say("wc.reach.fourth"), fourth.team, fourth.team_slug, fourth.flag_code]);
 
   const awardGroups = [...new Set(awards.map((a) => a.award))];
 
@@ -139,8 +141,8 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
         <section className="section">
           <h2>{say("wc.t.result")}</h2>
           <ul className="sc-list">
-            {podium.filter((p) => p[1] && p[2]).map(([label, name, slug, flag]) => (
-              <li key={label}><b>{label}</b> <SoccerTeamName slug={slug!} name={name!} flag={flag} /></li>
+            {podium.filter((p) => p[2] && p[3]).map(([place, label, name, slug, flag]) => (
+              <li key={label}>{place <= 3 ? <PlaceMedal place={place} /> : null}<b>{label}</b> <SoccerTeamName slug={slug!} name={name!} flag={flag} /></li>
             ))}
           </ul>
         </section>

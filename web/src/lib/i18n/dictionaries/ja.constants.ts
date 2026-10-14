@@ -1616,6 +1616,7 @@ export const JA: Dictionary = {
   "venue.finalsNote": "決勝の試合はここで{n}試合行われました。直近のものを載せています。日付を押すと、その試合のページが開きます。",
   "venue.gamesNote": "会場が分かっている試合のみを数えています。古いシーズンの一部の試合は会場の記録がなく、含まれていません。",
   "credit.surfaces": "競技面：{kyogijo}。",
+  "credit.emblems": "トロフィーとメダル：{dougu}。",
   ...SOCCER_JA,
   ...MLS_JA,
   ...GAME_JA,

@@ -562,6 +562,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - `@johnmorrisdotca/hata`: flags.
   - `@johnmorrisdotca/address-plus`: addresses.
   - `@johnmorrisdotca/kuni`: ISO codes.
+  - `@johnmorrisdotca/dougu-sports`: trophy and medal icons (`lib/trophies.ts`, `TrophyIcon.tsx`); credited on /terms.
 - **List APIs** (public, read-only JSON, cached an hour; the contract is the comment at the top of each route file): `GET /api/players`
   and `GET /api/teams` take `league`, `q` (accents ignored; teams also match former names), `status=active|defunct` (teams), `position` (players; a position code such as LW or SS, older words read as codes; matches any position a player holds, rows carry `position` and `positions` as codes), `nat` (players; a two-letter country code, matched against the row's `country`),
   `from` and `to` (whole years 1800 to 2100, from not after to: keeps rows whose first..last season overlaps the range; the same `?from=&to=` drives the year slider on `/players` and `/teams`, remembered per page in `spxn-range-players` and `spxn-range-teams`),

@@ -1616,6 +1616,7 @@ export const FR: Dictionary = {
   "venue.finalsNote": "{n} matchs d’une finale ont été disputés ici; les plus récents sont listés. Une date ouvre la page de ce match.",
   "venue.gamesNote": "Les totaux comptent les matchs de l’archive dont l’installation est connue. Quelques matchs des plus anciennes saisons n’ont pas d’installation connue et ne sont pas comptés.",
   "credit.surfaces": "Surfaces de jeu : {kyogijo}.",
+  "credit.emblems": "Trophées et médailles : {dougu}.",
   ...SOCCER_FR,
   ...MLS_FR,
   ...GAME_FR,
