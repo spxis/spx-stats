@@ -4,6 +4,7 @@ import { SoccerHomeCard } from "@/components/SoccerHomeCard";
 import { Figures } from "@/components/ui";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
+import { playerTotal } from "@/lib/playerIndex";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES } from "@/lib/leagues";
 import { LOCALE_OG } from "@/lib/locale";
@@ -24,7 +25,7 @@ export async function generateMetadata() {
 
 export default guard(async function Home() {
   const { say, plural } = await currentSpeaker();
-  const s = await getSummary();
+  const [s, players] = await Promise.all([getSummary(), playerTotal()]);
   const seasons = withCoverage(s.seasons);
   const t = s.totals;
   return (
@@ -37,6 +38,7 @@ export default guard(async function Home() {
       <Figures items={[
         [say("home.games"), t.games], [say("home.results"), t.finals], [say("home.confirmed"), t.confirmed],
         [say("home.lines"), t.lines], [say("home.winners"), t.award_winners], [say("home.franchises"), t.franchises],
+        ...(players ? [[say("home.players"), players] as [string, number]] : []),
       ]} />
       <section className="section">
         <h2>{say("home.archiveTitle")}</h2>

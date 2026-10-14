@@ -62,13 +62,14 @@ export const FR: Dictionary = {
 
   // home
   "home.title": "Chaque match, chaque champion",
-  "home.lede": "Pointages, classements, champions et récompenses de cinq ligues, construits à partir des archives de SPX de 1997 à 2013 et complétés par des sources ouvertes. Chaque résultat indique d’où il vient.",
+  "home.lede": "Pointages, classements, champions et récompenses du hockey, du basketball, du baseball, du football et du soccer, construits à partir des archives de SPX de 1997 à 2013 et complétés par des sources ouvertes. Chaque résultat indique d’où il vient.",
   "home.games": "Matchs",
   "home.results": "Résultats",
   "home.confirmed": "Confirmés par une deuxième source",
   "home.lines": "Cotes de paris",
   "home.winners": "Lauréats",
   "home.franchises": "Concessions",
+  "home.players": "Joueurs",
   "home.archiveTitle": "Ce que contient l’archive",
   "home.archiveNote": "Chaque carré est une saison, ombré selon la part de ses matchs dont le résultat est connu. Cliquez sur l’un d’eux pour l’ouvrir.",
   "home.span": "{from}–{to} · {seasons}",

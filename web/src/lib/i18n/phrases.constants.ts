@@ -148,13 +148,14 @@ export const PHRASES = {
 
   // home
   "home.title": "Every game, every champion",
-  "home.lede": "Scores, standings, champions and awards of five leagues, built from the SPX archive of 1997–2013 and filled out from open sources. Every result says where it came from.",
+  "home.lede": "Scores, standings, champions and awards across hockey, basketball, baseball, football and soccer, built from the SPX archive of 1997–2013 and filled out from open sources. Every result says where it came from.",
   "home.games": "Games",
   "home.results": "Results",
   "home.confirmed": "Confirmed by a second source",
   "home.lines": "Betting lines",
   "home.winners": "Award winners",
   "home.franchises": "Franchises",
+  "home.players": "Players",
   "home.archiveTitle": "What the archive holds",
   "home.archiveNote": "Each square is a season, shaded by how many of its games have a result. Click one to open it.",
   "home.span": "{from}–{to} · {seasons}",

@@ -43,6 +43,16 @@ export interface PlayerFilters {
   letter?: string; letterBy?: LetterBy;
 }
 
+/** How many players the players index lists (the five leagues' players, as /players counts them with no filter): one request that asks for a row and reads the count. A view that is missing gives null. */
+export async function playerTotal(): Promise<number | null> {
+  try {
+    return (await rowsWindow("player_index", `select=person_id&${PLAYER_LISTED}`, 0, 1, z.object({ person_id: z.number() }))).total;
+  } catch (e) {
+    if (e instanceof ApiError && e.status != null && e.status >= 400 && e.status < 500) return null;
+    throw e;
+  }
+}
+
 /** The first and last season in the players index for a league (every league when none), which is the full reach of the year slider. */
 export const playerSpan = (league: string): Promise<Span> => readSpan("player_index", [PLAYER_LISTED, ...(isLeague(league) ? [`leagues=cs.${encodeURIComponent(`{${league}}`)}`] : [])]);
 
