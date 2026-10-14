@@ -15,7 +15,7 @@ export interface ClubTeam {
   logo?: string | null;
 }
 
-/** [date, awayId, awayScore, homeScore, homeId, phase, status initial, source, overtime 0|1, checked]. */
+/** [date, awayId, awayScore, homeScore, homeId, phase, status initial, source, overtime 0|1, checked, game id]. */
 export type GameTuple = [
   date: string,
   away: number,
@@ -27,6 +27,8 @@ export type GameTuple = [
   source: string,
   overtime: 0 | 1,
   checked: number | null,
+  /** The game's id in the archive: the key of its page (lib/gamePath.ts). */
+  id: number,
 ];
 
 export interface Selection {

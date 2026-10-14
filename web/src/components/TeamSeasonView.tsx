@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc, localToday } from "@/lib/format";
+import { gamePath } from "@/lib/gamePath";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import { srcName } from "@/lib/leagues";
 import type { Loc } from "@/lib/loc";
@@ -29,6 +30,7 @@ import { SplitBars } from "./SplitBars";
 import { TeamLabel } from "./TeamLabel";
 import { Badge } from "./ui";
 import "./team.css";
+import "./game.css";
 import { seasonPath } from "@/lib/slug";
 
 interface Props {
@@ -113,7 +115,17 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
     },
     { key: "loc", label: say("col.ha"), title: say("col.haTitle"), get: (g) => g.loc, cell: (g) => say(g.loc === "Home" ? "loc.home" : "loc.away") },
     { key: "opp", label: say("col.opponent"), cls: "team", get: (g) => g.oppName, cell: (g) => <><TeamLabel lg={lg} f={g.oppF} name={g.oppName} year={year} abbr={abbrFor(abbrs, g.oppF, year, g.oppName)} logo={logos.get(g.oppF)} /><H2hLink lg={lg} year={year} a={teams.get(meId)?.f} b={g.oppF} /></> },
-    { key: "score", label: say("col.score"), num: true, title: say("col.scoreTitle"), get: (g) => g.margin, cell: (g) => (g.res ? `${g.mine}–${g.theirs}` : "") },
+    {
+      key: "score", label: say("col.score"), num: true, title: say("col.scoreTitle"), get: (g) => g.margin,
+      cell: (g) => {
+        const me = teams.get(meId)?.name ?? null, [away, home] = g.loc === "Home" ? [g.oppName, me] : [me, g.oppName];
+        return (
+          <Link className="scorelink" href={gamePath(lg, year, g.id, away, home)} prefetch={false} title={say("gm.viewGameTitle", { away: away ?? "—", home: home ?? "—" })}>
+            {g.res ? `${g.mine}–${g.theirs}` : say("gm.viewGame")}
+          </Link>
+        );
+      },
+    },
     {
       key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
       cell: (g) => (g.res ? <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> : <span className="note">{say("game.noResult")}</span>),

@@ -13,6 +13,7 @@ import { TeamLabel } from "@/components/TeamLabel";
 import { PitchFigure, SoccerHere } from "@/components/VenueSoccer";
 import { VisitControl } from "@/components/VenueVisits";
 import { Figures } from "@/components/ui";
+import { gamePath } from "@/lib/gamePath";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUE_CODES, LG } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -193,7 +194,7 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
                   const home = names.get(`${g.league}|${g.home_franchise_id}`) ?? "", away = names.get(`${g.league}|${g.away_franchise_id}`) ?? "";
                   return (
                     <li key={g.game_id}>
-                      <Link href={`/${g.league}/scores/${g.game_date}`} prefetch={false}>{g.game_date}</Link>
+                      <Link href={gamePath(g.league, g.year, g.game_id, away, home)} prefetch={false}>{g.game_date}</Link>
                       <span>{`${leagueName(g.league)} ${g.year}`}</span>
                       <span>{g.away_score != null && g.home_score != null ? `${away} ${g.away_score}, ${home} ${g.home_score}` : `${away} / ${home}`}</span>
                     </li>

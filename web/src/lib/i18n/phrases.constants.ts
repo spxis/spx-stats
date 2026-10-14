@@ -1,3 +1,4 @@
+import { GAME_EN } from "./game.constants.ts";
 import { MLS_EN } from "./mls.constants.ts";
 import { SOCCER_EN } from "./soccer.constants.ts";
 /**
@@ -1787,11 +1788,12 @@ export const PHRASES = {
   "venue.colLastGame": "Last game",
   "venue.seasonsHead": "Games by season",
   "venue.finalsHead": "Finals held here",
-  "venue.finalsNote": "{n} games of a final were played here; the most recent are listed. A date opens that day’s scores.",
+  "venue.finalsNote": "{n} games of a final were played here; the most recent are listed. A date opens that game’s page.",
   "venue.gamesNote": "Counts are the games on record where this venue is known. A few games of the older seasons have no venue on record and are not counted.",
   "credit.surfaces": "Playing surfaces: {kyogijo}.",
   ...SOCCER_EN,
   ...MLS_EN,
+  ...GAME_EN,
   "nav.countries": "Countries",
   "col.country": "Country",
   "count.countries.one": "{count} country",

@@ -1,4 +1,5 @@
 import type { Dictionary } from "../dictionaries";
+import { GAME_FR } from "../game.constants.ts";
 import { MLS_FR } from "../mls.constants.ts";
 import { SOCCER_FR } from "../soccer.constants.ts";
 
@@ -1597,11 +1598,12 @@ export const FR: Dictionary = {
   "venue.colLastGame": "Dernier match",
   "venue.seasonsHead": "Matchs par saison",
   "venue.finalsHead": "Finales disputées ici",
-  "venue.finalsNote": "{n} matchs d’une finale ont été disputés ici; les plus récents sont listés. Une date ouvre les résultats de ce jour.",
+  "venue.finalsNote": "{n} matchs d’une finale ont été disputés ici; les plus récents sont listés. Une date ouvre la page de ce match.",
   "venue.gamesNote": "Les totaux comptent les matchs de l’archive dont l’installation est connue. Quelques matchs des plus anciennes saisons n’ont pas d’installation connue et ne sont pas comptés.",
   "credit.surfaces": "Surfaces de jeu : {kyogijo}.",
   ...SOCCER_FR,
   ...MLS_FR,
+  ...GAME_FR,
   "nav.countries": "Pays",
   "col.country": "Pays",
   "count.countries.one": "{count} pays",

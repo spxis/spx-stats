@@ -19,6 +19,7 @@ import { titleHolders } from "@/lib/champions";
 import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { abbrFor } from "@/lib/abbr";
 import { atUtc, fmt3 } from "@/lib/format";
+import { gamePath } from "@/lib/gamePath";
 import { pairPath, pairSeasonPath } from "@/lib/h2h";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -36,6 +37,7 @@ import { parseSeasonSeg, seasonPath } from "@/lib/slug";
 import { recShare, tableOf } from "@/lib/sort";
 import { getPaths, pairOf } from "@/lib/teamSlugs";
 import "@/components/series.css";
+import "@/components/game.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Kept and revalidated every hour, once per language (lib/routing.ts); its data comes from the hour-long cache.
@@ -300,7 +302,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
             return (
               <li key={g.id} className={`gtile${g.played ? "" : " ahead"}${g.ifNeeded ? " ifneeded" : ""}`} style={{ "--tc": g.winner == null ? "var(--rule)" : g.winner === 0 ? "var(--ca)" : "var(--cb)" } as React.CSSProperties}>
                 <span className="ghead">
-                  <b>{single ? say("games.theGame") : say("games.gameN", { n: fmt(g.n) })}</b>
+                  <b><Link href={gamePath(lg, y, g.id, s.sides[awayIdx].name, s.sides[g.home].name)} prefetch={false} title={sp.say("gm.viewGameTitle", { away: s.sides[awayIdx].name, home: s.sides[g.home].name })}>{single ? say("games.theGame") : say("games.gameN", { n: fmt(g.n) })}</Link></b>
                   {g.ot ? <span className="badge">{extra}</span> : null}
                   {g.ifNeeded ? <span className="badge">{say("games.ifNeeded")}</span> : null}
                   <Link href={datePath(lg, y, g.date, "playoffs")} prefetch={false} title={say("games.dayTitle")}>{dt.monthDayShort(atUtc(g.date))}</Link>

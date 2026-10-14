@@ -1,4 +1,5 @@
 import type { Dictionary } from "../dictionaries";
+import { GAME_JA } from "../game.constants.ts";
 import { MLS_JA } from "../mls.constants.ts";
 import { SOCCER_JA } from "../soccer.constants.ts";
 
@@ -1597,11 +1598,12 @@ export const JA: Dictionary = {
   "venue.colLastGame": "最後の試合",
   "venue.seasonsHead": "シーズン別の試合数",
   "venue.finalsHead": "ここで行われた決勝",
-  "venue.finalsNote": "決勝の試合はここで{n}試合行われました。直近のものを載せています。日付を押すと、その日のスコアが開きます。",
+  "venue.finalsNote": "決勝の試合はここで{n}試合行われました。直近のものを載せています。日付を押すと、その試合のページが開きます。",
   "venue.gamesNote": "会場が分かっている試合のみを数えています。古いシーズンの一部の試合は会場の記録がなく、含まれていません。",
   "credit.surfaces": "競技面：{kyogijo}。",
   ...SOCCER_JA,
   ...MLS_JA,
+  ...GAME_JA,
   "nav.countries": "国別",
   "col.country": "国",
   "count.countries.one": "{count}か国",

@@ -3,6 +3,7 @@ import type { GameRow } from "@/lib/api/types";
 import { logoFor } from "@/lib/brand";
 import { getBrands, getSummary } from "@/lib/data";
 import { atUtc } from "@/lib/format";
+import { gamePath } from "@/lib/gamePath";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
@@ -12,6 +13,7 @@ import { ScoresBar } from "./ScoresBar";
 import { TeamLabel } from "./TeamLabel";
 import { Badge } from "./ui";
 import "./scores.css";
+import "./game.css";
 
 type Brands = Awaited<ReturnType<typeof getBrands>>;
 type Say = Awaited<ReturnType<typeof currentSpeaker>>["say"];
@@ -24,10 +26,12 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
   const final = g.status === "final" && g.home_score != null && g.away_score != null;
   const away = final && g.away_score! > g.home_score!, home = final && g.home_score! > g.away_score!;
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
+  const page = gamePath(lg, g.year, g.game_id, g.away, g.home);
+  const title = say("gm.viewGameTitle", { away: g.away ?? "—", home: g.home ?? "—" });
   const side = (id: number, f: number | null, name: string | null, score: number | null, won: boolean) => (
     <div className={"srow" + (won ? " won" : "")}>
       <span className="sname"><TeamLabel lg={lg} f={f} name={name || "—"} year={g.year} className={won ? "won" : undefined} logo={logoFor(brands, f, g.year)} size={32} shape="square" /></span>
-      <b className="sscore">{final ? score : ""}</b>
+      <b className="sscore">{final ? <Link href={page} prefetch={false} title={title}>{score}</Link> : ""}</b>
     </div>
   );
   return (
@@ -42,6 +46,7 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
         <Badge src={g.source} />
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}
         {g.checked === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠ " + say("game.disputed")}</span> : null}
+        <Link href={page} prefetch={false} className="viewgame" title={title}>{say("gm.viewGame")}</Link>
       </div>
     </li>
   );

@@ -54,7 +54,7 @@ export function deriveTeamGames(games: GameRow[], franchise: number, standing: S
       src: g.source, v: g.checked,
       rec: res ? `${c.w}–${c.l}${standing?.t || c.t ? `–${c.t}` : ""}${standing?.otl || c.o ? `–${c.o}` : ""}` : "",
       recPct: res && played ? (c.w + c.t / 2) / played : null,
-      tuple: [g.game_date, g.away_id, g.away_score, g.home_score, g.home_id, ph, g.status[0] ?? "", g.source, g.overtime ? 1 : 0, g.checked],
+      tuple: [g.game_date, g.away_id, g.away_score, g.home_score, g.home_id, ph, g.status[0] ?? "", g.source, g.overtime ? 1 : 0, g.checked, g.game_id],
     });
   }
   return games.map((g) => out.get(g)!);

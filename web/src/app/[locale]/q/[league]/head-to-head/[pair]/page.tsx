@@ -14,10 +14,12 @@ import { queryHref } from "@/components/ViewTabs";
 import { Badge, Figures } from "@/components/ui";
 import "@/components/h2h.css";
 import "@/components/series.css";
+import "@/components/game.css";
 import { abbrFor } from "@/lib/abbr";
 import { brandFor, logoFor } from "@/lib/brand";
 import { getAbbrs, getBrands, getTeam } from "@/lib/data";
 import { fmt3, atUtc } from "@/lib/format";
+import { gamePath } from "@/lib/gamePath";
 import {
   biggestWin, bySeason, h2hGames, parseH2hQuery, playoffMeetings, runByGame, runBySeason, streak, tally,
   type H2hGame, type PlayoffMeeting, type Season,
@@ -356,7 +358,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
     },
     {
       key: "score", label: say("col.score"), num: true, title: say("h2h.col.scoreTitle"), cls: "h2hscore", get: (g: H2hGame) => g.awayScore - g.homeScore,
-      cell: (g: H2hGame) => <>{g.awayScore}–{g.homeScore}{g.ot ? <span className="badge tag ot">{extra}</span> : null}</>,
+      cell: (g: H2hGame) => <><Link className="scorelink" href={gamePath(lg, g.year, g.id, g.awayName, g.homeName)} prefetch={false} title={say("gm.viewGameTitle", { away: g.awayName, home: g.homeName })}>{g.awayScore}–{g.homeScore}</Link>{g.ot ? <span className="badge tag ot">{extra}</span> : null}</>,
     },
     {
       key: "home", label: say("h2h.col.home"), cls: "team", get: (g: H2hGame) => g.homeName,

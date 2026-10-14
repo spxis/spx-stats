@@ -53,6 +53,19 @@ async function whereOf(lg: string, year: number, game: DrawnGame, brands: BrandM
 }
 
 /**
+ * Where a game was played, as the page that shows it says it: the venue (null when none is known or claimed), whether it was a neutral site, and for an MLB game the kyogijo
+ * park. A park kyogijo knows to have stood in other years is not the park of this season, so nothing is claimed about the venue then. The game page names the venue with it,
+ * so the name and the drawing always agree; the reads are the same ones the drawing makes, kept once per render.
+ */
+export async function placeOf(lg: string, year: number, game: DrawnGame, brands: BrandMap): Promise<{ venue: HomeVenue | null; neutral: boolean; park: string | null }> {
+  const where = await whereOf(lg, year, game, brands);
+  let venue = where.venue;
+  let park = lg === "mlb" ? parkOf(venue) : null;
+  if (park && !parkFits(park, year)) { park = null; venue = null; }
+  return { venue, neutral: where.neutral, park };
+}
+
+/**
  * One game's score on the surface it was played on (kyogijo, drawn at build or on the first visit and kept with the page, so a view costs no server
  * work): the clubs' colours and logos at the ends, the score in the middle, and for an MLB game the outfield fence of the park it was played in.
  * The drawing is decorative: the figure's label says the score as text and the caption says what is drawn.
@@ -62,12 +75,7 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs }
   if (!sport || game.home.score == null || game.away.score == null) return null;
   const sp = await currentSpeaker();
   const { say, dt } = sp;
-  const where = await whereOf(lg, year, game, brands);
-  const neutral = where.neutral;
-  let venue = where.venue;
-  let park = sport === "mlb" ? parkOf(venue) : null;
-  // A park kyogijo knows to have stood in other years is not the park of this season, so nothing is claimed about the venue.
-  if (park && !parkFits(park, year)) { park = null; venue = null; }
+  const { venue, neutral, park } = await placeOf(lg, year, game, brands);
   const [la, lb] = seriesLooks(lg, brandFor(brands, game.away.f, year), brandFor(brands, game.home.f, year));
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
   const status = game.overtime ? say("scores.finalExtra", { extra }) : say("scores.final");

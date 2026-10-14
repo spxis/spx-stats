@@ -587,6 +587,11 @@ Ask John before deleting or overwriting data. Production changes only through ap
   (`api.country_team_season`, `country_season`, `country_league`, `country_franchise`, refreshed by `api.refresh()`); every page hides its country section while a view is
   missing, and a club's roster section needs no view. The numbers are worked out in `web/src/lib/countryModel.ts` (`pnpm test:countries`). Where a league's countries are known
   for under half of its players (NHL on 2026-10-13) the pages say so and hold back shares and comparisons.
+- **A game's page:** `/<league>/<season>/game/<id>-<away>-at-<home>` (`app/[locale]/s/[league]/[year]/game/[game]`, twin in `q/`; address builder `lib/gamePath.ts`, sums
+  in `lib/gameView.ts`, tests `pnpm test:game`). Nothing is drawn at build time; each game is drawn on its first visit. The number decides the game, a wrong name is
+  redirected for good. Every score on the scoreboard, in a team's season table and calendar and on a series tile links to it. The archive holds no box score
+  (periods, innings, players) for any game yet, so the page carries the teams' records going in, form, the games either side, the meetings, the franchises and the
+  club leaders. Read games by `league` and `game_id`, or by team-season id: filtering the games view on `away_f` or `home_f` scans the league.
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
 - **The player page's statistics board** (`components/PlayerBoard.tsx`, maths in `lib/playerBoard.ts`, tests `pnpm test:player`) is drawn in the

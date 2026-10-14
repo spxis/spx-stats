@@ -1,8 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
+import Link from "next/link";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc, isoDay, localToday } from "@/lib/format";
+import { gamePath } from "@/lib/gamePath";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { ClubTeam, GameTuple } from "@/lib/season";
@@ -13,14 +15,16 @@ import { TeamLabel } from "./TeamLabel";
 import { TeamLogo } from "./TeamLogo";
 import { Badge } from "./ui";
 import "./team.css";
+import "./game.css";
 
 function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number; abbrs: AbbrMap }) {
   const { say } = useSpeaker();
-  const [, a, as, hs, h, , st, src, ot, v] = g;
+  const [, a, as, hs, h, , st, src, ot, v, gid] = g;
   const fin = st === "f";
   const aw = fin && (as ?? 0) > (hs ?? 0), hw = fin && (hs ?? 0) > (as ?? 0);
   const nm = (id: number) => teams.get(id)?.name || "—";
   const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
+  const text = fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : say("game.noResult");
   return (
     <div className="game">
       <span>
@@ -29,7 +33,11 @@ function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; team
           home: <TeamLabel lg={lg} f={teams.get(h)?.f} name={nm(h)} year={year} abbr={ab(h)} className={hw ? "won" : undefined} logo={teams.get(h)?.logo} />,
         }} />
       </span>
-      <span className="score">{fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : say("game.noResult")}</span>
+      <span className="score">
+        {year != null
+          ? <Link className="scorelink" href={gamePath(lg, year, gid, nm(a), nm(h))} prefetch={false} title={say("gm.viewGameTitle", { away: nm(a), home: nm(h) })}>{text}</Link>
+          : text}
+      </span>
       <span className="meta">
         <Badge src={src} />
         {v === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}
