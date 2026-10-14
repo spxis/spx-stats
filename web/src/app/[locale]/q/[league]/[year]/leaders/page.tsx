@@ -7,6 +7,7 @@ import { PlayerLeaders } from "@/components/PlayerLeaders";
 import { TeamLeaders } from "@/components/TeamLeaders";
 import { NoSeason } from "@/components/ui";
 import { queryHref } from "@/components/ViewTabs";
+import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { withGaps } from "@/lib/coverage";
@@ -15,6 +16,7 @@ import { cleanSeasons, leadersPath } from "@/lib/leaderStats";
 import { PLAYER_SPECS } from "@/lib/leaderPlayers";
 import { getLeagueStandings } from "@/lib/leadersData";
 import { pageMeta } from "@/lib/meta";
+import { getOutageYears } from "@/lib/outageData";
 import { leagueSat } from "@/lib/noSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import "@/components/alignment.css";
@@ -73,7 +75,11 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
 
   const hasPlayers = !!PLAYER_SPECS[lg];
   const view = hasPlayers && sp.view === "players" ? "players" : "teams";
-  const [standings, brands, abbrs] = await Promise.all([getLeagueStandings(lg).catch(() => null), getBrands(), getAbbrs(lg)]);
+  const [standings, brands, abbrs, outageYears] = await Promise.all([getLeagueStandings(lg).catch(() => null), getBrands(), getAbbrs(lg), getOutageYears(lg)]);
+  // The champion going into the season, as the season page badges it (the same read, cached an hour: the years the league sat out do not break a reign).
+  const holders = titleHolders(summary.seasons, lg, outageYears);
+  const prev = holders.before(y);
+  const defending = prev?.champion_franchise != null ? { f: prev.champion_franchise, label: prev.label, streak: titleStreak(holders.byYear, prev.champion_franchise, prev.year, holders.sat) } : null;
   const idle = mine.filter(leagueSat).map((s) => s.year);
   const unfinished = new Set(mine.filter((s) => s.games > 0 && s.finals < 0.9 * s.games).map((s) => s.year));
   const clean = cleanSeasons(standings ?? [], unfinished);
@@ -105,7 +111,7 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
       ) : view === "players" ? (
         <PlayerLeaders lg={lg} year={y} teams={thisYear} sp={sp} brands={brands} abbrs={abbrs} />
       ) : thisYear.length ? (
-        <TeamLeaders lg={lg} year={y} all={finished} mine={thisYear} issue={clean.issues.get(y)} sp={sp} brands={brands} abbrs={abbrs} idle={idle} champion={here.champion ? here.champion_franchise : null} />
+        <TeamLeaders lg={lg} year={y} all={finished} mine={thisYear} issue={clean.issues.get(y)} sp={sp} brands={brands} abbrs={abbrs} idle={idle} champion={here.champion ? here.champion_franchise : null} defending={defending} />
       ) : (
         <p className="lunavail">{say("leaders.noTeams")}</p>
       )}
