@@ -9,7 +9,6 @@ import { H2hSeasonSelect } from "@/components/H2hSeasonSelect";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
-import { TeamLogo } from "@/components/TeamLogo";
 import { queryHref } from "@/components/ViewTabs";
 import { Badge, Figures } from "@/components/ui";
 import "@/components/h2h.css";
@@ -238,12 +237,17 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
     const f = i === 0 ? a : b, r = i === 0 ? t.a : t.b, sh = i === 0 ? shareA : shareB, scored = i === 0 ? t.af : t.bf;
     const logo = logoFor(d.brands, f, logoYear);
     return (
-      <div className={`sdside ${i === 0 ? "a" : "b"}`}>
-        {logo ? <TeamLogo url={logo} size={88} shape="circle" /> : <span className="crest"><span className="mono">{abbrFor(d.abbrs, f, year ?? last.year, name[i])}</span></span>}
-        <h2 className="sdname"><Link href={paths.team(lg, f)} prefetch={false}>{name[i]}</Link></h2>
-        <span className="sdmeta">{say("h2h.side.record", { record: recordText(r) })}</span>
-        <span className="sdmeta">{sh == null ? "" : say("h2h.side.share", { share: fmt3(sh) })} · {say("h2h.side.scored", { count: fmt(scored), unit: unit.toLowerCase() })}</span>
-        <span className="sdlinks">
+      <div className={`hs ${i === 0 ? "a" : "b"}`}>
+        <h2 className="hsname">
+          {logo ? null : <span className="hscrest"><span className="mono">{abbrFor(d.abbrs, f, year ?? last.year, name[i])}</span></span>}
+          <TeamLabel lg={lg} f={f} name={name[i]} logo={logo} size={64} shape="circle" />
+        </h2>
+        <span className="hsstats">
+          <span>{say("h2h.side.record", { record: recordText(r) })}</span>
+          {sh == null ? null : <span>{say("h2h.side.share", { share: fmt3(sh) })}</span>}
+          <span>{say("h2h.side.scored", { count: fmt(scored), unit: unit.toLowerCase() })}</span>
+        </span>
+        <span className="hslinks">
           {year != null ? <Link href={paths.teamSeason(lg, f, year)} prefetch={false}>{say("team.everyGame", { season: seasonLabel(lg, year) })}</Link> : null}
           <Link href={paths.team(lg, f)} prefetch={false}>{say("tseason.allSeasons")}</Link>
         </span>
@@ -273,7 +277,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const streakCard = st ? (
     <div className="h2hfact" style={{ "--tc": st.side == null ? "var(--rule)" : st.side === 0 ? "var(--ca)" : "var(--cb)" } as React.CSSProperties}>
       <span className="k">{say("h2h.fact.streak")}</span>
-      <b>{st.side == null ? say("h2h.tie") : st.side === 0 ? na : nb}</b>
+      <b>{st.side == null ? say("h2h.tie") : <TeamLabel lg={lg} f={st.side === 0 ? a : b} name={st.side === 0 ? na : nb} logo={logoFor(d.brands, st.side === 0 ? a : b, logoYear)} />}</b>
       <span className="sub">{st.side == null ? say("h2h.streak.tie") : plural("h2h.streak", st.n)}</span>
     </div>
   ) : null;
@@ -322,7 +326,13 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const signed = (v: number) => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(Math.abs(v));
   const seasonTable = tableOf(rows, [
     { key: "season", label: say("col.season"), cls: "seasoncell", get: (s: Season) => s.year, cell: (s: Season) => <Link href={seasonHref(s.year)} prefetch={false} scroll={false}>{seasonLabel(lg, s.year)}</Link> },
-    ...(renamed ? [{ key: "teams", label: say("h2h.col.teams"), cls: "team", get: (s: Season) => `${s.aName} ${s.bName}`, cell: (s: Season) => say("h2h.title", { a: s.aName, b: s.bName }) }] : []),
+    ...(renamed ? [{ key: "teams", label: say("h2h.col.teams"), cls: "team", get: (s: Season) => `${s.aName} ${s.bName}`, cell: (s: Season) => (
+      <span className="h2hpair">
+        <span><TeamLabel lg={lg} f={a} name={s.aName} year={s.year} logo={logoFor(d.brands, a, s.year)} /></span>
+        <span className="vs" aria-hidden="true">·</span>
+        <span><TeamLabel lg={lg} f={b} name={s.bName} year={s.year} logo={logoFor(d.brands, b, s.year)} /></span>
+      </span>
+    ) }] : []),
     { key: "gp", label: say("col.gp"), num: true, get: (s: Season) => s.t.gp, cell: (s: Season) => fmt(s.t.gp) },
     { key: "rec", label: say("h2h.col.record", { team: na }), num: true, title: say("h2h.col.recordTitle"), get: (s: Season) => share(s.t.a), cell: (s: Season) => recordText(s.t.a) },
     { key: "share", label: say("col.share"), num: true, title: say("h2h.col.shareTitle", { team: na }), get: (s: Season) => share(s.t.a), cell: (s: Season) => { const v = share(s.t.a); return v == null ? "" : fmt3(v); } },
@@ -388,16 +398,16 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
       {lede}
       {controls}
 
-      <section className="showdown" aria-label={say("h2h.title", { a: name[0], b: name[1] })}>
+      <section className="h2hsum" aria-label={say("h2h.title", { a: name[0], b: name[1] })}>
         {side(0)}
-        <div className="sdmid">
-          <div className="bigscore" aria-label={`${t.a.w}–${t.b.w}`}>
+        <div className="hsmid">
+          <div className="hsscore" aria-label={`${t.a.w}–${t.b.w}`}>
             <b className={`n a${lead > 0 ? " w" : ""}`}>{t.a.w}</b>
             <span className="dash" aria-hidden="true">–</span>
             <b className={`n b${lead < 0 ? " w" : ""}`}>{t.b.w}</b>
           </div>
-          <span className="verdict">{verdict}</span>
-          <span className="sdnote">{note}</span>
+          <span className="hsverdict">{verdict}</span>
+          <span className="hsnote">{note}</span>
         </div>
         {side(1)}
       </section>
@@ -412,7 +422,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
         <h2>{say("h2h.cmp.title")}</h2>
         <p className="note">{say("h2h.cmp.note")}</p>
         <div className="cmp">
-          <div className="cmphead"><b style={{ color: "var(--ca)" }}>{na}</b><span /><b style={{ color: "var(--cb)" }}>{nb}</b></div>
+          <div className="cmphead"><b style={{ color: "var(--ca)" }}><TeamLabel lg={lg} f={a} name={na} logo={logoFor(d.brands, a, logoYear)} /></b><span /><b style={{ color: "var(--cb)" }}><TeamLabel lg={lg} f={b} name={nb} logo={logoFor(d.brands, b, logoYear)} /></b></div>
           {metrics.map((m) => <H2hCompareRow key={m.label} m={m} />)}
         </div>
       </section>
