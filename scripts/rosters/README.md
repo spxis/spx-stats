@@ -22,6 +22,11 @@ Raw files live in `~/Projects/backups/spx-stats/raw/` (never in the checkout). F
     python3 -I scripts/rosters/wp_fetch.py nba $R/wikidata_rosters/$D/nba_team_seasons.tsv $R/wikidata_rosters/$D/nba all
     python3 -I scripts/rosters/load.py nba $R/wikidata_rosters/$D/nba ~/Projects/backups/spx-stats/rosters-$D-nba.sql
     bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-nba.sql      # archive + legacy_rosters on DS1
+    # CFL (fetched the same day into $R/wikidata_rosters/$D/cfl, titles in cfl_team_seasons.tsv)
+    python3 -I scripts/rosters/wd_fetch.py cfl $R/wikidata_rosters/$D/cfl
+    python3 -I scripts/rosters/wp_fetch.py cfl $R/wikidata_rosters/$D/cfl_team_seasons.tsv $R/wikidata_rosters/$D/cfl all
+    python3 -I scripts/rosters/load.py cfl $R/wikidata_rosters/$D/cfl ~/Projects/backups/spx-stats/rosters-$D-cfl.sql
+    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-cfl.sql
     # NFL
     python3 -I scripts/rosters/nflverse_fetch.py $R/nflverse_rosters/$D
     python3 -I scripts/rosters/nflverse_load.py $R/nflverse_rosters/$D ~/Projects/backups/spx-stats/rosters-$D-nfl.sql

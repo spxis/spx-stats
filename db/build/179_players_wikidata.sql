@@ -76,17 +76,20 @@ select lt.league_code, lt.team_qid, lt.label, pg_temp.key(lt.label) as k from le
 union
 select a.league, lt.team_qid, lt.label, pg_temp.key(a.our_name) from seed_alias a join legacy_rosters.league_team lt on lt.league_code = a.league and lt.label = a.label;
 create index on team_name (league_code, team_qid);
+create temp table team_key on commit drop as select distinct league_code, team_qid, k from team_name;
+create index on team_key (league_code, team_qid);
 
 create temp table st on commit drop as
-select tn.league_code, c.qid, c.value_qid as team_qid, tn.label, tn.k, c.start_on, c.start_prec, c.end_on, c.end_prec, c.n
+select tn.league_code, c.qid, c.value_qid as team_qid, tn.label, c.start_on, c.start_prec, c.end_on, c.end_prec, c.n
 from c join lp on lp.qid = c.qid
-join (select distinct league_code, team_qid, label, k from team_name) tn on tn.team_qid = c.value_qid and tn.league_code = lp.league_code
+join (select distinct league_code, team_qid, label from legacy_rosters.league_team) tn on tn.team_qid = c.value_qid and tn.league_code = lp.league_code
 where c.prop = 'P54';
 
--- Wikidata: the seasons each dated statement covers
+-- Wikidata: the seasons each dated statement covers, once for each spelling of the club's name
 create temp table want_y on commit drop as
-select p.league_code, p.qid, p.team_qid, p.label, p.k, y, 'wikidata'::text as origin
+select p.league_code, p.qid, p.team_qid, p.label, tk.k, y, 'wikidata'::text as origin
 from st p
+join team_key tk on tk.league_code = p.league_code and tk.team_qid = p.team_qid
 cross join lateral (select extract(year from p.start_on)::int
                            - case when p.league_code = 'nba' and p.start_prec >= 10 and extract(month from p.start_on) < 6 then 1 else 0 end as a) f
 cross join lateral (select greatest(f.a, least(f.a + 30, case
@@ -104,14 +107,18 @@ select r.league_code, r.season, r.club, r.src, r.ord, r.name, r.link_title, coal
             when coalesce(rd.to_qid, t.qid) not in (select qid from human) then 'the item is not a human'
             -- a date of birth a year or more off belongs to someone else; a day, month or one year of difference is a slip in one of the two sources
             when r.dob is not null and bo.d is not null and abs(extract(year from r.dob) - extract(year from bo.d)) > 1 then 'the roster''s date of birth differs from the item''s'
+            -- an item that states an occupation or a sport, none of them the league's, is someone else; an item that states neither (a stub) is taken
             when not (exists (select 1 from lp where lp.league_code = r.league_code and lp.qid = coalesce(rd.to_qid, t.qid))
                       or exists (select 1 from signal g join c on c.prop = g.prop and c.value_qid = g.value_qid
                                   where g.league_code = r.league_code and c.qid = coalesce(rd.to_qid, t.qid)))
-                 then 'the item is not a player of the league' end as why
+                 and exists (select 1 from c where c.qid = coalesce(rd.to_qid, t.qid) and c.prop in ('P106', 'P641'))
+                 then 'the item is not a player of the league'
+            when yb.y is not null and r.season - yb.y not between 15 and 52 then 'the birth year does not fit the season' end as why
 from legacy_rosters.wp_roster r
 left join legacy_rosters.wp_title t on t.title = r.link_title
 left join legacy_rosters.redirect rd on rd.from_qid = t.qid
 left join born_on bo on bo.qid = coalesce(rd.to_qid, t.qid)
+left join born yb on yb.qid = coalesce(rd.to_qid, t.qid)
 where r.link_title is not null;
 
 -- A name whose link failed but whose date of birth is given: the one Wikidata player of the league with that name (accents ignored) and that birth date.
@@ -121,8 +128,10 @@ create index on lp_name (league_code, k, d);
 
 -- ... or, with no date of birth, the one Wikidata player of the league with that name who has a statement for this very club.
 create temp table lp_club on commit drop as
-select lp.league_code, lp.qid, pg_temp.key(i.label) as k, s.k as club_k
-from lp join legacy_rosters.item i on i.qid = lp.qid join (select distinct league_code, qid, k from st) s on s.qid = lp.qid and s.league_code = lp.league_code;
+select distinct lp.league_code, lp.qid, pg_temp.key(i.label) as k, tk.k as club_k
+from lp join legacy_rosters.item i on i.qid = lp.qid
+join (select distinct league_code, qid, team_qid from st) s on s.qid = lp.qid and s.league_code = lp.league_code
+join team_key tk on tk.league_code = s.league_code and tk.team_qid = s.team_qid;
 create index on lp_club (league_code, k, club_k);
 
 create temp table wp_ok on commit drop as
@@ -294,16 +303,16 @@ from (
   select tn.league_code, tn.team_qid, tn.label,
          (select count(*) from st s where s.league_code = tn.league_code and s.team_qid = tn.team_qid) as statements,
          (select count(*) from st s where s.league_code = tn.league_code and s.team_qid = tn.team_qid and s.start_on is null) as undated,
-         (select count(*) from want_y w where w.origin = 'wikidata' and w.league_code = tn.league_code and w.team_qid = tn.team_qid) as slots,
-         (select count(*) from ranked r where r.origin = 'wikidata' and r.league_code = tn.league_code and r.team_qid = tn.team_qid and r.r = 1 and r.n = 1) as placed,
-         (select count(*) from ranked r where r.origin = 'wikidata' and r.league_code = tn.league_code and r.team_qid = tn.team_qid and r.r = 1 and r.n = 1
+         (select count(distinct (w.qid, w.y)) from want_y w where w.origin = 'wikidata' and w.league_code = tn.league_code and w.team_qid = tn.team_qid) as slots,
+         (select count(distinct (r.qid, r.y)) from ranked r where r.origin = 'wikidata' and r.league_code = tn.league_code and r.team_qid = tn.team_qid and r.r = 1 and r.n = 1) as placed,
+         (select count(distinct (r.qid, r.y)) from ranked r where r.origin = 'wikidata' and r.league_code = tn.league_code and r.team_qid = tn.team_qid and r.r = 1 and r.n = 1
              and r.team_season_id in (select team_season_id from wp_ts)
              and not exists (select 1 from ranked x where x.origin = 'wikipedia' and x.r = 1 and x.n = 1 and x.qid = r.qid and x.team_season_id = r.team_season_id)) as set_aside,
-         (select count(*) from want_y w where w.origin = 'wikidata' and w.league_code = tn.league_code and w.team_qid = tn.team_qid
+         (select count(distinct (w.qid, w.y)) from want_y w where w.origin = 'wikidata' and w.league_code = tn.league_code and w.team_qid = tn.team_qid
              and not exists (select 1 from cand x where (x.qid, x.team_qid, x.y, x.origin) = (w.qid, w.team_qid, w.y, w.origin))) as no_season,
          (select count(distinct (x.qid, x.y)) from ranked x where x.origin = 'wikidata' and x.league_code = tn.league_code and x.team_qid = tn.team_qid and x.r = 1 and x.n > 1) as ambiguous,
-         exists (select 1 from fname f where f.league_code = tn.league_code and f.k = tn.k) as franchise_known
-  from (select distinct league_code, team_qid, label, k from team_name) tn) t
+         exists (select 1 from team_key tk join fname f on f.league_code = tk.league_code and f.k = tk.k where tk.league_code = tn.league_code and tk.team_qid = tn.team_qid) as franchise_known
+  from (select distinct league_code, team_qid, label from legacy_rosters.league_team) tn) t
 where t.undated > 0 or t.placed < t.slots or not t.franchise_known;
 
 -- a Wikipedia article with no roster, or whose club is not among the franchises
