@@ -1,0 +1,9 @@
+rank,pattern,surface,note
+5,hybrid bermuda|bermuda.*hybrid,grass,"Tifway 419 Hybrid Bermuda is a natural grass cultivar, not a hybrid turf"
+10,grassmaster|sisgrass|hybrid|reinforced,hybrid,natural grass reinforced with synthetic fibres
+20,"multi-?surface|ice *[/,&] *(parquet|wood|hardwood)|ice and (parquet|wood|hardwood)|(parquet|wood|hardwood).*\yice\y",multi,a convertible floor: ice and a floor over it
+30,\yice\y|\yhockey\y|frozen,ice,
+40,parquet|hardwood|\ywood|maple|basketball,wood,
+50,astro|field ?turf|turf nation|artificial|synthetic|\yturf\y|sprinturf|tartan|poly-?turf|polytan|\yubu\y|shaw sports|sportexe|hellas|matrix|helix|duraplay|a-turf|team pro|fifa quality|act global|xtreme|mardi grass|supertur,artificial,brand names of synthetic turf; AstroTurf GameDay Grass and Astrograss are synthetic
+60,grass|lawn|bluegrass|blue grass|bermuda|ryegrass|paspalum|natural|poa pratensis|\ysod\y|tifway|latitude *36|bandera|bullseye|riviera|santa ana|tahoma|merion|northbridge|gn-1|platinum te,grass,natural grass and its cultivars
+70,concrete|\ydirt\y|\yclay\y|cinder,other,

@@ -1,19 +1,27 @@
 #!/usr/bin/env python3
 """Load the raw files of scripts/wikidata_venues/fetch.py into legacy_wikidata_venues (migration 051).
-Usage: load.py <raw dir> <YYYY-MM-DD> [--sql-out FILE]     e.g. load.py ~/Projects/backups/spx-stats/raw/wikidata_venues/2026-10-12 2026-10-12
+Usage: load.py <raw dir> <YYYY-MM-DD> [--sql-out FILE] [--facts-only]     e.g. load.py ~/Projects/backups/spx-stats/raw/wikidata_venues/2026-10-12 2026-10-12
 Reads PGHOST/PGPORT/PGUSER/PGDATABASE/PGPASSWORD. With --sql-out the SQL is written to FILE instead of run (apply it with
 scripts/mac/ds1-apply.sh). Rerunnable: every venue in the raw files is deleted and loaded again.
 Names come from Wikidata P1448 (official name) and P2561 (name), with their P580/P582 start and end, and from the
 "former names" of the English Wikipedia infobox. Facts: P1083 capacity, P1619/P571 opened, P3999/P576 closed, P127 owner,
 P765 surface, P31 (retractable or domed) roof, P6375 address, P281 postal code (as Wikidata gives it; postal_check.py then
 validates it, migration 058), P669 + P670 street address (street_address) and the street line of the Wikipedia infobox (wp_address),
-migration 059."""
+migration 059. Migration 089 adds: P31 'destroyed building or structure' (destroyed), the infobox |closed=, |demolished= and |status= (a year only when
+the text is one clean date, never a renovation or a temporary closing), the roof the first paragraph of the article names when the infobox has none,
+and legacy_wikidata_venues.fact: every surface and roof statement with the years it carries (Wikidata P765 with P580/P582, and the lines of the
+infobox surface and roof fields, "AstroTurf (1989-2004)<br>FieldTurf (2005-2010)").
+--facts-only fills just those new columns and the fact table of venues already loaded (UPDATE and INSERT only): it leaves the names and the postal
+checks (postal_check.py) as they are, so a folder loaded before migration 089 can be given the new facts without redoing them."""
 import glob, html, json, os, re, subprocess, sys
 
 argv = sys.argv[1:]
 sql_out = None
 if "--sql-out" in argv:
     i = argv.index("--sql-out"); sql_out = os.path.expanduser(argv[i + 1]); del argv[i:i + 2]
+facts_only = "--facts-only" in argv
+if facts_only:
+    argv.remove("--facts-only")
 raw, day = os.path.expanduser(argv[0]), argv[1]
 q = lambda v: "null" if v is None else "'" + str(v).replace("'", "''") + "'"
 n = lambda v: "null" if v is None else str(v)
@@ -135,9 +143,14 @@ def former_names(wikitext):
     return out
 
 
-def infobox(wikitext, field):
+def infobox_raw(wikitext, field):
     m = re.search(r"\|\s*" + field + r"\s*=(.*?)(?=\n\s*\||\n\}\})", wikitext, re.I | re.S)
-    return unwrap(m.group(1)) if m else None
+    return m.group(1) if m else None
+
+
+def infobox(wikitext, field):
+    r = infobox_raw(wikitext, field)
+    return unwrap(r) if r is not None else None
 
 
 def wp_surface(wikitext):
@@ -190,6 +203,102 @@ def wp_roof(wikitext):
     return "open" if re.search(r"\bopen\b|\bnone\b|^\s*no\b", t) else None
 
 
+# ---- closing, demolition, status, surface periods, roof (migration 089) -------------------------------------------
+NOISE = re.compile(r"renovat|temporar|repair|restor|collaps|began|start(?:ed)?\b|ongoing|construct|hurricane|upgrade|expansion|reopen|partial|\b(?:first|second|third|fourth|original|present|old|new) (?:stadium|arena|rink|building|park|grounds)", re.I)
+YEAR = re.compile(r"(?<!\d)(1[6-9]\d\d|20\d\d)(?!\d|s\b)")
+DASH = r"(?:-|–|—|&ndash;|\{\{ndash\}\}|\bto\b)"
+
+
+def clean_wiki(t):
+    """Infobox text without comments, references and the date templates ({{Start date and age|1996|10|24}} becomes 1996-10-24)."""
+    t = re.sub(r"<!--.*?-->", "", t, flags=re.S)
+    t = re.sub(r"<ref[^>]*?/>|<ref[^>]*>.*?</ref>", "", t, flags=re.S | re.I)
+    t = re.sub(r"\{\{\s*(?:start|end|date)[ _]date(?:[ _]and[ _]age)?\s*\|\s*(?:df\s*=\s*\w+\s*\|\s*)?(\d{4})(?:\s*\|\s*(\d{1,2}))?(?:\s*\|\s*(\d{1,2}))?[^{}]*\}\}",
+               lambda m: "-".join(x for x in m.groups() if x), t, flags=re.I)
+    # {{start date and age|September 21, 1961|br=y}}: the date is written out
+    t = re.sub(r"\{\{\s*(?:start|end)[ _]date(?:[ _]and[ _]age)?\s*\|\s*([^|{}=]*\d{4}[^|{}=]*)(?:\|[^{}]*)?\}\}", lambda m: m.group(1), t, flags=re.I)
+    return t
+
+
+def one_year(text):
+    """The year of an infobox date field when it names exactly one clean date; else None. Several lines (a renovation closing and a final game),
+    a range, a renovation or a temporary closing give None, except that one line saying 'final' or 'last' is taken."""
+    if not text:
+        return None
+    items = [re.sub(r"\s+", " ", unwrap(x)).strip(" ,;") for x in re.split(r"<br\s*/?>|\n|\*", clean_wiki(text), flags=re.I)]
+    items = [x for x in items if x]
+    final = [x for x in items if re.search(r"final|last", x, re.I) and YEAR.search(x)]
+    if len(items) > 1 and final and len({y for x in final for y in YEAR.findall(x)}) == 1:
+        items = final[:1]
+    if len(items) != 1:
+        return None
+    it = items[0]
+    ys = YEAR.findall(it)
+    if NOISE.search(it) or len(set(ys)) > 1:   # a range, two dates or a renovation is not one closing
+        return None
+    return int(ys[0]) if ys else None
+
+
+def surface_lines(text):
+    """The statements of an infobox surface (or roof) field: [(raw text, [(from, until), ...])]. A parenthesis of years ("(1989-2004)", "(2016-present)",
+    "(1977-2001, 2005-06)") dates a statement; a statement with none is undated (ranges = [])."""
+    if not text:
+        return []
+    t = clean_wiki(text)
+    t = re.sub(r"\{\{\s*(?:convert|cvt)\s*\|([^{}]*)\}\}", lambda m: " ".join(x for x in m.group(1).split("|") if not x.startswith("abbr")), t, flags=re.I)
+    out = []
+    for item in re.split(r"<br\s*/?>|\n|\*", unwrap(t), flags=re.I):
+        item = re.sub(r"<[^>]+>|'{2,}", "", item)
+        item = re.sub(r"\s+", " ", item).strip(" ,;-")
+        if not item or len(item) > 160:
+            continue
+        ranges, name = [], item
+        m = re.search(r"\(([^()]*)\)\s*$", item)
+        if m and YEAR.search(m.group(1)):
+            words = re.sub(r"present|current|now|until|since|from|jan\w*|feb\w*|mar\w*|apr\w*|may|jun\w*|jul\w*|aug\w*|sep\w*|oct\w*|nov\w*|dec\w*|and|season|seasons|to", "", m.group(1), flags=re.I)
+            if not re.search(r"[A-Za-z]{3,}", words):
+                name = item[:m.start()].strip(" ,;-")
+                for piece in re.split(r"[,;]|\band\b", m.group(1)):
+                    a = YEAR.search(piece)
+                    if not a:
+                        continue
+                    rest = piece[a.end():]
+                    b = None if re.search(r"present|current|now", rest, re.I) else int(a.group(1))
+                    mm = re.match(r"\s*" + DASH + r"\s*(\d{4}|\d{2})?", rest)
+                    if mm:
+                        if mm.group(1) is None:
+                            b = None                      # "2016-": still so
+                        elif len(mm.group(1)) == 4:
+                            b = int(mm.group(1))
+                        else:
+                            b = int(a.group(1)[:2] + mm.group(1))
+                    ranges.append((int(a.group(1)), b))
+        if name and re.search(r"[A-Za-z]", name):
+            out.append((name, ranges))
+    return out
+
+
+def lead_roof(wikitext):
+    """The roof the first paragraph of the article names ('retractable' or 'dome'), in plain words. Used only when the infobox has no roof."""
+    body = clean_wiki(wikitext)
+    for _ in range(8):   # drop templates from the inside out: the infobox first
+        b2 = re.sub(r"\{\{[^{}]*\}\}", "", body)
+        if b2 == body:
+            break
+        body = b2
+    para = next((x for x in re.split(r"\n\s*\n", body) if "'''" in x), "")
+    para = unwrap(para).lower()
+    if re.search(r"\bformer(?:ly)?\b[^.]{0,60}retractable|had a retractable|was a [^.]{0,40}retractable", para):
+        return None
+    if re.search(r"non-?retractable", para):
+        return "dome"
+    if re.search(r"(?<![a-z])retractable[- ]roof|(?<![a-z])retractable[- ]dome|(?<![a-z])retractable-roofed", para):
+        return "retractable"
+    if re.search(r"\bdomed (?:stadium|arena)|fixed[- ]roof|inflatable dome|air-supported", para):
+        return "dome"
+    return None
+
+
 # ---- build the rows -------------------------------------------------------------------------------------------------
 sql = ["begin;"]
 stats = {"venues": 0, "wd_names": 0, "wp_names": 0}
@@ -236,13 +345,48 @@ for qid, e in sorted(ents.items()):
             break
     pg = pages.get(title) if title else None
     rev = pg["revisions"][0] if pg and pg.get("revisions") else None
-    sql.append(f"delete from legacy_wikidata_venues.name where qid = {q(qid)};")
-    sql.append(f"delete from legacy_wikidata_venues.venue where qid = {q(qid)};")
-    sql.append("insert into legacy_wikidata_venues.venue (qid, label, wikipedia_title, wikipedia_revid, wikipedia_on, capacity, opened_on, opened_prec, closed_on, owner, surface, roof, address, wp_surface, wp_roof, fetched_on, postal_code, street_address, wp_address) values "
-               f"({q(qid)}, {q(label)}, {q(title)}, {n(rev['revid']) if rev else 'null'}, {q(rev['timestamp'][:10]) if rev else 'null'}, {n(cap)}, "
-               f"{q(op[0]) if op else 'null'}, {n(op[1]) if op else 'null'}, {q(cl_[0]) if cl_ else 'null'}, {q(owner)}, {q(surf)}, {q(roof)}, {q(adr)}, "
-               f"{q(wp_surface(rev['slots']['main']['content'])) if rev else 'null'}, {q(wp_roof(rev['slots']['main']['content'])) if rev else 'null'}, {q(day)}, {q(postal)}, {q(street)}, {q(wp_address(rev['slots']['main']['content'])) if rev else 'null'});")
+    sql.append(f"delete from legacy_wikidata_venues.fact where qid = {q(qid)};")
+    if not facts_only:
+        sql.append(f"delete from legacy_wikidata_venues.name where qid = {q(qid)};")
+        sql.append(f"delete from legacy_wikidata_venues.venue where qid = {q(qid)};")
+    content = rev["slots"]["main"]["content"] if rev else None
+    destroyed = any("destroyed" in (labels.get(i) or "").lower() for i in ids(cl, "P31"))
+    wp_closed_raw, wp_dem_raw = (infobox_raw(content, "closed"), infobox_raw(content, "demolished")) if rev else (None, None)
+    wp_closed_raw, wp_dem_raw = (re.sub(r"\s+", " ", clean_wiki(x)).strip()[:200] or None if x else None for x in (wp_closed_raw, wp_dem_raw))
+    wp_status = (re.sub(r"\s+", " ", unwrap(clean_wiki(infobox_raw(content, "status") or ""))).strip()[:60] or None) if rev else None
+    wp_surf_raw = (re.sub(r"\s+", " ", unwrap(clean_wiki(infobox_raw(content, "surface") or ""))).strip()[:400] or None) if rev else None
+    roof_lead = (lead_roof(content) if wp_roof(content) is None else None) if rev else None
+    new_cols = (f"{'true' if destroyed else 'false'}, {n(one_year(infobox_raw(content, 'closed'))) if rev else 'null'}, {q(wp_closed_raw)}, {n(one_year(infobox_raw(content, 'demolished'))) if rev else 'null'}, {q(wp_dem_raw)}, "
+                f"{q(wp_status)}, {q(roof_lead)}, {q(wp_surf_raw)}")
+    if facts_only:
+        sql.append("update legacy_wikidata_venues.venue set (destroyed, wp_closed_year, wp_closed_raw, wp_demolished_year, wp_demolished_raw, wp_status, wp_roof_lead, wp_surface_raw) = "
+                   f"({new_cols}) where qid = {q(qid)};")
+    else:
+        sql.append("insert into legacy_wikidata_venues.venue (qid, label, wikipedia_title, wikipedia_revid, wikipedia_on, capacity, opened_on, opened_prec, closed_on, owner, surface, roof, address, wp_surface, wp_roof, fetched_on, postal_code, street_address, wp_address, "
+                   "destroyed, wp_closed_year, wp_closed_raw, wp_demolished_year, wp_demolished_raw, wp_status, wp_roof_lead, wp_surface_raw) values "
+                   f"({q(qid)}, {q(label)}, {q(title)}, {n(rev['revid']) if rev else 'null'}, {q(rev['timestamp'][:10]) if rev else 'null'}, {n(cap)}, "
+                   f"{q(op[0]) if op else 'null'}, {n(op[1]) if op else 'null'}, {q(cl_[0]) if cl_ else 'null'}, {q(owner)}, {q(surf)}, {q(roof)}, {q(adr)}, "
+                   f"{q(wp_surface(content)) if rev else 'null'}, {q(wp_roof(content)) if rev else 'null'}, {q(day)}, {q(postal)}, {q(street)}, {q(wp_address(content)) if rev else 'null'}, "
+                   + new_cols + ");")
+
+    # surface and roof statements with their years: Wikidata P765 (P580/P582), and the lines of the infobox fields
+    for o, c in enumerate(live(cl, "P765")):
+        lab = labels.get(c["mainsnak"]["datavalue"]["value"]["id"])
+        s0, _ = when(c, "P580"); e0, _ = when(c, "P582")
+        if lab:
+            sql.append("insert into legacy_wikidata_venues.fact (qid, kind, ord, source, raw, from_year, until_year, dated) values "
+                       f"({q(qid)}, 'surface', {o}, 'wikidata', {q(lab)}, {n(int(s0[:4]) if s0 else None)}, {n(int(e0[:4]) if e0 else None)}, {'true' if (s0 or e0) else 'false'}) on conflict do nothing;")
+    if rev:
+        for kind, field in (("surface", "surface"), ("roof", "roof")):
+            o = 0
+            for name, ranges in surface_lines(infobox_raw(content, field)):
+                for a, b in (ranges or [(None, None)]):
+                    sql.append("insert into legacy_wikidata_venues.fact (qid, kind, ord, source, raw, from_year, until_year, dated) values "
+                               f"({q(qid)}, {q(kind)}, {o}, 'wikipedia', {q(name)}, {n(a)}, {n(b)}, {'true' if ranges else 'false'}) on conflict do nothing;")
+                    o += 1
     stats["venues"] += 1
+    if facts_only:
+        continue
     for p, kind in (("P1448", "official"), ("P2561", "name")):
         for c in live(cl, p):
             v = c["mainsnak"]["datavalue"]["value"]

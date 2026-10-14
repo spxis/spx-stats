@@ -1,0 +1,5 @@
+wikidata_id,field,value,wikipedia_title,revision_id,note
+Q935412,capacity,20000,Delorimier Stadium,1334516751,"Lead sentence: 'was a 20,000-seat sports stadium in Montreal'. Wikidata has no capacity for it."
+Q935412,opened_year,1928,Delorimier Stadium,1334516751,History section: 'The stadium opened in May 1928'. Wikidata has no opening date; it has the closing (P3999 1960) and demolition (P576 1965).
+Q3413952,opened_year,1891,Quebec Skating Rink,1372222674,"Wikidata and the first sentence give 1851, the first of four rinks of that name. The one the Quebec Hockey Club played in, and the one this item's other facts (capacity from 1891, closing in 1918) describe, is the fourth: infobox built '1891 (4th)' (the History section says it was constructed in 1892). Without this the /venues year slider starts in 1851."
+Q76318,unsourced,grass for MLB from 2026,,,"A ticket says the Rogers Centre turf went to grass for MLB in 2026. Neither Wikidata nor the English Wikipedia article (revision 1379619269, 2026-10-11) says so: the infobox ends 'AstroTurf 3D Xtreme with dirt infield (2016-present)'. Not used until a citable source exists."
