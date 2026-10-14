@@ -1,0 +1,40 @@
+#!/bin/bash
+# spx: one short command for the everyday Mac jobs of this project. Works from any folder once linked onto the PATH
+# (spx link puts ~/.local/bin/spx -> this file). Each job is a thin wrapper over the script that does it.
+#
+#   spx preview [update|status|install|uninstall|stop]   the always-on DS1 preview at http://localhost:3150 (default: status)
+#   spx deploy [--check-only]                             build against DS1 and deploy prebuilt (scripts/mac/deploy-prebuilt.sh)
+#   spx harvest [--measure]                               the DS1 Wikipedia/Wikidata harvester's progress
+#   spx task [args]                                       the ticket board (pnpm task in web/)
+#   spx check                                             the connection checks (DS1, board, Vercel, gh, keychain)
+#   spx pull                                              fast-forward this checkout to origin/main
+#   spx link                                              put spx on the PATH (~/.local/bin/spx)
+set -euo pipefail
+
+SELF="$(readlink -f "${BASH_SOURCE[0]}" 2>/dev/null || python3 -c 'import os,sys;print(os.path.realpath(sys.argv[1]))' "${BASH_SOURCE[0]}")"
+ROOT="$(cd "$(dirname "$SELF")" && pwd)"
+cd "$ROOT"
+
+pull() { git -C "$ROOT" pull -q --ff-only origin main && echo "spx: $(git -C "$ROOT" log --oneline -1)"; }
+
+cmd="${1:-help}"; shift || true
+case "$cmd" in
+  preview)
+    sub="${1:-status}"; shift || true
+    case "$sub" in
+      update) pull; exec bash scripts/mac/ds1-preview.sh --update "$@" ;;
+      status|install|uninstall|stop) exec bash scripts/mac/ds1-preview.sh "--$sub" "$@" ;;
+      *) echo "spx preview: update | status | install | uninstall | stop" >&2; exit 2 ;;
+    esac ;;
+  deploy)  pull; exec bash scripts/mac/deploy-prebuilt.sh "$@" ;;
+  harvest) exec python3 -I scripts/harvest/status.py "$@" ;;
+  task)    cd web && exec pnpm -s task "$@" ;;
+  check)   exec bash scripts/mac/spx-check.sh "$@" ;;
+  pull)    pull ;;
+  link)
+    mkdir -p "$HOME/.local/bin"
+    ln -sfn "$ROOT/spx" "$HOME/.local/bin/spx"
+    echo "spx: linked $HOME/.local/bin/spx -> $ROOT/spx" ;;
+  help|-h|--help) sed -n '2,12p' "$SELF" | sed 's/^# \{0,1\}//' ;;
+  *) echo "spx: unknown job '$cmd' (spx help)" >&2; exit 2 ;;
+esac
