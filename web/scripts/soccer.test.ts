@@ -6,6 +6,8 @@ import { JA } from "../src/lib/i18n/dictionaries/ja.constants.ts";
 import { SOCCER_EN, SOCCER_FR, SOCCER_JA } from "../src/lib/i18n/soccer.constants.ts";
 import { subdivisionName, teamName } from "../src/lib/soccerNames.ts";
 import { soccerMatchIdOf, soccerMatchPath, soccerPlayerPath, soccerTeamPath, tournamentPath } from "../src/lib/soccerPath.ts";
+import type { Match, TeamMatch } from "../src/lib/soccer.ts";
+import { goalsOf, h2hPath, metPairs, opponentRecords, pairKey, splitPair, summarize } from "../src/lib/soccerH2H.ts";
 import { reachRank, reached, scoreLines, STAGE_PHRASE } from "../src/lib/soccerView.ts";
 
 /** Run in web/: pnpm test:soccer */
@@ -67,4 +69,56 @@ test("a score shows extra time and the shootout under it", () => {
   assert.deepEqual(scoreLines(s, base), { main: "3–3", note: "4–2 on penalties" });
   assert.deepEqual(scoreLines(s, { ...base, shootout: false, home_penalties: null, away_penalties: null }), { main: "3–3", note: "after extra time" });
   assert.deepEqual(scoreLines(s, { ...base, extra_time: false, shootout: false, home_penalties: null, away_penalties: null }), { main: "3–3", note: null });
+});
+
+// ── head to head (lib/soccerH2H.ts) ──────────────────────────────────────────────────────────────────────────────────────────────────
+const meeting = (id: number, year: number, home: string, away: string, hg: number, ag: number, extra: Partial<Match> = {}): Match => ({
+  match_id: id, source_key: "", league: "wc", year, tournament_id: `wc${year}`, stage_key: "group", stage_order: 1, group_name: null, match_number: null,
+  match_date: `${year}-06-01`, kickoff_local: null, utc_offset: null, home_team_id: home, home, home_slug: home, home_flag: null, home_goals: hg,
+  away_team_id: away, away, away_slug: away, away_flag: null, away_goals: ag, home_goals_90: null, away_goals_90: null, extra_time: false, shootout: false,
+  home_penalties: null, away_penalties: null, winner_team_id: hg > ag ? home : ag > hg ? away : null, is_replay: false, venue_name: null, venue_city: null,
+  venue_country: null, venue_wikidata_id: null, venue_id: null, lineup_players: 0, goal_rows: 0, source: null, checked: null, ...extra,
+});
+
+test("a pairing's address has the two slugs alphabetically, whichever way round they are asked for", () => {
+  assert.equal(h2hPath("france", "argentina"), "/worldcup/head-to-head/argentina-vs-france");
+  assert.equal(h2hPath("argentina", "france"), "/worldcup/head-to-head/argentina-vs-france");
+  assert.deepEqual(splitPair("united-states-vs-sweden"), ["united-states", "sweden"]);
+  assert.equal(splitPair("argentina"), null);
+  assert.equal(splitPair("argentina-vs-argentina"), null);
+  assert.equal(splitPair("a-vs-b-vs-c"), null);
+  assert.equal(pairKey("T-30", "T-03"), pairKey("T-03", "T-30"));
+});
+
+test("a head-to-head record: draws include shootouts, which are counted on the side; widest wins; first, last and stages", () => {
+  const ms = [
+    meeting(1, 1930, "ARG", "FRA", 1, 0),
+    meeting(2, 1978, "ARG", "FRA", 2, 1),
+    meeting(3, 2018, "FRA", "ARG", 4, 3, { stage_key: "round_of_16", stage_order: 5 }),
+    meeting(4, 2022, "ARG", "FRA", 3, 3, { stage_key: "final", stage_order: 9, extra_time: true, shootout: true, home_penalties: 4, away_penalties: 2, winner_team_id: "ARG" }),
+  ];
+  const s = summarize([ms[3], ms[0], ms[2], ms[1]], "ARG", "FRA");
+  assert.equal(s.played, 4);
+  assert.deepEqual([s.aWins, s.draws, s.bWins], [2, 1, 1]);
+  assert.deepEqual([s.aShootoutWins, s.bShootoutWins], [1, 0]);
+  assert.deepEqual([s.aGoals, s.bGoals], [1 + 2 + 3 + 3, 0 + 1 + 4 + 3]);
+  assert.equal(s.biggestA?.match_id, 2, "1-0 and 2-1 are both one goal ahead; the match with more goals wins");
+  assert.equal(s.biggestB?.match_id, 3);
+  assert.equal(s.first?.match_id, 1);
+  assert.equal(s.last?.match_id, 4);
+  assert.deepEqual(s.stages, ["group", "round_of_16", "final"]);
+  assert.deepEqual(goalsOf(ms[2], "ARG"), [3, 4]);
+});
+
+test("the pairings that have met, and a team's opponents from its own matches", () => {
+  assert.equal(metPairs([{ home_team_id: "A", away_team_id: "B" }, { home_team_id: "B", away_team_id: "A" }, { home_team_id: "A", away_team_id: "C" }]).size, 2);
+  const tm = (id: number, opp: string, gf: number, ga: number, shootout = false, won: boolean | null = null): TeamMatch => ({
+    match_id: id, league: "wc", year: 2000 + id, tournament_id: "wc", stage_key: "group", stage_order: 1, group_name: null, match_date: "2000-01-01", team_id: "T", opponent_id: opp,
+    opponent: opp, opponent_slug: opp, opponent_flag: null, is_home: true, gf, ga, result: gf > ga ? "w" : gf < ga ? "l" : "d", extra_time: shootout, shootout, pens_for: null,
+    pens_against: null, won_match: won, venue_name: null, venue_city: null, venue_country: null,
+  });
+  const r = opponentRecords([tm(1, "X", 2, 0), tm(2, "X", 1, 1, true, true), tm(3, "Y", 0, 1), tm(4, "X", 0, 0, true, false)]);
+  const x = r.find((o) => o.opponent_id === "X")!;
+  assert.deepEqual([x.played, x.won, x.drawn, x.lost, x.pens_won, x.pens_lost, x.last_year], [3, 1, 2, 0, 1, 1, 2004]);
+  assert.equal(r.length, 2);
 });

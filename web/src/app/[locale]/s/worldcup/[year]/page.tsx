@@ -7,13 +7,13 @@ import { SoccerKnockout } from "@/components/SoccerKnockout";
 import { SoccerSquads } from "@/components/SoccerSquads";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { SortTable } from "@/components/SortTable";
+import { StadiumName } from "@/components/StadiumName";
 import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import {
   getAwards, getSoccerTeams, getSquads, getStandings, getTopScorers, getTournamentMatches, getTournamentTeams, tournamentOfYear,
-  type Match,
 } from "@/lib/soccer";
 import { teamName } from "@/lib/soccerNames";
 import { isYearSeg, soccerMatchPath, soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPath";
@@ -87,7 +87,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       },
     },
     { key: "away", label: say("wc.col.away"), cls: "team", get: (m) => m.away, cell: (m) => <SoccerTeamName slug={m.away_slug} name={m.away} flag={m.away_flag} /> },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => venueText(m) },
+    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={m.venue_city ?? undefined} /> },
   ], (m) => m.match_id);
 
   const scorerTable = tableOf(scorers, [
@@ -98,17 +98,17 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
     { key: "games", label: say("wc.col.gamesScored"), num: true, get: (s) => s.matches_scored_in },
   ], (s, i) => `${s.person_id ?? s.player}-${s.team_id}-${i}`);
 
-  // stadiums as the source names them: plain text until a venue page exists. When the world stadium dataset is on the site, the name links to
-  // /venue/Q<venue_wikidata_id> (that route redirects to the venue's own address); until then only the name is shown.
+  // stadiums as the source names them; the name links to /venue/Q<venue_wikidata_id> (that route redirects to the venue's own address) when the
+  // world stadium dataset holds the ground (venue_id), else it is plain text.
   const stadiums = [...matches.reduce((map, m) => {
     if (!m.venue_name) return map;
     const key = `${m.venue_name}|${m.venue_city ?? ""}`;
-    const e = map.get(key) ?? { name: m.venue_name, city: m.venue_city, country: m.venue_country, qid: m.venue_wikidata_id, n: 0 };
+    const e = map.get(key) ?? { name: m.venue_name, city: m.venue_city, country: m.venue_country, qid: m.venue_wikidata_id, linked: m.venue_id != null, n: 0 };
     e.n += 1;
     return map.set(key, e);
-  }, new Map<string, { name: string; city: string | null; country: string | null; qid: string | null; n: number }>()).values()];
+  }, new Map<string, { name: string; city: string | null; country: string | null; qid: string | null; linked: boolean; n: number }>()).values()];
   const stadiumTable = tableOf(stadiums, [
-    { key: "name", label: say("col.venue"), cls: "team", get: (s) => s.name, cell: (s) => s.name },
+    { key: "name", label: say("col.venue"), cls: "team", get: (s) => s.name, cell: (s) => <StadiumName name={s.name} qid={s.qid} linked={s.linked} /> },
     { key: "city", label: say("wc.col.city"), cls: "team", get: (s) => s.city, cell: (s) => [s.city, s.country].filter(Boolean).join(", ") },
     { key: "n", label: say("wc.col.matches"), num: true, get: (s) => s.n },
   ], (s) => s.name);
@@ -204,7 +204,3 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
     </div>
   );
 });
-
-function venueText(m: Match): string {
-  return [m.venue_name, m.venue_city].filter(Boolean).join(", ");
-}

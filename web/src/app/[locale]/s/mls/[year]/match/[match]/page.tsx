@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
+import { StadiumName } from "@/components/StadiumName";
 import { SoccerSurface } from "@/components/GameSurface";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -49,14 +50,15 @@ export default guard(async function MlsMatchPage({ params }: Params) {
   if (`/mls/${year}/match/${match}` !== canonical) permanentRedirect(canonical);
   const { say, fmt, dt } = await currentSpeaker();
   const sc = mlsScoreLines(say, m);
-  // A stadium is shown as the source names it, as plain text: the stadium pages belong to the world stadium dataset, which joins by m.venue_wikidata_id.
-  const venue = [m.venue_name, m.venue_city, m.venue_country].filter(Boolean).join(", ");
+  // A stadium is shown as the source names it; the name links to /venue/Q<m.venue_wikidata_id>, which redirects to the venue's own page, when the
+  // world stadium dataset holds the ground (m.venue_id), else it is plain text.
+  const venueRest = [m.venue_city, m.venue_country].filter(Boolean).join(", ");
   return (
     <div className="soccer">
       <section className="head fade">
         <span className="eyebrow"><Link href={mlsSeasonPath(m.year)}>{say("mls.season", { year: m.year })}</Link> · {mlsStageName(say, m.stage_key)}</span>
         <h1>{m.home} – {m.away}</h1>
-        <p className="lede">{dt.full(new Date(m.match_date))}{venue ? ` · ${venue}` : ""}{m.attendance ? ` · ${say("mls.m.crowd", { n: fmt(m.attendance) })}` : ""}</p>
+        <p className="lede">{dt.full(new Date(m.match_date))}{m.venue_name ? <> · <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={venueRest} /></> : null}{m.attendance ? ` · ${say("mls.m.crowd", { n: fmt(m.attendance) })}` : ""}</p>
       </section>
       <section className="sc-board" aria-label={say("wc.m.result")}>
         <div className="side"><span className="nm"><MlsClubName slug={m.home_slug} name={m.home} /></span></div>

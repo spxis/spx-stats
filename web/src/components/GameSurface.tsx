@@ -96,6 +96,11 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs }
  * A soccer match on its pitch: the ground when the stadium is one kyogijo knows by its Wikidata id (the pitch at its published size), else a standard pitch.
  * No crests (a team's emblem is not ours to draw): the two sides keep kyogijo's own colours. `note` is what follows "Final" ("after extra time", "4–2 on
  * penalties"), written in the status; `winner` is given because a shoot-out settles a level score.
+ *
+ * Where kyogijo's coming "round team mark over the pitch" plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, which waits for the next kyogijo version; not
+ * built here): the two sides of this drawing take a round mark from the national team's round flag, which the match page already draws large in its
+ * heading (components/SoccerFlag.tsx, `large`). It would be passed in here as a `home.mark` / `away.mark` next to `name`, and `drawGameOnce` would hand it
+ * to kyogijo; until then the sides keep kyogijo's own colours.
  */
 export async function SoccerSurface({ home, away, note, winner, competition, date, wikidata }: {
   home: { name: string; goals: number }; away: { name: string; goals: number };

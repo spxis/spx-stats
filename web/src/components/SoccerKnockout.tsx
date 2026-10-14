@@ -10,6 +10,10 @@ import "./soccer.css";
 /**
  * The knockout rounds as columns, earliest first: one box per match with both teams, their goals and a note for extra time or a shootout.
  * The box opens the match. (Boxes are not joined by lines: a replay, a third-place match or a round of 16 that was a first round would not fit a drawn tree.)
+ *
+ * Where kyogijo's coming `roadToFinal` plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, which waits for the next kyogijo version; not built here): it
+ * would draw a champion's or finalist's path round by round with round team marks, from the same `matches` these columns are made of. The tournament
+ * page would show it above or instead of these columns for the final's two teams; the round flags drawn here are the marks it would reuse.
  */
 export async function SoccerKnockout({ matches }: { matches: Match[] }) {
   const { say, locale } = await currentSpeaker();

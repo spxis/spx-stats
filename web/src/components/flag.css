@@ -1,7 +1,10 @@
-/* The flag sizes. Keep the numbers in step with FLAG_WIDTH, FLAG_HEIGHT and FLAG_SIDE in lib/flagSvg.ts. */
+/* The flag sizes. Keep the numbers in step with FLAG_WIDTH, FLAG_HEIGHT, FLAG_SIDE and FLAG_ROUND_LARGE in lib/flagSvg.ts. */
 .flag { display: inline-block; width: 24px; height: 16px; flex: none; align-self: center; vertical-align: -3px; margin-inline: 2px; line-height: 0; opacity: .92; }
 .flag svg { display: block; width: 24px; height: 16px; max-width: none; border-radius: 2px; filter: drop-shadow(0 0 .5px var(--muted, #888)); }
 /* Round and square (country buttons and chips): Hata draws the frame, so nothing is clipped here. */
 .flag-round, .flag-square { width: 18px; height: 18px; vertical-align: -4px; }
 .flag-round svg, .flag-square svg { width: 18px; height: 18px; }
 .flag-round svg { border-radius: 0; }
+/* The large round flag, for the two teams of a World Cup match or pairing: the one size besides the 18px round. */
+.flag-round.flag-lg { width: 56px; height: 56px; margin-inline: 0; vertical-align: middle; opacity: 1; }
+.flag-round.flag-lg svg { width: 56px; height: 56px; filter: drop-shadow(0 0 1px var(--muted, #888)); }

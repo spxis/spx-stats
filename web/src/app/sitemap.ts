@@ -9,7 +9,8 @@ import { leadersPath } from "@/lib/leaderStats";
 import { scoresPath } from "@/lib/scores";
 import { withGaps } from "@/lib/coverage";
 import { seasonPath } from "@/lib/slug";
-import { getSoccerTeams, getTournaments } from "@/lib/soccer";
+import { getMatchPairs, getSoccerTeams, getTournaments } from "@/lib/soccer";
+import { h2hPath, pairKey } from "@/lib/soccerH2H";
 import { soccerTeamPath, tournamentPath } from "@/lib/soccerPath";
 import { getMlsClubs, getMlsSeasons } from "@/lib/mls";
 import { MLS_PATH, mlsClubPath, mlsSeasonPath } from "@/lib/mlsPath";
@@ -20,7 +21,7 @@ const url = (path: string) => `${SITE_URL}${path}`;
 
 // The sitemap is built at deploy time, so a failed read of the archive leaves that part out instead of failing the build.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams, countryData, mlsSeasons, mlsClubs] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams(), getLeagueCounts(), getMlsSeasons(), getMlsClubs()]);
+  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams, countryData, mlsSeasons, mlsClubs, matchPairs] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams(), getLeagueCounts(), getMlsSeasons(), getMlsClubs(), getMatchPairs()]);
   const seasons = summary.status === "fulfilled" ? summary.value.seasons : [];
   const lastModified = summary.status === "fulfilled" ? new Date(summary.value.totals.refreshed_at) : new Date();
   const held = new Set(seasons.filter((s) => s.games > 0).map((s) => `${s.league}|${s.year}`));
@@ -35,9 +36,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // A venue page exists for each home venue of the /venues list.
   const venueUrls = venues.status === "fulfilled" ? [...venues.value].sort().map((s) => ({ url: url(`/venue/${s}`), lastModified })) : [];
   // World Cup pages exist once the archive holds a tournament; a failed read leaves them out.
+  // A head-to-head page exists for each pair of national teams that have met in a World Cup, men's or women's (lib/soccerH2H.ts).
+  const slugById = soccerTeams.status === "fulfilled" ? new Map(soccerTeams.value.map((t) => [t.team_id, t.slug])) : new Map<string, string>();
+  const h2hUrls = matchPairs.status === "fulfilled"
+    ? [...new Set(matchPairs.value.map((m) => pairKey(m.home_team_id, m.away_team_id)))].flatMap((k) => {
+        const [x, y] = k.split("|").map((id) => slugById.get(id));
+        return x && y ? [{ url: url(h2hPath(x, y)), lastModified }] : [];
+      })
+    : [];
   const soccerUrls = [
     ...(soccer.status === "fulfilled" && soccer.value.length ? ["/soccer", "/worldcup", "/worldcup/teams", ...soccer.value.map((t) => tournamentPath(t.year))].map((p) => ({ url: url(p), lastModified })) : []),
     ...(soccerTeams.status === "fulfilled" ? soccerTeams.value.filter((t) => t.tournaments > 0).map((t) => ({ url: url(soccerTeamPath(t.slug)), lastModified })) : []),
+    ...h2hUrls,
   ];
   // MLS pages exist once the archive holds a season.
   const mlsUrls = mlsSeasons.status === "fulfilled" && mlsSeasons.value.length

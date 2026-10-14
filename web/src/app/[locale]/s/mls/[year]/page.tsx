@@ -6,6 +6,7 @@ import { MlsCredit } from "@/components/MlsCredit";
 import { MlsPlayoffs } from "@/components/MlsPlayoffs";
 import { MlsTables } from "@/components/MlsTables";
 import { SortTable } from "@/components/SortTable";
+import { StadiumName } from "@/components/StadiumName";
 import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -59,7 +60,7 @@ export default guard(async function MlsSeasonPage({ params }: Params) {
     { key: "place", label: say("mls.col.place"), num: true, get: (t) => t.overall_position },
     { key: "pts", label: say("col.pts"), num: true, get: (t) => t.points },
     { key: "result", label: say("wc.col.reached"), cls: "team", get: (t) => mlsReachRank(t.performance), cell: (t) => mlsReached(say, t.performance) },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (t) => t.venue_name, cell: (t) => [t.venue_name, t.venue_city].filter(Boolean).join(", ") },
+    { key: "venue", label: say("col.venue"), cls: "team", get: (t) => t.venue_name, cell: (t) => <StadiumName name={t.venue_name} qid={t.venue_wikidata_id} rest={t.venue_city ?? undefined} /> },
   ], (t) => t.team_id);
 
   const matchTable = tableOf(matches, [
@@ -74,7 +75,7 @@ export default guard(async function MlsSeasonPage({ params }: Params) {
       },
     },
     { key: "away", label: say("wc.col.away"), cls: "team", get: (m) => m.away, cell: (m) => <MlsClubName slug={m.away_slug} name={m.away} /> },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => [m.venue_name, m.venue_city].filter(Boolean).join(", ") },
+    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={m.venue_city ?? undefined} /> },
     { key: "crowd", label: say("mls.col.crowd"), num: true, get: (m) => m.attendance ?? null, cell: (m) => (m.attendance ? fmt(m.attendance) : "") },
   ], (m) => m.match_id);
 

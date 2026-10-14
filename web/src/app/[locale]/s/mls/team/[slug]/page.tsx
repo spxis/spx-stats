@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
 import { SortTable } from "@/components/SortTable";
+import { StadiumName } from "@/components/StadiumName";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
@@ -58,7 +59,7 @@ export default guard(async function MlsClubPage({ params }: Params) {
     { key: "ga", label: say("wc.col.ga"), num: true, get: (x) => x.goals_against },
     { key: "pts", label: say("col.pts"), num: true, get: (x) => x.points },
     { key: "result", label: say("wc.col.reached"), cls: "team", get: (x) => mlsReachRank(x.performance), cell: (x) => mlsReached(say, x.performance) },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (x) => x.venue_name, cell: (x) => [x.venue_name, x.venue_city].filter(Boolean).join(", ") },
+    { key: "venue", label: say("col.venue"), cls: "team", get: (x) => x.venue_name, cell: (x) => <StadiumName name={x.venue_name} qid={x.venue_wikidata_id} rest={x.venue_city ?? undefined} /> },
   ], (x) => x.tournament_id);
 
   const matchTable = tableOf(matches, [

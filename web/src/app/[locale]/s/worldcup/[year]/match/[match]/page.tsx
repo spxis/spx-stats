@@ -4,10 +4,12 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerSurface } from "@/components/GameSurface";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
+import { StadiumName } from "@/components/StadiumName";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { getMatch, getMatchDetail, tournamentOfYear, type Card, type Goal, type Lineup, type Match } from "@/lib/soccer";
+import { h2hPath } from "@/lib/soccerH2H";
 import { teamName } from "@/lib/soccerNames";
 import { isYearSeg, soccerMatchIdOf, soccerMatchPath, soccerPlayerPath, soccerTeamPath, tournamentPath } from "@/lib/soccerPath";
 import { groupLabel, scoreLines, stageName } from "@/lib/soccerView";
@@ -58,9 +60,9 @@ export default guard(async function MatchPage({ params }: Params) {
   ];
   const referees = d.staff.filter((x) => x.role === "referee");
   const managers = d.staff.filter((x) => x.role === "manager");
-  // A stadium is shown as the source names it. When the world stadium dataset is live, m.venue_wikidata_id links the name to /venue/Q<id>,
-  // which redirects to the venue's own page; until that route exists the name is plain text (and the link would 404 for an id not yet in the dataset).
-  const venue = [m.venue_name, m.venue_city, m.venue_country].filter(Boolean).join(", ");
+  // A stadium is shown as the source names it; the name links to /venue/Q<m.venue_wikidata_id>, which redirects to the venue's own page, when the
+  // world stadium dataset holds the ground (m.venue_id), else it is plain text.
+  const venueRest = [m.venue_city, m.venue_country].filter(Boolean).join(", ");
   const kickoff = m.kickoff_local ? m.kickoff_local.slice(0, 5) : null;
   const teamOf = (id: string) => { const sd = sides.find((x) => x.id === id); return sd ? teamName({ name: sd.name, slug: sd.slug, flag: sd.flag }, locale) : ""; };
   const cardsOf = (personId: number) => d.cards.filter((c) => c.person_id === personId);
@@ -71,12 +73,14 @@ export default guard(async function MatchPage({ params }: Params) {
         <span className="eyebrow"><Link href={tournamentPath(m.year)}>{title}</Link> · {groupLabel(say, m)}</span>
         <h1>{teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale)} – {teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale)}</h1>
         <p className="lede">
-          {dt.full(new Date(m.match_date))}{kickoff ? ` · ${kickoff}${m.utc_offset ? ` (UTC${m.utc_offset})` : ""}` : ""}{venue ? ` · ${venue}` : ""}
+          {dt.full(new Date(m.match_date))}{kickoff ? ` · ${kickoff}${m.utc_offset ? ` (UTC${m.utc_offset})` : ""}` : ""}{m.venue_name ? <> · <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={venueRest} /></> : null}
         </p>
       </section>
+      {/* Where kyogijo's coming round team mark over the pitch plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, waits for the next kyogijo version; not built
+          here): the two large round flags in this board are the marks it would draw, and SoccerSurface below takes them (see the note in components/GameSurface.tsx). */}
       <section className="sc-board" aria-label={say("wc.m.result")}>
         <div className="side">
-          <span className="nm"><SoccerTeamName slug={sides[0].slug} name={sides[0].name} flag={sides[0].flag} /></span>
+          <span className="nm"><SoccerTeamName slug={sides[0].slug} name={sides[0].name} flag={sides[0].flag} large /></span>
         </div>
         <div className="mid">
           <div className="big">{s.main}</div>
@@ -84,9 +88,10 @@ export default guard(async function MatchPage({ params }: Params) {
           {m.extra_time && m.home_goals_90 != null && m.away_goals_90 != null ? <div className="sub">{say("wc.m.after90", { home: m.home_goals_90, away: m.away_goals_90 })}</div> : null}
         </div>
         <div className="side away">
-          <span className="nm"><SoccerTeamName slug={sides[1].slug} name={sides[1].name} flag={sides[1].flag} /></span>
+          <span className="nm"><SoccerTeamName slug={sides[1].slug} name={sides[1].name} flag={sides[1].flag} large /></span>
         </div>
       </section>
+      <p className="note"><Link href={h2hPath(m.home_slug, m.away_slug)}>{say("wc.m.allMeetings", { a: teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale), b: teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale) })}</Link></p>
       <SoccerSurface
         home={{ name: teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale), goals: m.home_goals }}
         away={{ name: teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale), goals: m.away_goals }}

@@ -211,5 +211,16 @@ export const soccerPerson = cache(async (personId: number): Promise<SoccerPerson
 export const getPlayerTournaments = cache((personId: number) =>
   id(personId) ? rows("soccer_player_tournaments", `person_id=eq.${personId}&order=year.asc`, playerTournamentSchema) : Promise.resolve([]));
 
+/** Every World Cup match between two teams, men's and women's, either team at home (the head-to-head page). */
+export const getMeetings = cache((a: string, b: string) =>
+  /^[A-Z]-[a-z0-9-]+$/.test(a) && /^[A-Z]-[a-z0-9-]+$/.test(b) && a !== b
+    ? rows("soccer_matches", `league=in.(wc,wwc)&or=(and(home_team_id.eq.${a},away_team_id.eq.${b}),and(home_team_id.eq.${b},away_team_id.eq.${a}))&order=match_date.asc,match_id.asc`, matchSchema)
+    : Promise.resolve([]));
+
+const pairSchema = z.object({ home_team_id: text, away_team_id: text });
+
+/** The two teams of every World Cup match, for the list of pairings that have met (the sitemap). */
+export const getMatchPairs = cache(() => rows("soccer_matches", "league=in.(wc,wwc)&select=home_team_id,away_team_id", pairSchema));
+
 export const getPlayerGoals = cache((personId: number) =>
   id(personId) ? rows("soccer_scorers", `person_id=eq.${personId}&order=year.asc,match_id.asc`, scorerSchema) : Promise.resolve([]));
