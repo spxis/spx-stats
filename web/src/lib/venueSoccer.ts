@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { groundByWikidata } from "@johnmorrisdotca/kyogijo";
+import { groundByWikidata } from "@johnmorrisdotca/kyogijo-stadiums";
 import { rows } from "./soccer";
 import { citedTitle, currentName, spansOf, type Pitch, type SoccerName, type SoccerVenue } from "./venueSoccerRows";
 import type { VenueMatch } from "./venueSoccerGames";

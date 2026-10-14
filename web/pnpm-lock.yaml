@@ -17,9 +17,9 @@ importers:
       '@johnmorrisdotca/hata':
         specifier: 1.5.0
         version: 1.5.0
-      '@johnmorrisdotca/kyogijo':
-        specifier: 0.2.0
-        version: 0.2.0
+      '@johnmorrisdotca/kyogijo-stadiums':
+        specifier: 0.4.0
+        version: 0.4.0
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -393,8 +393,8 @@ packages:
     resolution: {integrity: sha512-CAzssK6RXy0rRlCP+v5XLNSr1A+RK7dESqyzB/hz/VRNUySlESSiNsAO+6r5DAQ2oi7iII5ruI79BqJA7X5wCA==}
     engines: {node: '>=24'}
 
-  '@johnmorrisdotca/kyogijo@0.2.0':
-    resolution: {integrity: sha512-pRJnEsZKrV6gbHicWLSQwbAnKYTi62+SVxgDCVoHqCN+qhw86SUidAY9qlxuDcbF3WrkICStUUymu29CySj4Xw==}
+  '@johnmorrisdotca/kyogijo-stadiums@0.4.0':
+    resolution: {integrity: sha512-ydb9vPKLayYtCcLw3r/0d3GjqhwNIyLFbojxGMlgLnJzg6gVKwdN4uTtBW8+V3Gxq9hJb1KW6ncumnZyDgaLdQ==}
     engines: {node: '>=22'}
     peerDependencies:
       '@resvg/resvg-js': '>=2.6.0'
@@ -2694,7 +2694,7 @@ snapshots:
 
   '@johnmorrisdotca/hata@1.5.0': {}
 
-  '@johnmorrisdotca/kyogijo@0.2.0': {}
+  '@johnmorrisdotca/kyogijo-stadiums@0.4.0': {}
 
   '@jridgewell/gen-mapping@0.3.13':
     dependencies:

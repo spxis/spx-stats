@@ -241,7 +241,7 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
 
       <p className="note">
         <Credits say={say} use={["flags"]} />{" "}
-        {surfaces.length || pitch ? <Rich text={say("credit.surfaces")} parts={{ kyogijo: <LibCredit lib="kyogijo" /> }} /> : null}{" "}
+        {surfaces.length || pitch ? <Rich text={say("credit.surfaces")} parts={{ kyogijo: <LibCredit lib="kyogijo-stadiums" /> }} /> : null}{" "}
         {say(soccer ? "venue.dataCreditSoccer" : "venue.dataCredit")}
       </p>
     </>

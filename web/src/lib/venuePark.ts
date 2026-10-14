@@ -1,8 +1,8 @@
-import { eraChanges, ERA_CURRENT, PARKS, PARK_IDS, parkByWikidata, parkQuirksIn, parkWallsIn, type Park } from "@johnmorrisdotca/kyogijo";
+import { eraChanges, ERA_CURRENT, PARKS, PARK_IDS, parkByWikidata, parkQuirksIn, parkWallsIn, type Park } from "@johnmorrisdotca/kyogijo-stadiums";
 
 /**
- * Which drawing a venue gets from @johnmorrisdotca/kyogijo (0.2.0): a surface for the sport of each league that played there, as it was
- * in the venue's last season for that league, and for a ballpark an MLB club played in, that park's own outfield fence. Kyogijo 0.2.0 has
+ * Which drawing a venue gets from @johnmorrisdotca/kyogijo-stadiums (0.4.0): a surface for the sport of each league that played there, as it was
+ * in the venue's last season for that league, and for a ballpark an MLB club played in, that park's own outfield fence. Kyogijo Stadiums 0.4.0 has
  * ninety-four parks, each with its Wikidata item, so a park is found by the venue's Wikidata id (Olympic Stadium, Jarry Park and the Polo
  * Grounds get their own fences). A venue with no match, or no id, falls back to the names the park has gone by, and only while an MLB club
  * plays there: a past park that shares a name with today's (the first Yankee Stadium) must not take its fence.

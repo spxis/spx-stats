@@ -1,5 +1,5 @@
 import "server-only";
-import { describe, drawSurface, parkById } from "@johnmorrisdotca/kyogijo";
+import { describe, drawSurface, parkById } from "@johnmorrisdotca/kyogijo-stadiums";
 import type { VenueDetail } from "./venueDataset";
 import type { VenueRow } from "./venueModel";
 import { eraOf, erasOf, MLB_PARK_IDS, parkExtras, parkIdFor, parsePitchFile, parseSurfaceFile, pitchFileName, SURFACE_SPORT, surfaceFileName, type SurfaceSport } from "./venuePark";

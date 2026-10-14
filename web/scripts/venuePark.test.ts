@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { KYOGIJO_STYLE, PARKS, PARK_IDS, SPORTS } from "@johnmorrisdotca/kyogijo";
+import { KYOGIJO_STYLE, PARKS, PARK_IDS, SPORTS } from "@johnmorrisdotca/kyogijo-stadiums";
 import { eraOf, erasOf, MLB_PARK_IDS, MLB_PARKS, parkExtras, parkIdFor, parseSurfaceFile, SURFACE_SPORT, surfaceFileName } from "../src/lib/venuePark.ts";
 
 /** Run in web/: pnpm test:venues */

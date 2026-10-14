@@ -9,7 +9,7 @@ import { LG, seasonLabel } from "@/lib/leagues";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { getVenueFacts, getVenueNames, nameIn } from "@/lib/venueName";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
-import { groundById } from "@johnmorrisdotca/kyogijo";
+import { groundById } from "@johnmorrisdotca/kyogijo-stadiums";
 import { Credits } from "./Credits";
 import "./kyogijo.css";
 import "./gamesurface.css";

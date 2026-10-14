@@ -1,9 +1,9 @@
-import { drawKyogijo, groundByWikidata, parkById } from "@johnmorrisdotca/kyogijo";
+import { drawKyogijo, groundByWikidata, parkById } from "@johnmorrisdotca/kyogijo-stadiums";
 import type { BrandMap } from "./brand.ts";
 import { parkIdFor, SURFACE_SPORT, type SurfaceSport } from "./venuePark.ts";
 
 /**
- * A game's score drawn on the surface it was played on, with @johnmorrisdotca/kyogijo. Pure (no server-only imports) so the pages and the checks
+ * A game's score drawn on the surface it was played on, with @johnmorrisdotca/kyogijo-stadiums. Pure (no server-only imports) so the pages and the checks
  * share it. The drawing is a string of SVG written into the page, one per page, without its stylesheet: components/kyogijo.css holds it once, for
  * every page, and is kept in step with the package by scripts/gameSurface.test.ts. A drawing is decorative (aria-hidden); the page says the score as text.
  */
