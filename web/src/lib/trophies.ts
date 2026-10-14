@@ -24,6 +24,9 @@ const T: Record<string, string> = {
   cfl: wrap(`<path d="M12 18h36c0 16-8 24-18 24S12 34 12 18z"/><path d="M12 18c0-3 36-3 36 0"/>
       <path d="M12 22c-6 0-7 10 2 11M48 22c6 0 7 10-2 11"/>
       <path d="M27 42h6v14h-6z"/><path d="M20 56h20v8H20zM16 64h28v10H16zM13 74h34v12H13z"/>`, "Grey Cup"),
+  // The World Cup, MLS Cup and other soccer trophies: a ball held up on a tapering stand with a stepped base.
+  soccer: wrap(`<circle cx="30" cy="22" r="14"/><path d="M16 22h28M30 8c-7 7-7 21 0 28M30 8c7 7 7 21 0 28" stroke-width="1.4"/>
+      <path d="M24 36c0 14 2 20-3 32h18c-5-12-3-18-3-32"/><path d="M18 68h24v8H18z"/><path d="M15 76h30v10H15z"/>`, "Trophy"),
 };
 
 /** Trusted, static SVG markup for a league's trophy. */

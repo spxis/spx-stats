@@ -7,6 +7,7 @@ import { GameSurface, type DrawnGame } from "@/components/GameSurface";
 import { SeriesCard } from "@/components/SeasonPlayoffs";
 import { SeriesCharts, type ChartWords } from "@/components/SeriesCharts";
 import { SeriesStyle } from "@/components/SeriesStyle";
+import { Showdown, type ShowdownSide } from "@/components/Showdown";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
@@ -226,21 +227,26 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
     { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
   ], (m) => `${m.year}-${m.s.meeting}`);
   const mets = metrics(say, unit, ra, rb);
-  const side = (i: 0 | 1) => {
+  const side = (i: 0 | 1): ShowdownSide => {
     const t = s.sides[i], r = i === 0 ? ra : rb, rk = rankText(t.f);
     const logo = logoFor(d.brands, t.f, y);
     const won = s.winner === i;
-    return (
-      <div className={`sdside ${i === 0 ? "a" : "b"}${s.winner != null && !won ? " lost" : ""}`}>
-        {logo ? <TeamLogo url={logo} size={88} shape="circle" /> : <span className="crest"><span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span></span>}
-        <h2 className="sdname"><Link href={paths.teamSeason(lg, t.f, y)} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link></h2>
-        {won ? <span className="wintag">{crowned ? <><BadgeCup league={lg} />{say("side.champions", { season })}</> : say("side.won")}</span> : null}
-        <span className="sdmeta">{r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : d.standings == null ? sp.say("load.failed") : say("side.noRecord")}</span>
-        {rk ? <span className="sdmeta">{rk}</span> : null}
-        <span className="sdlinks"><Link href={paths.teamSeason(lg, t.f, y)} prefetch={false}>{say("side.games", { season })}</Link><Link href={paths.team(lg, t.f)} prefetch={false}>{say("side.allSeasons")}</Link></span>
-      </div>
-    );
+    return {
+      crest: logo ? <TeamLogo url={logo} size={88} shape="circle" /> : <span className="crest"><span className="mono">{abbrFor(d.abbrs, t.f, y, t.name)}</span></span>,
+      name: <Link href={paths.teamSeason(lg, t.f, y)} prefetch={false} title={say("side.games.title", { team: t.name, season })}>{t.name}</Link>,
+      tag: won ? (crowned ? <><BadgeCup league={lg} />{say("side.champions", { season })}</> : say("side.won")) : null,
+      meta: [
+        r && tally(r) ? say("side.record", { record: tally(r)! }) + (r.pts != null ? say("side.pts", { pts: fmt(r.pts) }) : "") : d.standings == null ? sp.say("load.failed") : say("side.noRecord"),
+        ...(rk ? [rk] : []),
+      ],
+      links: [
+        <Link key="season" href={paths.teamSeason(lg, t.f, y)} prefetch={false}>{say("side.games", { season })}</Link>,
+        <Link key="all" href={paths.team(lg, t.f)} prefetch={false}>{say("side.allSeasons")}</Link>,
+      ],
+      lost: s.winner != null && !won,
+    };
   };
+  const shown = (i: 0 | 1) => (single ? s.games[0].score[i] ?? "–" : s.basis === "goals" ? s.sides[i].scored : s.sides[i].wins);
 
   return (
     <>
@@ -254,19 +260,12 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
         <p className="lede">{lede}</p>
       </section>
 
-      <section className="showdown" aria-label={say("page.aria", { a: A.name, b: B.name })}>
-        {side(0)}
-        <div className="sdmid">
-          <div className="bigscore" aria-label={say("score.aria", { a: single ? s.games[0].score[0] ?? "–" : s.basis === "goals" ? A.scored : A.wins, b: single ? s.games[0].score[1] ?? "–" : s.basis === "goals" ? B.scored : B.wins })}>
-            <b className={`n a${s.winner === 0 ? " w" : ""}`}>{single ? s.games[0].score[0] ?? "–" : s.basis === "goals" ? A.scored : A.wins}</b>
-            <span className="dash" aria-hidden="true">–</span>
-            <b className={`n b${s.winner === 1 ? " w" : ""}`}>{single ? s.games[0].score[1] ?? "–" : s.basis === "goals" ? B.scored : B.wins}</b>
-          </div>
-          <span className="verdict">{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={36} shape="circle" /> : null}{verdict}</span>
-          <span className="sdnote">{s.live ? say("verdict.noteLive", { bestOf: fmt(s.bestOf), played: fmt(played) }) : s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })}</span>
-        </div>
-        {side(1)}
-      </section>
+      <Showdown
+        label={say("page.aria", { a: A.name, b: B.name })} a={side(0)} b={side(1)} winner={s.winner === 0 ? 0 : s.winner === 1 ? 1 : null}
+        score={[shown(0), shown(1)]} scoreLabel={say("score.aria", { a: shown(0), b: shown(1) })}
+        verdict={<>{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={36} shape="circle" /> : null}{verdict}</>}
+        notes={[s.live ? say("verdict.noteLive", { bestOf: fmt(s.bestOf), played: fmt(played) }) : s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })]}
+      />
 
       {drawnGame && last ? (
         <section className="section">

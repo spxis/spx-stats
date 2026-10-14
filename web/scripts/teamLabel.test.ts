@@ -53,8 +53,8 @@ export function bareTeamLinks(code: string): string[] {
     .filter(({ tag }) => /paths\.team(Season)?\(|pairPath\(/.test(tag))
     // Words, numbers and cards are fine: the text comes from say(), a season label, a record or a count.
     .filter(({ inner }) => !/\bsay\(|seasonLabel\(|\bsp\.say\(|\.gp\b|\brec\(|scoreText\(|\.label\b/.test(inner))
-    // The heading of a showdown card sits under its big crest, which is the logo.
-    .filter(({ before, tag }) => !/className="sdname"/.test(before + tag))
+    // The heading of a showdown card sits under its big crest, which is the logo (a side of components/Showdown.tsx: its `name:`).
+    .filter(({ before, tag }) => !/className="sdname"/.test(before + tag) && !/\bname:\s*$/.test(before))
     .map(({ inner }) => inner.trim());
 }
 
@@ -80,6 +80,7 @@ test("the scanner flags a bare team link and passes a label, a season link and a
   assert.equal(bareTeamLinks('<Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>').length, 0);
   assert.equal(bareTeamLinks('<Link href={paths.teamSeason(lg, f, y)}>{seasonLabel(lg, y)}</Link>').length, 0);
   assert.equal(bareTeamLinks('<h2 className="sdname"><Link href={paths.team(lg, f)} prefetch={false}>{name[i]}</Link></h2>').length, 0);
+  assert.equal(bareTeamLinks('{ crest, name: <Link href={paths.team(lg, f)} prefetch={false}>{name[i]}</Link>, tag }').length, 0);
   assert.equal(bareTeamLinks('<Link href={`/city/${slug}`}>{city.name}</Link>').length, 0);
 });
 

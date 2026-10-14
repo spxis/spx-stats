@@ -92,32 +92,37 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs }
   );
 }
 
+/** A side of a soccer match on the strip: its name and short code, what it scored, its round flag (an address) and its colours (a hex without #). */
+export interface SoccerSide { name: string; abbr: string; goals: number; logo?: string | null; color?: string | null; ink?: string | null }
+
 /**
  * A soccer match on its pitch: the ground when the stadium is one kyogijo knows by its Wikidata id (the pitch at its published size), else a standard pitch.
- * No crests (a team's emblem is not ours to draw): the two sides keep kyogijo's own colours. `note` is what follows "Final" ("after extra time", "4–2 on
- * penalties"), written in the status; `winner` is given because a shoot-out settles a level score.
+ * The strip puts the home side first, on the left, as the page's banner does (gameSurface.ts sets kyogijo's `homeSide`), and writes each side's three-letter
+ * code (the FIFA code of a national team, lib/soccerLook.ts). The sides take the banner's colours, and a national team its round flag as its logo (a file,
+ * /soccer-flag/ES.svg, as the NHL strip passes a club's logo; a club has none, its emblem is not ours to draw). `note` is what follows "Final" ("after extra
+ * time", "4–2 on penalties"), written in the status; `winner` is given because a shoot-out settles a level score.
  *
  * Where kyogijo's coming "round team mark over the pitch" plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, which waits for the next kyogijo version; not
- * built here): the two sides of this drawing take a round mark from the national team's round flag, which the match page already draws large in its
- * heading (components/SoccerFlag.tsx, `large`). It would be passed in here as a `home.mark` / `away.mark` next to `name`, and `drawGameOnce` would hand it
- * to kyogijo; until then the sides keep kyogijo's own colours.
+ * built here): it would take the same flag file as a mark next to `logo`; until then the flag is the strip's logo.
  */
 export async function SoccerSurface({ home, away, note, winner, competition, date, wikidata }: {
-  home: { name: string; goals: number }; away: { name: string; goals: number };
+  home: SoccerSide; away: SoccerSide;
   note: string | null; winner: "home" | "away" | "none"; competition?: string; date: string; wikidata?: string | null;
 }) {
   const sp = await currentSpeaker();
   const { say } = sp;
   const ground = groundOf(wikidata);
   const status = note ? `${say("scores.final")} · ${note}` : say("scores.final");
+  const side = (s: SoccerSide): GameDrawing["home"] => ({ name: s.name, abbr: s.abbr, score: s.goals, logo: s.logo, color: s.color, ink: s.ink });
   const drawing = drawGameOnce({
     sport: "soccer", year: null, language: sp.locale === "ja" ? "ja" : "en", status, competition, date, ground, winner,
-    away: { name: away.name, score: away.goals }, home: { name: home.name, score: home.goals },
+    away: side(away), home: side(home),
   });
   if (!drawing) return null;
   const g = ground ? groundById(ground) : null;
   return (
-    <figure className="gsurf" data-sport="soccer" aria-label={say("gs.aria", { away: away.name, awayScore: away.goals, home: home.name, homeScore: home.goals, status })}>
+    // The label's wording is "{away} ..., {home} ..." (the North American order); a soccer match reads home first, so the two are handed over swapped.
+    <figure className="gsurf" data-sport="soccer" aria-label={say("gs.aria", { away: home.name, awayScore: home.goals, home: away.name, homeScore: away.goals, status })}>
       <div className="gsurf-art" style={{ aspectRatio: `${drawing.width} / ${drawing.height}` }} dangerouslySetInnerHTML={{ __html: drawing.svg }} />
       <figcaption className="note">{[competition, date].filter(Boolean).join(" · ")}<br />{g ? say("gs.ground", { venue: g.name }) : say("gs.stdSoccer")} <Credits say={say} use={["surfaces"]} /></figcaption>
     </figure>

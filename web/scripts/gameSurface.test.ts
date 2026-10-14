@@ -67,6 +67,20 @@ test("soccer draws a pitch, on a ground kyogijo knows by its Wikidata id, with t
   assert.ok(d.svg.includes("Final · 4–2 on penalties"));
 });
 
+test("a soccer strip puts the home side first and writes the codes it is given, with the flags as logos", () => {
+  const soccer = game({
+    sport: "soccer", year: null, winner: "home", status: "Final",
+    home: { name: "Spain", abbr: "ESP", score: 2, color: "c60b1e", ink: "ffffff", logo: "/soccer-flag/ES.svg" },
+    away: { name: "Argentina", abbr: "ARG", score: 1, color: "74acdf", ink: "12161b", logo: "/soccer-flag/AR.svg" },
+  });
+  assert.equal(gameOptions(soccer).homeSide, "left");
+  assert.equal(gameOptions(game()).homeSide, undefined, "the other sports keep kyogijo's away-at-home order");
+  const svg = drawGame(soccer)!.svg;
+  assert.ok(svg.indexOf(">ESP<") < svg.indexOf(">ARG<"), "home first");
+  assert.ok(!svg.includes(">SPA<"));
+  assert.ok(svg.includes("/soccer-flag/ES.svg") && svg.includes("/soccer-flag/AR.svg"));
+});
+
 test("a game only known by its home club claims no venue at a neutral site or in a bubble season", () => {
   assert.ok(neutralSite("nfl", 2023, "playoffs", true));
   assert.ok(neutralSite("nfl", 1966, "playoffs", true));

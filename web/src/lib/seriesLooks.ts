@@ -5,7 +5,6 @@
  * other colour, and failing that to a lighter or darker shade of its own primary (same hue), never to white or
  * another near-white. Text on every block meets WCAG AA (4.5:1).
  */
-import type { TeamBrandRow } from "./api/types";
 import { contrast, lum, PAPER } from "./brand.ts";
 
 export interface SideLook {
@@ -19,6 +18,9 @@ export interface SideLook {
 }
 
 type Theme = "light" | "dark";
+
+/** What a look is worked out from: a club's brand row, or any pair of colours (a national team's flag colours). Hex without #. */
+export interface Colours { primary_hex?: string | null; secondary_hex?: string | null }
 
 /** Two colours count as alike below this CIE76 distance (Lab); 30 is plainly two different colours side by side. */
 export const APART = 30;
@@ -87,6 +89,7 @@ function shades(h: string, awayFrom?: string): string[] {
 const LEAGUE_HEX: Record<string, { light: string; dark: string }> = {
   nhl: { light: "1f6fb2", dark: "5aa6e6" }, nba: { light: "c8571b", dark: "f08a4b" }, mlb: { light: "b5283a", dark: "ef5a6c" },
   nfl: { light: "2f6b3c", dark: "6fb37f" }, cfl: { light: "9b2335", dark: "e06a7c" },
+  soccer: { light: "2f7a4b", dark: "6fb37f" },
 };
 const NEUTRALS = [{ light: "5d6874", dark: "9aa4ad" }, { light: "b07a12", dark: "e0a83d" }];
 
@@ -99,7 +102,7 @@ export function onBlock(hex: string): string {
 }
 
 /** A team's own colours, primary first. */
-const own = (b: TeamBrandRow | null): string[] => [b?.primary_hex, b?.secondary_hex].filter((h): h is string => !!h).map(lower);
+const own = (b: Colours | null): string[] => [b?.primary_hex, b?.secondary_hex].filter((h): h is string => !!h).map(lower);
 
 /** The first colour of `pool` that passes `ok`, or null. */
 const first = (pool: string[], ok: (h: string) => boolean): string | null => pool.find(ok) ?? null;
@@ -125,7 +128,7 @@ function lineOf(theme: Theme, colours: string[], fallbacks: string[], apart: str
 }
 
 /** The two teams' looks. `a` is the first side (the winner on a series page); `b` is the side that gives way when the two are close. */
-export function seriesLooks(league: string, a: TeamBrandRow | null, b: TeamBrandRow | null): [SideLook, SideLook] {
+export function seriesLooks(league: string, a: Colours | null, b: Colours | null): [SideLook, SideLook] {
   const lg = LEAGUE_HEX[league] ?? LEAGUE_HEX.nhl;
   const ca = own(a), cb = own(b);
 

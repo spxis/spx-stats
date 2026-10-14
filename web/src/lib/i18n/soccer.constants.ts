@@ -183,6 +183,17 @@ export const SOCCER_EN = {
   "wc.col.lastMet": "Last met",
   "wc.col.shootouts": "Shootouts",
   "wc.col.shootoutsTitle": "Shootouts won–lost, in matches level after extra time",
+
+  // the match banner (components/Showdown.tsx), also used by the MLS match pages
+  "wc.sd.win": "{team} win",
+  "wc.sd.draw": "Draw",
+  "wc.sd.score": "{a} to {b}",
+  "wc.sd.stageDate": "{stage} · {date}",
+  "wc.sd.champions": "World Cup champions",
+  "wc.sd.championsWomen": "Women’s World Cup champions",
+  "wc.sd.record": "{year}: {w}W–{d}D–{l}L, goals {gf}–{ga}",
+  "wc.sd.team": "{team} at the World Cup",
+  "wc.sd.meetings": "All meetings",
 } as const satisfies Record<string, string>;
 
 export const SOCCER_FR: Record<keyof typeof SOCCER_EN, string> = {
@@ -359,6 +370,17 @@ export const SOCCER_FR: Record<keyof typeof SOCCER_EN, string> = {
   "wc.col.lastMet": "Dernière rencontre",
   "wc.col.shootouts": "Tirs au but",
   "wc.col.shootoutsTitle": "Séances de tirs au but gagnées–perdues, dans les matchs restés nuls après prolongation",
+
+  // the match banner (components/Showdown.tsx), also used by the MLS match pages
+  "wc.sd.win": "Victoire : {team}",
+  "wc.sd.draw": "Match nul",
+  "wc.sd.score": "{a} à {b}",
+  "wc.sd.stageDate": "{stage} · {date}",
+  "wc.sd.champions": "Champions du monde",
+  "wc.sd.championsWomen": "Championnes du monde",
+  "wc.sd.record": "{year} : {w} V – {d} N – {l} D, buts {gf}–{ga}",
+  "wc.sd.team": "{team} à la Coupe du monde",
+  "wc.sd.meetings": "Toutes les rencontres",
 };
 
 export const SOCCER_JA: Record<keyof typeof SOCCER_EN, string> = {
@@ -535,4 +557,15 @@ export const SOCCER_JA: Record<keyof typeof SOCCER_EN, string> = {
   "wc.col.lastMet": "直近の対戦",
   "wc.col.shootouts": "PK戦",
   "wc.col.shootoutsTitle": "PK戦の勝ち–負け（延長戦を終えて同点だった試合）",
+
+  // the match banner (components/Showdown.tsx), also used by the MLS match pages
+  "wc.sd.win": "{team}の勝利",
+  "wc.sd.draw": "引き分け",
+  "wc.sd.score": "{a}対{b}",
+  "wc.sd.stageDate": "{stage}・{date}",
+  "wc.sd.champions": "ワールドカップ優勝",
+  "wc.sd.championsWomen": "女子ワールドカップ優勝",
+  "wc.sd.record": "{year}年：{w}勝{d}分{l}敗、{gf}得点{ga}失点",
+  "wc.sd.team": "ワールドカップの{team}",
+  "wc.sd.meetings": "全対戦",
 };

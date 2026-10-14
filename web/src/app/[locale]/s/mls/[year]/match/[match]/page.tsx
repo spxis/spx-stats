@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
-import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
+import { SeriesStyle } from "@/components/SeriesStyle";
+import { Showdown, type ShowdownSide } from "@/components/Showdown";
+import { BadgeCup } from "@/components/TrophyIcon";
 import { StadiumName } from "@/components/StadiumName";
 import { SoccerSurface } from "@/components/GameSurface";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
-import { getMlsMatch } from "@/lib/mls";
-import { MLS_PATH, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
+import { getMlsMatch, getMlsSeasonTeams } from "@/lib/mls";
+import { MLS_PATH, mlsClubPath, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
 import { mlsScoreLines, mlsStageName } from "@/lib/mlsView";
 import type { Match } from "@/lib/soccer";
+import { clubAbbr, neutralLooks } from "@/lib/soccerLook";
 import { soccerMatchIdOf } from "@/lib/soccerPath";
 import "@/components/soccer.css";
 
@@ -50,6 +53,34 @@ export default guard(async function MlsMatchPage({ params }: Params) {
   if (`/mls/${year}/match/${match}` !== canonical) permanentRedirect(canonical);
   const { say, fmt, dt } = await currentSpeaker();
   const sc = mlsScoreLines(say, m);
+  const entries = await getMlsSeasonTeams(m.tournament_id);
+  // The banner: the home side first (as the heading and the strip). The archive holds no club colours or logos (a club's emblem is not ours to draw), so the
+  // two sides are the neutral pair, each with its short name as a monogram.
+  const looks = neutralLooks();
+  const abbrs = [clubAbbr(m.home_team_id, m.home), clubAbbr(m.away_team_id, m.away)] as const;
+  const names = [m.home, m.away] as const;
+  const winner: 0 | 1 | null = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : m.home_goals > m.away_goals ? 0 : m.away_goals > m.home_goals ? 1 : null;
+  const bannerSide = (i: 0 | 1): ShowdownSide => {
+    const id = i === 0 ? m.home_team_id : m.away_team_id, slug = i === 0 ? m.home_slug : m.away_slug;
+    const e = entries.find((x) => x.team_id === id);
+    const gf = e?.goals_for, ga = e?.goals_against;
+    const record = e && e.wins != null && e.losses != null && gf != null && ga != null
+      ? (e.shootout_wins ?? 0) > 0
+        ? say("mls.sd.recordSo", { year: m.year, w: e.wins, l: e.losses, sw: e.shootout_wins ?? 0, gf, ga })
+        : e.draws != null ? say("mls.sd.record", { year: m.year, w: e.wins, d: e.draws, l: e.losses, gf, ga }) : null
+      : null;
+    return {
+      crest: <span className="crest"><span className="mono">{abbrs[i]}</span></span>,
+      name: <Link href={mlsClubPath(slug)} prefetch={false}>{names[i]}</Link>,
+      tag: winner === i && m.stage_key === "final" ? <><BadgeCup league="soccer" />{say("mls.sd.champions")}</> : null,
+      meta: record ? [record] : [],
+      links: [
+        <Link key="club" href={mlsClubPath(slug)} prefetch={false}>{say("mls.sd.team", { club: names[i] })}</Link>,
+        <Link key="season" href={mlsSeasonPath(m.year)} prefetch={false}>{say("mls.season", { year: m.year })}</Link>,
+      ],
+      lost: winner != null && winner !== i,
+    };
+  };
   // A stadium is shown as the source names it; the name links to /venue/Q<m.venue_wikidata_id>, which redirects to the venue's own page, when the
   // world stadium dataset holds the ground (m.venue_id), else it is plain text.
   const venueRest = [m.venue_city, m.venue_country].filter(Boolean).join(", ");
@@ -60,18 +91,17 @@ export default guard(async function MlsMatchPage({ params }: Params) {
         <h1>{m.home} – {m.away}</h1>
         <p className="lede">{dt.full(new Date(m.match_date))}{m.venue_name ? <> · <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={venueRest} /></> : null}{m.attendance ? ` · ${say("mls.m.crowd", { n: fmt(m.attendance) })}` : ""}</p>
       </section>
-      <section className="sc-board" aria-label={say("wc.m.result")}>
-        <div className="side"><span className="nm"><MlsClubName slug={m.home_slug} name={m.home} /></span></div>
-        <div className="mid">
-          <div className="big">{sc.main}</div>
-          {sc.note ? <div className="sub">{sc.note}</div> : null}
-        </div>
-        <div className="side away"><span className="nm"><MlsClubName slug={m.away_slug} name={m.away} /></span></div>
-      </section>
+      <SeriesStyle a={looks[0]} b={looks[1]} />
+      <Showdown
+        label={say("wc.m.result")} a={bannerSide(0)} b={bannerSide(1)} winner={winner} level={winner == null}
+        score={[m.home_goals, m.away_goals]} scoreLabel={say("wc.sd.score", { a: m.home_goals, b: m.away_goals })}
+        verdict={winner == null ? say("wc.sd.draw") : say("wc.sd.win", { team: names[winner] })}
+        notes={[sc.note, say("wc.sd.stageDate", { stage: mlsStageName(say, m.stage_key), date: dt.full(new Date(m.match_date)) })].filter((x): x is string => !!x)}
+      />
       <SoccerSurface
-        home={{ name: m.home, goals: m.home_goals }}
-        away={{ name: m.away, goals: m.away_goals }}
-        note={sc.note} winner={m.winner_team_id === m.home_team_id ? "home" : m.winner_team_id ? "away" : "none"}
+        home={{ name: names[0], abbr: abbrs[0], goals: m.home_goals, color: looks[0].block, ink: looks[0].on }}
+        away={{ name: names[1], abbr: abbrs[1], goals: m.away_goals, color: looks[1].block, ink: looks[1].on }}
+        note={sc.note} winner={winner === 0 ? "home" : winner === 1 ? "away" : "none"}
         competition={`${say("mls.season", { year: m.year })} · ${mlsStageName(say, m.stage_key)}`} date={dt.full(new Date(m.match_date))} wikidata={m.venue_wikidata_id}
       />
       {m.checked === 1 ? <p className="note">{say("mls.m.confirmed")}</p> : null}

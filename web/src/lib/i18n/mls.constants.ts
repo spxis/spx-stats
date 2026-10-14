@@ -99,6 +99,12 @@ export const MLS_EN = {
   "mls.m.crowd": "attendance {n}",
   "mls.m.confirmed": "The result is confirmed by a second source.",
   "mls.m.noDetail": "Goals, lineups and cards are not in the archive for MLS matches.",
+
+  // the match banner (components/Showdown.tsx)
+  "mls.sd.champions": "MLS Cup champions",
+  "mls.sd.record": "{year}: {w}W–{d}D–{l}L, goals {gf}–{ga}",
+  "mls.sd.recordSo": "{year}: {w}W–{l}L, {sw} shootout wins, goals {gf}–{ga}",
+  "mls.sd.team": "{club} in MLS",
 };
 
 export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
@@ -193,6 +199,12 @@ export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
   "mls.m.crowd": "assistance : {n}",
   "mls.m.confirmed": "Le résultat est confirmé par une seconde source.",
   "mls.m.noDetail": "Les buts, les formations et les cartons ne sont pas dans l’archive pour les matchs de la MLS.",
+
+  // the match banner (components/Showdown.tsx)
+  "mls.sd.champions": "Champions de la Coupe MLS",
+  "mls.sd.record": "{year} : {w} V – {d} N – {l} D, buts {gf}–{ga}",
+  "mls.sd.recordSo": "{year} : {w} V – {l} D, tirs de barrage gagnés : {sw}, buts {gf}–{ga}",
+  "mls.sd.team": "{club} dans la MLS",
 };
 
 export const MLS_JA: Record<keyof typeof MLS_EN, string> = {
@@ -287,4 +299,10 @@ export const MLS_JA: Record<keyof typeof MLS_EN, string> = {
   "mls.m.crowd": "観客数 {n}人",
   "mls.m.confirmed": "この結果は第2の情報源で確認されています。",
   "mls.m.noDetail": "MLSの試合については、得点経過、先発メンバー、カードの情報はアーカイブにありません。",
+
+  // the match banner (components/Showdown.tsx)
+  "mls.sd.champions": "MLSカップ優勝",
+  "mls.sd.record": "{year}年：{w}勝{d}分{l}敗、{gf}得点{ga}失点",
+  "mls.sd.recordSo": "{year}年：{w}勝{l}敗、シュートアウト勝利{sw}回、{gf}得点{ga}失点",
+  "mls.sd.team": "MLSの{club}",
 };

@@ -67,6 +67,8 @@ export function gameOptions(g: GameDrawing, plain = false) {
     ...(g.sport === "nfl" || g.sport === "cfl" ? { detail: "simple" as const } : {}),
     ...(park ? { park } : {}),
     ...(!plain && g.sport === "soccer" && g.ground ? { ground: g.ground } : {}),
+    // Soccer is written "home first" (Spain 2–1 Belgium), as the match page's banner is; kyogijo's own default is the North American "away at home".
+    ...(g.sport === "soccer" ? { homeSide: "left" as const } : {}),
     ...(g.sport !== "soccer" && g.year != null ? { year: g.year } : {}),
   };
 }

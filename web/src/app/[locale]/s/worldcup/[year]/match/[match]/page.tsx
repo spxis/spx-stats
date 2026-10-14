@@ -1,15 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, permanentRedirect } from "next/navigation";
+import { BadgeCup } from "@/components/TrophyIcon";
+import { SeriesStyle } from "@/components/SeriesStyle";
+import { Showdown, type ShowdownSide } from "@/components/Showdown";
 import { SoccerCredit } from "@/components/SoccerCredit";
+import { SoccerCrest } from "@/components/SoccerCrest";
 import { SoccerSurface } from "@/components/GameSurface";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { StadiumName } from "@/components/StadiumName";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
-import { getMatch, getMatchDetail, tournamentOfYear, type Card, type Goal, type Lineup, type Match } from "@/lib/soccer";
+import { getMatch, getMatchDetail, getTournamentTeams, tournamentOfYear, type Card, type Goal, type Lineup, type Match } from "@/lib/soccer";
 import { h2hPath } from "@/lib/soccerH2H";
+import { soccerFlagAddress } from "@/lib/soccerFlagSprite";
+import { soccerAbbr, soccerLooks } from "@/lib/soccerLook";
 import { teamName } from "@/lib/soccerNames";
 import { isYearSeg, soccerMatchIdOf, soccerMatchPath, soccerPlayerPath, soccerTeamPath, tournamentPath } from "@/lib/soccerPath";
 import { groupLabel, scoreLines, stageName } from "@/lib/soccerView";
@@ -51,7 +57,7 @@ export default guard(async function MatchPage({ params }: Params) {
   const canonical = soccerMatchPath(m.year, m.match_id, m.home, m.away);
   if (`/worldcup/${year}/match/${match}` !== canonical) permanentRedirect(canonical);
   const { say, dt, locale } = await currentSpeaker();
-  const [t, d] = await Promise.all([tournamentOfYear(m.year), getMatchDetail(m.match_id)]);
+  const [t, d, entries] = await Promise.all([tournamentOfYear(m.year), getMatchDetail(m.match_id), getTournamentTeams(m.tournament_id)]);
   const s = scoreLines(say, m);
   const title = say(m.league === "wwc" ? "wc.tournamentWomen" : "wc.tournamentMen", { year: m.year });
   const sides = [
@@ -66,6 +72,26 @@ export default guard(async function MatchPage({ params }: Params) {
   const kickoff = m.kickoff_local ? m.kickoff_local.slice(0, 5) : null;
   const teamOf = (id: string) => { const sd = sides.find((x) => x.id === id); return sd ? teamName({ name: sd.name, slug: sd.slug, flag: sd.flag }, locale) : ""; };
   const cardsOf = (personId: number) => d.cards.filter((c) => c.person_id === personId);
+  // The banner: the home side first (as the heading and the strip), each in its flag colours; the winner of the final is the tournament's champion.
+  const names = [teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale), teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale)] as const;
+  const abbrs = [soccerAbbr(m.home_team_id, m.home), soccerAbbr(m.away_team_id, m.away)] as const;
+  const looks = soccerLooks(m.home_team_id, m.away_team_id);
+  const winner: 0 | 1 | null = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : m.home_goals > m.away_goals ? 0 : m.away_goals > m.home_goals ? 1 : null;
+  const bannerSide = (i: 0 | 1): ShowdownSide => {
+    const sd = sides[i], entry = entries.find((e) => e.team_id === sd.id);
+    const champion = winner === i && m.stage_key === "final" && (!t || !t.winner_team_id || t.winner_team_id === sd.id);
+    return {
+      crest: <SoccerCrest code={sd.flag} name={names[i]} abbr={abbrs[i]} />,
+      name: <Link href={soccerTeamPath(sd.slug)} prefetch={false}>{names[i]}</Link>,
+      tag: champion ? <><BadgeCup league="soccer" />{say(m.league === "wwc" ? "wc.sd.championsWomen" : "wc.sd.champions")}</> : null,
+      meta: entry ? [say("wc.sd.record", { year: m.year, w: entry.won, d: entry.drawn, l: entry.lost, gf: entry.goals_for, ga: entry.goals_against })] : [],
+      links: [
+        <Link key="team" href={soccerTeamPath(sd.slug)} prefetch={false}>{say("wc.sd.team", { team: names[i] })}</Link>,
+        <Link key="h2h" href={h2hPath(m.home_slug, m.away_slug)} prefetch={false}>{say("wc.sd.meetings")}</Link>,
+      ],
+      lost: winner != null && winner !== i,
+    };
+  };
 
   return (
     <div className="soccer">
@@ -76,26 +102,21 @@ export default guard(async function MatchPage({ params }: Params) {
           {dt.full(new Date(m.match_date))}{kickoff ? ` · ${kickoff}${m.utc_offset ? ` (UTC${m.utc_offset})` : ""}` : ""}{m.venue_name ? <> · <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={venueRest} /></> : null}
         </p>
       </section>
-      {/* Where kyogijo's coming round team mark over the pitch plugs in (board ticket cmv7f4bq50007l9060dnvj3qo, waits for the next kyogijo version; not built
-          here): the two large round flags in this board are the marks it would draw, and SoccerSurface below takes them (see the note in components/GameSurface.tsx). */}
-      <section className="sc-board" aria-label={say("wc.m.result")}>
-        <div className="side">
-          <span className="nm"><SoccerTeamName slug={sides[0].slug} name={sides[0].name} flag={sides[0].flag} large /></span>
-        </div>
-        <div className="mid">
-          <div className="big">{s.main}</div>
-          {s.note ? <div className="sub">{s.note}</div> : null}
-          {m.extra_time && m.home_goals_90 != null && m.away_goals_90 != null ? <div className="sub">{say("wc.m.after90", { home: m.home_goals_90, away: m.away_goals_90 })}</div> : null}
-        </div>
-        <div className="side away">
-          <span className="nm"><SoccerTeamName slug={sides[1].slug} name={sides[1].name} flag={sides[1].flag} large /></span>
-        </div>
-      </section>
-      <p className="note"><Link href={h2hPath(m.home_slug, m.away_slug)}>{say("wc.m.allMeetings", { a: teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale), b: teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale) })}</Link></p>
+      <SeriesStyle a={looks[0]} b={looks[1]} />
+      <Showdown
+        label={say("wc.m.result")} a={bannerSide(0)} b={bannerSide(1)} winner={winner} level={winner == null}
+        score={[m.home_goals, m.away_goals]} scoreLabel={say("wc.sd.score", { a: m.home_goals, b: m.away_goals })}
+        verdict={winner == null ? say("wc.sd.draw") : say("wc.sd.win", { team: names[winner] })}
+        notes={[
+          s.note,
+          m.extra_time && m.home_goals_90 != null && m.away_goals_90 != null ? say("wc.m.after90", { home: m.home_goals_90, away: m.away_goals_90 }) : null,
+          say("wc.sd.stageDate", { stage: groupLabel(say, m), date: dt.full(new Date(m.match_date)) }),
+        ].filter((x): x is string => !!x)}
+      />
       <SoccerSurface
-        home={{ name: teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale), goals: m.home_goals }}
-        away={{ name: teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale), goals: m.away_goals }}
-        note={s.note} winner={m.winner_team_id === m.home_team_id ? "home" : m.winner_team_id === m.away_team_id ? "away" : "none"}
+        home={{ name: names[0], abbr: abbrs[0], goals: m.home_goals, logo: soccerFlagAddress(m.home_flag), color: looks[0].block, ink: looks[0].on }}
+        away={{ name: names[1], abbr: abbrs[1], goals: m.away_goals, logo: soccerFlagAddress(m.away_flag), color: looks[1].block, ink: looks[1].on }}
+        note={s.note} winner={winner === 0 ? "home" : winner === 1 ? "away" : "none"}
         competition={`${title} · ${groupLabel(say, m)}`} date={dt.full(new Date(m.match_date))} wikidata={m.venue_wikidata_id}
       />
       {m.checked === 1 ? <p className="note">{say("wc.m.confirmed")}</p> : null}

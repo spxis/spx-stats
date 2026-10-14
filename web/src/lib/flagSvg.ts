@@ -5,6 +5,8 @@ export const FLAG_HEIGHT = 16;
 export const FLAG_SIDE = 18;
 /** The side of the one large round flag: the national teams' flags in the heading of a World Cup match, head-to-head or team page (components/SoccerFlag.tsx). */
 export const FLAG_ROUND_LARGE = 56;
+/** The side of the biggest round flag: a national team's flag in the crest circle of the match banner (components/Showdown.tsx). The same at every width. */
+export const FLAG_ROUND_HERO = 72;
 
 /** `rect` is the flag as a flag (the default, in tables and headings); `round` and `square` are for country buttons and chips. */
 export type FlagShape = "rect" | "round" | "square";

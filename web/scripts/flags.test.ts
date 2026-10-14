@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { FLAG_HEIGHT, FLAG_ROUND_LARGE, FLAG_SIDE, FLAG_WIDTH, HATA_SHAPE, sizeFlagSvg } from "../src/lib/flagSvg.ts";
+import { FLAG_HEIGHT, FLAG_ROUND_HERO, FLAG_ROUND_LARGE, FLAG_SIDE, FLAG_WIDTH, HATA_SHAPE, sizeFlagSvg } from "../src/lib/flagSvg.ts";
 
 /**
  * Run in web/: pnpm test:flags
@@ -47,6 +47,12 @@ test("the large round flag of the World Cup headings has its own box, and only t
   assert.ok(FLAG_ROUND_LARGE > FLAG_SIDE);
 });
 
+test("the hero round flag of the match banner has its own box too", () => {
+  const css = readFileSync(new URL("../src/components/flag.css", import.meta.url), "utf8");
+  assert.equal((css.match(new RegExp(`width: ${FLAG_ROUND_HERO}px; height: ${FLAG_ROUND_HERO}px`, "g")) ?? []).length, 2);
+  assert.ok(FLAG_ROUND_HERO > FLAG_ROUND_LARGE);
+});
+
 test("no other stylesheet sizes a flag", () => {
   for (const f of ["people.css", "team.css", "city.css"]) {
     const css = readFileSync(new URL(`../src/components/${f}`, import.meta.url), "utf8");
@@ -64,7 +70,7 @@ const PAGES: [string, string, { rounds: number; rects: number } | null][] = [
   ["city page", "/city/vancouver", null],
   ["cities list", "/cities", null],
   ["players list", "/players?nat=CA&sort=name.asc", { rounds: 1, rects: 0 }],
-  // The World Cup pages draw round flags from one sprite (components/SoccerFlag.tsx): 18px in lists, 56px in the heading of a match, pairing or team.
+  // The World Cup pages draw round flags from one sprite (components/SoccerFlag.tsx): 18px in lists, 56px in the heading of a pairing or team, 72px in the match banner.
   ["world cup match", "/worldcup/2022/match/2600-argentina-france", { rounds: 4, rects: 0 }],
   ["world cup head to head", "/worldcup/head-to-head/argentina-vs-france", { rounds: 4, rects: 0 }],
   ["world cup team", "/worldcup/team/argentina", { rounds: 2, rects: 0 }],
@@ -97,14 +103,14 @@ test("every flag on the page is the same fixed size at desktop and phone width",
         const found = await page.evaluate(() => {
           const box = (e: Element) => { const r = e.getBoundingClientRect(); return [Math.round(r.width * 10) / 10, Math.round(r.height * 10) / 10]; };
           return {
-            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg") ? box(e.querySelector("svg")!) : null, shaped: e.classList.contains("flag-round") || e.classList.contains("flag-square"), large: e.classList.contains("flag-lg") })),
+            flags: [...document.querySelectorAll(".flag")].map((e) => ({ outer: box(e), svg: e.querySelector("svg") ? box(e.querySelector("svg")!) : null, shaped: e.classList.contains("flag-round") || e.classList.contains("flag-square"), large: e.classList.contains("flag-lg"), hero: e.classList.contains("flag-hero") })),
             stray: document.querySelectorAll("svg[data-hata]:not(.flag svg)").length,
           };
         });
         // The players list is only required to be tidy once the country column exists; the others must show flags.
         if (!path.startsWith("/players")) assert.ok(found.flags.length > 0, `${what} at ${width}px: no flags found`);
         for (const f of found.flags) {
-          const want = f.large ? [FLAG_ROUND_LARGE, FLAG_ROUND_LARGE] : f.shaped ? [FLAG_SIDE, FLAG_SIDE] : [FLAG_WIDTH, FLAG_HEIGHT];
+          const want = f.hero ? [FLAG_ROUND_HERO, FLAG_ROUND_HERO] : f.large ? [FLAG_ROUND_LARGE, FLAG_ROUND_LARGE] : f.shaped ? [FLAG_SIDE, FLAG_SIDE] : [FLAG_WIDTH, FLAG_HEIGHT];
           assert.deepEqual(f.outer, want, `${what} at ${width}px: flag box is ${f.outer}`);
           assert.deepEqual(f.svg, want, `${what} at ${width}px: flag drawing is ${f.svg}`);
         }

@@ -9,6 +9,10 @@ import { soccerMatchIdOf, soccerMatchPath, soccerPlayerPath, soccerTeamPath, tou
 import type { Match, TeamMatch } from "../src/lib/soccer.ts";
 import { goalsOf, h2hPath, metPairs, opponentRecords, pairKey, splitPair, summarize } from "../src/lib/soccerH2H.ts";
 import { reachRank, reached, scoreLines, STAGE_PHRASE } from "../src/lib/soccerView.ts";
+import { contrast, lum, PAPER } from "../src/lib/brand.ts";
+import { APART, deltaE, TEXT_CONTRAST, TOO_LIGHT } from "../src/lib/seriesLooks.ts";
+import { clubAbbr, neutralLooks, SOCCER_LOOK, soccerAbbr, soccerLooks } from "../src/lib/soccerLook.ts";
+import { soccerFlagAddress } from "../src/lib/soccerFlagSprite.ts";
 
 /** Run in web/: pnpm test:soccer */
 const placeholdersIn = (t: string) => [...t.matchAll(/\{(\w+)\}/g)].map((m) => m[1]).sort();
@@ -121,4 +125,39 @@ test("the pairings that have met, and a team's opponents from its own matches", 
   const x = r.find((o) => o.opponent_id === "X")!;
   assert.deepEqual([x.played, x.won, x.drawn, x.lost, x.pens_won, x.pens_lost, x.last_year], [3, 1, 2, 0, 1, 1, 2004]);
   assert.equal(r.length, 2);
+});
+
+test("a national team's FIFA code and flag colours: all 93 teams, never white-ish, text at AA on every pair of them", () => {
+  const ids = Object.keys(SOCCER_LOOK);
+  assert.equal(ids.length, 93);
+  for (const id of ids) {
+    const [abbr, a, b] = SOCCER_LOOK[id];
+    assert.match(abbr, /^[A-Z]{3}$/, id);
+    assert.match(a, /^[0-9a-f]{6}$/, id);
+    assert.match(b, /^[0-9a-f]{6}$/, id);
+  }
+  // The FIFA code, which api.soccer_teams.fifa_code (ISO 3166 alpha-3 for many teams, and one code for both Germanys) is not.
+  assert.deepEqual(["T-73", "T-03", "T-31", "T-86", "T-48", "T-75", "X-dr-congo", "T-88"].map((id) => soccerAbbr(id, "x")), ["ESP", "ARG", "GER", "FRG", "NED", "SUI", "COD", "ZAI"]);
+  assert.equal(soccerAbbr("T-99", "Atlantis"), "ATL");
+  for (const x of ids) for (const y of ids) {
+    if (x >= y) continue;
+    const [la, lb] = soccerLooks(x, y);
+    for (const [side, look] of [["first", la], ["second", lb]] as const) {
+      assert.ok(lum(look.block) <= TOO_LIGHT, `${x} v ${y}: ${side} block #${look.block} is white-ish`);
+      assert.ok(contrast(look.block, look.on) >= TEXT_CONTRAST, `${x} v ${y}: text on ${side} block`);
+      assert.ok(contrast(look.light, PAPER.light) >= 3 && contrast(look.dark, PAPER.dark) >= 3, `${x} v ${y}: ${side} line unreadable`);
+    }
+    // Two reds or two blues: the second side must still read apart (a pairing of alike flags may fall back to a neutral, never to the same colour).
+    assert.ok(deltaE(la.block, lb.block) >= APART, `${x} v ${y}: blocks #${la.block} and #${lb.block} are alike`);
+  }
+  const [n1, n2] = neutralLooks();
+  assert.ok(deltaE(n1.block, n2.block) >= APART && contrast(n1.block, n1.on) >= TEXT_CONTRAST && contrast(n2.block, n2.on) >= TEXT_CONTRAST);
+});
+
+test("MLS clubs get a short name; a round flag has a file of its own, or none", () => {
+  assert.deepEqual(["C-seattle-sounders-fc", "C-la-galaxy", "C-new-york-red-bulls", "C-unknown-fc"].map((id) => clubAbbr(id, "Unknown FC")), ["SEA", "LAG", "NYRB", "UNK"]);
+  assert.equal(soccerFlagAddress("ES"), "/soccer-flag/ES.svg");
+  assert.equal(soccerFlagAddress("gb-eng"), "/soccer-flag/GB-ENG.svg");
+  assert.equal(soccerFlagAddress(null), null);
+  assert.equal(soccerFlagAddress("../x"), null);
 });
