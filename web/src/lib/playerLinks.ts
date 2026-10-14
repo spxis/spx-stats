@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows } from "./api/client";
+import { rows } from "./api/client";
+import { canFallBack } from "./api/soften";
 import { LEAGUE_CODES } from "./leagues";
 import { playerPath, primaryLeague } from "./playerPath";
 
@@ -38,7 +39,7 @@ export async function homeLeague(p: { person_id: number; leagues: string[] | nul
  */
 export const getPlayerPaths = cache(async () => {
   const multi = await getMultiLeague().catch((e) => {
-    if (!(e instanceof ApiError)) throw e;
+    if (!canFallBack(e)) throw e;
     return new Map<number, string>();
   });
   return (id: number, name: string, league?: string | null): string => {

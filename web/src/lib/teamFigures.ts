@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows } from "./api/client";
+import { rows } from "./api/client";
+import { canFallBack } from "./api/soften";
 import type { PhraseKey } from "./i18n/phrases.constants";
 
 const schema = z.object({ franchise_id: z.number(), games_played: z.number().nullable(), stats: z.record(z.string(), z.number()) });
@@ -51,7 +52,7 @@ export const getFigureRanks = cache(async (lg: string, year: number, f: number):
     }
     return out;
   } catch (e) {
-    if (!(e instanceof ApiError)) throw e;
+    if (!canFallBack(e)) throw e;
     return [];
   }
 });

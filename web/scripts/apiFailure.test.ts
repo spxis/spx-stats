@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { isTransient, shouldThrow } from "../src/lib/api/failure.ts";
+import { isTransient, mayFallBack, shouldThrow } from "../src/lib/api/failure.ts";
 
 /** Run in web/: pnpm test:failure */
 test("a 5xx answer or a read that threw (timeout, network) is transient; a 4xx or a bad row is not", () => {
@@ -23,4 +23,12 @@ test("every other failure keeps the inline note, and so does anything outside pr
   assert.equal(shouldThrow({ transient: true }, "development"), false);
   assert.equal(shouldThrow({ transient: true }, "test"), false);
   assert.equal(shouldThrow({ transient: true }, undefined), false);
+});
+
+test("an extra section falls back to its empty answer only for a failed read that is not transient in production", () => {
+  assert.equal(mayFallBack(true, { transient: true }, "production"), false, "transient in production: throw so the last good page is kept");
+  assert.equal(mayFallBack(true, { transient: false }, "production"), true);
+  assert.equal(mayFallBack(true, { transient: true }, "development"), true);
+  assert.equal(mayFallBack(false, { transient: false }, "development"), false, "anything that is not a failed read is rethrown");
+  assert.equal(mayFallBack(false, {}, "production"), false);
 });

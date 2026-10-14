@@ -18,3 +18,12 @@ export function isTransient(status: number | undefined, threw: boolean): boolean
 export function shouldThrow(failure: { transient?: boolean }, nodeEnv: string | undefined): boolean {
   return failure.transient === true && nodeEnv === "production";
 }
+
+/**
+ * Whether a section that is only an extra on its page may fall back to an empty answer for a failure: only for a failed read of the
+ * archive (`isApiError`) and, in production, not one the database could not answer (see `shouldThrow`). A section that swallowed a
+ * transient failure would bake a partial page into the cache for the hour, where a throw keeps the last good copy.
+ */
+export function mayFallBack(isApiError: boolean, failure: { transient?: boolean }, nodeEnv: string | undefined): boolean {
+  return isApiError && !shouldThrow(failure, nodeEnv);
+}

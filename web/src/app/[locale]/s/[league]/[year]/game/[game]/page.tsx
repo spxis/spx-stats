@@ -11,7 +11,7 @@ import { Rich } from "@/components/i18n/Rich";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge } from "@/components/ui";
-import { ApiError } from "@/lib/api/client";
+import { canFallBack } from "@/lib/api/soften";
 import type { GameRow, StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
 import { brandFor, logoFor } from "@/lib/brand";
@@ -45,7 +45,7 @@ export const generateStaticParams = () => [];
 type Params = PageProps<"/[locale]/s/[league]/[year]/game/[game]">;
 
 /** A read the page can do without: a failed one leaves its section out (and the page is redrawn within seconds, as for every failed read), anything else is a real error. */
-const soft = <T,>(p: Promise<T>): Promise<T | null> => p.catch((e) => { if (e instanceof ApiError) return null; throw e; });
+const soft = <T,>(p: Promise<T>): Promise<T | null> => p.catch((e) => { if (canFallBack(e)) return null; throw e; });
 
 /** The game an address names, with the address it should have; null when there is no such game in that league. */
 async function find(league: string, seg: string) {
