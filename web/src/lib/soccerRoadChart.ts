@@ -1,4 +1,4 @@
-import { roadToFinal } from "@johnmorrisdotca/kyogijo-stadiums/charts";
+import { roadToFinal } from "@johnmorrisdotca/taisen-brackets/road";
 import type { Speaker } from "./i18n/i18n.ts";
 import type { Match } from "./soccer.ts";
 import { soccerFlagAddress } from "./soccerFlagSprite.ts";
@@ -8,7 +8,7 @@ import { roadOf, type Road, type RoadTeam } from "./soccerRoad.ts";
 import { stageName } from "./soccerView.ts";
 
 /**
- * A tournament's road to the final, drawn with kyogijo in the reader's language: the SVG for the file the page loads (app/soccer-road/[file]), and what the page
+ * A tournament's road to the final, drawn with Taisen Brackets in the reader's language: the SVG for the file the page loads (app/soccer-road/[file]), and what the page
  * itself writes (the table that stands for the drawing, the labels, the drawing's shape). One function for both, so the file and the table never disagree. Pure.
  *
  * The phone size is used at every width: one drawing about 17 KB, which the page does not carry in its HTML (a string given to a page is sent twice, once as
@@ -47,7 +47,7 @@ export function roadChartFor(matches: readonly Match[], year: number, league: st
   for (const r of road.rounds) if (r.replay) labels[r.key] = `${stageName(say, r.stage)} · ${say("wc.ko.replay")}`;
   const groups = road.secondGroups ? say("wc.road.groupsMulti") : say("wc.road.groups");
   const chart = roadToFinal(road.finalists, {
-    language: locale === "ja" ? "ja" : "en", size: "phone", style: "none", id: `road-${league}-${year}`, title,
+    locale, size: "phone", theme: "auto", id: `road-${league}-${year}`, title,
     subtitle: road.finalRound ? say("wc.road.decider") : say("wc.t.road"), final: road.final, labels, groupLabel: groups,
   });
   const svg = chart.draw()

@@ -1,0 +1,8 @@
+/* A knockout bracket drawn by Taisen Brackets (components/Knockout.tsx): the desk's drawing above 760px, the phone's below. Each is an SVG that scales to its box. */
+.kobracket svg { display: block; width: 100%; height: auto; margin: 0 auto; }
+.kobracket .ko-phone { display: none; max-width: 520px; margin: 0 auto; }
+@media (max-width: 760px) {
+  .kobracket .ko-wide { display: none; }
+  .kobracket .ko-phone { display: block; }
+}
+.kobracket a.tb-link { text-decoration: none; }

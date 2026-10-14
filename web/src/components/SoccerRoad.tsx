@@ -5,11 +5,10 @@ import { roadChartFor } from "@/lib/soccerRoadChart";
 import { Credits } from "./Credits";
 import { RoadArt } from "./RoadArt";
 import { SoccerTeamName } from "./SoccerTeamName";
-import "./kyogijo-road.css";
 import "./soccer.css";
 
 /**
- * The road to a tournament's final (kyogijo's `roadToFinal`, the phone size at every width): both finalists as large round flags, down the middle the rounds
+ * The road to a tournament's final (Taisen Brackets' `roadToFinal`, the phone size at every width): both finalists as large round flags, down the middle the rounds
  * on a dotted road, on each side its matches with both teams' round flags, the score and a.e.t. or the shoot-out, and its group stage as a row of small flags at
  * the foot. The drawing is a file (/soccer-road/<year>.<language>.svg, app/soccer-road) that RoadArt writes into the page when it comes into view, so the page's
  * HTML holds the table and not the 17 KB drawing (twice, as markup and as data); the flags are files too (/soccer-flag/<CODE>.svg). The drawing is decorative: the
@@ -32,7 +31,7 @@ export async function SoccerRoad({ matches, year, league }: { matches: Match[]; 
         <RoadArt className="sc-road-art" src={`/soccer-road/${year}.${locale}.svg`} ratio={chart.width / chart.height} />
         <figcaption className="note">
           {road.finalRound ? <>{say("wc.road.noFinal", { year })} </> : null}
-          <Credits say={say} use={["surfaces"]} />
+          <Credits say={say} use={["brackets"]} />
         </figcaption>
         <details className="sc-road-table">
           <summary>{say("wc.road.table")}</summary>

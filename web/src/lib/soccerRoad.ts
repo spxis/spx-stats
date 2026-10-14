@@ -1,8 +1,8 @@
-import type { RoadFinal, RoadFinalist, RoadGroupMatch, RoadMatch } from "@johnmorrisdotca/kyogijo-stadiums/charts";
+import type { RoadFinal, RoadFinalist, RoadGroupMatch, RoadMatch } from "@johnmorrisdotca/taisen-brackets/road";
 import type { Match } from "./soccer.ts";
 
 /**
- * The road to a World Cup's final, as the data kyogijo's `roadToFinal` takes (docs: the chart's finalists are teams with a `path` and a `group`). Pure: no
+ * The road to a World Cup's final, as the data Taisen Brackets' `roadToFinal` takes (docs: the chart's finalists are teams with a `path` and a `group`). Pure: no
  * server code, so the checks (scripts/soccerRoad.test.ts) share it with the tournament page.
  *
  * The final is the match of stage `final` (the home side of the final is the first finalist, as in the data and the match page). 1950 had no final, only a
@@ -11,7 +11,7 @@ import type { Match } from "./soccer.ts";
  *
  * Each finalist's matches before that match, the earliest first: the knockout matches are its `path` (one per round; a drawn match that was replayed, in 1934
  * and 1938, gives the replay a round of its own), and every group-stage match is its `group`, the second group stage of 1974 to 1982 and the final round of
- * 1950 included, because kyogijo draws the group stage as one row of small marks.
+ * 1950 included, because Taisen draws the group stage as one row of small marks.
  */
 
 /** How a team is drawn on the chart: its name in the reader's language, its three-letter code, its round flag's address and its colour. */
@@ -38,7 +38,7 @@ export interface Road {
 export interface RoadEntry { team: string; teamRef?: TeamRef; stage: string; opponent: string; opponentRef?: TeamRef; goals: number; against: number; note: string }
 
 const ROUND_KEY: Record<string, string> = { round_of_32: "round-of-32", round_of_16: "round-of-16", quarter: "quarter-final", semi: "semi-final" };
-/** The key a knockout stage has on the chart: kyogijo's own for the four it has words for, else the stage with its underscores turned into dashes. */
+/** The key a knockout stage has on the chart: Taisen's own for the four it has words for, else the stage with its underscores turned into dashes. */
 export const roundKey = (stage: string): string => ROUND_KEY[stage] ?? stage.replace(/_/g, "-");
 
 const order = (a: Match, b: Match) => a.match_date.localeCompare(b.match_date) || a.match_id - b.match_id;

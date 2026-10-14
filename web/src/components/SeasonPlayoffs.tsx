@@ -1,16 +1,19 @@
 import Link from "next/link";
+import { Fragment } from "react";
 import type { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { roundSay } from "@/lib/roundWords";
 import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
+import { drawKnockout } from "@/lib/bracketDraw";
 import type { Bracket } from "@/lib/bracketLayout";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
-import { nickname, roundPath, scoreWords, seriesPath, type Series } from "@/lib/series";
-import { BracketFrame } from "./BracketFrame";
+import { roundPath, seriesPath, type Series } from "@/lib/series";
+import { trophySvg } from "@/lib/trophies";
 import { Credits } from "./Credits";
+import { Knockout } from "./Knockout";
 import { TeamLogo } from "./TeamLogo";
 import { queryHref } from "./ViewTabs";
 import "./alignment.css";
@@ -36,43 +39,19 @@ export function SeriesCard({ paths, lg, s, brands, year, say }: { paths: TeamPat
   );
 }
 
-type Brands = Awaited<ReturnType<typeof getBrands>>;
-
-/** One series as a compact box: the two clubs (the winner in bold), nothing else; the box opens the series page. */
-function BracketBox({ paths, lg, year, s, brands, say, pos, top, dim }: { paths: TeamPaths; lg: string; year: number; s: Series; brands: Brands; say: Say; pos: { y: number; to: number | null; fed: boolean; last?: boolean; final?: boolean }; top?: 0 | 1; dim?: boolean }) {
-  const dy = pos.to == null ? 0 : pos.to - pos.y;
-  const order = top === 1 ? ([1, 0] as const) : ([0, 1] as const);
-  const title = s.winner == null ? say("card.title", { a: s.sides[0].name, b: s.sides[1].name }) : `${s.sides[0].name} ${scoreWords(s, say)} ${s.sides[1].name}`;
-  return (
-    <Link
-      href={seriesPath(paths, lg, year, s)} prefetch={false} title={title}
-      className={`bx${pos.fed ? " fed" : ""}${pos.to != null ? (dy < 0 ? " out up" : " out") : ""}${pos.last ? " last" : ""}${pos.final ? " final" : ""}${dim ? " dim" : ""}`}
-      style={{ top: `calc(var(--row) * ${pos.y} + 5px)`, "--dy": Math.abs(dy) } as React.CSSProperties}
-    >
-      {order.map((i) => (
-        <span key={i} className={`bxr${s.winner === i ? " won" : ""}`}>
-          <TeamLogo url={logoFor(brands, s.sides[i].f, year)} size={16} />
-          <span className="nm">{nickname(s.sides[i].name)}</span>
-        </span>
-      ))}
-    </Link>
-  );
-}
-
 /** The playoff bracket of a season: one half down each side (the conferences where the alignment data splits them), the final in the middle. Draws nothing when there are no playoff games. */
 export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
   const say = roundSay(sp);
-  const [{ series, names, bracket, brands, align }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
+  const [{ series, names, bracket, layoutOf, align }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
   if (!series.length) return null;
-  const rounds = names.length;
   const b: Bracket = bracket;
-  const heading = (r: number, name: string) => <h4><Link href={roundPath(lg, year, r)} prefetch={false} title={sp.say("playoffs.round.title", { round: name })}>{name}</Link></h4>;
-  const extra = b.other;
   const slug = (label: string | null) => (label ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const choices = b.sides.length === 2 && b.sides.every((s) => s.label) ? b.sides.map((s) => ({ key: slug(s.label), label: s.label! })) : [];
   const only = choices.find((c) => c.key === conf)?.key ?? "";
-  const shown = (s: Bracket["sides"][number]) => !only || slug(s.label) === only;
+  // One conference chosen: its half alone, as a bracket of its own (the series of that half, up to its final), with no champion.
+  const half = only ? b.sides.find((s) => slug(s.label) === only) : undefined;
+  const keep = half ? half.boxes.map((x) => x.i) : null;
   // Divisions the season had (two or more), within the chosen conference if one is chosen; picking one dims the series that have no club of it.
   const divMap = new Map<string, { label: string; conference: string; short: string | null; ids: Set<number> }>();
   for (const a of align) {
@@ -92,6 +71,20 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
     : [];
   const chosen = divChoices.find((c) => c.key === div);
   const dims = (s: Series) => !!chosen && !s.sides.some((t) => chosen.ids.has(t.f));
+  // The drawing's boxes are links: a division fades the boxes of the series with no club of it, picked out by their address (the final is always shown in full).
+  const finalAt = b.finalIndex != null ? seriesPath(paths, lg, year, series[b.finalIndex]) : null;
+  const dim = chosen
+    ? series.map((s) => (dims(s) ? seriesPath(paths, lg, year, s) : null)).filter((h): h is string => !!h && h !== finalAt)
+      .map((h) => `.kobracket a.tb-link[href="${h.replace(/[^\w\-/]/g, "")}"]{opacity:.4}`).join("")
+    : "";
+  const shownLayout = keep ? layoutOf(keep) : b;
+  const tieAt = (k: number) => series[keep ? keep[k] : k];
+  const lastRound = Math.max(0, ...(keep ?? []).map((i) => b.ties[i].round));
+  const art = drawKnockout(shownLayout, {
+    locale: sp.locale, roundNames: keep ? names.slice(0, lastRound) : names,
+    href: (t) => seriesPath(paths, lg, year, tieAt(t.index)),
+    ...(keep ? { champion: false } : { trophy: trophySvg(lg) }),
+  });
   return (
     <section className="section" id="playoffs">
       <h2>{say("bracket.title")}</h2>
@@ -112,19 +105,13 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
         </nav>
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
-      <BracketFrame
-        bracket={b} show={shown} heading={(r) => heading(r, names[r - 1])} finalHeading={heading(rounds, names[rounds - 1])}
-        box={(i, pos, top) => <BracketBox paths={paths} key={i} lg={lg} year={year} s={series[i]} brands={brands} say={say} pos={pos} top={top} dim={pos.final ? undefined : dims(series[i])} />}
-      />
+      <Knockout art={art} dim={dim} />
+      <p className="note">
+        {names.map((n, i) => (
+          <Fragment key={n + i}>{i ? " · " : null}<Link href={roundPath(lg, year, i + 1)} prefetch={false} title={sp.say("playoffs.round.title", { round: n })}>{n}</Link></Fragment>
+        ))}
+      </p>
       <p className="note"><Credits say={sp.say} use={["brackets"]} /></p>
-      {extra.length ? (
-        <>
-          <h3>{sp.say("playoffs.other")}</h3>
-          <div className="bracket mine">
-            {extra.map((i) => <SeriesCard paths={paths} key={`${series[i].sides[0].f}-${series[i].sides[1].f}-${series[i].meeting}`} lg={lg} s={series[i]} brands={brands} year={year} say={say} />)}
-          </div>
-        </>
-      ) : null}
     </section>
   );
 });

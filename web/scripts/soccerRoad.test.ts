@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { roadToFinal } from "@johnmorrisdotca/kyogijo-stadiums/charts";
+import { roadToFinal } from "@johnmorrisdotca/taisen-brackets/road";
 import type { Match } from "../src/lib/soccer.ts";
 import { deciderOf, roadOf, roundKey, type RoadTeam } from "../src/lib/soccerRoad.ts";
 import { PHRASES } from "../src/lib/i18n/phrases.constants.ts";
@@ -50,8 +50,8 @@ test("a final's road: each finalist's group matches are its group row, its knock
   assert.equal(r.entries.at(-1)?.stage, "final");
   assert.ok(!r.entries.some((e) => e.opponent === "MAR" && e.team === "ARG"), "the third-place match is nobody's road");
   assert.ok(!r.secondGroups);
-  // And kyogijo draws it, with a table that lists every match.
-  const chart = roadToFinal(r.finalists, { final: r.final, size: "phone", style: "none" });
+  // And Taisen draws it, with a table that lists every match.
+  const chart = roadToFinal(r.finalists, { final: r.final, size: "phone" });
   assert.ok(chart.draw().startsWith("<svg"));
   assert.ok(chart.table().includes("CRO"));
 });
@@ -67,7 +67,7 @@ test("a drawn match that was replayed gives the replay a round of its own", () =
   assert.equal(r.finalists[0].path[2].note, "replay");
   assert.ok(r.rounds.some((x) => x.key === "quarter-final-replay" && x.replay && x.stage === "quarter"));
   assert.equal(r.final.decidedBy, "aet");
-  assert.ok(roadToFinal(r.finalists, { final: r.final, size: "phone", style: "none" }).draw());
+  assert.ok(roadToFinal(r.finalists, { final: r.final, size: "phone" }).draw());
 });
 
 test("1950 had no final: the last match of the final round stands as the final, and the other final-round matches are the group row", () => {
@@ -84,7 +84,7 @@ test("1950 had no final: the last match of the final round stands as the final, 
   assert.equal(r.finalists[0].path.length, 0);
   assert.equal(r.finalists[0].group?.length, 3, "a group match and the two final-round matches before the deciding one");
   assert.deepEqual(r.final.score, [2, 1]);
-  assert.ok(roadToFinal(r.finalists, { final: r.final, size: "phone", style: "none" }).draw());
+  assert.ok(roadToFinal(r.finalists, { final: r.final, size: "phone" }).draw());
 });
 
 test("a tournament with neither a final nor a final round has no road", () => {
@@ -92,7 +92,7 @@ test("a tournament with neither a final nor a final round has no road", () => {
   assert.equal(roadOf([m("group", 1, "A", 1, 0, "B")], team, note), null);
 });
 
-test("kyogijo's round keys are used where it has words; any other stage is its key with dashes", () => {
+test("Taisen's round keys are used where it has words; any other stage is its key with dashes", () => {
   assert.deepEqual(["round_of_32", "round_of_16", "quarter", "semi"].map(roundKey), ["round-of-32", "round-of-16", "quarter-final", "semi-final"]);
   assert.equal(roundKey("third_place"), "third-place");
 });

@@ -15,7 +15,7 @@ export const ChampionSurface = guard(async function ChampionSurface({ lg, year, 
   const sp = await currentSpeaker();
   const say = roundSay(sp);
   const [{ series, names, bracket, brands }, abbrs] = await Promise.all([loadPlayoffs(lg, year, say), getAbbrs(lg)]);
-  const fin = bracket.final ? series[bracket.final.i] : null;
+  const fin = bracket.finalIndex != null ? series[bracket.finalIndex] : null;
   if (!fin || fin.live || fin.winner == null || fin.sides[fin.winner].f !== champion) return null;
   const last = fin.games.filter((g) => g.played && g.score[0] != null && g.score[1] != null).at(-1);
   if (!last) return null;

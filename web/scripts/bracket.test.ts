@@ -1,9 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
+import { drawKnockout } from "../src/lib/bracketDraw.ts";
 import { buildBracket, type Tie } from "../src/lib/bracketLayout.ts";
+import { buildSeries, seriesPlay, seriesTies, type PlayoffGame } from "../src/lib/series.ts";
 import type { Match } from "../src/lib/soccer.ts";
-import { knockoutOf } from "../src/lib/soccerBracket.ts";
+import { knockoutOf, soccerPlay } from "../src/lib/soccerBracket.ts";
 
 /** Run in web/: pnpm test:bracket (the layout is Taisen Brackets', which is sport-agnostic: ties of any two sides, here string teams as in a World Cup). */
 
@@ -65,10 +67,10 @@ test("a drawn match that was replayed is one tie, decided by the replay", () => 
 test("a tournament whose only knockout match is the final draws the final alone; a tie nobody won leads nowhere", () => {
   const only = knockoutOf([m(1, "third_place", 8, "A", "B", 1, 0), m(2, "final", 9, "C", "D", 1, 0)]);
   const b = buildBracket(only.ties, only.round, () => null);
-  assert.equal(b.final?.i, 0);
-  assert.equal(b.sides.length, 0);
+  assert.equal(b.finalIndex, 0);
+  assert.equal(b.final, null, "nothing feeds it, so no two halves meet at it");
   const ties: Tie[] = [{ teams: [1, 2], winner: null, start: "1" }, { teams: [1, 3], winner: 1, start: "2" }];
-  assert.equal(buildBracket(ties, [1, 2], () => null).final?.i, 1);
+  assert.equal(buildBracket(ties, [1, 2], () => null).finalIndex, 1);
 });
 
 test("two halves take the conferences' names when the conferences split them cleanly", () => {
@@ -91,13 +93,13 @@ test("a round-robin game (round 0) stays out of the tree, and a tie outside the 
   assert.deepEqual([b.place[0], b.place[2], b.place[3], b.place[4]], ["l", "f", "o", "o"], "the places are an array, by tie");
 });
 
-test("a final nothing feeds is still drawn in the middle, with the western side on top", () => {
-  const ties: Tie[] = [{ teams: [1, 2], winner: 2, start: "1" }];
-  const conf = (t: number) => (t === 1 ? { name: "Eastern Conference", short: "E" } : { name: "Western Conference", short: "W" });
-  const b = buildBracket(ties, [1], conf);
-  assert.equal(b.final?.i, 0);
-  assert.deepEqual(b.final?.order, [1, 0]);
-  assert.equal(b.sides.length, 0);
+test("a final nothing feeds (1974 and 1978 had only a final and a third-place match) is drawn, on a desk and on a phone", () => {
+  const ko = knockoutOf([m(1, "third_place", 8, "A", "B", 1, 0), m(2, "final", 9, "C", "D", 1, 0)]);
+  const ties: Tie<string>[] = [...ko.ties, { teams: ["A", "B"], winner: "A", start: "2000-06-01", third: true }];
+  const layout = buildBracket(ties, [1, 1], () => null);
+  assert.equal(layout.third, 1);
+  const art = drawKnockout(layout, { href: (t) => `/match/${t.index}` });
+  for (const svg of [art.wide, art.phone]) assert.equal((svg.match(/class="tb-link"/g) ?? []).length, 2);
 });
 
 test("Taisen Brackets is pinned at an exact version and credited with both links", () => {
@@ -106,4 +108,52 @@ test("Taisen Brackets is pinned at an exact version and credited with both links
   const credits = readFileSync(new URL("../src/components/Credits.tsx", import.meta.url), "utf8");
   assert.match(credits, /"taisen-brackets"/);
   assert.match(credits, /credit\.brackets/);
+});
+
+test("a tie is played as the package reads it: a replay is a second, flagged game; a shoot-out is the first team's first", () => {
+  const ko = knockoutOf([
+    m(1, "quarter", 6, "A", "B", 1, 1), m(2, "quarter", 6, "B", "A", 0, 1, { is_replay: true }),
+    m(3, "quarter", 6, "C", "D", 2, 2, { extra_time: true, shootout: true, home_penalties: 3, away_penalties: 4 }), m(4, "semi", 7, "A", "C", 1, 0),
+  ]);
+  const replay = ko.ties.find((t) => t.matches.length === 2)!.play!;
+  assert.equal(replay.kind, "replay");
+  assert.deepEqual(replay.games?.map((g) => [...g.score]), [[1, 1], [0, 1]], "both games from the point of view of the first side (B, the replay's home team), the first game's home side flipped");
+  assert.deepEqual(replay.games?.map((g) => !!g.replay), [false, true]);
+  const pens = soccerPlay([ko.ties.find((t) => t.teams[0] === "C")!.matches[0]], "D");
+  assert.deepEqual(pens.games?.[0].pens, [4, 3]);
+  assert.equal(pens.games?.[0].extraTime, true);
+});
+
+test("a series is played as best-of-N with the games it has: a single game is a game, a total-goals series an aggregate", () => {
+  const g = (id: number, day: string, away: number, home: number, as: number, hs: number): PlayoffGame => ({
+    game_id: id, game_date: day, status: "final", away_id: away, away: `Team ${away}`, away_score: as, home_id: home, home: `Team ${home}`, home_score: hs,
+    overtime: false, source: "test", away_f: away, home_f: home, checked: null,
+  } as PlayoffGame);
+  const series = buildSeries("nhl", 2026, [g(1, "2026-04-20", 2, 1, 1, 3), g(2, "2026-04-22", 2, 1, 4, 2), g(3, "2026-04-24", 1, 2, 5, 1), g(4, "2026-04-26", 1, 2, 2, 0)], 1, { bestOf: 7 })!;
+  const play = seriesPlay(series);
+  assert.equal(play.kind, "series");
+  assert.equal(play.bestOf, 7);
+  assert.equal(play.games?.length, 4);
+  assert.deepEqual(play.score, [series.sides[0].wins, series.sides[1].wins]);
+  assert.deepEqual(seriesTies([series])[0].play, play);
+  const one = buildSeries("nfl", 2025, [g(9, "2026-01-10", 2, 1, 17, 20)], 1)!;
+  assert.equal(seriesPlay(one).kind, "game");
+});
+
+test("a bracket is drawn twice, the desk's and the phone's, with a real link on every box and no script", () => {
+  const ko = knockoutOf(eight);
+  const ties: Tie<string>[] = [...ko.ties, { teams: ["C", "G"], winner: "C", start: "2000-06-07", third: true }];
+  const layout = buildBracket(ties, [...ko.round, 3], () => null, (id) => ({ name: `Team ${id}`, abbr: id }));
+  const art = drawKnockout(layout, { href: (t) => `/match/${t.index}`, roundNames: ["Quarter-finals", "Semi-finals", "Final"] });
+  for (const svg of [art.wide, art.phone]) {
+    assert.ok(svg.startsWith("<svg") && svg.endsWith("</svg>"));
+    assert.equal((svg.match(/<a class="tb-link" href="\/match\/\d"/g) ?? []).length, 8, "seven ties and the third-place match each link to their page");
+    assert.ok(!/<script|javascript:|onclick/i.test(svg));
+  }
+  assert.ok(art.wide.includes('viewBox="0 0 1200') && art.phone.includes('viewBox="0 0 390'));
+  assert.equal((art.wide.match(/<style>/g) ?? []).length + (art.phone.match(/<style>/g) ?? []).length, 1, "the stylesheet is in the page once");
+  const own = /class="taisen (tb-[a-z0-9]+)/.exec(art.wide)![1];
+  assert.ok(new RegExp(`class="taisen tb-[a-z0-9]+ ${own} `).test(art.phone), "the phone's drawing wears the desk's class, so the one stylesheet draws both");
+  assert.ok(/quarter-finals/i.test(art.wide), "the round names are the ones given");
+  assert.ok(art.wide.includes(">Team E<") || art.wide.includes(">E<"), "a team is its name or its short name");
 });

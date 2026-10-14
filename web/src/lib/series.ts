@@ -3,7 +3,7 @@
  * franchises played in a season; the wins of each side, the running score and the winner are counted here.
  * Pure (no server-only imports) so the pages, the charts and the checks all use the same counting.
  */
-import type { Tie } from "./bracketLayout.ts";
+import type { Tie, TiePlay } from "./bracketLayout.ts";
 import type { GameRow } from "./api/types";
 import { LG, type LeagueCode } from "./leagues.ts";
 import { bestOfFromGames, bestOfIn, roundKeys, winsNeeded, type RoundKey } from "./playoffFormat.ts";
@@ -406,6 +406,17 @@ export function rankIn(rows: readonly { franchise_id: number; pct: number | null
   return { place, of: pool.length };
 }
 
-/** The series as the bracket layout takes them (lib/bracketLayout.ts): the franchises of each, the winner's franchise, the start date. */
+/**
+ * How a series was played, in the bracket package's words (`TiePlay`): one game is a game with its score, a series decided on total goals an aggregate of
+ * its games, any other a best-of-N series with the games played (the wins of each side are worked out from them).
+ */
+export function seriesPlay(s: Series): TiePlay {
+  const played = s.games.filter((g): g is SeriesGame & { score: [number, number] } => g.played && g.score[0] != null && g.score[1] != null);
+  if (s.games.length === 1 && played.length === 1) return { kind: "game", score: played[0].score, ...(played[0].ot ? { extraTime: true } : {}) };
+  const games = played.map((g) => ({ score: g.score, ...(g.ot ? { extraTime: true } : {}) }));
+  return s.basis === "goals" ? { kind: "aggregate", legs: games } : { kind: "series", bestOf: s.bestOf, games, score: [s.sides[0].wins, s.sides[1].wins] };
+}
+
+/** The series as the bracket layout takes them (lib/bracketLayout.ts): the franchises of each, the winner's franchise, the start date, how it was played. */
 export const seriesTies = (list: readonly Series[]): Tie[] =>
-  list.map((s) => ({ teams: [s.sides[0].f, s.sides[1].f] as const, winner: s.winner == null ? null : s.sides[s.winner].f, start: s.start }));
+  list.map((s) => ({ teams: [s.sides[0].f, s.sides[1].f] as const, winner: s.winner == null ? null : s.sides[s.winner].f, start: s.start, play: seriesPlay(s) }));

@@ -4,7 +4,7 @@ import { test } from "node:test";
 import type { BrandMap } from "../src/lib/brand.ts";
 import type { TeamBrandRow } from "../src/lib/api/types.ts";
 import { drawGame, gameOptions, groundOf, homeVenueIn, neutralSite, parkFits, parkOf, sportOf, type GameDrawing, type VenueLookup } from "../src/lib/gameSurface.ts";
-import { kyogijoCss, kyogijoRoadCss } from "./kyogijoCss.ts";
+import { kyogijoCss } from "./kyogijoCss.ts";
 
 /** Run in web/: pnpm test:surface */
 
@@ -17,7 +17,6 @@ const game = (over: Partial<GameDrawing> = {}): GameDrawing => ({
 
 test("kyogijo.css is the stylesheet the installed kyogijo writes (run: node scripts/kyogijoCss.ts)", () => {
   assert.equal(readFileSync(new URL("../src/components/kyogijo.css", import.meta.url), "utf8"), kyogijoCss());
-  assert.equal(readFileSync(new URL("../src/components/kyogijo-road.css", import.meta.url), "utf8"), kyogijoRoadCss());
   assert.ok(kyogijoCss().includes(".ky-mark-bg"), "the round team mark's rules are in the stylesheet the pitch's marks use");
 });
 

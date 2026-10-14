@@ -1,5 +1,6 @@
-import type { Tie } from "./bracketLayout.ts";
+import type { Tie, TiePlay } from "./bracketLayout.ts";
 import type { Match } from "./soccer.ts";
+import { goalsOf } from "./soccerH2H.ts";
 
 /**
  * A tournament's knockout rounds as ties for the bracket layout (lib/bracketLayout.ts). A tie is the match two teams played in a stage; a drawn
@@ -11,6 +12,20 @@ export interface SoccerTie extends Tie<string> {
   stage_key: string;
   /** Its matches, oldest first (more than one only for a replay); the last one decided it. */
   matches: Match[];
+}
+
+/**
+ * How a tie was played, in the bracket package's words: its matches oldest first, each as the goals of `side` and of the other team (extra time included,
+ * a shoot-out apart, in the same order). A drawn match that was replayed (1934, 1938) gives the replay a game of its own, flagged, which settles the tie.
+ */
+export function soccerPlay(ms: readonly Match[], side: string): TiePlay {
+  const games = ms.map((m, i) => {
+    const [a, b] = goalsOf(m, side);
+    const pens: readonly [number, number] | null = m.shootout && m.home_penalties != null && m.away_penalties != null
+      ? (m.home_team_id === side ? [m.home_penalties, m.away_penalties] : [m.away_penalties, m.home_penalties]) : null;
+    return { score: [a, b] as const, date: m.match_date, ...(m.extra_time ? { extraTime: true } : {}), ...(pens ? { pens } : {}), ...(i > 0 ? { replay: true } : {}) };
+  });
+  return ms.length > 1 ? { kind: "replay", games } : { kind: "game", games };
 }
 
 export interface Knockout {
@@ -35,7 +50,7 @@ export function knockoutOf(matches: readonly Match[]): Knockout {
   }
   const ties: SoccerTie[] = [...byTie.values()].map((ms) => {
     const last = ms.at(-1)!;
-    return { teams: [last.home_team_id, last.away_team_id] as const, winner: last.winner_team_id, start: ms[0].match_date, stage_key: last.stage_key, matches: ms };
+    return { teams: [last.home_team_id, last.away_team_id] as const, winner: last.winner_team_id, start: ms[0].match_date, stage_key: last.stage_key, matches: ms, play: soccerPlay(ms, last.home_team_id) };
   });
   const order = new Map<string, number>();
   for (const m of ko) if (m.stage_key !== "third_place") order.set(m.stage_key, Math.min(order.get(m.stage_key) ?? Infinity, m.stage_order));
