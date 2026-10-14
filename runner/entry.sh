@@ -22,6 +22,20 @@ for name in SUPABASE_ACCESS_TOKEN PGHOST PGUSER PGDATABASE PGPASSWORD; do
   [ -n "${!name:-}" ] || { log "$name is not set (see runner/README.md)"; sleep 60; exit 1; }
 done
 
+# The API watchdog (scripts/release/watchdog.py) runs beside the release loop, not inside it, so a long scores update cannot
+# stop the probes. One probe a minute. WATCHDOG=0 in release-runner.env switches it off. It runs the code at REF, so a new
+# version of it needs no rebuild of the image.
+if [ "${WATCHDOG:-1}" = "0" ]; then
+  log "watchdog: off (WATCHDOG=0)"
+else
+  (
+    while true; do
+      [ -f "$DIR/scripts/release/watchdog.py" ] && python3 -I "$DIR/scripts/release/watchdog.py" || true
+      sleep "${WATCHDOG_INTERVAL:-60}"
+    done
+  ) &
+fi
+
 while true; do
   if git -C "$DIR" fetch --quiet origin && git -C "$DIR" checkout --quiet --detach "$REF"; then
     python3 -I "$RELEASE" run || log "run exited with $?"

@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { driftState, requestBlock, type SyncRow } from "../src/lib/releases/rules.ts";
+import { driftState, healthLine, requestBlock, type SyncRow } from "../src/lib/releases/rules.ts";
 
 /** Run in web/: pnpm test:releases */
 const row = (table_name: string, state: "same" | "differs", checked_at: string): SyncRow => ({ table_name, ds1_rows: 1, prod_rows: 1, state, checked_at, detail: null });
@@ -47,4 +47,18 @@ test("the cooldown of a drift check does not block a scores request, but an open
   assert.equal(requestBlock([drift], NOW, 10, "scores"), null);
   const open = { id: 8, kind: "scores", status: "queued", requested_at: "2026-10-13T12:00:00Z", finished_at: null };
   assert.match(requestBlock([open], NOW, 10, "drift") ?? "", /#8 is queued/);
+});
+
+test("the API health line: no outage, one that is over, one still going", () => {
+  const e = { failing_since: "2026-10-14T07:00:00+00:00", detected_at: "2026-10-14T07:04:00+00:00", probes_failed: 90, reload_at: "2026-10-14T07:04:00+00:00", restart_at: "2026-10-14T07:09:00+00:00", recovered_at: null, last_error: "HTTP 503 PGRST002" };
+  assert.equal(healthLine([]).kind, "none");
+  const down = healthLine([e]);
+  assert.equal(down.kind, "down");
+  assert.match(down.text, /failing from 2026-10-14 07:00 UTC/);
+  assert.match(down.text, /schema reload 07:04, project restart 07:09 UTC/);
+  const past = healthLine([{ ...e, recovered_at: "2026-10-14T07:30:00+00:00" }, { ...e, failing_since: "2026-10-10T01:00:00+00:00" }]);
+  assert.equal(past.kind, "past");
+  assert.match(past.text, /2026-10-14 07:00 to 07:30 UTC \(30 min\)/);
+  assert.match(past.text, /2 outages recorded/);
+  assert.match(healthLine([{ ...e, reload_at: null, restart_at: null }]).text, /has not acted yet/);
 });

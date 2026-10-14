@@ -121,3 +121,32 @@ export function barMessages(s: BarSummary | null | undefined): string[] {
   if (s.paused) out.push("auto-approval is on Hold");
   return out;
 }
+
+export type HealthEvent = {
+  failing_since: string;
+  detected_at: string;
+  probes_failed: number;
+  reload_at: string | null;
+  restart_at: string | null;
+  recovered_at: string | null;
+  last_error: string | null;
+};
+
+export type HealthLine = { kind: "none" | "down" | "past"; text: string };
+
+const clock = (iso: string | null | undefined) => (stamp(iso) ?? "?").slice(11) || "?";
+
+/**
+ * The "API health" line of /admin/data, from the runner watchdog's incident list (newest first). "down" is an incident the watchdog has
+ * not seen end; "past" is the latest one that has. The watchdog records an incident only after 5 failed probes in a row, so a blip leaves no row.
+ */
+export function healthLine(events: HealthEvent[]): HealthLine {
+  const e = events[0];
+  if (!e) return { kind: "none", text: "No outage of the public API recorded." };
+  const actions = [e.reload_at ? `schema reload ${clock(e.reload_at)}` : null, e.restart_at ? `project restart ${clock(e.restart_at)}` : null].filter(Boolean);
+  const did = actions.length ? ` The watchdog did: ${actions.join(", ")} UTC.` : " The watchdog has not acted yet.";
+  if (!e.recovered_at) return { kind: "down", text: `The public API was failing from ${stamp(e.failing_since)} UTC and has not been seen working since.${did}` };
+  const minutes = Math.max(0, Math.round((Date.parse(e.recovered_at) - Date.parse(e.failing_since)) / 60000));
+  const rest = events.length > 1 ? ` ${events.length} outages recorded in all.` : "";
+  return { kind: "past", text: `Last outage ${stamp(e.failing_since)} to ${clock(e.recovered_at)} UTC (${minutes} min).${did}${rest}` };
+}

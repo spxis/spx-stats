@@ -42,6 +42,38 @@ of the release prepared for an admin's **Request scores update** (below).
 - Rebuild after pulling this change: Container Manager, Project, `spx-release-runner`, Action, Build (only needed for a new `Dockerfile` or
   `entry.sh`; this change touches neither, so setting `RELEASE_REF` to the new sha and restarting is enough).
 
+## API watchdog (keeps production's REST API up)
+
+On 2026-10-14 production's PostgREST stalled for about 90 minutes (statement timeouts, then `PGRST002` "could not query the database for
+the schema cache", 503 on every uncached page) until the project was restarted by hand. The runner now does the same, in order, only after
+the API has stayed down for a while. `scripts/release/watchdog.py` is started by `entry.sh` next to the release loop (not inside it, so a long
+scores update cannot stop the probes) and does one probe a minute:
+
+1. **Probe.** One read of the public API, the way a visitor's page would make it: `GET /rest/v1/games?league=eq.nhl&year=eq.2010&select=game_id&limit=1`
+   with the public key and an 8 second timeout (not `/rest/v1/`, which answers 401 to the publishable key). Only HTTP 200 with a JSON list counts as working.
+2. **5 failed probes in a row** (about 5 minutes): the incident is recorded and the runner sends `NOTIFY pgrst, 'reload schema'` through the
+   Management API `database/query` endpoint (once per incident).
+3. **5 more failures:** `POST /v1/projects/<ref>/restart`, at most once an hour. After a restart failed probes are ignored for 10 minutes
+   (`WATCHDOG_GRACE`, 600 s) while the project comes back; if it is still down after that and the hour is up, it restarts again.
+4. **The first probe that works** closes the incident. A run of fewer than 5 failures leaves no trace except a log line.
+
+Before a reload or a restart it asks the Management API for the project's status and holds off (and asks again next minute) when that does not
+answer or says the project is paused, restarting, restoring or being upgraded, so a bad network on the NAS or a project already mid-restart never
+causes one. It uses the `SUPABASE_ACCESS_TOKEN` the runner already holds; nothing new goes in `release-runner.env`.
+
+- **Switch off:** `WATCHDOG=0` in `release-runner.env`, then Build (a restart alone can keep the old values). The log says `watchdog: off`.
+- **Records.** Each incident is one row of `meta.api_health_event` (migration 090: `failing_since`, `detected_at`, `probes_failed`, `reload_at`,
+  `restart_at`, `recovered_at`, `last_error`), written on DS1 and copied to production through the Management API, which answers even while
+  PostgREST does not. `/admin/data` shows the latest as an "API health" line under the title (red while an incident is open); without the migration on
+  production the line is simply left out, and without it on DS1 the runner logs `could not record the incident` and carries on.
+  Apply 090 on DS1 and on production before the first outage you want recorded. The table is not a release table: the drift check and `prepare` skip it.
+- **State** is `data/watchdog.json` (the streak, what was sent, the last restart, an incident not yet written to both sides), so a restart of the
+  container does not forget an outage in progress or the once-an-hour limit.
+- **Cost:** one single-row read a minute (Supabase Free has no request limit; nothing Vercel-side is touched) and, during an outage only, one
+  Management API call per action. The unit tests are `python3 -I scripts/release/test/test_watchdog.py` (no database, no network).
+- **Version.** `entry.sh` changed (it starts the watchdog), so the first time needs Build: copy `entry.sh` over and
+  `cd /volume2/docker/spx-release-runner && sudo docker compose up -d --build`. After that the watchdog code follows `RELEASE_REF` like the rest.
+
 ## What it does and where things are
 
 - Code: the public repo, fetched from GitHub every minute and checked out at `RELEASE_REF` (default `origin/main`). Pin the

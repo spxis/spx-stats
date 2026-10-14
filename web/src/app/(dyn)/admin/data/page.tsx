@@ -4,8 +4,8 @@ import Link from "next/link";
 import { ConfirmSummary } from "@/components/ConfirmSummary";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
-import { ReleaseError, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
-import { TABS, TAB_COOKIE, autoApproveAt, bytesLabel, driftState, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, stamp, type Tab } from "@/lib/releases/rules";
+import { ReleaseError, apiHealth, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
+import { TABS, TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, stamp, type Tab } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
 import { AutoSwitch } from "./AutoSwitch";
 import { DecisionCard } from "./DecisionCard";
@@ -431,11 +431,13 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
 
   let data: Dashboard | null = null;
   let problem = "";
-  try {
-    data = await releaseDashboard();
-  } catch (error) {
-    problem = error instanceof ReleaseError ? error.message : "The release data is not available.";
-  }
+  const [dashboard, events] = await Promise.all([
+    releaseDashboard().then((d) => ({ d }), (error: unknown) => ({ error })),
+    apiHealth(),
+  ]);
+  if ("d" in dashboard) data = dashboard.d;
+  else problem = dashboard.error instanceof ReleaseError ? dashboard.error.message : "The release data is not available.";
+  const health = events ? healthLine(events) : null;
 
   return (
     <>
@@ -443,6 +445,11 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
         <h1>Data releases</h1>
         <p className="lede">Production changes only through numbered releases. Approve or reject each one here; the runner next to DS1 applies the approved ones and checks the result.</p>
         {problem ? <p className="note" role="alert">{problem}</p> : null}
+        {health ? (
+          <p className={health.kind === "down" ? "dr-alert" : "note"} role={health.kind === "down" ? "alert" : "status"}>
+            <strong>API health:</strong> {health.text}
+          </p>
+        ) : null}
       </section>
       {data ? <Report data={data} query={query} tab={tab} /> : null}
     </>

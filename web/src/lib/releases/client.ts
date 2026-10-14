@@ -3,6 +3,7 @@ import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { queuedAtBuild } from "@/lib/api/buildShare";
 import { API_KEY, REST_URL, RETRY_REVALIDATE } from "@/lib/api/config";
+import type { HealthEvent } from "./rules";
 
 /**
  * The data releases, read and approved through two functions in the production database's `api` schema
@@ -180,6 +181,29 @@ const cachedSummary = unstable_cache(
 export async function adminBarSummary(): Promise<AdminSummary | null> {
   try {
     return await cachedSummary();
+  } catch {
+    return null;
+  }
+}
+
+const healthEvent = z.object({
+  failing_since: z.string(),
+  detected_at: z.string(),
+  probes_failed: z.number(),
+  reload_at: z.string().nullable(),
+  restart_at: z.string().nullable(),
+  recovered_at: z.string().nullable(),
+  last_error: z.string().nullable(),
+});
+
+/**
+ * The runner watchdog's list of outages of the public API, newest first (migration 090, api.api_health). Null when the function is
+ * missing or the call fails: /admin/data then simply leaves the "API health" line out.
+ */
+export async function apiHealth(): Promise<HealthEvent[] | null> {
+  try {
+    const parsed = z.object({ events: z.array(healthEvent) }).safeParse(await rpc("api_health", { p_secret: secret() }));
+    return parsed.success ? parsed.data.events : null;
   } catch {
     return null;
   }
