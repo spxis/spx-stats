@@ -39,3 +39,16 @@
 @media (max-width: 560px) {
   .cityrank td b { font-size: 18px; }
 }
+
+/* The small map in the corner of a city page: it opens the large map in a dialog. */
+.citymap { position: absolute; top: 0; right: 0; width: 220px; display: flex; flex-direction: column; gap: 4px; }
+.citymap .mapbtn { position: static; width: 100%; }
+.citymap .teammap { border: 1px solid var(--rule); background: var(--panel); }
+.citymap .note { font-size: 13px; margin: 0; }
+.head:has(.citymap) { min-height: 205px; }
+@media (min-width: 641px) { .cityhead:has(.citymap) .cityname { max-width: calc(100% - 240px); } }
+@media (max-width: 640px) {
+  .citymap { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
+  .head:has(.citymap) { min-height: 0; }
+}
+.cityboard .cityrangenote { margin-top: 0; }

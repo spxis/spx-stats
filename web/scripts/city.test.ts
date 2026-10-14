@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fold } from "../src/lib/fold.ts";
-import { buildStays, MIN_RANKED_SEASONS, rankOf, titlesByDecade, totalsOf, unitOf, unitTotals, winShare, type CityRef, type ClubSeason, type Placement } from "../src/lib/cityModel.ts";
+import { buildStays, clipStay, MIN_RANKED_SEASONS, rankOf, titlesByDecade, totalsOf, unitOf, unitTotals, winShare, type CityRef, type ClubSeason, type Placement } from "../src/lib/cityModel.ts";
 
 /** Run in web/: pnpm test:city */
 
@@ -147,6 +147,27 @@ test("titles by decade and totals", () => {
   const t = totalsOf(stays);
   assert.equal(t.clubs, 2); assert.equal(t.titles, 4); assert.equal(t.seasons, 5); assert.deepEqual(t.leagues, ["nba", "nhl"]);
   assert.equal(t.first, 1991); assert.equal(t.last, 2001);
+});
+
+test("a stay narrowed to a range of years adds up again for those years only", () => {
+  const seasons = [season("nhl", 1990, 1, 40, 30, true, "Old"), season("nhl", 1991, 1, 20, 50), season("nhl", 1992, 1, 30, 40), season("nhl", 1995, 1, 10, 10, true, "New"), season("nhl", 1996, 1, 5, 15), season("nhl", 1993, 9, 1, 1), season("nhl", 1994, 9, 1, 1)];
+  const places = seasons.filter((s) => s.f === 1).map((s) => place(s.league, s.year, 1, "x"));
+  const stay = buildStays(places, seasons).find((s) => s.f === 1)!;
+  assert.deepEqual(stay.runs, [[1990, 1992], [1995, 1996]]);
+  assert.equal(clipStay(stay, 1980, 2010), stay, "a range that holds every season changes nothing");
+  assert.equal(clipStay(stay, 1993, 1994), null, "no season inside");
+  const a = clipStay(stay, 1991, 1995)!;
+  assert.deepEqual(a.runs, [[1991, 1992], [1995, 1995]]);
+  assert.equal(a.seasons, 3); assert.equal(a.first, 1991); assert.equal(a.last, 1995);
+  assert.deepEqual(a.titles, [1995]); assert.deepEqual(a.titleTeams, ["New"]);
+  assert.deepEqual([a.w, a.l], [60, 100]);
+  assert.equal(a.share, winShare(60, 100, 0, 0));
+  assert.equal(a.name, stay.name, "the club keeps the name it wears here");
+  assert.equal(a.active, stay.active);
+  // the figures of a range agree with the club's own seasons
+  const b = clipStay(stay, 1990, 1990)!;
+  assert.deepEqual(totalsOf([b]), { ...totalsOf([b]), seasons: 1, titles: 1, first: 1990, last: 1990 });
+  assert.deepEqual(b.titleTeams, ["Old"]);
 });
 
 test("ranks: ties share a place, and a short history is not ranked by rate or share", () => {

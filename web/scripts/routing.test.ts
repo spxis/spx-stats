@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
 import { test } from "node:test";
 import { createRequire } from "node:module";
-import { acceptsFirst, ALWAYS_STATIC, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS } from "../src/lib/routing.ts";
+import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
 
@@ -75,7 +75,7 @@ test("an address with a query the pages read is drawn for the request; one with 
   assert.equal(route({ path: "/nhl/2012-13", query: { view: "wildcard" } }), "/en/q/nhl/2012-13");
   assert.equal(route({ path: "/nhl/2012-13", query: { sort_games: "date.desc" }, cookie: "spxn-locale=ja" }), "/ja/q/nhl/2012-13");
   assert.equal(route({ path: "/players", query: { q: "gretzky" } }), "/en/q/players");
-  assert.equal(route({ path: "/city/vancouver", query: { from: "1990" } }), "/en/q/city/vancouver");
+  assert.equal(route({ path: "/city/vancouver", query: { sort: "years.asc" } }), "/en/q/city/vancouver");
   assert.equal(route({ path: "/country/CA", query: { sort_leagues: "players.desc" } }), "/en/q/country/CA");
   assert.equal(route({ path: "/mlb/world", query: { sort_countries: "n.desc" } }), "/en/q/mlb/world");
   assert.equal(route({ path: "/countries", query: { sort_countries: "n.desc" } }), "/en/s/countries");
@@ -107,6 +107,16 @@ test("a player page reads its seasons, phase and clubs in the browser, so those 
   assert.equal(route({ path: player, query: { q: "x" } }), `/en/q${player}`);
   assert.equal(route({ path: "/nhl/player", query: { from: "1985" } }), "/en/s/nhl/player");
   assert.equal(route({ path: "/nhl/players-of-note", query: { from: "1985" } }), "/en/q/nhl/players-of-note");
+});
+
+test("a city page reads its years in the browser, so from and to leave it the static copy; its other keys and the other player keys still ask the server", () => {
+  const city = "/city/vancouver";
+  for (const key of CITY_CLIENT_KEYS) assert.equal(route({ path: city, query: { [key]: "1990" } }), `/en/s${city}`, key);
+  assert.equal(route({ path: city, query: { from: "1990", to: "2000" }, cookie: "spxn-locale=fr" }), `/fr/s${city}`);
+  assert.equal(route({ path: city, query: { from: "1990", sort: "years.asc" } }), `/en/q${city}`);
+  assert.match(route({ path: city, query: { phase: "p" } }), /^\/en\/q\//);
+  assert.match(route({ path: "/players", query: { from: "1990" } }), /^\/en\/q\//);
+  assert.match(route({ path: "/teams", query: { to: "1990" } }), /^\/en\/q\//);
 });
 
 test("the home page and the pages that read no query stay static whatever the query is", () => {

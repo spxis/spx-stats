@@ -30,6 +30,9 @@ export const QUERY_KEYS = [
     do not ask for a copy drawn per request: the one static page serves them all. Everywhere else they are read on the server as before. */
 export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season"] as const;
 
+/** The keys of PLAYER_CLIENT_KEYS a city page also reads in the browser (components/CityBoard.tsx: the years its clubs, timeline and titles count); the city page's other keys still ask the server. */
+export const CITY_CLIENT_KEYS = ["from", "to"] as const;
+
 /** Pages that read no query at all, even on the server: always the static copy, whatever the address carries (the home page and
     the league pages keep their year range and the like in the browser). */
 export const ALWAYS_STATIC = ["about", "cities", "logos", "privacy", "quality", "sources", "terms", "venues", "countries", "soccer", "worldcup", "mls", ...LEAGUE_CODES] as const;
@@ -90,12 +93,12 @@ export function pageRewrites(): Rewrite[] {
   // 2. A query key on the address: the copy drawn for this request. One rule per key, because Vercel refuses a has or missing list of
   //    more than MAX_CONDITIONS items, so "none of these keys" cannot be one rule. Inside each pass the language rules keep their order.
   //    The keys a player page reads in the browser (PLAYER_CLIENT_KEYS) skip the player pages (/nhl/player/...) and keep the rest.
-  const notPlayer = `/:first(${LEAGUE_CODES.join("|")})/:second((?!player(?:/|$))[^/]+)/:rest*`, others = `/:first(players|teams|city)/:rest*`;
+  const notPlayer = `/:first(${LEAGUE_CODES.join("|")})/:second((?!player(?:/|$))[^/]+)/:rest*`, others = `/:first(players|teams|city)/:rest*`, notCity = `/:first(players|teams)/:rest*`;
   each((l) => {
     for (const key of QUERY_KEYS) {
       const has: Cond[] = [...l.has, { type: "query", key }];
       if ((PLAYER_CLIENT_KEYS as readonly string[]).includes(key)) {
-        out.push({ source: others, destination: `/${l.locale}/q/:first/:rest*`, has, missing: l.missing });
+        out.push({ source: (CITY_CLIENT_KEYS as readonly string[]).includes(key) ? notCity : others, destination: `/${l.locale}/q/:first/:rest*`, has, missing: l.missing });
         out.push({ source: notPlayer, destination: `/${l.locale}/q/:first/:second/:rest*`, has, missing: l.missing });
       } else out.push({ source: `/:first(${PAGE_ROOTS.join("|")})/:rest*`, destination: `/${l.locale}/q/:first/:rest*`, has, missing: l.missing });
     }

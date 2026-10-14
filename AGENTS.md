@@ -573,8 +573,11 @@ Ask John before deleting or overwriting data. Production changes only through ap
 - **One record per person:** `db/build/185_person_merge.sql` merges records that are the same human (never on name alone) and keeps
   `core.person_redirect`, which the player page uses to redirect an old id. Pairs it will not merge are logged as `possible-duplicate:` in `meta.data_issue`.
 - **Cities:** `/cities` (search, year-range slider, sortable table and map, all filtered in the browser) and `/city/<slug>` (every club that
-  played there, its venues on a map, timeline, titles by decade, how the city ranks). Both are kept pages that read no query (`cities` is in
-  `ALWAYS_STATIC`, `city` in `PAGE_ROOTS`, `q/city/[slug]` is the twin for an address with another page's query key). Which city a club season
+  played there, its venues on a small corner map that opens the large one in a dialog, a year-range slider, timeline, titles by decade, how the
+  city ranks). Both are kept pages that read no query on the server (`cities` is in `ALWAYS_STATIC`, `city` in `PAGE_ROOTS`, `q/city/[slug]` is
+  the twin for an address with another page's query key). On a city page `?from=&to=` (`CITY_CLIENT_KEYS` in `routing.ts`) is read in the browser
+  by `CityBoard`, which narrows the figures, clubs table, timeline and titles with `clipStay` and remembers the range per city
+  (`spxn-range-c:<path>`); the rank table and win-share bars stay all-time. Which city a club season
   belongs to, the metro areas and the rank method are data and documented in `scripts/city/README.md` (tables `ref.city`, `ref.city_alias`,
   `ref.metro`, `core.team_season_city`, built by `db/build/197_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
 - **Where the players come from:** `/countries` (league against league: mix bars, table, trend by decade, firsts, cards), `/country/<code>` (one country in every league),

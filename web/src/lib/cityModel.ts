@@ -107,6 +107,25 @@ export function titlesByDecade(stays: Stay[]): Map<number, Record<string, number
   return out;
 }
 
+/**
+ * A stay narrowed to the seasons from..to, with its seasons, titles, record, share and runs worked out again for those years; null when none of its
+ * seasons fall inside. The name and the `active` flag are the club's own (what it is called here, whether it still plays), whatever the range.
+ */
+export function clipStay(s: Stay, from: number, to: number): Stay | null {
+  if (from <= s.first && to >= s.last) return s;
+  const rows = s.rows.filter((r) => r[0] >= from && r[0] <= to);
+  if (!rows.length) return null;
+  const runs = s.runs.flatMap(([a, b]): [number, number][] => { const x = Math.max(a, from), y = Math.min(b, to); return x <= y ? [[x, y]] : []; });
+  const keep = s.titles.map((y, i) => [y, i] as const).filter(([y]) => y >= from && y <= to);
+  let w = 0, l = 0, t = 0, otl = 0;
+  for (const r of rows) { w += Math.max(0, r[2]); l += Math.max(0, r[3]); t += r[4]; otl += r[5]; }
+  return {
+    ...s, runs, rows, first: rows[0][0], last: rows[rows.length - 1][0], seasons: rows.length,
+    titles: keep.map(([y]) => y), titleTeams: keep.map(([, i]) => s.titleTeams[i]),
+    w, l, t, otl, share: winShare(w, l, t, otl),
+  };
+}
+
 /** The unit a city is ranked and grouped as: its metro area, or itself when it belongs to none. */
 export const unitOf = (c: Pick<CityRef, "slug" | "metro">) => c.metro ?? c.slug;
 

@@ -69,8 +69,9 @@ const at5 = (n: number) => n.toFixed(5);
 /**
  * The map dots of a set of stays: one for each venue a club used while it was in those cities, with the venue's name, place, address and
  * Wikipedia page as the team pages' maps give them (the same venue list, filtered to the venues the database placed those seasons at).
+ * With `focus` (a city's slug), the venues in that city are marked `me`, so the small map on its page frames them and not the metro area round it.
  */
-export async function getCityPins(stays: Stay[], placements: Placement[], cities: Map<string, CityRef>, paths: TeamPaths, say: Speaker["say"]): Promise<Pin[]> {
+export async function getCityPins(stays: Stay[], placements: Placement[], cities: Map<string, CityRef>, paths: TeamPaths, say: Speaker["say"], focus?: string): Promise<Pin[]> {
   const brands = await getBrands();
   const unit = (slug: string | null) => { const c = slug ? cities.get(slug) : null; return c ? unitOf(c) : null; };
   const wanted = new Map<string, { years: number[]; stay: Stay }>();
@@ -96,7 +97,7 @@ export async function getCityPins(stays: Stay[], placements: Placement[], cities
       const a = Math.min(...w.years), b = Math.max(...w.years);
       pins.push({
         f: pins.length, name: w.stay.name || t.name, venue: `${v.venue} · ${a === b ? a : `${a}–${b}`}`, lat: v.lat, lon: v.lon, cc: v.cc,
-        place: v.place, wiki: v.wiki, href: t.href, extra: v.extra, address: v.address, abbr: lg.toUpperCase(),
+        place: v.place, wiki: v.wiki, href: t.href, extra: v.extra, address: v.address, abbr: lg.toUpperCase(), me: focus != null && w.stay.city === focus,
       });
     }
   }

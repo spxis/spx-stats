@@ -134,6 +134,8 @@ export interface TeamData {
   /** [year, w, l, t, otl] for each season with a record. */
   seasons: [number, number, number | null, number | null, number | null][];
   titles: number[];
+  /** The seasons the club has in the archive but no regular-season record for (a Stanley Cup Final or a playoff run is all there is, or the season has not begun): [year, champion]. */
+  unrecorded: [number, boolean, string | null][];
 }
 
 export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | null> => {
@@ -143,15 +145,28 @@ export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | n
     rows("franchise_names", `${q}&select=*&order=name_from`, franchiseNameSchema),
   ]);
   if (!ts.length && !names.length) return null;
-  const t: TeamData = { f, names: names.map((n) => ({ name: n.name, from: n.name_from, to: n.name_to })), seasons: [], titles: [] };
+  const t: TeamData = { f, names: names.map((n) => ({ name: n.name, from: n.name_from, to: n.name_to })), seasons: [], titles: [], unrecorded: [] };
   let last: string | null = null;
   for (const s of ts) {
     if (s.w != null) t.seasons.push([s.year, s.w, s.l, s.t, s.otl]);
+    else t.unrecorded.push([s.year, s.champion, s.team]);
     if (s.champion) t.titles.push(s.year);
     if (!t.names.length) last = s.team;
   }
   if (!t.names.length && last) t.names.push({ name: last, from: null, to: null });
   return t;
+});
+
+const phaseRow = z.object({ year: z.number(), phase: z.string() });
+
+/** The phases a club played games in, for the given seasons (a comma list): year to the set of phases ("regular", "playoffs", ...). One small read, for the few seasons that have no standings row. */
+export const getTeamPhases = cache(async (lg: string, f: number, years: string): Promise<Map<number, Set<string>>> => {
+  const out = new Map<number, Set<string>>();
+  if (!years) return out;
+  for (const r of await rows("games", `league=eq.${lg}&year=in.(${years})&or=(away_f.eq.${f},home_f.eq.${f})&select=year,phase`, phaseRow)) {
+    out.set(r.year, (out.get(r.year) ?? new Set()).add(r.phase));
+  }
+  return out;
 });
 
 export const getTeamStandings = cache(async (lg: string, f: number): Promise<StandingRow[]> =>

@@ -28,7 +28,7 @@ import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getOutageYears } from "@/lib/outageData";
-import { getAbbrs, getBrands, getClubs, getSummary, getTeam, getTeamStandings } from "@/lib/data";
+import { getAbbrs, getBrands, getClubs, getSummary, getTeam, getTeamPhases, getTeamStandings } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -61,7 +61,9 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const n = t.titles.length;
   return pageMeta({
     title: `${name} · ${LG[league]}`,
-    description: say("team.metaDesc", { name, seasons: plural("count.seasons", t.seasons.length), titles: n ? say("team.titlesSuffix", { titles: plural("count.championships", n) }) : "" }),
+    description: t.seasons.length || !t.unrecorded.length
+      ? say("team.metaDesc", { name, seasons: plural("count.seasons", t.seasons.length), titles: n ? say("team.titlesSuffix", { titles: plural("count.championships", n) }) : "" })
+      : say("team.metaDescBare", { name, seasons: plural("count.seasons", t.unrecorded.length), titles: n ? say("team.titlesSuffix", { titles: plural("count.championships", n) }) : "" }),
     path: at.path,
     locale,
   });
@@ -103,7 +105,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const [t, rows, brands, abbrs, summary, venuePlaces] = await Promise.all([getTeam(lg, f), getTeamStandings(lg, f), getBrands(), getAbbrs(lg), getSummary(), getVenuePlaces(lg)]);
   const [venueNames, venueFacts, outageYears] = await Promise.all([getVenueNames(), getVenueFacts(), getOutageYears(lg)]);
   if (!t) notFound();
-  const names = t.names;
+  // A club with no recorded name span (the early Stanley Cup challengers) gets the years of its seasons, so a club that is gone does not read "until today".
+  const seasonYears = [...t.seasons.map((x) => x[0]), ...t.unrecorded.map((x) => x[0])];
+  const latestYear = Math.max(0, ...summary.seasons.filter((x) => x.league === lg).map((x) => x.year));
+  const names = t.names.map((n) => (n.from == null && n.to == null && seasonYears.length && Math.max(...seasonYears) < latestYear ? { ...n, from: String(Math.min(...seasonYears)), to: String(Math.max(...seasonYears)) } : n));
   const now = names.at(-1)?.name || say("team.fallback", { id: f });
   const b = brandFor(brands, f);
   const holders = titleHolders(summary.seasons, lg, outageYears);
@@ -136,11 +141,26 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const switchClubs = (await getLeagueClubs(lg).catch(() => [])).sort((a, c) => a.name.localeCompare(c.name, "en"));
   const withGames = new Set(summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
   const idle = idleYears(rows, summary.seasons, lg);
+  // Seasons the club has but the standings do not (no regular-season games on file): the early Stanley Cup challengers played only a series, a few
+  // clubs have a champion year with no games loaded, and a season not begun has nothing. Each is listed with what it is, so the page agrees with the city page.
+  const haveRow = new Set(rows.map((r) => r.year));
+  const pending = t.unrecorded.filter(([y, champion]) => !haveRow.has(y) && (withGames.has(y) || champion));
+  const phases = await getTeamPhases(lg, f, pending.map(([y]) => y).join(","));
+  const bare = new Map(pending.map(([year, , team]) => {
+    const ph = phases.get(year);
+    const kind = ph?.has("playoffs") && !ph.has("regular") ? (lg === "nhl" && year < 1926 ? "bareCup" : "barePlayoffs") : ph?.size ? "bareOther" : "bareNone";
+    return [year, { team, label: say(`team.${kind}` as const) }] as const;
+  }));
+  for (const y of bare.keys()) idle.delete(y);
   const gaps: StandingRow[] = [...idle].filter(([y]) => !rows.some((r) => r.year === y)).map(([y]) => ({
     league: lg, year: y, team_id: 0, franchise_id: f, team: null, gp: null, w: null, l: null, t: null, otl: null, pts: null,
     pf: null, pa: null, home: null, road: null, pct: null, basis: "none", source: null,
   }));
-  const tableRows = [...rows, ...gaps].sort((a, b) => b.year - a.year);
+  const bareRows: StandingRow[] = [...bare].map(([y, x]) => ({
+    league: lg, year: y, team_id: 0, franchise_id: f, team: x.team, gp: null, w: null, l: null, t: null, otl: null, pts: null,
+    pf: null, pa: null, home: null, road: null, pct: null, basis: "none", source: null,
+  }));
+  const tableRows = [...rows, ...gaps, ...bareRows].sort((a, b) => b.year - a.year);
   const standings = tableOf(tableRows, [
     {
       key: "champ", label: say("col.champion"), hideLabel: true, cls: "cupcol", title: say("team.champSeason"), get: (r) => (won.has(r.year) ? 1 : 0),
@@ -152,7 +172,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
     },
     {
       key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><TeamLogo url={logoFor(brands, f, r.year)} /><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, f, r.year, r.team)}</abbr></>,
+      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><TeamLogo url={logoFor(brands, f, r.year)} /><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, f, r.year, r.team)}</abbr>{bare.has(r.year) ? <span className="seasoncell barenote"> · {bare.get(r.year)?.label}</span> : null}</>,
     },
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,
@@ -232,6 +252,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
   const city = await getClubCity(lg, f);
+  const titlesPart = t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "";
+  const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: titlesPart })
+    : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })
+      : say("team.ledeBareOnly", { seasons: plural("count.seasons", bare.size), titles: titlesPart });
   return (
     <>
       <AccentStyle league={lg} team={b?.primary_hex ? teamAccent(b) : undefined} />
@@ -251,7 +275,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
             {streak > 1 ? say("team.reigningMany", { n: fmt(streak), season: reigning.label }) : say("team.reigning", { season: reigning.label })}
           </Link>
         ) : null}
-        <p className="lede">{say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: t.titles.length ? say("team.titlesSuffix", { titles: plural("count.championships", t.titles.length) }) : "" })}</p>
+        <p className="lede">{ledeText}</p>
         <CompareControl lg={lg} f={f} name={now} />
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
@@ -268,7 +292,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       ) : null}
       {rows.length ? (
         <TeamCharts lg={lg} f={f} rows={rows} titles={t.titles} seasons={t.seasons} idle={[...idle]} />
-      ) : (
+      ) : bare.size ? null : (
         <section className="section">
           <h2>{say("team.winTitle")}</h2>
           <p className="note">{say("team.winNote")}</p>
@@ -276,10 +300,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         </section>
       )}
       {rows.length ? <Suspense fallback={null}><FranchiseCountries lg={lg} f={f} name={now} /></Suspense> : null}
-      {rows.length ? (
+      {rows.length || bare.size ? (
         <section className="section">
           <h2>{say("team.standings")}</h2>
-          <p className="note">{say("team.standingsNote", { seasons: plural("count.seasons", rows.length) })}</p>
+          <p className="note">{say("team.standingsNote", { seasons: plural("count.seasons", rows.length + bare.size) })}</p>
           <div className="tablebox"><SortTable {...standings} def="season.desc" /></div>
         </section>
       ) : null}

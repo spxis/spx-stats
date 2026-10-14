@@ -101,6 +101,16 @@ test("the head script holds each page on its own saved range", () => {
   assert.equal(held("/about", "", { "spxn-range": "1990-2005", "spxn-range-players": "1990-2005" }), false);
 });
 
+test("a city page is held on its own saved range and on an address range, and no other page's", () => {
+  assert.equal(held("/city/vancouver", "", { "spxn-range-c:/city/vancouver": "1990-2005" }), true);
+  assert.equal(held("/city/vancouver", "?from=1990&to=2005", {}), true);
+  assert.equal(held("/city/vancouver", "", { "spxn-range-c:/city/montreal": "1990-2005" }), false);
+  assert.equal(held("/city/vancouver", "", { "spxn-range-teams": "1990-2005", "spxn-range": "1990-2005" }), false);
+  assert.equal(held("/city/vancouver", "", { "spxn-range-c:/city/vancouver": "abc" }), false);
+  assert.equal(held("/cities", "", { "spxn-range-c:/cities": "1990-2005" }), false);
+  assert.equal(held("/city/vancouver/extra", "?from=1990", {}), false);
+});
+
 test("panning keeps the width and stops at the ends", () => {
   const r = { from: 1990, to: 2000 };
   assert.deepEqual(panRange(r, 5, 1950, 2025), { from: 1995, to: 2005 });
