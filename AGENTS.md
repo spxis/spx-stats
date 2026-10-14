@@ -399,6 +399,10 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
 - **Ongoing scores** (the season in progress, all five leagues) come from English Wikipedia's club-season articles, with nflverse
   as the NFL's second check: `scripts/daily/run.py --apply` writes them to DS1 only (see `scripts/daily/README.md`). The NHL API
   (no new requests of any kind, section 3) and MLB statsapi are not used for new scores.
+- **The harvest job** (`harvest/`, `scripts/harvest/`, a Docker job on the NAS next to the daily one) reads English Wikipedia and Wikidata around the clock,
+  one request at a time, for what DS1 does not hold yet (gaps first: NBA, NFL and CFL rosters, team statistics, awards, drafts, bios), then re-reads by revision
+  id. It writes `legacy_files.raw_archive` and `legacy_wikipedia_harvest` / `legacy_wikidata_harvest` on DS1 only and builds no `core` rows. State of the queue:
+  `python3 -I scripts/harvest/status.py`; setup, limits and the missing build steps: `harvest/README.md`.
 - **Venue names and facts** (every name a home venue carried with its years, plus capacity, opened, owner, surface, roof, address) come
   from Wikidata (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA). Refresh once a year (February) or after a
   rename: the command list is in `scripts/wikidata_venues/README.md`; production gets `core.brand_venue_name` and

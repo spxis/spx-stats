@@ -1,0 +1,26 @@
+{
+"batchcomplete": true,
+"query": {
+"pages": [
+{
+"pageid": 1,
+"ns": 0,
+"title": "2023 CFL draft",
+"revisions": [
+{
+"revid": 1369708084,
+"parentid": 1369708083,
+"timestamp": "2026-08-16T17:15:17Z",
+"slots": {
+"main": {
+"contentmodel": "wikitext",
+"contentformat": "text/x-wiki",
+"content": "==Draft order==\n===Round one===\n{| class=\"wikitable\" style=\"width: 90%\"\n|-\n!width=7%| Pick # !!width=40% | CFL team !!width=20% | Player !!width=8% | Position !!width=20% | University\n|-\n|align=center| 1 || [[Ottawa Redblacks]] || [[Dontae Bull]] || OL || [[Fresno State Bulldogs football|Fresno State]]\n|-\n|align=center| 2 || [[Edmonton Elks]] || [[Michael Brodrique]] || LB || [[Montreal Carabins football|Montreal]]\n|-\n|align=center| 3 || [[Saskatchewan Roughriders]] || [[Lake Korte-Moore]] || DL ||  [[UBC Thunderbirds|British Columbia]]\n|-\n|align=center| 4 || [[Calgary Stampeders]] (via [[Hamilton Tiger-Cats|Hamilton]]<ref name=\"Mitchell\" group=trade/>) || [[Cole Tucker (Canadian football)|Cole Tucker]] || WR || [[Northern Illinois Huskies football|Northern Illinois]]\n|}\n"
+}
+}
+}
+]
+}
+]
+}
+}

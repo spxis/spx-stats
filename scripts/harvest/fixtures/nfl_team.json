@@ -1,0 +1,26 @@
+{
+"batchcomplete": true,
+"query": {
+"pages": [
+{
+"pageid": 1,
+"ns": 0,
+"title": "2023 Kansas City Chiefs season",
+"revisions": [
+{
+"revid": 1375966002,
+"parentid": 1375966001,
+"timestamp": "2026-09-21T04:16:55Z",
+"slots": {
+"main": {
+"contentmodel": "wikitext",
+"contentformat": "text/x-wiki",
+"content": "==Final roster==\n{{NFL final roster\n|Year=2023\n|TeamName=Kansas City Chiefs\n|Quarterbacks=\n{{NFLplayer|&nbsp;9|Blaine Gabbert}}\n{{NFLplayer|15|Patrick Mahomes}}\n\n|Running Backs=\n{{NFLplayer|25|Clyde Edwards-Helaire}}\n{{NFLplayer|&nbsp;1|Jerick McKinnon}}\n{{NFLplayer|10|Isiah Pacheco}}\n{{NFLplayer|29|La'Mical Perine}}\n\n|Wide Receivers=\n{{NFLplayer|12|Mecole Hardman}}\n{{NFLplayer|17|Richie James}}\n{{NFLplayer|24|Skyy Moore}}\n{{NFLplayer|&nbsp;4|Rashee Rice|rookie=y}}\n{{NFLplayer|&nbsp;8|Justyn Ross}}\n{{NFLplayer|19|Kadarius Toney}}\n{{NFLplayer|11|Marquez Valdes-Scantling}}\n{{NFLplayer|84|Justin Watson|d=wide receiver}}\n\n|Tight Ends=\n{{NFLplayer|81|Blake Bell}}\n{{NFLplayer|83|Noah Gray}}\n{{NFLplayer|87|Travis Kelce}}\n\n|Offensive Linemen=\n{{NFLplayer|73|Nick Allegretti|G}}\n{{NFLplayer|66|Mike Caliendo|G}}\n{{NFLplayer|52|Creed Humphrey|C}}\n{{NFLplayer|64|Wanya Morris|T|d=American football|rookie=y}}\n{{NFLplayer|77|Lucas Niang|T}}\n{{NFLplayer|79|Donovan Smith|T}}\n{{NFLplayer|65|Trey Smith|d=offensive lineman|G}}\n{{NFLplayer|74|Jawaan Taylor|T}}\n\n}}\n\n==Preseason==\n"
+}
+}
+}
+]
+}
+]
+}
+}

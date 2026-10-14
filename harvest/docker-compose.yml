@@ -1,0 +1,20 @@
+services:
+  harvest:
+    build:
+      context: .
+      network: host
+    network_mode: host
+    container_name: spx-harvest
+    init: true
+    restart: unless-stopped
+    env_file: ./harvest.env
+    volumes:
+      - ./data:/data
+    # a polite neighbour on the NAS: the job is network and database bound, not CPU bound
+    cpus: "0.5"
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

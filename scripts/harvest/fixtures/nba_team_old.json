@@ -1,0 +1,26 @@
+{
+"batchcomplete": true,
+"query": {
+"pages": [
+{
+"pageid": 1,
+"ns": 0,
+"title": "1985–86 Boston Celtics season",
+"revisions": [
+{
+"revid": 1357307744,
+"parentid": 1357307743,
+"timestamp": "2026-06-01T22:31:15Z",
+"slots": {
+"main": {
+"contentmodel": "wikitext",
+"contentformat": "text/x-wiki",
+"content": "==Player stats==\n''Note: GP= Games played; REB= Rebounds; AST= Assists; STL = Steals; BLK = Blocks; PTS = Points; AVG = Average''\n{| class=\"wikitable sortable\"\n|-\n!  style=\"background:#ddf; width:16%;\"| Player\n!  style=\"background:#ddf; width:9%;\"| GP\n!  style=\"background:#ddf; width:9%;\"| REB\n!  style=\"background:#ddf; width:9%;\"| AST\n!  style=\"background:#ddf; width:9%;\"| STL\n!  style=\"background:#ddf; width:9%;\"| BLK\n!  style=\"background:#ddf; width:9%;\"| PTS\n!  style=\"background:#ddf; width:9%;\"| AVG\n|- style=\"text-align:center;\"\n| [[Larry Bird]] || 82  || 805  || 557  || 166  || 51  || 2115  || 25.8\n|- style=\"text-align:center;\"\n| [[Kevin McHale (basketball)|Kevin McHale]] || 68 || 551 || 181 || 29 || 134 || 1448 || 21.3\n|- style=\"text-align:center;\"\n| [[Robert Parish]] || 81 || 770 || 145 || 65 || 116 || 1305 || 16.1\n|- style=\"text-align:center;\"\n| [[Dennis Johnson]] || 78 || 268 || 456 || 110 || 35 || 1213 || 15.6\n|- style=\"text-align:center;\"\n| [[Danny Ainge]] || 80 || 235 || 405 || 94 || 7 || 855 || 10.7\n|- style=\"text-align:center;\"\n| [[Scott Wedman]] || 79 || 192 || 82 || 38 || 22 || 634 || 8.0\n|- style=\"text-align:center;\"\n| [[Bill Walton]] || 80  || 544  || 165  || 38  || 106  || 606  || 7.6\n|- style=\"text-align:center;\"\n| [[Jerry Sichting]] || 82 || 104 || 188 || 50 || 0 || 537 || 6.5\n|- style=\"text-align:center;\"\n| [[David Thirdkill]] || 49  || 70  || 15  || 11  || 3  || 163  || 3.3\n|- style=\"text-align:center;\"\n| [[Sam Vincent (basketball)|Sam Vincent]] || 57  || 48  || 69  || 17  || 4  || 184  || 3.2\n|- style=\"text-align:center;\"\n| [[Sly Williams]] || 6  || 15  || 2  || 1  || 1  || 17  || 2.8\n|- style=\"text-align:center;\"\n| [[Rick Carlisle]] || 77  || 77  || 104  || 19  || 4  || 199  || 2.6\n|- style=\"text-align:center;\"\n| [[Greg Kite]] || 64  || 128  || 17  || 3  || 28  || 83  || 1.3\n|}\n\n\n==Roster==\n{{NBA roster header|team=Boston Celtics|season=1985–86}}\n<!-- list of players -->\n{{player2 | num = 44 | first = Danny | last = Ainge | pos = SG | ft = 6 | in = 5 | lbs = 175 | college = Brigham Young University | DOB = 1959-03-17 }}\n{{player2 | num = 33 | first = Larry | last = Bird | pos = SF | ft = 6 | in = 9 | lbs = 220 | college = Indiana State University | DOB = 1956-12-07 }}\n{{player2 | num = 34 | first = Rick | last = Carlisle | pos = SG | ft = 6 | in = 5 | lbs = 210 | college = University of Virginia | DOB = 1959-10-27 }}\n{{player2 | num = 3 | first = Dennis | last = Johnson | pos = PG | ft = 6 | in = 4 | lbs = 185 | college = Pepperdine University | DOB = 1954-09-18 }}\n{{player2 | num = 50 | first = Greg | last = Kite | pos = C | ft = 6 | in = 11 | lbs = 250 | college = Brigham Young University | DOB = 1961-08-05 }}\n{{player2 | num = 32 | first = Kevin | last = McHale | dab = basketball | pos = PF | ft = 6 | in = 10 | lbs = 210 | school = University of Minnesota | DOB = 1957-12-19 }}\n{{player2 | num = 00 | first = Robert | last = Parish | pos = C | ft = 7 | in = 1 | lbs = 230 | college = Centenary College of Louisiana | DOB = 1953-08-30 }}\n{{player2 | num = 12 | first = Jerry | last = Sichting | pos = PG | ft = 6 | in = 1 | lbs = 168 | college = Purdue University | DOB = 1956-11-29 }}\n{{player2 | num = 45 | first = David | last = Thirdkill | pos = SF | ft = 6 | in = 7 | lbs = 195 | college = Bradley University | DOB = 1960-04-12 }}\n{{player2 | num = 11 | first = Sam | last = Vincent | link = Sam_Vincent_(basketball) | pos = PG | ft = 6 | in = 2 | lbs = 185 | college = Michigan State University | DOB = 1963-05-18 }}\n{{player2 | num = 5 | first = Bill | last = Walton | pos = C | ft = 6 | in = 11 | lbs = 235 | college = University of California, Los Angeles | DOB = 1952-11-05 }}\n{{player2 | num = 8 | first = Scott | last = Wedman | pos = SF | ft = 6 | in = 7 | lbs = 215 | college = University of Colorado | DOB = 1952-07-29 }}\n{{player2 | num = 35 | first = Sly | last = Williams | pos = SG | ft = 6 | in = 7 | lbs = 210 | college = University of Rhode Island | DOB = 1958-01-26 }}\n<!-- end list of players -->\n{{NBA roster footer\n| head_coach =\n* [[K. C. Jones]]\n| asst_coach =\n*[[Ed Badger]]\n*[[Chris Ford]]\n*[[Jimmy Rodgers (basketball)|Jimmy Rodgers]]\n| roster_url = https://www.basketball-reference.com/teams/BOS/1986.html\n}}\n\n"
+}
+}
+}
+]
+}
+]
+}
+}

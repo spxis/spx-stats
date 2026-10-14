@@ -1,0 +1,26 @@
+{
+"batchcomplete": true,
+"query": {
+"pages": [
+{
+"pageid": 1,
+"ns": 0,
+"title": "2023 NBA draft",
+"revisions": [
+{
+"revid": 1376923660,
+"parentid": 1376923659,
+"timestamp": "2026-09-27T00:46:36Z",
+"slots": {
+"main": {
+"contentmodel": "wikitext",
+"contentformat": "text/x-wiki",
+"content": "==Draft selections==\n{|class=\"wikitable sortable plainrowheaders\" style=\"text-align:left\"\n|-\n!scope=\"col\" style=\"width:20px;\"| {{tooltip|Rnd.|Draft round}}\n!scope=\"col\" style=\"width:20px;\"| {{tooltip|Pick|Overall pick number}}\n!scope=\"col\" style=\"width:120px;\"| Player\n!scope=\"col\" style=\"width:20px;\"| {{tooltip|Pos.|Position(s) played}}\n!scope=\"col\" style=\"width:120px;\"| {{tooltip|Nationality|Player's representative nationality}}{{refn|group=n|name=nationality|Nationality indicates the player's national team or representative nationality. If a player has not competed at the international level, then the nationality indicates the national team which the player is eligible to represent according to [[FIBA]] rules.}}\n!scope=\"col\" style=\"width:300px;\"| Team\n!scope=\"col\" style=\"width:150px;\"| {{tooltip|School / club team|Most recent school attended or team played for before the draft}}\n|-\n|style=\"text-align:center;\"|1\n|style=\"text-align:center;\"|[[List of first overall NBA draft picks|1]]\n|bgcolor=\"FBCEB1\"|[[Victor Wembanyama]]*<sup>~</sup>\n|C\n|{{flag|France}}\n|[[San Antonio Spurs]]\n|[[Metropolitans 92]] {{small|([[LNB Pro A|France]])}}\n|-\n|style=\"text-align:center;\"|1\n|style=\"text-align:center;\"|2\n|[[Brandon Miller (basketball, born 2002)|Brandon Miller]]\n|SF\n|{{flag|United States}}\n|[[Charlotte Hornets]]\n|[[Alabama Crimson Tide men's basketball|Alabama]] {{small|([[Freshman|Fr.]])}}\n|-\n|style=\"text-align:center;\"|1\n|style=\"text-align:center;\"|3\n|[[Scoot Henderson]]\n|PG\n| {{flagu|United States}}\n|[[Portland Trail Blazers]]\n|[[NBA G League Ignite]] {{small|([[NBA G League]])}}\n|-\n|style=\"text-align:center;\"|1\n|style=\"text-align:center;\"|4\n|[[Amen Thompson]]\n|PG\n| {{flagu|United States}}\n|[[Houston Rockets]]\n|[[Overtime Elite|City Reapers]] {{small|([[Overtime Elite]])}}\n|-\n|style=\"text-align:center;\"|1\n|style=\"text-align:center;\"|5\n|[[Ausar Thompson]]\n|SF\n| {{flagu|United States}}\n|[[Detroit Pistons]]\n|City Reapers {{small|(Overtime Elite)}}\n|}\n"
+}
+}
+}
+]
+}
+]
+}
+}

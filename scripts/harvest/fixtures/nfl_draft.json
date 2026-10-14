@@ -1,0 +1,26 @@
+{
+"batchcomplete": true,
+"query": {
+"pages": [
+{
+"pageid": 1,
+"ns": 0,
+"title": "2023 NFL draft",
+"revisions": [
+{
+"revid": 1374065443,
+"parentid": 1374065442,
+"timestamp": "2026-09-09T16:29:20Z",
+"slots": {
+"main": {
+"contentmodel": "wikitext",
+"contentformat": "text/x-wiki",
+"content": "==Player selections==\n{{NFLDraft-row |draftyear=2023 |round=1 |picknum=1 |firstpickinround=yes |team=Carolina Panthers |first=Bryce |last=Young |position=QB |collegeyear=2022 |college=Alabama |collegeteam=Alabama Crimson Tide |collegelink=Alabama |cfb page exists=yes |note= from Chicago }}\n{{NFLDraft-row |draftyear=2023 |round=1 |picknum=2 |team=Houston Texans |first=C. J. |last=Stroud |position=QB |collegeyear=2022 |college=Ohio State |collegeteam=Ohio State Buckeyes |collegelink=Ohio State |cfb page exists=yes |probowl=yes }}\n{{NFLDraft-row |draftyear=2023 |round=1 |picknum=3 |team=Houston Texans |first=Will |last=Anderson Jr. |position=LB |collegeyear=2022 |college=Alabama |collegeteam=Alabama Crimson Tide |collegelink=Alabama |cfb page exists=yes |note=from Arizona }}\n{{NFLDraft-row |draftyear=2023 |round=1 |picknum=4 |team=Indianapolis Colts |first=Anthony |last=Richardson |dab=Anthony Richardson (American football) |position=QB |collegeyear=2022 |college=Florida |collegeteam=Florida Gators |collegelink=Florida |cfb page exists=yes }}\n{{NFLDraft-row |draftyear=2023 |round=1 |picknum=5 |team=Seattle Seahawks |first=Devon |last=Witherspoon |position=CB |collegeyear=2022 |college=Illinois |collegeteam=Illinois Fighting Illini |collegelink=Illinois |cfb page exists=yes |note=from Denver }}\n"
+}
+}
+}
+]
+}
+]
+}
+}

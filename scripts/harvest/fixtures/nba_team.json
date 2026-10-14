@@ -1,0 +1,26 @@
+{
+"batchcomplete": true,
+"query": {
+"pages": [
+{
+"pageid": 1,
+"ns": 0,
+"title": "2023–24 Boston Celtics season",
+"revisions": [
+{
+"revid": 1364965269,
+"parentid": 1364965268,
+"timestamp": "2026-07-19T14:59:11Z",
+"slots": {
+"main": {
+"contentmodel": "wikitext",
+"contentformat": "text/x-wiki",
+"content": "{{Infobox NBA season\n| team            = Boston Celtics\n| end_year        = 2024\n| DivisionWin     = yes\n| ConferenceWin   = Yes\n| ChampionshipWin = Yes\n| wins            = 64\n| losses          = 18\n| division        = Atlantic\n| division_place  = 1\n| conf_place      = 1\n| coach           = [[Joe Mazzulla]]\n| gm              = [[Brad Stevens]]\n| owners          = [[Wyc Grousbeck]]\n| arena           = [[TD Garden]]\n| playoffs        = '''[[2024 NBA Finals|NBA champions]]'''<br>(defeated [[2023–24 Dallas Mavericks season|Mavericks]] 4–1)\n| bbr_team        = BOS\n| television      = [[NBC Sports Boston]]\n| radio           = [[WBZ-FM]]\n}}\n\n== Roster ==\n{{NBA roster header|team=Boston Celtics|season=2023–24}}\n<!-- list of players -->\n{{player2 | num = 12 | first = Oshae | last = Brissett | pos = F | ft = 6 | in = 7 | lbs = 210 | college = Syracuse | DOB = 1998-06-20 }}\n{{player2 | num = 7 | first = Jaylen | last = Brown | pos = GF | ft = 6 | in = 6 | lbs = 223 | college = California | DOB = 1996-10-24 }}\n{{player2 | num = 20 | first = JD | last = Davison | pos= G | ft = 6 | in = 1 | lbs = 195 | college = Alabama | DOB = 2002-10-03 | note = TW }}\n{{player2 | num = 30 | first = Sam | last = Hauser | pos = F | ft = 6 | in = 7 | lbs = 217 | college = Virginia | DOB = 1997-12-08 }}\n{{player2 | num = 4 | first = Jrue | last = Holiday | pos = G | ft = 6 | in = 4 | lbs = 205 | college = UCLA | DOB = 1990-06-12 }}\n{{player2 | num = 42 | first = Al | last = Horford | pos = FC | ft = 6 | in = 9 | lbs = 240 | college = Florida | DOB = 1986-06-03 }}\n{{player2 | num = 40 | first = Luke | last = Kornet | pos = C | ft = 7 | in = 2 | lbs = 250 | college = Vanderbilt | DOB = 1995-07-15 }}\n{{player2 | num = 50 | first = Sviatoslav | last = Mykhailiuk | pos = GF | ft = 6 | in = 7 | lbs = 205 | college = Kansas | DOB = 1997-06-10 }}\n{{player2 | num = 13 | first = Drew | last = Peterson | dab = basketball | pos = F | ft = 6 | in = 9 | lbs = 205 | college = USC | DOB = 1999-11-09 | note = TW }}\n{{player2 | num = 8 | first = Kristaps | last = Porziņģis | pos = FC | ft = 7 | in = 3 | lbs = 240 | from = Latvia | DOB = 1995-08-02 | }}\n{{player2 | num = 11 | first = Payton | last = Pritchard | pos = G | ft = 6 | in = 1 | lbs = 195 | college = Oregon | DOB = 1998-01-28 }}\n{{player2 | num = 88 | first = Neemias | last = Queta | pos = C | ft = 7 | in = 0 | lbs= 248 | college = Utah State | DOB = 1999-07-13 }}\n{{player2 | num = 44 | first = Jaden | last = Springer | pos = G | ft = 6 | in = 4 | lbs = 202 | college = Tennessee | DOB = 2002-09-25 }}\n{{player2 | num = 0 | first = Jayson | last = Tatum | pos = F | ft = 6 | in = 8 | lbs = 210 | college = Duke | DOB = 1998-03-03 }}\n{{player2 | num = 26 | first = Xavier | last = Tillman | pos = FC | ft = 6 | in = 7 | lbs = 245 | college = Michigan State | DOB = 1999-01-12 }}\n{{player2 | num = 27 | first = Jordan | last = Walsh | pos = GF | ft = 6 | in = 6 | lbs = 205 | from = Arkansas | DOB = 2004-03-03 }}\n{{player2 | num = 9 | first = Derrick | last = White | pos = G | ft = 6 | in = 4 | lbs = 190 | college = Colorado | DOB = 1994-07-02 }}\n<!-- end list of players -->\n{{NBA roster footer\n| head_coach =\n* [[Joe Mazzulla]]\n| asst_coach =\n* [[Sam Cassell]]\n* [[Tony Dobbins]]\n* [[Amile Jefferson]]\n* [[Charles Lee (basketball)|Charles Lee]]\n* [[D. J. MacLeay]]\n* [[Matt Reynolds (basketball)|Matt Reynolds]]\n| otherlegend = '''(GL)''' On [[NBA G League#Player allocations|assignment]] to G League affiliate\n| otherlegend2 = '''(TW)''' Two-way affiliate player\n| roster_url = http://www.nba.com/celtics/roster/\n| accessdate = April 16, 2024\n}}<noinclude>\n\n\n==Standings==\n\n===Division===\n{{2023–24 NBA Atlantic standings|team=BOS}}\n\n"
+}
+}
+}
+]
+}
+]
+}
+}
