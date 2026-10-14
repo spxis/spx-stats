@@ -50,7 +50,7 @@ import { nameEras, type NameSpan } from "@/lib/nameEras";
 import { recShare, tableOf } from "@/lib/sort";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/team/[franchise] keeps this page and revalidates it every hour. The data behind it keeps its one-hour cache (lib/api/client.ts).
+// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/team/[franchise] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/q/[league]/team/[franchise]">): Promise<Metadata> => {
   const { league, franchise } = await params;

@@ -12,7 +12,7 @@ import { MLS_PATH } from "@/lib/mlsPath";
 import { tournamentPath, WORLDCUP_PATH, WORLDCUP_TEAMS_PATH } from "@/lib/soccerPath";
 import "@/components/soccer.css";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();

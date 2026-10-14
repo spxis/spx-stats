@@ -4,9 +4,9 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 
-// Kept and revalidated every hour. The league and the decade are read from the address in the browser, so the page reads no query
+// Kept and revalidated every day. The league and the decade are read from the address in the browser, so the page reads no query
 // (and ?lg= ?dec= are not in QUERY_KEYS, lib/routing.ts).
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateMetadata() {
   const { say, locale } = await currentSpeaker();

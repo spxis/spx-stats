@@ -12,7 +12,7 @@ import { soccerMatchPath, soccerPlayerPath, tournamentPath, WORLDCUP_TEAMS_PATH 
 import { tableOf } from "@/lib/sort";
 import "@/components/soccer.css";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();

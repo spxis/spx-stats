@@ -21,7 +21,7 @@ import { rangeFromQuery } from "@/lib/yearRange";
 import "@/components/alignment.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Drawn for the request when the address has a query (lib/routing.ts); without one, s/players keeps this page and revalidates it every hour. Each page of players the database sends is kept for an hour.
+// Drawn for the request when the address has a query (lib/routing.ts); without one, s/players keeps this page and revalidates it every day. Each page of players the database sends is kept for a day.
 
 const DEF_SORT = "name.asc";
 const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";

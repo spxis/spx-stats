@@ -1,8 +1,8 @@
 import { venuesGeoJson } from "@/lib/venueDataset";
 import { getVenueRecords } from "@/lib/venueData";
 
-// The open dataset of venues as GeoJSON, complete (every kind, with a kind property; GET /api/venues defaults to home only) (RFC 7946, [longitude, latitude]); name, licence, attribution and sources are top-level members. Kept an hour; no query is read.
-export const revalidate = 3600;
+// The open dataset of venues as GeoJSON, complete (every kind, with a kind property; GET /api/venues defaults to home only) (RFC 7946, [longitude, latitude]); name, licence, attribution and sources are top-level members. Kept a day; no query is read.
+export const revalidate = 86400;
 
 export async function GET() {
   try {

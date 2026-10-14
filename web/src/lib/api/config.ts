@@ -20,8 +20,13 @@ export const REST_URL = LOCAL.test(local) ? local.replace(/\/*$/, "/") : `${BASE
 export const API_KEY =
   env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || "sb_publishable_FmeiL6oX9_Mrb8psQZFSQg_YO_O4afC";
 
-/** Seconds a response is kept before the next request refreshes it in the background. */
-export const REVALIDATE = 3600;
+/**
+ * Seconds a response is kept before the next request refreshes it in the background: one day. Data changes only through releases, and
+ * the release runner revalidates the changed tables' cache tags (POST /api/revalidate, lib/api/tags.ts) right after each one, so the
+ * time is only a safety net. Segment config (`export const revalidate = 86400`) must be a literal number, so pages repeat it;
+ * scripts/revalidate.test.ts checks that every literal equals this value.
+ */
+export const REVALIDATE = 86400;
 /** Seconds a retried read is kept (and so, because a page lives no longer than its shortest read, how long a page drawn after a failed first try is kept). */
 export const RETRY_REVALIDATE = 15;
 /** Rows PostgREST returns per request. */

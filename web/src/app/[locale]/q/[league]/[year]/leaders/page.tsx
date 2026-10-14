@@ -76,7 +76,7 @@ export default guard(async function LeadersPage({ params, searchParams }: PagePr
   const hasPlayers = !!PLAYER_SPECS[lg];
   const view = hasPlayers && sp.view === "players" ? "players" : "teams";
   const [standings, brands, abbrs, outageYears] = await Promise.all([getLeagueStandings(lg).catch(() => null), getBrands(), getAbbrs(lg), getOutageYears(lg)]);
-  // The champion going into the season, as the season page badges it (the same read, cached an hour: the years the league sat out do not break a reign).
+  // The champion going into the season, as the season page badges it (the same read, cached a day: the years the league sat out do not break a reign).
   const holders = titleHolders(summary.seasons, lg, outageYears);
   const prev = holders.before(y);
   const defending = prev?.champion_franchise != null ? { f: prev.champion_franchise, label: prev.label, streak: titleStreak(holders.byYear, prev.champion_franchise, prev.year, holders.sat) } : null;

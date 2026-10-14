@@ -26,7 +26,7 @@ import { seasonPath } from "@/lib/slug";
 import { franchiseOfName, getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const dynamicParams = false;
 export const generateStaticParams = () => LEAGUE_CODES.map((league) => ({ league }));
 

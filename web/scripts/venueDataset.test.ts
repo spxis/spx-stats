@@ -266,11 +266,11 @@ test("comparison puts empty values last in both directions", () => {
 
 const read = (path: string) => readFileSync(new URL(path, import.meta.url), "utf8");
 
-test("the downloads are kept routes: one revalidate hour, no request, no query, no per-request work", () => {
+test("the downloads are kept routes: one revalidate day, no request, no query, no per-request work", () => {
   for (const file of ["../src/app/venues.csv/route.ts", "../src/app/venues.geojson/route.ts"]) {
     assert.ok(existsSync(new URL(file, import.meta.url)), file);
     const src = read(file);
-    assert.match(src, /export const revalidate = 3600;/, file);
+    assert.match(src, /export const revalidate = 86400;/, file);
     assert.match(src, /export async function GET\(\)/, file);
     assert.doesNotMatch(src, /request|searchParams|cookies|headers\(|dynamic\s*=/, file);
     assert.doesNotMatch(src, /\bsql\b/i, file);

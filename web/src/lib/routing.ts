@@ -1,7 +1,7 @@
 /**
  * How a request reaches a page that can be kept (next.config.ts builds its rewrites from this; no Next imports, so a node script can test it).
  *
- * The public pages are static and revalidated every hour, so a visit costs no server render. Two things used to force a render
+ * The public pages are static, kept a day and refreshed on demand after each release (POST /api/revalidate), so a visit costs no server render. Two things used to force a render
  * per request, and both are now part of the route instead:
  *
  *   the language   app/[locale]/...   One copy of each page per language. The address a reader sees has no language in it:

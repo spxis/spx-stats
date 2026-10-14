@@ -26,7 +26,7 @@ export interface CoachLeague {
 
 /**
  * The head coaches who held the job with two or more franchises, league by league (api.team_season_staff and api.team_seasons, both
- * kept an hour). A coach has a page of his own only if he played; the others have none, and their bands go to the club instead.
+ * kept a day). A coach has a page of his own only if he played; the others have none, and their bands go to the club instead.
  */
 export const getCoachMoves = cache(async (): Promise<Record<string, CoachLeague>> => {
   const [brands, paths, playerPath] = await Promise.all([getBrands(), getPaths(), getPlayerPaths()]);

@@ -15,7 +15,7 @@ const champSchema = z.object({ year: int, franchise_id: int });
 
 /**
  * Every franchise of a league added up: four list requests (the league's team seasons, its playoff games, its title
- * seasons and the franchise names), each kept an hour by the API client. Same rows the team pages add up.
+ * seasons and the franchise names), each kept a day by the API client. Same rows the team pages add up.
  */
 export const getAllTime = cache(async (lg: string) => {
   const q = `league=eq.${lg}`;

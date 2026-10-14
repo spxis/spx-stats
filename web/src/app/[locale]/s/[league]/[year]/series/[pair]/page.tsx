@@ -40,7 +40,7 @@ import "@/components/series.css";
 import "@/components/game.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Kept and revalidated every hour, once per language (lib/routing.ts); its data comes from the hour-long cache.
+// Kept and revalidated every day, once per language (lib/routing.ts); its data comes from the day-long cache.
 
 const unitKey = (lg: string) => (lg === "nhl" ? "unit.nhl" : lg === "mlb" ? "unit.mlb" : "unit.other");
 

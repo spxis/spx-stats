@@ -35,7 +35,7 @@ import { playerIdOf, playerPath } from "@/lib/playerPath";
 import { seasonPath, withQuery } from "@/lib/slug";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/player/[player] keeps this page and revalidates it every hour. The data behind it keeps its one-hour cache (lib/api/client.ts).
+// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/player/[player] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
 /** The person an address means and the address they should have; null when the league or the id is not one. */
 async function locate(league: string, seg: string) {

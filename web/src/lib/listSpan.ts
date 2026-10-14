@@ -10,7 +10,7 @@ const lastSchema = z.object({ last_season: z.number() });
 
 /**
  * The earliest first season and the latest last season of an `api` list view under some filters (a league), two one-row reads that the data
- * cache keeps for an hour. It throws when no row has a season.
+ * cache keeps for a day. It throws when no row has a season.
  */
 export async function readSpan(view: string, filters: readonly string[]): Promise<Span> {
   const [lo, hi] = await Promise.all([

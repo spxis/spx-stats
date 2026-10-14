@@ -14,7 +14,7 @@ import { roundSay } from "@/lib/roundWords";
 import "@/components/series.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Kept and revalidated every hour, once per language (lib/routing.ts); its data comes from the hour-long cache.
+// Kept and revalidated every day, once per language (lib/routing.ts); its data comes from the day-long cache.
 
 const roundOfParam = (v: string) => (/^\d{1,2}$/.test(v) ? Number(v) : null);
 

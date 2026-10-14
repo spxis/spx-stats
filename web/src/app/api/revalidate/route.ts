@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * Called once by the release runner after a release changed production, so the pages it touched are rebuilt now instead of
- * within the hour. POST only (Next answers 405 to anything else). The caller must send REVALIDATE_SECRET as a Bearer token,
+ * within the day. POST only (Next answers 405 to anything else). The caller must send REVALIDATE_SECRET as a Bearer token,
  * compared in constant time. The only effect is revalidateTag for the listed cache tags; nothing is read or written.
  */
 export async function POST(request: Request) {

@@ -7,7 +7,7 @@ import { guard } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateMetadata() {
   const { say, locale } = await currentSpeaker();

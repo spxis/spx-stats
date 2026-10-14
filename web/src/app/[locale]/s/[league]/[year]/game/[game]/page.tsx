@@ -39,7 +39,7 @@ import { getPaths } from "@/lib/teamSlugs";
 import "@/components/series.css";
 import "@/components/game.css";
 
-// Kept and revalidated like the rest (lib/routing.ts; the layout's hour is the longest a page may live). Nothing is drawn at build time: each game is drawn on its first visit.
+// Kept and revalidated like the rest (lib/routing.ts; the layout's day is the longest a page may live). Nothing is drawn at build time: each game is drawn on its first visit.
 export const generateStaticParams = () => [];
 
 type Params = PageProps<"/[locale]/s/[league]/[year]/game/[game]">;

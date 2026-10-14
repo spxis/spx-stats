@@ -21,7 +21,7 @@ export interface LineageData {
   omitted: Record<string, number>;
 }
 
-/** Every franchise with its stretches under one name, from the team seasons and the team index (both kept an hour). */
+/** Every franchise with its stretches under one name, from the team seasons and the team index (both kept a day). */
 export const getLineage = cache(async (): Promise<LineageData> => {
   const [seasons, index, paths] = await Promise.all([
     teamSeasonRows("select=league,year,franchise_id,team,w,l,t,otl,champion&order=league,franchise_id,year", seasonSchema),

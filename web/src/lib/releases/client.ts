@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache } from "next/cache";
 import { z } from "zod";
 import { queuedAtBuild } from "@/lib/api/buildShare";
-import { API_KEY, REST_URL, RETRY_REVALIDATE } from "@/lib/api/config";
+import { API_KEY, REST_URL, RETRY_REVALIDATE, REVALIDATE } from "@/lib/api/config";
 import type { HealthEvent } from "./rules";
 
 /**
@@ -220,19 +220,19 @@ const versionRow = z.array(z.object({ number: z.string().regex(/^\d{4}\.\d{2}\.\
 
 /**
  * The newest finished release that changed production data, for the footer. Null when the view is missing or the call fails.
- * Kept for an hour like the pages around it (every page carries this footer, so a shorter time would make every kept page
+ * Kept for a day like the pages around it (every page carries this footer, so a shorter time would make every kept page
  * regenerate that often); a release refreshes it at once through the "data-version" tag (POST /api/revalidate).
  */
 export async function latestDataVersion(): Promise<string | null> {
   // A read that fails is tried once more and that try is kept briefly, so a footer drawn while the database struggles is replaced soon
-  // (a page lives no longer than its shortest read) instead of going without the version for an hour.
+  // (a page lives no longer than its shortest read) instead of going without the version for a day.
   for (let attempt = 0; attempt < 2; attempt++) {
     try {
       // Sent once per `next build`, not once per page-drawing worker (api/buildShare.ts).
       const res = await queuedAtBuild("data_version", () =>
         fetch(`${REST_URL}data_version?select=number`, {
           headers: { apikey: API_KEY, "accept-profile": "api" },
-          next: { revalidate: attempt ? RETRY_REVALIDATE : 3600, tags: ["data-version"] },
+          next: { revalidate: attempt ? RETRY_REVALIDATE : REVALIDATE, tags: ["data-version"] },
           signal: AbortSignal.timeout(3000),
         }),
       );

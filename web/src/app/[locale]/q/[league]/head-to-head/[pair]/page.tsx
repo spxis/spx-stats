@@ -42,7 +42,7 @@ import { getLeagueClubs, getPaths, groupOf, h2hOf } from "@/lib/teamSlugs";
 import { GroupPage, groupMeta } from "./group";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/head-to-head/[pair] keeps this page and revalidates it every hour. The data behind it keeps its one-hour cache (lib/api/client.ts).
+// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/head-to-head/[pair] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
 const UNIT = { nhl: "unit.goals", nba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points" } as const satisfies Record<string, PhraseKey>;
 /** A long history is listed from the newest game; the rest is one click away (?list=all). */

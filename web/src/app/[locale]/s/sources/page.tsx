@@ -10,7 +10,7 @@ import { tableOf } from "@/lib/sort";
 import { guard } from "@/lib/loadGuard";
 import { getProvenance } from "@/lib/provenanceData";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateMetadata() {
   const { say, locale } = await currentSpeaker();

@@ -24,7 +24,7 @@ const held = new Map<string, () => Promise<VenueIndex>>();
 /**
  * The venues of the /venues list in the reader's language, found by address: the home venues, and the world soccer stadiums (those with no coordinates
  * included: they have a page, not a dot). Kept a few minutes per server instance and language, so a crowd of venue pages drawn together (a crawler walking
- * the sitemap) builds the list once, not once per page; each page is kept an hour by the CDN.
+ * the sitemap) builds the list once, not once per page; each page is kept a day.
  */
 export async function getVenueIndex(): Promise<VenueIndex> {
   const { say, locale } = await currentSpeaker();

@@ -15,7 +15,7 @@ import { soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPat
 import { tableOf } from "@/lib/sort";
 import "@/components/soccer.css";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // Nothing is drawn at build time: each person is drawn on first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];

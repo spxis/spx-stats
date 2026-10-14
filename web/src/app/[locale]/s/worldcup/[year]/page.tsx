@@ -24,7 +24,7 @@ import { tableOf } from "@/lib/sort";
 import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 // Nothing is drawn at build time: each tournament is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];

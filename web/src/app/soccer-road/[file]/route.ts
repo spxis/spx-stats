@@ -6,8 +6,8 @@ import { roadChartFor } from "@/lib/soccerRoadChart";
 // One tournament's road to the final as a file (/soccer-road/2022.fr.svg), which the tournament page fetches when the figure comes into view instead of carrying
 // the drawing in its HTML (components/RoadArt.tsx; lib/soccerRoadChart.ts draws it). Written in the reader's language, the way the page's own text is, with kyogijo's
 // rules left to the page (components/kyogijo-road.css), so the drawing follows the page's light and dark. Drawn on its first request, then kept like the page is
-// (an hour). No query is read; a name that is no tournament with a road is a 404.
-export const revalidate = 3600;
+// (a day). No query is read; a name that is no tournament with a road is a 404.
+export const revalidate = 86400;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

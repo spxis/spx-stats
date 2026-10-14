@@ -1,5 +1,7 @@
 import assert from "node:assert/strict";
+import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
+import { REVALIDATE } from "../src/lib/api/config.ts";
 import { tagsFor } from "../src/lib/api/tags.ts";
 import { MAX_TAGS, bearer, parseTags, secretMatches } from "../src/lib/revalidate.ts";
 import { barMessages, parseTab, requestBlock } from "../src/lib/releases/rules.ts";
@@ -64,4 +66,42 @@ test("the admin bar says nothing unless something needs the admin", () => {
   assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false }), []);
   assert.deepEqual(barMessages({ waiting: 1, drift: 0, paused: false }), ["1 release is waiting for approval"]);
   assert.deepEqual(barMessages({ waiting: 3, drift: 1, paused: true }), ["3 releases are waiting for approval", "a drift fix is proposed", "auto-approval is on Hold"]);
+});
+
+/* ---------- how long a kept page lives ---------------------------------------------------- */
+
+const SRC = new URL("../src/", import.meta.url);
+const sourceFiles = (readdirSync(SRC, { recursive: true }) as string[])
+  .filter((f) => /\.tsx?$/.test(f))
+  .map((f) => ({ f, text: readFileSync(new URL(f, SRC), "utf8") }));
+
+test("every kept page, route and read lives a day (86400); only the signed-in pages are drawn per request (0)", () => {
+  const seen: string[] = [];
+  for (const { f, text } of sourceFiles) {
+    for (const m of text.matchAll(/export const revalidate = (\S+?);/g)) {
+      seen.push(f);
+      const want = f.startsWith("app/(dyn)/") ? "0" : "86400";
+      assert.equal(m[1], want, `${f}: segment config revalidate must be the literal ${want}`);
+    }
+    assert.doesNotMatch(text, /revalidate:\s*3600\b/, `${f}: a one-hour read time`);
+    assert.doesNotMatch(text, /revalidate\s*=\s*3600\b/, `${f}: a one-hour page time`);
+  }
+  assert.ok(seen.length > 20, "found the kept pages");
+  assert.ok(seen.includes("app/[locale]/layout.tsx"));
+  assert.equal(REVALIDATE, 86400);
+});
+
+test("every server fetch of the archive carries cache tags the release runner can revalidate", () => {
+  const client = readFileSync(new URL("lib/api/client.ts", SRC), "utf8");
+  const releases = readFileSync(new URL("lib/releases/client.ts", SRC), "utf8");
+  assert.match(client, /next: \{ revalidate: [^}]*tags: tagsFor\(view, query\) \}/);
+  assert.match(releases, /next: \{ revalidate: [^}]*tags: \["data-version"\] \}/);
+  // The only other read of the archive is the signed-in admin's, which is never kept (no-store) or is the 60 second tagged summary.
+  assert.equal([...client.matchAll(/\bfetch\(/g)].length, 1);
+  assert.equal([...releases.matchAll(/\bfetch\(/g)].length, 2);
+  // No other module in the site reaches the archive.
+  for (const { f, text } of sourceFiles) {
+    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts") continue;
+    assert.doesNotMatch(text, /\bREST_URL\b/, `${f}: reads the archive without cache tags`);
+  }
 });

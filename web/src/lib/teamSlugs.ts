@@ -11,7 +11,7 @@ import { buildSlugs, franchiseNamed, makePaths, parsePair, resolveFranchise, res
 const nameRow = z.object({ league: z.string(), franchise_id: z.number(), name: z.string(), name_from: z.string().nullable(), name_to: z.string().nullable() });
 const seasonRow = z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), team: z.string().nullable() });
 
-/** Every league's team addresses, built from the franchise names and each season's team name (kept an hour like the rest). */
+/** Every league's team addresses, built from the franchise names and each season's team name (kept a day like the rest). */
 export const getSlugs = cache(async () => {
   const [names, seasons] = await Promise.all([
     rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from", nameRow),

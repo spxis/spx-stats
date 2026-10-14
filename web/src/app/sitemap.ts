@@ -15,7 +15,7 @@ import { soccerTeamPath, tournamentPath } from "@/lib/soccerPath";
 import { getMlsClubs, getMlsSeasons } from "@/lib/mls";
 import { MLS_PATH, mlsClubPath, mlsSeasonPath } from "@/lib/mlsPath";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 const url = (path: string) => `${SITE_URL}${path}`;
 

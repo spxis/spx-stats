@@ -321,7 +321,7 @@ production on 2026-10-14). One command from the repo root builds the pages from 
   `SPX_REST_URL=http://127.0.0.1:3190/` and `vercel deploy --prebuilt --prod`, stops the container by name, makes one request to spxn.com, and prunes
   Vercel to the live deployment and one previous (plus the pinned `spx-stats-1p836thn0`, one `vercel remove --safe` per URL).
 - `SPX_REST_URL` is read by `web/src/lib/api/config.ts` and accepted only for `127.0.0.1`/`localhost` (`pnpm test:resturl`). It is never set on
-  Vercel: pages revalidated at run time (hourly ISR) still read production, so the data a page shows after its first revalidation is production's.
+  Vercel: pages revalidated at run time (daily ISR, or on demand after a release) still read production, so the data a page shows after its first revalidation is production's.
 - DS1 holds more than production (`PUBLISH_FILTER`: the game rows of `core.external_id`). **No `api` view or function that is in production reads
   `core.external_id`** (checked in `db/migrations`; only `ingest.report_results`, not installed there, does), and PostgREST exposes only schema
   `api`, so the DS1 build needs no filter. If a view ever reads that table, filter it in the view or add the same condition to the build.
@@ -489,7 +489,7 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    empty for the whole league, else `<source code>:<source key>`; EN required, FR and JA when known; `source` is a
    `meta.source` code, `source_url` the page), run `scripts/build_core.sh` or just `psql -f db/build/183_season_notes.sql`
    from the repo root, then publish `core.season_note` to production with a data release (item 5). Check one page on
-   spxn.com (pages cache for an hour). Migration `033` creates the table.
+   spxn.com (pages are kept a day, refreshed on demand after the release). Migration `033` creates the table.
    **After loading new seasons** (a new league, a new year, a backfill like the NFL before 1999) the load is not done until these
    rerunnable steps have run on DS1, each through `scripts/mac/ds1-apply.sh`, and the load's report names each one that ran:
    `165` champions from the games, `172` champion links, `175` team brands and logos, `178` alignment (conferences and divisions; a
@@ -547,7 +547,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
 
 - **`web/`** is the site: Next.js 16 App Router, React 19, TypeScript strict, Tailwind v4, Zod 4, d3, pnpm.
   - Read `web/node_modules/next/dist/docs/` before writing Next.js code: this version differs from older ones.
-  - Data comes from PostgREST (`Accept-Profile: api`) through server fetches with `next: { revalidate: 3600 }`,
+  - Data comes from PostgREST (`Accept-Profile: api`) through server fetches with `next: { revalidate: REVALIDATE }` (one day, 86400; every fetch carries cache tags, `lib/api/tags.ts`),
     validated with Zod. A failed fetch shows an inline "Couldn't load" message.
   - **A read the database could not answer** (5xx, timeout, network; `ApiError.transient`) makes the page throw in production, not draw "Couldn't load": Next keeps the last good copy of a kept page when its regeneration throws and retries on the next request (a build fails instead of baking the note). A path with no copy yet gets `error.tsx`, the same note with a retry button. 4xx answers and schema errors keep the inline note, as does `next dev` (`lib/api/failure.ts`, `pnpm test:failure`). Next cannot tell a first render from a regeneration, hence this rule.
   - **Every read of `games` carries a season** (`year=eq.`): `api.games` reaches its league only through a join, so one without it scans all ~386k games and outlasts the 8 s limit. `getGameDay`, `getGameBounds` and `getGamesBetween` take the seasons from `season_summary` (`lib/gameSeasons.ts`, `pnpm test:seasons`).
@@ -555,8 +555,9 @@ Ask John before deleting or overwriting data. Production changes only through ap
     go out once per worker. `web/src/lib/api/buildShare.ts` makes the workers queue per read (lock files under `.next/cache`) so
     it goes out once per build; it only acts while `NEXT_PHASE` is the production build (`SPX_BUILD_QUEUE=off` disables it).
     A new server `fetch` to the database should go through `queuedAtBuild` the same way (`lib/api/client.ts` already does).
-- **Kept pages (no server work per view).** Every public page is static and revalidated hourly (ISR), so a visit costs no
-  server render: the Vercel account has a 4 h a month Active CPU cap. Two things used to force a render per request,
+- **Kept pages (no server work per view).** Every public page is static and kept a day (`revalidate = 86400`, a literal
+  in each segment; `pnpm test:revalidate` checks them), and the release runner refreshes the changed tables' cache tags right after each release
+  (POST `/api/revalidate`), so a visit costs no server render and almost no database egress (Supabase Free: 5 GB a month). Two things used to force a render per request,
   and both are part of the route now (`web/src/lib/routing.ts` explains it; `web/next.config.ts` builds the rewrites):
   - **Language** is the first route segment, `app/[locale]` (read anywhere with `currentLocale()`, which uses
     `next/root-params`). The address a reader sees has no language: rewrites pick `/en`, `/fr` or `/ja` from the

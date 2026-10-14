@@ -26,7 +26,7 @@ export interface TeamBoardData {
  * Every franchise for the teams page, with what the browser needs to filter and draw the list: former names with the logo of their years, the
  * country and home of the latest season, and the conferences and divisions it has sat in. The franchise list (api.team_index) must load; the rest
  * is optional, and where a read fails the page just has no country, map, group or former-name logo, never a wrong one. All of it is read once,
- * at the hour the page is kept, and sent to the browser, so a visit asks the server for nothing.
+ * at the time the page is kept, and sent to the browser, so a visit asks the server for nothing.
  */
 export async function getTeamBoard(french: boolean): Promise<TeamBoardData> {
   const [index, brands, names, cities, placements, ...aligned] = await Promise.all([

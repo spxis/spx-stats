@@ -9,7 +9,7 @@ import { LEAGUES } from "@/lib/leagues";
 import { LOCALE_OG } from "@/lib/locale";
 import { guard } from "@/lib/loadGuard";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 export async function generateMetadata() {
   const { say, locale } = await currentSpeaker();

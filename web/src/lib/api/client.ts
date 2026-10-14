@@ -28,7 +28,7 @@ const TIMEOUT_MS = 8000;
  * the network drops or it takes too long; 4xx answers are final. Each try carries its own abort signal, which also keeps Next from
  * handing the retry the failed answer it remembered for the first try. The retry is kept for only RETRY_REVALIDATE seconds, and a page lives
  * no longer than the shortest read it made, so a page drawn while the database was struggling is replaced within seconds instead of
- * showing the "Couldn't load" note, or a gap, for the hour a good page is kept. Asked once per page render (`cache()`), so the same page
+ * showing the "Couldn't load" note, or a gap, for the day a good page is kept. Asked once per page render (`cache()`), so the same page
  * of a view read twice in one render costs one request, and each reader gets its own copy of the answer.
  */
 const fetchPage = cache(async (view: string, query: string, from: number, size: number, count: boolean): Promise<Response> => {

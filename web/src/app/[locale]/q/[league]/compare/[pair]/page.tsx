@@ -33,7 +33,7 @@ import { deriveTeamGames, seasonRecord } from "@/lib/teamSeason";
 import { getLeagueClubs, getPaths, compareOf } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
-// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/compare/[pair] keeps this page and revalidates it every hour. The data behind it keeps its one-hour cache (lib/api/client.ts).
+// Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/compare/[pair] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
 const UNIT = { nhl: "unit.goals", nba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points" } as const satisfies Record<string, PhraseKey>;
 

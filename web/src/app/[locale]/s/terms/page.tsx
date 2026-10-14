@@ -4,7 +4,7 @@ import { Rich } from "@/components/i18n/Rich";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 
 const UPDATED = new Date("2026-10-11");
 

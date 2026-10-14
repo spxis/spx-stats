@@ -5,7 +5,7 @@ import { standingRows } from "./api/teamSeasons";
 import { leaderStandingSchema, leaderStatSchema, personNameSchema, type LeaderStat } from "./api/leaders";
 import type { PlayerGroupId } from "./leaderPlayers";
 
-/** Every standings row of a league, all seasons, trimmed to the columns the leaders use (a few pages, kept an hour). */
+/** Every standings row of a league, all seasons, trimmed to the columns the leaders use (a few pages, kept a day). */
 export const getLeagueStandings = cache(async (lg: string) =>
   standingRows(`league=eq.${lg}&select=year,team_id,franchise_id,team,gp,w,l,t,otl,pts,pf,pa&order=year,team_id`, leaderStandingSchema));
 
