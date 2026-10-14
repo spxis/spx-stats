@@ -2,7 +2,9 @@
 -- Sources, mapped through ref.position_alias (db/build/185_ref_position.sql):
 --   * Wikidata "position played" (P413) statements of the person's Wikidata item, preferred first, in Wikidata's order; statements that
 --     name a job (coach, manager) are dropped;
---   * the NHL API's position for the person's NHL API id, the most recent first.
+--   * the NHL API's position for the person's NHL API id, the most recent first;
+--   * Wikidata's P413 statements of the players of the NBA and CFL clubs (legacy_rosters, db/build/179), after the ones above;
+--   * the position codes of a person's nflverse rosters (core.roster_stint, source nflverse, db/build/181), the most often held first.
 -- The main position is the first code; positions lists every code the person holds, the main one first. An unsided "winger" is LW and RW; a hockey "forward" is F
 -- (not C, LW or RW, which it could be), and is dropped when the person has a more exact forward position. A raw value that fits no list
 -- ("utility player") is logged in meta.data_issue (entity_kind 'position') and leaves nothing; so does every raw
@@ -37,7 +39,24 @@ from core.external_id x
 join meta.source s on s.source_id = x.source_id and s.code = 'nhl_api'
 join (select player_id, position, max(season * 10 + game_type) as last from legacy_nhlapi.player_season
        where position is not null and btrim(position) <> '' group by player_id, position) ps on ps.player_id::text = x.external_key
-where x.entity_kind = 'person';
+where x.entity_kind = 'person'
+union all
+-- Wikidata's statements for the players of the NBA and CFL clubs (legacy_rosters, db/build/179), after the ones above
+select x.entity_id, 'wikidata', lower(btrim(it.label)),
+       500 + row_number() over (partition by x.entity_id order by (cl.rank = 'preferred') desc, cl.n)
+from core.external_id x
+join meta.source s on s.source_id = x.source_id and s.code = 'wikidata'
+join legacy_rosters.claim cl on cl.qid = x.external_key and cl.prop = 'P413' and coalesce(cl.rank, 'normal') <> 'deprecated'
+left join legacy_rosters.redirect r on r.from_qid = cl.value_qid
+join legacy_rosters.item it on it.qid = coalesce(r.to_qid, cl.value_qid)
+where x.entity_kind = 'person' and it.label is not null and btrim(it.label) <> '' and it.label !~* '(^| )(coach|manager)$'
+union all
+-- the position codes of a person's nflverse rosters (db/build/181), the most often held first, then the latest
+select z.person_id, 'nflverse', lower(z.position), 3000 + dense_rank() over (partition by z.person_id order by z.n desc, z.last desc, z.position)
+from (select rs.person_id, rs.position, count(*) as n, max(se.start_year) as last
+        from core.roster_stint rs join core.team_season ts using (team_season_id) join core.season se using (season_id)
+       where rs.source_id = (select source_id from meta.source where code = 'nflverse') and rs.position is not null
+       group by rs.person_id, rs.position) z;
 
 -- A value that names two positions ("rf/lf", "Forward/center") is split.
 create temp table tok on commit drop as

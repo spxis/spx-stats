@@ -71,6 +71,47 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
   }
 });
 
+const listSchema = z.object({
+  person_id: z.number(), name: z.string(), position: z.string().nullable(), positions: z.array(z.string()).nullable(), country: z.string().nullable(),
+  jersey_number: z.number().nullable(), status: z.string().nullable(),
+});
+
+/** The leagues whose rosters are archived as lists, without player statistics (NBA, CFL: Wikidata and Wikipedia; NFL: nflverse). */
+const LISTED = new Set(["nba", "nfl", "cfl"]);
+
+/** A player on a club's season roster for a league with no player statistics. */
+export interface ListedPlayer {
+  id: number;
+  name: string;
+  /** The main position as a code, else null. */
+  pos: string | null;
+  /** Every position the player holds as codes, the main one first. */
+  positions: string[];
+  /** The country code of the birthplace, else of the nationality; null when neither is known. */
+  nat: string | null;
+  number: number | null;
+  /** nflverse's roster status (ACT, RES, CUT, DEV ...), else null. */
+  status: string | null;
+}
+
+/**
+ * The players listed on one club's season (api.team_season_roster, migration 093) for a league whose rosters are loaded without statistics. One request.
+ * Empty for any other league (a few award winners' stints would be a partial list), when nothing is listed and when the read fails softly.
+ */
+export const getTeamList = cache(async (league: string, teamSeasonId: number): Promise<ListedPlayer[]> => {
+  if (!LISTED.has(league)) return [];
+  try {
+    const list = await rows("team_season_roster", `team_season_id=eq.${teamSeasonId}&select=person_id,name,position,positions,country,jersey_number,status`, listSchema);
+    return list.map((p) => ({
+      id: p.person_id, name: p.name, pos: short(p.position), positions: positionCodes(p.positions, p.position), nat: p.country?.toUpperCase() ?? null,
+      number: p.jersey_number, status: p.status,
+    }));
+  } catch (e) {
+    if (!canFallBack(e)) throw e;
+    return [];
+  }
+});
+
 const staffSchema = z.object({
   role: z.enum(["head_coach", "captain", "alternate_captain"]), person_id: z.number(), name: z.string(), kind: z.string(),
   first_on: z.string().nullable(), last_on: z.string().nullable(),

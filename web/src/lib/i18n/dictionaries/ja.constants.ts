@@ -1798,4 +1798,8 @@ export const JA: Dictionary = {
   "players.azLast": "姓",
   "players.azFirst": "名",
   "players.azNone": "{letter}：この条件に当てはまる選手はいません",
+  "roster.players": "選手（{n}）",
+  "roster.number": "背番号",
+  "roster.noteList": "{season}のこのクラブの選手名簿（ポジション順）です。移籍した選手はそれぞれのクラブに載ります。このリーグの選手成績はまだ保管していません。",
+  "roster.noteHidden": "シーズン前に解雇された選手と練習生は載せていません。",
 };

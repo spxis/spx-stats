@@ -1798,4 +1798,8 @@ export const FR: Dictionary = {
   "players.azLast": "Nom de famille",
   "players.azFirst": "Prénom",
   "players.azNone": "{letter} : aucun joueur avec ces choix",
+  "roster.players": "Joueurs ({n})",
+  "roster.number": "N°",
+  "roster.noteList": "Joueurs de l’effectif de ce club en {season}, par poste. Un joueur qui a changé de club figure sous chacun. Aucune statistique de joueur n’est encore archivée pour cette ligue.",
+  "roster.noteHidden": "Les joueurs libérés avant la saison et l’équipe d’entraînement ne sont pas listés.",
 };

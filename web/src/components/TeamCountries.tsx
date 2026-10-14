@@ -10,7 +10,7 @@ import { flagCodes } from "@/lib/flagCodes";
 import { MIN_PLAYERS, rankCountries, sumStats, tally, UNKNOWN, withOther, type RankKind } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { countryName, pctText } from "@/lib/people-format";
-import { getRoster, type RosterPlayer } from "@/lib/roster";
+import { getRoster, getTeamList, type RosterPlayer } from "@/lib/roster";
 import { STAT_GROUP_ORDER } from "@/lib/playerStats";
 import "@/components/country.css";
 
@@ -26,8 +26,10 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
   lg: string; year: number; season: string; teamSeasonId: number; path: string; sp: Record<string, string | string[] | undefined>;
 }) {
   const roster = await getRoster(teamSeasonId);
+  const listed = roster.length ? [] : await getTeamList(lg, teamSeasonId);
   let counts: [string, number][];
   if (roster.length) counts = roster.map((p) => [p.nat ?? UNKNOWN, 1] as [string, number]);
+  else if (listed.length) counts = listed.filter((p) => !p.status || (p.status !== "CUT" && p.status !== "DEV")).map((p) => [p.nat ?? UNKNOWN, 1] as [string, number]);
   else {
     const club = await getClubSeasonCountries(teamSeasonId);
     if (!club?.length) return null;

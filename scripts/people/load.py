@@ -85,4 +85,5 @@ def main(raw, links):
     print(len(items), "items,", len(claims), "statements,", len(redirects), "redirects,", sum(1 for r in link_rows if r[3]), "of", len(link_rows), "links resolved,", len(files), "files archived", p.stderr.strip()[:500])
     if p.returncode: sys.exit(1)
 
-main(sys.argv[1], sys.argv[2])
+if __name__ == "__main__":
+    main(sys.argv[1], sys.argv[2])

@@ -113,7 +113,9 @@ from pf left join core.external_id x
 -- People no longer wanted (no award of theirs links to them any more) go, with their key.
 create temp table gone on commit drop as
 select x.entity_id from core.external_id x
-where x.entity_kind = 'person' and x.source_id = (select source_id from wd) and x.external_key not in (select qid from want);
+where x.entity_kind = 'person' and x.source_id = (select source_id from wd) and x.external_key not in (select qid from want)
+  -- a player 179 placed on an NBA or CFL roster is a Wikidata person too (this step's own stints are gone by now; any left belong to another step)
+  and not exists (select 1 from core.roster_stint r where r.person_id = x.entity_id);
 delete from core.external_id where entity_kind = 'person' and entity_id in (select entity_id from gone) and source_id = (select source_id from wd);
 -- a record another source also keys (a merge, 185) stays
 delete from core.person where person_id in (select entity_id from gone)
