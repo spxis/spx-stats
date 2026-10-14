@@ -45,6 +45,7 @@ import { clubPins, getVenueTeams } from "@/lib/venueMap";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
 import { factsLine, getVenueFacts, getVenueNames, nameIn, nowName, placeAddress } from "@/lib/venueName";
 import { idleYears } from "@/lib/noSeason";
+import { nameEras, type NameSpan } from "@/lib/nameEras";
 import { recShare, tableOf } from "@/lib/sort";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
@@ -113,7 +114,16 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   // A club with no recorded name span (the early Stanley Cup challengers) gets the years of its seasons, so a club that is gone does not read "until today".
   const seasonYears = [...t.seasons.map((x) => x[0]), ...t.unrecorded.map((x) => x[0])];
   const latestYear = Math.max(0, ...summary.seasons.filter((x) => x.league === lg).map((x) => x.year));
-  const names = t.names.map((n) => (n.from == null && n.to == null && seasonYears.length && Math.max(...seasonYears) < latestYear ? { ...n, from: String(Math.min(...seasonYears)), to: String(Math.max(...seasonYears)) } : n));
+  // A club that is gone ends its final name with its last season rather than "today". `span` holds the days the name covers for counting
+  // its seasons (the last season counts, so those run to the next 1 January).
+  const gone = seasonYears.length > 0 && Math.max(...seasonYears) < latestYear;
+  const names: (NameSpan & { span?: NameSpan })[] = t.names.map((n, i) => {
+    if (n.from == null && n.to == null && gone) {
+      const from = String(Math.min(...seasonYears)), to = String(Math.max(...seasonYears));
+      return { ...n, from, to, span: { name: n.name, from, to: String(Number(to) + 1) } };
+    }
+    return gone && n.to == null && i === t.names.length - 1 ? { ...n, to: String(Math.max(...seasonYears)), span: n } : n;
+  });
   const now = names.at(-1)?.name || say("team.fallback", { id: f });
   const b = brandFor(brands, f);
   const holders = titleHolders(summary.seasons, lg, outageYears);
@@ -203,10 +213,16 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       ),
     },
   ], (r) => r.year, (r) => (idle.has(r.year) ? "idlerow" : undefined));
-  const nameTable = tableOf(names, [
-    { key: "name", label: say("col.name"), cls: "team", get: (n) => n.name },
-    { key: "from", label: say("col.from"), get: (n) => n.from, cell: (n) => n.from || "" },
-    { key: "until", label: say("col.until"), get: (n) => n.to || "9999", cell: (n) => n.to || say("team.today") },
+  // Each name with the seasons played under it and its logo (the club's current one, drawn dimmed, where we hold none for those years).
+  const eras = nameEras(names.map((n) => n.span ?? n), [...new Set([...rows.map((r) => r.year), ...bare.keys()])], brands, f).map((e, i) => ({ ...e, from: names[i].from, to: names[i].to }));
+  const nameTable = tableOf(eras, [
+    {
+      key: "name", label: say("col.name"), cls: "team", get: (n) => n.name,
+      cell: (n) => <><TeamLogo url={n.logo} dim={n.current} title={n.current ? say("team.currentLogo") : undefined} />{n.name}</>,
+    },
+    { key: "from", label: say("col.from"), cls: "seasoncell", get: (n) => n.from, cell: (n) => n.from || "" },
+    { key: "until", label: say("col.until"), cls: "seasoncell", get: (n) => n.to || "9999", cell: (n) => n.to || say("team.today") },
+    { key: "seasons", label: say("col.seasons"), num: true, get: (n) => n.seasons },
   ], (n, i) => `${i}|${n.name}`);
   const venues = (brands[f] ?? [])
     .filter((v, i, all) => v.home_venue && all.findIndex((w) => w.home_venue === v.home_venue && w.brand_from === v.brand_from) === i)
@@ -318,7 +334,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       {names.length ? (
         <section className="section">
           <h2>{say("team.names")}</h2>
-          <SortTable {...nameTable} param="sort_names" />
+          <div className="scroll"><SortTable {...nameTable} param="sort_names" /></div>
         </section>
       ) : null}
       {venues.length ? (

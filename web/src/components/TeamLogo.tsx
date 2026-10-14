@@ -13,12 +13,13 @@ export const LOGO_SIZE = 20;
  * A team logo, hot-linked from Wikimedia Commons and shown small to identify the team (see the Logos page).
  * A logo that fails to load is dropped rather than left as a broken image. It carries no alt text of its own because the
  * team's name always sits beside it (a screen reader would read the name twice); use TeamLabel for a logo with its name.
+ * `dim` draws a logo that stands in for the real one (the current mark beside a past name), with `title` saying so.
  */
-export function TeamLogo({ url, size = LOGO_SIZE, shape = "regular" }: { url: string | null | undefined; size?: number; shape?: LogoShape }) {
+export function TeamLogo({ url, size = LOGO_SIZE, shape = "regular", dim = false, title }: { url: string | null | undefined; size?: number; shape?: LogoShape; dim?: boolean; title?: string }) {
   const [failed, setFailed] = useState(false);
   if (!url || failed) return null;
   return (
     // eslint-disable-next-line @next/next/no-img-element -- remote, already-small logos; next/image would proxy a third party's trademarks
-    <img className={shape === "regular" ? "logo" : `logo ${shape}`} style={{ "--s": `${size}px` } as CSSProperties} src={url} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
+    <img className={`${shape === "regular" ? "logo" : `logo ${shape}`}${dim ? " dim" : ""}`} title={title} style={{ "--s": `${size}px` } as CSSProperties} src={url} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setFailed(true)} />
   );
 }

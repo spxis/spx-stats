@@ -42,6 +42,7 @@
     "test:review": "node --test scripts/personReview.test.ts",
     "test:looks": "node --test scripts/seriesLooks.test.ts",
     "test:label": "node --test scripts/teamLabel.test.ts",
+    "test:eras": "node --test scripts/nameEras.test.ts",
     "test:player": "node --test scripts/player.test.ts",
     "test:soccer": "node --test scripts/soccer.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",

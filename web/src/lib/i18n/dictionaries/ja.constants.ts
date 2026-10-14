@@ -148,6 +148,7 @@ export const JA: Dictionary = {
   "team.nextHome": "次の本拠地",
   "team.everyGame": "{season}の全試合",
   "team.today": "現在",
+  "team.currentLogo": "現在のロゴ",
   "winline.none": "結果のそろったシーズンはまだありません。",
   "winline.aria": "シーズン別の勝率",
   "winline.share": "勝率 {share}",

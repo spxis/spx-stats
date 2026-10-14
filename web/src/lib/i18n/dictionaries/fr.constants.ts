@@ -148,6 +148,7 @@ export const FR: Dictionary = {
   "team.nextHome": "Prochain domicile",
   "team.everyGame": "Tous les matchs de {season}",
   "team.today": "aujourd’hui",
+  "team.currentLogo": "Logo actuel",
   "winline.none": "Aucune saison complète de résultats pour l’instant.",
   "winline.aria": "Pourcentage de victoires par saison",
   "winline.share": "Taux de victoire {share}",
