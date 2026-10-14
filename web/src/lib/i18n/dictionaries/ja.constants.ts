@@ -257,6 +257,7 @@ export const JA: Dictionary = {
   // table columns and figures
   "table.sortAsc": "{label}、昇順に並べ替え",
   "table.sortDesc": "{label}、降順に並べ替え",
+  "table.showAll": "すべて表示（{count}件）",
   "col.season": "シーズン",
   "col.champion": "優勝",
   "col.final": "決勝",

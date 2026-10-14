@@ -26,6 +26,9 @@ import "@/components/soccer.css";
 
 export const revalidate = 86400;
 
+/** The long tables (teams, matches, scorers) show this many rows until the reader asks for all of them. */
+const LONG_TABLE = 20;
+
 // Nothing is drawn at build time: each tournament is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];
 
@@ -165,20 +168,20 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       {teams.length ? (
         <section className="section scroll" id="teams">
           <h2>{say("wc.t.teams")}</h2>
-          <div className="tablebox"><SortTable {...teamTable} def="reached.desc" param="sort_teams" /></div>
+          <div className="tablebox"><SortTable {...teamTable} def="reached.desc" param="sort_teams" limit={LONG_TABLE} /></div>
         </section>
       ) : null}
       {matches.length ? (
         <section className="section scroll" id="matches">
           <h2>{say("wc.t.matches")}</h2>
-          <div className="tablebox"><SortTable {...matchTable} def="date.asc" param="sort_games" /></div>
+          <div className="tablebox"><SortTable {...matchTable} def="date.asc" param="sort_games" limit={LONG_TABLE} /></div>
           {matches.some((m) => m.lineup_players === 0) ? <p className="note">{say("wc.t.noLineups")}</p> : null}
         </section>
       ) : null}
       {scorers.length ? (
         <section className="section scroll" id="scorers">
           <h2>{say("wc.t.scorers")}</h2>
-          <div className="tablebox"><SortTable {...scorerTable} def="goals.desc" param="sort_scorers" /></div>
+          <div className="tablebox"><SortTable {...scorerTable} def="goals.desc" param="sort_scorers" limit={LONG_TABLE} /></div>
           {scorers.some((s) => s.person_id == null) ? <p className="note">{say("wc.t.scorerNamesOnly")}</p> : null}
         </section>
       ) : null}

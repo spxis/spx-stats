@@ -369,6 +369,11 @@
   th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--ink); }
   th[aria-sort="ascending"] .arrow, th[aria-sort="descending"] .arrow { opacity: 1; color: var(--accent); }
   table[aria-busy="true"] { opacity: .6; }
+  /* The button under a table that shows its first rows (SortTable `limit`). */
+  .showall { margin: 10px 0 0; }
+  .showall button { font: inherit; padding: 6px 12px; border: 1px solid var(--rule); background: none; color: var(--accent); cursor: pointer; }
+  .showall button:hover { border-color: var(--accent); }
+  .showall button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   td a { text-underline-offset: 3px; }
 
   /* Team charts: the accent is the team's colour; motion only when the reader allows it. */

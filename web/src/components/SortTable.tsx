@@ -57,6 +57,8 @@ interface Props {
   link?: RowLink;
   /** The page keeps the sort itself (it sorts and pages the whole list before giving this table a page of it): a press calls this with the new sort, and nothing is written to the address here. Pair it with `initial`, the sort the page holds. */
   onSort?: (sort: SortKey[]) => void;
+  /** Draws only the first `limit` rows of the sort in force, under a "Show all" button that draws the rest (already on the page: no request). The sort still covers every row. */
+  limit?: number;
 }
 
 /**
@@ -65,7 +67,7 @@ interface Props {
  * and blanks come last whichever way the sort runs. The rows arrive already drawn (the page makes the links), so the
  * table is server-rendered and crawlable.
  */
-export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort }: Props) {
+export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort, limit }: Props) {
   const router = useRouter();
   const { say } = useSpeaker();
   const known = useMemo(() => columns.map((c) => c.key), [columns]);
@@ -84,7 +86,10 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
   if (served !== seen) { setSeen(served); setPicked(null); }
   const spec = picked ?? initial ?? (fromUrl.length ? fromUrl : defSpec);
 
-  const shown = useMemo(() => sortRows(rows, spec, (r, k) => r.sort[k]), [rows, spec]);
+  const sorted = useMemo(() => sortRows(rows, spec, (r, k) => r.sort[k]), [rows, spec]);
+  const [all, setAll] = useState(false);
+  const capped = limit != null && !all && sorted.length > limit;
+  const shown = capped ? sorted.slice(0, limit) : sorted;
   const first = spec[0];
 
   function press(c: SortColumn) {
@@ -98,7 +103,7 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
 
   const row = (r: SortRow) => <Row key={r.id} r={r} columns={columns} link={link} />;
 
-  return (
+  const table = (
     <table aria-busy={pending || undefined} aria-label={label}>
       <thead>
         <tr>
@@ -131,5 +136,12 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
         ) : null;
       }) : <tbody>{shown.map(row)}</tbody>}
     </table>
+  );
+  if (!capped) return table;
+  return (
+    <>
+      {table}
+      <p className="showall"><button type="button" onClick={() => setAll(true)}>{say("table.showAll", { count: String(sorted.length) })}</button></p>
+    </>
   );
 }

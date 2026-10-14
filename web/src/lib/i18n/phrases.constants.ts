@@ -322,6 +322,7 @@ export const PHRASES = {
   // table columns and figures
   "table.sortAsc": "{label}, sort ascending",
   "table.sortDesc": "{label}, sort descending",
+  "table.showAll": "Show all {count}",
   "col.season": "Season",
   "col.champion": "Champion",
   "col.final": "Final",

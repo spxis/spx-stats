@@ -6,7 +6,8 @@ import { JA } from "../src/lib/i18n/dictionaries/ja.constants.ts";
 import { SOCCER_EN, SOCCER_FR, SOCCER_JA } from "../src/lib/i18n/soccer.constants.ts";
 import { subdivisionName, teamName } from "../src/lib/soccerNames.ts";
 import { soccerMatchIdOf, soccerMatchPath, soccerPlayerPath, soccerTeamPath, tournamentPath } from "../src/lib/soccerPath.ts";
-import type { Match, TeamMatch } from "../src/lib/soccer.ts";
+import type { Match, Squad, TeamMatch } from "../src/lib/soccer.ts";
+import { squadCodes, squadLine, squadPath, squadRowsPath } from "../src/lib/soccerSquad.ts";
 import { goalsOf, h2hPath, metPairs, opponentRecords, pairKey, splitPair, summarize } from "../src/lib/soccerH2H.ts";
 import { reachRank, reached, scoreLines, STAGE_PHRASE } from "../src/lib/soccerView.ts";
 import { contrast, lum, PAPER } from "../src/lib/brand.ts";
@@ -160,4 +161,20 @@ test("MLS clubs get a short name; a round flag has a file of its own, or none", 
   assert.equal(soccerFlagAddress("gb-eng"), "/soccer-flag/GB-ENG.svg");
   assert.equal(soccerFlagAddress(null), null);
   assert.equal(soccerFlagAddress("../x"), null);
+});
+
+test("a squad is a short line per player, and its page and rows have addresses of their own", () => {
+  const row = { person_id: 7, player: "Lionel Messi", shirt_number: 10, position_code: " fw ", played: 7, started: 7, goals: 7, yellow: 1, red: 0 } as Squad;
+  assert.deepEqual(squadLine(row, (c) => (c === "FW" ? "Forward" : null)), [7, "Lionel Messi", 10, "FW", "Forward", 7, 7, 7, 1, 0]);
+  assert.deepEqual(squadLine({ ...row, position_code: null, shirt_number: null }, () => "x"), [7, "Lionel Messi", null, null, null, 7, 7, 7, 1, 0]);
+  assert.deepEqual(squadCodes([row, { ...row, position_code: "FW" }, { ...row, position_code: null }, { ...row, position_code: "gk" }]), ["FW", "GK"]);
+  assert.equal(squadPath(2022, "argentina"), "/worldcup/2022/squad/argentina");
+  assert.equal(squadRowsPath(2022, "argentina"), "/worldcup/2022/squad/argentina/rows");
+});
+
+test("the squad texts are in every language", () => {
+  for (const key of ["wc.squad.page", "wc.squad.loading", "wc.squad.failed", "wc.squad.open", "wc.squad.back"] as const) {
+    assert.ok(SOCCER_EN[key] && SOCCER_FR[key] && SOCCER_JA[key], key);
+  }
+  assert.ok(PHRASES["table.showAll"].includes("{count}") && FR["table.showAll"]?.includes("{count}") && JA["table.showAll"]?.includes("{count}"));
 });

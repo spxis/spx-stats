@@ -257,6 +257,7 @@ export const FR: Dictionary = {
   // table columns and figures
   "table.sortAsc": "{label}, trier en ordre croissant",
   "table.sortDesc": "{label}, trier en ordre décroissant",
+  "table.showAll": "Tout afficher ({count})",
   "col.season": "Saison",
   "col.champion": "Champion",
   "col.final": "Finale",
