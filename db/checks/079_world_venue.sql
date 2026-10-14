@@ -1,6 +1,6 @@
 -- what: world soccer stadiums (scripts/world_stadiums/): a pitch size for an item that is not a venue, a pitch size that a football pitch cannot have, a venue
 --       that closed before it opened, a soccer match with a venue_id but no Wikidata id whose venue has no exact name of the match's stadium (db/build/207 fills those by name) or is in another city, and a match whose venue_id is not the venue of its Wikidata id (or of
---       the item in the VALUES list below, the same four pairs as db/seed/soccer_venue_fix.csv). One plain query, as release.py needs.
+--       the item in the VALUES list below, the same pairs as db/seed/soccer_venue_fix.csv). One plain query, as release.py needs.
 -- baseline: 0
 select 'pitch for an item that is not a venue: ' || p.wikidata_id as problem
 from core.venue_pitch p
@@ -26,5 +26,5 @@ union all
 select 'soccer match venue_id of another item: ' || m.source_key || ' ' || m.venue_wikidata_id || ' -> ' || v.source_key
 from core.soccer_match m
 join core.venue v on v.venue_id = m.venue_id
-left join (values ('Q8842808', 'Q909851'), ('Q2688256', 'Q1136764'), ('Q4835088', 'Q176460'), ('Q2090', 'Q152599')) f(match_id, venue_qid) on f.match_id = m.venue_wikidata_id
+left join (values ('Q8842808', 'Q909851'), ('Q2688256', 'Q1136764'), ('Q4835088', 'Q176460'), ('Q2090', 'Q152599'), ('Q2937412', 'Q199359')) f(match_id, venue_qid) on f.match_id = m.venue_wikidata_id
 where m.venue_wikidata_id is not null and v.source_key <> coalesce(f.venue_qid, m.venue_wikidata_id)

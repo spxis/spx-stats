@@ -12,3 +12,4 @@ Q486472,"Kansas City is a city (P31 city in the United States), linked from an M
 Q589481,"Olympic stadium is a generic item with no place (no P31, P131 or P17), linked from an MLS match box"
 Q8842808,"Estadio Independencia is a Wikimedia disambiguation page (P31), linked from a match box where a stadium was meant"
 Q2090,"Nuremberg is a city (P31 big city), reached from the Wikipedia link of the Frankenstadion (1974 and 2006 World Cups); the stadium is Q152599 (db/seed/soccer_venue_fix.csv)"
+Q2937412,"Citrus Bowl is a sports competition (P31), the bowl game, linked from an MLS match box where the stadium was meant; the stadium is Camping World Stadium Q199359 (db/seed/soccer_venue_fix.csv)"

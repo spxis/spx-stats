@@ -22,12 +22,40 @@ drop table if exists pg_temp.seed_fix;
 create temp table seed_fix (match_wikidata_id text, venue_wikidata_id text, why text);
 \copy seed_fix from 'db/seed/soccer_venue_fix.csv' with (format csv, header true)
 
+drop table if exists pg_temp.seed_not_venue;
+create temp table seed_not_venue (qid text, why text);
+\copy seed_not_venue from 'db/seed/not_a_venue.csv' with (format csv, header true)
+
 create temp table wd as select source_id from meta.source where code = 'wikidata';
 
 update core.soccer_match m set venue_id = v.venue_id
 from seed_fix f right join (select distinct venue_wikidata_id as qid from core.soccer_match where venue_id is null and venue_wikidata_id is not null) q on q.qid = f.match_wikidata_id
 join core.venue v on v.source_id = (select source_id from wd) and v.source_key = coalesce(f.venue_wikidata_id, q.qid)
 where m.venue_id is null and m.venue_wikidata_id = q.qid;
+
+-- A match whose venue_id was set from an item that db/seed/soccer_venue_fix.csv now corrects (Citrus Bowl, the game, for Camping World Stadium) moves to the
+-- corrected venue. A match with no Wikidata id that the name pass put on the wrong venue (the name "Citrus Bowl" of a venue made from the game's item) loses it
+-- and goes through the name pass again (an unmatched name is logged below). The venue row made from the wrong item is then removed when nothing refers to it
+-- (db/seed/not_a_venue.csv names it).
+update core.soccer_match m set venue_id = v2.venue_id
+from seed_fix f
+join core.venue v1 on v1.source_key = f.match_wikidata_id and v1.source_id = (select source_id from wd)
+join core.venue v2 on v2.source_key = f.venue_wikidata_id and v2.source_id = (select source_id from wd)
+where m.venue_wikidata_id = f.match_wikidata_id and m.venue_id = v1.venue_id and v2.venue_id <> v1.venue_id;
+update core.soccer_match m set venue_id = null
+from seed_not_venue n join core.venue v1 on v1.source_key = n.qid and v1.source_id = (select source_id from wd)
+where m.venue_wikidata_id is null and m.venue_id = v1.venue_id;
+delete from core.venue v
+using seed_not_venue n
+where v.source_key = n.qid and v.source_id = (select source_id from wd)
+  and not exists (select 1 from core.soccer_match x where x.venue_id = v.venue_id)
+  and not exists (select 1 from core.game x where x.venue_id = v.venue_id)
+  and not exists (select 1 from core.game_venue x where x.venue_id = v.venue_id)
+  and not exists (select 1 from core.franchise_home_venue x where x.venue_id = v.venue_id)
+  and not exists (select 1 from core.franchise_venue x where x.venue_id = v.venue_id)
+  and not exists (select 1 from core.team_season x where x.home_venue_id = v.venue_id)
+  and not exists (select 1 from core.venue_game_season x where x.venue_id = v.venue_id)
+  and not exists (select 1 from core.venue_final_game x where x.venue_id = v.venue_id);
 
 -- ---------------------------------------------------------------- second pass: exact venue name (matches with no Wikidata id)
 drop table if exists pg_temp.smv_vn, pg_temp.smv_m, pg_temp.smv_cand, pg_temp.smv_any, pg_temp.smv_res;

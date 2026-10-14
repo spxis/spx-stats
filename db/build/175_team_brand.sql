@@ -14,6 +14,11 @@
 drop table if exists pg_temp.seed_venue_fix;
 create temp table seed_venue_fix (team_qid text, place_qid text, reason text);
 \copy seed_venue_fix from 'db/seed/venue_fix.csv' with (format csv, header true)
+-- A club item Wikidata gives no home venue (only its headquarters city: the Houston Oilers, Los Angeles Raiders, San Diego Chargers and Florida Marlins items)
+-- takes the venues of db/seed/home_venue.csv (English Wikipedia or dated Wikidata, checked by hand) for the club of that name; a city is not a venue.
+drop table if exists pg_temp.seed_home;
+create temp table seed_home (league text, franchise text, qid text, from_d date, until_d date, source text, source_url text, note text);
+\copy seed_home from 'db/seed/home_venue.csv' with (format csv, header true)
 
 delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikidata');
 delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikipedia');
@@ -49,6 +54,14 @@ with ident as (
          (starts_on is not null or ends_on is not null) as dated
   from legacy_team_brand.team_place p where coalesce(rank, '') <> 'deprecated'
     and not exists (select 1 from seed_venue_fix x where x.team_qid = p.qid and x.place_qid = p.place_qid)
+), seedpl as (   -- the seed venues of a club item with no home venue statement of its own, with the coordinates of the venue item
+  select t.qid, v.label, v.latitude, v.longitude, true as has_xy, daterange(h.from_d, h.until_d) as vr
+  from legacy_team_brand.team t
+  join seed_home h on h.league = t.league_code and pg_temp.norm(h.franchise) = pg_temp.norm(t.label)
+  join lateral (select p.label, p.latitude, p.longitude from legacy_franchise_info.place p where p.qid = h.qid and p.latitude is not null
+                union all select g.label, g.latitude, g.longitude from legacy_game_venue.venue g where g.qid = h.qid and g.latitude is not null limit 1) v on true
+  where not exists (select 1 from legacy_team_brand.team_place d where d.qid = t.qid and d.kind = 'home_venue' and coalesce(d.rank, '') <> 'deprecated')
+    and exists (select 1 from legacy_team_brand.team_place d where d.qid = t.qid and d.kind in ('headquarters', 'located_in'))   -- only where a city would otherwise stand in for the venue
 ), und as (   -- undated home venues of a team with no dated one, with the years of the venue item itself (opened, closed)
   select pl.qid, pl.place_qid, pl.label, pl.latitude, pl.longitude, pl.has_xy, (pl.rank = 'preferred') as pref,
          p.opened_on as lo, p.closed_on as hi
@@ -80,10 +93,13 @@ with ident as (
          daterange(case when bool_or(s is null) then null else min(s) end, case when bool_or(e is null) then null else max(e) end)
   from island group by qid, place_qid, label, latitude, longitude, grp
   union all
+  select qid, label, latitude, longitude, vr from seedpl
+  union all
   select * from (
     select distinct on (qid) qid, label, latitude, longitude, daterange(null, null)
     from pl where kind in ('headquarters', 'located_in')
       and not exists (select 1 from pl d where d.qid = pl.qid and d.kind = 'home_venue')
+      and not exists (select 1 from seedpl s where s.qid = pl.qid)
     order by qid, has_xy desc, (kind = 'headquarters') desc, place_qid) f
 ), cand as (
   select distinct on (i.franchise_id, rng)
