@@ -32,7 +32,7 @@ export function roadChartFor(matches: readonly Match[], year: number, league: st
     const home = m.home_team_id === id;
     const t = home ? { name: m.home, slug: m.home_slug, flag: m.home_flag } : { name: m.away, slug: m.away_slug, flag: m.away_flag };
     const logo = soccerFlagAddress(t.flag), look = SOCCER_LOOK[id];
-    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ...(logo ? { logo } : {}), ...(look ? { color: `#${look[1]}` } : {}) };
+    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ref: { name: t.name, slug: t.slug, flag: t.flag }, ...(logo ? { logo } : {}), ...(look ? { color: `#${look[1]}` } : {}) };
   };
   const words = (kind: "aet" | "pens" | "replay", pens?: readonly [number, number]) =>
     kind === "aet" ? say("wc.aetShort") : kind === "replay" ? say("wc.ko.replay") : say("wc.road.pens", { a: pens?.[0] ?? "", b: pens?.[1] ?? "" });

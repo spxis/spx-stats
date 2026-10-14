@@ -8,7 +8,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { getMlsAllTime, getMlsClubs, getMlsSeasons, type Season } from "@/lib/mls";
-import { mlsClubPath, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
+import { mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
 import { tableOf } from "@/lib/sort";
 import "@/components/soccer.css";
 
@@ -59,7 +59,7 @@ export default guard(async function MlsPage() {
   }
 
   const clubTable = tableOf(clubs, [
-    { key: "club", label: say("col.team"), cls: "team", get: (c) => c.name, cell: (c) => <Link href={mlsClubPath(c.slug)} prefetch={false}>{c.latest_name ?? c.name}</Link> },
+    { key: "club", label: say("col.team"), cls: "team", get: (c) => c.name, cell: (c) => <MlsClubName slug={c.slug} name={c.latest_name ?? c.name} /> },
     { key: "years", label: say("mls.col.years"), get: (c) => c.first_year, cell: (c) => (c.first_year === c.last_year ? String(c.first_year) : `${c.first_year}–${c.last_year}`) },
     { key: "seasons", label: say("mls.col.seasons"), num: true, get: (c) => c.seasons },
     { key: "p", label: say("wc.col.played"), title: say("wc.col.playedTitle"), num: true, get: (c) => record.get(c.team_id)?.played ?? null, cell: (c) => fmt(record.get(c.team_id)?.played ?? 0) },

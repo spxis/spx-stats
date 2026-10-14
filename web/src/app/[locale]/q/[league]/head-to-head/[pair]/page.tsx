@@ -9,6 +9,7 @@ import { H2hSeasonSelect } from "@/components/H2hSeasonSelect";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
+import { TeamLogo } from "@/components/TeamLogo";
 import { queryHref } from "@/components/ViewTabs";
 import { Badge, Figures } from "@/components/ui";
 import "@/components/h2h.css";
@@ -268,7 +269,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
     return (
       <Link className="h2hfact" href={dayHref(g)} prefetch={false} style={{ "--tc": tc } as React.CSSProperties} title={say("h2h.gameTitle")}>
         <span className="k">{say(key)}</span>
-        <b>{win == null ? say("h2h.tie") : (win === 0 ? na : nb)} {hi}–{lo}</b>
+        <b>{win == null ? say("h2h.tie") : <><TeamLogo url={logoFor(d.brands, win === 0 ? a : b, g.year)} />{win === 0 ? na : nb}</>} {hi}–{lo}</b>
         <span className="sub">{dt.ymd(atUtc(g.date))}{g.ph === "playoffs" ? ` · ${say("phase.playoffs")}` : ""}{g.ot ? ` · ${say(lg === "mlb" ? "col.extras" : "col.ot")}` : ""}</span>
       </Link>
     );

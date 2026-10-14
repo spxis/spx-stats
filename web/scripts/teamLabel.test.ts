@@ -58,6 +58,69 @@ export function bareTeamLinks(code: string): string[] {
     .map(({ inner }) => inner.trim());
 }
 
+/** The label phrases of a table column that names a team (one that also sets `cls: "team"`, the column class for names). */
+const TEAM_LABELS = [
+  "col.team", "col.opponent", "col.champion", "col.home", "col.away", "h2h.home", "h2h.away", "h2h.col.home", "h2h.col.away", "h2h.col.teams",
+  "wc.col.away", "wc.col.runnerUp", "past.winner", "mls.col.name", "mls.col.shield", "mls.col.cup",
+];
+/** What may draw a team in such a cell: the logo with its link, a national team's flag with its link, a club with no logo held, a logo alone, or a page's own `team(`/`club(` helper that returns a TeamLabel. */
+const TEAM_CELL = /<TeamLabel\b|<SoccerTeamName\b|<MlsClubName\b|<TeamLogo\b|\b(?:team|club)\(/;
+
+/** The table columns (a `{ key, label, cls: "team", get, cell }` object) that name a team but show the bare string: no `cell`, or a cell that is plain text or a bare link. */
+export function bareTeamColumns(code: string): string[] {
+  const out: string[] = [];
+  const re = /cls:\s*"[^"]*\bteam\b[^"]*"/g;
+  for (let m = re.exec(code); m; m = re.exec(code)) {
+    // The object that holds the property: walk out to its braces.
+    let depth = 0, start = m.index;
+    for (; start >= 0; start--) {
+      const c = code[start];
+      if (c === "}") depth++;
+      else if (c === "{") { if (depth === 0) break; depth--; }
+    }
+    let end = m.index;
+    depth = 0;
+    for (; end < code.length; end++) {
+      const c = code[end];
+      if (c === "{") depth++;
+      else if (c === "}") { if (depth === 0) break; depth--; }
+    }
+    const obj = code.slice(start, end + 1);
+    const label = /label:\s*(?:sp\.)?say\("([^"]+)"/.exec(obj)?.[1];
+    if (!label || !TEAM_LABELS.includes(label)) continue;
+    const cell = /\bcell:/.exec(obj);
+    if (!cell || !TEAM_CELL.test(obj.slice(cell.index))) out.push(`${label}: ${obj.replace(/\s+/g, " ").slice(0, 80)}`);
+  }
+  return out;
+}
+
+test("a table column that names a team draws it with its logo (TeamLabel), never the bare string", () => {
+  const found = sources().flatMap((file) => bareTeamColumns(read(file)).map((c) => `${rel(file)}: ${c}`));
+  assert.deepEqual(found, []);
+});
+
+test("the column scanner flags a bare team string and passes a label, a flag name and a club name", () => {
+  assert.equal(bareTeamColumns('{ key: "team", label: say("col.team"), cls: "team", get: (r) => r.team }').length, 1);
+  assert.equal(bareTeamColumns('{ key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => r.team }').length, 1);
+  assert.equal(bareTeamColumns('{ key: "opp", label: say("col.opponent"), cls: "team", get: (m) => m.o, cell: (m) => <Link href={p}>{m.o}</Link> }').length, 1);
+  assert.equal(bareTeamColumns('{ key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => <TeamLabel lg={lg} f={r.f} name={r.team} logo={null} /> }').length, 0);
+  assert.equal(bareTeamColumns('{ key: "home", label: say("col.home"), cls: "team", get: (m) => m.home, cell: (m) => <SoccerTeamName slug={m.s} name={m.home} flag={m.f} /> }').length, 0);
+  assert.equal(bareTeamColumns('{ key: "club", label: say("col.team"), cls: "team", get: (c) => c.name, cell: (c) => <MlsClubName slug={c.slug} name={c.name} /> }').length, 0);
+  // Not a team: a venue, a player, a record or a manager carries the same class or label words.
+  assert.equal(bareTeamColumns('{ key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.v }').length, 0);
+  assert.equal(bareTeamColumns('{ key: "name", label: say("col.name"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={h}>{p.name}</Link> }').length, 0);
+  assert.equal(bareTeamColumns('{ key: "home", label: say("col.home"), get: (r) => recShare(r.home), cell: (r) => r.home || "" }').length, 0);
+});
+
+test("a whole-card link names its team with a logo alone (a link cannot nest), and a plain table of teams carries marks", () => {
+  const h2h = read(join(SRC, "app/[locale]/q/[league]/head-to-head/[pair]/page.tsx"));
+  const fact = h2h.slice(h2h.indexOf("const fact = "), h2h.indexOf("const st = streak"));
+  assert.ok(/className="h2hfact"/.test(fact) && fact.includes("<TeamLogo"), "the head-to-head fact cards (Biggest win, Last game) show the winner's logo inside the card link");
+  assert.ok(!/<TeamLabel/.test(fact), "a fact card is one link to a game, so it holds no TeamLabel link");
+  const road = read(join(SRC, "components/SoccerRoad.tsx"));
+  assert.ok(road.includes("<SoccerTeamName") && !/<td>\{e\.(team|opponent)\}<\/td>/.test(road), "the road table names its teams with their flags and links");
+});
+
 test("a team link is drawn by TeamLabel only", () => {
   const found = sources().flatMap((file) => {
     const code = read(file);

@@ -7,6 +7,7 @@ import { GameLeaders } from "@/components/GameLeaders";
 import { GameSurface, placeOf, type DrawnGame } from "@/components/GameSurface";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
+import { Rich } from "@/components/i18n/Rich";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo } from "@/components/TeamLogo";
 import { Badge } from "@/components/ui";
@@ -165,6 +166,11 @@ export default guard(async function GamePage({ params }: Params) {
   const phaseTag = g.phase === "preseason" ? say("phase.preseason") : g.phase === "all_star" ? say("phase.allStar") : null;
   const competition = playoffs && roundDated ? `${roundDated}${gameNo ? ` · ${gameNo}` : ""}` : phaseTag ?? say("phase.regular");
 
+  /** A side of an earlier meeting of the two clubs: its logo that season, then its name as a link to that season. */
+  const clubIn = (x: PairGame, away: boolean) => {
+    const f = away ? x.away_f : x.home_f;
+    return <TeamLabel lg={lg} f={f} name={(away ? x.away : x.home) ?? "—"} year={x.year} logo={logoFor(brands, f, x.year)} />;
+  };
   const chip = (r: Result) => <span className={`gchip ${r}`}>{say(RESULT_KEY[r])}</span>;
   const gameLine = (x: Lite, s: (typeof sides)[number]) => {
     const home = x.home_id === s.tid, r = resultFor(x, s.tid, otl);
@@ -324,7 +330,7 @@ export default guard(async function GamePage({ params }: Params) {
                 {thisSeason.map((x) => (
                   <li key={x.game_id} className={x.game_id === g.game_id ? "now" : undefined}>
                     {x.game_id === g.game_id ? <span className="note">{dt.monthDayShort(atUtc(x.game_date))}</span> : <Link href={linkTo(x)} prefetch={false}>{dt.monthDayShort(atUtc(x.game_date))}</Link>}
-                    <span>{x.away} {isFinal(x) ? scoreOf(x) : say("gm.at", { team: x.home ?? "—" })} {isFinal(x) ? x.home : ""}{x.overtime && isFinal(x) ? ` (${extra})` : ""}</span>
+                    <span>{clubIn(x, true)} {isFinal(x) ? <>{scoreOf(x)} {clubIn(x, false)}</> : <Rich text={say("gm.at")} parts={{ team: clubIn(x, false) }} />}{x.overtime && isFinal(x) ? ` (${extra})` : ""}</span>
                     {x.phase === "playoffs" ? <span className="badge tag">{say("phase.playoffs")}</span> : null}
                   </li>
                 ))}
@@ -338,7 +344,7 @@ export default guard(async function GamePage({ params }: Params) {
                 {recent.map((x) => (
                   <li key={x.game_id}>
                     <Link href={linkTo(x)} prefetch={false}>{dt.ymd(atUtc(x.game_date))}</Link>
-                    <span>{x.away} {scoreOf(x)} {x.home}{x.overtime ? ` (${extra})` : ""}</span>
+                    <span>{clubIn(x, true)} {scoreOf(x)} {clubIn(x, false)}{x.overtime ? ` (${extra})` : ""}</span>
                     {x.phase === "playoffs" ? <span className="badge tag">{say("phase.playoffs")}</span> : null}
                   </li>
                 ))}

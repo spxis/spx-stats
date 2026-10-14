@@ -15,7 +15,10 @@ import type { Match } from "./soccer.ts";
  */
 
 /** How a team is drawn on the chart: its name in the reader's language, its three-letter code, its round flag's address and its colour. */
-export type RoadTeam = { name: string; abbr: string; logo?: string; color?: string };
+export type RoadTeam = { name: string; abbr: string; logo?: string; color?: string; ref?: TeamRef };
+
+/** A team as the site names it in a list: the name before translation, its page and its flag (SoccerTeamName draws all three). */
+export interface TeamRef { name: string; slug: string; flag: string | null }
 
 export interface Road {
   finalists: [RoadFinalist, RoadFinalist];
@@ -32,7 +35,7 @@ export interface Road {
   entries: RoadEntry[];
 }
 
-export interface RoadEntry { team: string; stage: string; opponent: string; goals: number; against: number; note: string }
+export interface RoadEntry { team: string; teamRef?: TeamRef; stage: string; opponent: string; opponentRef?: TeamRef; goals: number; against: number; note: string }
 
 const ROUND_KEY: Record<string, string> = { round_of_32: "round-of-32", round_of_16: "round-of-16", quarter: "quarter-final", semi: "semi-final" };
 /** The key a knockout stage has on the chart: kyogijo's own for the four it has words for, else the stage with its underscores turned into dashes. */
@@ -85,7 +88,7 @@ export function roadOf(
         if (m.stage_key !== "group") secondGroups = true;
         const g = resultOf(m, id);
         group.push({ opponent: opponent(m), score: g.score });
-        entries.push({ team: team(decider, id).name, stage: "group", opponent: opponent(m).name, goals: g.score[0], against: g.score[1], note: "" });
+        entries.push({ team: team(decider, id).name, teamRef: team(decider, id).ref, stage: "group", opponent: opponent(m).name, opponentRef: opponent(m).ref, goals: g.score[0], against: g.score[1], note: "" });
         continue;
       }
       // A drawn match that was replayed (the same two teams in the same stage again) is two rows, the second with a round key of its own.
@@ -95,7 +98,7 @@ export function roadOf(
       const r = resultOf(m, id);
       const words = again ? note("replay") : r.decidedBy === "pens" ? note("pens", r.pens) : r.decidedBy === "aet" ? note("aet") : "";
       path.push({ round: key, opponent: opponent(m), ...r, note: words });
-      entries.push({ team: team(decider, id).name, stage: key, opponent: opponent(m).name, goals: r.score[0], against: r.score[1], note: words });
+      entries.push({ team: team(decider, id).name, teamRef: team(decider, id).ref, stage: key, opponent: opponent(m).name, opponentRef: opponent(m).ref, goals: r.score[0], against: r.score[1], note: words });
       if (!rounds.some((x) => x.key === key)) rounds.push({ key, stage: m.stage_key, replay: again });
     }
     return { ...team(decider, id), path, ...(group.length ? { group } : {}) };
@@ -105,6 +108,6 @@ export function roadOf(
   const r = resultOf(decider, ids[0]);
   const words = r.decidedBy === "pens" ? note("pens", r.pens) : r.decidedBy === "aet" ? note("aet") : "";
   const final: RoadFinal = { score: r.score, decidedBy: r.decidedBy, ...(r.pens ? { pens: r.pens } : {}), note: words };
-  entries.push({ team: finalists[0].name, stage: "final", opponent: finalists[1].name, goals: r.score[0], against: r.score[1], note: words });
+  entries.push({ team: finalists[0].name, teamRef: team(decider, ids[0]).ref, stage: "final", opponent: finalists[1].name, opponentRef: team(decider, ids[1]).ref, goals: r.score[0], against: r.score[1], note: words });
   return { finalists, final, decider, finalRound, rounds, secondGroups, entries };
 }

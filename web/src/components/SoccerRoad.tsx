@@ -1,8 +1,10 @@
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Match } from "@/lib/soccer";
+import type { TeamRef } from "@/lib/soccerRoad";
 import { roadChartFor } from "@/lib/soccerRoadChart";
 import { Credits } from "./Credits";
 import { RoadArt } from "./RoadArt";
+import { SoccerTeamName } from "./SoccerTeamName";
 import "./kyogijo-road.css";
 import "./soccer.css";
 
@@ -21,6 +23,7 @@ export async function SoccerRoad({ matches, year, league }: { matches: Match[]; 
   if (!chart) return null;
   const { road, labels, groups, title } = chart;
   const [a, b] = road.finalists;
+  const named = (name: string, ref?: TeamRef) => (ref ? <SoccerTeamName slug={ref.slug} name={ref.name} flag={ref.flag} /> : name);
   const stageOf = (key: string) => (key === "group" ? groups : labels[key] ?? key);
   return (
     <section className="section" id="road">
@@ -38,7 +41,7 @@ export async function SoccerRoad({ matches, year, league }: { matches: Match[]; 
               <thead><tr><th>{say("col.team")}</th><th>{say("wc.col.stage")}</th><th>{say("wc.road.opponent")}</th><th>{say("col.score")}</th></tr></thead>
               <tbody>
                 {road.entries.map((e, i) => (
-                  <tr key={i}><td>{e.team}</td><td>{stageOf(e.stage)}</td><td>{e.opponent}</td><td>{e.goals}–{e.against}{e.note ? ` (${e.note})` : ""}</td></tr>
+                  <tr key={i}><td>{named(e.team, e.teamRef)}</td><td>{stageOf(e.stage)}</td><td>{named(e.opponent, e.opponentRef)}</td><td>{e.goals}–{e.against}{e.note ? ` (${e.note})` : ""}</td></tr>
                 ))}
               </tbody>
             </table>

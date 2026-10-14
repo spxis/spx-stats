@@ -48,7 +48,7 @@ export default guard(async function MlsClubPage({ params }: Params) {
 
   const seasonTable = tableOf(seasons, [
     { key: "year", label: say("wc.col.year"), num: true, get: (x) => x.year, cell: (x) => <Link href={mlsSeasonPath(x.year)} prefetch={false}>{x.year}</Link> },
-    { key: "name", label: say("mls.col.name"), cls: "team", get: (x) => x.team_name },
+    { key: "name", label: say("mls.col.name"), cls: "team", get: (x) => x.team_name, cell: (x) => <MlsClubName slug={club.slug} name={x.team_name} link={false} /> },
     { key: "conf", label: say("mls.col.conference"), cls: "team", get: (x) => x.conference, cell: (x) => (x.conference === "Eastern Conference" ? say("mls.east") : x.conference === "Western Conference" ? say("mls.west") : "") },
     { key: "place", label: say("mls.col.place"), num: true, get: (x) => x.overall_position },
     { key: "p", label: say("wc.col.played"), title: say("wc.col.playedTitle"), num: true, get: (x) => x.played },
