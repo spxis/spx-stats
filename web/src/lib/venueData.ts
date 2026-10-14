@@ -1,11 +1,11 @@
 import "server-only";
 import { speaker } from "./i18n/i18n";
-import { afterValues, parseListParams } from "./listParams";
+import { afterValues, BadParams, parseListParams } from "./listParams";
 import { searchWords } from "./listQuery";
 import { memo } from "./memo";
 import { getPaths } from "./teamSlugs";
 import { getVenueList } from "./venueList";
-import { queryVenues, RECORD_FIELDS, venueOrder, venueRecords, VENUE_SORTS, type VenuePage, type VenueQuery, type VenueRecord } from "./venueDataset";
+import { queryVenues, readKinds, RECORD_FIELDS, venueOrder, venueRecords, VENUE_SORTS, type VenuePage, type VenueQuery, type VenueRecord } from "./venueDataset";
 
 /* The open dataset of home venues: the same list /venues draws (venueList.ts), in English, as records. The downloads and GET /api/venues only read it. */
 
@@ -29,6 +29,8 @@ export async function listVenues(sp: URLSearchParams): Promise<VenuePage> {
   const { values: v, sort, sortText, fields, range } = parseListParams("venues", sp, { sorts: VENUE_SORTS, fields: RECORD_FIELDS, defSort: "name.asc" });
   const order = venueOrder(sort);
   const after = afterValues(v.after, sortText, order);
-  const query: VenueQuery = { kind: v.kind, league: v.league, words: searchWords(v.q ?? ""), status: v.status, nat: v.nat, ...range };
+  const kinds = readKinds(v.kind);
+  if (!kinds.ok) throw new BadParams([{ param: "kind", message: kinds.message }]);
+  const query: VenueQuery = { kind: kinds.kinds, league: v.league, words: searchWords(v.q ?? ""), status: v.status, nat: v.nat, ...range };
   return queryVenues(await getVenueRecords(), query, { order, sortText, fields, limit: v.limit, offset: v.offset, after });
 }

@@ -193,10 +193,25 @@ export const VENUE_SORTS = Object.keys(VENUE_COLS);
 const TIE: Col = { field: "id" };
 export const venueOrder = (sort: readonly SortKey[]): Order => orderOf(sort, VENUE_COLS, [TIE]);
 
+const KINDS: readonly VenueKind[] = ["home", "spring", "future"];
+
+/**
+ * `?kind=` of GET /api/venues: left out, the home venues alone (the API's long-standing answer); a comma list of home, spring and future (in any order, none twice);
+ * or `all` for the three. Anything else is a problem the caller gets as a 400 naming `kind`.
+ */
+export function readKinds(raw: string | undefined): { ok: true; kinds: VenueKind[] } | { ok: false; message: string } {
+  const bad = { ok: false, message: "use home, spring, future (a comma list of them, e.g. home,future) or all; left out, home" } as const;
+  if (raw === undefined) return { ok: true, kinds: ["home"] };
+  if (raw === "all") return { ok: true, kinds: [...KINDS] };
+  const list = raw.split(",");
+  if (!list.every((k) => (KINDS as readonly string[]).includes(k)) || new Set(list).size !== list.length) return bad;
+  return { ok: true, kinds: KINDS.filter((k) => list.includes(k)) };
+}
+
 export type VenueStatus = "all" | "current" | "former";
 export interface VenueQuery {
-  /** Only this kind (home, spring or future); left out, every kind. */
-  kind?: VenueKind;
+  /** Only these kinds (home, spring, future); left out, every kind. GET /api/venues passes ["home"] when the caller names none. */
+  kind?: readonly VenueKind[];
   league?: string;
   words: string[];
   status: VenueStatus;
@@ -207,7 +222,7 @@ export interface VenueQuery {
 
 /** Whether a venue passes a query. A venue whose years are unknown is kept by any range, as on the page. */
 export function venueFits(r: VenueRecord, q: VenueQuery, text: string): boolean {
-  if (q.kind && r.kind !== q.kind) return false;
+  if (q.kind && !q.kind.includes(r.kind)) return false;
   if (q.league && !r.leagues.includes(q.league)) return false;
   if (q.status === "current" && !r.current) return false;
   if (q.status === "former" && r.current) return false;

@@ -1396,7 +1396,7 @@ export const JA: Dictionary = {
   "venuesPage.legendSpring": "四角：春季キャンプ地の球場",
   "venuesPage.legendFuture": "破線の輪：まだ開業していない施設",
   "venuesData.title": "オープンデータ：本拠地一覧",
-  "venuesData.lede": "{venues}の一覧は、{csv}形式と{geojson}形式でダウンロードでき（CSVは1か所につき1行、GeoJSONは1か所につき1フィーチャ。再生成は1時間に1回まで）、{api}でJSONとしても読めます。APIはleague、kind、q、status、nat、from、to、sort、limit、offsetまたはafter、fieldsを受け付けます。一覧には本拠地のほか、春季キャンプ地（kindがspring）と球団の新施設計画（kindがfuture）も含まれます。",
+  "venuesData.lede": "{venues}の一覧は、{csv}形式と{geojson}形式でダウンロードでき（CSVは1か所につき1行、GeoJSONは1か所につき1フィーチャ。再生成は1時間に1回まで）、{api}でJSONとしても読めます。APIはleague、kind、q、status、nat、from、to、sort、limit、offsetまたはafter、fieldsを受け付けます。一覧には本拠地のほか、春季キャンプ地（kindがspring）と球団の新施設計画（kindがfuture）も含まれます。APIは、指定がなければ本拠地だけを返します。ほかも含めるには、kind=spring、kind=home,future（カンマ区切り）、またはkind=allを指定します。CSVとGeoJSONは全種類を含む完全なファイルで、種類はkind列で区別します。",
   "venuesData.licence": "ライセンス：本拠地の識別子、名称、座標、所在地、基本情報はWikidata由来で、CC0 1.0です。競技面と屋根は英語版Wikipediaの該当記事のインフォボックス由来の場合があり、CC BY-SA 4.0として扱い、Wikipediaとその執筆者をクレジットしてください（wikipedia_title列が記事名です）。球団、リーグ、使用年はSPXのアーカイブと上に挙げた出典によります。GeoJSONにはこのライセンスとクレジットがファイル内に含まれます。CSVにはそれを含められないため、このページがCSVのライセンス表示を兼ねます。",
   "venuesData.columns": "項目：wikidata_id、name、former_names（name (from-to); ...）、latitude、longitude、city、region（ISO 3166-2）、country（ISO 3166-1 alpha-2）、leagues（コードを;でつなぐ）、clubs（league:franchise_id name (from-to); ...）、first_year、last_year（球団が今も使っている間は空）、current、opened、closed、capacity、roof、surface、wikipedia_title、kind（home、springまたはfuture）、status（建設予定の施設の状態：proposed、approved、under_construction）、spring_league（cactusまたはgrapefruit）、planned_open_year、games（記録にある開催試合数）。空欄は不明を表します。座標はWGS 84で、GeoJSONの位置は[経度, 緯度]の順です。",
   "count.venues.one": "{count}か所",

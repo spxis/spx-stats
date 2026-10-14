@@ -283,9 +283,11 @@ test("the API route is a list API: it goes through respond() and the checked par
   const src = read("../src/app/api/venues/route.ts");
   assert.match(src, /respond\(/);
   assert.match(src, /listVenues\(/);
-  for (const p of ["league", "status", "from", "to", "sort", "limit", "offset", "after", "fields"]) assert.ok(src.includes(p), `contract names ${p}`);
+  for (const p of ["league", "kind=home,future", "kind", "status", "from", "to", "sort", "limit", "offset", "after", "fields"]) assert.ok(src.includes(p), `contract names ${p}`);
   const data = read("../src/lib/venueData.ts");
   assert.match(data, /parseListParams\("venues"/);
+  assert.match(data, /readKinds\(v\.kind\)[\s\S]*param: "kind"/, "a bad kind is a 400 naming kind");
+  assert.match(src, /left out, home only/, "the contract says the default");
 });
 
 test("the /venues page and /sources link the downloads and describe the dataset", () => {

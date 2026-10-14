@@ -43,7 +43,7 @@ const listSchemas = {
   venues: z.object({
     ...common,
     status: z.preprocess(blank, z.enum(["all", "current", "former"]).default("all")),
-    kind: z.preprocess(blank, z.enum(["home", "spring", "future"]).optional()),
+    kind: text(40),
     nat: z.preprocess(blank, z.string().regex(/^[A-Za-z]{2}$/, "a two-letter country code, e.g. CA").optional()),
   }),
 };

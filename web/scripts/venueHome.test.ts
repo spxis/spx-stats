@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { latestFinals, summarizeGames, type FinalGameRow, type GameSeasonRow } from "../src/lib/venueGames.ts";
-import { futureRows, springRows, type FutureRow, type LayerContext, type SpringRow } from "../src/lib/venueLayerRows.ts";
+import { futureLeagues, futureRows, springRows, type FutureRow, type LayerContext, type SpringRow } from "../src/lib/venueLayerRows.ts";
 import { tenanciesOf, type PeriodRow } from "../src/lib/venueTenancy.ts";
-import { queryVenues, venueOrder, venueRecords, venuesCsv, RECORD_FIELDS, type VenueDetail, type VenueQuery } from "../src/lib/venueDataset.ts";
+import { queryVenues, readKinds, venueOrder, venueRecords, venuesCsv, RECORD_FIELDS, type VenueDetail, type VenueQuery } from "../src/lib/venueDataset.ts";
 import { finishRow } from "../src/lib/venueWire.ts";
 
 /** Run in web/: pnpm test:venues */
@@ -114,6 +114,17 @@ test("a future venue is a row with the year the source plans, no club playing th
   assert.ok(r.extra.some((e) => e.includes("venuesPage.replaces")));
 });
 
+test("every future venue with coordinates is a row, whatever the league of its clubs (the list's leagues include theirs)", () => {
+  const list = [
+    venue({}), venue({ venue_key: "b", clubs: [{ club: "Some Team", league: "mls", franchise_id: 4 }] }), venue({ venue_key: "c", clubs: [{ club: "Two Teams", league: "nba", franchise_id: 1 }, { club: "Two Teams", league: "nhl", franchise_id: 2 }] }),
+    venue({ venue_key: "d", clubs: [{ club: "Nobody", league: "wnba", franchise_id: null }], latitude: null, longitude: null }),
+  ];
+  assert.deepEqual(futureLeagues(list).sort(), ["mls", "nba", "nfl", "nhl"], "a league with no coordinates does not count");
+  const { rows } = futureRows(list, { ...ctx, leagues: futureLeagues(list) });
+  assert.equal(rows.length, list.filter((v) => v.latitude != null && v.longitude != null).length);
+  assert.deepEqual(rows.map((r) => r.clubs.length), [2, 1, 2]);
+});
+
 test("a future venue with no planned year keeps none", () => {
   const { rows } = futureRows([venue({ planned_open_year: null })], ctx);
   assert.equal(rows[0].planned, null);
@@ -132,6 +143,32 @@ test("the dataset says what kind each record is, and the API can ask for one kin
   assert.ok((RECORD_FIELDS as readonly string[]).includes("kind"));
   const q = (kind?: VenueQuery["kind"]) => queryVenues(records, { kind, words: [], status: "all" }, { order: venueOrder([{ key: "name", dir: "asc" }]), sortText: "name.asc", fields: null, limit: 50, offset: 0, after: null });
   assert.equal(q().page.total, 2);
-  assert.deepEqual(q("future").data.map((r) => r.kind), ["future"]);
-  assert.equal(q("home").page.total, 0);
+  assert.deepEqual(q(["future"]).data.map((r) => r.kind), ["future"]);
+  assert.equal(q(["home"]).page.total, 0);
+  assert.equal(q(["spring", "future"]).page.total, 2);
+});
+
+test("?kind= of the API: home when left out, a comma list or all when asked, a 400 naming kind otherwise", () => {
+  assert.deepEqual(readKinds(undefined), { ok: true, kinds: ["home"] });
+  assert.deepEqual(readKinds("all"), { ok: true, kinds: ["home", "spring", "future"] });
+  assert.deepEqual(readKinds("future"), { ok: true, kinds: ["future"] });
+  assert.deepEqual(readKinds("future,home"), { ok: true, kinds: ["home", "future"] });
+  for (const bad of ["stadium", "home,", "home,stadium", "home,home", "all,home", "ALL", ",", "home future"]) {
+    const r = readKinds(bad);
+    assert.equal(r.ok, false, bad);
+  }
+  const { rows: s } = springRows([park({})], ctx);
+  const { rows: f } = futureRows([venue({})], ctx);
+  const home = { ...s[0], id: "Q1", kind: "home" as const, tag: null };
+  const detail = new Map<string, VenueDetail>([["Q1", { wid: "Q1", city: null, iso: null, names: [] }], [s[0].id, { wid: "Q5", city: null, iso: null, names: [] }], [f[0].id, { wid: "Q8", city: null, iso: null, names: [] }]]);
+  for (const r of [home, ...s, ...f]) finishRow(r, ["nhl", "nfl", "mlb"]);
+  const records = venueRecords([home, ...s, ...f], detail);
+  const page = (kind: string | undefined) => {
+    const k = readKinds(kind);
+    assert.ok(k.ok);
+    return queryVenues(records, { kind: k.kinds, words: [], status: "all" }, { order: venueOrder([{ key: "name", dir: "asc" }]), sortText: "name.asc", fields: ["kind"], limit: 50, offset: 0, after: null }).data.map((r) => r.kind);
+  };
+  assert.deepEqual(page(undefined), ["home"], "the default is home alone");
+  assert.deepEqual(page("spring,future").sort(), ["future", "spring"]);
+  assert.deepEqual(page("all").sort(), ["future", "home", "spring"]);
 });

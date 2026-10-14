@@ -18,11 +18,11 @@ import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
 import { getGameTotals, getTenancies } from "./venueHome";
 import { getFutureVenues, getSpringParks } from "./venueLayers";
-import { futureRows, springRows, type LayerContext } from "./venueLayerRows";
+import { futureLeagues, futureRows, springRows, type LayerContext } from "./venueLayerRows";
 
 export interface VenueList {
   rows: VenueRow[];
-  /** The leagues that have venues, in the order the page lists them. */
+  /** The leagues that have venues (home, or a venue planned for one of their clubs), in the order the page lists them. */
   leagues: string[];
   /** What the open dataset adds to a row (by row id): Wikidata id, city, ISO 3166-2 region and every name with its years. */
   detail: Map<string, VenueDetail>;
@@ -55,15 +55,18 @@ async function currentAlignment(): Promise<Map<string, { conf: string; div: stri
  * from the data: a league added later shows up here with no change.
  */
 export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, say: Speaker["say"]): Promise<VenueList> {
-  const brands = await getBrands();
+  const [brands, futureList] = await Promise.all([getBrands(), getFutureVenues()]);
   const seen = new Set<string>();
   for (const eras of Object.values(brands)) for (const b of eras) if (b.home_venue && b.latitude != null && b.longitude != null) seen.add(b.league);
   // the leagues the site already knows keep their usual order; any other league follows, by code
   const rank = (l: string) => { const i = (LEAGUE_CODES as readonly string[]).indexOf(l); return i < 0 ? LEAGUE_CODES.length : i; };
-  const leagues = [...seen].sort((a, b) => rank(a) - rank(b) || BY(a, b));
-  const [byLeague, spans, facts, align, cityData, tenancies, totals, springList, futureList] = await Promise.all([
+  const order = (set: Iterable<string>) => [...set].sort((a, b) => rank(a) - rank(b) || BY(a, b));
+  const leagues = order(seen);
+  // A league whose only venue is one planned for a club still gets its chip: the league list is the home leagues and those of the future venues.
+  const chips = order(new Set([...seen, ...futureLeagues(futureList)]));
+  const [byLeague, spans, facts, align, cityData, tenancies, totals, springList] = await Promise.all([
     Promise.all(leagues.map(async (lg) => ({ lg, teams: await getVenueTeams(lg, brands, paths, say).catch(() => []) }))),
-    getVenueNames(), getVenueFacts(), currentAlignment(), getCityData().catch(() => null), getTenancies(), getGameTotals(), getSpringParks(), getFutureVenues(),
+    getVenueNames(), getVenueFacts(), currentAlignment(), getCityData().catch(() => null), getTenancies(), getGameTotals(), getSpringParks(),
   ]);
 
   // The city page of a venue is the one the database placed club seasons at, for those coordinates.
@@ -129,7 +132,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
     r.clubs.sort((a, b) => (a.from ?? -1) - (b.from ?? -1) || BY(a.name, b.name));
     // The logo a club wore in its last season here (a venue era ends on the first day of the year it left, hence the year before).
     for (const c of r.clubs) c.logo = logoFor(brands, c.f, c.to == null ? undefined : c.to - 1);
-    finishRow(r, leagues);
+    finishRow(r, chips);
     for (const c of r.clubs) {
       if (c.to != null) continue;
       const a = align.get(`${c.lg}|${c.f}`);
@@ -144,12 +147,12 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
 
   // The spring training parks and the future venues follow the home venues: they are drawn on the same map and listed in the same table, behind their own filter.
   const ctx: LayerContext = {
-    leagues, href: (lg, f) => paths.team(lg, f), logo: (f, year) => logoFor(brands, f, year),
+    leagues: chips, href: (lg, f) => paths.team(lg, f), logo: (f, year) => logoFor(brands, f, year),
     country: (lat, lon) => countryAt(lat, lon), say,
   };
   for (const layer of [springRows(springList, ctx), futureRows(futureList, ctx)]) {
     layer.rows.sort((a, b) => BY(a.name, b.name));
-    for (const r of layer.rows) { finishRow(r, leagues); out.push(r); detail.set(r.id, layer.detail.get(r.id)!); }
+    for (const r of layer.rows) { finishRow(r, chips); out.push(r); detail.set(r.id, layer.detail.get(r.id)!); }
   }
-  return { rows: out, leagues, detail };
+  return { rows: out, leagues: chips, detail };
 }

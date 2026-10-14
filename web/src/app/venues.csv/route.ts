@@ -1,7 +1,7 @@
 import { venuesCsv } from "@/lib/venueDataset";
 import { getVenueRecords } from "@/lib/venueData";
 
-// The open dataset of home venues as CSV (columns, licence and credit: /sources). Kept an hour like the pages; no query is read, so it is built once and served from the cache.
+// The open dataset of venues as CSV, complete (home, spring and future rows, told apart by the kind column; GET /api/venues defaults to home only) (columns, licence and credit: /sources). Kept an hour like the pages; no query is read, so it is built once and served from the cache.
 export const revalidate = 3600;
 
 export async function GET() {

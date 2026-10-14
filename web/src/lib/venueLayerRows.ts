@@ -104,7 +104,11 @@ export function springRows(list: readonly SpringRow[], ctx: LayerContext): { row
   return { rows, detail };
 }
 
-/** The future venues as rows. A venue planned for clubs of leagues the list does not have is left out. */
+/** The leagues of the clubs a future venue is planned for, for the venues that will be drawn (those with coordinates): they get a league chip like any other. */
+export const futureLeagues = (list: readonly FutureRow[]): string[] =>
+  [...new Set(list.filter((v) => v.latitude != null && v.longitude != null).flatMap((v) => v.clubs.map((c) => c.league)))];
+
+/** The future venues as rows. A venue planned for clubs of leagues the list does not have is left out (the list's leagues include those of futureLeagues, so none is). */
 export function futureRows(list: readonly FutureRow[], ctx: LayerContext): { rows: VenueRow[]; detail: Map<string, VenueDetail> } {
   const rows: VenueRow[] = [];
   const detail = new Map<string, VenueDetail>();
