@@ -23,7 +23,7 @@ export const QUERY_KEYS = [
   "phase", "team", "teams", "month", "day", "date", "all", "season", "view", "loc", "result", "conf", "div",
   "map", "mapteam", "stat", "pos", "nat", "list", "active",
   "sort_countries", "sort_firsts", "sort_leagues", "sort_rank", "sort_stack",
-  "q", "league", "status", "page", "from", "to", "after", "offset",
+  "q", "league", "status", "page", "from", "to", "after", "offset", "letter", "letter_by",
 ] as const;
 
 /** Query keys a player page reads in the browser (components/PlayerBoard.tsx: the seasons shown, the phase and the clubs), so on a player page they

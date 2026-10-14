@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
+import { LetterBar } from "@/components/LetterBar";
 import { ListRange } from "@/components/ListRange";
 import { SearchBox } from "@/components/SearchBox";
 import { SortTable } from "@/components/SortTable";
@@ -12,7 +13,8 @@ import { isLeague, LEAGUES, LG } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
 import { countryName, positionsText } from "@/lib/people-format";
-import { getPlayerPage, PLAYER_SORTS, playerSpan, searchWords } from "@/lib/playerIndex";
+import { readLetter } from "@/lib/listQuery";
+import { getLetterCounts, getPlayerPage, PLAYER_SORTS, playerSpan, searchWords } from "@/lib/playerIndex";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
@@ -29,7 +31,7 @@ const pageOf = (v: string) => (/^\d{1,4}$/.test(v) && Number(v) > 0 ? Number(v) 
 export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/[locale]/q/players">): Promise<Metadata> => {
   const sp = await searchParams;
   const { say, locale } = await currentSpeaker();
-  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.nat) && !first(sp.sort) && !first(sp.from) && !first(sp.to);
+  const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.nat) && !first(sp.letter) && !first(sp.sort) && !first(sp.from) && !first(sp.to);
   return { ...pageMeta({ title: say("players.title"), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
 });
 
@@ -44,8 +46,15 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
   const sortText = formatSort(sort);
   const span = await playerSpan(league).catch(() => null);
   const range = span ? rangeFromQuery(first(sp.from), first(sp.to), span.min, span.max) : null;
-  const data = await getPlayerPage(league, q, sort, pageOf(first(sp.page)), { ...(range ?? {}), ...(nat ? { nat } : {}) }).catch(() => null);
-  const keep = { league: league || null, nat: nat || null, q: q || null, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
+  // The first letter of the last name (or of the first name): it combines with every other choice, and the row of letters counts under those choices.
+  const letter = readLetter(first(sp.letter)) ?? "";
+  const letterBy = first(sp.letter_by) === "first" ? "first" : "last";
+  const others = { ...(range ?? {}), ...(nat ? { nat } : {}), letterBy } as const;
+  const [data, counts] = await Promise.all([
+    getPlayerPage(league, q, sort, pageOf(first(sp.page)), { ...others, ...(letter ? { letter } : {}) }).catch(() => null),
+    getLetterCounts({ league, words: searchWords(q), ...others }),
+  ]);
+  const keep = { league: league || null, nat: nat || null, q: q || null, letter: letter ? letter.toUpperCase() : null, letter_by: letterBy === "first" ? "first" : null, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
   const href = (changes: Record<string, string | null>) => queryHref("/players", sp, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
 
@@ -79,8 +88,9 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
               <Link key={l.code} href={href({ league: l.code || null })} prefetch={false} aria-current={l.code === league ? "page" : undefined}>{l.short}</Link>
             ))}
           </nav>
-          <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(nat ? { nat } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
+          <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
         </div>
+        <LetterBar say={say} plural={plural} letter={letter} by={letterBy} counts={counts} href={href} />
         {nat ? <p className="note"><Flag code={nat} shape="round" /> {say("players.countryOnly", { name: countryName(nat, locale) })} · <Link href={href({ nat: null })} prefetch={false}>{say("players.countryClear")}</Link></p> : null}
         {span ? <ListRange page="/players" min={span.min} max={span.max} from={range?.from ?? span.min} to={range?.to ?? span.max} inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))} /> : null}
         <div className="yr-hold">

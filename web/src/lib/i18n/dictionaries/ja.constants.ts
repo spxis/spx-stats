@@ -1791,4 +1791,9 @@ export const JA: Dictionary = {
   "teams.mapOpen": "表示中のチームの地図を開く",
   "teams.mapCaption": "地図 · {n}チーム",
   "teams.mapNote": "地図上のチーム：{n}。各チームの最新の本拠地に表示しています。点を押すとチームのページを開きます。",
+  "players.azAria": "名前の頭文字で選手を探す",
+  "players.azByAria": "頭文字を取る名前",
+  "players.azLast": "姓",
+  "players.azFirst": "名",
+  "players.azNone": "{letter}：この条件に当てはまる選手はいません",
 };

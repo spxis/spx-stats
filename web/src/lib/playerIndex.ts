@@ -1,10 +1,11 @@
 import "server-only";
-import { ApiError, rowsSlice, rowsWindow } from "./api/client";
+import { z } from "zod";
+import { ApiError, rows, rowsSlice, rowsWindow } from "./api/client";
 import { playerIndexSchema, type PlayerIndexRow } from "./api/people";
 import { isLeague } from "./leagues";
 import { readSpan, type Span } from "./listSpan";
 import { overlapFilters } from "./listRange";
-import { orderOf, PLAYER_LISTED, playerQuery, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
+import { letterFilter, letterFilterPlain, orderOf, PLAYER_LISTED, playerQuery, readLetter, searchFilters, searchWords, type Col, type LetterBy, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
 import { positionCode } from "./positions";
 import { slugify } from "./slug";
@@ -12,6 +13,8 @@ import { slugify } from "./slug";
 export { searchWords };
 
 export const PLAYERS_PER_PAGE = 100;
+
+const letterCountSchema = z.object({ letter: z.string(), n: z.number() });
 
 /** The columns of the players table (and the API's `sort=`), by the field of `api.player_index` each sorts on. */
 export const PLAYER_SORTS: Record<string, Col> = {
@@ -32,7 +35,11 @@ const COUNTRY_RETRY = 60_000;
 
 export const playerOrder = (sort: readonly SortKey[]): Order => orderOf(sort, PLAYER_SORTS, PLAYER_TIE);
 
-export interface PlayerFilters { league: string; words: readonly string[]; position?: string; nat?: string; from?: number; to?: number }
+export interface PlayerFilters {
+  league: string; words: readonly string[]; position?: string; nat?: string; from?: number; to?: number;
+  /** One letter a to z: keeps players whose last name (or first name, with letterBy "first") starts with it. */
+  letter?: string; letterBy?: LetterBy;
+}
 
 /** The first and last season in the players index for a league (every league when none), which is the full reach of the year slider. */
 export const playerSpan = (league: string): Promise<Span> => readSpan("player_index", [PLAYER_LISTED, ...(isLeague(league) ? [`leagues=cs.${encodeURIComponent(`{${league}}`)}`] : [])]);
@@ -67,12 +74,32 @@ export async function readPlayers(f: PlayerFilters, order: Order, win: { offset:
     const { rows, total } = await rowsWindow(view, query, win.offset, win.limit, playerIndexSchema);
     return { rows, total, more: win.offset + rows.length < total };
   };
-  if (!f.words.length) return run("player_index", base);
+  const letter = readLetter(f.letter);
+  if (!f.words.length && !letter) return run("player_index", base);
   try {
-    return await run("player_search", [...base, ...searchFilters(f.words)]);
+    return await run("player_search", [...base, ...searchFilters(f.words), ...(letter ? [letterFilter(letter, f.letterBy)] : [])]);
   } catch (e) {
     if (!(e instanceof ApiError) || e.status !== 404) throw e;
-    return run("player_index", [...base, ...f.words.map((w) => `name=ilike.${encodeURIComponent(`*${w}*`)}`)]);
+    return run("player_index", [...base, ...f.words.map((w) => `name=ilike.${encodeURIComponent(`*${w}*`)}`), ...(letter ? [letterFilterPlain(letter, f.letterBy)] : [])]);
+  }
+}
+
+/** How many players start with each letter under the same filters but the letter (api.player_letters, migration 091): letter to count, only letters with players. Null where the database lacks the function (the row then draws every letter). */
+export async function getLetterCounts(f: Omit<PlayerFilters, "letter">): Promise<Map<string, number> | null> {
+  const args = [
+    `p_by=${f.letterBy === "first" ? "first" : "last"}`,
+    isLeague(f.league) ? `p_league=${f.league}` : "",
+    f.nat ? `p_nat=${encodeURIComponent(f.nat.toUpperCase())}` : "",
+    f.position ? `p_position=${encodeURIComponent(positionCode(f.position) ?? f.position)}` : "",
+    f.from !== undefined ? `p_from=${f.from}` : "",
+    f.to !== undefined ? `p_to=${f.to}` : "",
+    f.words.length ? `p_q=${encodeURIComponent(f.words.join(" "))}` : "",
+  ].filter(Boolean).join("&");
+  try {
+    const found = await rows("rpc/player_letters", args, letterCountSchema);
+    return new Map(found.map((r) => [r.letter, r.n]));
+  } catch {
+    return null;
   }
 }
 
@@ -90,7 +117,7 @@ export interface PlayerPage { list: PlayerIndexRow[]; total: number; page: numbe
  * One page of the players index, in the order asked for (the view is indexed for each column), with the number of players
  * that match the league and the name. A page past the last is answered with the last page.
  */
-export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, more: { from?: number; to?: number; nat?: string } = {}): Promise<PlayerPage> {
+export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, more: { from?: number; to?: number; nat?: string; letter?: string; letterBy?: LetterBy } = {}): Promise<PlayerPage> {
   const order = playerOrder(sort);
   const f = { league, words: searchWords(q), ...more };
   let at = page;

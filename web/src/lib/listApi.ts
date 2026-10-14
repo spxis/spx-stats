@@ -46,7 +46,7 @@ export async function listPlayers(sp: URLSearchParams): Promise<Listing<ReturnTy
   const { values: v, sort, sortText, fields, range } = parseListParams("players", sp, { sorts: Object.keys(PLAYER_SORTS), fields: PLAYER_FIELDS, defSort: "name.asc" });
   const order = playerOrder(sort);
   const after = afterValues(v.after, sortText, order);
-  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, nat: v.nat, ...range }, order, { offset: v.offset, limit: v.limit, after });
+  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, nat: v.nat, letter: v.letter, letterBy: v.letter_by, ...range }, order, { offset: v.offset, limit: v.limit, after });
   const url = fields && !fields.includes("url") ? () => "" : await playerPaths();
   return {
     data: rows.map((p) => pick(playerItem(p, url), fields)),

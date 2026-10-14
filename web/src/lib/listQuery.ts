@@ -12,6 +12,39 @@ export { fold };
 /** The words of a search, each one a piece of a name (so "gretzky wayne" finds Wayne Gretzky); only letters and digits are left in them. */
 export const searchWords = (q: string): string[] => fold(q).split(" ").filter(Boolean).slice(0, 4).map((w) => w.slice(0, 30));
 
+/** Words that follow a name and are not part of it: "Ken Griffey Jr." is filed under G. Folded (no dots), as `search` holds them. */
+export const NAME_SUFFIXES = ["jr", "sr", "ii", "iii", "iv"] as const;
+export type LetterBy = "last" | "first";
+
+/** A letter as a caller typed it, folded (so "É" is E): the lower-case a to z it stands for, or null when it is not one letter. */
+export function readLetter(raw: string | null | undefined): string | null {
+  const f = fold((raw ?? "").trim());
+  return /^[a-z]$/.test(f) ? f : null;
+}
+
+/**
+ * The PostgREST filter, on the folded `search` of api.player_search, that keeps the players whose LAST name starts with the letter (the last word of
+ * the name, trailing Jr, Sr, II, III and IV set aside), or whose first name does with `by = "first"`. The last-name filter is a POSIX regular expression
+ * (`match`, with a lookahead so a suffix is never taken for the name); the letter is a checked a to z, so nothing a caller types reaches the pattern.
+ * api.player_letters (migration 091) counts with the same meaning.
+ */
+export function letterFilter(letter: string, by: LetterBy = "last"): string {
+  const l = readLetter(letter);
+  if (!l) throw new Error("not a letter");
+  if (by === "first") return `search=like.${encodeURIComponent(`${l}*`)}`;
+  const suffix = NAME_SUFFIXES.join("|");
+  return `search=match.${encodeURIComponent(`(^| )(?!(${suffix})( |$))${l}[^ ]*( (${suffix}))*$`)}`;
+}
+
+/** The same meaning on the plain `name` (accents and capitals not folded), for a database that has no api.player_search yet. */
+export function letterFilterPlain(letter: string, by: LetterBy = "last"): string {
+  const l = readLetter(letter);
+  if (!l) throw new Error("not a letter");
+  if (by === "first") return `name=ilike.${encodeURIComponent(`${l}*`)}`;
+  const suffix = NAME_SUFFIXES.join("|");
+  return `name=imatch.${encodeURIComponent(`(^| )(?!(${suffix})[.]?( |$))${l}[^ ]*( (${suffix})[.]?)*$`)}`;
+}
+
 export type Val = string | number | null;
 /** A sortable field of a view; `num` for numbers, `nullable` for fields that can be empty (those sort last either way). */
 export interface Col { field: string; num?: boolean; nullable?: boolean; noCursor?: boolean }

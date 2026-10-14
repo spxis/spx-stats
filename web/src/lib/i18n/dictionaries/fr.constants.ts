@@ -1791,4 +1791,9 @@ export const FR: Dictionary = {
   "teams.mapOpen": "Ouvrir la carte des équipes affichées",
   "teams.mapCaption": "Carte · {n} équipes",
   "teams.mapNote": "{n} équipes sur la carte, chacune à sa dernière installation. Appuyez sur un point pour ouvrir l’équipe.",
+  "players.azAria": "Joueurs selon la première lettre du nom",
+  "players.azByAria": "Le nom dont on prend la lettre",
+  "players.azLast": "Nom de famille",
+  "players.azFirst": "Prénom",
+  "players.azNone": "{letter} : aucun joueur avec ces choix",
 };
