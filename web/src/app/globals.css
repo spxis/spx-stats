@@ -281,8 +281,6 @@
   @media (min-width: 760px) {
     .foot-cols { grid-template-columns: 1fr 1fr 1.8fr .8fr; gap: 8px 32px; }
   }
-  .pager { display: flex; flex-wrap: wrap; align-items: center; gap: 0 18px; margin-top: 12px; }
-  .pager a { padding-block: 8px; }
   td.nowrap { white-space: nowrap; }
   .foot-links { display: flex; flex-wrap: wrap; gap: 0 16px; }
   .foot-links a { padding-block: 6px; }

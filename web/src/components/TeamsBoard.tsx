@@ -12,6 +12,7 @@ import { placeText, type Conf, type Div } from "@/lib/teamGroups";
 import { replaceQuery } from "@/lib/urlQuery";
 import { RANGE_PAGES, releaseRangeHold, saveRange, savedRange } from "@/lib/yearRange";
 import { PageFlag } from "./PageFlag";
+import { Pager } from "./Pager";
 import { SortTable } from "./SortTable";
 import { usePaths } from "./SlugProvider";
 import { TeamLabel } from "./TeamLabel";
@@ -220,15 +221,9 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
             <>
               <p className="note" role="status" aria-live="polite">{plural("count.teams", filtered.length)}{view.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(view.page), pages: fmt(view.pages) })}` : ""}</p>
               <div className="scroll teamlist"><SortTable {...table} def={DEF_SORT} initial={spec} onSort={setSort} /></div>
-              {view.pages > 1 ? (
-                <nav className="pager" aria-label={say("teams.pager")}>
-                  {view.page > 1 ? <PageLink to={1} href={href} change={change} label={"« " + say("players.first")} /> : null}
-                  {view.page > 1 ? <PageLink to={view.page - 1} href={href} change={change} label={"‹ " + say("players.prev")} rel="prev" /> : null}
-                  <b>{say("players.pageOf", { page: fmt(view.page), pages: fmt(view.pages) })}</b>
-                  {view.page < view.pages ? <PageLink to={view.page + 1} href={href} change={change} label={say("players.next") + " ›"} rel="next" /> : null}
-                  {view.page < view.pages ? <PageLink to={view.pages} href={href} change={change} label={say("players.last") + " »"} /> : null}
-                </nav>
-              ) : null}
+              <Pager page={view.page} pages={view.pages} label={say("teams.pager")} say={say} fmt={fmt}
+                href={(n) => href({ page: n > 1 ? String(n) : null })}
+                onPage={(n) => { change({ page: n > 1 ? String(n) : null }); document.querySelector(".teamlist")?.scrollIntoView({ block: "start" }); }} />
             </>
           ) : <p className="note">{say("teams.none")}</p>}
         </div>
@@ -238,19 +233,6 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
 }
 
 const STATUS_LABEL = { all: "teams.statusAll", active: "teams.statusActive", defunct: "teams.statusDefunct" } as const;
-
-/** A link to another page of the list: a real address (so it opens in a new tab), but a plain press only changes the board. */
-function PageLink({ to, href, change: go, label, rel }: { to: number; href: (c: Record<string, string | null>) => string; change: (c: Record<string, string | null>) => void; label: string; rel?: string }) {
-  return (
-    <a href={href({ page: to > 1 ? String(to) : null })} rel={rel}
-      onClick={(e) => {
-        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-        e.preventDefault();
-        go({ page: to > 1 ? String(to) : null });
-        document.querySelector(".teamlist")?.scrollIntoView({ block: "start" });
-      }}>{label}</a>
-  );
-}
 
 /** The least number of titles a team must hold to be listed: a slider from none to the most any listed league's team holds. */
 function TitlesControl({ teams, league, value, onChange }: { teams: BoardTeam[]; league: string; value: number; onChange: (n: number) => void }) {

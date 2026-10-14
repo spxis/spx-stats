@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
 import { LetterBar } from "@/components/LetterBar";
+import { Pager } from "@/components/Pager";
 import { CountryScope } from "@/components/CountryScope";
 import { moreChips, PlayerCountries } from "@/components/PlayerCountries";
 import { ListRange } from "@/components/ListRange";
@@ -150,15 +151,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
           <>
             <p className="note">{plural("count.players", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
             <div className="scroll"><SortTable {...table} def={DEF_SORT} initial={sort} remote /></div>
-            {data.pages > 1 ? (
-              <nav className="pager" aria-label={say("players.pager")}>
-                {data.page > 1 ? <Link href={to(1)} prefetch={false}>{"« " + say("players.first")}</Link> : null}
-                {data.page > 1 ? <Link href={to(data.page - 1)} prefetch={false} rel="prev">{"‹ " + say("players.prev")}</Link> : null}
-                <b>{say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}</b>
-                {data.page < data.pages ? <Link href={to(data.page + 1)} prefetch={false} rel="next">{say("players.next") + " ›"}</Link> : null}
-                {data.page < data.pages ? <Link href={to(data.pages)} prefetch={false}>{say("players.last") + " »"}</Link> : null}
-              </nav>
-            ) : null}
+            <Pager page={data.page} pages={data.pages} href={to} label={say("players.pager")} say={say} fmt={fmt} />
             {countries ? <PlayerCountries part="strip" t={countries} reference={reference} league={league} chosen={nat} href={href} /> : null}
             {book.key()}
             <p className="note small"><Credits say={say} use={["flags"]} /></p>
