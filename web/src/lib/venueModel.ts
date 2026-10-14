@@ -50,7 +50,7 @@ export interface VenueRow {
   al: string[];
   /** The lines the map panel adds: its other names and its facts. */
   extra: string[];
-  /** What kind of place it is: a home venue (the list's subject), a spring training park or a stadium planned for a club. */
+  /** What kind of place it is: a home venue (the list's subject), a spring training park, a stadium planned for a club or a world soccer stadium (World Cup, MLS) that is not a home venue of the five leagues. */
   kind: VenueKind;
   /** A spring training park's league ("cactus" or "grapefruit"), or a future venue's status ("proposed", "approved" or "under_construction"). */
   tag: string | null;
@@ -60,8 +60,8 @@ export interface VenueRow {
   games: number | null;
 }
 
-export type VenueKind = "home" | "spring" | "future";
-export const VENUE_KINDS: readonly VenueKind[] = ["home", "spring", "future"];
+export type VenueKind = "home" | "spring" | "future" | "soccer";
+export const VENUE_KINDS: readonly VenueKind[] = ["home", "spring", "future", "soccer"];
 
 export type VenueStatus = "" | "current" | "former";
 
@@ -71,7 +71,7 @@ export type VenueVisited = "" | "yes" | "no";
 export interface VenueFilter { leagues: string[]; status: VenueStatus; visited: VenueVisited; cc: string; conf: string; div: string; from: number; to: number; show: VenueKind[] }
 export interface YearBounds { min: number; max: number }
 
-/** Home venues are what the page shows until the reader adds the spring training parks or the future venues. */
+/** Home venues are what the page shows until the reader adds the spring training parks, the future venues or the world soccer stadiums. */
 export const DEFAULT_SHOW: readonly VenueKind[] = ["home"];
 
 export const emptyFilter = (b: YearBounds): VenueFilter => ({ leagues: [], status: "", visited: "", cc: "", conf: "", div: "", from: b.min, to: b.max, show: [...DEFAULT_SHOW] });

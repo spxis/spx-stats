@@ -45,7 +45,7 @@ export interface VenueRecord {
   roof: string | null;
   surface: string | null;
   wikipedia_title: string | null;
-  /** home: a venue a club played its home games at; spring: a spring training park; future: a venue planned for a club (not built yet). */
+  /** home: a venue a club played its home games at; spring: a spring training park; future: a venue planned for a club (not built yet); soccer: a stadium that staged World Cup or MLS matches and is not a home venue of the five leagues. */
   kind: VenueKind;
   /** A future venue's status: proposed, approved or under_construction; null for every other kind. */
   status: string | null;
@@ -53,7 +53,7 @@ export interface VenueRecord {
   spring_league: string | null;
   /** The year a future venue is planned to open, as its source says; null when the source gives none (and for every other kind). */
   planned_open_year: number | null;
-  /** Games played there in all, on record in the archive; null when none are (spring and future venues have none). */
+  /** Games played there in all, on record in the archive (for a soccer stadium, its World Cup and MLS matches); null when none are (spring and future venues have none). */
   games: number | null;
 }
 
@@ -114,7 +114,7 @@ export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<stri
 
 export const DATASET = {
   name: "SPX Stats Network: home venues",
-  description: "Every home venue of the NHL, NBA, MLB, NFL and CFL clubs on record, current and former, with its clubs, former names, place and basic facts, and with it the spring training parks of the major-league clubs (kind spring) and the venues planned for a club (kind future).",
+  description: "Every home venue of the NHL, NBA, MLB, NFL and CFL clubs on record, current and former, with its clubs, former names, place and basic facts, and with it the spring training parks of the major-league clubs (kind spring), the venues planned for a club (kind future) and the other stadiums that staged World Cup or MLS matches (kind soccer).",
   url: "https://spxn.com/venues",
   licence:
     "Venue identifiers, names, coordinates, places and facts from Wikidata are CC0 1.0. Surface and roof may come from the infobox of the venue's English Wikipedia article and are then CC BY-SA 4.0: credit Wikipedia and its authors (wikipedia_title names the article) and share alike. Clubs, leagues and years of use come from the SPX Stats archive; each source's licence is on https://spxn.com/sources.",
@@ -193,14 +193,14 @@ export const VENUE_SORTS = Object.keys(VENUE_COLS);
 const TIE: Col = { field: "id" };
 export const venueOrder = (sort: readonly SortKey[]): Order => orderOf(sort, VENUE_COLS, [TIE]);
 
-const KINDS: readonly VenueKind[] = ["home", "spring", "future"];
+const KINDS: readonly VenueKind[] = ["home", "spring", "future", "soccer"];
 
 /**
- * `?kind=` of GET /api/venues: left out, the home venues alone (the API's long-standing answer); a comma list of home, spring and future (in any order, none twice);
- * or `all` for the three. Anything else is a problem the caller gets as a 400 naming `kind`.
+ * `?kind=` of GET /api/venues: left out, the home venues alone (the API's long-standing answer); a comma list of home, spring, future and soccer (in any order, none twice);
+ * or `all` for the four. Anything else is a problem the caller gets as a 400 naming `kind`.
  */
 export function readKinds(raw: string | undefined): { ok: true; kinds: VenueKind[] } | { ok: false; message: string } {
-  const bad = { ok: false, message: "use home, spring, future (a comma list of them, e.g. home,future) or all; left out, home" } as const;
+  const bad = { ok: false, message: "use home, spring, future, soccer (a comma list of them, e.g. home,future) or all; left out, home" } as const;
   if (raw === undefined) return { ok: true, kinds: ["home"] };
   if (raw === "all") return { ok: true, kinds: [...KINDS] };
   const list = raw.split(",");

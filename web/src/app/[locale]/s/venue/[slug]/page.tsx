@@ -7,20 +7,25 @@ import { Flag } from "@/components/Flag";
 import { Rich } from "@/components/i18n/Rich";
 import { MapViewer } from "@/components/MapViewer";
 import type { Pin } from "@/components/mapDraw";
+import { SoccerFlag } from "@/components/SoccerFlag";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";
+import { PitchFigure, SoccerHere } from "@/components/VenueSoccer";
 import { VisitControl } from "@/components/VenueVisits";
 import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUE_CODES, LG } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
-import { countryName } from "@/lib/people-format";
+import { countryName, joinList } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
-import { surfacesFor } from "@/lib/venueDraw";
+import { pitchDrawing, surfacesFor } from "@/lib/venueDraw";
 import { getVenueGames } from "@/lib/venueHome";
 import { getNames } from "@/lib/venueMap";
 import { findVenue, getVenueIndex } from "@/lib/venuePage";
+import { getVenueMatches } from "@/lib/venueSoccer";
+import { summarizeGames } from "@/lib/venueSoccerGames";
+import { isSoccerLeague, matchCount, SOCCER_NAME_KEY, yearsOf } from "@/lib/venueSoccerRows";
 import "@/components/city.css";
 import "@/components/venue.css";
 
@@ -28,7 +33,6 @@ import "@/components/venue.css";
 export const generateStaticParams = () => [];
 
 const ROOF_KEY = { open: "venuesPage.roofOpen", dome: "venuesPage.roofDome", retractable: "venuesPage.roofRetractable" } as const;
-const leagueName = (l: string) => (LG as Record<string, string>)[l] ?? l.toUpperCase();
 const link = (href: string, text: string) => <a className="ext" href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/s/venue/[slug]">): Promise<Metadata> => {
@@ -39,7 +43,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const { row } = venue;
   return pageMeta({
     title: row.place ? `${row.name}, ${row.place}` : row.name,
-    description: say("venue.metaDesc", { name: row.name, clubs: plural("count.clubs", row.clubs.length) }),
+    description: row.kind === "soccer" ? say("venue.metaDescSoccer", { name: row.name }) : say("venue.metaDesc", { name: row.name, clubs: plural("count.clubs", row.clubs.length) }),
     path: `/venue/${row.slug}`,
     locale,
   });
@@ -52,13 +56,21 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
   if (!venue) notFound();
   // A Wikidata id is an address too (so another page can link a venue it knows only by that): it goes to the venue's own.
   if (redirect) permanentRedirect(`/venue/${redirect}`);
-  const { row: v, detail } = venue;
+  const { row: v, detail, soccer } = venue;
   const today = say("team.today");
   const span = (a: number | null, b: number | null) => `${a ?? "…"}–${b ?? today}`;
-  const surfaces = surfacesFor(v, detail, locale === "ja" ? "ja" : "en");
+  const leagueName = (l: string) => (isSoccerLeague(l) ? say(SOCCER_NAME_KEY[l]) : (LG as Record<string, string>)[l] ?? l.toUpperCase());
+  const language = locale === "ja" ? "ja" : "en";
+  const surfaces = surfacesFor(v, detail, language);
+  // A world soccer stadium (a home venue's too): the World Cup and MLS matches played there, and its pitch drawn at its size. The clubs of a stadium that is only that are its competitions: no club table.
+  const soccerOnly = v.kind === "soccer";
+  const played = soccer ? summarizeGames(await getVenueMatches(soccer.venueId)) : null;
+  const pitch = soccer ? pitchDrawing(soccer.pitch.length, soccer.pitch.width, language) : null;
+  const matches = soccer ? matchCount(soccer) : 0;
+  const soccerYears = soccer ? yearsOf(soccer) : { first: null, last: null };
 
   // The games played here (counts by league and season, the latest finals): read in one request, empty while the views are not on the server.
-  const held = detail.wid ? await getVenueGames(detail.wid, [...v.leagues, ...LEAGUE_CODES]) : null;
+  const held = detail.wid && !soccerOnly ? await getVenueGames(detail.wid, [...v.leagues, ...LEAGUE_CODES]) : null;
   const names = new Map<string, string>();
   if (held?.finals.length) {
     await Promise.all([...new Set(held.finals.map((g) => g.league))].map(async (lg) => { for (const n of await getNames(lg)) names.set(`${lg}|${n.franchise_id}`, n.name); }));
@@ -111,26 +123,40 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
           {v.place ? <> · {v.citySlug ? <Link href={`/city/${v.citySlug}`} prefetch={false}>{v.place}</Link> : v.place}</> : null}
           {v.cc ? <> · {countryName(v.cc, locale)}</> : null}
         </span>
-        <h1 className="cityname">{v.name}{v.cc ? <Flag code={v.cc} /> : null}</h1>
-        <p className="lede">{say(v.place ? "venue.lede" : "venue.ledeNoPlace", { name: v.name, place: v.place ?? "", clubs: plural("count.clubs", v.clubs.length), leagues: v.leagues.map(leagueName).join(", ") })}</p>
+        <h1 className="cityname">{v.name}{v.cc ? (soccer ? <SoccerFlag code={v.cc} name={countryName(v.cc, locale)} shape="rect" /> : <Flag code={v.cc} />) : null}</h1>
+        <p className="lede">
+          {soccerOnly
+            ? say(v.place ? "venue.ledeSoccer" : "venue.ledeSoccerNoPlace", { name: v.name, place: v.place ?? "", matches: plural("count.matches", matches), competitions: joinList(v.leagues.map(leagueName), locale) })
+            : say(v.place ? "venue.lede" : "venue.ledeNoPlace", { name: v.name, place: v.place ?? "", clubs: plural("count.clubs", v.clubs.length), leagues: v.leagues.map(leagueName).join(", ") })}
+          {!soccerOnly && soccer && matches ? <>{" "}{say("venue.ledeAlsoSoccer", { matches: plural("count.matches", matches) })}</> : null}
+        </p>
         <VisitControl vkey={v.key} name={v.name} always />
       </section>
 
-      <Figures items={[
+      <Figures items={soccerOnly ? [
+        [say("venue.figMatches"), matches],
+        [say("venuesPage.colLeagues"), v.leagues.length],
+        [say("venue.figFirst"), soccerYears.first == null ? "—" : String(soccerYears.first)],
+        [say("venue.figLast"), v.current ? today : soccerYears.last == null ? "—" : String(soccerYears.last)],
+        ...(v.capacity != null ? [[say("venuesPage.colCapacity"), fmt(v.capacity)] as [string, string]] : []),
+      ] : [
         [say("city.figClubs"), v.clubs.length],
         [say("venuesPage.colLeagues"), v.leagues.length],
         [say("venue.figFirst"), v.from == null ? "—" : String(v.from)],
         [say("venue.figLast"), v.current ? today : v.to == null ? "—" : String(v.to)],
         ...(held ? [[say("venue.figGames"), held.games.games] as [string, number]] : []),
+        ...(soccer && matches ? [[say("venue.figMatches"), matches] as [string, number]] : []),
       ]} />
 
-      <section className="section">
-        <h2>{say("venue.clubsHead")}</h2>
-        <div className="scroll cityclubs">
-          <SortTable columns={built.columns} rows={rows} def="years.asc" label={say("venue.clubsHead")} groups={[{ id: "active", title: say("venue.groupNow") }, { id: "former", title: say("venue.groupFormer") }]} />
-        </div>
-        <p className="note">{say("venue.clubsNote")}</p>
-      </section>
+      {soccerOnly ? null : (
+        <section className="section">
+          <h2>{say("venue.clubsHead")}</h2>
+          <div className="scroll cityclubs">
+            <SortTable columns={built.columns} rows={rows} def="years.asc" label={say("venue.clubsHead")} groups={[{ id: "active", title: say("venue.groupNow") }, { id: "former", title: say("venue.groupFormer") }]} />
+          </div>
+          <p className="note">{say("venue.clubsNote")}</p>
+        </section>
+      )}
 
       {formerNames.length ? (
         <section className="section">
@@ -181,6 +207,10 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
         </section>
       ) : null}
 
+      {played ? <SoccerHere games={played} say={say} plural={plural} fmt={fmt} locale={locale} /> : null}
+
+      {soccer && pitch ? <PitchFigure pitch={soccer.pitch} drawing={pitch} say={say} /> : null}
+
       {surfaces.length ? (
         <section className="section">
           <h2>{say("venue.surfaceHead")}</h2>
@@ -211,8 +241,8 @@ export default guard(async function VenuePage({ params }: PageProps<"/[locale]/s
 
       <p className="note">
         <Credits say={say} use={["flags"]} />{" "}
-        {surfaces.length ? <Rich text={say("credit.surfaces")} parts={{ kyogijo: <LibCredit lib="kyogijo" /> }} /> : null}{" "}
-        {say("venue.dataCredit")}
+        {surfaces.length || pitch ? <Rich text={say("credit.surfaces")} parts={{ kyogijo: <LibCredit lib="kyogijo" /> }} /> : null}{" "}
+        {say(soccer ? "venue.dataCreditSoccer" : "venue.dataCredit")}
       </p>
     </>
   );

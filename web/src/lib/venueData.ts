@@ -22,7 +22,10 @@ export const getVenueRecords = async (): Promise<VenueRecord[]> => {
 };
 
 /** The address of every venue's page (/venue/<slug>), for the sitemap. */
-export const getVenueSlugs = async (): Promise<string[]> => (await getEnglishList()).rows.filter((r) => r.kind === "home").map((r) => r.slug);
+export const getVenueSlugs = async (): Promise<string[]> => {
+  const { rows, unplaced } = await getEnglishList();
+  return [...rows, ...unplaced].filter((r) => r.kind === "home" || r.kind === "soccer").map((r) => r.slug);
+};
 
 /** The page GET /api/venues answers: the query string checked (a bad value is a BadParams naming it), then the records filtered, sorted and cut. */
 export async function listVenues(sp: URLSearchParams): Promise<VenuePage> {

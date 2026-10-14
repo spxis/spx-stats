@@ -12,6 +12,7 @@
 .venuelegend i.ring { background: transparent; border: 2px solid var(--ink); }
 .venuelegend i.square { background: var(--ink); border: 0; }
 .venuelegend i.plan { background: transparent; border: 2px dashed var(--ink); }
+.venuelegend i.diamond { background: var(--ink); border: 0; transform: rotate(45deg) scale(.8); }
 .venuetable { margin-top: 14px; }
 .venuetable td.venuename { white-space: normal; min-width: 180px; }
 .venuetable td.venuecity { white-space: nowrap; }
@@ -31,3 +32,4 @@
 .venuefilters .seg button.kind i.filled { background: currentColor; border-radius: 50%; }
 .venuefilters .seg button.kind i.square { background: currentColor; }
 .venuefilters .seg button.kind i.plan { border: 2px dashed currentColor; border-radius: 50%; }
+.venuefilters .seg button.kind i.diamond { background: currentColor; transform: rotate(45deg) scale(.8); }

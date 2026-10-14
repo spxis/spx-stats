@@ -6,9 +6,10 @@ import type { VenueDetail } from "./venueDataset";
 import { getVenueList } from "./venueList";
 import type { VenueRow } from "./venueModel";
 import { resolveVenue } from "./venueSlug";
+import type { SoccerVenue } from "./venueSoccerRows";
 
-/** A venue's row in the /venues list, with what the open dataset adds to it. */
-export interface VenueEntry { row: VenueRow; detail: VenueDetail }
+/** A venue's row in the /venues list, with what the open dataset adds to it and, for a stadium that staged World Cup or MLS matches, what the archive holds of them. */
+export interface VenueEntry { row: VenueRow; detail: VenueDetail; soccer: SoccerVenue | null }
 
 /** What a venue's page is drawn from: every venue by its page address, and the address of each venue that has a Wikidata id. */
 export interface VenueIndex {
@@ -21,21 +22,22 @@ const HOLD = 5 * 60_000;
 const held = new Map<string, () => Promise<VenueIndex>>();
 
 /**
- * The venues of the /venues list in the reader's language, found by address. Kept a few minutes per server instance and language, so a
- * crowd of venue pages drawn together (a crawler walking the sitemap) builds the list once, not once per page; each page is kept an hour by the CDN.
+ * The venues of the /venues list in the reader's language, found by address: the home venues, and the world soccer stadiums (those with no coordinates
+ * included: they have a page, not a dot). Kept a few minutes per server instance and language, so a crowd of venue pages drawn together (a crawler walking
+ * the sitemap) builds the list once, not once per page; each page is kept an hour by the CDN.
  */
 export async function getVenueIndex(): Promise<VenueIndex> {
   const { say, locale } = await currentSpeaker();
   let load = held.get(locale);
   if (!load) {
     load = memo(HOLD, async () => {
-      const { rows, detail } = await getVenueList(await getPaths(), say);
+      const { rows, detail, soccer, unplaced } = await getVenueList(await getPaths(), say, locale);
       const bySlug = new Map<string, VenueEntry>();
       const byWid = new Map<string, string>();
-      for (const row of rows) {
-        if (row.kind !== "home") continue;
+      for (const row of [...rows, ...unplaced]) {
+        if (row.kind !== "home" && row.kind !== "soccer") continue;
         const d = detail.get(row.id) ?? { wid: null, city: null, iso: null, names: [] };
-        bySlug.set(row.slug, { row, detail: d });
+        bySlug.set(row.slug, { row, detail: d, soccer: d.wid ? soccer.get(d.wid.toUpperCase()) ?? null : null });
         if (d.wid) byWid.set(d.wid.toUpperCase(), row.slug);
       }
       return { bySlug, byWid };

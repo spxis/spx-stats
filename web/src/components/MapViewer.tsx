@@ -157,9 +157,10 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         a.setAttribute("aria-label", pinText(t));
         const hit = document.createElementNS(NS, "circle"); hit.setAttribute("class", "hit");
         hit.setAttribute("cx", String(t.p[0])); hit.setAttribute("cy", String(t.p[1]));
-        // A spring training park is a square (a rect), every other dot a circle: the kind is in the shape, not only in the colour.
-        const c = document.createElementNS(NS, t.shape === "square" ? "rect" : "circle") as SVGGraphicsElement; c.setAttribute("class", pinClass(t));
-        if (t.shape !== "square") { c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1])); }
+        // A spring training park is a square (a rect) and a world soccer stadium a diamond (the same rect turned), every other dot a circle: the kind is in the shape, not only in the colour.
+        const boxed = t.shape === "square" || t.shape === "diamond";
+        const c = document.createElementNS(NS, boxed ? "rect" : "circle") as SVGGraphicsElement; c.setAttribute("class", pinClass(t));
+        if (!boxed) { c.setAttribute("cx", String(t.p[0])); c.setAttribute("cy", String(t.p[1])); }
         const tone = tones.get(toneKey(t));
         paint(c, t, tone);
         a.append(hit, c);
@@ -210,10 +211,12 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
     const asLogo = (d: Scene["dots"][number]) => logosOn.current && !!d.img && !d.img.dataset.failed;
     for (const d of s.dots) {
       const rr = d.t.me ? r * 1.5 : r;
-      if (d.t.shape === "square") {
-        const side = rr * 1.7;
+      if (d.t.shape === "square" || d.t.shape === "diamond") {
+        // a diamond is the square turned 45 degrees, drawn a little larger so its points reach as far as a circle's edge
+        const side = rr * (d.t.shape === "diamond" ? 1.55 : 1.7);
         d.c.setAttribute("x", String(d.t.p[0] - side / 2)); d.c.setAttribute("y", String(d.t.p[1] - side / 2));
         d.c.setAttribute("width", String(side)); d.c.setAttribute("height", String(side));
+        if (d.t.shape === "diamond") d.c.setAttribute("transform", `rotate(45 ${d.t.p[0]} ${d.t.p[1]})`);
       } else d.c.setAttribute("r", String(rr));
       d.hit.setAttribute("r", String((box.width * hitPx) / px));
       if (d.img) {

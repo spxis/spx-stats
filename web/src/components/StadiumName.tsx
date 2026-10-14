@@ -1,12 +1,11 @@
 import Link from "next/link";
 
 /**
- * Whether /venue/Q<wikidata id> answers for a World Cup or MLS ground. Checked 2026-10-14 against production and a local build of main: the route exists, but
- * its index (lib/venuePage.ts) holds only the home venues of the five leagues, so /venue/Q1186333 (Lusail Stadium) and /venue/Q786149 (the 1930 final's ground) are a 404
- * even though api.venue_ref holds both. Set this to true once the world stadium dataset's pages serve those ids; the links below are then live on the
- * World Cup and MLS match pages and the stadium lists, with nothing else to change.
+ * Whether /venue/Q<wikidata id> answers for a World Cup or MLS ground. It does since the venue index (lib/venuePage.ts) holds every stadium that has a soccer
+ * match (lib/venueSoccer.ts), not just the home venues of the five leagues: /venue/Q1186333 (Lusail Stadium) redirects to the stadium's page. Set this to false
+ * to take the links off the World Cup and MLS match pages and the stadium lists, with nothing else to change.
  */
-export const STADIUM_PAGES_LIVE = false;
+export const STADIUM_PAGES_LIVE = true;
 
 /**
  * A stadium's name as a World Cup or MLS page prints it. When the match knows its ground by a Wikidata id, the name links to /venue/Q<id>, which redirects

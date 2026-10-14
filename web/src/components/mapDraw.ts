@@ -28,9 +28,9 @@ export interface Pin {
   tone?: string;
   /** A dot for something no longer in use: drawn as a hollow ring, so the difference is in the shape and not only the colour. */
   defunct?: boolean;
-  /** A dot that is not round, so a kind of place is told apart by its shape and not only its colour: "square" (a spring training park) or "plan" (a round dot
-      with a dashed outline and no fill: a venue not built yet). */
-  shape?: "square" | "plan";
+  /** A dot that is not round, so a kind of place is told apart by its shape and not only its colour: "square" (a spring training park), "diamond" (a square turned a
+      quarter: a world soccer stadium) or "plan" (a round dot with a dashed outline and no fill: a venue not built yet). */
+  shape?: "square" | "diamond" | "plan";
   /** Conference and division as their short names, for the filters. */
   conf?: string | null;
   div?: string | null;

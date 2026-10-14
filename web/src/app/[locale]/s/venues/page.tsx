@@ -6,9 +6,10 @@ import { LG } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { getPaths } from "@/lib/teamSlugs";
+import { venueCountryName } from "@/lib/venueCountry";
 import { getVenueList } from "@/lib/venueList";
+import { isSoccerLeague, SOCCER_NAME_KEY } from "@/lib/venueSoccerRows";
 import { packVenues } from "@/lib/venueWire";
-import { COUNTRY_KEY } from "@/components/countryKey";
 import "@/components/alignment.css";
 import "@/components/city.css";
 
@@ -20,14 +21,15 @@ export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
 });
 
 export default guard(async function VenuesPage() {
-  const { say } = await currentSpeaker();
-  const { rows, leagues } = await getVenueList(await getPaths(), say);
+  const speaker = await currentSpeaker();
+  const { say } = speaker;
+  const { rows, leagues } = await getVenueList(await getPaths(), say, speaker.locale);
   // The year slider spans the years venues were used; a venue not built yet has none.
   const known = rows.filter((v) => v.kind !== "future").flatMap((v) => [v.from, v.to]).filter((y): y is number => y != null);
   const min = known.length ? Math.min(...known) : 1900;
   const max = Math.max(new Date().getFullYear(), ...known);
-  const wire = packVenues(rows, leagues, (cc) => (COUNTRY_KEY[cc] ? say(COUNTRY_KEY[cc]) : cc));
-  const labels = Object.fromEntries(leagues.map((l) => [l, (LG as Record<string, string>)[l] ?? l.toUpperCase()]));
+  const wire = packVenues(rows, leagues, (cc) => venueCountryName(cc, speaker));
+  const labels = Object.fromEntries(leagues.map((l) => [l, isSoccerLeague(l) ? say(SOCCER_NAME_KEY[l]) : (LG as Record<string, string>)[l] ?? l.toUpperCase()]));
   return (
     <>
       <section className="head fade">

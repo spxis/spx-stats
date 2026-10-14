@@ -14,7 +14,7 @@
 .teammap.viewer .pin.closed.me { fill: var(--paper); stroke: var(--ink); stroke-width: 3px; }
 .teammap.viewer .pin.plan { fill: var(--paper); stroke: var(--accent); stroke-width: 2.5px; stroke-dasharray: 3 2.5; }
 .teammap.viewer .pin.plan.me { stroke: var(--ink); stroke-width: 3px; }
-.teammap.viewer .pin.square { stroke-linejoin: miter; }
+.teammap.viewer .pin.square, .teammap.viewer .pin.diamond { stroke-linejoin: miter; }
 .teammap.viewer .hit { fill: transparent; stroke: none; pointer-events: fill; }
 .teammap.viewer a { outline: none; }
 .teammap.viewer a:focus-visible .pin { stroke: var(--ink); stroke-width: 3px; }

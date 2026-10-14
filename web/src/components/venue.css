@@ -26,3 +26,10 @@
 .venuefinals li { display: flex; flex-wrap: wrap; gap: 2px 14px; align-items: baseline; border-bottom: 1px solid var(--rule); padding: 6px 0; }
 .venuefinals li > :first-child { font-variant-numeric: tabular-nums; min-width: 92px; }
 .venuefinals li span:nth-child(2) { color: var(--muted); font: 600 13px/1.4 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+.venuefinals li.venuefinal { background: var(--panel); padding-left: 8px; padding-right: 8px; border-left: 3px solid var(--accent); }
+.venueedition { margin: 0 0 16px; }
+.venueedition h3 { margin: 14px 0 4px; }
+.venueedition .note { margin: 0 0 6px; }
+.venuefinalline { margin: 4px 0 6px; padding: 6px 8px; background: var(--panel); border-left: 3px solid var(--accent); }
+.venuefinalline b { margin-right: 8px; font: 600 13px/1.4 var(--display); text-transform: uppercase; letter-spacing: .06em; }
+.venuepitch img { max-height: 380px; }

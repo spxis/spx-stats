@@ -150,7 +150,8 @@ test("the dataset says what kind each record is, and the API can ask for one kin
 
 test("?kind= of the API: home when left out, a comma list or all when asked, a 400 naming kind otherwise", () => {
   assert.deepEqual(readKinds(undefined), { ok: true, kinds: ["home"] });
-  assert.deepEqual(readKinds("all"), { ok: true, kinds: ["home", "spring", "future"] });
+  assert.deepEqual(readKinds("all"), { ok: true, kinds: ["home", "spring", "future", "soccer"] });
+  assert.deepEqual(readKinds("soccer,home"), { ok: true, kinds: ["home", "soccer"] });
   assert.deepEqual(readKinds("future"), { ok: true, kinds: ["future"] });
   assert.deepEqual(readKinds("future,home"), { ok: true, kinds: ["home", "future"] });
   for (const bad of ["stadium", "home,", "home,stadium", "home,home", "all,home", "ALL", ",", "home future"]) {

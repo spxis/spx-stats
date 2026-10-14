@@ -8,11 +8,16 @@ import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { LEAGUE_CODES } from "./leagues";
 import type { Speaker } from "./i18n/i18n";
+import type { Locale } from "./locale";
 import { getPaths } from "./teamSlugs";
 import { getNames, getVenueTeams } from "./venueMap";
+import { formatVenueAddress, venueMapsUrl } from "./venueAddress";
+import { venueCountryName } from "./venueCountry";
 import type { VenueDetail } from "./venueDataset";
 import type { VenueClub, VenueRow } from "./venueModel";
-import { venueSlugs } from "./venueSlug";
+import { venueSlugs, venueSlugsAfter } from "./venueSlug";
+import { getSoccerVenues } from "./venueSoccer";
+import { SOCCER_LEAGUES, soccerRows, type SoccerVenue } from "./venueSoccerRows";
 import { venueKey } from "./venueVisits";
 import { finishRow } from "./venueWire";
 import { factsLine, getVenueFacts, getVenueNames, namesLine } from "./venueName";
@@ -26,6 +31,10 @@ export interface VenueList {
   leagues: string[];
   /** What the open dataset adds to a row (by row id): Wikidata id, city, ISO 3166-2 region and every name with its years. */
   detail: Map<string, VenueDetail>;
+  /** Every world soccer stadium (a home venue's included), by Wikidata id in upper case: what its page adds. */
+  soccer: Map<string, SoccerVenue>;
+  /** The soccer stadiums the archive has no coordinates for: they have a page (their detail is in `detail`) but are not rows of the list or of the dataset. */
+  unplaced: VenueRow[];
 }
 
 const at5 = (n: number) => n.toFixed(5);
@@ -54,16 +63,18 @@ async function currentAlignment(): Promise<Map<string, { conf: string; div: stri
  * names, facts and place. Built from the same views the team pages' venue maps use, so the two always agree. Which leagues there are comes
  * from the data: a league added later shows up here with no change.
  */
-export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, say: Speaker["say"]): Promise<VenueList> {
-  const [brands, futureList] = await Promise.all([getBrands(), getFutureVenues()]);
+export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, say: Speaker["say"], locale: Locale = "en"): Promise<VenueList> {
+  const [brands, futureList, soccerList] = await Promise.all([getBrands(), getFutureVenues(), getSoccerVenues()]);
   const seen = new Set<string>();
   for (const eras of Object.values(brands)) for (const b of eras) if (b.home_venue && b.latitude != null && b.longitude != null) seen.add(b.league);
   // the leagues the site already knows keep their usual order; any other league follows, by code
-  const rank = (l: string) => { const i = (LEAGUE_CODES as readonly string[]).indexOf(l); return i < 0 ? LEAGUE_CODES.length : i; };
+  const soccerLeagues = SOCCER_LEAGUES.filter((l) => soccerList.some((v) => v.spans.some((x) => x.lg === l)));
+  const known: readonly string[] = [...LEAGUE_CODES, ...SOCCER_LEAGUES];
+  const rank = (l: string) => { const i = known.indexOf(l); return i < 0 ? known.length : i; };
   const order = (set: Iterable<string>) => [...set].sort((a, b) => rank(a) - rank(b) || BY(a, b));
   const leagues = order(seen);
   // A league whose only venue is one planned for a club still gets its chip: the league list is the home leagues and those of the future venues.
-  const chips = order(new Set([...seen, ...futureLeagues(futureList)]));
+  const chips = order(new Set([...seen, ...futureLeagues(futureList), ...soccerLeagues]));
   const [byLeague, spans, facts, align, cityData, tenancies, totals, springList] = await Promise.all([
     Promise.all(leagues.map(async (lg) => ({ lg, teams: await getVenueTeams(lg, brands, paths, say).catch(() => []) }))),
     getVenueNames(), getVenueFacts(), currentAlignment(), getCityData().catch(() => null), getTenancies(), getGameTotals(), getSpringParks(),
@@ -154,5 +165,26 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
     layer.rows.sort((a, b) => BY(a.name, b.name));
     for (const r of layer.rows) { finishRow(r, chips); out.push(r); detail.set(r.id, layer.detail.get(r.id)!); }
   }
-  return { rows: out, leagues: chips, detail };
+
+  // The world soccer stadiums: one that is also a home venue keeps its home row (its page adds the soccer); the others are rows of their own, the ones the archive
+  // has no coordinates for kept apart (a page, but no dot).
+  const homeWids = new Set(out.flatMap((r) => (r.kind === "home" ? [detail.get(r.id)?.wid?.toUpperCase() ?? ""] : [])).filter(Boolean));
+  const soccer = new Map(soccerList.map((v) => [v.wid.toUpperCase(), v]));
+  const who = { say, locale };
+  const world = soccerRows(soccerList, homeWids, {
+    say, country: (lat, lon) => countryAt(lat, lon),
+    address: (v) => {
+      const a = formatVenueAddress({
+        street: v.address, city: v.city, region: v.cc === "US" || v.cc === "CA" ? v.region?.split("-")[1] : null, postal: v.postal, countryCode: v.cc, country: v.cc ? venueCountryName(v.cc, who) : null,
+      });
+      return a?.street ? { text: a.text, href: venueMapsUrl(a, v.lat, v.lon) } : null;
+    },
+  });
+  const all = [...world.rows, ...world.unplaced];
+  const taken = new Set(out.flatMap((r) => (r.slug ? [r.slug] : [])));
+  const worldSlugs = venueSlugsAfter(all.map((r) => ({ id: r.id, name: r.name, wid: world.detail.get(r.id)?.wid ?? null, city: world.detail.get(r.id)?.city ?? r.place })), taken);
+  for (const r of all) { r.slug = worldSlugs.get(r.id) ?? r.id; finishRow(r, chips); detail.set(r.id, world.detail.get(r.id)!); }
+  world.rows.sort((a, b) => BY(a.name, b.name));
+  out.push(...world.rows);
+  return { rows: out, leagues: chips, detail, soccer, unplaced: world.unplaced };
 }

@@ -69,3 +69,22 @@ export function resolveVenue<T>(bySlug: ReadonlyMap<string, T>, byWid: ReadonlyM
   }
   return { venue: null, redirect: null };
 }
+
+/**
+ * The slugs of venues added to a list whose slugs are already in use (the world soccer stadiums beside the home venues): the same rules as `venueSlugs` among
+ * themselves, and one that a taken slug already holds takes its Wikidata id (else a number), so no home venue's address ever changes.
+ */
+export function venueSlugsAfter(list: readonly SlugInput[], taken: ReadonlySet<string>): Map<string, string> {
+  const byId = new Map(list.map((v) => [v.id, v]));
+  const out = new Map<string, string>();
+  const used = new Set(taken);
+  for (const [id, slug] of venueSlugs(list)) {
+    let s = slug;
+    const wid = byId.get(id)?.wid;
+    if (used.has(s) && wid) s = `${slug}-${wid.toLowerCase()}`;
+    for (let n = 2; used.has(s); n++) s = `${slug}-${n}`;
+    used.add(s);
+    out.set(id, s);
+  }
+  return out;
+}

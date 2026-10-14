@@ -136,3 +136,18 @@ export function parseSurfaceFile(name: string): { sport: SurfaceSport; park: str
   if (!sport || (m[2] && sport !== "mlb")) return null;
   return { sport, park: m[2] ?? null, era: m[3] ? Number(m[3]) : null, language: m[4] as "en" | "ja" };
 }
+
+/** A pitch's side as its file name writes it: metres to the half metre, a whole number or ".5". */
+const pitchSide = (m: number) => String(Math.round(m * 2) / 2);
+
+/** The file a soccer pitch is served from (`/surface/pitch-105x68.en.svg`): its length by its width in metres, to the half metre, so stadiums of one size share one file. */
+export const pitchFileName = (length: number, width: number, language: "en" | "ja"): string => `pitch-${pitchSide(length)}x${pitchSide(width)}.${language}.svg`;
+
+/** The pitch, in metres, and language a file name stands for, or null when it names none: a size a football pitch can have (90 to 120 m long, 45 to 90 m wide, in half metres). */
+export function parsePitchFile(name: string): { length: number; width: number; language: "en" | "ja" } | null {
+  const m = /^pitch-(\d{2,3}(?:\.5)?)x(\d{2}(?:\.5)?)\.(en|ja)\.svg$/.exec(name);
+  if (!m) return null;
+  const length = Number(m[1]), width = Number(m[2]);
+  if (length < 90 || length > 120 || width < 45 || width > 90 || length < width) return null;
+  return { length, width, language: m[3] as "en" | "ja" };
+}

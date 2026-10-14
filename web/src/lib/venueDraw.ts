@@ -2,7 +2,7 @@ import "server-only";
 import { describe, drawSurface, parkById } from "@johnmorrisdotca/kyogijo";
 import type { VenueDetail } from "./venueDataset";
 import type { VenueRow } from "./venueModel";
-import { eraOf, erasOf, MLB_PARK_IDS, parkExtras, parkIdFor, parseSurfaceFile, SURFACE_SPORT, surfaceFileName, type SurfaceSport } from "./venuePark";
+import { eraOf, erasOf, MLB_PARK_IDS, parkExtras, parkIdFor, parsePitchFile, parseSurfaceFile, pitchFileName, SURFACE_SPORT, surfaceFileName, type SurfaceSport } from "./venuePark";
 
 /**
  * One drawing of a venue: the surface of a sport, served as a file (`/surface/<file>`, see app/surface) and named by an <img> with its
@@ -60,8 +60,41 @@ export function surfaceFiles(): string[] {
   return names;
 }
 
+/** The pitch files every page can name at once, drawn at build: the standard 105 by 68 m pitch of the Laws of the Game, which a stadium with no published size gets. The others are drawn on their first request and kept. */
+export function pitchFiles(): string[] {
+  return (["en", "ja"] as const).map((language) => pitchFileName(105, 68, language));
+}
+
+/** A soccer pitch as a file: kyogijo's pitch at a size in metres, with its stylesheet inside (as a ballpark's), drawn once per size and language. */
+function drawPitch(length: number, width: number, language: Language): Drawn {
+  const key = pitchFileName(length, width, language);
+  let d = drawn.get(key);
+  if (!d) {
+    const o = { sport: "soccer" as const, language, pitch: { length, width, unit: "m" as const } };
+    const svg = drawSurface(o).replaceAll("html:not([data-theme=light]) ", "");
+    const box = /viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/.exec(svg);
+    const { title, description } = describe(o);
+    d = { svg, alt: `${title}. ${description}`, width: Math.round(Number(box?.[1] ?? 400)), height: Math.round(Number(box?.[2] ?? 200)) };
+    drawn.set(key, d);
+  }
+  return d;
+}
+
+/** One drawing of a soccer pitch for a page: the file, its alternative text and size. The size drawn is the stadium's to the half metre. */
+export interface PitchDrawing { src: string; alt: string; width: number; height: number; length: number; widthM: number }
+
+/** The drawing of a pitch of `length` by `width` metres (a stadium's published size, or the standard one). */
+export function pitchDrawing(length: number, width: number, language: Language): PitchDrawing {
+  const name = parsePitchFile(pitchFileName(length, width, language));
+  const [l, w] = name ? [name.length, name.width] : [105, 68];
+  const d = drawPitch(l, w, language);
+  return { src: `/surface/${pitchFileName(l, w, language)}`, alt: d.alt, width: d.width, height: d.height, length: l, widthM: w };
+}
+
 /** The SVG text of a file name, or null when it names no drawing. */
 export function surfaceFile(name: string): string | null {
+  const pitch = parsePitchFile(name);
+  if (pitch) return drawPitch(pitch.length, pitch.width, pitch.language).svg;
   const f = parseSurfaceFile(name);
   if (!f || (f.park && !MLB_PARK_IDS.includes(f.park)) || !erasOf(f.sport, f.park).includes(f.era)) return null;
   return draw(f.sport, f.park, f.language, f.era).svg;
