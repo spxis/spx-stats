@@ -471,7 +471,7 @@ core rebuild; the release runner runs `select api.refresh();` after each release
    rerunnable steps have run on DS1, each through `scripts/mac/ds1-apply.sh`, and the load's report names each one that ran:
    `165` champions from the games, `172` champion links, `175` team brands and logos, `178` alignment (conferences and divisions; a
    new season needs its standings templates in `legacy_alignment`, fetched by `scripts/alignment/`), `183` season notes (add a row to
-   `db/seed/season_note.csv` for a short or cancelled season), `190`, `191` and `192` the indexes, then `refresh materialized view api.season_summary`
+   `db/seed/season_note.csv` for a short or cancelled season), `190`, `191` and `192` the indexes, `209` the games and finals held at each venue (`core.venue_game_season`, `core.venue_final_game`; release both tables), then `refresh materialized view api.season_summary`
    (`select api.refresh()` on production). Then run `db/checks/051` to `053` (finished season without a champion, team seasons without
    a conference or division, a stale season summary): each must stay at its baseline. A load that skips one is how the NFL 1973-1998
    seasons went live with no champions and no conferences.
