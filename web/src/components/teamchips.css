@@ -1,0 +1,12 @@
+/* The Teams column of /players: a row of small team logos (at most four) and a "+N", and the team picker beside the filters. */
+.tchips { display: inline-flex; flex-wrap: nowrap; align-items: center; gap: 4px; white-space: nowrap; }
+.tchip { box-sizing: border-box; display: inline-flex; align-items: center; justify-content: center; min-width: 28px; height: 28px; padding: 3px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
+.tchip:hover, .tchip:focus-visible { border-color: var(--ink); }
+.tchip .logo { margin: 0; vertical-align: 0; height: 20px; }
+.tchip .tinit { font: 700 11px/1 var(--display); letter-spacing: .04em; color: var(--muted); }
+.tmore { font: 600 13px/1 var(--display); color: var(--muted); padding: 0 4px; cursor: help; }
+.tmore:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+
+.teampick { display: inline-flex; align-items: center; gap: 8px; margin: 0; }
+.teampick label { font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.teampick select { max-width: min(100%, 260px); }

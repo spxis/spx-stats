@@ -5,6 +5,7 @@
 import { z } from "zod";
 import { LEAGUE_CODES } from "./leagues";
 import { readRange } from "./listRange";
+import { TEAM_SEGMENT } from "./playerTeamModel";
 import { cursorOf, readCursor, readLetter, searchWords, valuesOf, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
 
@@ -40,6 +41,7 @@ const listSchemas = {
     nat: z.preprocess(blank, z.string().regex(/^[A-Za-z]{2}$/, "a two-letter country code, e.g. CA").optional()),
     letter: z.preprocess(blank, z.string().max(4).refine((v) => readLetter(v) !== null, "one letter, A to Z (accents are ignored)").optional()),
     letter_by: z.preprocess(blank, z.enum(["last", "first"]).default("last")),
+    team: z.preprocess(blank, z.string().max(80).regex(TEAM_SEGMENT, "a team address as on its page, e.g. montreal-canadiens").optional()),
   }),
   teams: z.object({ ...common, status: z.preprocess(blank, z.enum(["all", "active", "defunct"]).default("all")) }),
   venues: z.object({

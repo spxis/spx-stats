@@ -6,7 +6,7 @@ import { teamIndexSchema, type TeamIndexRow } from "./api/teams";
 import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { LG, isLeague } from "./leagues";
-import { afterValues, nextCursor, parseListParams, parseSuggestParams } from "./listParams";
+import { afterValues, BadParams, nextCursor, parseListParams, parseSuggestParams } from "./listParams";
 import { fold, playerQuery, searchWords } from "./listQuery";
 import { memo } from "./memo";
 import { positionsText } from "./people-format";
@@ -14,7 +14,7 @@ import { positionCodes } from "./positions";
 import { playerOrder, PLAYER_SORTS, readPlayers } from "./playerIndex";
 import { getPlayerPaths } from "./playerLinks";
 import { readTeams, teamOrder, TEAM_SORTS, type TeamStatus } from "./teamIndex";
-import { getPaths } from "./teamSlugs";
+import { getPaths, teamOf } from "./teamSlugs";
 
 /* The JSON of /api/players, /api/teams and their /suggest. The route handlers only parse the query string and send what these return. */
 
@@ -46,7 +46,15 @@ export async function listPlayers(sp: URLSearchParams): Promise<Listing<ReturnTy
   const { values: v, sort, sortText, fields, range } = parseListParams("players", sp, { sorts: Object.keys(PLAYER_SORTS), fields: PLAYER_FIELDS, defSort: "name.asc" });
   const order = playerOrder(sort);
   const after = afterValues(v.after, sortText, order);
-  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, nat: v.nat, letter: v.letter, letterBy: v.letter_by, ...range }, order, { offset: v.offset, limit: v.limit, after });
+  // team=<the address segment of the club's page> needs the league (club addresses are per league) and names a club that league has had.
+  let team: number | undefined;
+  if (v.team) {
+    if (!v.league) throw new BadParams([{ param: "team", message: "needs league= (a team address belongs to a league)" }]);
+    const t = await teamOf(v.league, v.team);
+    if (!t) throw new BadParams([{ param: "team", message: `no team called that in the ${v.league.toUpperCase()}` }]);
+    team = t.f;
+  }
+  const { rows, total, more } = await readPlayers({ league: v.league ?? "", words: searchWords(v.q ?? ""), position: v.position, nat: v.nat, letter: v.letter, letterBy: v.letter_by, team, ...range }, order, { offset: v.offset, limit: v.limit, after });
   const url = fields && !fields.includes("url") ? () => "" : await playerPaths();
   return {
     data: rows.map((p) => pick(playerItem(p, url), fields)),

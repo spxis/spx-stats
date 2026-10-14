@@ -17,6 +17,8 @@ export interface CountryFilters {
   league?: string; words?: readonly string[]; position?: string; from?: number; to?: number;
   /** One letter a to z, of the last name (or of the first name with letterBy "first"). */
   letter?: string; letterBy?: "last" | "first";
+  /** A franchise id: only players who ever played for it (migration 098). */
+  team?: number;
 }
 
 /** The query string of the api.player_countries call; a choice that is not set is left out. */
@@ -29,12 +31,13 @@ export function countryArgs(f: CountryFilters): string {
     f.from !== undefined ? `p_from=${f.from}` : "",
     f.to !== undefined ? `p_to=${f.to}` : "",
     f.words?.length ? `p_q=${encodeURIComponent(f.words.join(" "))}` : "",
+    f.team !== undefined ? `p_franchise=${f.team}` : "",
   ].filter(Boolean).join("&");
 }
 
 /** True when the choices are only a league (or none): then the all-time country views answer without the new function. */
 export const isPlainLeague = (f: CountryFilters): boolean =>
-  f.from === undefined && f.to === undefined && !f.letter && !f.position && !f.words?.length;
+  f.from === undefined && f.to === undefined && !f.letter && !f.position && !f.words?.length && f.team === undefined;
 
 /** The counts of the function's rows, best first, the unknown ones apart. */
 export const fromRows = (rows: readonly CountryRow[]): Tally => tally(rows.map((r) => [r.country || UNKNOWN, r.n] as [string, number]));

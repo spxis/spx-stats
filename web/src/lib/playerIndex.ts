@@ -37,6 +37,8 @@ export const playerOrder = (sort: readonly SortKey[]): Order => orderOf(sort, PL
 
 export interface PlayerFilters {
   league: string; words: readonly string[]; position?: string; nat?: string; from?: number; to?: number;
+  /** A franchise id: keeps players who ever played for it (api.player_team_search, migration 098; there is no fallback, a database without it answers an error). */
+  team?: number;
   /** One letter a to z: keeps players whose last name (or first name, with letterBy "first") starts with it. */
   letter?: string; letterBy?: LetterBy;
 }
@@ -75,6 +77,7 @@ export async function readPlayers(f: PlayerFilters, order: Order, win: { offset:
     return { rows, total, more: win.offset + rows.length < total };
   };
   const letter = readLetter(f.letter);
+  if (f.team !== undefined) return run("player_team_search", [...base, `franchise_id=eq.${f.team}`, ...searchFilters(f.words), ...(letter ? [letterFilter(letter, f.letterBy)] : [])]);
   if (!f.words.length && !letter) return run("player_index", base);
   try {
     return await run("player_search", [...base, ...searchFilters(f.words), ...(letter ? [letterFilter(letter, f.letterBy)] : [])]);
@@ -94,6 +97,7 @@ export async function getLetterCounts(f: Omit<PlayerFilters, "letter">): Promise
     f.from !== undefined ? `p_from=${f.from}` : "",
     f.to !== undefined ? `p_to=${f.to}` : "",
     f.words.length ? `p_q=${encodeURIComponent(f.words.join(" "))}` : "",
+    f.team !== undefined ? `p_franchise=${f.team}` : "",
   ].filter(Boolean).join("&");
   try {
     const found = await rows("rpc/player_letters", args, letterCountSchema);
@@ -117,7 +121,7 @@ export interface PlayerPage { list: PlayerIndexRow[]; total: number; page: numbe
  * One page of the players index, in the order asked for (the view is indexed for each column), with the number of players
  * that match the league and the name. A page past the last is answered with the last page.
  */
-export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, more: { from?: number; to?: number; nat?: string; letter?: string; letterBy?: LetterBy } = {}): Promise<PlayerPage> {
+export async function getPlayerPage(league: string, q: string, sort: SortKey[], page: number, more: { from?: number; to?: number; nat?: string; letter?: string; letterBy?: LetterBy; team?: number } = {}): Promise<PlayerPage> {
   const order = playerOrder(sort);
   const f = { league, words: searchWords(q), ...more };
   let at = page;
