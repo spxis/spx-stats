@@ -6,7 +6,7 @@ import { FLAG_HEIGHT, FLAG_ROUND_HERO, FLAG_ROUND_LARGE, FLAG_SIDE, FLAG_FILE, F
 /**
  * Run in web/: pnpm test:flags
  * The first tests need nothing. The browser test needs a running site (pnpm build && pnpm start, or pnpm dev) at
- * SPX_BASE_URL (default http://localhost:3100) and Chromium for playwright-core; it is skipped, with the reason, when either is missing.
+ * SPX_BASE_URL (default http://localhost:7701) and Chromium for playwright-core; it is skipped, with the reason, when either is missing.
  */
 
 test("sizeFlagSvg gives Hata's drawing the fixed box and keeps its viewBox", () => {
@@ -71,7 +71,7 @@ test("no other stylesheet sizes a flag", () => {
   }
 });
 
-const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:3100").replace(/\/$/, "");
+const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:7701").replace(/\/$/, "");
 // Pages with flags: the roster and its country filter, a player, a city, the cities list, the team heading, the players list.
 // The roster is an MLB club: NHL birth countries are held for only 5% of players (a Canucks roster has just one country, so no filter), MLB for 99%.
 // `rounds` and `rects` are the least number of round and rectangle flags each page must show (the filter buttons and chips are round, the table columns and headings rectangles).

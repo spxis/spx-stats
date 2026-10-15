@@ -8,7 +8,7 @@ import { test } from "node:test";
  * A team named in a list, table or card is drawn by TeamLabel (src/components/TeamLabel.tsx): its small logo, then its name as a link.
  * The first tests read the source and need nothing; they fail when a component names a team some other way, which is how the
  * Seasons table on a player's page came to show no logos while every other list did. The browser test needs a running site
- * (pnpm build && pnpm start, or pnpm dev) at SPX_BASE_URL (default http://localhost:3100) and Chromium for playwright-core; it is
+ * (pnpm build && pnpm start, or pnpm dev) at SPX_BASE_URL (default http://localhost:7701) and Chromium for playwright-core; it is
  * skipped, with the reason, when either is missing.
  */
 
@@ -170,7 +170,7 @@ test("TeamLabel passes the logo on, and the logo has one size and one stylesheet
   assert.ok(!/^\s*\.logo\s*\{/m.test(globals), "globals.css must not size the logo; teamlogo.css does");
 });
 
-const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:3100").replace(/\/$/, "");
+const BASE = (process.env.SPX_BASE_URL ?? "http://localhost:7701").replace(/\/$/, "");
 
 async function browserOrReason() {
   try {

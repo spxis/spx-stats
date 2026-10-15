@@ -17,9 +17,9 @@ test("without SPX_REST_URL the site reads production", async () => {
 });
 
 test("a loopback address is used, with one trailing slash", async () => {
-  assert.equal(await restUrl("http://127.0.0.1:3190"), "http://127.0.0.1:3190/");
-  assert.equal(await restUrl("http://127.0.0.1:3190//"), "http://127.0.0.1:3190/");
-  assert.equal(await restUrl("http://localhost:3190/"), "http://localhost:3190/");
+  assert.equal(await restUrl("http://127.0.0.1:7790"), "http://127.0.0.1:7790/");
+  assert.equal(await restUrl("http://127.0.0.1:7790//"), "http://127.0.0.1:7790/");
+  assert.equal(await restUrl("http://localhost:7790/"), "http://localhost:7790/");
 });
 
 test("the preview's compose service is accepted only with SPX_PREVIEW=1, and only that name", async () => {
@@ -27,7 +27,7 @@ test("the preview's compose service is accepted only with SPX_PREVIEW=1, and onl
   assert.equal(await restUrl("http://pgrst:3000/"), PROD);
   process.env.SPX_PREVIEW = "1";
   assert.equal(await restUrl("http://pgrst:3000"), "http://pgrst:3000/");
-  for (const v of ["http://pgrst.evil.example:3000/", "http://pgrst@evil.example/", "https://pgrst:3000/", "http://other:3000/", "http://192.0.2.101:3190/"]) {
+  for (const v of ["http://pgrst.evil.example:3000/", "http://pgrst@evil.example/", "https://pgrst:3000/", "http://other:3000/", "http://192.0.2.101:7790/"]) {
     assert.equal(await restUrl(v), PROD, v);
   }
   delete process.env.SPX_PREVIEW;
@@ -48,7 +48,7 @@ test("SPX_REVALIDATE shortens the cache time only in preview mode, and only with
 });
 
 test("anything that is not this computer is ignored", async () => {
-  for (const v of ["https://evil.example/rest/v1/", "http://127.0.0.1.evil.example/", "http://192.0.2.101:3190/", "https://127.0.0.1:3190/", "http://localhost.evil.example/"]) {
+  for (const v of ["https://evil.example/rest/v1/", "http://127.0.0.1.evil.example/", "http://192.0.2.101:7790/", "https://127.0.0.1:7790/", "http://localhost.evil.example/"]) {
     assert.equal(await restUrl(v), PROD, v);
   }
 });

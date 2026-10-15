@@ -71,7 +71,7 @@
 
 @layer components {
   /* The one control size (--control-h): height and a centred single line; the sideways padding stays with each control. */
-  select, input[type="search"], .theme, .signin-link, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a, .seasonnav select,
+  select, input[type="search"], .theme, .signin-link, .usermenu-btn, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a, .seasonnav select,
   .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visiteditor input, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .tk-filters input[type="search"], .tk-filters select {
     box-sizing: border-box; height: var(--control-h); padding-block: 0; line-height: 1;
   }
@@ -104,6 +104,7 @@
   .aux a.signin-link { color: var(--paper); border-bottom-width: 1px; }
   .signin-btn { align-self: flex-start; font-size: 16px; padding: 10px 16px; }
   .signin-btn:disabled { opacity: .6; }
+  .signin-choices { display: flex; flex-wrap: wrap; gap: 12px; align-items: flex-start; }
   .ticketform { display: flex; flex-direction: column; gap: 12px; max-width: 560px; }
   .ticketform label { display: flex; flex-direction: column; gap: 4px; font-weight: 600; }
   .ticketform input, .ticketform textarea, .ticketform select { font: inherit; font-weight: 400; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
@@ -168,7 +169,8 @@
   .profile dt { color: var(--muted); }
   .profile dd { margin: 0; overflow-wrap: anywhere; }
   .usermenu { position: relative; }
-  .usermenu-btn { display: flex; align-items: center; gap: 8px; padding: 3px 8px 3px 3px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 14px/1 var(--display); }
+  /* Height comes from the --control-h rule above, so the header is as tall signed in (this button) as signed out (theme switch, Sign in). */
+  .usermenu-btn { display: flex; align-items: center; gap: 8px; padding-block: 0; padding-inline: 7px 8px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); font: 600 14px/1 var(--display); }
   .usermenu-btn:hover { border-color: var(--ink); }
   .usermenu-btn img, .usermenu-initial { width: 26px; height: 26px; border-radius: 50%; }
   .usermenu-initial { display: grid; place-items: center; background: var(--ink); color: var(--paper); }

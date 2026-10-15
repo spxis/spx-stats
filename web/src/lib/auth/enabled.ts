@@ -6,6 +6,8 @@
  * as missing and every kept page was built as "no sign-in" (no link, no account menu, and the signed-in browser's hint hid the theme button for nothing).
  * The script says so with SPX_AUTH_CONFIGURED=1 in the build's environment; the deployed functions read the real values at run time as before.
  */
+import { previewMode } from "./preview.ts";
+
 export const firstEnv = (env: Record<string, string | undefined>, names: string[]): string | null => {
   for (const name of names) {
     const value = env[name]?.trim();
@@ -18,6 +20,7 @@ export const AUTH_ID = ["AUTH_GOOGLE_ID", "GOOGLE_CLIENT_ID"];
 export const AUTH_CLIENT_SECRET = ["AUTH_GOOGLE_SECRET", "GOOGLE_CLIENT_SECRET"];
 export const AUTH_SECRET = ["AUTH_SECRET", "NEXTAUTH_SECRET"];
 
+/** The DS1 preview (SPX_PREVIEW=1, never on Vercel) has its own sign-in for this Mac (lib/auth/preview.ts), so it shows the login controls too. */
 export function authConfigured(env: Record<string, string | undefined>): boolean {
-  return Boolean(firstEnv(env, AUTH_ID) && firstEnv(env, AUTH_CLIENT_SECRET) && firstEnv(env, AUTH_SECRET)) || env.SPX_AUTH_CONFIGURED === "1";
+  return Boolean(firstEnv(env, AUTH_ID) && firstEnv(env, AUTH_CLIENT_SECRET) && firstEnv(env, AUTH_SECRET)) || env.SPX_AUTH_CONFIGURED === "1" || previewMode(env);
 }

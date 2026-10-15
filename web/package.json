@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.119.0",
+  "version": "0.119.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -8,16 +8,16 @@
     "node": ">=22"
   },
   "scripts": {
-    "dev": "next dev -p 3100",
+    "dev": "next dev -p 7701",
     "build": "next build",
-    "start": "next start -p 3100",
+    "start": "next start -p 7701",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "task": "node scripts/task.ts",
     "test:trophies": "node --conditions=react-server --test scripts/trophies.test.ts",
     "i18n:review": "node scripts/i18n-review.ts",
     "test:i18n": "node --test scripts/i18n.test.ts",
-    "test:auth": "node --test scripts/auth.test.ts",
+    "test:auth": "node --conditions=react-server --test scripts/auth.test.ts scripts/authPreview.test.ts",
     "test:revalidate": "node --test scripts/revalidate.test.ts",
     "test:releases": "node --test scripts/releases.test.ts",
     "test:localtime": "node --test scripts/localTime.test.ts",
