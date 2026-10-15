@@ -23,6 +23,10 @@ export class ApiError extends Error {
 /** Seconds a request may take before it is given up on and tried again. */
 const TIMEOUT_MS = 8000;
 
+/** During `next build` many workers read at once and the small production database can briefly answer 5xx: wait longer and try more. */
+const AT_BUILD = process.env.NEXT_PHASE === "phase-production-build";
+const PAUSES_MS = AT_BUILD ? [1000, 3000, 6000, 10000] : [300];
+
 /**
  * One page of a view. The request is tried once more after a short pause when the database answers 5xx (including a statement timeout),
  * the network drops or it takes too long; 4xx answers are final. Each try carries its own abort signal, which also keeps Next from
@@ -34,8 +38,8 @@ const TIMEOUT_MS = 8000;
 const fetchPage = cache(async (view: string, query: string, from: number, size: number, count: boolean): Promise<Response> => {
   let last = "";
   let threw = false;
-  for (let attempt = 0; attempt < 2; attempt++) {
-    if (attempt) await new Promise((r) => setTimeout(r, 300));
+  for (let attempt = 0; attempt <= PAUSES_MS.length; attempt++) {
+    if (attempt) await new Promise((r) => setTimeout(r, PAUSES_MS[attempt - 1]));
     try {
       const send = () =>
         fetch(`${REST_URL}${view}?${query}`, {
