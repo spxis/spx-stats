@@ -761,6 +761,12 @@ Ask John before deleting or overwriting data. Production changes only through ap
     else the English Wikipedia infobox file the site's other fair-use logos already use), scale, nudge and tile colour. No row means drawn as always.
     `status` is `proposed` (shown only on `/admin/logos`, admin only), `approved` (shown on the site) or `rejected`; John approves on that page by telling an
     agent, who edits the CSV. Needs migration 107 on production, then a data release of `core.logo_fit`; the site draws nothing differently until then.
+- **The SPXIS marks** (the swoosh, the star, the shields, the lockups; John's own corporate logos, © SportsInteractive, not under the site's data licences)
+  live in `web/public/brand/` as small minified SVGs in a light and a `-dark` file, cut from his Illustrator sheets by `web/scripts/brand/extractBrand.ts`
+  (originals stay in his Dropbox; the script also writes `lib/brandMarks.ts`, `brandSwoosh.ts`, `brandShield.ts`); `scripts/brand/rasterize.ts` draws the favicon,
+  apple-touch, app and social-preview PNGs. The header swoosh (`BrandSwoosh`, inline, themed by the `--mk-*` tokens), the footer line, About's marks section
+  (`BrandHistory`) and the favicon/OG head (`lib/brandAssets.ts`) use them; `BrandShield` (the empty shield as a container for a logo or abbreviation) is a preview
+  on About and `/admin/logos` only. Never put these marks into an MIT package. `pnpm test:brand`.
 - Never build a public endpoint that runs SQL.
 
 ## 10. Git

@@ -7,6 +7,7 @@ import { LogoFitProvider } from "@/components/LogoFitProvider";
 import { SlugProvider } from "@/components/SlugProvider";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { authEnabled } from "@/lib/auth/config";
+import { SITE_ICONS, SOCIAL_IMAGES } from "@/lib/brandAssets";
 import { getLogoFits } from "@/lib/data";
 import { HINT_SCRIPT } from "@/lib/auth/hint";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -28,10 +29,12 @@ export async function siteMetadata(): Promise<Metadata> {
   const description = say("site.description");
   return {
     metadataBase: new URL(SITE_URL),
+    icons: SITE_ICONS,
+    manifest: "/manifest.webmanifest",
     title: { default: "SPXN · SPX Stats Network", template: "%s · SPXN" },
     description,
-    openGraph: { siteName: "SPXN", type: "website", locale: LOCALE_OG[locale], title: "SPXN · SPX Stats Network", description },
-    twitter: { card: "summary", title: "SPXN · SPX Stats Network", description },
+    openGraph: { siteName: "SPXN", type: "website", locale: LOCALE_OG[locale], title: "SPXN · SPX Stats Network", description, images: [...SOCIAL_IMAGES.openGraph] },
+    twitter: { card: "summary_large_image", title: "SPXN · SPX Stats Network", description, images: [...SOCIAL_IMAGES.twitter] },
   };
 }
 

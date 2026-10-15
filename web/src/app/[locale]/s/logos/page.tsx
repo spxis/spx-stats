@@ -1,4 +1,5 @@
 import { rollups } from "d3";
+import Link from "next/link";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
 import { getBrands } from "@/lib/data";
@@ -43,6 +44,8 @@ export default guard(async function LogosPage() {
         ) : <p className="note">{say("logos.none")}</p>}
         <h2>{say("logos.coloursTitle")}</h2>
         <p>{say("logos.colours")}</p>
+        <h2>{say("logos.brandTitle")}</h2>
+        <p><Rich text={say("logos.brand")} parts={{ link: <Link href="/about#marks">{say("logos.brandLink")}</Link> }} /></p>
         <h2>{say("logos.removalTitle")}</h2>
         <p><Rich text={say("logos.removal")} parts={{ link: <a href="https://github.com/spxis/spx-stats/issues">{say("logos.openIssue")}</a> }} /></p>
       </section>

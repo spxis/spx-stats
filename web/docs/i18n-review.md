@@ -17,7 +17,7 @@ reviewed legal copy.
 Not translated on purpose: team, player and venue names, league codes (NHL, NBA, MLB, NFL, CFL), and the names
 SPX Stats Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia Commons, Vercel, Supabase and GitHub.
 
-## 1. About, Terms, Privacy and the footer (90)
+## 1. About, Terms, Privacy and the footer (111)
 
 | Where a reader meets it | English on the site | French | Japanese | What the Japanese says back | Correction |
 | --- | --- | --- | --- | --- | --- |
@@ -40,6 +40,8 @@ SPX Stats Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wiki
 | Every page: header and footer; Terms page, /terms | The information used here was obtained free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at {link}. | Les renseignements utilisés ici ont été obtenus gratuitement auprès de Retrosheet, qui en détient les droits d’auteur. Les personnes intéressées peuvent communiquer avec Retrosheet à {link}. | **ここで使用している情報は、Retrosheetから無償で提供されたもので、著作権はRetrosheetにあります。ご関心のある方は{link}からRetrosheetにご連絡ください。** | The information used here was provided free of charge by Retrosheet, and the copyright belongs to Retrosheet. Anyone interested, please contact Retrosheet from {link}. |  |
 | Every page: header and footer | Data credits, licences and the logo notice are on {link}. | Les crédits des données, les licences et l’avis sur les logos figurent à la page {link}. | **データの出典、ライセンス、ロゴに関するお知らせは{link}に載せています。** | Notices about data sources, licences and logos are posted on {link}. |  |
 | Every page: header and footer; Terms page, /terms; Terms page, /terms (tab title and search result) | Terms and licence | Conditions et licence | **利用規約とライセンス** | Rules of use and licence. |  |
+| Every page: header and footer | SportsInteractive, established 1997. The SPXIS marks are © SportsInteractive. {link} | SportsInteractive, fondé en 1997. Les marques SPXIS sont © SportsInteractive. {link} | **SportsInteractive、1997年設立。SPXISのマークは© SportsInteractiveです。{link}** | SportsInteractive, established 1997. SPXIS's marks are © SportsInteractive. {link} |  |
+| Every page: header and footer | About the marks | À propos des marques | **マークについて** | About the marks. |  |
 | Every page: header and footer | Version {version} | Version {version} | **バージョン {version}** | Version {version} |  |
 | Every page: footer | Language | Langue | **言語** | Language. |  |
 | About page, /about | SPX Stats Network | SPX Stats Network | **SPX Stats Network** | SPX Stats Network (a name; not translated). |  |
@@ -60,6 +62,25 @@ SPX Stats Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wiki
 | About page, /about; Terms page, /terms; Privacy page, /privacy | github.com/spxis/spx-stats | github.com/spxis/spx-stats | **github.com/spxis/spx-stats** | github.com/spxis/spx-stats (an address; not translated). |  |
 | About page, /about; Terms page, /terms; Privacy page, /privacy | Last updated: {date} | Dernière mise à jour : {date} | **最終更新日：{date}** | Last update date: {date} |  |
 | About page, /about (tab title and search result) | What SPXN is, where its data comes from, and who runs it. | Ce qu’est SPXN, d’où viennent ses données et qui l’exploite. | **SPXNとは何か、データの出どころ、運営者について。** | What SPXN is, where the data comes from, and about the people who run it. |  |
+| About page, /about (the SPXIS marks) | The SportsInteractive shield, established 1997. | Le blason de SportsInteractive, fondé en 1997. | **SportsInteractiveのシールド（盾形の紋章）、1997年設立。** | SportsInteractive's shield (a shield-shaped emblem), established 1997. |  |
+| About page, /about (the SPXIS marks) | spxn.com, a sportsinteractive network, with the swoosh. | spxn.com, un réseau sportsinteractive, avec le swoosh. | **スウッシュを使ったsportsinteractiveネットワーク、spxn.com。** | spxn.com, the sportsinteractive network that uses the swoosh. |  |
+| About page, /about (the SPXIS marks) | The spxn shield, established 1997. | Le blason spxn, fondé en 1997. | **spxnのシールド、1997年設立。** | spxn's shield, established 1997. |  |
+| About page, /about (the SPXIS marks) | SPX Interactive Software, with the swoosh. | SPX Interactive Software, avec le swoosh. | **スウッシュを使ったSPX Interactive Software。** | SPX Interactive Software, which uses the swoosh. |  |
+| About page, /about (the SPXIS marks) | The SPXIS shield, established 1997. | Le blason SPXIS, fondé en 1997. | **SPXISのシールド、1997年設立。** | SPXIS's shield, established 1997. |  |
+| About page, /about (the SPXIS marks) | The SPXIS marks | Les marques SPXIS | **SPXISのマーク** | SPXIS's marks (the word for a logo or symbol). |  |
+| About page, /about (the SPXIS marks) | SPXN grew out of SportsInteractive, established in 1997. These are its marks through the years. | SPXN est issu de SportsInteractive, fondé en 1997. Voici ses marques au fil des ans. | **SPXNは、1997年に設立されたSportsInteractiveから生まれました。年代ごとのマークをご覧ください。** | SPXN was born from SportsInteractive, established in 1997. Please look at the marks of each period. |  |
+| About page, /about (the SPXIS marks) | These are SPXIS marks, © SportsInteractive. They are not under the licences that cover the site's data. | Ce sont des marques de SPXIS, © SportsInteractive. Elles ne relèvent pas des licences qui couvrent les données du site. | **これらはSPXISのマークで、© SportsInteractiveです。サイトのデータに適用されるライセンスの対象ではありません。** | These are SPXIS's marks and are © SportsInteractive. They are not covered by the licences that apply to the site's data. |  |
+| About page, /about (the SPXIS marks) | The swoosh and the star | Le swoosh et l’étoile | **スウッシュと星** | The swoosh and the star. |  |
+| About page, /about (the SPXIS marks) | Red centre, as drawn | Centre rouge, comme dessiné | **赤い中心（原案どおり）** | Red centre (as in the original design). |  |
+| About page, /about (the SPXIS marks) | Brighter centre, for small sizes | Centre plus vif, pour les petites tailles | **より明るい中心（小さいサイズ向け）** | Brighter centre (for small sizes). |  |
+| About page, /about (the SPXIS marks) | One colour | Une seule couleur | **単色** | Single colour. |  |
+| About page, /about (the SPXIS marks) | The star | L’étoile | **星** | Star. |  |
+| About page, /about (the SPXIS marks) | The shield as a container | Le blason comme contenant | **入れ物としてのシールド** | The shield as a container (a thing that holds something). |  |
+| About page, /about (the SPXIS marks) | The empty shield can hold a team's logo or abbreviation, in the team's colours or in SPXN navy. This is a preview: no page uses it yet. | Le blason vide peut contenir le logo ou l’abréviation d’une équipe, aux couleurs de l’équipe ou en bleu marine SPXN. Ceci est un aperçu : aucune page ne l’utilise encore. | **空のシールドには、チームのロゴや略称を、チームカラーまたはSPXNのネイビーで入れられます。これはプレビューで、まだどのページでも使われていません。** | The empty shield can hold a team's logo or abbreviation, in team colours or SPXN navy. This is a preview and is not yet used on any page. |  |
+| About page, /about (the SPXIS marks) | Logo, team colours | Logo, couleurs de l’équipe | **ロゴ・チームカラー** | Logo, team colours. |  |
+| About page, /about (the SPXIS marks) | Abbreviation, team colours | Abréviation, couleurs de l’équipe | **略称・チームカラー** | Abbreviation, team colours. |  |
+| About page, /about (the SPXIS marks) | Logo, SPXN navy | Logo, bleu marine SPXN | **ロゴ・SPXNネイビー** | Logo, SPXN navy. |  |
+| About page, /about (the SPXIS marks) | Abbreviation, SPXN navy, league in the band | Abréviation, bleu marine SPXN, ligue dans le bandeau | **略称・SPXNネイビー・上部の帯にリーグ名** | Abbreviation, SPXN navy, league name in the band at the top. |  |
 | Terms page, /terms | SPX Stats Network | SPX Stats Network | **SPX Stats Network** | SPX Stats Network (a name; not translated). |  |
 | Terms page, /terms | The plain rules for using SPXN, and the credits and licences of the data behind it. | Les règles simples pour utiliser SPXN, ainsi que les crédits et les licences des données qui l’alimentent. | **SPXNを使うときの簡単なルールと、データの出典・ライセンスです。** | The simple rules for using SPXN, and the sources and licences of the data. |  |
 | Terms page, /terms | Using the site | Utilisation du site | **サイトのご利用について** | About using the site. |  |

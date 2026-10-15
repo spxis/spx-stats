@@ -13,6 +13,7 @@ export const SCOPE: readonly { file: string; place: string }[] = [
   { file: "src/components/SiteChrome.tsx", place: "Every page: header and footer" },
   { file: "src/components/i18n/LanguagePicker.tsx", place: "Every page: footer" },
   { file: "src/app/[locale]/s/about/page.tsx", place: "About page, /about" },
+  { file: "src/components/BrandHistory.tsx", place: "About page, /about (the SPXIS marks)" },
   { file: "src/app/[locale]/s/terms/page.tsx", place: "Terms page, /terms" },
   { file: "src/components/Credits.tsx", place: "Terms page, /terms (credits)" },
   { file: "src/app/[locale]/s/privacy/page.tsx", place: "Privacy page, /privacy" },

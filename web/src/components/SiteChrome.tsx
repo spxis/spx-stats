@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { FooterLanguage, HeaderAccount } from "./auth/Account";
+import { BrandImg } from "./BrandImg";
+import { BrandSwoosh } from "./BrandSwoosh";
 import { Rich } from "./i18n/Rich";
 import { LeagueNav } from "./LeagueNav";
 import { SoccerFooterLinks } from "./SoccerFooterLinks";
@@ -14,6 +16,7 @@ export async function SiteHeader() {
   return (
     <header className="top">
       <Link className="brand" href="/">
+        <BrandSwoosh height={26} />
         <span className="brand-mark">SPXN</span>
         <span className="brand-name">SPX Stats Network</span>
       </Link>
@@ -77,6 +80,10 @@ export async function SiteFooter() {
           <Rich text={say("footer.credits")} parts={{ link: <Link href="/terms">{say("terms.title")}</Link> }} />
         </p>
       </div>
+      <p className="foot-brand">
+        <BrandImg name="sportsinteractive" height={22} alt="sportsinteractive" />
+        <span><Rich text={say("footer.brand")} parts={{ link: <Link href="/about#marks">{say("footer.brandLink")}</Link> }} /></span>
+      </p>
       <div className="foot-base">
         <FooterLanguage />
         <p className="ver">

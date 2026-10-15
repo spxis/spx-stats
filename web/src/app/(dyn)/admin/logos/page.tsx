@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { z } from "zod";
 import { rows } from "@/lib/api/client";
+import { BrandShieldExamples } from "@/components/BrandShieldExamples";
 import { requireAdmin } from "@/lib/auth/user";
 import { getBrands, getLogoFits } from "@/lib/data";
 import { sheetLogos } from "@/lib/logoSheet";
@@ -83,6 +84,13 @@ export default async function AdminLogosPage({ searchParams }: { searchParams: P
           {league || show || text ? <Link prefetch={false} href="/admin/logos">Clear</Link> : null}
         </form>
         <p className="note">Showing {shown.length} of {all.length} logos. {fits.length === 0 ? "No fit data is loaded yet (api.logo_fit is empty or missing)." : ""}</p>
+      </section>
+      <section className="section">
+        <h2>Shield container (preview)</h2>
+        <p className="note">
+          The SPXIS shield as a frame for a team logo or abbreviation, in the team&rsquo;s colours and in SPXN navy. Not used on any public page yet; it is also on /about. The logos here are plain (no fit applied).
+        </p>
+        <BrandShieldExamples labels={{ logoTeam: "Logo, team colours", abbrTeam: "Abbreviation, team colours", logoNavy: "Logo, SPXN navy", abbrNavy: "Abbreviation, SPXN navy, league in the band" }} />
       </section>
       {proposals.length ? (
         <section className="section">

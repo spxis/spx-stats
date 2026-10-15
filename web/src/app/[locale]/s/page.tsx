@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Heatmap } from "@/components/Heatmap";
 import { SoccerHomeCard } from "@/components/SoccerHomeCard";
 import { Figures } from "@/components/ui";
+import { SOCIAL_IMAGES } from "@/lib/brandAssets";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
 import { playerTotal } from "@/lib/playerIndex";
@@ -18,7 +19,7 @@ export async function generateMetadata() {
     alternates: { canonical: "/" },
     openGraph: {
       title: "SPXN · SPX Stats Network", url: "/", siteName: "SPXN", type: "website", locale: LOCALE_OG[locale],
-      description: say("site.description"),
+      description: say("site.description"), images: [...SOCIAL_IMAGES.openGraph],
     },
   };
 }

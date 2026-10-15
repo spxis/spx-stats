@@ -86,7 +86,7 @@
   .seg > button, .seg > a { box-sizing: border-box; align-self: stretch; display: inline-flex; align-items: center; justify-content: center; min-height: calc(var(--control-h) - 2px); padding-block: 0; line-height: 1; }
   /* The header is a layer of its own, one above --z-pop: the user menu opens from it and must paint over every page block, including one lifted for an open popover (the rule on .page below). */
   .top { position: relative; z-index: calc(var(--z-pop) + 1); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding-block: 18px 14px; border-bottom: 2px solid var(--ink); max-width: 1180px; margin-inline: auto; }
-  .brand { display: flex; align-items: baseline; gap: 8px; text-decoration: none; }
+  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .brand-mark { font: 700 28px/1 var(--display); letter-spacing: .04em; background: var(--ink); color: var(--paper); padding: 2px 8px 0; }
   .brand-name { font: 600 22px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; }
   .leagues, .aux { display: flex; flex-wrap: wrap; gap: 4px 18px; }
@@ -457,3 +457,55 @@
 a.addresslink { color: inherit; text-decoration-line: underline; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); text-underline-offset: 3px; }
 a.addresslink:hover { text-decoration-color: currentColor; }
 a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; text-decoration: none; display: inline-block; }
+
+/* ---- The SPXIS marks (was components/brand.css: a separate file's `@layer components` can rank below Tailwind's base when it loads first) ---- */
+/* The SPXIS marks (© SportsInteractive; public/brand). The inline swoosh takes its colours from these tokens, so one drawing follows the
+   light or dark page: n = the swoosh body (navy, or the page ink on dark), g = the gap ring round the centre (the page colour), r = the centre.
+   Marks shown as pictures come in two files; .bimg-light and .bimg-dark are those two, one hidden per theme (the tokens in globals.css). */
+:root { --mk-n: #00274c; --mk-g: var(--paper); --mk-r: #c9243f; --shield-ink: #ffffff; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { --mk-n: #e8ebe6; --mk-r: #ee3c57; }
+}
+:root[data-theme="dark"] { --mk-n: #e8ebe6; --mk-r: #ee3c57; }
+
+.bimg { display: block; }
+.bimg-dark { display: none; }
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .bimg-light { display: none; }
+  :root:not([data-theme="light"]) .bimg-dark { display: block; }
+}
+:root[data-theme="dark"] .bimg-light { display: none; }
+:root[data-theme="dark"] .bimg-dark { display: block; }
+
+@layer components {
+  .bm { display: block; flex: none; }
+  .bm-n { fill: var(--mk-n); }
+  .bm-r { fill: var(--mk-r); }
+  .bm-g { stroke: var(--mk-g); fill: none; }
+
+  .bimg { height: auto; max-width: 100%; }
+
+  /* About: the marks through the years. */
+  .bh { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 230px), 1fr)); gap: 12px; margin-top: 12px; list-style: none; padding: 0; }
+  .bh li { display: flex; flex-direction: column; gap: 8px; border: 1px solid var(--rule); background: var(--panel); padding: 12px; }
+  .bh .pic { display: flex; align-items: center; justify-content: center; height: 120px; }
+  .bh .pic .bimg { max-height: 100%; width: auto; }
+  .bh .yr { font: 600 13px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+  .bh p { margin: 0; font-size: 15px; }
+  .bshields { display: grid; grid-template-columns: repeat(4, max-content); gap: 10px 22px; margin-top: 12px; justify-content: start; align-items: center; }
+  .bshields .cap { max-width: 130px; font: 600 12px/1.25 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+  @media (max-width: 520px) { .bshields { grid-template-columns: repeat(2, max-content); } }
+  .bsw { display: flex; flex-wrap: wrap; align-items: center; gap: 14px 28px; margin-top: 12px; }
+  .bsw figure { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .bsw figcaption { font-size: 13px; color: var(--muted); }
+  .bsw .bimg { height: 44px; width: auto; }
+
+  /* The footer line. */
+  .foot .foot-brand { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 12px; margin-block: 4px; }
+  .foot .foot-brand .bimg { height: 22px; width: auto; }
+
+  /* BrandShield: the shield as a container. */
+  .shield { position: relative; display: inline-block; flex: none; line-height: 0; }
+  .shield > svg { display: block; width: 100%; height: auto; }
+  .shield > img { position: absolute; object-fit: contain; }
+}

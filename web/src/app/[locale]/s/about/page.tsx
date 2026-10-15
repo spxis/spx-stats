@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { BrandHistory } from "@/components/BrandHistory";
 import { Rich } from "@/components/i18n/Rich";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
@@ -42,6 +43,7 @@ export default async function AboutPage() {
         <p><Rich text={say("about.contact")} parts={{ link: <a href="https://github.com/spxis/spx-stats/issues">{say("about.contactLink")}</a> }} /></p>
         <p className="note">{say("legal.updated", { date: dt.ymd(UPDATED) })}</p>
       </section>
+      <BrandHistory />
     </>
   );
 }
