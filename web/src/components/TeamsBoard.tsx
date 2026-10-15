@@ -3,6 +3,7 @@
 import { useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { fmt3 } from "@/lib/format";
 import { LEAGUES, LG } from "@/lib/leagues";
+import { teamsTitle } from "@/lib/listTitle";
 import { formatSort, parseSort, sortRows, tableOf, type SortKey } from "@/lib/sort";
 import {
   currentPlace, DEF_SORT, filterTeams, leagueSpan, mostTitles, pageOf, readFilters, searchTextOf, STATUSES,
@@ -18,6 +19,7 @@ import { usePaths } from "./SlugProvider";
 import { TeamLabel } from "./TeamLabel";
 import { TeamLogo } from "./TeamLogo";
 import { TeamsMapCorner } from "./TeamsMap";
+import { usePageTitle } from "./usePageTitle";
 import { YearRange } from "./YearRange";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { Pin } from "./mapDraw";
@@ -50,7 +52,7 @@ interface Props {
   groups: Record<string, { confs: Conf[]; divs: Div[] }>;
   /** Country names in this page's language, for the codes the teams carry. */
   countries: Record<string, string>;
-  /** The page's heading, lede and links (drawn by the server); the small map sits in the corner of this block. */
+  /** The page's lede and links (drawn by the server), under the heading this board writes; the small map sits in the corner of the block. */
   head: ReactNode;
 }
 
@@ -74,6 +76,12 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
   const texts = useMemo(() => new Map(teams.map((t) => [t, searchTextOf(t)])), [teams]);
   const filtered = useMemo(() => filterTeams(teams, f, texts), [teams, f, texts]);
   const g = f.league ? groups[f.league] : undefined;
+
+  // The heading and the tab's title say which teams are listed (the league, the division or conference, active or defunct), as the controls below have them.
+  const here = now.league ? groups[now.league] : undefined;
+  const place = (now.div ? here?.divs.find((d) => d.id === now.div)?.name : now.conf ? here?.confs.find((c) => c.id === now.conf)?.name : null) ?? null;
+  const title = teamsTitle(say, { league: now.league ? LG[now.league as keyof typeof LG] ?? null : null, place, status: now.status });
+  usePageTitle(`${title} · SPXN`, `${say("teams.title")} · SPXN`);
 
   // Years remembered for the next visit and not yet in the address: put them there, so the page can be shared as it looks.
   const hasAddressYears = useMemo(() => { const q = new URLSearchParams(search); return q.has("from") || q.has("to"); }, [search]);
@@ -165,6 +173,7 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
     <>
       <section className="head fade teamshead">
         <TeamsMapCorner pins={pins} />
+        <h1>{title}</h1>
         {head}
       </section>
       <section className="section">

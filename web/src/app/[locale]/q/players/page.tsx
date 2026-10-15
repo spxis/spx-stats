@@ -12,6 +12,8 @@ import { SortTable } from "@/components/SortTable";
 import { positionBook } from "@/components/PositionKey";
 import { queryHref } from "@/components/ViewTabs";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import type { Speaker } from "@/lib/i18n/i18n";
+import { playersTitle } from "@/lib/listTitle";
 import { isLeague, LEAGUES, LG } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
@@ -40,16 +42,29 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 const clean = (v: string) => v.trim().slice(0, 60);
 const pageOf = (v: string) => (/^\d{1,4}$/.test(v) && Number(v) > 0 ? Number(v) : 1);
 
+/** The list's heading and title: the league, team and country that narrow it (the team is a club's address, which belongs to its league). */
+async function titleOf(sp: Record<string, string | string[] | undefined>, { say, locale }: Speaker): Promise<string> {
+  const asked = first(sp.league);
+  const league = isLeague(asked) ? asked : "";
+  const nat = /^[A-Za-z]{2}$/.test(first(sp.nat)) ? first(sp.nat).toUpperCase() : "";
+  const hit = league && first(sp.team) && (await playerTeamsReady()) ? await teamOf(league, first(sp.team)) : null;
+  const club = hit ? (await getSlugs()).leagues[league]?.clubs.get(hit.f)?.name : undefined;
+  return playersTitle(say, { league: isLeague(league) ? LG[league] : null, team: club, country: nat ? countryName(nat, locale) : null });
+}
+
 export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/[locale]/q/players">): Promise<Metadata> => {
   const sp = await searchParams;
-  const { say, locale } = await currentSpeaker();
+  const speaker = await currentSpeaker();
+  const { say, locale } = speaker;
   const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.team) && !first(sp.nat) && !first(sp.letter) && !first(sp.sort) && !first(sp.from) && !first(sp.to);
-  return { ...pageMeta({ title: say("players.title"), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
+  return { ...pageMeta({ title: await titleOf(sp, speaker), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
 });
 
 export default guard(async function PlayersPage({ searchParams }: PageProps<"/[locale]/q/players">) {
   const sp = await searchParams;
-  const { say, plural, fmt, locale } = await currentSpeaker();
+  const speaker = await currentSpeaker();
+  const { say, plural, fmt, locale } = speaker;
+  const title = await titleOf(sp, speaker);
   const player = await getPlayerPaths();
   const league = isLeague(first(sp.league)) ? first(sp.league) : "";
   const q = clean(first(sp.q));
@@ -164,7 +179,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
   return (
     <>
       <section className="head fade tight">
-        <h1>{say("players.title")}</h1>
+        <h1>{title}</h1>
         <p className="lede">{say("players.lede")}</p>
       </section>
       <section className="section plist">
