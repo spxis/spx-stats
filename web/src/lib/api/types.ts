@@ -67,6 +67,8 @@ export interface GameRow {
   checked: number | null;
   away_f: number | null;
   home_f: number | null;
+  /** Scheduled start, UTC, when a source recorded one. Absent until the view exposes it, and null when no source did. */
+  starts_at?: string | null;
 }
 
 export interface StandingRow {

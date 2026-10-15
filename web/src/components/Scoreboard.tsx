@@ -9,6 +9,7 @@ import { LG, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { loadScores } from "@/lib/scoresData";
 import { AccentStyle } from "./AccentStyle";
+import { StartTime } from "./StartTime";
 import { DayStrip } from "./DayStrip";
 import { ScoresBar } from "./ScoresBar";
 import { TeamLabel } from "./TeamLabel";
@@ -43,6 +44,11 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
         <span className={"sstate" + (final ? "" : " pending")}>
           {final ? (g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")) : upcoming ? say("scores.scheduled") : say("scores.noResult")}
         </span>
+        {!final && upcoming ? (
+          g.starts_at
+            ? <span className="stime" title={say("scores.scheduledStart")}><StartTime iso={g.starts_at} gameDate={g.game_date} /></span>
+            : <span className="stime tba">{say("scores.timeTba")}</span>
+        ) : null}
         {PHASE_TAG[g.phase] ? <span className="badge tag">{say(PHASE_TAG[g.phase])}</span> : null}
         <Badge src={g.source} />
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}

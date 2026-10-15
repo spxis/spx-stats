@@ -23,6 +23,7 @@
     "test:revalidate": "node --test scripts/revalidate.test.ts",
     "test:releases": "node --test scripts/releases.test.ts",
     "test:localtime": "node --test scripts/localTime.test.ts",
+    "test:times": "node --test scripts/startTime.test.ts",
     "test:ops": "node --test scripts/ops.test.ts",
     "test:resturl": "node --test scripts/restUrl.test.ts",
     "test:idle": "node --test scripts/idleTeams.test.ts",

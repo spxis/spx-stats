@@ -1489,6 +1489,8 @@ export const PHRASES = {
   "scores.final": "Final",
   "scores.finalExtra": "Final / {extra}",
   "scores.scheduled": "Scheduled",
+  "scores.scheduledStart": "Scheduled start",
+  "scores.timeTba": "Time TBA",
   "scores.noResult": "No result",
   "scores.none": "No {league} games on {date}.",
   "scores.nearest": "The nearest days with games:",
