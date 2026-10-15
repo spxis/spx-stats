@@ -1246,6 +1246,7 @@ export const PHRASES = {
   "rnd.nfl": "Super Bowl {numeral}",
   "rnd.nflOld": "NFL Championship",
   "rnd.afl": "AFL Championship",
+  "rnd.aafc": "AAFC Championship",
   "rnd.cfl": "Grey Cup",
   "rnd.other": "Final",
   "rnd.first": "First Round",

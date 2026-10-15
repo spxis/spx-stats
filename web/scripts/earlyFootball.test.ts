@@ -35,7 +35,7 @@ test("the AFL is a league the site knows, a closed one, and its seasons are sing
   assert.equal(LG.afl, "AFL");
   assert.equal(seasonLabel("afl", 1965), "1965");
   assert.equal(seasonLabel("nfl", 1920), "1920");
-  assert.ok(LEAGUES.filter((l) => l.code !== "afl").every((l) => !l.closed));
+  assert.ok(LEAGUES.filter((l) => l.code !== "afl" && l.code !== "aafc").every((l) => !l.closed));
 });
 
 test("a league's first and last season come from its rows: the NFL starts in 1920, the AFL in 1960 and ends in 1969", () => {

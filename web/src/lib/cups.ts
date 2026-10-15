@@ -23,6 +23,7 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   nfl: [TROPHY_FOOTBALL, "Vince Lombardi Trophy"],
   cfl: [TROPHY_CANADIAN_BOWL, "Grey Cup"],
   afl: [TROPHY_FOOTBALL, "AFL Championship"],
+  aafc: [TROPHY_FOOTBALL, "AAFC Championship"],
   worldcup: [TROPHY_SOCCER_GLOBE, "World Cup"],
   wwc: [TROPHY_SOCCER_GLOBE, "World Cup"],
   mls: [TROPHY_SOCCER_BALL, "MLS Cup"],

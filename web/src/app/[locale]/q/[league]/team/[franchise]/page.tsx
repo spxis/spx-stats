@@ -33,7 +33,7 @@ import { getOutageYears } from "@/lib/outageData";
 import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { isLeague, LG, RELATED_LEAGUES, seasonLabel, type LeagueCode } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
 import { seasonPath } from "@/lib/slug";
@@ -212,10 +212,11 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const country = countryAt(place?.latitude, place?.longitude);
   const city = await getClubCity(lg, f);
   const titlesPart = nTitles ? say("team.titlesSuffix", { titles: plural("count.championships", nTitles) }) : "";
-  // The AFL's clubs are today's NFL franchises: each league's page points to the other's seasons of the same club.
-  const otherLg = lg === "afl" ? "nfl" : lg === "nfl" ? "afl" : null;
-  const otherTeam = otherLg ? await getTeam(otherLg, f).catch(() => null) : null;
-  const otherSeasons = otherTeam ? otherTeam.seasons.length + otherTeam.unrecorded.length : 0;
+  // A rival league's clubs are today's franchises (the AFL's and the AAFC's, now NFL clubs): each league's page points to the same club's seasons in the others.
+  const others = (await Promise.all((RELATED_LEAGUES[lg] ?? []).map(async (o) => {
+    const ot = await getTeam(o, f).catch(() => null);
+    return ot && ot.seasons.length + ot.unrecorded.length ? { lg: o, seasons: ot.seasons.length + ot.unrecorded.length } : null;
+  }))).filter((x): x is { lg: LeagueCode; seasons: number } => x !== null);
   const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: titlesPart })
     : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })
       : say("team.ledeBareOnly", { seasons: plural("count.seasons", bare.size), titles: titlesPart });
@@ -239,9 +240,9 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </Link>
         ) : null}
         <p className="lede">{ledeText}</p>
-        {otherLg && otherSeasons ? (
-          <p className="note">{say("team.otherLeague", { league: LG[otherLg], seasons: plural("count.seasons", otherSeasons) })} <Link href={paths.team(otherLg, f)}>{say("team.otherLeagueLink", { league: LG[otherLg] })}</Link></p>
-        ) : null}
+        {others.map((o) => (
+          <p className="note" key={o.lg}>{say("team.otherLeague", { league: LG[o.lg], seasons: plural("count.seasons", o.seasons) })} <Link href={paths.team(o.lg, f)}>{say("team.otherLeagueLink", { league: LG[o.lg] })}</Link></p>
+        ))}
         {rows.length ? <CompareControl lg={lg} f={f} name={now} teamPath={at.path} /> : null}
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}

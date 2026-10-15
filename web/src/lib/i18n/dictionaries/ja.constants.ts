@@ -1062,6 +1062,7 @@ export const JA: Dictionary = {
   "rnd.nfl": "スーパーボウル{numeral}",
   "rnd.nflOld": "NFLチャンピオンシップ",
   "rnd.afl": "AFLチャンピオンシップ",
+  "rnd.aafc": "AAFCチャンピオンシップ",
   "rnd.cfl": "グレイカップ",
   "rnd.other": "決勝",
   "rnd.first": "第1ラウンド",

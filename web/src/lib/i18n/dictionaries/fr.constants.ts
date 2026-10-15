@@ -1062,6 +1062,7 @@ export const FR: Dictionary = {
   "rnd.nfl": "Super Bowl {numeral}",
   "rnd.nflOld": "Championnat de la NFL",
   "rnd.afl": "Championnat de l'AFL",
+  "rnd.aafc": "Championnat de l'AAFC",
   "rnd.cfl": "Coupe Grey",
   "rnd.other": "Finale",
   "rnd.first": "Première ronde",
