@@ -43,6 +43,7 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 . "$HERE/spx-checks.sh"
 . "$HERE/lib/ds1-pgrst.sh"
+. "$HERE/lib/hosted-logos.sh"
 set -u
 
 STATE_DIR="$HOME/Library/Caches/spx-stats"
@@ -184,6 +185,9 @@ prepare_src() {
   git -C "$REPO" archive "$sha" | tar -x -C "$SRC" || die "git archive failed"
   mkdir -p "$SRC/scripts/mac/ds1-preview"
   cp "$HERE/ds1-preview/Dockerfile" "$HERE/ds1-preview/site-entry.sh" "$SRC/scripts/mac/ds1-preview/" || die "no preview files next to this script"
+  # The SportsLogos.Net files the site serves itself (/team-logos/sl/..., not in git) come from DS1's archive into the image's web/public (sha256 checked;
+  # stops when a logo a brand row names is missing). New files alone do not move the commit: use --update --force to rebuild for them.
+  hosted_logos_export "$SRC/web"
 }
 
 build_and_up() {
@@ -375,6 +379,8 @@ ds1_pgrst_start "$NAME" "$PGRST_PORT"   # sets LOCAL=http://127.0.0.1:<pgrst por
 # ---- 2. the site -------------------------------------------------------------------------------------------------------------------
 # SPX_REST_URL makes web/src/lib/api/config.ts read LOCAL (loopback only); the next lines run in web/ with that variable only for them.
 cd "$REPO/web" || die "no web/ directory"
+# This checkout's web/public/team-logos/sl (git-ignored) gets the SportsLogos.Net files too; without them those logos show as missing, nothing else breaks.
+( hosted_logos_export "$REPO/web" ) || say "warning: the SportsLogos.Net logo files were not written; their logos will not show in this preview"
 # Sign-in on this Mac: SPX_PREVIEW=1 turns on "Sign in (this Mac)" (web/src/lib/auth/preview.ts: loopback host only, never on Vercel). It needs a
 # signing secret: the always-on project's if its env file exists, else a fresh one for this run. Exported (not on a command line), so it is not
 # shown by ps. Google is not offered here: its client only allows http://localhost:$SITE_PORT, the always-on site's address.

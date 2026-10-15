@@ -6,7 +6,8 @@
 # Steps (each prints one line):
 #   1. start a PostgREST in Docker (pinned image, 127.0.0.1:7790) on DS1 Postgres, schema api, role anon, read-only session;
 #   2. check it serves the same data as production (scripts/mac/same-data.py: latest release number and season_summary);
-#   3. git archive of the commit into a temp dir (default: origin/main), vercel link and pull;
+#   3. git archive of the commit into a temp dir (default: origin/main), vercel link and pull; then the SportsLogos.Net logo files are written from
+#      DS1 into web/public/team-logos/sl (scripts/logos/export_hosted.py, sha256 checked; it stops when a file a brand row names is missing);
 #   4. `vercel build --prod` there with SPX_REST_URL pointing at that PostgREST (web/src/lib/api/config.ts accepts only loopback addresses);
 #   5. stop the PostgREST (by container name), then `vercel deploy --prebuilt --prod`, one request to spxn.com;
 #   5b. guards (AGENTS.md section 7): before deploying, the built home page must carry the sign-in control (lib/build-auth.sh); after, one request each to
@@ -25,6 +26,7 @@ REPO="$(cd "$HERE/../.." && pwd)"
 . "$HERE/spx-checks.sh"
 . "$HERE/lib/ds1-pgrst.sh"
 . "$HERE/lib/build-auth.sh"
+. "$HERE/lib/hosted-logos.sh"
 set -u
 
 SCOPE="spxis-projects-0d6306b4"
@@ -42,7 +44,7 @@ while [ $# -gt 0 ]; do
     --no-prune) NO_PRUNE=1 ;;
     --force) FORCE=1 ;;
     --keep) KEEP=1 ;;
-    -h|--help) sed -n '2,21p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown option: $1"; exit 2 ;;
   esac
   shift
@@ -112,6 +114,11 @@ fi
 # The deploy guard (AGENTS.md section 7): this build must have sign-in on, or every kept page is built signed-out (2026-10-15).
 [ -n "$AUTH_FLAG" ] || die "the project settings pulled from Vercel do not hold all three sign-in variables (AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET), so the build would have no sign-in. Nothing was built or deployed. Check the project's Environment Variables for production, then run this again"
 say "linked and pulled project settings into $TMP"
+
+# ---- 3b. the logo files the site serves itself --------------------------------------------------------------------------------------
+# The SportsLogos.Net marks (/team-logos/sl/..., migration 108) are not in git: write them from DS1's archive into web/public before the build, so they ship
+# as static files. Stops (nothing built) when a logo a brand row points at is missing from the archive or its sha256 does not match.
+hosted_logos_export "$TMP/web"
 
 # ---- 4. build against DS1 ----------------------------------------------------------------------------------------------------------
 say "vercel build --prod (reads only $LOCAL)"
