@@ -13,12 +13,14 @@ import { SeasonGames } from "@/components/SeasonGames";
 import { packGames } from "@/lib/gamesCodec";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
+import { StandingsFocus } from "@/components/StandingsFocus";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TrophyBanner } from "@/components/TrophyBanner";
 import { Badge, NoSeason } from "@/components/ui";
 import { queryHref, ViewTabs } from "@/components/ViewTabs";
 import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
 import { getStandingsAsOf } from "@/lib/alignmentData";
+import { chosenGroup, groupChoices, placeHeading, placeLabel, rowClasses } from "@/lib/standingsGroups";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor, abbrsForYear } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
@@ -129,7 +131,12 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const views = availableViews(lg, y, st);
   const wantedView = viewSchema.parse(sp.view);
   const view = views.includes(wantedView) ? wantedView : "league";
-  const grouped = groupStandings(say, st, view, LEAGUES.find((l) => l.code === lg)?.name);
+  // The sub-filter buttons of the chosen view (the conferences, or the divisions): ?group= narrows the table to one of them.
+  const choices = groupChoices(view, st);
+  const group = chosenGroup(choices, sp.group);
+  const shown = group ? st.filter(group.has) : st;
+  const grouped = groupStandings(say, shown, view, LEAGUES.find((l) => l.code === lg)?.name);
+  const heading = placeHeading(lg, st);
   const pub = d.standings.find((r) => r.basis === "published");
   const basis = asOf ? say("season.basisAsOf") : pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
   const startDay = seasonStartDay(d.games.map((g) => ({ date: g[0], phase: g[5], status: g[6] })));
@@ -160,6 +167,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         </>
       ),
     },
+    ...(heading ? [{ key: "place", label: say(heading), cls: "place", get: (r: StandingRow) => placeLabel(r) }] : []),
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpTeamTitle"), get: (r) => r.gp,
       cell: (r) => (r.gp != null && played.has(r.team_id) ? (
@@ -184,7 +192,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       ),
     },
   ];
-  const standings = tableOf(st, cols, (r) => r.team_id);
+  const standings = tableOf(shown, cols, (r) => r.team_id, (r) => rowClasses(r) || undefined);
   standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
   const sort = parseSort(sp.sort, cols.map((c) => c.key), "pct.desc");
   return (
@@ -232,9 +240,11 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
               <Link href={queryHref(seasonPath(lg, y), sp, { all: withUnplayed ? null : "1" })} prefetch={false} scroll={false}>{say(withUnplayed ? "season.hideUnplayed" : "season.showUnplayed")}</Link>
             </div>
           ) : null}
-          <ViewTabs lg={lg} path={seasonPath(lg, y)} sp={sp} view={view} views={views} rows={st} />
-          <p className="note">{standingsNote}</p>
-          <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
+          <StandingsFocus>
+            <ViewTabs lg={lg} path={seasonPath(lg, y)} sp={sp} view={view} views={views} rows={st} choices={choices} group={group?.key ?? ""} />
+            <p className="note">{standingsNote}</p>
+            <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
+          </StandingsFocus>
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />

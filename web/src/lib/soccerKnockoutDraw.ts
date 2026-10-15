@@ -1,5 +1,6 @@
 import type { Bracket } from "./bracketLayout";
 import { buildBracket, type Tie } from "./bracketLayout";
+import type { BracketMark } from "./bracketGroups";
 import { drawKnockoutFiles, type KnockoutFiles, type KnockoutOptions } from "./bracketDraw";
 import type { Speaker } from "./i18n/i18n";
 import type { Match } from "./soccer";
@@ -53,4 +54,14 @@ export function soccerKnockoutDrawing(matches: readonly Match[], sp: Pick<Speake
 export function soccerBracketFile(matches: readonly Match[], sp: Pick<Speaker, "say" | "locale">, part: keyof KnockoutFiles): string | null {
   const d = soccerKnockoutDrawing(matches, sp);
   return d ? drawKnockoutFiles(d.layout, d.options)[part] : null;
+}
+
+/** What the "today" marker needs of each match box (components/BracketFocus.tsx): the box's link and the days of the matches of its tie (a replay has two). */
+export function soccerTieMarks(matches: readonly Match[]): BracketMark[] {
+  const ko = knockoutOf([...matches]);
+  const one = (ms: readonly Match[]): BracketMark => {
+    const m = ms.at(-1)!;
+    return { h: soccerMatchPath(m.year, m.match_id, m.home, m.away), d: [...new Set(ms.map((x) => x.match_date.slice(0, 10)))] };
+  };
+  return [...ko.ties.map((t) => one(t.matches)), ...(ko.third ? [one([ko.third])] : [])];
 }

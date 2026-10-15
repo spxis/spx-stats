@@ -1,9 +1,10 @@
+import { BracketFocus } from "@/components/BracketFocus";
 import { Credits } from "@/components/Credits";
 import { KnockoutFile } from "@/components/KnockoutFile";
 import { drawKnockoutFiles, shapeOf } from "@/lib/bracketDraw";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Match } from "@/lib/soccer";
-import { soccerKnockoutDrawing } from "@/lib/soccerKnockoutDraw";
+import { soccerKnockoutDrawing, soccerTieMarks } from "@/lib/soccerKnockoutDraw";
 import "./soccer.css";
 
 /**
@@ -26,7 +27,9 @@ export async function SoccerKnockout({ matches, year }: { matches: Match[]; year
   const file = (part: "wide" | "phone") => ({ src: `/bracket-svg/soccer-${year}.${part}.${sp.locale}.svg`, ratio: shapeOf(art[part]) });
   return (
     <>
-      <KnockoutFile wide={file("wide")} phone={file("phone")} />
+      <BracketFocus marks={soccerTieMarks(matches)} asked="" today={sp.say("bracket.today")} todayTitle={sp.say("bracket.todayTitle")}>
+        <KnockoutFile wide={file("wide")} phone={file("phone")} />
+      </BracketFocus>
       <p className="note"><Credits say={sp.say} use={["brackets"]} /></p>
     </>
   );

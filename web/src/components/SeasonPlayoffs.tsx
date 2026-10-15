@@ -7,11 +7,14 @@ import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
 import { drawKnockout, drawKnockoutFiles, shapeOf } from "@/lib/bracketDraw";
 import type { Bracket } from "@/lib/bracketLayout";
+import { confGroup, divGroup, type BracketMark } from "@/lib/bracketGroups";
+import { dateSchema } from "@/lib/alignment";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { roundPath, seriesPath, type Series } from "@/lib/series";
 import { playInOptions, seasonBracketOptions } from "@/lib/seasonBracket";
+import { BracketFocus } from "./BracketFocus";
 import { Credits } from "./Credits";
 import { Knockout } from "./Knockout";
 import { KnockoutFile, type KnockoutSource } from "./KnockoutFile";
@@ -87,6 +90,15 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
   const files = asFile ? drawKnockoutFiles(shownLayout, options) : null;
   const art = asFile ? null : drawKnockout(shownLayout, options);
   // The NBA's play-in (2020-21 on), under the bracket it leads to: drawn only where the games fit the known shape (lib/nbaPlayIn.ts).
+  // What the group buttons and the "today" marker need, per tie shown (components/BracketFocus.tsx): the groups a club of it is in, the days of its games, and the final (kept by a
+  // division's fade). Sent as data, so the cached drawing is the same for everyone and the day is worked out in the reader's browser.
+  const confOf = new Map<number, string>();
+  if (!half) for (const c of choices) for (const x of b.sides.find((side) => slug(side.label) === c.key)?.boxes ?? []) confOf.set(x.i, confGroup(c.key));
+  const marks: BracketMark[] = (keep ?? series.map((_, i) => i)).map((i) => {
+    const s = series[i];
+    const g = [...(confOf.has(i) ? [confOf.get(i)!] : []), ...divChoices.filter((c) => s.sides.some((t) => c.ids.has(t.f))).map((c) => divGroup(c.key))];
+    return { h: seriesPath(paths, lg, year, s), ...(g.length ? { g } : {}), d: [...new Set(s.games.map((x) => x.date.slice(0, 10)))], ...(s === finalSeries ? { keep: true } : {}) };
+  });
   const playInLayout = await playIn();
   const playInFiles = playInLayout ? drawKnockoutFiles(playInLayout.layout, playInOptions(sp.locale)) : null;
   return (
@@ -94,22 +106,24 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
       <h2>{say("bracket.title")}</h2>
       <p className="note">{sp.say("playoffs.note", { count: sp.fmt(series.length) })}</p>
       {b.robin.length ? <p className="note"><Link href={roundPath(lg, year, 0)} prefetch={false}>{sp.say("playoffs.robinLink", { count: sp.fmt(b.robin.length) })}</Link></p> : null}
+      <BracketFocus marks={marks} asked={dateSchema.parse(query.date)} today={sp.say("bracket.today")} todayTitle={sp.say("bracket.todayTitle")}>
       {choices.length ? (
         <nav className="seg views" aria-label={sp.say("playoffs.sideAria")}>
           {[{ key: "", label: sp.say("playoffs.sideAll") }, ...choices].map((c) => (
-            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { conf: c.key || null, div: null })}#playoffs`} prefetch={false} aria-current={c.key === only ? "page" : undefined}>{c.label}</Link>
+            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { conf: c.key || null, div: null })}#playoffs`} prefetch={false} aria-current={c.key === only ? "page" : undefined} data-bg={half ? undefined : c.key ? confGroup(c.key) : ""}>{c.label}</Link>
           ))}
         </nav>
       ) : null}
       {divChoices.length ? (
         <nav className="seg views scroll" aria-label={sp.say("playoffs.divAria")}>
           {[{ key: "", label: sp.say("playoffs.divAll") }, ...divChoices].map((c) => (
-            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { div: c.key || null })}#playoffs`} prefetch={false} aria-current={c.key === (chosen?.key ?? "") ? "page" : undefined}>{c.label}</Link>
+            <Link key={c.key} href={`${queryHref(seasonPath(lg, year), query, { div: c.key || null })}#playoffs`} prefetch={false} aria-current={c.key === (chosen?.key ?? "") ? "page" : undefined} data-bg={c.key ? divGroup(c.key) : ""}>{c.label}</Link>
           ))}
         </nav>
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
       {files ? <KnockoutFile wide={fileOf("wide", files.wide)} phone={fileOf("phone", files.phone)} /> : <Knockout art={art!} />}
+      </BracketFocus>
       {playInFiles && !only ? (
         <>
           <h3>{sp.say("playoffs.playIn")}</h3>

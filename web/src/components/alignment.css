@@ -40,3 +40,14 @@ table tbody + tbody .grouphead th { border-top: 14px solid var(--paper); }
 .change .meta { color: var(--muted); font-size: 13px; }
 
 .history td.span { white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+/* The view buttons and, beside them, the buttons that narrow the table to one conference or division (components/ViewTabs.tsx). */
+.viewrow { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; }
+.seg.views.sub { flex-wrap: wrap; }
+/* Hovering or focusing one lights its rows and fades the rest, or lights the Conference / Division column (components/StandingsFocus.tsx). */
+.standfocus tbody tr { transition: opacity .12s, background-color .12s; }
+@media (prefers-reduced-motion: reduce) { .standfocus tbody tr { transition: none; } }
+.standfocus[data-hi]:has(tbody tr.pv-hi) tbody tr:not(.pv-hi):not(.grouphead) { opacity: .4; }
+.standfocus tbody tr.pv-hi td { background: color-mix(in srgb, var(--accent) 16%, transparent); }
+.standfocus[data-hicol] td.place { background: color-mix(in srgb, var(--accent) 16%, transparent); color: var(--ink); }
+td.place { white-space: nowrap; color: var(--muted); }

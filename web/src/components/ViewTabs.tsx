@@ -18,17 +18,28 @@ export function queryHref(path: string, sp: Query, changes: Record<string, strin
 
 /**
  * League / Conference / Division (/ Wild card) as a row of links: the choice is in the address (?view=), so it is shared
- * and crawlable. The whole-league view is the default and leaves the address plain.
+ * and crawlable. The whole-league view is the default and leaves the address plain. On the same row, the groups of the chosen view
+ * (the conferences, or the divisions) are buttons that narrow the table to one of them (?group=); hovering or focusing one lights its clubs in the table (components/StandingsFocus.tsx).
  */
-export async function ViewTabs({ lg, path, sp, view, views, rows }: { lg: string; path: string; sp: Query; view: ViewId; views: ViewId[]; rows: readonly Placed[] }) {
+export async function ViewTabs({ lg, path, sp, view, views, rows, choices = [], group = "" }: { lg: string; path: string; sp: Query; view: ViewId; views: ViewId[]; rows: readonly Placed[]; choices?: { key: string; label: string; cls: string }[]; group?: string }) {
   if (views.length < 2) return null;
   const { say } = await currentSpeaker();
   return (
-    <nav className="seg views" aria-label={say("view.aria")}>
-      {views.map((v) => (
-        <Link key={v} href={queryHref(path, sp, { view: v === "league" ? null : v })} prefetch={false} scroll={false}
-          aria-current={v === view ? "page" : undefined}>{viewLabel(say, lg, v, rows)}</Link>
-      ))}
-    </nav>
+    <div className="viewrow">
+      <nav className="seg views" aria-label={say("view.aria")}>
+        {views.map((v) => (
+          <Link key={v} href={queryHref(path, sp, { view: v === "league" ? null : v, group: null })} prefetch={false} scroll={false}
+            aria-current={v === view ? "page" : undefined} data-hicol={v === "league" ? undefined : v}>{viewLabel(say, lg, v, rows)}</Link>
+        ))}
+      </nav>
+      {choices.length ? (
+        <nav className="seg views sub" aria-label={say("view.subAria")}>
+          {[{ key: "", label: say("view.subAll"), cls: "" }, ...choices].map((c) => (
+            <Link key={c.key} href={queryHref(path, sp, { group: c.key || null })} prefetch={false} scroll={false}
+              aria-current={c.key === group ? "page" : undefined} data-hi={c.cls}>{c.label}</Link>
+          ))}
+        </nav>
+      ) : null}
+    </div>
   );
 }

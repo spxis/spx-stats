@@ -7,3 +7,14 @@
 }
 .kobracket a.tb-link { text-decoration: none; }
 .kobracket .ko-dim { opacity: .4; }
+
+/* A group button's preview (components/BracketFocus.tsx): the ties a click would fade take `pv-dim`, and while a preview shows it replaces the chosen group's own fade. */
+.kobracket .tb-tie { transition: opacity .12s; }
+@media (prefers-reduced-motion: reduce) { .kobracket .tb-tie { transition: none; } }
+.bkfocus[data-preview] .kobracket .ko-dim { opacity: 1; }
+.bkfocus[data-preview] .kobracket .pv-dim { opacity: .4; }
+/* A tie with a game today: a ring in the page's accent, a glow and a small "Today" tag on its top edge. */
+.kobracket .tb-tie.ko-today .tb-box { stroke: var(--accent); stroke-width: 3.5; }
+.kobracket .tb-tie.ko-today { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); }
+.kobracket .ko-todaytag rect { fill: var(--ink); }
+.kobracket .ko-todaytag text { fill: var(--paper); font: 700 11px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; }

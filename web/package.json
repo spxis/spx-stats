@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.114.2",
+  "version": "0.115.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -61,6 +61,8 @@
     "test:soccer": "node --test scripts/soccer.test.ts scripts/soccerStrip.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",
     "test:bracket": "node --test scripts/bracket.test.ts",
+    "test:bracketgroups": "node --test scripts/bracketGroups.test.ts",
+    "test:standingsgroups": "node --test scripts/standingsGroups.test.ts",
     "test:playin": "node --test scripts/playIn.test.ts",
     "test:sides": "node --test scripts/sides.test.ts",
     "test:road": "node --test scripts/soccerRoad.test.ts",
