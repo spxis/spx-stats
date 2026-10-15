@@ -77,6 +77,9 @@ a.gchip:hover { border-color: var(--accent); }
 a.scorelink { color: inherit; font-variant-numeric: tabular-nums; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
 a.scorelink:hover { color: var(--accent-text); text-decoration-color: currentColor; }
 
+.olinks { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+.olinks a { font: 600 12px/1.3 var(--display); text-decoration: underline; text-underline-offset: 2px; }
+
 /* The "Game N" heading of a series tile opens that game. */
 .ghead b a { margin-left: 0; color: inherit; text-decoration-color: color-mix(in srgb, currentColor 30%, transparent); }
 .ghead b a:hover { color: var(--accent-text); }

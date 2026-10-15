@@ -69,6 +69,8 @@ export interface GameRow {
   home_f: number | null;
   /** Scheduled start, UTC, when a source recorded one. Absent until the view exposes it, and null when no source did. */
   starts_at?: string | null;
+  /** The NHL's numeric game id. Absent until the view exposes it, and null for every other game. */
+  nhl_id?: number | null;
 }
 
 export interface StandingRow {

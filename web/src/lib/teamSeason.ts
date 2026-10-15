@@ -25,6 +25,8 @@ export interface TeamGame {
   recPct: number | null;
   /** The game as the season page's calendar and game list draw it. */
   tuple: GameTuple;
+  /** The NHL's numeric game id, when the row carries one. */
+  nhlId: number | null;
 }
 
 const PHASE: Record<string, Phase> = { regular: "r", playoffs: "p", preseason: "s", all_star: "a" };
@@ -55,6 +57,7 @@ export function deriveTeamGames(games: GameRow[], franchise: number, standing: S
       rec: res ? `${c.w}–${c.l}${standing?.t || c.t ? `–${c.t}` : ""}${standing?.otl || c.o ? `–${c.o}` : ""}` : "",
       recPct: res && played ? (c.w + c.t / 2) / played : null,
       tuple: [g.game_date, g.away_id, g.away_score, g.home_score, g.home_id, ph, g.status[0] ?? "", g.source, g.overtime ? 1 : 0, g.checked, g.game_id],
+      nhlId: g.nhl_id ?? null,
     });
   }
   return games.map((g) => out.get(g)!);

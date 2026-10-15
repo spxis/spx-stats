@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
-import { abbrFor, type AbbrMap } from "@/lib/abbr";
+import { abbrFor, officialAbbr, type AbbrMap } from "@/lib/abbr";
 import { atUtc, localToday } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";
 import { RESULT_KEY } from "@/lib/i18n/keys";
@@ -21,6 +21,7 @@ import { verdictOf } from "./HomeRoadBars";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { LocSwitch } from "./LocSwitch";
 import { MonthFilter } from "./MonthFilter";
+import { OfficialLinks } from "./OfficialLinks";
 import { PhaseSwitch } from "./PhaseSwitch";
 import { ResultSwitch } from "./ResultSwitch";
 import { createRowLink } from "./rowLink";
@@ -120,9 +121,12 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
       cell: (g) => {
         const me = teams.get(meId)?.name ?? null, [away, home] = g.loc === "Home" ? [g.oppName, me] : [me, g.oppName];
         return (
-          <Link className="scorelink" href={gamePath(lg, year, g.id, away, home)} prefetch={false} title={say("gm.viewGameTitle", { away: away ?? "—", home: home ?? "—" })}>
-            {g.res ? `${g.mine}–${g.theirs}` : say("gm.viewGame")}
-          </Link>
+          <>
+            <Link className="scorelink" href={gamePath(lg, year, g.id, away, home)} prefetch={false} title={say("gm.viewGameTitle", { away: away ?? "—", home: home ?? "—" })}>
+              {g.res ? `${g.mine}–${g.theirs}` : say("gm.viewGame")}
+            </Link>
+            <OfficialLinks league={lg} date={g.date} away={g.loc === "Home" ? officialAbbr(abbrs, g.oppF, year) : officialAbbr(abbrs, teams.get(meId)?.f, year)} home={g.loc === "Home" ? officialAbbr(abbrs, teams.get(meId)?.f, year) : officialAbbr(abbrs, g.oppF, year)} nhlId={g.nhlId} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
+          </>
         );
       },
     },

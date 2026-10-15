@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
+import { OfficialLinks } from "@/components/OfficialLinks";
 import { GameLeaders } from "@/components/GameLeaders";
 import { GameSurface, placeOf, type DrawnGame } from "@/components/GameSurface";
 import { SeriesStyle } from "@/components/SeriesStyle";
@@ -13,7 +14,7 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { Badge } from "@/components/ui";
 import { canFallBack } from "@/lib/api/soften";
 import type { GameRow, StandingRow } from "@/lib/api/types";
-import { abbrFor } from "@/lib/abbr";
+import { abbrFor, officialAbbr } from "@/lib/abbr";
 import { brandFor, logoFor } from "@/lib/brand";
 import { getAbbrs, getBrands, getSeasonStandings } from "@/lib/data";
 import { atUtc } from "@/lib/format";
@@ -259,6 +260,10 @@ export default guard(async function GamePage({ params }: Params) {
           <div>
             <dt>{say("gm.venue")}</dt>
             <dd>{venue?.name ? (venue.wid ? <Link href={`/venue/${venue.wid}`} prefetch={false}>{venue.name}</Link> : venue.name) : neutral ? say("gm.neutral") : say("gm.venueUnknown")}</dd>
+          </div>
+          <div>
+            <dt>{say("scores.leagueSite")}</dt>
+            <dd><OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, fa, y)} home={officialAbbr(abbrs, fh, y)} nhlId={g.nhl_id} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} /></dd>
           </div>
           <div>
             <dt>{say("col.source")}</dt>

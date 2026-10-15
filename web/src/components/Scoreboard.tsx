@@ -1,7 +1,8 @@
 import Link from "next/link";
 import type { GameRow } from "@/lib/api/types";
+import { officialAbbr, type AbbrMap } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
-import { getBrands, getSummary } from "@/lib/data";
+import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { atUtc } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -9,6 +10,7 @@ import { LG, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { loadScores } from "@/lib/scoresData";
 import { AccentStyle } from "./AccentStyle";
+import { OfficialLinks } from "./OfficialLinks";
 import { StartTime } from "./StartTime";
 import { DayStrip } from "./DayStrip";
 import { ScoresBar } from "./ScoresBar";
@@ -24,7 +26,7 @@ const PHASE_TAG: Record<string, "phase.playoffs" | "phase.preseason" | "phase.al
   playoffs: "phase.playoffs", preseason: "phase.preseason", all_star: "phase.allStar",
 };
 
-function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; brands: Brands; say: Say; upcoming: boolean }) {
+function Game({ lg, g, brands, abbrs, say, upcoming }: { lg: LeagueCode; g: GameRow; brands: Brands; abbrs: AbbrMap; say: Say; upcoming: boolean }) {
   const final = g.status === "final" && g.home_score != null && g.away_score != null;
   const away = final && g.away_score! > g.home_score!, home = final && g.home_score! > g.away_score!;
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
@@ -52,6 +54,7 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}
         {g.checked === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠ " + say("game.disputed")}</span> : null}
         <Link href={page} prefetch={false} className="viewgame" title={title}>{say("gm.viewGame")}</Link>
+        <OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, g.away_f, g.year)} home={officialAbbr(abbrs, g.home_f, g.year)} nhlId={g.nhl_id} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
       </div>
     </li>
   );
@@ -61,9 +64,9 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
 export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
   const { say, plural, dt } = await currentSpeaker();
   const eyebrow = <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>;
-  let data: Awaited<ReturnType<typeof loadScores>>, brands: Brands, seasons: Awaited<ReturnType<typeof getSummary>>["seasons"];
+  let data: Awaited<ReturnType<typeof loadScores>>, brands: Brands, abbrs: AbbrMap, seasons: Awaited<ReturnType<typeof getSummary>>["seasons"];
   try {
-    [data, brands, { seasons }] = await Promise.all([loadScores(lg, day), getBrands(), getSummary()]);
+    [data, brands, abbrs, { seasons }] = await Promise.all([loadScores(lg, day), getBrands(), getAbbrs(lg), getSummary()]);
   } catch {
     return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("scores.title")}</h1></section><p className="note">{say("load.failed")}</p></>;
   }
@@ -99,7 +102,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
       <section className="section">
         {games.length ? (
           <ul className="scoreboard">
-            {games.map((g) => <Game key={g.game_id} lg={lg} g={g} brands={brands} say={say} upcoming={upcoming} />)}
+            {games.map((g) => <Game key={g.game_id} lg={lg} g={g} brands={brands} abbrs={abbrs} say={say} upcoming={upcoming} />)}
           </ul>
         ) : (
           <div className="noday">
