@@ -150,6 +150,7 @@ export const JA: Dictionary = {
   "team.winNote": "塗りつぶしの点は優勝したシーズンです。シーズンをクリックすると開きます。",
   "team.standings": "シーズン別の順位表",
   "team.standingsNote": "{seasons}、新しい順。トロフィーは優勝したシーズンを示します。",
+  "team.backToTeam": "{name}のページに戻る",
   "team.names": "名称の変遷",
   "team.venues": "本拠地",
   "team.springHead": "春季キャンプ",

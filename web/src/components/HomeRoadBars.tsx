@@ -6,8 +6,7 @@ import { usePaths } from "./SlugProvider";
 import { fmt3 } from "@/lib/format";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { seasonLabel } from "@/lib/leagues";
-import { addRec, EMPTY, recordAt, share } from "@/lib/loc";
-import type { StandingRow } from "@/lib/api/types";
+import { addRec, EMPTY, recordAt, share, type ChartRow } from "@/lib/loc";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { NO_SEASON_KEY, type NoSeasonKind } from "./ui";
 import { TipLines, useTooltip } from "./Tooltip";
@@ -24,7 +23,7 @@ export function verdictOf(home: number | null, road: number | null, say: Speaker
 }
 
 /** Win share at home and on the road for each season, as paired bars, with the all-time answer above them. */
-export function HomeRoadBars({ rows, lg, f, idle = [] }: { rows: StandingRow[]; lg: string; f: number; idle?: [number, NoSeasonKind][] }) {
+export function HomeRoadBars({ rows, lg, f, idle = [] }: { rows: ChartRow[]; lg: string; f: number; idle?: [number, NoSeasonKind][] }) {
   const router = useRouter();
   const paths = usePaths();
   const { say } = useSpeaker();

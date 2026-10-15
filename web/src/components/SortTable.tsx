@@ -59,6 +59,12 @@ interface Props {
   onSort?: (sort: SortKey[]) => void;
   /** Draws only the first `limit` rows of the sort in force, under a "Show all" button that draws the rest (already on the page: no request). The sort still covers every row. */
   limit?: number;
+  /**
+   * The rows given are only the first of the table: the page left the rest out (they come from `load` when asked for). A "Show all" link under the table
+   * calls `load`, and is a plain link to `href` (the whole list as a page of its own) where script is off or the rest could not be fetched. A sort other than the
+   * default asks for the rest at once, because it must cover every row. `loaded` says the rows given are now all of them.
+   */
+  partial?: { total: number; loaded: boolean; state: "idle" | "loading" | "failed" | "done"; load: () => void; href: string };
 }
 
 /**
@@ -67,7 +73,7 @@ interface Props {
  * and blanks come last whichever way the sort runs. The rows arrive already drawn (the page makes the links), so the
  * table is server-rendered and crawlable.
  */
-export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort, limit }: Props) {
+export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort, limit, partial }: Props) {
   const router = useRouter();
   const { say } = useSpeaker();
   const known = useMemo(() => columns.map((c) => c.key), [columns]);
@@ -85,6 +91,12 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
   const [seen, setSeen] = useState(served);
   if (served !== seen) { setSeen(served); setPicked(null); }
   const spec = picked ?? initial ?? (fromUrl.length ? fromUrl : defSpec);
+
+  // A sort that is not the default must cover every row, so it brings in the rest of a partial table (the rows it holds now are just the newest).
+  const wantsAll = picked != null || fromUrl.length > 0;
+  const needRest = partial != null && !partial.loaded && wantsAll;
+  const loadRest = partial?.load;
+  useEffect(() => { if (needRest) loadRest?.(); }, [needRest, loadRest]);
 
   const sorted = useMemo(() => sortRows(rows, spec, (r, k) => r.sort[k]), [rows, spec]);
   const [all, setAll] = useState(false);
@@ -137,6 +149,19 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
       }) : <tbody>{shown.map(row)}</tbody>}
     </table>
   );
+  if (partial && !partial.loaded) {
+    const busy = partial.state === "loading";
+    return (
+      <>
+        {table}
+        <p className="showall">
+          <a href={partial.href} aria-busy={busy || undefined} onClick={(e) => { if (partial.state !== "failed") { e.preventDefault(); if (!busy) partial.load(); } }}>
+            {busy ? say("load.loading") : say("table.showAll", { count: String(partial.total) })}
+          </a>
+        </p>
+      </>
+    );
+  }
   if (!capped) return table;
   return (
     <>

@@ -6,6 +6,8 @@ import type { Locale } from "@/lib/locale";
 import { chizu, frame, NS, pinText, type Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { MapViewer } from "./MapViewer";
+import { useFetchedJson } from "./useFetchedJson";
+import type { FranchiseMapView } from "@/lib/mapView";
 
 /* Team maps, drawn with Chizu (MIT, https://github.com/johnmorrisdotca/chizu) from Natural Earth
    outlines (public domain). A small map on a team page marks its home; pressing it opens a large
@@ -59,10 +61,11 @@ export function MapHost({ pins, title, onEmpty }: { pins: Pin[]; title: string; 
 
 /**
  * A small map of the team's home in the corner of its page. Pressing it opens a dialog with a large map
- * of every team in the league that season; a dot opens that team.
+ * of every team in the league that season; a dot opens that team. The other clubs' pins are fetched from `dataHref` (the franchise's `rows/map`)
+ * when the dialog is first opened, so the page carries only this club's pin.
  */
-export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort, name }: {
-  me: Pin; others: Pin[]; clubCount: number; seasonLabel: string; leagueShort: string; name: string;
+export function TeamMapCorner({ me, dataHref, seasonLabel, leagueShort, name }: {
+  me: Pin; dataHref: string; seasonLabel: string; leagueShort: string; name: string;
 }) {
   const { say } = useSpeaker();
   const [hidden, setHidden] = useState(false);
@@ -72,7 +75,10 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
   const router = useRouter();
   const label = say("map.label", { league: leagueShort, season: seasonLabel });
   useEffect(() => { if (open) dlg.current?.showModal(); }, [open]);
+  const [asked, setAsked] = useState(false);
+  const { data } = useFetchedJson<FranchiseMapView>(dataHref, "view", asked);
   if (hidden) return null;
+  const others = data?.league ?? [];
   const all = others.some((p) => p.f === me.f) ? others : [...others, me];
   // Closing applies the map's choice: the page moves to the chosen club.
   const closed = () => {
@@ -82,7 +88,7 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
   };
   return (
     <>
-      <button type="button" className="mapbtn" aria-label={say("map.open", { league: leagueShort, season: seasonLabel })} onClick={() => setOpen(true)}>
+      <button type="button" className="mapbtn" aria-label={say("map.open", { league: leagueShort, season: seasonLabel })} onClick={() => { setAsked(true); setOpen(true); }}>
         <MapHost pins={[me]} title={say("map.where", { name })} onEmpty={() => setHidden(true)} />
       </button>
       {open ? (
@@ -92,7 +98,7 @@ export function TeamMapCorner({ me, others, clubCount, seasonLabel, leagueShort,
             <h2>{label}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          <MapViewer pins={all} title={label} total={clubCount} selected={picked} onPick={setPicked} />
+          {data ? <MapViewer pins={all} title={label} total={data.clubCount} selected={picked} onPick={setPicked} /> : <p className="note" role="status">{say("load.loading")}</p>}
         </dialog>
       ) : null}
     </>

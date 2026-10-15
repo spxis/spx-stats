@@ -150,6 +150,7 @@ export const FR: Dictionary = {
   "team.winNote": "Les points pleins sont des saisons de championnat. Cliquez sur une saison pour l’ouvrir.",
   "team.standings": "Classement par saison",
   "team.standingsNote": "{seasons}, les plus récentes d’abord. Le trophée marque une saison de championnat.",
+  "team.backToTeam": "Retour à {name}",
   "team.names": "Noms au fil du temps",
   "team.venues": "Enceintes à domicile",
   "team.springHead": "Camp d’entraînement printanier",

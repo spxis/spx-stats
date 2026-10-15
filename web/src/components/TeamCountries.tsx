@@ -42,7 +42,6 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
   const limited = t.known < 0.5 * t.total;
   const { say, plural, fmt, locale } = await currentSpeaker();
   const tpl = `${queryHref(path, sp, { nat: "XXCODEXX" })}#roster`.replace("XXCODEXX", "{code}");
-  const href = (code: string) => tpl.replace("{code}", code);
   const { top, other } = withOther(t.list, KEEP);
   const slices: Slice[] = [
     ...top.map((c, i) => ({ code: c.code, n: c.n, slot: i })),
@@ -109,7 +108,7 @@ export async function TeamCountries({ lg, year, season, teamSeasonId, path, sp }
         <>
           <h3>{say("country.rankHead")}</h3>
           <p className="note">{say("country.rankNote", { n: fmt(MIN_PLAYERS) })}</p>
-          {rankedRows.map(({ k, result }) => <CountryRanker key={k} kind={k} result={result} hrefFor={href} min={MIN_PLAYERS} />)}
+          {rankedRows.map(({ k, result }) => <CountryRanker key={k} kind={k} result={{ rows: result.rows.map(({ code, players, values }) => ({ code, players, values })), best: result.best, small: result.small }} hrefTpl={tpl} min={MIN_PLAYERS} flags={flags} />)}
         </>
       ) : null}
       <p className="note">{say("country.noteSource")} <Credits say={say} use={["maps"]} /></p>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TeamLogo } from "./TeamLogo";
+import { useFetchedJson } from "./useFetchedJson";
 import "./h2h.css";
 
 export type CompareGroup = "division" | "conference" | "other" | "league" | "none";
@@ -11,6 +12,8 @@ export type CompareGroup = "division" | "conference" | "other" | "league" | "non
 export interface CompareClub { f: number; name: string; alt: string[]; first: number; last: number; active: boolean; logo: string | null; group: CompareGroup; href: string }
 
 const plain = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+const NONE: CompareClub[] = [];
+const NO_LABELS = { division: null, conference: null };
 const ORDER: CompareGroup[] = ["division", "conference", "other", "league", "none"];
 
 /**
@@ -18,13 +21,15 @@ const ORDER: CompareGroup[] = ["division", "conference", "other", "league", "non
  * in other divisions, the other conference) and a search box over every club of the league. Each club is a plain link
  * to the comparison page, so the choice is an address that can be shared.
  */
-export function CompareMenu({ name, season, clubs, labels }: {
+export function CompareMenu({ name, season: season0, clubs: clubs0, labels: labels0, dataHref }: {
   name: string;
   /** The season the groups are those of (the season viewed, or the latest of the club). */
-  season: string;
-  clubs: CompareClub[];
+  season?: string;
+  clubs?: CompareClub[];
   /** The names of the club's own division and conference. */
-  labels: { division: string | null; conference: string | null };
+  labels?: { division: string | null; conference: string | null };
+  /** Instead of the three above: where to fetch them (`{ view: { season, list, labels } }`) the first time the menu is opened, so the page does not carry a list of every club. */
+  dataHref?: string;
 }) {
   const { say, fmt } = useSpeaker();
   const uid = useId();
@@ -35,6 +40,11 @@ export function CompareMenu({ name, season, clubs, labels }: {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [only, setOnly] = useState<CompareGroup | "all">("all");
+  const [wanted, setWanted] = useState(false);
+  const lazy = useFetchedJson<{ season: string; list: CompareClub[]; labels: { division: string | null; conference: string | null } }>(dataHref ?? "", "view", wanted && !!dataHref);
+  const clubs = clubs0 ?? lazy.data?.list ?? NONE;
+  const season = season0 ?? lazy.data?.season ?? "";
+  const labels = labels0 ?? lazy.data?.labels ?? NO_LABELS;
 
   const present = useMemo(() => new Set(clubs.map((c) => c.group)), [clubs]);
   const choices = (["division", "conference", "other"] as const).filter((g) => present.has(g));
@@ -55,6 +65,7 @@ export function CompareMenu({ name, season, clubs, labels }: {
   const show = () => {
     if (open) { setOpen(false); return; }
     setQuery("");
+    setWanted(true);
     setOpen(true);
     requestAnimationFrame(() => input.current?.focus({ preventScroll: true }));
   };
@@ -136,7 +147,7 @@ export function CompareMenu({ name, season, clubs, labels }: {
               })}
             </ul>
             <div className="sr-only" role="status">{items.length ? say("h2h.pick.results", { n: fmt(items.length) }) : say("h2h.pick.none")}</div>
-            {items.length ? null : <p className="pnone">{say("h2h.pick.none")}</p>}
+            {items.length ? null : <p className="pnone">{lazy.state === "loading" ? say("load.loading") : say("h2h.pick.none")}</p>}
           </div>
         ) : null}
       </div>

@@ -251,6 +251,7 @@ export const PHRASES = {
   "team.winNote": "Filled dots are championship seasons. Click a season to open it.",
   "team.standings": "Standings by season",
   "team.standingsNote": "{seasons}, newest first. The trophy marks a championship season.",
+  "team.backToTeam": "Back to {name}",
   "team.names": "Names over time",
   "team.venues": "Home venues",
   "team.springHead": "Spring training",

@@ -1,9 +1,8 @@
 "use client";
 
 import { seasonLabel } from "@/lib/leagues";
-import { addRec, EMPTY, recordAt, type Loc } from "@/lib/loc";
+import { addRec, EMPTY, recordAt, type ChartRow, type Loc } from "@/lib/loc";
 import { recordParts } from "@/lib/record";
-import type { StandingRow } from "@/lib/api/types";
 import { Donut } from "./Donut";
 import { HomeRoadBars } from "./HomeRoadBars";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -22,7 +21,7 @@ const WIN_NOTE = { all: "team.winNote", home: "team.winNoteHome", road: "team.wi
  * The charts of a team's page that follow the Home / Road / All switch: the record donuts, the scoring margin (all games
  * only, because points are not split by home and road) and the winning share by season. Then the home-versus-road chart.
  */
-export function TeamCharts({ lg, f, rows, titles, seasons, idle }: { lg: string; f: number; rows: StandingRow[]; titles: number[]; seasons: WinSeason[]; idle: [number, NoSeasonKind][] }) {
+export function TeamCharts({ lg, f, rows, titles, seasons, idle }: { lg: string; f: number; rows: ChartRow[]; titles: number[]; seasons: WinSeason[]; idle: [number, NoSeasonKind][] }) {
   const { say, plural } = useSpeaker();
   const [loc, setLoc] = useLocParam();
   const total = rows.reduce((a, r) => addRec(a, recordAt(r, loc)), EMPTY);

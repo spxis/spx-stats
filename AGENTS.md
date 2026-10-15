@@ -642,6 +642,16 @@ Ask John before deleting or overwriting data. Production changes only through ap
     keeps the UTC value. Never write "UTC" after a time by hand. `pnpm test:localtime`.
   - Check a change with `pnpm build` (the route table shows `●` for kept pages, `ƒ` for `q/` and `(dyn)`) and `pnpm start`:
     a second request to the same address answers with `x-nextjs-cache: HIT`.
+- **Page weight: every public page stays under about 300 KB of HTML (about 50 KB gzipped).** Next sends each server-rendered element twice (in the
+  markup and in the payload), so a long table or a big chart costs double. Measure with `pnpm start` against the DS1 PostgREST (`curl -s -H 'Accept-Encoding: identity' <url> | wc -c`),
+  never against production. The patterns, each with an example to copy:
+  - **A long table shows its newest rows and fetches the rest.** The page sends the first rows as plain data (a short line type in `lib/standLines.ts`, `lib/awardLines.ts`), the client table builds its cells
+    (`components/StandingsTable.tsx`, `AwardsTable.tsx`, over `SortTable`'s `partial` prop and `useMoreLines`), and "Show all" (or sorting by another column) fetches the older rows from a kept JSON route
+    (`app/[locale]/s/[league]/team/[franchise]/rows/standings`, revalidate a day, no query). The "Show all" link is a real link to the full list as a page of its own (`.../seasons`), so a reader without script and a crawler reach every row.
+    Repeated long strings (logo addresses) go in one list the lines point into.
+  - **A section far down loads when the reader gets near it:** `useSeen` (an IntersectionObserver) then `useFetchedJson` from a kept route (`rows/countries`, `rows/map`), or a client chunk drawn in the browser only
+    (`TeamChartsLazy`, charts with no words a search needs). The page keeps the heading and one sentence. A menu or a dialog that needs a big list fetches it when first opened (`CompareMenu` `dataHref`, `TeamMapCorner`).
+  - Props for a client component are plain data and as short as the component allows (a chart takes `ChartRow`, not the whole standings row).
 - **`site/`** is the retired plain-JS site; don't add to it.
 - **Languages:** EN, FR and JA through `web/src/lib/i18n` (`say('key')`, `currentSpeaker()` / `useSpeaker()`, cookie
   `spxn-locale`).

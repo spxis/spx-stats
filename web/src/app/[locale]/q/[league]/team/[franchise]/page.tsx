@@ -5,24 +5,24 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CompareControl } from "@/components/CompareControl";
 import { SortTable } from "@/components/SortTable";
+import { StandingsTable } from "@/components/StandingsTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { FranchiseCountries } from "@/components/FranchiseCountries";
-import { TeamCharts } from "@/components/TeamCharts";
+import { TeamChartsLazy } from "@/components/TeamChartsLazy";
 import { Credits } from "@/components/Credits";
 import { AddressLink } from "@/components/AddressLink";
 import { venueMapsUrl } from "@/lib/venueAddress";
 import { Flag } from "@/components/Flag";
 import { TeamLogo } from "@/components/TeamLogo";
-import { TeamMapCorner, type Pin } from "@/components/TeamMap";
+import { TeamMapCorner } from "@/components/TeamMap";
 import { FranchiseVenueNotes } from "@/components/FranchiseVenueNotes";
-import { VenueMap } from "@/components/VenueMap";
+import { VenueMapLazy } from "@/components/VenueMapLazy";
 import { BadgeCup, Trophy } from "@/components/TrophyMark";
-import { CupsProvider, MiniCup } from "@/components/TrophyIcon";
+import { CupsProvider } from "@/components/TrophyIcon";
 import { cupsFor } from "@/lib/cups";
-import { Figures, NoSeason } from "@/components/ui";
+import { Figures } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
-import { getSeasonAlignment } from "@/lib/alignmentData";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor } from "@/lib/abbr";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
@@ -30,7 +30,7 @@ import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getOutageYears } from "@/lib/outageData";
-import { getAbbrs, getBrands, getClubs, getSummary, getTeam, getTeamPhases, getTeamStandings } from "@/lib/data";
+import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
@@ -43,13 +43,14 @@ import { getClubCity } from "@/lib/cityData";
 import { cupTitlesOf } from "@/lib/cup";
 import { getCupTitles } from "@/lib/cupData";
 import "@/components/city.css";
-import { clubPins, getVenueTeams } from "@/lib/venueMap";
+import { mapRestPath } from "@/lib/mapView";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
 import { factsLine, getVenueFacts, getVenueNames, nameIn, nowName, placeAddress } from "@/lib/venueName";
-import { idleYears } from "@/lib/noSeason";
 import { nameEras, type NameSpan } from "@/lib/nameEras";
-import { recShare, tableOf } from "@/lib/sort";
+import { tableOf } from "@/lib/sort";
 import { guard, guardMeta } from "@/lib/loadGuard";
+import { franchiseSeasonRows, standLines } from "@/lib/franchiseRows";
+import { STAND_HEAD } from "@/lib/standLines";
 
 // Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/team/[franchise] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
@@ -132,89 +133,25 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const reigning = holders.reigning;
   const streak = reigning && reigning.champion_franchise === f ? titleStreak(holders.byYear, f, reigning.year, holders.sat) : 0;
   const won = new Set(t.titles);
-  const showT = rows.some((r) => r.t), showO = rows.some((r) => r.otl), showP = rows.some((r) => r.pts != null);
-  const maxPct = Math.max(0, ...rows.map((r) => r.pct ?? 0)) || 1;
 
   // The corner map: the team's home in the latest season it has results for; the dialog shows every team that season.
   const lastYear = rows.length ? Math.max(...rows.map((r) => r.year)) : null;
   const me = lastYear != null ? placeFor(brands, f, lastYear) : null;
   let map: React.ReactNode = null;
-  let leaguePins: Pin[] | null = null;
-  let clubCount = 0;
   if (lastYear != null && me && me.latitude != null && me.longitude != null) {
-    const [clubs, places] = await Promise.all([getClubs(lg, lastYear), getSeasonAlignment(lg, lastYear)]);
-    leaguePins = clubPins({ year: lastYear, me: f, clubs, brands, abbrs, alignment: places, places: venuePlaces, names: venueNames, facts: venueFacts, say, href: (c) => paths.team(lg, c) });
-    clubCount = clubs.length;
     const mePlace = venuePlaces.get(placeKey(f, me.home_venue, me.latitude, me.longitude) ?? "");
     map = (
       <TeamMapCorner
         me={{ f, name: now, abbr: abbrFor(abbrs, f, lastYear, now), lat: me.latitude, lon: me.longitude, venue: me.home_venue ? nameIn(mePlace?.wid ? venueNames.get(mePlace.wid) : undefined, lastYear, me.home_venue) : me.home_venue, place: mePlace?.place, wiki: mePlace?.wiki, href: paths.team(lg, f), me: true }}
-        others={leaguePins} clubCount={clubs.length}
+        dataHref={mapRestPath(at.path)}
         seasonLabel={seasonLabel(lg, lastYear)} leagueShort={LG[lg]} name={now}
       />
     );
   }
 
   const switchClubs = (await getLeagueClubs(lg).catch(() => [])).sort((a, c) => a.name.localeCompare(c.name, "en"));
-  const withGames = new Set(summary.seasons.filter((x) => x.league === lg && x.games > 0).map((x) => x.year));
-  const idle = idleYears(rows, summary.seasons, lg);
-  // Seasons the club has but the standings do not (no regular-season games on file): the early Stanley Cup challengers played only a series, a few
-  // clubs have a champion year with no games loaded, and a season not begun has nothing. Each is listed with what it is, so the page agrees with the city page.
-  const haveRow = new Set(rows.map((r) => r.year));
-  const pending = t.unrecorded.filter(([y, champion]) => !haveRow.has(y) && (withGames.has(y) || champion));
-  const phases = await getTeamPhases(lg, f, pending.map(([y]) => y).join(","));
-  const bare = new Map(pending.map(([year, , team]) => {
-    const ph = phases.get(year);
-    const kind = ph?.has("playoffs") && !ph.has("regular") ? (lg === "nhl" && year < 1926 ? "bareCup" : "barePlayoffs") : ph?.size ? "bareOther" : "bareNone";
-    return [year, { team, label: say(`team.${kind}` as const) }] as const;
-  }));
-  for (const y of bare.keys()) idle.delete(y);
-  const gaps: StandingRow[] = [...idle].filter(([y]) => !rows.some((r) => r.year === y)).map(([y]) => ({
-    league: lg, year: y, team_id: 0, franchise_id: f, team: null, gp: null, w: null, l: null, t: null, otl: null, pts: null,
-    pf: null, pa: null, home: null, road: null, pct: null, basis: "none", source: null,
-  }));
-  const bareRows: StandingRow[] = [...bare].map(([y, x]) => ({
-    league: lg, year: y, team_id: 0, franchise_id: f, team: x.team, gp: null, w: null, l: null, t: null, otl: null, pts: null,
-    pf: null, pa: null, home: null, road: null, pct: null, basis: "none", source: null,
-  }));
-  const tableRows = [...rows, ...gaps, ...bareRows].sort((a, b) => b.year - a.year);
-  const standings = tableOf(tableRows, [
-    {
-      key: "champ", label: say("col.champion"), hideLabel: true, cls: "cupcol", title: say("team.champSeason"), get: (r) => (won.has(r.year) ? 1 : 0),
-      cell: (r) => (won.has(r.year) ? <MiniCup league={lg} /> : null),
-    },
-    {
-      key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (r) => r.year,
-      cell: (r) => <Link href={seasonPath(lg, r.year)} prefetch={false}>{seasonLabel(lg, r.year)}</Link>,
-    },
-    {
-      key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => idle.has(r.year) ? <NoSeason kind={idle.get(r.year)} /> : <><TeamLogo url={logoFor(brands, f, r.year)} /><span className="tn-long">{r.team || ""}</span><abbr className="tn-short" title={r.team ?? undefined}>{abbrFor(abbrs, f, r.year, r.team)}</abbr>{bare.has(r.year) ? <span className="seasoncell barenote"> · {bare.get(r.year)?.label}</span> : null}</>,
-    },
-    {
-      key: "gp", label: say("col.gp"), num: true, title: say("col.gpSeasonTitle"), get: (r) => r.gp,
-      cell: (r) => (r.gp != null && withGames.has(r.year) ? (
-        <Link href={paths.teamSeason(lg, f, r.year)} prefetch={false} title={say("team.everyGame", { season: seasonLabel(lg, r.year) })}>{r.gp}</Link>
-      ) : r.gp ?? ""),
-    },
-    { key: "w", label: say("col.w"), num: true, get: (r) => r.w }, { key: "l", label: say("col.l"), num: true, get: (r) => r.l },
-    ...(showT ? [{ key: "t", label: say("col.t"), num: true, get: (r: StandingRow) => r.t }] : []),
-    ...(showO ? [{ key: "otl", label: say("col.otl"), num: true, get: (r: StandingRow) => r.otl }] : []),
-    ...(showP ? [{ key: "pts", label: say("col.pts"), num: true, get: (r: StandingRow) => r.pts }] : []),
-    { key: "pf", label: say("col.pf"), num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
-    { key: "pa", label: say("col.pa"), num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
-    { key: "home", label: say("col.home"), get: (r) => recShare(r.home), cell: (r) => r.home || "" },
-    { key: "road", label: say("col.road"), get: (r) => recShare(r.road), cell: (r) => r.road || "" },
-    {
-      key: "pct", label: say("col.pct"), num: true, get: (r) => r.pct,
-      cell: (r) => (
-        <>
-          {r.pct != null ? fmt3(r.pct) : ""}
-          {r.pct != null ? <span className="pctbar" style={{ width: `${Math.round((60 * r.pct) / maxPct)}px` }} /> : null}
-        </>
-      ),
-    },
-  ], (r) => r.year, (r) => (idle.has(r.year) ? "idlerow" : undefined));
+  const { withGames, idle, bare, tableRows } = await franchiseSeasonRows(lg, f, t, rows, summary.seasons, say);
+  const { lines: standLinesAll, flags: standFlags } = standLines(f, tableRows, won, idle, bare, withGames, brands, abbrs, rows);
   // Each name with the seasons played under it and its logo (the club's current one, drawn dimmed, where we hold none for those years).
   const eras = nameEras(names.map((n) => n.span ?? n), [...new Set([...rows.map((r) => r.year), ...bare.keys()])], brands, f).map((e, i) => ({ ...e, from: names[i].from, to: names[i].to }));
   const nameTable = tableOf(eras, [
@@ -270,7 +207,6 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       },
     },
   ], (r, i) => `${i}|${r.shown}`);
-  const venueTeams = venues.length ? await getVenueTeams(lg, brands, paths, say) : [];
   const spOne = (k: string) => { const v = sp[k]; return Array.isArray(v) ? v[0] : v; };
   const place = placeFor(brands, f, lastYear ?? undefined);
   const country = countryAt(place?.latitude, place?.longitude);
@@ -299,7 +235,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </Link>
         ) : null}
         <p className="lede">{ledeText}</p>
-        <CompareControl lg={lg} f={f} name={now} />
+        {rows.length ? <CompareControl lg={lg} f={f} name={now} teamPath={at.path} /> : null}
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
       {nTitles ? (
@@ -315,7 +251,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         </div>
       ) : null}
       {rows.length ? (
-        <TeamCharts lg={lg} f={f} rows={rows} titles={t.titles} seasons={t.seasons} idle={[...idle]} />
+        <TeamChartsLazy lg={lg} f={f} rows={rows.map(({ year, gp, w, l, t, otl, pf, pa, home, road }) => ({ year, gp, w, l, t, otl, pf, pa, home, road }))} titles={t.titles} seasons={t.seasons} idle={[...idle]} />
       ) : bare.size ? null : (
         <section className="section">
           <h2>{say("team.winTitle")}</h2>
@@ -323,15 +259,15 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           <WinLine seasons={t.seasons} titles={t.titles} lg={lg} idle={[...idle]} />
         </section>
       )}
-      {rows.length ? <Suspense fallback={null}><FranchiseCountries lg={lg} f={f} name={now} /></Suspense> : null}
+      {rows.length ? <Suspense fallback={null}><FranchiseCountries lg={lg} f={f} name={now} teamPath={at.path} /></Suspense> : null}
       {rows.length || bare.size ? (
         <section className="section">
           <h2>{say("team.standings")}</h2>
           <p className="note">{say("team.standingsNote", { seasons: plural("count.seasons", rows.length + bare.size) })}</p>
-          <div className="tablebox"><SortTable {...standings} def="season.desc" /></div>
+          <div className="tablebox"><StandingsTable lg={lg} f={f} teamPath={at.path} head={standLinesAll.slice(0, STAND_HEAD)} total={standLinesAll.length} flags={standFlags} /></div>
         </section>
       ) : null}
-      <TeamAwards lg={lg} f={f} />
+      <TeamAwards lg={lg} f={f} teamPath={at.path} />
       <TeamAlignment lg={lg} f={f} />
       {names.length ? (
         <section className="section">
@@ -342,15 +278,9 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       {venues.length ? (
         <section className="section">
           <h2>{say("team.venues")}</h2>
-          {venueTeams.length ? (
-            <VenueMap
-              league={leaguePins} teams={venueTeams} slug={paths.slug(lg, f)} leagueShort={LG[lg]} seasonLabel={lastYear != null ? seasonLabel(lg, lastYear) : ""}
-              clubCount={clubCount} tab={spOne("map") === "history" ? "history" : "league"} team={spOne("team") ?? paths.slug(lg, f)}
-            />
-          ) : null}
+          <VenueMapLazy teamPath={at.path} slug={paths.slug(lg, f)} tab={spOne("map") === "history" ? "history" : "league"} team={spOne("team") ?? paths.slug(lg, f)} />
           <div className="scroll"><SortTable {...venueTable} param="sort_venues" /></div>
           <FranchiseVenueNotes lg={lg} f={f} />
-          {venueTeams.length ? null : <p className="note"><Credits say={say} use={["addresses"]} /></p>}
         </section>
       ) : null}
       <p className="note"><Credits say={say} use={["flags"]} /></p>

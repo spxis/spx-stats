@@ -27,8 +27,14 @@ export function parseRec(text: string | null | undefined, hasOtl: boolean): Rec 
   return hasOtl ? { w, l, t: 0, otl: a } : { w, l, t: a, otl: 0 };
 }
 
+/** The fields of a standings row that make up its record (a chart needs no more). */
+export type RecRow = Pick<StandingRow, "w" | "l" | "t" | "otl" | "home" | "road">;
+
+/** What the team page's charts take of a standings row: a short list sent to the browser instead of the whole row. */
+export type ChartRow = RecRow & Pick<StandingRow, "year" | "gp" | "pf" | "pa">;
+
 /** The record of a standings row at home, on the road, or in all, or null when the row does not say. */
-export function recordAt(r: StandingRow, loc: Loc): Rec | null {
+export function recordAt(r: RecRow, loc: Loc): Rec | null {
   if (loc === "all") return r.w == null ? null : { w: r.w, l: r.l ?? 0, t: r.t ?? 0, otl: r.otl ?? 0 };
   return parseRec(loc === "home" ? r.home : r.road, r.otl != null);
 }
