@@ -17,8 +17,9 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner, type Pin } from "@/components/TeamMap";
 import { FranchiseVenueNotes } from "@/components/FranchiseVenueNotes";
 import { VenueMap } from "@/components/VenueMap";
-import { MiniCup } from "@/components/TrophyIcon";
 import { BadgeCup, Trophy } from "@/components/TrophyMark";
+import { CupsProvider, MiniCup } from "@/components/TrophyIcon";
+import { cupsFor } from "@/lib/cups";
 import { Figures, NoSeason } from "@/components/ui";
 import { WinLine } from "@/components/WinLine";
 import { getSeasonAlignment } from "@/lib/alignmentData";
@@ -279,7 +280,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
     : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })
       : say("team.ledeBareOnly", { seasons: plural("count.seasons", bare.size), titles: titlesPart });
   return (
-    <>
+    <CupsProvider markup={cupsFor(won.size ? [lg] : [])}>
       <AccentStyle league={lg} team={b?.primary_hex ? teamAccent(b) : undefined} />
       {b?.primary_hex ? (
         <div className="teamband" style={{ "--tp": `#${b.primary_hex}`, "--ts": `#${b.secondary_hex || b.primary_hex}` } as React.CSSProperties} />
@@ -353,6 +354,6 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         </section>
       ) : null}
       <p className="note"><Credits say={say} use={["flags"]} /></p>
-    </>
+    </CupsProvider>
   );
 });

@@ -7,7 +7,7 @@ import { roundSay } from "./roundWords";
 import { seriesPath, type Series } from "./series";
 import type { TeamPaths } from "./slug";
 import { getPaths } from "./teamSlugs";
-import { trophySvg } from "./trophies";
+import { cupSvg } from "./cups";
 
 /**
  * What a season's playoff bracket is drawn with, in one place so the page (which draws a conference or a division of it inline, and needs the shape of the
@@ -24,7 +24,7 @@ export function seasonBracketOptions(p: {
     locale: p.locale, roundNames: keep ? p.names.slice(0, p.lastRound ?? 0) : [...p.names],
     href: (t: { index: number }) => seriesPath(p.paths, lg, year, tieAt(t.index)),
     tieClass: (t: { index: number }) => (p.dims?.(tieAt(t.index)) && tieAt(t.index) !== p.finalSeries ? "ko-dim" : null),
-    ...(keep ? { champion: false } : { trophy: trophySvg(lg) }),
+    ...(keep ? { champion: false } : { trophy: cupSvg(lg) }),
     ...knockoutLook(lg),
   };
   return options;

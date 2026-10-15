@@ -10,7 +10,7 @@ import { teamName } from "./soccerNames";
 import { soccerMatchPath } from "./soccerPath";
 import { knockoutOf, matchSides, soccerPlay } from "./soccerBracket";
 import { stageName } from "./soccerView";
-import { trophySvg } from "./trophies";
+import { cupSvg } from "./cups";
 
 /**
  * A tournament's knockout as the bracket layout and the options Taisen draws it with, in one place for the tournament page (components/SoccerKnockout.tsx, which needs
@@ -45,7 +45,7 @@ export function soccerKnockoutDrawing(matches: readonly Match[], sp: Pick<Speake
     locale, roundNames: ko.stages.map((s) => stageName(say, s)),
     flagHref: soccerFlagAddress,
     href: (t) => { const m = matchOf(t.index); return soccerMatchPath(m.year, m.match_id, m.home, m.away); },
-    trophy: trophySvg(["worldcup", "wwc", "mls"].includes(league) ? league : "soccer"),
+    trophy: cupSvg(["worldcup", "wwc", "mls"].includes(league) ? league : "soccer"),
   };
   return { layout, options, ties: ties.length };
 }

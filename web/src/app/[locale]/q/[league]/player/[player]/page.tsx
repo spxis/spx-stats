@@ -22,6 +22,8 @@ import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
 import { positionBook } from "@/components/PositionKey";
 import { PlayerBoard } from "@/components/PlayerBoard";
+import { CupsProvider } from "@/components/TrophyIcon";
+import { cupsFor } from "@/lib/cups";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
 import { buildBoard } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
@@ -204,8 +206,10 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           <p className="note">{say("player.titlesNote")}</p>
         </section>
       ) : null}
-      {board ? <PlayerBoard data={board} /> : null}
-      <PlayerResume resume={record.resume} seasons={record.seasonTeams} brands={brands} />
+      <CupsProvider markup={cupsFor(titles.map((t) => t.league))}>
+        {board ? <PlayerBoard data={board} /> : null}
+        <PlayerResume resume={record.resume} seasons={record.seasonTeams} brands={brands} />
+      </CupsProvider>
       {awards.length ? (
         <section className="section">
           <h2>{say("player.awards")}</h2>

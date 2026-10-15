@@ -1,10 +1,20 @@
 "use client";
 
-import { trophySvg } from "@/lib/trophies";
+import { createContext, useContext, type ReactNode } from "react";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
-/** The small cup beside a championship season in a table drawn in the browser (the server pages use TrophyMark and TrophyBanner, which ship no script). */
+/* The cups a client component may draw, as markup the server drew (lib/cups.ts) and sent as data: no drawing code is in the browser bundle. */
+const Cups = createContext<Record<string, string>>({});
+
+/** Wraps a client component that draws `MiniCup`s: the page names the leagues it shows (`cupsFor(leagues)` of lib/cups.ts) and the server draws their cups once. */
+export function CupsProvider({ markup, children }: { markup: Record<string, string>; children: ReactNode }) {
+  return <Cups value={markup}>{children}</Cups>;
+}
+
+/** The small cup beside a championship season in a table or a list drawn in the browser (a cup is drawn on the server, in lib/cups.ts; TrophyMark has the ones a server page draws inline). It draws nothing for a league the provider was not given. */
 export function MiniCup({ league }: { league: string }) {
   const { say } = useSpeaker();
-  return <span className="minicup" title={say("trophy.champion")} role="img" aria-label={say("trophy.champion")} dangerouslySetInnerHTML={{ __html: trophySvg(league) }} />;
+  const markup = useContext(Cups)[league];
+  if (!markup) return null;
+  return <span className="minicup" title={say("trophy.champion")} role="img" aria-label={say("trophy.champion")} dangerouslySetInnerHTML={{ __html: markup }} />;
 }

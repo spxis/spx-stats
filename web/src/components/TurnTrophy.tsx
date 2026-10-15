@@ -6,7 +6,7 @@ import type { TurnLeague } from "@/lib/trophyTurn";
 /**
  * Makes the trophy drawn just before it turn: put it right after the element the server drew (TrophyBanner does). It draws nothing itself, so the
  * page looks right with no script and for crawlers. Once that element scrolls into view it loads the one trophy's frames and the turning code
- * (lib/turnCup.ts, a few kB), and from then on the trophy turns slowly, can be dragged and answers the arrow keys. `hint` says so to a screen reader.
+ * (lib/turnCup.ts: the package's light bindTurn and the one cup), and from then on the trophy turns slowly, can be dragged and answers the arrow keys. `hint` says so to a screen reader.
  */
 export function TurnTrophy({ league, hint }: { league: TurnLeague; hint: string }) {
   const marker = useRef<HTMLSpanElement>(null);

@@ -1,5 +1,5 @@
-/* How a champion banner's trophy sits and turns. Shared by the build script (scripts/trophyMarkup.ts, which draws the still the server sends)
-   and the browser (TurnTrophy), so the still and the first turned frame are the same picture. */
+/* How a champion banner's trophy sits and turns. Shared by the server (lib/cups.ts, which draws the still it sends) and the browser (lib/turnCup.ts),
+   so the still and the first turned frame are the same picture. */
 
 /** Degrees the trophy leans toward the eye, at rest and while it turns. */
 export const TROPHY_TILT = 10;

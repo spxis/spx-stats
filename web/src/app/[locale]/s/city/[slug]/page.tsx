@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CityBoard, type BoardStay } from "@/components/CityBoard";
+import { CupsProvider } from "@/components/TrophyIcon";
+import { cupsFor } from "@/lib/cups";
 import { CityMapCorner } from "@/components/CityMap";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
@@ -107,6 +109,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
       </section>
 
       {total.clubs ? (
+        <CupsProvider markup={cupsFor(board.filter((s) => s.titles.length).map((s) => s.league))}>
         <CityBoard
           stays={board}
           rank={(
@@ -138,6 +141,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
             </section>
           ) : null}
         </CityBoard>
+        </CupsProvider>
       ) : null}
 
       {members2.length ? (
