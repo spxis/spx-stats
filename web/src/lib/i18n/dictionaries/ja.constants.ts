@@ -1,6 +1,7 @@
 import type { Dictionary } from "../dictionaries";
 import { GAME_JA } from "../game.constants.ts";
 import { MLS_JA } from "../mls.constants.ts";
+import { PLAYERSTATS_JA } from "../playerstats.constants.ts";
 import { SOCCER_JA } from "../soccer.constants.ts";
 
 /** Japanese. Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
@@ -783,7 +784,7 @@ export const JA: Dictionary = {
   "player.teamPlayoffsTip": "クラブはプレーオフに出場",
   "player.statsTitle": "成績",
   "player.statsNone": "この選手の成績はまだ保有していません。",
-  "player.statsCredit": "成績：ホッケーはNHL（api.nhle.com）、野球はLahman Baseball Database（SABR、CC BY-SA 3.0）。各種率は積み上げ成績から算出しています。",
+  "player.statsCredit": "成績：ホッケーはNHL（api.nhle.com）、野球はLahman Baseball Database（SABR、CC BY-SA 3.0）、バスケットボールは英語版Wikipediaの各クラブのシーズン記事（CC BY-SA 4.0）、フットボールはnflverse（CC BY 4.0）をもとにしています。バスケットボールで1試合平均のみの記載のシーズンは、合計を「1試合平均×出場試合数」で求めています。率の指標は、回数や得点などの実数から算出しています。",
   "player.career": "通算",
   "player.careerSeasons.one": "{count}シーズン",
   "player.careerSeasons.other": "{count}シーズン",
@@ -1671,6 +1672,7 @@ export const JA: Dictionary = {
   "credit.emblems": "トロフィーとメダル：{dougu}。",
   "credit.brackets": "トーナメント表のレイアウト：{taisen}。",
   ...SOCCER_JA,
+  ...PLAYERSTATS_JA,
   ...MLS_JA,
   ...GAME_JA,
   "nav.countries": "国別",

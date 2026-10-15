@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  awardBadge, bucketOf, enoughPlayed, heroFigure, bySeason, cdfAt, clampSpan, cumulative, GROUPS, indexRefs, packRef, unpackRef, inningsText, inRange, leagueAvg, leagueFinishes, metricOf, milestonesOf,
+  awardBadge, bucketOf, enoughPlayed, groupViews, heroFigure, bySeason, cdfAt, clampSpan, cumulative, GROUPS, indexRefs, packRef, unpackRef, inningsText, inRange, leagueAvg, leagueFinishes, metricOf, milestonesOf,
   peakRun, peakSeason, perOf, pooledPercentile, radarOf, rankIn, refKey, shares, sumStats, topPercent, type RefRow, type StatRow,
 } from "../src/lib/playerBoard.ts";
 import { clubKey } from "../src/lib/playerBoard.ts";
+import { showStat, STAT_GROUPS } from "../src/lib/playerStats.ts";
 import { playerRangeKey, parsePlayerState, playerStateText, rawPlayerSpan } from "../src/lib/playerRange.ts";
 
 /** Run in web/: pnpm test:player */
@@ -223,4 +224,45 @@ test("league figures travel as short lists and come back whole", () => {
   const t = ref("skater", 1980, "pts", { t: [100, 90] });
   assert.deepEqual(unpackRef(packRef({ ...t, p: "playoffs" })), { ...t, p: "playoffs" });
   assert.equal("q" in unpackRef(packRef(t)), false);
+});
+
+// ---- basketball and football ---------------------------------------------------------------------------------------------------------
+
+test("basketball: per-game figures come from the totals, and a season's clubs add up", () => {
+  const bb = GROUPS.basketball;
+  const rows: StatRow[] = [
+    { league: "nba", year: 1990, ts: 1, f: 1, team: "Bulls", phase: "regular", group: "basketball", stats: { gp: 82, gs: 82, min: 3197, pts: 2753, reb: 492, ast: 453, stl: 227, blk: 54 } },
+    { league: "nba", year: 1991, ts: 2, f: 1, team: "Bulls", phase: "regular", group: "basketball", stats: { gp: 82, pts: 2580, reb: 511, ast: 489, stl: 223, blk: 51 } },
+  ];
+  const t = sumStats(rows);
+  assert.equal(perOf(metricOf(bb, "pts"), t), (2753 + 2580) / 164);
+  assert.equal(metricOf(bb, "reb").ref, "reb_pg");
+  assert.equal(STAT_GROUPS.basketball.cols.find((c) => c.key === "mpg")!.get(rows[0].stats), 3197 / 82);
+  assert.equal(STAT_GROUPS.basketball.cols.find((c) => c.key === "mpg")!.get(rows[1].stats), null); // no minutes in that season: no figure, not zero
+  assert.equal(enoughPlayed("basketball", "regular", { gp: 19 }), false);
+  assert.equal(enoughPlayed("basketball", "regular", { gp: 20 }), true);
+});
+
+test("football: passer rating, yards per carry and combined tackles are worked out from counting numbers", () => {
+  const pass = STAT_GROUPS.passing.cols, rush = STAT_GROUPS.rushing.cols, def = STAT_GROUPS.defense.cols, kick = STAT_GROUPS.kicking.cols;
+  // Tom Brady, 2007: 398 of 578 for 4806 yards, 50 touchdowns, 8 interceptions: a rating of 117.2
+  const brady = { gp: 16, cmp: 398, att: 578, yds: 4806, td: 50, int: 8 };
+  assert.ok(Math.abs(pass.find((c) => c.key === "rtg")!.get(brady)! - 117.2) < 0.05);
+  assert.equal(pass.find((c) => c.key === "cmppct")!.get(brady), 398 / 578);
+  assert.equal(pass.find((c) => c.key === "rtg")!.get({ gp: 3 }), null);
+  assert.equal(rush.find((c) => c.key === "ypc")!.get({ att: 20, yds: 90 }), 4.5);
+  assert.equal(rush.find((c) => c.key === "ypc")!.get({ att: 0, yds: 0 }), null);
+  assert.equal(def.find((c) => c.key === "cmb")!.get({ tkl: 60, ast: 25 }), 85);
+  assert.equal(def.find((c) => c.key === "cmb")!.get({ sck: 2 }), null); // tackles not recorded: no figure
+  assert.equal(kick.find((c) => c.key === "fg50")!.get({ fg50: 4, fg60: 1 }), 5);
+  assert.equal(showStat("pct", 0.6836, String), "68.4");
+  assert.equal(showStat("rate1", 8.315, String), "8.3");
+  // a defender's page lists defense first, a quarterback's passing
+  const stats = (group: string): StatRow => ({ league: "nfl", year: 2007, ts: 1, f: 1, team: "Patriots", phase: "regular", group, stats: { gp: 16, att: 5 } });
+  const all = [stats("rushing"), stats("passing"), stats("defense")];
+  const span = { from: 1999, to: 2025 };
+  assert.deepEqual(groupViews(all, span, "regular", new Set(), "QB").map((g) => g.def.id), ["passing", "rushing", "defense"]);
+  assert.deepEqual(groupViews(all, span, "regular", new Set(), "LB").map((g) => g.def.id), ["defense", "passing", "rushing"]);
+  assert.equal(enoughPlayed("passing", "regular", { att: 99 }), false);
+  assert.equal(enoughPlayed("kicking", "playoffs", { fga: 3 }), true);
 });

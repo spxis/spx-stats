@@ -112,6 +112,7 @@ export function PlayerDonuts({ view, g, metric: picked }: { view: BoardView; g: 
 
   const split = g.def.split;
   const splitParts = useMemo<Part[]>(() => {
+    if (!split) return [];
     const total = sumStats(g.rows);
     return shares(split.parts.map((p) => ({ key: p.key, value: p.get(total) ?? 0 }))).map((s, i) => ({
       key: s.key, label: say(split.parts.find((p) => p.key === s.key)!.label as PhraseKey), value: s.value, color: PALETTE[i % PALETTE.length] }));
@@ -135,7 +136,7 @@ export function PlayerDonuts({ view, g, metric: picked }: { view: BoardView; g: 
           <Donut title={say("charts.byPhase", { stat: name })} parts={phaseParts} fmtValue={val} aria={say("charts.byPhase", { stat: name })}
             centre={{ big: val(sum(phaseParts)), small: say(byGames ? "stat.gp" : (metric.label as PhraseKey)) }} />
         ) : null}
-        {splitParts.length > 1 ? (
+        {split && splitParts.length > 1 ? (
           <Donut title={say(split.label as PhraseKey)} parts={splitParts} fmtValue={fmt} aria={say(split.label as PhraseKey)}
             centre={{ big: fmt(sum(splitParts)), small: say("charts.total") }} />
         ) : null}

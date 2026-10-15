@@ -1,5 +1,6 @@
 import { GAME_EN } from "./game.constants.ts";
 import { MLS_EN } from "./mls.constants.ts";
+import { PLAYERSTATS_EN } from "./playerstats.constants.ts";
 import { SOCCER_EN } from "./soccer.constants.ts";
 /**
  * Every word of the site's own chrome, in English: one flat catalogue, dotted keys grouped by the area that owns them,
@@ -962,7 +963,7 @@ export const PHRASES = {
   "player.statsSeasonPage": "{season} season page",
   "player.statsView": "View {name}’s stats for {season}",
   "player.statsNone": "No statistics are held for this player yet.",
-  "player.statsCredit": "Statistics: hockey from the NHL (api.nhle.com); baseball from the Lahman Baseball Database (SABR, CC BY-SA 3.0). Rates are worked out from the counting statistics.",
+  "player.statsCredit": "Statistics: hockey from the NHL (api.nhle.com); baseball from the Lahman Baseball Database (SABR, CC BY-SA 3.0); basketball from the club-season articles of English Wikipedia (CC BY-SA 4.0), where a season is given as per-game averages only the totals are the average times the games played; football from nflverse (CC BY 4.0). Rates are worked out from the counting statistics.",
   "player.career": "Career",
   "player.careerSeasons.one": "{count} season",
   "player.careerSeasons.other": "{count} seasons",
@@ -1873,6 +1874,7 @@ export const PHRASES = {
   "credit.emblems": "Trophies and medals: {dougu}.",
   "credit.brackets": "Bracket layout: {taisen}.",
   ...SOCCER_EN,
+  ...PLAYERSTATS_EN,
   ...MLS_EN,
   ...GAME_EN,
   "nav.countries": "Countries",

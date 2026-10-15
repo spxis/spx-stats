@@ -79,8 +79,8 @@ export interface GroupDef {
   /** Milestones by stat. */
   milestones: Mark[];
   radar: RadarAxis[];
-  /** The stat the second donut splits: shares of these numbers. */
-  split: { id: string; label: string; parts: { key: string; label: string; get: (s: StatNumbers) => number | null }[] };
+  /** The stat the second donut splits: shares of these numbers (none: no such donut). */
+  split?: { id: string; label: string; parts: { key: string; label: string; get: (s: StatNumbers) => number | null }[] };
 }
 
 const col = (group: string, key: string): StatCol => {
@@ -190,8 +190,144 @@ const PITCHING: GroupDef = {
   split: { id: "wl", label: "split.wl", parts: [{ key: "w", label: "stat.w.name", get: (s) => num(s, "w") }, { key: "l", label: "stat.l.name", get: (s) => num(s, "l") }] },
 };
 
-export const GROUPS: Record<string, GroupDef> = { skater: SKATER, goalie: GOALIE, batting: BATTING, pitching: PITCHING };
-export const GROUP_ORDER = ["skater", "goalie", "batting", "pitching"] as const;
+// ---- basketball and football (migration 101 and db/build/181_stats_*.sql): one group per kind of line; a quarterback has passing and rushing --------
+
+const per1 = (top: string, games: (s: StatNumbers) => number | null = gp): Per => perGame(top, games);
+const ratio = (a: string, b: string) => (s: StatNumbers) => div(num(s, a), num(s, b));
+const tkls = (s: StatNumbers) => col("defense", "cmb").get(s);
+
+const BASKETBALL: GroupDef = {
+  id: "basketball", title: "statgroup.basketball", games: gp,
+  metrics: [
+    count("basketball", "gp"), count("basketball", "gs"), count("basketball", "pts", { per: per1("pts"), ref: "pts_pg" }),
+    count("basketball", "reb", { per: per1("reb"), ref: "reb_pg" }), count("basketball", "ast", { per: per1("ast"), ref: "ast_pg" }),
+    count("basketball", "stl", { per: per1("stl"), ref: "stl_pg" }), count("basketball", "blk", { per: per1("blk"), ref: "blk_pg" }),
+  ],
+  hero: [{ id: "gp" }, { id: "pts" }, { id: "reb" }, { id: "ast" }, { id: "stl" }, { id: "blk" }],
+  bars: ["pts", "reb", "ast", "stl", "blk", "gp"],
+  main: "pts",
+  milestones: [{ id: "pts", marks: [5000, 10000, 15000, 20000, 25000, 30000, 35000] }, { id: "reb", marks: [5000, 10000, 15000] },
+    { id: "ast", marks: [2500, 5000, 7500, 10000] }, { id: "gp", marks: [500, 1000, 1250] }],
+  radar: [
+    { ref: "pts_pg", label: "radar.pts_pg", get: ratio("pts", "gp") }, { ref: "reb_pg", label: "radar.reb_pg", get: ratio("reb", "gp") },
+    { ref: "ast_pg", label: "radar.ast_pg", get: ratio("ast", "gp") }, { ref: "stl_pg", label: "radar.stl_pg", get: ratio("stl", "gp") },
+    { ref: "blk_pg", label: "radar.blk_pg", get: ratio("blk", "gp") },
+  ],
+};
+
+const PASSING: GroupDef = {
+  id: "passing", title: "statgroup.passing", games: gp,
+  metrics: [
+    count("passing", "gp"), count("passing", "cmp"), count("passing", "att"), count("passing", "yds", { per: per1("yds"), ref: "yds_pg" }),
+    count("passing", "td", { per: per1("td"), ref: "td_pg" }), count("passing", "int", { per: per1("int"), ref: "int_pg", low: true }), count("passing", "sck"),
+    rate("passing", "cmppct", { ref: "cmp_pct" }), rate("passing", "ypa", { ref: "ypa" }), rate("passing", "rtg"),
+  ],
+  hero: [{ id: "gp" }, { id: "yds" }, { id: "td" }, { id: "int" }, { id: "cmppct" }, { id: "ypa" }, { id: "rtg" }],
+  bars: ["yds", "td", "int", "cmp", "att", "gp", "cmppct", "ypa", "rtg"],
+  main: "yds",
+  milestones: [{ id: "yds", marks: [10000, 20000, 30000, 40000, 50000, 60000, 70000] }, { id: "td", marks: [100, 200, 300, 400, 500] }, { id: "gp", marks: [100, 200, 300] }],
+  radar: [
+    { ref: "cmp_pct", label: "radar.cmp_pct", get: ratio("cmp", "att") }, { ref: "ypa", label: "radar.ypa", get: ratio("yds", "att") },
+    { ref: "td_pg", label: "radar.td_pg", get: ratio("td", "gp") }, { ref: "yds_pg", label: "radar.yds_pg", get: ratio("yds", "gp") },
+    { ref: "int_pg", label: "radar.int_pg", low: true, get: ratio("int", "gp") },
+  ],
+  split: { id: "pass", label: "split.pass", parts: [{ key: "cmp", label: "stat.cmp.name", get: (s) => num(s, "cmp") },
+    { key: "inc", label: "stat.inc.name", get: (s) => { const a = num(s, "att"), c = num(s, "cmp"); return a == null || c == null ? null : Math.max(0, a - c); } }] },
+};
+
+const RUSHING: GroupDef = {
+  id: "rushing", title: "statgroup.rushing", games: gp,
+  metrics: [
+    count("rushing", "gp"), count("rushing", "att", { per: per1("att"), ref: "att_pg" }), count("rushing", "yds", { per: per1("yds"), ref: "yds_pg" }),
+    count("rushing", "td", { per: per1("td"), ref: "td_pg" }), count("rushing", "fum"), rate("rushing", "ypc", { ref: "ypc" }),
+  ],
+  hero: [{ id: "gp" }, { id: "att" }, { id: "yds" }, { id: "td" }, { id: "ypc" }, { id: "fum" }],
+  bars: ["yds", "td", "att", "ypc", "gp", "fum"],
+  main: "yds",
+  milestones: [{ id: "yds", marks: [5000, 10000, 15000] }, { id: "td", marks: [50, 100, 150] }, { id: "gp", marks: [100, 200] }],
+  radar: [
+    { ref: "ypc", label: "radar.ypc", get: ratio("yds", "att") }, { ref: "yds_pg", label: "radar.yds_pg", get: ratio("yds", "gp") },
+    { ref: "td_pg", label: "radar.td_pg", get: ratio("td", "gp") }, { ref: "att_pg", label: "radar.att_pg", get: ratio("att", "gp") },
+  ],
+};
+
+const RECEIVING: GroupDef = {
+  id: "receiving", title: "statgroup.receiving", games: gp,
+  metrics: [
+    count("receiving", "gp"), count("receiving", "tgt"), count("receiving", "rec", { per: per1("rec"), ref: "rec_pg" }),
+    count("receiving", "yds", { per: per1("yds"), ref: "yds_pg" }), count("receiving", "td", { per: per1("td"), ref: "td_pg" }), rate("receiving", "ypr", { ref: "ypr" }),
+  ],
+  hero: [{ id: "gp" }, { id: "rec" }, { id: "yds" }, { id: "td" }, { id: "ypr" }, { id: "tgt" }],
+  bars: ["yds", "rec", "td", "tgt", "ypr", "gp"],
+  main: "yds",
+  milestones: [{ id: "yds", marks: [5000, 10000, 15000] }, { id: "rec", marks: [500, 1000, 1500] }, { id: "td", marks: [50, 100, 150] }],
+  radar: [
+    { ref: "ypr", label: "radar.ypr", get: ratio("yds", "rec") }, { ref: "rec_pg", label: "radar.rec_pg", get: ratio("rec", "gp") },
+    { ref: "yds_pg", label: "radar.yds_pg", get: ratio("yds", "gp") }, { ref: "td_pg", label: "radar.td_pg", get: ratio("td", "gp") },
+  ],
+};
+
+const DEFENSE: GroupDef = {
+  id: "defense", title: "statgroup.defense", games: gp,
+  metrics: [
+    count("defense", "gp"), count("defense", "cmb", { per: { unit: "game", get: (s) => div(tkls(s), gp(s)) }, ref: "cmb_pg" }), count("defense", "tkl"), count("defense", "ast"),
+    count("defense", "tfl"), count("defense", "sck", { per: per1("sck"), ref: "sck_pg" }), count("defense", "int", { per: per1("int"), ref: "int_pg" }),
+    count("defense", "pd", { per: per1("pd"), ref: "pd_pg" }), count("defense", "ff"), count("defense", "fr"), count("defense", "td"),
+  ],
+  hero: [{ id: "gp" }, { id: "cmb" }, { id: "sck" }, { id: "int" }, { id: "pd" }, { id: "ff" }],
+  bars: ["cmb", "sck", "int", "pd", "tfl", "ff", "gp"],
+  main: "cmb",
+  milestones: [{ id: "cmb", marks: [500, 1000, 1500] }, { id: "sck", marks: [50, 100, 150] }, { id: "int", marks: [20, 40, 60] }],
+  radar: [
+    { ref: "cmb_pg", label: "radar.cmb_pg", get: (s) => div(tkls(s), gp(s)) }, { ref: "sck_pg", label: "radar.sck_pg", get: ratio("sck", "gp") },
+    { ref: "int_pg", label: "radar.int_pg", get: ratio("int", "gp") }, { ref: "pd_pg", label: "radar.pd_pg", get: ratio("pd", "gp") },
+  ],
+  split: { id: "tackles", label: "split.tackles", parts: [{ key: "tkl", label: "stat.tkl.name", get: (s) => num(s, "tkl") }, { key: "ast", label: "stat.tka.name", get: (s) => num(s, "ast") }] },
+};
+
+const KICKING: GroupDef = {
+  id: "kicking", title: "statgroup.kicking", games: gp,
+  metrics: [
+    count("kicking", "gp"), count("kicking", "fgm", { per: per1("fgm"), ref: "fgm_pg" }), count("kicking", "fga"), rate("kicking", "fgpct", { ref: "fg_pct" }),
+    count("kicking", "fg50"), count("kicking", "xpm"), count("kicking", "xpa"),
+  ],
+  hero: [{ id: "gp" }, { id: "fgm" }, { id: "fga" }, { id: "fgpct" }, { id: "fg50" }, { id: "xpm" }],
+  bars: ["fgm", "fga", "xpm", "fg50", "fgpct", "gp"],
+  main: "fgm",
+  milestones: [{ id: "fgm", marks: [100, 200, 300, 400, 500] }, { id: "xpm", marks: [200, 400, 600] }],
+  radar: [
+    { ref: "fg_pct", label: "radar.fg_pct", get: ratio("fgm", "fga") }, { ref: "xp_pct", label: "radar.xp_pct", get: ratio("xpm", "xpa") },
+    { ref: "fgm_pg", label: "radar.fgm_pg", get: ratio("fgm", "gp") },
+  ],
+};
+
+const PUNTING: GroupDef = {
+  id: "punting", title: "statgroup.punting", games: gp,
+  metrics: [
+    count("punting", "gp"), count("punting", "punts", { per: per1("punts"), ref: "punts_pg" }), count("punting", "yds"), rate("punting", "ypp", { ref: "ypp" }),
+    count("punting", "in20"), count("punting", "tb"),
+  ],
+  hero: [{ id: "gp" }, { id: "punts" }, { id: "yds" }, { id: "ypp" }, { id: "in20" }, { id: "tb" }],
+  bars: ["punts", "yds", "in20", "tb", "ypp", "gp"],
+  main: "punts",
+  milestones: [{ id: "punts", marks: [500, 1000, 1500] }],
+  radar: [
+    { ref: "ypp", label: "radar.ypp", get: ratio("yds", "punts") }, { ref: "in20_pct", label: "radar.in20_pct", get: ratio("in20", "punts") },
+    { ref: "punts_pg", label: "radar.punts_pg", get: ratio("punts", "gp") },
+  ],
+};
+
+export const GROUPS: Record<string, GroupDef> = {
+  skater: SKATER, goalie: GOALIE, batting: BATTING, pitching: PITCHING,
+  basketball: BASKETBALL, passing: PASSING, rushing: RUSHING, receiving: RECEIVING, defense: DEFENSE, kicking: KICKING, punting: PUNTING,
+};
+export const GROUP_ORDER = ["skater", "goalie", "batting", "pitching", "basketball", "passing", "rushing", "receiving", "defense", "kicking", "punting"] as const;
+
+/** The group listed first for a football position (a defender's defense, a back's rushing ...); basketball has the one group. */
+const FIRST_GROUP: Record<string, string> = {
+  QB: "passing", RB: "rushing", FB: "rushing", WR: "receiving", TE: "receiving", K: "kicking", P: "punting",
+  DL: "defense", DE: "defense", DT: "defense", NT: "defense", LB: "defense", DB: "defense", CB: "defense", S: "defense",
+};
 
 export const metricOf = (group: GroupDef, id: string): Metric => group.metrics.find((m) => m.id === id) ?? group.metrics[0];
 
@@ -246,7 +382,8 @@ export interface GroupView {
 
 /** The groups the player has statistics in (skaters, then goalies, hitters, pitchers; a pitcher's pitching first), each cut to the range, phase and clubs. */
 export function groupViews(stats: readonly StatRow[], span: Span, phase: Phase, clubs: ReadonlySet<string>, position?: string | null): GroupView[] {
-  const order = position === "P" ? ["pitching", ...GROUP_ORDER.filter((x) => x !== "pitching")] : GROUP_ORDER;
+  const first = position === "P" ? "pitching" : position ? FIRST_GROUP[position] : undefined;
+  const order = first ? [first, ...GROUP_ORDER.filter((x) => x !== first)] : GROUP_ORDER;
   return order.flatMap((id) => {
     const mine = stats.filter((s) => s.group === id);
     if (!mine.length) return [];
@@ -484,6 +621,13 @@ const ENOUGH: Record<string, { regular: number; playoffs: number; key: string }>
   goalie: { regular: 15, playoffs: 5, key: "gp" },
   batting: { regular: 100, playoffs: 20, key: "ab" },
   pitching: { regular: 90, playoffs: 30, key: "ipouts" },
+  basketball: { regular: 20, playoffs: 5, key: "gp" },
+  passing: { regular: 100, playoffs: 30, key: "att" },
+  rushing: { regular: 50, playoffs: 15, key: "att" },
+  receiving: { regular: 20, playoffs: 6, key: "rec" },
+  defense: { regular: 8, playoffs: 2, key: "gp" },
+  kicking: { regular: 10, playoffs: 3, key: "fga" },
+  punting: { regular: 20, playoffs: 5, key: "punts" },
 };
 
 export function enoughPlayed(group: string, phase: Phase, total: StatNumbers): boolean {

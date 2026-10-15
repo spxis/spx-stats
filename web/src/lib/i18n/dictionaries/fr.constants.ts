@@ -1,6 +1,7 @@
 import type { Dictionary } from "../dictionaries";
 import { GAME_FR } from "../game.constants.ts";
 import { MLS_FR } from "../mls.constants.ts";
+import { PLAYERSTATS_FR } from "../playerstats.constants.ts";
 import { SOCCER_FR } from "../soccer.constants.ts";
 
 /** French (Canada). Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
@@ -783,7 +784,7 @@ export const FR: Dictionary = {
   "player.teamPlayoffsTip": "Le club a joué les séries",
   "player.statsTitle": "Statistiques",
   "player.statsNone": "Nous n’avons pas encore de statistiques pour ce joueur.",
-  "player.statsCredit": "Statistiques : hockey de la NHL (api.nhle.com) ; baseball de la base de données Lahman (SABR, CC BY-SA 3.0). Les taux sont calculés à partir des statistiques de décompte.",
+  "player.statsCredit": "Statistiques : hockey, NHL (api.nhle.com) ; baseball, Lahman Baseball Database (SABR, CC BY-SA 3.0) ; basketball, articles sur les saisons des clubs de Wikipédia en anglais (CC BY-SA 4.0) ; football, nflverse (CC BY 4.0). Lorsqu’une saison n’est donnée qu’en moyennes par match, le total est obtenu en multipliant la moyenne par le nombre de matchs joués. Les taux sont calculés à partir des cumuls.",
   "player.career": "Carrière",
   "player.careerSeasons.one": "{count} saison",
   "player.careerSeasons.other": "{count} saisons",
@@ -1671,6 +1672,7 @@ export const FR: Dictionary = {
   "credit.emblems": "Trophées et médailles : {dougu}.",
   "credit.brackets": "Disposition du tableau : {taisen}.",
   ...SOCCER_FR,
+  ...PLAYERSTATS_FR,
   ...MLS_FR,
   ...GAME_FR,
   "nav.countries": "Pays",
