@@ -262,6 +262,21 @@ select pg_temp.chk('rebuild: replaying the log gives the same games, verificatio
 select pg_temp.chk('rebuild: a second replay changes nothing', (select pg_temp.signature(2099)) = (select s99 from _sig) and (select (ingest.replay(true, false) ->> 'games_made')::int) = 0);
 
 -- ---------------------------------------------------------------------------------------------- privileges: ingest_writer
+-- ---------------------------------------------------------------------------------------------- start times
+select pg_temp.fgame('test:ST', date '2098-06-01', 'spx_database:77', 'spx_database:62', 'scheduled', null, null);
+insert into _r select 'ST1', pg_temp.rep(pg_temp.ob('test:ST', date '2098-06-01', 'spx_database:77', 'spx_database:62', 'scheduled', null, null, 'none', '{"starts_at":"2098-06-01T23:05:00Z"}'::jsonb, 2098));
+select pg_temp.chk('start: a scheduled game takes the reported start',
+       pg_temp.out(r, 'applied') = 1 and (select starts_at = timestamptz '2098-06-01 23:05:00+00' from core.game where source_key = 'test:ST'), r::text) from _r where k = 'ST1';
+insert into _r select 'ST1b', pg_temp.rep(pg_temp.ob('test:ST', date '2098-06-01', 'spx_database:77', 'spx_database:62', 'scheduled', null, null, 'none', '{"starts_at":"2098-06-01T23:05:00Z"}'::jsonb, 2098));
+select pg_temp.chk('start: the same start again adds no observation',
+       (r ->> 'repeat') = '1' and pg_temp.nobs('test:ST') = 1) from _r where k = 'ST1b';
+insert into _r select 'ST1c', pg_temp.rep(pg_temp.ob('test:ST', date '2098-06-01', 'spx_database:77', 'spx_database:62', 'scheduled', null, null, 'none', '{}', 2098));
+select pg_temp.chk('start: a report with no time leaves the stored start',
+       pg_temp.nobs('test:ST') = 2 and (select starts_at = timestamptz '2098-06-01 23:05:00+00' from core.game where source_key = 'test:ST'));
+insert into _r select 'ST2', pg_temp.rep(pg_temp.ob('test:F2', date '2098-05-02', 'spx_database:77', 'spx_database:62', 'final', 2, 1, 'confirmed', '{"starts_at":"2098-05-02T23:05:00Z"}'::jsonb, 2098));
+select pg_temp.chk('start: a final does not gain a start time',
+       (select starts_at is null from core.game where game_id = pg_temp.fid('F2')));
+
 select pg_temp.chk('role: ingest_writer exists, cannot log in, is not a superuser', (select not rolcanlogin and not rolsuper and not rolbypassrls and not rolcreaterole and not rolcreatedb from pg_roles where rolname = 'ingest_writer'));
 select pg_temp.chk('function: report_results is security definer with a fixed search_path', (select prosecdef and proconfig @> array['search_path=pg_catalog, pg_temp'] from pg_proc where oid = 'ingest.report_results(jsonb)'::regprocedure));
 select pg_temp.chk('table: row level security is on and nobody but the owner holds a privilege on ingest.game_observation',

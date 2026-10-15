@@ -168,6 +168,8 @@ def claims_from(games, roster, season):
         c = P.claim(SOURCE, (a["name"], h["name"]), score, h["name"], day, status, "playoffs" if g.get("postseason") else "regular",
                     ot=ot, ot_n=(int(g["period"]) - 4) if ot else None, src=str(g["id"]))
         c["source"] = SOURCE
+        start = P.utc_instant(g.get("datetime"))          # `date` is the day only; the clock is `datetime`. A missing one stays missing.
+        if start: c["start"] = start
         claims.append(c)
     return claims, bad
 

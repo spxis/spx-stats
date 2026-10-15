@@ -49,7 +49,7 @@ AUTO_ACTOR = "auto:daily-scores"
 AUTO_HOLD_MINUTES = 10
 AUTO_TABLES = ("core.game", "meta.verification", "meta.data_issue")
 AUTO_GAME_COLUMNS = {"status", "home_score", "away_score", "went_to_overtime", "decided_by_shootout", "overtime_periods",
-                     "decided_by", "updated_at"}
+                     "decided_by", "updated_at", "starts_at"}
 AUTO_MAX_GAMES = 500
 AUTO_MAX_SIDE_ROWS = 2000
 AUTO_ISSUE_SOURCE = "wikipedia_daily"
@@ -876,8 +876,8 @@ def issue_update_reasons(ctx, t, keys, game_keys):
 
 def policy_reasons(ctx, names, diffs):
     """Why a daily_scores release may NOT be approved automatically; an empty list means it meets the policy.
-    The policy: only core.game, meta.verification and meta.data_issue; games change only in status, score, overtime and
-    shootout fields (and updated_at), only games that are not final in production, no inserts, no deletes, at most 500
+    The policy: only core.game, meta.verification and meta.data_issue; games change only in status, score, overtime,
+    shootout and the scheduled start (and updated_at), only games that are not final in production, no inserts, no deletes, at most 500
     games; verification and data issue rows are inserts only and only about those games, except that an existing
     wikipedia_daily data issue about one of those games may change its resolution and resolved_at."""
     why = []
@@ -915,7 +915,7 @@ def policy_reasons(ctx, names, diffs):
             if final:
                 why.append("%d games are already final in production (game ids %s)" % (len(final), short(final)))
             for c, ids in sorted(other.items()):
-                why.append("column %s changes on %d games (game ids %s); only status, scores, overtime and shootout may change"
+                why.append("column %s changes on %d games (game ids %s); only status, scores, overtime, shootout and the scheduled start may change"
                            % (c, len(ids), short(ids)))
     for name, kind, field, allowed in (("meta.verification", "entity_kind", "entity_id", set(games)),
                                        ("meta.data_issue", "entity_kind", "entity_key", {v for v in games.values() if v})):

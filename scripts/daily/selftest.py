@@ -226,7 +226,7 @@ def test_observation():
     check(sorted(o["agree"]) == ["A page@11", "nflverse@abc"] and len(o["conflict"]) == 1 and o["conflict"][0]["ref"] == "C page@22"
           and (o["conflict"][0]["home_score"], o["conflict"][0]["away_score"]) == (2, 3) and o["dissent"], "evidence: who agrees, who conflicts, in the game's orientation")
     s = A.observation(G.build_games([P.claim("A page", ("X", "Y"), None, "X", d, "scheduled", "regular")], "nfl", 2026)[0], xy)
-    check(s["status"] == "scheduled" and s["verdict"] == "none" and s["home_score"] is None and s["conflict"] == [], "a scheduled game has no verdict and no score")
+    check(s["status"] == "scheduled" and s["verdict"] == "none" and s["home_score"] is None and s["conflict"] == [] and s["starts_at"] is None, "a scheduled game has no verdict, no score and no invented time")
     json_ok = A.jlit([o, s]).startswith("$j$")
     check(json_ok, "observations go to SQL as one dollar-quoted jsonb literal")
     dh = [mk("A page", "X", "Y", 1, 0, d, dh=1), mk("A page", "X", "Y", 5, 4, d, dh=2), mk("B page", "X", "Y", 5, 4, d, dh=2), mk("B page", "X", "Y", 1, 0, d, dh=1)]
@@ -246,7 +246,7 @@ def test_balldontlie():
     check(not bad and len(cs) == 8, "balldontlie fixture: 8 NBA games read, the game against a foreign club skipped (%d, %r)" % (len(cs), bad))
     by = {c["src"]: c for c in cs}
     c = by["21717855"]
-    check(c["status"] == "scheduled" and c["score"] is None and c["home"] == "Detroit Pistons" and set(c["teams"]) == {"Detroit Pistons", "Boston Celtics"} and c["date"] == D(2026, 10, 20), "balldontlie: a scheduled game")
+    check(c["status"] == "scheduled" and c["score"] is None and c["home"] == "Detroit Pistons" and set(c["teams"]) == {"Detroit Pistons", "Boston Celtics"} and c["date"] == D(2026, 10, 20) and c["start"] == "2026-10-20T19:00:00Z", "balldontlie: a scheduled game keeps its datetime, not the date")
     c = by["900001"]
     check(c["status"] == "final" and c["score"] == {"Miami Heat": 112, "Minnesota Timberwolves": 104} and c["ot"] is False, "balldontlie: a final, scores by team")
     c = by["900002"]
@@ -267,7 +267,7 @@ def test_balldontlie():
     o = A.observation(G.build_games([bd], "nba", 2026)[0], full)
     check(o["source"] == "balldontlie" and o["ref"] == "balldontlie@abc" and o["verdict"] == "single", "observation: source balldontlie, reference balldontlie@<sha>")
     sch = A.observation(G.build_games([by["21717855"]], "nba", 2026)[0], full)
-    check(sch["source"] == "balldontlie" and sch["status"] == "scheduled" and sch["verdict"] == "none", "observation: a scheduled game seen only by balldontlie")
+    check(sch["source"] == "balldontlie" and sch["status"] == "scheduled" and sch["verdict"] == "none" and sch["starts_at"] == "2026-10-20T19:00:00Z", "observation: a scheduled game keeps the start balldontlie recorded")
     # fetching: throttled, whole season first, then the window; games merge by id; the archived bytes are stable
     pages = [dict(data=d["data"][:5], meta=dict(next_cursor=5, per_page=5)), dict(data=d["data"][5:], meta=dict(next_cursor=None, per_page=5))]
     calls, slept = [], []
@@ -347,11 +347,11 @@ def test_bdlsports():
     ot = by["1392219"]
     check(ot["status"] == "final" and ot["ot"] is True and len(ot["score"]) == 2, "nfl: Final/OT is an overtime final")
     check(by["1392216"]["ot"] is False and by["1392216"]["date"] == D(2026, 9, 9) and by["1392216"]["phase"] == "regular", "nfl: regulation final; the local date of a 00:20Z start is the day before")
-    check(by["1392295"]["status"] == "scheduled" and by["1392295"]["score"] is None and by["1392295"]["date"] == D(2026, 10, 15), "nfl: a scheduled game")
+    check(by["1392295"]["status"] == "scheduled" and by["1392295"]["score"] is None and by["1392295"]["date"] == D(2026, 10, 15) and by["1392295"]["start"] == "2026-10-16T00:15:00Z", "nfl: a scheduled game keeps its UTC start")
     check(by["900001"]["status"] == "postponed" and by["900002"]["status"] == "scheduled" and by["900002"]["score"] is None, "nfl: postponed; a game being played has no result yet")
     tbd = dict(d[4], id=900005, date="2027-01-10T05:00:00.000Z", status="TBD")
     c = S.claims_from("nfl", [tbd], rosters["nfl"], 2026)[0][0]
-    check(c["status"] == "scheduled" and c["date"] == D(2027, 1, 10), "nfl: a game with no time yet (05:00Z, TBD) keeps its day")
+    check(c["status"] == "scheduled" and c["date"] == D(2027, 1, 10) and "start" not in c, "nfl: a game with no time yet (05:00Z, TBD) keeps its day and no clock")
     mix = dict(d[4], id=900006, home_team=dict(d[4]["home_team"], id=-1))
     check(S.claims_from("nfl", [mix], rosters["nfl"], 2026) == ([], []), "a game with a club that is not one (id -1: the All-Star Game, an undecided pairing) is skipped without a word")
     cs25, bad25 = S.claims_from("nfl", d, rosters["nfl"], 2025)
@@ -460,8 +460,35 @@ def test_release_hook():
         check(r["status"] == "skipped" and a is None, "no token -> skipped")
 
 
+def test_starts():
+    import tempfile
+    import run as R
+    check(P.utc_instant("2026-10-20") is None, "a date is not a time")
+    check(P.utc_instant("2026-10-20T19:00:00.000Z") == "2026-10-20T19:00:00Z", "a UTC instant keeps the clock and drops the fraction")
+    check(P.utc_instant("2027-01-10T05:00:00.000Z", placeholder=True) is None and P.utc_instant("2026-11-01T04:00:00Z", placeholder=True) is None, "04:00Z and 05:00Z are not a time")
+    check(P.utc_instant("2026-09-10T00:20:00.000Z", placeholder=True) == "2026-09-10T00:20:00Z", "a start just after midnight UTC is kept")
+    check(P.eastern_clock("2026-10-18", "13:00") == "2026-10-18T17:00:00Z", "nflverse 1:00 pm Eastern in October is 17:00Z")
+    check(P.eastern_clock("2026-11-08", "13:00") == "2026-11-08T18:00:00Z", "nflverse 1:00 pm Eastern in November is 18:00Z")
+    check(P.eastern_clock("2026-10-18", "NA") is None and P.eastern_clock("2026-10-18", "") is None and P.eastern_clock("2026-10-18", None) is None, "nflverse NA and blank are not a time")
+    a = dict(P.claim("balldontlie", ("X", "Y"), None, "X", D(2026, 10, 18), "scheduled", "regular"), source="balldontlie", start="2026-10-18T17:00:00Z")
+    b = dict(P.claim("nflverse", ("X", "Y"), None, "X", D(2026, 10, 18), "scheduled", "regular"), source="nflverse", start="2026-10-18T20:00:00Z")
+    g = G.build_games([a, b], "nfl", 2026)[0]
+    check(g["start"] == "2026-10-18T17:00:00Z" and any("start time differs" in n for n in g["notes"]), "two recorded starts: the best-ranked source's clock is kept, and the difference is noted")
+    ros = roster("nfl", [("New England Patriots", "New England", "Patriots", "NE"), ("Seattle Seahawks", "Seattle", "Seahawks", "SEA")])
+    header = "game_id,season,game_type,week,gameday,gametime,away_team,away_score,home_team,home_score,location,overtime\n"
+    rows = header + "2026_01_NE_SEA,2026,REG,1,2026-10-18,13:00,NE,NA,SEA,NA,Home,NA\n2026_02_SEA_NE,2026,REG,2,2026-10-25,NA,SEA,NA,NE,NA,Home,NA\n"
+    with tempfile.TemporaryDirectory() as raw:
+        os.makedirs(os.path.join(raw, "nflverse"))
+        open(os.path.join(raw, "nflverse", "games.csv"), "w").write(rows)
+        cs, bad, n = R.nflverse_claims(2026, ros, {}, raw, True)
+    by = {c["src"]: c for c in cs}
+    check(n == 0 and not bad and by["2026_01_NE_SEA"]["start"] == "2026-10-18T17:00:00Z", "nflverse: an Eastern gametime becomes a UTC start")
+    check("start" not in by["2026_02_SEA_NE"], "nflverse: NA gametime is not a start")
+
+
 def run():
     test_observation()
+    test_starts()
     test_balldontlie()
     test_bdlsports()
     test_parsers()
@@ -473,7 +500,7 @@ def run():
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL) and the release hook (auto and review routes)")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL), recorded start times and the release hook (auto and review routes)")
     return 0
 
 

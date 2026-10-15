@@ -151,6 +151,8 @@ def nflverse_claims(season, roster, state, raw_dir, offline):
                               rnd.get(r["game_type"]), neutral=(r["location"] == "Neutral"), ot=(r["overtime"] == "1") if played else None,
                               src=r["game_id"]))
         claims[-1]["source"] = "nflverse"
+        start = P.eastern_clock(r["gameday"], r.get("gametime"))   # Eastern HH:MM. Blank and NA are not a time.
+        if start: claims[-1]["start"] = start
     sub = nflverse_subset(raw_dir, season)
     for c in claims: c["revid"] = sub[1] if sub else None
     return claims, bad, req

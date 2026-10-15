@@ -114,8 +114,13 @@ def summarize(cl, league, season):
     ots = {bool(c["ot"]) for c in finals if c["ot"] is not None}
     if len(ots) > 1: notes.append("overtime flag differs by source")
     phases = {c["phase"] for c in cl}
+    timed = [c for c in cl if c.get("start")]
+    start = None
+    if timed:
+        start = sorted(timed, key=lambda c: (_rank(c, home), c["source"]))[0]["start"]
+        if len({c["start"] for c in timed}) > 1: notes.append("start time differs by source")
     return dict(league=league, season=season, phase=pick["phase"], round=next((c["round"] for c in cl if c["round"]), None),
-                date=pick["date"], home=home, away=away, teams=teams, neutral=neutral,
+                date=pick["date"], home=home, away=away, teams=teams, neutral=neutral, start=start,
                 status=status, score=score, ot=any(c["ot"] for c in finals) if finals else None,
                 so=any(c["so"] for c in finals), ot_n=next((c["ot_n"] for c in finals if c["ot_n"]), None),
                 confidence=conf, alternatives=alts, notes=notes + (["phase differs: " + "/".join(sorted(phases))] if len(phases) > 1 else []),

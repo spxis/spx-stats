@@ -14,6 +14,7 @@ strip() { sed -E '/^[[:space:]]*(begin|commit)[[:space:]]*;[[:space:]]*$/Id' "$1
   echo 'set client_min_messages = warning;'
   strip "$REPO/db/migrations/044_ingest_report_results.sql"
   strip "$REPO/db/migrations/046_ingest_writer_role.sql"
+  strip "$REPO/db/migrations/114_game_starts_at.sql"
   cat "$HERE/ingest_report_results.sql"
   echo 'rollback;'
 } > "$work/run.sql"
@@ -23,4 +24,4 @@ if ! out="$("$REPO/scripts/daily/ds1.sh" -X -q -P pager=off -f "$work/run.sql" 2
   exit 2
 fi
 echo "$out"
-echo "$out" | grep -q '^RESULT: ALL [0-9]* CHECKS PASSED'
+echo "$out" | grep -q 'RESULT: ALL [0-9]* CHECKS PASSED'

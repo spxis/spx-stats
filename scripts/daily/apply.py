@@ -122,7 +122,7 @@ def observation(g, roster):
                 game_no=int(r["source_key"].rsplit(":", 1)[1]), home_key=fk(h), away_key=fk(a), home_name=h, away_name=a,
                 home_known=r["home_known"], neutral=r["neutral"], status=r["status"], home_score=r["home_score"], away_score=r["away_score"],
                 overtime=r["overtime"], shootout=r["shootout"], ot_periods=r["ot_periods"], verdict=verdict, source=src, ref=ref,
-                agree=agree, conflict=conflict, dissent=r["dissent"], notes=r["notes"])
+                agree=agree, conflict=conflict, dissent=r["dissent"], notes=r["notes"], starts_at=g.get("start"))
 
 
 def plan_load(todo, held, pages_state, raw_dir, nfl, files=()):

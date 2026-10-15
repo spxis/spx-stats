@@ -199,6 +199,8 @@ def claims_from(league, games, roster, season):
                     ot=ot, ot_n=ot_n, src=str(g["id"]))
         c["source"] = SOURCE
         c["_start"] = str(g["date"])
+        start = P.utc_instant(g.get("date"), placeholder=True)   # the UTC start. 04:00Z and 05:00Z mean the time is not set yet.
+        if start: c["start"] = start
         claims.append(c)
     if league == "mlb":     # balldontlie does not say which game of a doubleheader it is: the earlier start is the first
         byday = {}

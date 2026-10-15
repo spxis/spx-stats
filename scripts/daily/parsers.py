@@ -9,6 +9,7 @@ Nothing here touches the network or a database. Rows that cannot be read are ret
 Source of the text: English Wikipedia, CC BY-SA 4.0 (authors: each article's history).
 """
 import datetime, importlib.util, os, re
+from zoneinfo import ZoneInfo
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 MONTHS = {m: i + 1 for i, m in enumerate("jan feb mar apr may jun jul aug sep oct nov dec".split())}
@@ -137,6 +138,40 @@ def status_of_row(text, attr):
     if re.search(r"suspend", text, re.I): return "suspended"
     if row_flag(attr) == "X": return "postponed"
     return "scheduled"
+
+
+def utc_instant(raw, placeholder=False):
+    """A clock a source recorded, as UTC `YYYY-MM-DDTHH:MM:SSZ`, or None.
+
+    A date with no time is not a clock. When `placeholder` is set, 04:00:00Z and 05:00:00Z are not a clock either:
+    that is how balldontlie stores a game that has no time yet (midnight Eastern). Nothing is guessed from a date."""
+    if raw is None: return None
+    s = str(raw).strip()
+    if not s or s.upper() in ("NA", "TBD", "NULL", "NONE"): return None
+    if "T" not in s: return None
+    try: dt = datetime.datetime.fromisoformat(s.replace("Z", "+00:00"))
+    except ValueError: return None
+    if dt.tzinfo is None: return None
+    dt = dt.astimezone(datetime.timezone.utc).replace(microsecond=0)
+    if placeholder and (dt.hour, dt.minute, dt.second) in ((4, 0, 0), (5, 0, 0)): return None
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def eastern_clock(day, clock):
+    """A calendar day plus `HH:MM` in Eastern time -> a UTC instant, or None.
+
+    nflverse's `gametime` is Eastern. Empty, NA and TBD are not a time, and the date alone is not one either."""
+    if clock is None: return None
+    s = str(clock).strip()
+    if not s or s.upper() in ("NA", "TBD", "NULL", "NONE"): return None
+    m = re.fullmatch(r"(\d{1,2}):(\d{2})", s)
+    if not m: return None
+    h, mi = int(m.group(1)), int(m.group(2))
+    if h > 23 or mi > 59: return None
+    try: d = datetime.date.fromisoformat(str(day))
+    except ValueError: return None
+    local = datetime.datetime(d.year, d.month, d.day, h, mi, tzinfo=ZoneInfo("America/New_York"))
+    return local.astimezone(datetime.timezone.utc).replace(microsecond=0).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def claim(page, teams, score, home, date, status, phase, rnd=None, neutral=False, ot=None, so=False, ot_n=None, dh=None, src=""):

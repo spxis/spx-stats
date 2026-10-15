@@ -571,7 +571,7 @@ EXCLUSIVE lock for the whole rebuild. So:
    - **Automatic approval (daily scores only):** the daily job prepares with
      `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores [--title ".."]` (tables default to
      `core.game,meta.verification,meta.data_issue`). The runner approves it as `auto:daily-scores`, 10 minutes after it was
-     prepared, only if games change just in status, score and overtime/shootout fields, only on games not final in production,
+     prepared, only if games change just in status, score, overtime/shootout and the scheduled start, only on games not final in production,
      no inserts or deletes, at most 500 games, verification/data issue rows are new rows about those games (the one exception: an existing `wikipedia_daily` game issue
      about a changed game may change only `resolution` and `resolved_at`), and all checks pass;
      it re-checks the policy before applying. Anything else stays pending for John, with the reasons at `/admin/data`. John can

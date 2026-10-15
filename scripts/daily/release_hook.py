@@ -7,7 +7,7 @@ DS1 is the only place data is written; production changes only through data rele
 Two routes, chosen from the tables the run wrote to:
   auto    every table is core.game, meta.verification or meta.data_issue, and DAILY_RELEASE_KIND is set:
           `prepare --kind <DAILY_RELEASE_KIND> --title "Daily scores <date>" --notes ...`, NO --tables (the kind's own default applies).
-          The runner approves it by policy after a hold (status, score, overtime and shootout changes only; scripts/release/README.md).
+          The runner approves it by policy after a hold (status, score, overtime, shootout and the scheduled start only; scripts/release/README.md).
   review  anything else (a new season, team seasons, external ids, sources ... or no DAILY_RELEASE_KIND): a normal publish release,
           `prepare --title "Daily scores <date> (needs review)" --tables <ALL the tables the run wrote to>`. It waits for John.
 

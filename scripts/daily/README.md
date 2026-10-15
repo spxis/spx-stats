@@ -220,7 +220,8 @@ for the table. `db/tests/run-ingest-tests.sh` proves it by running as the role. 
 (`wpdaily:<league>:<season>:<phase>:<date>:<home>:<away>:<n>`); `league`, `season`, `phase` (regular|playoffs), `round`, `game_date`,
 `game_no` (0, or 1 for the second game of a doubleheader); **`home_key`, `away_key`: franchise keys**; `home_name`, `away_name` (display);
 `home_known`, `neutral`; `status` (scheduled|in_progress|final|postponed|suspended|cancelled); `home_score`, `away_score` (a final needs
-both), `overtime`, `shootout`, `ot_periods`; `verdict` (the Python cross-check: none|single|confirmed|resolved|disputed; a final needs
+both), `overtime`, `shootout`, `ot_periods`; `starts_at` (the scheduled start in UTC when a source recorded a clock, otherwise null;
+never inferred from the date); `verdict` (the Python cross-check: none|single|confirmed|resolved|disputed; a final needs
 one); `source` (the best-ranked source) and `ref` (its `page@revision` / file sha256); the evidence: `agree` (references of every source
 that gave the reported score), `conflict` (`[{ref, source, home_score, away_score}]`), `dissent` (the same as sentences), `notes`.
 Parsing, pairing and the cross-check stay in Python (`scripts/daily`); the database owns the invariants and the transitions.
@@ -302,7 +303,7 @@ ingest function is **not** installed on production, there is no production login
   no game prepares nothing. It never approves, and always passes `--by daily-job` (before `prepare`). Two routes:
   - **Auto.** Every table the run wrote to is `core.game`, `meta.verification` or `meta.data_issue`, and `DAILY_RELEASE_KIND` is set:
     `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores --title "Daily scores <date>" --notes ...`, with no
-    `--tables` (the kind's default is those three). The runner approves it after a hold if it only changes status, score and overtime/shootout
+    `--tables` (the kind's default is those three). The runner approves it after a hold if it only changes status, score, overtime/shootout and the scheduled start
     on games not final in production (`scripts/release/README.md` has the exact lane).
   - **Review.** Anything else (a new season, `core.season`, `core.team_season`, `core.external_id`, `meta.source` ..., or no
     `DAILY_RELEASE_KIND`): a normal publish release, `prepare --title "Daily scores <date> (needs review)" --tables <all the tables the run
