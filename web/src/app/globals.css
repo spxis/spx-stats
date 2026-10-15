@@ -82,7 +82,8 @@
   /* A segmented toggle is the same height: its frame plus buttons that fill it (a wrapped one keeps a full-height row each). */
   .seg { box-sizing: border-box; min-height: var(--control-h); }
   .seg > button, .seg > a { box-sizing: border-box; align-self: stretch; display: inline-flex; align-items: center; justify-content: center; min-height: calc(var(--control-h) - 2px); padding-block: 0; line-height: 1; }
-  .top { display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding-block: 18px 14px; border-bottom: 2px solid var(--ink); max-width: 1180px; margin-inline: auto; }
+  /* The header is a layer of its own, one above --z-pop: the user menu opens from it and must paint over every page block, including one lifted for an open popover (the rule on .page below). */
+  .top { position: relative; z-index: calc(var(--z-pop) + 1); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding-block: 18px 14px; border-bottom: 2px solid var(--ink); max-width: 1180px; margin-inline: auto; }
   .brand { display: flex; align-items: baseline; gap: 8px; text-decoration: none; }
   .brand-mark { font: 700 28px/1 var(--display); letter-spacing: .04em; background: var(--ink); color: var(--paper); padding: 2px 8px 0; }
   .brand-name { font: 600 22px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; }
