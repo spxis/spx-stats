@@ -54,7 +54,6 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 .sstate { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--ink); margin-right: 4px; }
 .sstate.pending { color: var(--muted); }
 .stime { font: 600 12px/1 var(--mono); color: var(--ink); }
-.stime.tba { font: 600 11px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 
 .noday { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px dashed var(--rule); }
 .nearest { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }

@@ -546,7 +546,6 @@ export const JA: Dictionary = {
   "scores.weekForward": "7日後へ",
   "scores.todayMark": "今日",
   "scores.scheduledStart": "予定開始",
-  "scores.timeTba": "開始時刻未定",
   "cal.vsOpp": "、対 {opp}",
   "cal.atOpp": "、@ {opp}",
   "cal.oppFallback": "対戦相手",

@@ -44,10 +44,8 @@ function Game({ lg, g, brands, say, upcoming }: { lg: LeagueCode; g: GameRow; br
         <span className={"sstate" + (final ? "" : " pending")}>
           {final ? (g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")) : upcoming ? say("scores.scheduled") : say("scores.noResult")}
         </span>
-        {!final && upcoming ? (
-          g.starts_at
-            ? <span className="stime" title={say("scores.scheduledStart")}><StartTime iso={g.starts_at} gameDate={g.game_date} /></span>
-            : <span className="stime tba">{say("scores.timeTba")}</span>
+        {!final && upcoming && g.starts_at ? (
+          <span className="stime" title={say("scores.scheduledStart")}><StartTime iso={g.starts_at} gameDate={g.game_date} /></span>
         ) : null}
         {PHASE_TAG[g.phase] ? <span className="badge tag">{say(PHASE_TAG[g.phase])}</span> : null}
         <Badge src={g.source} />

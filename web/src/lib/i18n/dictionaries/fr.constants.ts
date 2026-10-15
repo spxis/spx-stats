@@ -546,7 +546,6 @@ export const FR: Dictionary = {
   "scores.weekForward": "Avancer de 7 jours",
   "scores.todayMark": "aujourd'hui",
   "scores.scheduledStart": "Début prévu",
-  "scores.timeTba": "Heure à confirmer",
   "cal.vsOpp": ", contre {opp}",
   "cal.atOpp": ", à {opp}",
   "cal.oppFallback": "l’adversaire",

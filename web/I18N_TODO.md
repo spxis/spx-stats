@@ -15,7 +15,7 @@ so a string added in English alone still shows.
 - **Japanese `@`** stands for "at" between away and home team in game rows and tooltips, because Japanese has no short "at".
 - **Country names** on a team's flag (Canada, United States, Mexico) are translated as ordinary words; the flag drawings themselves have no text.
 - **Season labels** read "2010-11年シーズン" in Japanese and "Saison 2010-11" in French.
-- **Scoreboard start time.** FR "Début prévu" (scheduled start) and "Heure à confirmer" (time TBA). JA "予定開始" (scheduled start) and "開始時刻未定" (start time not set).
+- **Scoreboard start time.** FR "Début prévu" and JA "予定開始" for the scheduled-start tooltip. The clock itself is the reader's local time.
 
 - **Player statistics.** Column abbreviations (FR PJ/B/A/V/D/N/DP/MBC/%A/BL for hockey; AB/CS/CC/PP/BV/MAB/MPB/MP/MJ/MPM for baseball; JA 試合/勝/敗/打率/防御率 and so on)
   are my best guess at what each league's own French and Japanese tables use. Slugging is "PUIS" (moyenne de puissance) so it does not clash with "MP" (minutes de pénalité). "Parcours sportif" for the sports résumé, "Repêchage" for the draft.
