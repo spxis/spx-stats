@@ -239,8 +239,8 @@
   .banner .how { color: var(--muted); grid-column: 1 / -1; }
   .banner.withcup { display: flex; align-items: center; gap: 14px 22px; }
   .banner .bbody { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; }
-  .bigcup { margin: 0; flex: none; width: clamp(84px, 22vw, 132px); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: var(--accent); }
-  .bigart { display: block; width: 100%; }
+  .bigcup { margin: 0; flex: none; width: clamp(104px, 26vw, 160px); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: var(--accent); }
+  .bigart { display: block; width: 100%; border-radius: 4px; }
   .bigart svg { display: block; width: 100%; height: auto; }
   .bigcup figcaption { font: 600 11px/1.25 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-wrap: balance; }
   @media (max-width: 480px) { .banner.withcup { padding: 14px 14px; gap: 12px 14px; } .banner.withcup .who { font-size: 26px; } .banner.withcup .who .logo { margin-right: 8px; } }

@@ -23,6 +23,7 @@ export const PHRASES = {
   "trophy.name.nfl": "Vince Lombardi Trophy",
   "trophy.name.cfl": "Grey Cup",
   "trophy.latest": "Latest champion",
+  "trophy.turnHint": "Drag or use the arrow keys to turn the trophy. Space starts and stops the turning.",
   "trophy.mostTitles": "Most titles: {team}, {count}",
   "source.derived": "From results",
   "source.editorial": "Editorial",

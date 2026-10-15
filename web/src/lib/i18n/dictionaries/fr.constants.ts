@@ -18,6 +18,7 @@ export const FR: Dictionary = {
   "trophy.name.nfl": "Trophée Vince Lombardi",
   "trophy.name.cfl": "Coupe Grey",
   "trophy.latest": "Dernier champion",
+  "trophy.turnHint": "Faites glisser ou utilisez les flèches pour faire tourner le trophée. La barre d’espace lance ou arrête la rotation.",
   "trophy.mostTitles": "Plus de titres : {team}, {count}",
   "source.derived": "Tiré des résultats",
   "source.editorial": "Éditorial",

@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { GENERATED, GENERATED_MEDALS, medalMarkup, trophyMarkup } from "./trophyMarkup.ts";
+import { GENERATED, GENERATED_MEDALS, GENERATED_METAL, medalMarkup, trophyMarkup, trophyMetalMarkup } from "./trophyMarkup.ts";
 import { medalSvg } from "../src/lib/medals.ts";
 import { trophySvg } from "../src/lib/trophies.ts";
 
 /** Run in web/: pnpm test:trophies. If it fails, run: pnpm trophies */
-test("trophies.generated.ts and medals.generated.ts match the pinned @johnmorrisdotca/dougu-sports (rerun pnpm trophies after a bump)", () => {
+test("trophies, trophiesMetal and medals .generated.ts match the pinned @johnmorrisdotca/dougu-sports (rerun pnpm trophies after a bump)", () => {
   assert.equal(readFileSync(GENERATED, "utf8"), trophyMarkup());
+  assert.equal(readFileSync(GENERATED_METAL, "utf8"), trophyMetalMarkup());
   assert.equal(readFileSync(GENERATED_MEDALS, "utf8"), medalMarkup());
 });
 

@@ -7,6 +7,7 @@ import { TROPHY_FOOTBALL } from "@johnmorrisdotca/dougu-sports/trophy/football";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
 import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-ball";
 import { TROPHY_SOCCER_GLOBE } from "@johnmorrisdotca/dougu-sports/trophy/soccer-globe";
+import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 import { MEDAL_BRONZE } from "@johnmorrisdotca/dougu-sports/medal/bronze";
 import { MEDAL_GOLD } from "@johnmorrisdotca/dougu-sports/medal/gold";
 import { MEDAL_SILVER } from "@johnmorrisdotca/dougu-sports/medal/silver";
@@ -17,7 +18,10 @@ import { MEDAL_SILVER } from "@johnmorrisdotca/dougu-sports/medal/silver";
  * (pnpm test:trophies fails while the file is stale).
  */
 
-type Drawing = { svg: (o: { style: "line" | "metal"; size: number }) => string };
+type Drawing = {
+  svg: (o: { style: "line" | "metal"; size: number }) => string;
+  frame: (o: { style: "line" | "metal"; size: number; yaw: number; pitch: number; title: false }) => string;
+};
 
 /** The package's drawing with its generic title replaced by the name of the trophy the team won; width and height dropped so the page's CSS sizes it. */
 const draw = (d: Drawing, name: string, style: "line" | "metal" = "line") =>
@@ -37,6 +41,9 @@ const TROPHIES: [string, Drawing, string][] = [
   ["mls", TROPHY_SOCCER_BALL, "MLS Cup"],
   ["soccer", TROPHY_SOCCER_BALL, "Trophy"],
 ];
+
+/** The five leagues' trophies drawn large in the banner: metal, leaning toward the eye, no title (the page labels it in the reader's language). */
+const BANNER: string[] = ["nhl", "nba", "mlb", "nfl", "cfl"];
 
 /** Metal-style medals (so gold, silver and bronze keep their colour), keyed by place. */
 const MEDALS: [number, Drawing, string][] = [
@@ -67,6 +74,24 @@ export function trophyMarkup(): string {
   ].join("\n");
 }
 
+/**
+ * The whole text of trophiesMetal.generated.ts: the banner trophies as the turned frame at yaw 0 (the box of the turn, the same box every frame of the
+ * turn is drawn in), so the page the server sends and the first frame TurnTrophy draws are one picture. A separate file: only TrophyBanner reads it.
+ */
+export function trophyMetalMarkup(): string {
+  return [
+    ...header(),
+    "/** Metal-style, tilted banner trophies by league key. */",
+    "export const TROPHY_METAL_MARKUP: Record<string, string> = {",
+    ...BANNER.map((k) => {
+      const d = TROPHIES.find(([key]) => key === k)![1];
+      return entry(k, d.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: false }).replace(/ width="64" height="64"/, ""));
+    }),
+    "};",
+    "",
+  ].join("\n");
+}
+
 /** The whole text of medals.generated.ts: a separate file so the pages that draw no medal never carry them. */
 export function medalMarkup(): string {
   return [
@@ -80,10 +105,12 @@ export function medalMarkup(): string {
 }
 
 export const GENERATED = fileURLToPath(new URL("../src/lib/trophies.generated.ts", import.meta.url));
+export const GENERATED_METAL = fileURLToPath(new URL("../src/lib/trophiesMetal.generated.ts", import.meta.url));
 export const GENERATED_MEDALS = fileURLToPath(new URL("../src/lib/medals.generated.ts", import.meta.url));
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {
   writeFileSync(GENERATED, trophyMarkup());
+  writeFileSync(GENERATED_METAL, trophyMetalMarkup());
   writeFileSync(GENERATED_MEDALS, medalMarkup());
-  console.log(`wrote ${GENERATED} and ${GENERATED_MEDALS}`);
+  console.log(`wrote ${GENERATED}, ${GENERATED_METAL} and ${GENERATED_MEDALS}`);
 }

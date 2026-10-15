@@ -18,6 +18,7 @@ export const JA: Dictionary = {
   "trophy.name.nfl": "ヴィンス・ロンバルディ・トロフィー",
   "trophy.name.cfl": "グレイカップ",
   "trophy.latest": "直近の優勝チーム",
+  "trophy.turnHint": "ドラッグまたは矢印キーでトロフィーを回せます。スペースキーで回転の開始と停止ができます。",
   "trophy.mostTitles": "最多優勝：{team}（{count}）",
   "source.derived": "試合結果から算出",
   "source.editorial": "編集部",

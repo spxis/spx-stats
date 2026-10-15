@@ -14,6 +14,9 @@ importers:
       '@johnmorrisdotca/chizu':
         specifier: 1.4.0
         version: 1.4.0
+      '@johnmorrisdotca/dougu-sports':
+        specifier: 0.7.2
+        version: 0.7.2
       '@johnmorrisdotca/hata':
         specifier: 1.5.0
         version: 1.5.0
@@ -22,7 +25,7 @@ importers:
         version: 0.10.1(@johnmorrisdotca/hata@1.5.0)
       '@johnmorrisdotca/taisen-brackets':
         specifier: 0.6.0
-        version: 0.6.0(@johnmorrisdotca/dougu-sports@0.1.0)(@johnmorrisdotca/hata@1.5.0)
+        version: 0.6.0(@johnmorrisdotca/dougu-sports@0.7.2)(@johnmorrisdotca/hata@1.5.0)
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -48,9 +51,6 @@ importers:
         specifier: ^4.6.5
         version: 4.6.5
     devDependencies:
-      '@johnmorrisdotca/dougu-sports':
-        specifier: 0.1.0
-        version: 0.1.0
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
@@ -395,8 +395,8 @@ packages:
     resolution: {integrity: sha512-tlfHQ9bL0Sim3SNuDRw7YNAjdnlrmWDzFZve9DIF9SNngHN3KQQj7r+zsSI0xAAzQ+dyOiZSbHHZ1jM15ZkoDA==}
     engines: {node: '>=22'}
 
-  '@johnmorrisdotca/dougu-sports@0.1.0':
-    resolution: {integrity: sha512-/Yq2T9ak6X906hIMwU2JCJYQVZuehL58LvOGXicZbg9ckEBVxvEx75QVG13z1VsNdIxBXuN7E60ZfZR+dqelqA==}
+  '@johnmorrisdotca/dougu-sports@0.7.2':
+    resolution: {integrity: sha512-Pv452KSJXSXfWQfqg4CbaG25QdYXDHh52U5COasGA3O+dzG/gOc5EJ3kqO1KV47UvKAR3kw7F2v3JmiHlw/JdA==}
     engines: {node: '>=22'}
 
   '@johnmorrisdotca/hata@1.5.0':
@@ -2717,7 +2717,7 @@ snapshots:
 
   '@johnmorrisdotca/chizu@1.4.0': {}
 
-  '@johnmorrisdotca/dougu-sports@0.1.0': {}
+  '@johnmorrisdotca/dougu-sports@0.7.2': {}
 
   '@johnmorrisdotca/hata@1.5.0': {}
 
@@ -2725,9 +2725,9 @@ snapshots:
     optionalDependencies:
       '@johnmorrisdotca/hata': 1.5.0
 
-  '@johnmorrisdotca/taisen-brackets@0.6.0(@johnmorrisdotca/dougu-sports@0.1.0)(@johnmorrisdotca/hata@1.5.0)':
+  '@johnmorrisdotca/taisen-brackets@0.6.0(@johnmorrisdotca/dougu-sports@0.7.2)(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:
-      '@johnmorrisdotca/dougu-sports': 0.1.0
+      '@johnmorrisdotca/dougu-sports': 0.7.2
       '@johnmorrisdotca/hata': 1.5.0
 
   '@jridgewell/gen-mapping@0.3.13':
