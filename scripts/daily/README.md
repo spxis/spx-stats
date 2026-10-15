@@ -351,7 +351,7 @@ archive, load, report, refresh (`observation()` builds what `ingest.report_resul
 checks · `selftest.py` + `fixtures/` the tests · `heartbeat.py` the `ingest.daily_run` row · `release_hook.py` `prepare_release()` ·
 `ingest-writer-login.sh` an optional DS1 login for the role · `../../daily/` the Docker job · `db/migrations/048_ingest_daily_run.sql` the heartbeat table ·
 `db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `055_daily_balldontlie.sql` lets it hold balldontlie's file · `044_ingest_report_results.sql` the API · `046_ingest_writer_role.sql` the
-role · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
+role · `114_game_starts_at.sql` the recorded start, applied last so a run does not put 044's functions back · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
 `db/tests/` (`run-ingest-tests.sh`, `run-rebuild-proof.sh`).
 Fixtures are excerpts of Wikipedia articles (CC BY-SA 4.0); the first line of each names the article and revision, and the
 authors are in the article history.

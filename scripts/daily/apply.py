@@ -4,7 +4,7 @@
 Daily scores go to the database through ONE function, ingest.report_results (migration 044), called as the restricted role
 ingest_writer (migration 046). History stays bulk. What `apply()` does, in this order, each step stopping the run if it fails:
   1. asks DS1 which page revisions it already holds (legacy_wikipedia_daily.page)
-  2. REHEARSAL: one transaction that ends in ROLLBACK: migrations 043, 044 and 046, archive rows, raw load, db/build/152 (seasons and
+  2. REHEARSAL: one transaction that ends in ROLLBACK: migrations 043, 044, 046, 055 and 114, archive rows, raw load, db/build/152 (seasons and
      team seasons only), the report of every game as an observation (as ingest_writer), ingest.replay(true, true) for the games
      the report found no row for, the same report again (it must add nothing), and the checks (snapshot.sql + checks.sql).
      A failed check, or any error, means nothing was written.
@@ -21,7 +21,7 @@ if HERE not in sys.path: sys.path.insert(0, HERE)
 import games as G, teams as T
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DS1 = os.path.join(HERE, "ds1.sh")
-MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql")]
+MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql", "114_game_starts_at.sql")]
 BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
