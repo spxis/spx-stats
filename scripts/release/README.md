@@ -17,7 +17,7 @@ Exit code: 0 ok, 1 refused or blocked or (drift) differences found, 2 error.
 1. **prepare** runs `db/checks/*.sql` on DS1, compares the tables with production by key (`scripts/sync/compare.py`), and writes a
    pending release to `meta.data_release` on DS1 (full content) and on production (so the site can show it). The preview lists
    rows to add, change and remove per table, the size change and any blockers (failed check, table would shrink by more than
-   5 percent without `--replace`, production would pass 450 MB, a column or table missing on production).
+   5 percent without `--replace`, the peak size estimate would pass 450 MB, a column or table missing on production). See "The size guard".
 2. **approve**: John taps Approve at `/admin/data`. The site calls `api.approve_release` (below). Nothing else approves.
 3. **run** (every minute on the NAS): for each approved release it checks that production's row matches DS1's copy (same digest,
    tables, options), re-runs the checks and the comparison and refuses if anything changed since the preview, saves the rows
@@ -218,10 +218,35 @@ rows it restores in tables that no foreign key references, so natural unique key
 that other tables reference are still upserted by primary key. A publish does the same (see "The order inside the apply block"). Releases prepared before this change have different row
 hashes for tables with float columns (`core.person`): prepare them again.
 
+## The size guard
+
+`prepare` and the runner's re-check before an apply both call `build_preview`, which estimates (`estimate_bytes`, one function) what each
+table adds, from its own average heap row (heap plus toast, divided by its rows; a table with no rows yet uses DS1's copy) and its
+index/heap ratio:
+
+- an inserted row takes its size once, plus the growth of the table's indexes (the ratio);
+- a changed row counts once more at the end (its new version) and twice at the peak (old and new stand until vacuum);
+- a deleted row frees nothing until vacuum: 0 at the end, once at the peak as a margin.
+
+The preview shows `end_bytes` (when the apply is done) and `peak_bytes`. The blocker fires when the **peak** passes `RELEASE_MAX_DB_MB`
+(default 450, the runner sets 480) and says both numbers: "production would reach about 423 MB while the release is applied and end at
+about 423 MB once it is done (limit 450 MB on the peak)". The old formula doubled every insert (2 x (add + change) x row), which made the
+roster release of 2026-10-15 read 514 MB for a real 369 MB, and 2026.10.15-4 (108,967 rows, about 56 MB real) 482 MB.
+
+## Refreshing the views after a release
+
+After an apply (or a rollback, or a restore after a failed verification) the runner refreshes production's `api` materialized views with
+migration 097's functions: `api.refresh_order()` lists them, then `api.refresh_one(view)` runs once per view, each as its own statement
+under its own `statement_timeout` (`RELEASE_REFRESH_VIEW_SEC`, default 600). A view that fails or times out is recorded and the others still
+run. The release result carries `refresh` (`ok`, or `failed: api.player_index, ...`) and `views` (`{view: "ok" | "failed: <why>"}`). A
+production without migration 097 gets the one `api.refresh()` call as before. A failed view does not fail the release: refresh it by hand
+with `select api.refresh_one('api.<view>')`.
+
 ## Tests
 
     python3 -I scripts/release/test/test_release.py
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
+    TEST_ORDER_PORT=<free port> python3 -I scripts/release/test/test_guard.py   # the size estimate with the two real releases of 2026-10-15, and the per-view refresh (own throwaway Postgres; stops it after)
     python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 3150; stops it after; includes the position-release shape and the foreign key loop refusal)
     python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 104/105 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
@@ -229,4 +254,4 @@ hashes for tables with float columns (`core.person`): prepare them again.
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies
 standing in for DS1 and production, and `mock_api.py` stands in for the Management API. Covers prepare, approval through the function,
 run, guardrail refusals, a failure mid-apply (production unchanged), a lost answer after commit, rollback, drift, ds1_step, float
-values through an API that rounds them, a restore with swapped unique keys, `api.refresh()` after a commit (also after a failed verification). `filter_case` in `test_release.py` runs the whole `PUBLISH_FILTER` flow through the CLI (prepare with and without `--replace`, approve, run, drift, new DS1 game ids, rollback); `test_apply_order.py` has the same in process (`scenario_publish_filter`, no template database). `test_auto.py` simulates time by moving `created_at` back and covers the data issue resolve and re-open rule.
+values through an API that rounds them, a restore with swapped unique keys, the per-view refresh after a commit (also after a failed verification; its own arithmetic and failure cases are in `test_guard.py`). `filter_case` in `test_release.py` runs the whole `PUBLISH_FILTER` flow through the CLI (prepare with and without `--replace`, approve, run, drift, new DS1 game ids, rollback); `test_apply_order.py` has the same in process (`scenario_publish_filter`, no template database). `test_auto.py` simulates time by moving `created_at` back and covers the data issue resolve and re-open rule.

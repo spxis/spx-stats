@@ -128,5 +128,5 @@ A section the runner cannot read says so and the others still go out. State is `
 ## Safety
 
 - `release-runner.env` holds two secrets. Keep it on the NAS only, never in git (it is in `.gitignore`).
-- The Supabase token can do anything in the project; the guardrails live in `release.py` (checks, 5 percent shrink limit, 450 MB
+- The Supabase token can do anything in the project; the guardrails live in `release.py` (checks, 5 percent shrink limit, 450 MB peak size estimate
   limit, snapshot, one transaction, verification). Do not run other things with that token from the NAS.

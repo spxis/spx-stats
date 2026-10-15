@@ -229,9 +229,34 @@ def fp(buckets):
 
 
 def table_sizes(side):
-    rows = side.run("select c.relnamespace::regnamespace::text || '.' || c.relname as n, pg_total_relation_size(c.oid) as b "
+    """{table: {"heap": heap and toast bytes, "index": index bytes}} for every table of core, meta and ref."""
+    rows = side.run("select c.relnamespace::regnamespace::text || '.' || c.relname as n, "
+                    "pg_relation_size(c.oid) + coalesce(pg_total_relation_size(c.reltoastrelid), 0) as heap, pg_indexes_size(c.oid) as idx "
                     "from pg_class c where c.relkind in ('r', 'p') and c.relnamespace::regnamespace::text in ('core', 'meta', 'ref')")
-    return {r["n"]: r["b"] for r in rows}
+    return {r["n"]: {"heap": int(r["heap"]), "index": int(r["idx"])} for r in rows}
+
+
+DEFAULT_ROW_BYTES = 200
+
+
+def estimate_bytes(add, change, remove, rows, sizes):
+    """What a release does to the size of production, for one table. rows: the table's row count on the side `sizes` came from;
+    sizes: {"heap", "index"} of that side's table (heap includes toast). Returns (delta, end, peak) in bytes, each to be added to the
+    database size now:
+      delta = (add - remove) * row * (1 + index/heap): the size change once vacuum has run (what the preview shows)
+      end   = add * row * (1 + index/heap) + change * row: the size when the apply is done, before any vacuum. An inserted row takes
+              its size once, plus the growth of the table's indexes (the table's index/heap ratio). A changed row adds its new
+              version; the old one is dead but still counted in the size now. A deleted row stays until vacuum: it frees nothing.
+      peak  = add * row * (1 + index/heap) + 2 * change * row + remove * row: the most it takes while the apply runs. A changed row
+              counts twice (old and new version stand until vacuum), a removed row once more as a margin.
+    row is the average heap row of the table (heap / rows). A table with no rows yet uses DEFAULT_ROW_BYTES and no index growth."""
+    heap, index = (sizes or {}).get("heap", 0), (sizes or {}).get("index", 0)
+    row = (heap / rows) if rows and heap else DEFAULT_ROW_BYTES
+    ratio = (index / heap) if heap else 0.0
+    delta = int((add - remove) * row * (1 + ratio))
+    end = int(add * row * (1 + ratio) + change * row)
+    peak = int(add * row * (1 + ratio) + 2 * change * row + remove * row)
+    return delta, end, peak
 
 
 def load_tables(ctx, names):
@@ -254,18 +279,34 @@ def load_tables(ctx, names):
     return out
 
 
+def size_estimate(db_bytes, per_table):
+    """(end, peak): production's size when the apply is done, and the most it reaches while it runs (estimate_bytes), from the
+    per-table figures of a preview (bytes_delta_end, bytes_delta_staged). The one place prepare and the runner's re-check both read."""
+    end = db_bytes + sum(max(p.get("bytes_delta_end", p["bytes_delta"]), 0) for p in per_table.values())
+    peak = db_bytes + sum(max(p["bytes_delta_staged"], 0) for p in per_table.values())
+    return end, peak
+
+
+def size_problem(db_bytes, per_table, limit=None):
+    """The blocker text when the peak passes the limit, else None. It shows the end size as well as the peak."""
+    limit = MAX_DB_BYTES if limit is None else limit
+    end, peak = size_estimate(db_bytes, per_table)
+    if peak > limit:
+        return ("production would reach about %d MB while the release is applied and end at about %d MB once it is done "
+                "(limit %d MB on the peak)" % (peak // 1048576, end // 1048576, limit // 1048576))
+    return None
+
+
 def guardrails(per_table, replace, db_bytes):
     problems = []
-    staged = 0
     for n, p in per_table.items():
         after = p["prod_rows"] + p["add"] - p["remove"]
         if p["prod_rows"] > 0 and after < p["prod_rows"] * (1 - SHRINK_LIMIT) and not replace:
             problems.append("%s would shrink from %d to %d rows (more than %d%%); a release must say replace to allow it"
                             % (n, p["prod_rows"], after, round(SHRINK_LIMIT * 100)))
-        staged += max(p["bytes_delta_staged"], 0)
-    if db_bytes + staged > MAX_DB_BYTES:
-        problems.append("production would reach about %d MB while the release is applied (limit %d MB)"
-                        % ((db_bytes + staged) // 1048576, MAX_DB_BYTES // 1048576))
+    big = size_problem(db_bytes, per_table)
+    if big:
+        problems.append(big)
     return problems
 
 
@@ -286,15 +327,15 @@ def build_preview(ctx, names, replace, diffs, blockers, warnings):
     db_bytes = ctx.prod.run("select pg_database_size(current_database()) as b")[0]["b"]
     per = {}
     for n in names:
-        p = {"ds1_rows": None, "prod_rows": None, "add": 0, "change": 0, "remove": 0, "bytes_delta": 0, "bytes_delta_staged": 0,
+        p = {"ds1_rows": None, "prod_rows": None, "add": 0, "change": 0, "remove": 0, "bytes_delta": 0, "bytes_delta_end": 0, "bytes_delta_staged": 0,
              "ds1_fp": None, "prod_fp": None, "blockers": list(blockers[n]), "warnings": list(warnings[n])}
         if n in diffs:
             t, d = diffs[n]
             p.update(ds1_rows=d["ds1"], prod_rows=d["prod"], add=len(d["only1"]), change=len(d["differ"]), remove=len(d["only2"]),
                      ds1_fp=fp(d["b1"]), prod_fp=fp(d["b2"]))
-            avg = (sp.get(n, 0) / d["prod"]) if d["prod"] else (sd.get(n, 0) / d["ds1"] if d["ds1"] else 200)
-            p["bytes_delta"] = int((p["add"] - p["remove"]) * avg)
-            p["bytes_delta_staged"] = int(2 * (p["add"] + p["change"]) * avg)
+            # a table with rows on production is measured there; a table with none by its DS1 copy
+            sizes, rows = (sp.get(n), d["prod"]) if d["prod"] else (sd.get(n), d["ds1"])
+            p["bytes_delta"], p["bytes_delta_end"], p["bytes_delta_staged"] = estimate_bytes(p["add"], p["change"], p["remove"], rows, sizes)
         per[n] = p
     problems = guardrails({n: p for n, p in per.items() if n in diffs}, replace, db_bytes)
     all_blockers = ["%s: %s" % (n, b) for n, p in per.items() for b in p["blockers"]] + problems
@@ -304,6 +345,7 @@ def build_preview(ctx, names, replace, diffs, blockers, warnings):
         "totals": {k: sum(p[k] for p in per.values()) for k in ("add", "change", "remove", "bytes_delta")},
         "db_bytes": db_bytes,
     }
+    preview["end_bytes"], preview["peak_bytes"] = size_estimate(db_bytes, {n: p for n, p in per.items() if n in diffs})
     return preview
 
 
@@ -748,14 +790,44 @@ def referenced_tables(ctx):
     return {p for (_, p) in C.fk_edges(ctx.ds1, ctx.prod)}
 
 
-def refresh_production(ctx):
-    """Run api.refresh() on production after a change to its data was committed. Returns "ok" or "failed: <why>" for the result."""
+REFRESH_VIEW_SECONDS = int(os.environ.get("RELEASE_REFRESH_VIEW_SEC", "600"))   # per view; 10 minutes
+
+
+def refresh_production(ctx, detail=None):
+    """Refresh production's api materialized views after a change to its data was committed (migration 097): api.refresh_order()
+    lists them, then api.refresh_one(view) runs for each one as its own statement under its own statement_timeout, so one slow
+    view does not time out the rest and the Management API is never held for one long call. A view that fails or times out is
+    recorded and the others still run. Returns "ok" or "failed: <views>" for the result. detail, a dict, receives {"views": {view:
+    "ok" | "failed: <why>"}}. Without migration 097 (no api.refresh_order) it falls back to one api.refresh() call."""
     try:
-        prod_exec(ctx.prod, "select api.refresh()")
-        return "ok"
-    except Exception as e:  # noqa: BLE001 - recorded in the result, never hides the release outcome
-        log("api.refresh failed: " + scrub(e))
-        return "failed: " + scrub(e)[:200]
+        views = prod_exec(ctx.prod, "select coalesce(jsonb_agg(view_name), '[]'::jsonb) as j from api.refresh_order()", attempts=3, timeout=60)
+        if not isinstance(views, list):
+            raise RuntimeError("api.refresh_order answered nothing")
+    except Exception as e:  # noqa: BLE001 - an older production: one call, as before
+        log("api.refresh_order unavailable (%s): calling api.refresh()" % scrub(e)[:120])
+        try:
+            prod_exec(ctx.prod, "select api.refresh()")
+            return "ok"
+        except Exception as e2:  # noqa: BLE001 - recorded in the result, never hides the release outcome
+            log("api.refresh failed: " + scrub(e2))
+            return "failed: " + scrub(e2)[:200]
+    results = {}
+    for v in views:
+        try:
+            sql = "set statement_timeout = '%ds';\nselect api.refresh_one(%s) as j" % (REFRESH_VIEW_SECONDS, C.ql(v))
+            r = prod_exec(ctx.prod, sql, attempts=1, timeout=REFRESH_VIEW_SECONDS + 60)
+            if isinstance(r, dict) and r.get("status") == "failed":
+                results[v] = "failed: " + str(r.get("error") or "")[:120]
+            else:
+                results[v] = "ok"
+        except Exception as e:  # noqa: BLE001 - a timeout or a lost answer for this view only
+            results[v] = "failed: " + scrub(e)[:120]
+        if results[v] != "ok":
+            log("refresh of %s %s" % (v, results[v]))
+    if detail is not None:
+        detail["views"] = results
+    bad = [v for v, r in results.items() if r != "ok"]
+    return "ok" if not bad else "failed: " + ", ".join(bad)
 
 
 def verify_equal(ctx, name, t, want_buckets):
@@ -1082,14 +1154,16 @@ def run_publish(ctx, rel, pre=None):
                 raise RuntimeError("production did not match DS1 after the release for %s; the snapshot was restored" % n)
     except Exception as e:  # noqa: BLE001 - the apply committed, so the views must be refreshed whatever went wrong
         problem = e
-    refresh = refresh_production(ctx)
+    views = {}
+    refresh = refresh_production(ctx, views)
     if problem:
-        raise AfterCommit(scrub(problem), {"refresh": refresh, "verified": False, "backup_schema": schema})
+        raise AfterCommit(scrub(problem), dict({"refresh": refresh, "verified": False, "backup_schema": schema}, **views))
     result = {"tables": {n: {"add": now["tables"][n]["add"], "change": now["tables"][n]["change"], "remove": now["tables"][n]["remove"],
                              "rows_before": now["tables"][n]["prod_rows"], "rows_after": now["tables"][n]["ds1_rows"]} for n in names},
               "totals": {k: now["totals"][k] for k in ("add", "change", "remove")},
               "backup_schema": schema, "before_fp": before_fp, "verified": True, "refresh": refresh,
               "seconds": round(time.time() - started)}
+    result.update(views)
     if rel["kind"] == "daily_scores":
         result["leagues"] = touched_leagues(ctx, items)
         result["touched"] = {}
@@ -1201,10 +1275,12 @@ def run_rollback(ctx, rel):
         restore(ctx, orig["id"], names, before_fp=res["before_fp"],
                 orig_rows={n: v["rows_before"] for n, v in res["tables"].items()})
     except AfterCommit as e:
-        raise AfterCommit(str(e), {"refresh": refresh_production(ctx), "verified": False})
-    refresh = refresh_production(ctx)
+        views = {}
+        raise AfterCommit(str(e), dict({"refresh": refresh_production(ctx, views), "verified": False}, **views))
+    views = {}
+    refresh = refresh_production(ctx, views)
     set_release(ctx, orig["id"], {"status": "rolled_back"}, from_status="done")
-    return {"rolled_back": number, "verified": True, "refresh": refresh, "seconds": round(time.time() - started)}
+    return dict({"rolled_back": number, "verified": True, "refresh": refresh, "seconds": round(time.time() - started)}, **views)
 
 
 # ---------------------------------------------------------------------------------------------------- score update requests

@@ -455,8 +455,17 @@ def restore_case(env):
 
 def refresh_case(env):
     fresh()
-    psql(PROD, "create table public.refresh_probe (n serial);\n"
-               "create or replace function api.refresh() returns void language sql security definer as $$ insert into public.refresh_probe default values $$")
+    # the runner refreshes one view at a time: api.refresh_order() lists them and api.refresh_one(view) refreshes one. Probe stand-ins:
+    # two views, one probe row per view refreshed.
+    probe_ok = ("create or replace function api.refresh_order() returns table (view_name text, mode text, bytes bigint) language sql as "
+                "$$ values ('api.probe_a'::text, 'plain'::text, 1::bigint), ('api.probe_b', 'plain', 2) $$;\n"
+                "create or replace function api.refresh_one(p_view text) returns jsonb language plpgsql as "
+                "$$ begin insert into public.refresh_probe (view) values (p_view); return jsonb_build_object('view', p_view, 'status', 'ok'); end $$")
+    probe_bad = ("create or replace function api.refresh_one(p_view text) returns jsonb language plpgsql as "
+                 "$$ begin insert into public.refresh_probe (view) values (p_view); "
+                 "if p_view = 'api.probe_a' then return jsonb_build_object('view', p_view, 'status', 'failed', 'error', 'boom'); end if; "
+                 "return jsonb_build_object('view', p_view, 'status', 'ok'); end $$")
+    psql(PROD, "create table public.refresh_probe (n serial, view text);\n" + probe_ok)
 
     def runs():
         return int(psql(PROD, "select count(*) from public.refresh_probe"))
@@ -469,16 +478,19 @@ def refresh_case(env):
     n = number_of(out)
     approve(n)
     rc, out, err = env.rel("run")
-    ok("a release that is applied runs api.refresh once and records it", status(n) == "done" and runs() == 1 and result(n)["refresh"] == "ok", out + err)
+    ok("a release that is applied refreshes every view once, as its own call, and records it",
+       status(n) == "done" and runs() == 2 and result(n)["refresh"] == "ok" and result(n)["views"] == {"api.probe_a": "ok", "api.probe_b": "ok"}, out + err + str(result(n)))
 
-    psql(PROD, "create or replace function api.refresh() returns void language sql security definer as $$ select 1 / 0 $$")
+    psql(PROD, probe_bad)
     psql(DS1, "update core.venue set city = city || ' (s)' where venue_id = (select min(venue_id) from core.venue)")
     rc, out, err = env.rel("prepare", "--title", "Refresh fails", "--tables", "core.venue")
     n = number_of(out)
     approve(n)
     rc, out, err = env.rel("run")
-    ok("a failing api.refresh is recorded and the release is still done", status(n) == "done" and result(n)["refresh"].startswith("failed"), out + err + str(result(n)))
-    psql(PROD, "create or replace function api.refresh() returns void language sql security definer as $$ insert into public.refresh_probe default values $$")
+    ok("a failing view is recorded by name, the other view still refreshes and the release is still done",
+       status(n) == "done" and result(n)["refresh"] == "failed: api.probe_a" and result(n)["views"]["api.probe_b"] == "ok" and runs() == 4,
+       out + err + str(result(n)))
+    psql(PROD, probe_ok)
 
     # an apply that fails before it commits changes nothing, so there is nothing to refresh
     psql(DS1, "insert into core.person (full_name, kind) values ('BAD NAME', 'player')")
@@ -504,8 +516,8 @@ def refresh_case(env):
     approve(n)
     before = runs()
     rc, out, err = env.rel("run")
-    ok("a failed verification still runs api.refresh, after the restore, and records it",
-       status(n) == "failed" and runs() == before + 1 and result(n).get("refresh") == "ok" and result(n).get("verified") is False
+    ok("a failed verification still refreshes the views, after the restore, and records it",
+       status(n) == "failed" and runs() == before + 2 and result(n).get("refresh") == "ok" and result(n).get("verified") is False
        and "snapshot was restored" in psql(PROD, "select error from meta.data_release where number = '%s'" % n), out + err + str(result(n)))
     ok("the result is on DS1 too", json.loads(psql(DS1, "select result::text from meta.data_release where number = '%s'" % n)).get("refresh") == "ok")
 
@@ -520,7 +532,7 @@ def refresh_case(env):
     approve(rn)
     before = runs()
     rc, out, err = env.rel("run")
-    ok("a rollback runs api.refresh and records it", status(rn) == "done" and runs() == before + 1 and result(rn)["refresh"] == "ok", out + err)
+    ok("a rollback refreshes the views and records it", status(rn) == "done" and runs() == before + 2 and result(rn)["refresh"] == "ok", out + err)
 
 
 def filter_case(env):
