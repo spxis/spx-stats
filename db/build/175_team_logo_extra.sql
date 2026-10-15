@@ -1,11 +1,14 @@
 -- Logos for the name eras Wikidata gave none (or a non-free one): Wikimedia Commons files read by the sweep (public domain or other free
 -- licences, legacy_team_brand.commons_logo, migration 108) and SportsLogos.Net marks (legacy_sportslogos.logo, shown small under fair use,
 -- served from our own file). Which file goes to which name era is db/seed/logo_extra.csv, checked by hand:
---   league       nhl, nba, mlb, nfl, cfl, or 'other' for a club that never played in one (the PCHA clubs)
+--   league       any league the club belonged to (nhl, nba, mlb, nfl, cfl, or a rival or predecessor league: afl, aafc, nha, pcha, wchl, wha) or that
+--                league's parent (afl is also nfl, pcha is also nhl: the PARENT map of web/src/lib/leagues.ts, copied below), so a club that
+--                moved from the AFL to the NFL answers to both; 'other' only for a club with no league row at all
 --   team         the identity's full name, as core.franchise_identity.full_name has it
 --   from_year    first season (its first year) the logo applies (empty: the identity's first day, open for a club's first name like 175_team_brand)
 --   to_year      last season it applies (empty: the identity's last day, open for the current name). A name that several identity rows
---                share (a split era) must give both, or the row would reach every one of them.
+--                share (a split era) must give both, or the row would reach every one of them. So must a name two clubs share
+--                (the AAFC's and the NFL's Baltimore Colts): an empty from_year starts at the first day of any club of that name.
 --   source       wikimedia_commons or sportslogos
 --   file_key     the Commons file name (underscores) or the SportsLogos.Net logo key
 --   replaces     empty: fills a gap; 'nonfree': stands in for the non-free (fair use) logo the era wears; 'free': replaces a free logo
@@ -41,11 +44,19 @@ left join legacy_sportslogos.logo l on s.source = 'sportslogos' and l.sl_logo_ke
 select 'logo_extra seed rows whose file is not loaded' as what, count(*) as n from logo_extra_file
 where url is null or url = '' or page is null having count(*) > 0;
 
+-- Every league name a seed row may use for a franchise: the leagues it has a row for, each one's parent, or 'other' when it has none.
+-- Keep the parents in step with PARENT in web/src/lib/leagues.ts.
+create temp table league_parent (league text primary key, parent text not null);
+insert into league_parent values ('afl', 'nfl'), ('aafc', 'nfl'), ('nha', 'nhl'), ('pcha', 'nhl'), ('wchl', 'nhl'), ('wha', 'nhl');
+create temp table franchise_league_name as
+select franchise_id, league_code as league from core.franchise_league
+union select fl.franchise_id, p.parent from core.franchise_league fl join league_parent p on p.league = fl.league_code
+union select f.franchise_id, 'other' from core.franchise f where not exists (select 1 from core.franchise_league fl where fl.franchise_id = f.franchise_id);
+
 with ident as (
   select i.franchise_id, i.valid_during, pg_temp.norm(i.full_name) n,
          i.valid_during = first_value(i.valid_during) over w as is_first,
-         i.valid_during = last_value(i.valid_during) over w as is_last,
-         coalesce((select min(fl.league_code) from core.franchise_league fl where fl.franchise_id = i.franchise_id), 'other') as league
+         i.valid_during = last_value(i.valid_during) over w as is_last
   from core.franchise_identity i
   window w as (partition by i.franchise_id order by lower(i.valid_during) nulls first rows between unbounded preceding and unbounded following)
 ), pick as (   -- the identity each seed row is for, and the days it covers (a club's first and last identity are open at the ends, as in 175_team_brand)
@@ -59,7 +70,8 @@ with ident as (
                         then (case when i.is_last then null else upper(i.valid_during) end)
                         else make_date(f.to_year + 1, 1, 1) end) as rng
   from logo_extra_file f
-  join ident i on i.league = f.league and i.n = pg_temp.norm(f.team)
+  join ident i on i.n = pg_temp.norm(f.team)
+  join franchise_league_name fn on fn.franchise_id = i.franchise_id and fn.league = f.league
   where f.url is not null and f.url <> '' and f.page is not null
     and (f.from_year is null or f.from_year <= coalesce(extract(year from upper(i.valid_during))::int - 1, 9999))   -- a year is a season's first year
     and (f.to_year is null or f.to_year >= extract(year from lower(i.valid_during))::int)
@@ -82,8 +94,8 @@ delete from core.franchise_brand where logo_url is null and primary_hex is null 
 -- A seed row that matched no identity (a typo, a renamed club, years outside the identity).
 select 'logo_extra seed rows matching no name era' as what, count(*) as n from logo_extra_file f
 where not exists (select 1 from core.franchise_identity i
-                  where pg_temp.norm(i.full_name) = pg_temp.norm(f.team)
-                    and coalesce((select min(fl.league_code) from core.franchise_league fl where fl.franchise_id = i.franchise_id), 'other') = f.league)
+                  join franchise_league_name fn on fn.franchise_id = i.franchise_id
+                  where pg_temp.norm(i.full_name) = pg_temp.norm(f.team) and fn.league = f.league)
 having count(*) > 0;
 -- A logo this file was meant to replace that only partly overlaps it stays, and both would draw: list them.
 select 'logo_extra replacements left partly overlapping' as what, count(*) as n

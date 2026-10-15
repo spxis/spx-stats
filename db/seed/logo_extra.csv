@@ -89,7 +89,7 @@ nba,Toronto Huskies,,,sportslogos,5040,,"SportsLogos.Net Primary logo 1947-1947,
 nba,Tri-Cities Blackhawks,,,sportslogos,5658,,"SportsLogos.Net Primary logo 1950-1951, fair use"
 nba,Washington Bullets,,1986,sportslogos,5603,,"SportsLogos.Net Primary logo 1975-1987, fair use"
 nba,Washington Bullets,1987,,sportslogos,58715261988,,"SportsLogos.Net Primary Dark logo 1988-1997, fair use"
-nfl,Baltimore Colts,,1978,sportslogos,328,,"SportsLogos.Net Primary logo 1961-1978, fair use"
+nfl,Baltimore Colts,1953,1978,sportslogos,328,,"SportsLogos.Net Primary logo 1961-1978, fair use"
 nfl,Baltimore Colts,1979,,sportslogos,329,,"SportsLogos.Net Primary logo 1979-1983, fair use"
 nfl,Los Angeles Raiders,,,sportslogos,2337,,"SportsLogos.Net Primary logo 1982-1994, fair use"
 nfl,San Diego Chargers,1973,1998,wikimedia_commons,San_Diego_Chargers_wordmark.svg,,Commons Public domain; undated
@@ -122,8 +122,8 @@ nhl,Toronto St. Patricks,,,wikimedia_commons,St._Patricks_de_Toronto.gif,,Common
 nhl,Utah Hockey Club,,,wikimedia_commons,Utah_Hockey_Club_2024-25_Logo.svg,,Commons Public domain; dated
 nhl,Winnipeg Jets,1979,1989,sportslogos,672m0hniykgn9aho0gwvho6ci,,"SportsLogos.Net Primary Dark logo 1974-1990, fair use"
 nhl,Winnipeg Jets,1990,1995,sportslogos,dhhc15gfgtog1qo5b5uwpz8h0,,"SportsLogos.Net Primary logo 1991-1996, fair use"
-other,Seattle Metropolitans,,,wikimedia_commons,Seattle_Metropolitans_logo.svg,,Commons Public domain; undated
-other,Vancouver Maroons,,,sportslogos,fynhatg3hohoq6gemzigp8vph,,"SportsLogos.Net Primary logo 1923-1924, fair use"
-other,Vancouver Millionaires,1917,1919,wikimedia_commons,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,,Commons Public domain; undated; the file was chosen by hand for this era
-other,Vancouver Millionaires,1920,1921,wikimedia_commons,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,,Commons Public domain; undated; the file was chosen by hand for this era
-other,Victoria Cougars,,,wikimedia_commons,Victoria_Cougars_1926.svg,,Commons Public domain; dated
+pcha,Seattle Metropolitans,,,wikimedia_commons,Seattle_Metropolitans_logo.svg,,Commons Public domain; undated
+pcha,Vancouver Maroons,,,sportslogos,fynhatg3hohoq6gemzigp8vph,,"SportsLogos.Net Primary logo 1923-1924, fair use"
+pcha,Vancouver Millionaires,1917,1919,wikimedia_commons,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,,Commons Public domain; undated; the file was chosen by hand for this era
+pcha,Vancouver Millionaires,1920,1921,wikimedia_commons,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,,Commons Public domain; undated; the file was chosen by hand for this era
+pcha,Victoria Cougars,,,wikimedia_commons,Victoria_Cougars_1926.svg,,Commons Public domain; dated
