@@ -114,8 +114,8 @@ say "built; PostgREST stopped"
 [ "$NO_DEPLOY" = 1 ] && { say "--no-deploy: stopping here"; exit 0; }
 
 # ---- 5. deploy prebuilt ------------------------------------------------------------------------------------------------------------
-say "vercel deploy --prebuilt --prod"
-URL="$(vercel deploy --prebuilt --prod --yes --scope "$SCOPE")" || die "the deploy failed"
+say "vercel deploy --prebuilt --prod --archive=tgz (one upload, not thousands of files)"
+URL="$(vercel deploy --prebuilt --prod --archive=tgz --yes --scope "$SCOPE")" || die "the deploy failed"
 say "deployed: $URL"
 say "spxn.com answers HTTP $(curl -s -o /dev/null -m 20 -w '%{http_code}' https://spxn.com/) (one request)"
 
