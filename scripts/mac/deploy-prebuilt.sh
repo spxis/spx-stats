@@ -95,7 +95,9 @@ vercel pull --yes --environment=production --scope "$SCOPE" >/dev/null 2>&1 || d
 # The footer shows VERCEL_GIT_COMMIT_SHA, and the pulled file holds the last Git deployment's value: put this commit's in its place.
 ENVFILE=".vercel/.env.production.local"
 if [ -f "$ENVFILE" ]; then
-  grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"; mv "$ENVFILE.new" "$ENVFILE"
+  # Sensitive variables come down empty (VAR=""); an empty AUTH_URL makes next-auth throw "Invalid URL" while pages are drawn.
+  # Drop the empty ones for the build: the deployed functions still read the real values from the project at run time.
+  grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=(""|)$' > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"; mv "$ENVFILE.new" "$ENVFILE"
 fi
 say "linked and pulled project settings into $TMP"
 
