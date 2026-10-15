@@ -1,15 +1,27 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useRef } from "react";
 
 /**
  * A drawing (an SVG file) written into the page when it comes into view, not carried in the page's HTML. Used for the road to the final: its SVG is about 17 KB,
  * and a string a page gives is sent twice (as markup and as data), so the page fetches the file instead, once, and only for a reader who scrolls to it. The box keeps
  * the drawing's shape (`ratio`, width over height) from the first byte, so nothing moves when it arrives. The drawing is written into the page, not shown as an
- * image, so it takes the page's colours, light and dark (the file carries Taisen's own stylesheet, which follows the page's light and dark); it is decorative, and the table beside it says the same.
+ * image, so it takes the page's colours, light and dark (the file carries Taisen's own stylesheet, which follows the page's light and dark); it is decorative, and the table beside it says the same (a drawing with `links`, a bracket, is not hidden from assistive technology, since its boxes are links).
  */
-export function RoadArt({ src, ratio, className }: { src: string; ratio: number; className?: string }) {
+export function RoadArt({ src, ratio, className, links }: { src: string; ratio: number; className?: string; links?: boolean }) {
   const box = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+  // `links`: the drawing's own links (a bracket's boxes) open the way the page's links do, in the page and not as a new load of the whole site. A click with a
+  // modifier key, a middle click or a link to another site is left to the browser.
+  const open = (e: React.MouseEvent) => {
+    if (!links || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const a = (e.target as Element).closest?.("a[href]");
+    const href = a?.getAttribute("href");
+    if (!href || !href.startsWith("/") || href.startsWith("//") || a?.getAttribute("target")) return;
+    e.preventDefault();
+    router.push(href);
+  };
   useEffect(() => {
     const el = box.current;
     if (!el) return;
@@ -29,5 +41,5 @@ export function RoadArt({ src, ratio, className }: { src: string; ratio: number;
     watch.observe(el);
     return () => { live = false; watch.disconnect(); };
   }, [src]);
-  return <div ref={box} className={className} style={{ aspectRatio: String(ratio) }} aria-hidden="true" />;
+  return <div ref={box} className={className} style={{ aspectRatio: String(ratio) }} aria-hidden={links ? undefined : "true"} onClick={links ? open : undefined} />;
 }

@@ -5,15 +5,16 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { roundSay } from "@/lib/roundWords";
 import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
-import { drawKnockout, knockoutLook } from "@/lib/bracketDraw";
+import { drawKnockout, drawKnockoutFiles, shapeOf } from "@/lib/bracketDraw";
 import type { Bracket } from "@/lib/bracketLayout";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { roundPath, seriesPath, type Series } from "@/lib/series";
-import { trophySvg } from "@/lib/trophies";
+import { playInOptions, seasonBracketOptions } from "@/lib/seasonBracket";
 import { Credits } from "./Credits";
 import { Knockout } from "./Knockout";
+import { KnockoutFile, type KnockoutSource } from "./KnockoutFile";
 import { TeamLogo } from "./TeamLogo";
 import { queryHref } from "./ViewTabs";
 import "./alignment.css";
@@ -77,20 +78,17 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
   // A division fades the ties with no club of it (class `ko-dim`, knockout.css); the final is always shown in full.
   const finalSeries = b.finalIndex != null ? series[b.finalIndex] : null;
   const shownLayout = keep ? layoutOf(keep) : b;
-  const tieAt = (k: number) => series[keep ? keep[k] : k];
   const lastRound = Math.max(0, ...(keep ?? []).map((i) => b.ties[i].round));
-  const art = drawKnockout(shownLayout, {
-    locale: sp.locale, roundNames: keep ? names.slice(0, lastRound) : names,
-    href: (t) => seriesPath(paths, lg, year, tieAt(t.index)),
-    tieClass: (t) => (dims(tieAt(t.index)) && tieAt(t.index) !== finalSeries ? "ko-dim" : null),
-    ...(keep ? { champion: false } : { trophy: trophySvg(lg) }),
-    ...knockoutLook(lg),
-  });
+  const options = seasonBracketOptions({ lg, year, locale: sp.locale, paths, series, names, keep, dims, finalSeries, lastRound });
+  // The whole bracket and the play-in are files the page loads when they come into view (app/bracket-svg, components/KnockoutFile.tsx), so the page's HTML does not hold the
+  // drawings (twice); a conference or a division chosen in the address is drawn into the page, as it is a view of its own.
+  const asFile = !keep && !chosen;
+  const fileOf = (part: "wide" | "phone" | "inwide" | "inphone", svg: string): KnockoutSource => ({ src: `/bracket-svg/${lg}-${year}.${part}.${sp.locale}.svg`, ratio: shapeOf(svg) });
+  const files = asFile ? drawKnockoutFiles(shownLayout, options) : null;
+  const art = asFile ? null : drawKnockout(shownLayout, options);
   // The NBA's play-in (2020-21 on), under the bracket it leads to: drawn only where the games fit the known shape (lib/nbaPlayIn.ts).
   const playInLayout = await playIn();
-  const playInArt = playInLayout
-    ? drawKnockout(playInLayout.layout, { locale: sp.locale, layout: "playin", seeds: true })
-    : null;
+  const playInFiles = playInLayout ? drawKnockoutFiles(playInLayout.layout, playInOptions(sp.locale)) : null;
   return (
     <section className="section" id="playoffs">
       <h2>{say("bracket.title")}</h2>
@@ -111,12 +109,12 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
         </nav>
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
-      <Knockout art={art} />
-      {playInArt && !only ? (
+      {files ? <KnockoutFile wide={fileOf("wide", files.wide)} phone={fileOf("phone", files.phone)} /> : <Knockout art={art!} />}
+      {playInFiles && !only ? (
         <>
           <h3>{sp.say("playoffs.playIn")}</h3>
           <p className="note">{sp.say("playoffs.playInNote")}</p>
-          <Knockout art={playInArt} />
+          <KnockoutFile wide={fileOf("inwide", playInFiles.wide)} phone={fileOf("inphone", playInFiles.phone)} />
         </>
       ) : null}
       <p className="note">

@@ -878,6 +878,7 @@ export const FR: Dictionary = {
   "playoffs.other": "Autres séries",
   "playoffs.playIn": "Tournoi play-in",
   "playoffs.playInNote": "Le tournoi play-in : les clubs classés du septième au dixième rang de chaque conférence se disputent les deux dernières places. Établi à partir des matchs joués juste avant les séries.",
+  "playoffs.file": "Ouvrir le tableau en image",
   "playoffs.round.title": "Tous les duels : {round}",
   "playoffs.round.bracket": "Tableau complet",
   "playoffs.round.lede": "Les {count} séries des séries éliminatoires {season} de la {league} : {round}.",

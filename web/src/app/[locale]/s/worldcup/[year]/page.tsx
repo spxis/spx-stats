@@ -161,7 +161,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       {knockout.length ? (
         <section className="section" id="knockout">
           <h2>{say("wc.t.knockout")}</h2>
-          <SoccerKnockout matches={knockout} />
+          <SoccerKnockout matches={knockout} year={t.year} />
         </section>
       ) : null}
       <SoccerRoad matches={matches} year={t.year} league={t.league} />

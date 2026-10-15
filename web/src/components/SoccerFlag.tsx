@@ -6,7 +6,7 @@ import "./flag.css";
  * A national team's flag on the World Cup pages. A tournament page shows the same few dozen flags hundreds of times (every table, bracket and
  * lineup), and some of Hata's drawings with a coat of arms are over 100 KB (Spain, Mexico, Ecuador), so drawing each one inline would make a page of
  * several megabytes. Instead every flag of a national team is drawn once, in one cached file per shape (/soccer-flags-round.svg and /soccer-flags.svg,
- * lib/soccerFlagFile.ts), and each use here is a few bytes pointing at it. A code the file lacks draws nothing but the empty box, and the team's name
+ * lib/soccerFlagFile.ts), and each use here is a few bytes pointing at it (an svg of its size around one `use`: a symbol fills the svg, so the `use` needs no size of its own, and the span's role and label already hide the drawing from assistive technology; a page holds some 200 of them, twice). A code the file lacks draws nothing but the empty box, and the team's name
  * is always beside it. `name` is the country's name for screen readers and the tooltip.
  *
  * The World Cup pages draw round flags (Hata's own round frame, in the file), in one of three fixed sizes: 18px in lists and tables, with `large`
@@ -22,8 +22,8 @@ export function SoccerFlag({ code, name, shape = "round", large = false, hero = 
   const cls = shape === "rect" ? "flag" : huge ? "flag flag-round flag-hero" : big ? "flag flag-round flag-lg" : "flag flag-round";
   return (
     <span className={cls} role={name ? "img" : undefined} aria-label={name} title={name} aria-hidden={name ? undefined : true}>
-      <svg width={w} height={h} aria-hidden="true" focusable="false">
-        <use href={`${soccerFlagsPath(shape)}#${flagSymbolId(code, shape)}`} width={w} height={h} />
+      <svg width={w} height={h}>
+        <use href={`${soccerFlagsPath(shape)}#${flagSymbolId(code, shape)}`} />
       </svg>
     </span>
   );

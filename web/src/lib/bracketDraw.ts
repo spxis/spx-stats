@@ -40,6 +40,27 @@ export function shareMarks(wide: string, phone: string): string {
  */
 export const knockoutScope = (layout: DrawOptions["layout"]): string => `kobk-${layout ?? "tree"}`;
 
+/** The bracket's two drawings, each standing on its own (its own marks and stylesheet), for the files a page loads instead of carrying them (`app/bracket-svg`). */
+export type KnockoutFiles = Knockout;
+
+/**
+ * The same two drawings as `drawKnockout`, but each complete by itself: a file is loaded alone (a phone shows only the phone's), so the phone's drawing keeps its
+ * own stylesheet and its own marks instead of using the desk's.
+ */
+export function drawKnockoutFiles(layout: BracketLayout, options: KnockoutOptions): KnockoutFiles {
+  const base: DrawOptions = { look: "road", theme: "auto", styleScope: knockoutScope(options.layout), ...options };
+  return {
+    wide: drawBracket(layout, { ...base, size: options.layout === "playin" ? { width: 1200, height: null } : "wide" }),
+    phone: drawBracket(layout, { ...base, size: "phone" }),
+  };
+}
+
+/** The shape of a drawing (its viewBox, width over height), for the box that holds it before it arrives. */
+export function shapeOf(svg: string): number {
+  const m = /viewBox="[-\d.]+ [-\d.]+ ([\d.]+) ([\d.]+)"/.exec(svg);
+  return m ? Number(m[1]) / Number(m[2]) : 16 / 9;
+}
+
 export function drawKnockout(layout: BracketLayout, options: KnockoutOptions): Knockout {
   const base: DrawOptions = { look: "road", theme: "auto", styleScope: knockoutScope(options.layout), ...options };
   // The play-in is as tall as its games need; every other layout fills the 1200 by 675 canvas.

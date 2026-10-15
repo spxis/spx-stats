@@ -1058,6 +1058,7 @@ export const PHRASES = {
   "playoffs.other": "Other series",
   "playoffs.playIn": "Play-in",
   "playoffs.playInNote": "The play-in: the clubs seeded seventh to tenth in each conference play for the last two places. Worked out from the games played just before the playoffs.",
+  "playoffs.file": "Open the bracket as a picture",
   "playoffs.sideAria": "Show one side of the bracket",
   "playoffs.sideAll": "All",
   "playoffs.divAria": "Highlight one division in the bracket",

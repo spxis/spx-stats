@@ -1,62 +1,33 @@
 import { Credits } from "@/components/Credits";
-import { Knockout } from "@/components/Knockout";
-import { drawKnockout } from "@/lib/bracketDraw";
-import { buildBracket, type Tie } from "@/lib/bracketLayout";
+import { KnockoutFile } from "@/components/KnockoutFile";
+import { drawKnockoutFiles, shapeOf } from "@/lib/bracketDraw";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Match } from "@/lib/soccer";
-import { soccerFlagAddress } from "@/lib/soccerFlagSprite";
-import { SOCCER_LOOK, soccerAbbr } from "@/lib/soccerLook";
-import { teamName } from "@/lib/soccerNames";
-import { soccerMatchPath } from "@/lib/soccerPath";
-import { knockoutOf, matchSides, soccerPlay } from "@/lib/soccerBracket";
-import { stageName } from "@/lib/soccerView";
-import { trophySvg } from "@/lib/trophies";
+import { soccerKnockoutDrawing } from "@/lib/soccerKnockoutDraw";
 import "./soccer.css";
 
 /**
- * The knockout rounds as a bracket drawn by Taisen Brackets (lib/bracketDraw.ts, components/Knockout.tsx; layout in lib/bracketLayout.ts, ties from
+ * The knockout rounds as a bracket drawn by Taisen Brackets (lib/soccerKnockoutDraw.ts builds it; lib/bracketDraw.ts draws it; layout in lib/bracketLayout.ts, ties from
  * lib/soccerBracket.ts): one half down each side or, on a phone, the rounds as rows, the final in the middle with the champion and the cup above it, a line
  * from each match to the one its winner plays next, the third-place match below. Each box shows both teams' round flags (the site's flag files, named by `flagHref`, so a page
  * does not carry Spain's 80 KB coat of arms twice), names and goals, with the penalties in brackets and a note for extra time or a replay, and opens the match
  * (a replayed tie opens the replay). Any match the tree has no place for the package draws apart, with a heading.
  *
+ * The drawings are files (/bracket-svg/soccer-<year>.<wide or phone>.<language>.svg, app/bracket-svg) that the page loads when they come into view
+ * (components/KnockoutFile.tsx), so the page's HTML holds two empty boxes of their shape and not 70 KB of SVG, twice.
+ *
  * Under it the tournament page draws the two finalists' roads, with the package's `roadToFinal` (components/SoccerRoad.tsx, from the same matches).
  */
-export async function SoccerKnockout({ matches }: { matches: Match[] }) {
-  const { say, locale } = await currentSpeaker();
-  const ko = knockoutOf(matches);
-  if (!ko.ties.length && !ko.third) return null;
-  const league = matches[0]?.league ?? "worldcup";
-
-  // The third-place match is a tie of its own for the drawing, after the others (it leads nowhere).
-  const thirdTie: Tie<string> | null = ko.third
-    ? { teams: matchSides(ko.third), winner: ko.third.winner_team_id, start: ko.third.match_date, third: true, play: soccerPlay([ko.third], matchSides(ko.third)[0]) }
-    : null;
-  const ties = [...ko.ties, ...(thirdTie ? [thirdTie] : [])];
-  const matchOf = (i: number): Match => (i < ko.ties.length ? ko.ties[i].matches.at(-1)! : ko.third!);
-  const sideOf = new Map<string, { m: Match; home: boolean }>();
-  for (const m of [...matches].sort((x, y) => x.match_date.localeCompare(y.match_date))) {
-    sideOf.set(m.home_team_id, { m, home: true });
-    sideOf.set(m.away_team_id, { m, home: false });
-  }
-  const look = (id: string) => {
-    const { m, home } = sideOf.get(id)!;
-    const t = home ? { name: m.home, slug: m.home_slug, flag: m.home_flag } : { name: m.away, slug: m.away_slug, flag: m.away_flag };
-    const colour = SOCCER_LOOK[id];
-    return { name: teamName(t, locale), abbr: soccerAbbr(id, t.name), ...(t.flag ? { flag: t.flag } : {}), ...(colour ? { color: `#${colour[1]}` } : {}) };
-  };
-  const rounds = [...ko.round, ko.stages.length];
-  const layout = buildBracket(ties, rounds, () => null, look);
-  const art = drawKnockout(layout, {
-    locale, roundNames: ko.stages.map((s) => stageName(say, s)),
-    flagHref: soccerFlagAddress,
-    href: (t) => { const m = matchOf(t.index); return soccerMatchPath(m.year, m.match_id, m.home, m.away); },
-    trophy: trophySvg(["worldcup", "wwc", "mls"].includes(league) ? league : "soccer"),
-  });
+export async function SoccerKnockout({ matches, year }: { matches: Match[]; year: number }) {
+  const sp = await currentSpeaker();
+  const drawing = soccerKnockoutDrawing(matches, sp);
+  if (!drawing || !drawing.ties) return null;
+  const art = drawKnockoutFiles(drawing.layout, drawing.options);
+  const file = (part: "wide" | "phone") => ({ src: `/bracket-svg/soccer-${year}.${part}.${sp.locale}.svg`, ratio: shapeOf(art[part]) });
   return (
     <>
-      {ties.length ? <Knockout art={art} /> : null}
-      {ties.length ? <p className="note"><Credits say={say} use={["brackets"]} /></p> : null}
+      <KnockoutFile wide={file("wide")} phone={file("phone")} />
+      <p className="note"><Credits say={sp.say} use={["brackets"]} /></p>
     </>
   );
 }

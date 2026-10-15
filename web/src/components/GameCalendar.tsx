@@ -17,6 +17,9 @@ import { Badge } from "./ui";
 import "./team.css";
 import "./game.css";
 
+/** How many games of the list the server draws; the rest are added when the page is live. */
+const FIRST_GAMES = 16;
+
 function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number; abbrs: AbbrMap }) {
   const { say } = useSpeaker();
   const [, a, as, hs, h, , st, src, ot, v, gid] = g;
@@ -123,6 +126,15 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
     ? [[day, byDay.get(day) ?? []] as const]
     : [...byDay].filter(([k]) => k.slice(0, 7) === month).sort((a, b) => a[0].localeCompare(b[0]));
   const n = shown.reduce((a, [, l]) => a + l.length, 0);
+  // The page is drawn once for everyone and a month of baseball is 450 rows of 1 KB; the server's (and the first client) render lists the first days' games only, and the
+  // rest follow once the page is live (the data is already here). The count in the note above is the month's whole.
+  const live = useSyncExternalStore(() => () => {}, () => true, () => false);
+  const listed: (readonly [string, GameTuple[]])[] = [];
+  for (let room = live ? Infinity : FIRST_GAMES, i = 0; room > 0 && i < shown.length; i++) {
+    const part = shown[i][1].slice(0, room);
+    room -= part.length;
+    listed.push([shown[i][0], part]);
+  }
   const monthFmt = months.length > 12 ? dt.monYear : dt.mon;
   const dayKeys = [...byDay.keys()].sort(), dayMin = dayKeys[0], dayMax = dayKeys.at(-1) ?? "";
 
@@ -160,7 +172,7 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
               {day ? <button type="button" className="linkish" onClick={() => onDay("")}>{say("cal.showMonth")}</button> : null}
             </p>
             <div className="games">
-              {shown.map(([date, list]) => (
+              {listed.map(([date, list]) => (
                 <div className="day" key={date}>
                   <h3>{dt.short(atUtc(date))}</h3>
                   {list.map((g, i) => <GameRow key={i} lg={lg} g={g} teams={teams} year={year} abbrs={abbrs} />)}

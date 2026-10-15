@@ -28,6 +28,20 @@ export function officialAbbr(abbrs: AbbrMap | null | undefined, f: number | null
   return [...list].sort((x, y) => gap(x) - gap(y))[0].abbreviation;
 }
 
+/**
+ * The abbreviations a page that shows one season needs, as a map of its own: one row for each franchise given, the abbreviation `officialAbbr` picks for that year,
+ * not the league's whole history (a client component's props are sent as data, and a league's abbreviations of every era, repeated, were 45 KB of a season page).
+ * `officialAbbr` and `abbrFor` read it as they read the full one, for that year.
+ */
+export function abbrsForYear(abbrs: AbbrMap, franchises: Iterable<number | null | undefined>, year: number): AbbrMap {
+  const out: AbbrMap = {};
+  for (const f of franchises) {
+    const abbreviation = f != null ? officialAbbr(abbrs, f, year) : null;
+    if (f != null && abbreviation) out[f] = [{ league: abbrs[f][0].league, franchise_id: f, valid_from: null, valid_to: null, abbreviation }];
+  }
+  return out;
+}
+
 /** The abbreviation for tight places: the database's, else the first letters of the name (never longer than four). */
 export function abbrFor(abbrs: AbbrMap | null | undefined, f: number | null | undefined, year: number | undefined, name: string | null | undefined): string {
   const a = officialAbbr(abbrs, f, year);

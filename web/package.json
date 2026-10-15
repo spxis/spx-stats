@@ -27,7 +27,7 @@
     "test:champions": "node --test scripts/champions.test.ts",
     "test:range": "node --test scripts/listRange.test.ts",
     "test:routing": "node --test scripts/routing.test.ts",
-    "test:seasons": "node --test scripts/gameSeasons.test.ts",
+    "test:seasons": "node --test scripts/gameSeasons.test.ts scripts/gamesCodec.test.ts",
     "test:failure": "node --test scripts/apiFailure.test.ts",
     "test:streaks": "node --test scripts/streaks.test.ts",
     "test:city": "node --test scripts/city.test.ts",
