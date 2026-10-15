@@ -464,7 +464,7 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   numbers are totals or averages), NFL from nflverse's `stats_player` files (CC BY 4.0, 1999 on, one line per club). Fetch, load and build steps, the order and the release
   split are in `scripts/player_stats/README.md`. A line is placed only through a Wikidata number or the NFL's gsis id and a roster stint, never on a name.
 - **The NFL from 1920 (the APFA in 1920-21) and the AFL (1960-1969)** come from English Wikipedia (CC BY-SA 4.0): each season article, its standings templates and every
-  club's season article, fetched and parsed by `scripts/nfl/season.py [--league afl] YEAR` into `legacy_wikipedia_nfl` / `legacy_wikipedia_afl` (migrations 054, 108), the raw wikitext
+  club's season article, fetched and parsed by `scripts/nfl/season.py [--league afl] YEAR` into `legacy_wikipedia_nfl` / `legacy_wikipedia_afl` (migrations 054, 109), the raw wikitext
   archived first (`wikipedia-<league>/<year>/...`). `db/build/151` builds games, standings, franchises and names, `165` and `166` the champions, `178` the alignment.
   The AFL is its own league (`afl`: `core.season` is one row per league and year) whose clubs are today's franchises (`core.franchise_league` gives each `afl` to 1970-03-01, `nfl` after);
   clubs that only existed before today's 32 are franchises of their own (`db/seed/nfl_club.csv` says which name is which franchise in which years). The 1966-69 Super Bowls join two leagues and are not
