@@ -678,7 +678,9 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - `NoSeason` (grey box, compact "–") for years with no games.
   - `DatePicker` for date choices.
 - **Left and right** are decided in one place, `web/src/lib/sides.ts` (constant `SIDE_RULE`, tested by `pnpm test:sides`); never order two teams by hand. A single game
-  has the visitor on the left and the home team on the right in every sport, soccer's "home first" included; a series has the team that had home advantage
+  follows its sport's own listing: the five leagues (NHL, NBA, MLB, NFL, CFL) put the visitor on the left and the home team on the right ("Bruins at Canadiens"); soccer puts
+  the home side on the left (Arsenal 2–1 Chelsea; the stored `home` is FIFA's designated Team A, who is listed first even at a neutral ground: "Argentina v France"), in the
+  heading, the title, the banner, the pageant surface, the panels and the knockout ties (`sport: "soccer"` / `HOME_FIRST` in `sides.ts`; a new sport says which it is); a series has the team that had home advantage
   (the home side of its first game: the archive holds no seeds) on the left, and a series of one game is a game. The series page and the champion's surface put the deciding game's
   teams in the series' order, not the game's own, so the banner and the surface under it never swap sides (kyogijo is always told the left team as its `away`, `homeSide: "right"`). It
   covers the series and game banners, the surfaces, the team panels and the bracket boxes (`seriesTies`, `matchSides`; a later round's top row is the team from the top feeder, which the

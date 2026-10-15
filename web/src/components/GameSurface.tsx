@@ -133,8 +133,8 @@ export async function SoccerSurface({ home, away, note, finish, winner, competit
   const ground = groundOf(wikidata);
   const status = note ? `${say("scores.final")} · ${note}` : say("scores.final");
   const side = (s: SoccerSide): GameDrawing["home"] => ({ name: s.name, abbr: s.abbr, score: s.goals, penalties: s.penalties, logo: s.logo, color: s.color, ink: s.ink });
-  // The visitor on the left and the home team on the right (lib/sides.ts); kyogijo is told the left team as its `away` and the right team as its `home`.
-  const { left, right, swapped } = leftRight(away, home, { winner: winner === "none" ? null : winner });
+  // The home side (FIFA's Team A) on the left and the visitor on the right, soccer's order (lib/sides.ts); kyogijo is told the left team as its `away` and the right team as its `home`.
+  const { left, right, swapped } = leftRight(away, home, { winner: winner === "none" ? null : winner, sport: "soccer" });
   const drawing = drawGameOnce({
     sport: "soccer", year: null, language: sp.locale === "ja" ? "ja" : "en", status: finishStatus(finish, sp.locale, say("scores.final")), competition, date, ground,
     winner: winner === "none" ? "none" : (winner === "home") === swapped ? "away" : "home",

@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildSeries, seriesTies, type PlayoffGame } from "../src/lib/series.ts";
-import { gameOrder, inOrder, leftRight, placeOf, SIDE_RULE, seriesOrder } from "../src/lib/sides.ts";
+import { gameOrder, inOrder, isHomeFirst, leftRight, placeOf, SIDE_RULE, seriesOrder } from "../src/lib/sides.ts";
 
 /** Run in web/: pnpm test:sides (the one rule for which team is on the left; AGENTS.md section 9). */
 
@@ -27,6 +27,19 @@ test("a single game: the visitor on the left, the home team on the right, whoeve
   assert.deepEqual(gameOrder(0, 0), [1, 0]);
   assert.deepEqual(inOrder(gameOrder(0), ["Home", "Visitor"]), ["Visitor", "Home"]);
   assert.deepEqual(leftRight("Visitor", "Home"), { left: "Visitor", right: "Home", swapped: false });
+});
+
+test("soccer lists the home side first: the home team (FIFA's Team A) on the left, the five leagues keep the visitor on the left", () => {
+  for (const sport of ["nhl", "nba", "mlb", "nfl", "cfl", undefined, null]) assert.equal(isHomeFirst(sport), false, String(sport));
+  assert.equal(isHomeFirst("soccer"), true);
+  assert.deepEqual(gameOrder(0, null, SIDE_RULE, "soccer"), [0, 1], "sides listed [home, visitor]: as they stand");
+  assert.deepEqual(gameOrder(1, null, SIDE_RULE, "soccer"), [1, 0], "sides listed [visitor, home]: swapped");
+  assert.deepEqual(gameOrder(0, 1, SIDE_RULE, "soccer"), [0, 1], "the winner does not move a team");
+  assert.deepEqual(gameOrder(0, null, SIDE_RULE, "nhl"), [1, 0], "a North American league: [home, visitor] swaps");
+  assert.deepEqual(inOrder(gameOrder(0, null, SIDE_RULE, "soccer"), ["Argentina", "France"]), ["Argentina", "France"], "Argentina v France, as FIFA lists the final");
+  assert.deepEqual(leftRight("Chelsea", "Arsenal", { sport: "soccer" }), { left: "Arsenal", right: "Chelsea", swapped: true });
+  assert.deepEqual(leftRight("Canadiens", "Bruins", { sport: "nhl" }), { left: "Canadiens", right: "Bruins", swapped: false });
+  assert.deepEqual(gameOrder(1, 0, "winner", "soccer"), [0, 1], "the winner rule is the same in every sport");
 });
 
 test("a series: the team that had home advantage in game one on the left, whoever won it", () => {

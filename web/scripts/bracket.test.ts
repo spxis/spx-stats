@@ -18,7 +18,7 @@ const m = (id: number, stage: string, order: number, home: string, away: string,
   venue_country: null, venue_wikidata_id: null, venue_id: null, lineup_players: 0, goal_rows: 0, source: null, checked: null, ...extra,
 });
 
-// Eight teams: A beats B, C beats D, E beats F, G beats H; A beats C, E beats G; E beats A in the final (E plays on the right, A on the left).
+// Eight teams: A beats B, C beats D, E beats F, G beats H; A beats C, E beats G; E beats A in the final (A is at home: soccer lists the home side first, so A plays on the left, E on the right).
 const eight = [
   m(1, "quarter", 6, "A", "B", 2, 0), m(2, "quarter", 6, "C", "D", 1, 0), m(3, "quarter", 6, "E", "F", 3, 1), m(4, "quarter", 6, "G", "H", 2, 1),
   m(5, "semi", 7, "A", "C", 1, 0), m(6, "semi", 7, "E", "G", 2, 0),
@@ -32,7 +32,7 @@ test("a knockout is one tie per pairing and stage, the third-place match apart, 
   assert.equal(ko.third?.match_id, 7);
   assert.deepEqual(ko.stages, ["quarter", "semi", "final"]);
   assert.deepEqual(ko.round, [1, 1, 1, 1, 2, 2, 3]);
-  assert.deepEqual(ko.ties[6].teams, ["E", "A"], "the visitor first, the home team second (the final: A was at home)");
+  assert.deepEqual(ko.ties[6].teams, ["A", "E"], "the home side first (FIFA's Team A), the visitor second (the final: A was at home)");
   assert.equal(ko.ties[6].winner, "E");
 });
 
@@ -42,13 +42,13 @@ test("the bracket puts one half down each side and the final in the middle, each
   assert.equal(b.final?.i, 6);
   assert.equal(b.sides.length, 2);
   assert.deepEqual(b.columns, [1, 2]);
-  // The final's first side (the visitor, E) leads the left half.
-  assert.deepEqual(b.sides[0].boxes.map((x) => x.i).sort(), [2, 3, 5]);
-  assert.deepEqual(b.sides[1].boxes.map((x) => x.i).sort(), [0, 1, 4]);
-  const semiA = b.sides[1].boxes.find((x) => x.i === 4)!;
+  // The final's first side (the home side, A) leads the left half.
+  assert.deepEqual(b.sides[0].boxes.map((x) => x.i).sort(), [0, 1, 4]);
+  assert.deepEqual(b.sides[1].boxes.map((x) => x.i).sort(), [2, 3, 5]);
+  const semiA = b.sides[0].boxes.find((x) => x.i === 4)!;
   assert.equal(semiA.fed, true);
   assert.equal(semiA.to, b.final!.y, "a semi-final's line runs to the final");
-  const q1 = b.sides[1].boxes.find((x) => x.i === 0)!, q2 = b.sides[1].boxes.find((x) => x.i === 1)!;
+  const q1 = b.sides[0].boxes.find((x) => x.i === 0)!, q2 = b.sides[0].boxes.find((x) => x.i === 1)!;
   assert.equal(semiA.y, (q1.y + q2.y) / 2, "a tie sits halfway between the two that feed it");
   assert.equal(b.other.length, 0);
 });
@@ -119,7 +119,7 @@ test("a tie is played as the package reads it: a replay is a second, flagged gam
   ]);
   const replay = ko.ties.find((t) => t.matches.length === 2)!.play!;
   assert.equal(replay.kind, "replay");
-  assert.deepEqual(replay.games?.map((g) => [...g.score]), [[1, 1], [1, 0]], "both games from the point of view of the first side (A, the replay's visitor)");
+  assert.deepEqual(replay.games?.map((g) => [...g.score]), [[1, 1], [0, 1]], "both games from the point of view of the first side (B, the replay's home side)");
   assert.deepEqual(replay.games?.map((g) => !!g.replay), [false, true]);
   const pens = soccerPlay([ko.ties.find((t) => t.teams.includes("D"))!.matches[0]], "D");
   assert.deepEqual(pens.games?.[0].pens, [4, 3]);

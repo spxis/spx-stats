@@ -58,7 +58,7 @@ const side = (s: GameSide) => ({
  * Everything kyogijo is told about a SOCCER match, in this one function. The pitch is the "full" size in kyogijo's "pageant" look: each side's flag laid large
  * over its half as a carpet (the flag's own file, /soccer-flag/<CODE>.rect.svg; a club with no picture is a carpet of its banner colours with its name across
  * it), the score on the strip under the pitch (kyogijo's "auto" puts it there on a wide pitch, so that nothing covers a flag), and the codes the explicit
- * FIFA ones. Which side is on the left is the site's rule (lib/sides.ts), not soccer's own "home first". The pageant is a switch made here and nowhere
+ * FIFA ones. Which side is on the left is the site's rule (lib/sides.ts): soccer's own "home first", so the home side (FIFA's Team A) is on the left. The pageant is a switch made here and nowhere
  * else: change the options below, not the callers.
  */
 function soccerOptions(g: GameDrawing, plain: boolean): ScoreOptions {

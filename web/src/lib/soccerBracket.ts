@@ -39,10 +39,10 @@ export interface Knockout {
   third: Match | null;
 }
 
-/** A match's two teams as a tie draws them, in the site's order for one game (lib/sides.ts): the visitor first, then the home team. */
+/** A match's two teams as a tie draws them, in soccer's order for one game (lib/sides.ts): the home side first (FIFA's Team A), then the visitor. */
 export function matchSides(m: Pick<Match, "home_team_id" | "away_team_id" | "winner_team_id">): readonly [string, string] {
   const winner = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : null;
-  return inOrder(gameOrder(0, winner), [m.home_team_id, m.away_team_id]);
+  return inOrder(gameOrder(0, winner, undefined, "soccer"), [m.home_team_id, m.away_team_id]);
 }
 
 /** The knockout matches of one tournament (the group stages come before stage_order 4). */

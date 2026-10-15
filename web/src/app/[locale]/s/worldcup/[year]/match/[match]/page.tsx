@@ -80,8 +80,8 @@ export default guard(async function MatchPage({ params }: Params) {
   const abbrs = [soccerAbbr(m.home_team_id, m.home), soccerAbbr(m.away_team_id, m.away)] as const;
   const looks = soccerLooks(m.home_team_id, m.away_team_id);
   const winner: 0 | 1 | null = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : m.home_goals > m.away_goals ? 0 : m.away_goals > m.home_goals ? 1 : null;
-  // Left and right (lib/sides.ts): the visitor on the left, the home team on the right, in the banner, the surface and the panels. The data above stays home first.
-  const order = gameOrder(0, winner);
+  // Left and right (lib/sides.ts): soccer lists the home side first (FIFA's Team A), so it is on the left in the banner, the surface and the panels, as in the heading. The data above is home first too.
+  const order = gameOrder(0, winner, undefined, "soccer");
   const [ia, ib] = order;
   const goals = [m.home_goals, m.away_goals] as const;
   const panels = order.map((i) => sides[i]);
