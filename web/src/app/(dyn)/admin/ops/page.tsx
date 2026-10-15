@@ -13,7 +13,7 @@ import { agoText, BackupSection, DailySection, HarvesterSection, ReleasesSection
 
 /**
  * Ops: a very internal view of the DS1 side for admins. Production (Vercel) cannot reach DS1 and must not, so this page only reads what the
- * runner next to DS1 pushed into production about every 15 minutes (meta.ops_status, migration 099, through api.ops_dashboard) and writes
+ * runner next to DS1 pushed into production about every 15 minutes (meta.ops_status, migration 104, through api.ops_dashboard) and writes
  * requests the runner acts on within a minute (Snapshot now, Pause and Resume harvester; "Check drift now" is the existing drift request).
  * Admin is checked on the server for every request and anyone else gets a 404. Never cached. In the reader's language.
  */

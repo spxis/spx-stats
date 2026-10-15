@@ -223,7 +223,7 @@ hashes for tables with float columns (`core.person`): prepare them again.
     python3 -I scripts/release/test/test_release.py
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
     python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 3150; stops it after; includes the position-release shape and the foreign key loop refusal)
-    python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 099/100 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
+    python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 104/105 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
 
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies

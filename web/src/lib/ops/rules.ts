@@ -227,7 +227,7 @@ export function harvesterTone(state: Harvester["state"]): Tone {
   return state === "running" ? "done" : state === "paused" || state === "idle" || state === "never" ? "live" : "stale";
 }
 
-/** Minutes the database wants between two requests of one kind (migration 099). */
+/** Minutes the database wants between two requests of one kind (migration 104). */
 export const REQUEST_GAP_MINUTES: Record<RequestKind, number> = { snapshot: 2, harvest_pause: 1, harvest_resume: 1 };
 
 /**

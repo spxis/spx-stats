@@ -169,7 +169,7 @@ test("the harvester button: Pause while it runs, Resume while it is paused, off 
   assert.deepEqual(pauseControl(null, []), { show: "pause", waiting: null });
 });
 
-test("why a request would be refused, matching migration 099", () => {
+test("why a request would be refused, matching migration 104", () => {
   const now = Date.parse(AT);
   const r = (kind: string, status: string, finished: number | null) => ({ id: 1, kind, requested_by: "x", requested_at: ago(10), status, finished_at: finished === null ? null : ago(finished), summary: null }) as never;
   assert.equal(requestBlock([r("snapshot", "queued", null)], "snapshot", now), "waiting");

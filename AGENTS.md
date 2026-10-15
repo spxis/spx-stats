@@ -536,7 +536,7 @@ EXCLUSIVE lock for the whole rebuild. So:
      "Check now" (Drift) writes one row in `meta.score_update_request`; the runner's once-a-minute run does the work. A scores request
      runs `scripts/daily/run.py --apply` on DS1 under the shared lock (`scripts/release/daily_lock.py`) and approves the release it
      prepares as `request:<admin>` only if the auto-approval policy passes and Hold is off. Never write to that table by hand.
-   - **`/admin/ops`** (migrations 099 on production, 100 on DS1; `runner/README.md`, "Ops snapshot and controls"): the DS1 side on one admin page. Vercel
+   - **`/admin/ops`** (migrations 104 on production, 105 on DS1; `runner/README.md`, "Ops snapshot and controls"): the DS1 side on one admin page. Vercel
      cannot reach DS1, so `scripts/release/ops.py` (runner container, `OPS_SNAPSHOT=0` switches it off) pushes one small status snapshot to
      `meta.ops_status` every 15 minutes (only when it changed, else hourly; ring of 96) and the page reads the latest through `api.ops_dashboard`.
      Buttons write `meta.ops_request` rows (Snapshot now, Pause or Resume harvester via the DS1 flag `ingest.harvest_state` key `ops_pause`) that the

@@ -208,7 +208,7 @@ def shape_sync(rows):
 
 
 def shape_backup(raw):
-    """The raw archive on DS1 and what spx-raw-export.sh reported at the end of its last run (migration 100)."""
+    """The raw archive on DS1 and what spx-raw-export.sh reported at the end of its last run (migration 105)."""
     ex = raw.get("export")
     ok = raw.get("export_ok")
     if isinstance(ex, dict) and "error" in ex:
@@ -393,7 +393,7 @@ def collect(cfg, ds1):
         b = ds1.json(Q_ARCHIVE)
         try:
             b.update(ds1.json(Q_EXPORT))
-        except Exception as e:  # noqa: BLE001 - migration 100 not applied on DS1
+        except Exception as e:  # noqa: BLE001 - migration 105 not applied on DS1
             b["export"] = {"error": "ingest.raw_export_run: " + clean(e, 100)}
         return b
     parts["backup"] = guarded(backup)
@@ -500,7 +500,7 @@ def tick(cfg, state, now, ds1, force=False, collect_fn=None, write_fn=None, queu
                 done.append((req.get("id"), status, summary))
                 out["requests"].append((req.get("id"), req.get("kind"), status))
                 force = force or wants
-        except Exception as e:  # noqa: BLE001 - production does not answer, or migration 099 is not there yet
+        except Exception as e:  # noqa: BLE001 - production does not answer, or migration 104 is not there yet
             if not state.get("requests_err") or now - state["requests_err"] > 3600:
                 log("could not read the requests (will keep trying, quietly): %s" % clean(e, 160))
                 state["requests_err"] = now

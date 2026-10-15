@@ -290,7 +290,7 @@ run
 check "a run with a DIFFERS reports problems and the failure count" has "$STUB_LOG.status" "'problems', 3, 2, 0, 1, "
 newenv; fixture "$BASIC"
 STUB_NO_STATUS_TABLE=1 run
-check "without migration 100 the export still succeeds" test "$RC" = 0 && has "$E/out" 'written 3'
+check "without migration 105 the export still succeeds" test "$RC" = 0 && has "$E/out" 'written 3'
 check "and says so in one line" has "$E/out" 'could not report this run to DS1'
 newenv; fixture "$BASIC"
 run --check

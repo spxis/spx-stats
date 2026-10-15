@@ -4,7 +4,7 @@
 STUB_HOSTS   "host=mode ..." where mode is up, timeout, refused, noroute, noname or hang
 STUB_FIXTURE JSON list of {"name", "data", optional "recorded_sha", optional "served"}
 STUB_FLAKY   label (batch, list, fetch) whose first call fails with a timeout
-STUB_NO_STATUS_TABLE  set: the status insert (ingest.raw_export_run) fails as if migration 100 were missing
+STUB_NO_STATUS_TABLE  set: the status insert (ingest.raw_export_run) fails as if migration 105 were missing
 STUB_LOG     file that gets one line per call (host, port, a short label: probe, list, batch or fetch), never the password
 """
 import hashlib, json, os, re, sys, time

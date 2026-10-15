@@ -101,8 +101,8 @@ A section the runner cannot read says so and the others still go out. State is `
 - **Cost:** per day 1,440 one-row reads of production plus at most 96 snapshot writes (about 100 KB to 1 MB a day of churn, a ring of 96 rows
   of a few KB, so production grows by under 1 MB in all). Nothing Vercel-side runs on a timer: the page refreshes itself once a minute only while a tab
   is visible and used (stops after 10 idle minutes).
-- **Needs** migration 099 on production (`meta.ops_status`, `meta.ops_request`, `api.ops_dashboard`, `api.request_ops`) and, for the Backups section,
-  migration 100 on DS1 (`ingest.raw_export_run`). Without 099 the runner logs `could not read the requests` once an hour and keeps going.
+- **Needs** migration 104 on production (`meta.ops_status`, `meta.ops_request`, `api.ops_dashboard`, `api.request_ops`) and, for the Backups section,
+  migration 105 on DS1 (`ingest.raw_export_run`). Without 104 the runner logs `could not read the requests` once an hour and keeps going.
   The Mac export script writes its row at the end of each run; it must be the new `scripts/mac/spx-raw-export.sh` on machine1 (copy it over `~/bin/`).
 - **Code is `entry.sh`'s first change since the watchdog:** it now also starts `ops.py`, so the first time needs Build. From the Mac, in the checkout (one command):
 

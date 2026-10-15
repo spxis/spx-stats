@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-"""Tests of the ops snapshot and controls (scripts/release/ops.py, migrations 099 and 100).
+"""Tests of the ops snapshot and controls (scripts/release/ops.py, migrations 104 and 105).
 
     python3 -I scripts/release/test/test_ops.py
 
 Part 1 is pure (the snapshot builder, the hash, the timer rules, the tick with stand-ins) and needs nothing.
 Part 2 needs a Postgres server: set PGHOST, PGPORT and PGUSER (a scratch server, for example the harvest one:
 `HARVEST_SCRATCH_PORT=3121 bash scripts/harvest/test/scratch.sh up`). It makes two throwaway databases on it, ops_t_ds1 (standing in for DS1:
-the harvest queue, the daily job, releases, the drift table, the raw archive, migration 100) and ops_t_prod (standing in for production:
-045 and 099), serves a stand-in Management API in front of the second, and drops both at the end. It checks the real SQL: the collectors
-against real rows, the request rules and the ring of 96 in migration 099, the secret, the pause switch and a whole tick end to end.
+the harvest queue, the daily job, releases, the drift table, the raw archive, migration 105) and ops_t_prod (standing in for production:
+045 and 104), serves a stand-in Management API in front of the second, and drops both at the end. It checks the real SQL: the collectors
+against real rows, the request rules and the ring of 96 in migration 104, the secret, the pause switch and a whole tick end to end.
 
 Exit code: 0 all passed, 1 a check failed.
 """
@@ -239,7 +239,7 @@ def test_tick_with_stand_ins():
     def broken_queue():
         raise RuntimeError("HTTP 400")
     s5, o5 = O.tick(CFG, {}, 7.0, ds1, collect_fn=collect, write_fn=write, queued_fn=broken_queue, mark_fn=mark)
-    check("tick: production without migration 099 does not stop the snapshot attempt", "requests_err" in s5 and o5["snapshot"] in ("written", "unchanged"), (s5, o5))
+    check("tick: production without migration 104 does not stop the snapshot attempt", "requests_err" in s5 and o5["snapshot"] in ("written", "unchanged"), (s5, o5))
 
 
 # ---------------------------------------------------------------------------------------------------- part 2: real SQL
@@ -298,14 +298,14 @@ def test_database():
     try:
         mig = lambda n: os.path.join(REPO, "db", "migrations", n)
         psql(ds1db, "create schema meta; create schema api; create schema ingest;")
-        for f in ("045_data_releases.sql", "047_auto_approval.sql", "048_ingest_daily_run.sql", "090_api_health_event.sql", "095_harvest_queue.sql", "100_ops_raw_export.sql"):
+        for f in ("045_data_releases.sql", "047_auto_approval.sql", "048_ingest_daily_run.sql", "090_api_health_event.sql", "095_harvest_queue.sql", "105_ops_raw_export.sql"):
             psql_file(ds1db, mig(f))
         psql(proddb, "create schema meta; create schema api;")
-        for f in ("045_data_releases.sql", "099_ops_status.sql"):
+        for f in ("045_data_releases.sql", "104_ops_status.sql"):
             psql_file(proddb, mig(f))
-        psql_file(proddb, mig("099_ops_status.sql"))     # rerunnable
-        check("migrations 099 and 100 apply and run twice", True)
-        psql_file(ds1db, mig("100_ops_raw_export.sql"))
+        psql_file(proddb, mig("104_ops_status.sql"))     # rerunnable
+        check("migrations 104 and 105 apply and run twice", True)
+        psql_file(ds1db, mig("105_ops_raw_export.sql"))
 
         # ---- production functions
         secret = "s" * 40
@@ -400,11 +400,11 @@ def test_database():
         # a missing optional table costs one field, not the snapshot
         psql(ds1db, "drop table ingest.raw_export_run")
         snap2 = O.build_snapshot(O.collect(cfg_real, ds1), RUNNER, NOW)
-        check("collector: without migration 100 the export says so and everything else is there", "error" in snap2["backup"]["export"] and snap2["backup"]["archive_rows"] == 2 and "error" not in snap2["harvester"], snap2["backup"])
+        check("collector: without migration 105 the export says so and everything else is there", "error" in snap2["backup"]["export"] and snap2["backup"]["archive_rows"] == 2 and "error" not in snap2["harvester"], snap2["backup"])
         psql(ds1db, "drop table ingest.harvest_fetch cascade")
         snap3 = O.build_snapshot(O.collect(cfg_real, ds1), RUNNER, NOW)
         check("collector: a broken harvester section is an error and the others are fine", "error" in snap3["harvester"] and snap3["sync"]["count"] == 2 and snap3["releases"]["pending"] == 1, snap3["harvester"])
-        psql_file(ds1db, mig("100_ops_raw_export.sql"))
+        psql_file(ds1db, mig("105_ops_raw_export.sql"))
 
         # ---- a whole tick against the stand-in Management API
         MockApi.db = proddb

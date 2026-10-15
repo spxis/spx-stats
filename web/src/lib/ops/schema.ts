@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 /**
- * What the runner next to DS1 pushes into production's meta.ops_status (scripts/release/ops.py, migration 099) and what
+ * What the runner next to DS1 pushes into production's meta.ops_status (scripts/release/ops.py, migration 104) and what
  * api.ops_dashboard answers. No imports from the server, so a node test can load it. A section the runner could not read arrives as
  * { error }, and the page shows the others.
  */
