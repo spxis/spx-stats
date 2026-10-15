@@ -1,7 +1,7 @@
 # spx-stats: agents start here
 
 The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://spxn.com
-("SPXN · SPX Stats Network"). The owner is John Morris. Read this whole file before working.
+("SPXN · SPX Network"). The owner is John Morris. Read this whole file before working.
 
 This is one of exactly two places that hold agent instructions:
 

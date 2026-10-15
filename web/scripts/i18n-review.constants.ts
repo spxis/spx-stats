@@ -5,6 +5,7 @@
  */
 export const READBACK: Readonly<Record<string, string>> = {
   "nav.teams": "Teams.",
+  "nav.soccer": "Soccer (the sport).",
   "nav.players": "Players (the word for an athlete).",
   "nav.venues": "Home grounds (the word for the place a team is based and plays).",
   "nav.countries": "By country (the word for the countries players come from).",
@@ -32,14 +33,14 @@ export const READBACK: Readonly<Record<string, string>> = {
   "footer.aboutLogos": "About the logos.",
   "footer.credits": "Notices about data sources, licences and logos are posted on {link}.",
   "legal.updated": "Last update date: {date}",
-  "about.eyebrow": "SPX Stats Network (a name; not translated).",
+  "about.eyebrow": "SPX Network (a name; not translated).",
   "about.title": "About SPXN.",
   "about.metaDesc": "What SPXN is, where the data comes from, and about the people who run it.",
   "about.lede":
     "SPXN is a record of the history of the NHL, NBA, MLB, NFL and CFL. You can look at game results, standings, championship teams and awards.",
   "about.whatTitle": "What SPXN is.",
   "about.what":
-    "On SPXN (SPX Stats Network) you can look up the history of five leagues by season, team, game and player. There are no accounts and no sign-up.",
+    "On SPXN (SPX Network) you can look up the history of five leagues by season, team, game and player. There are no accounts and no sign-up.",
   "about.dataTitle": "Where the data comes from.",
   "about.base":
     "The foundation is the SPX archive (SportsInteractive.com, 1997 to 2013). Where SPX has a value, we use SPX's value.",
@@ -71,6 +72,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "brand.swBright": "Brighter centre (for small sizes).",
   "brand.swSolid": "Single colour.",
   "brand.star": "Star.",
+  "brand.swSport": "On a league's pages the centre becomes that league's colour (one colour per sport). On the home page and pages that belong to no particular sport it stays red.",
   "brand.shieldTitle": "The shield as a container (a thing that holds something).",
   "brand.shieldText":
     "The empty shield can hold a team's logo or abbreviation, in team colours or SPXN navy. This is a preview and is not yet used on any page.",
@@ -80,7 +82,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "brand.exAbbrNavy": "Abbreviation, SPXN navy, league name in the band at the top.",
   "footer.brand": "SportsInteractive, established 1997. SPXIS's marks are © SportsInteractive. {link}",
   "footer.brandLink": "About the marks.",
-  "terms.eyebrow": "SPX Stats Network (a name; not translated).",
+  "terms.eyebrow": "SPX Network (a name; not translated).",
   "terms.title": "Rules of use and licence.",
   "terms.metaDesc": "The simple rules for using SPXN, and the licence and source of the data.",
   "terms.lede": "The simple rules for using SPXN, and the sources and licences of the data.",
@@ -115,7 +117,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "terms.ownerTitle": "The owner.",
   "terms.owner": "The owner of SPXN is John Morris.",
   "terms.notLegal": "This page is an explanation written to be easy to understand, and is not legal advice.",
-  "privacy.eyebrow": "SPX Stats Network (a name; not translated).",
+  "privacy.eyebrow": "SPX Network (a name; not translated).",
   "privacy.title": "Privacy.",
   "privacy.metaDesc":
     "What SPXN saves on your device, what it does not collect, and the third parties that can see your visit.",

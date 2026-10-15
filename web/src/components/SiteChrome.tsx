@@ -18,7 +18,7 @@ export async function SiteHeader() {
       <Link className="brand" href="/">
         <BrandSwoosh height={26} />
         <span className="brand-mark">SPXN</span>
-        <span className="brand-name">SPX Stats Network</span>
+        <span className="brand-name">SPX Network</span>
       </Link>
       <LeagueNav />
       <nav className="aux" aria-label={say("nav.about")}>

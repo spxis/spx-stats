@@ -1,7 +1,4 @@
-/* Soccer / World Cup pages. The accent is the soccer green; the five leagues keep theirs. */
-:root { --soccer: #1d8a5b; }
-@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --soccer: #4fbf8a; } }
-:root[data-theme="dark"] { --soccer: #4fbf8a; }
+/* Soccer / World Cup pages. The accent is the soccer green (--soccer, with the league colours at the top of globals.css); the five leagues keep theirs. */
 
 @layer components {
   .soccer { --accent: var(--soccer); }

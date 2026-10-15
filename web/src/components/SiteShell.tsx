@@ -31,10 +31,10 @@ export async function siteMetadata(): Promise<Metadata> {
     metadataBase: new URL(SITE_URL),
     icons: SITE_ICONS,
     manifest: "/manifest.webmanifest",
-    title: { default: "SPXN · SPX Stats Network", template: "%s · SPXN" },
+    title: { default: "SPXN · SPX Network", template: "%s · SPXN" },
     description,
-    openGraph: { siteName: "SPXN", type: "website", locale: LOCALE_OG[locale], title: "SPXN · SPX Stats Network", description, images: [...SOCIAL_IMAGES.openGraph] },
-    twitter: { card: "summary_large_image", title: "SPXN · SPX Stats Network", description, images: [...SOCIAL_IMAGES.twitter] },
+    openGraph: { siteName: "SPXN", type: "website", locale: LOCALE_OG[locale], title: "SPXN · SPX Network", description, images: [...SOCIAL_IMAGES.openGraph] },
+    twitter: { card: "summary_large_image", title: "SPXN · SPX Network", description, images: [...SOCIAL_IMAGES.twitter] },
   };
 }
 

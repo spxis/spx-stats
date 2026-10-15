@@ -1369,12 +1369,12 @@ export const PHRASES = {
   // about
   "nav.aboutPage": "About",
   "legal.updated": "Last updated: {date}",
-  "about.eyebrow": "SPX Stats Network",
+  "about.eyebrow": "SPX Network",
   "about.title": "About SPXN",
   "about.metaDesc": "What SPXN is, where its data comes from, and who runs it.",
   "about.lede": "SPXN is the historical record of the NHL, NBA, MLB, NFL and CFL: scores, standings, champions and awards.",
   "about.whatTitle": "What it is",
-  "about.what": "SPXN (SPX Stats Network) lets you browse the history of five leagues by season, team, game and player. It has no accounts and no sign-up.",
+  "about.what": "SPXN (SPX Network) lets you browse the history of five leagues by season, team, game and player. It has no accounts and no sign-up.",
   "about.dataTitle": "Where the data comes from",
   "about.base": "The base is the SPX archive (SportsInteractive.com, 1997–2013). Where SPX holds a value, SPX's value wins.",
   "about.gaps": "Gaps are filled from open sources that allow it, growing outward from SPX's seasons: Retrosheet, Lahman, nflverse, the NHL, Wikipedia and Wikidata. Logos come from Wikimedia Commons.",
@@ -1401,6 +1401,7 @@ export const PHRASES = {
   "brand.swBright": "Brighter centre, for small sizes",
   "brand.swSolid": "One colour",
   "brand.star": "The star",
+  "brand.swSport": "On a league's pages the centre takes that league's colour, one for each sport. Home and every page of no one sport keep the red.",
   "brand.shieldTitle": "The shield as a container",
   "brand.shieldText": "The empty shield can hold a team's logo or abbreviation, in the team's colours or in SPXN navy. This is a preview: no page uses it yet.",
   "brand.exLogoTeam": "Logo, team colours",
@@ -1415,7 +1416,7 @@ export const PHRASES = {
 
   // terms
   "footer.credits": "Data credits, licences and the logo notice are on {link}.",
-  "terms.eyebrow": "SPX Stats Network",
+  "terms.eyebrow": "SPX Network",
   "terms.title": "Terms and licence",
   "terms.metaDesc": "The plain rules for using SPXN, and the licence and credit of the data behind it.",
   "terms.lede": "The plain rules for using SPXN, and the credits and licences of the data behind it.",
@@ -1437,7 +1438,7 @@ export const PHRASES = {
   "terms.notLegal": "This page is a plain-language summary, not legal advice.",
 
   // privacy
-  "privacy.eyebrow": "SPX Stats Network",
+  "privacy.eyebrow": "SPX Network",
   "privacy.title": "Privacy",
   "privacy.metaDesc": "What SPXN stores on your device, what it does not collect, and who else sees your visit.",
   "privacy.lede": "In short: SPXN has no accounts, no ads and no tracking. This page says exactly what the site does.",

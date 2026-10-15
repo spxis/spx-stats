@@ -18,7 +18,7 @@ export async function generateMetadata() {
   return {
     alternates: { canonical: "/" },
     openGraph: {
-      title: "SPXN · SPX Stats Network", url: "/", siteName: "SPXN", type: "website", locale: LOCALE_OG[locale],
+      title: "SPXN · SPX Network", url: "/", siteName: "SPXN", type: "website", locale: LOCALE_OG[locale],
       description: say("site.description"), images: [...SOCIAL_IMAGES.openGraph],
     },
   };

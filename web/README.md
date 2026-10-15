@@ -1,6 +1,6 @@
 # SPXN web
 
-The SPX Stats Network site (https://spxn.com) as a Next.js app. It replaces the static site in `../site/` at the same URLs.
+The SPX Network site (https://spxn.com) as a Next.js app. It replaces the static site in `../site/` at the same URLs.
 
 Stack: Next.js (App Router, Turbopack), React, TypeScript (strict), Tailwind CSS v4, Zod, d3 (charts) and
 [Chizu](https://github.com/johnmorrisdotca/chizu) (maps), pnpm.

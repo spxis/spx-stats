@@ -117,12 +117,12 @@ export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<stri
 /* ---------- licence and provenance ---------------------------------------------------- */
 
 export const DATASET = {
-  name: "SPX Stats Network: home venues",
+  name: "SPX Network: home venues",
   description: "Every home venue of the NHL, NBA, MLB, NFL and CFL clubs on record, current and former, with its clubs, former names, place and basic facts, and with it the spring training parks of the major-league clubs (kind spring), the venues planned for a club (kind future) and the other stadiums that staged World Cup or MLS matches (kind soccer).",
   url: "https://spxn.com/venues",
   licence:
     "Venue identifiers, names, coordinates, places and facts from Wikidata are CC0 1.0. Surface and roof may come from the infobox of the venue's English Wikipedia article and are then CC BY-SA 4.0: credit Wikipedia and its authors (wikipedia_title names the article) and share alike. Clubs, leagues and years of use come from the SPX Stats archive; each source's licence is on https://spxn.com/sources.",
-  attribution: "SPX Stats Network (https://spxn.com), with data from Wikidata and English Wikipedia.",
+  attribution: "SPX Network (https://spxn.com), with data from Wikidata and English Wikipedia.",
   sources: [
     { name: "Wikidata", url: "https://www.wikidata.org", licence: "CC0 1.0", licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/" },
     { name: "English Wikipedia", url: "https://en.wikipedia.org", licence: "CC BY-SA 4.0", licenceUrl: "https://creativecommons.org/licenses/by-sa/4.0/" },

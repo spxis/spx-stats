@@ -1,4 +1,6 @@
 import { BrandImg } from "./BrandImg";
+import { BrandSwoosh } from "./BrandSwoosh";
+import { LEAGUES } from "@/lib/leagues";
 import { BrandShieldExamples } from "./BrandShieldExamples";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 
@@ -15,6 +17,7 @@ export async function BrandHistory() {
     { year: "2007", name: "spxis-software-lockup", h: 36, alt: "SPX Interactive Software", text: say("brand.y2007") },
     { year: "2019", name: "spxis-shield", h: 110, alt: "SPXIS", text: say("brand.y2019") },
   ] as const;
+  const sports = [...LEAGUES.map((l) => ({ code: l.code, name: l.short })), { code: "soccer", name: say("nav.soccer") }] as const;
   return (
     <section className="section" id="marks">
       <h2>{say("brand.title")}</h2>
@@ -35,6 +38,13 @@ export async function BrandHistory() {
         <figure><BrandImg name="swoosh-bright" height={44} alt="" /><figcaption>{say("brand.swBright")}</figcaption></figure>
         <figure><BrandImg name="swoosh-solid" height={44} alt="" /><figcaption>{say("brand.swSolid")}</figcaption></figure>
         <figure><BrandImg name="star" height={44} alt="" /><figcaption>{say("brand.star")}</figcaption></figure>
+      </div>
+      <p>{say("brand.swSport")}</p>
+      <div className="bsw">
+        <figure><BrandSwoosh height={44} /><figcaption>SPX</figcaption></figure>
+        {sports.map((s) => (
+          <figure key={s.code}><BrandSwoosh height={44} sport={s.code} /><figcaption>{s.name}</figcaption></figure>
+        ))}
       </div>
       <h3>{say("brand.shieldTitle")}</h3>
       <p>{say("brand.shieldText")}</p>

@@ -27,6 +27,7 @@ const WEB = new URL("../", import.meta.url);
 export const SAME_AS_ENGLISH: ReadonlySet<string> = new Set([
   "nav.sources",
   "nav.logos",
+  "nav.soccer",
   "footer.version",
   "privacy.questionsTitle",
   "about.eyebrow",
@@ -108,7 +109,7 @@ wrong whatever its style. Write fixes in the **Correction** column.
 reviewed legal copy.
 
 Not translated on purpose: team, player and venue names, league codes (NHL, NBA, MLB, NFL, CFL), and the names
-SPX Stats Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia Commons, Vercel, Supabase and GitHub.
+SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia Commons, Vercel, Supabase and GitHub.
 
 ## 1. About, Terms, Privacy and the footer (${main.length})
 
