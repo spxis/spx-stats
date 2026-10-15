@@ -1,0 +1,44 @@
+/* The strip of a tournament's teams (TeamStrip.tsx) and the map in its corner (TournamentMap.tsx). Tokens come from globals.css.
+   The six tier colours are lib/soccerStrip.ts TIER_COLORS: group stage, early knockout, quarter-finals, semi-finals, runner-up, champions; keep them in step. */
+.wcchip.t0, .wcdot.t0 { --tier: #c3d9f2; }
+.wcchip.t1, .wcdot.t1 { --tier: #8fbbe8; }
+.wcchip.t2, .wcdot.t2 { --tier: #5a97d6; }
+.wcchip.t3, .wcdot.t3 { --tier: #2f6fb8; }
+.wcchip.t4, .wcdot.t4 { --tier: #184f95; }
+.wcchip.t5, .wcdot.t5 { --tier: #d4a017; }
+
+.wcstrip ul { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.wcchip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 10px 3px 4px; border: 1px solid var(--rule); border-radius: 999px; background: var(--panel, var(--soft)); color: var(--ink); text-decoration: none; font: 600 13px/1 var(--display); letter-spacing: .06em; min-height: 28px; }
+.wcchip .flag { margin: 0; vertical-align: middle; border-radius: 50%; box-shadow: 0 0 0 2px var(--tier, transparent); opacity: 1; }
+.wcchip:hover, .wcchip:focus-visible { border-color: var(--ink); }
+.wcchip:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
+.wcchip.t5 { border-color: var(--tier); }
+@media (max-width: 640px) { .wcstrip ul { gap: 5px; } }
+
+/* A squad the strip or the map jumps to keeps clear of the top of the screen. */
+details.sc-squad { scroll-margin-top: 12px; }
+details.sc-squad:target { background: color-mix(in srgb, var(--soccer, #1d8a5b) 8%, transparent); }
+
+/* The small map in the top-right corner of the heading, as on a city page (city.css). */
+.wcmap { position: absolute; top: 0; right: 0; width: 220px; display: flex; flex-direction: column; gap: 4px; }
+.wcmap .note { font-size: 13px; margin: 0; }
+.wcmapbtn { display: block; width: 100%; padding: 0; border: 1px solid var(--rule); background: var(--soft); cursor: zoom-in; }
+.wcmapbtn .thumbbox { aspect-ratio: 1.7; width: 100%; }
+.wcmapbtn .thumbbox svg { display: block; width: 100%; height: 100%; }
+.head:has(.wcmap) { min-height: 205px; }
+@media (min-width: 641px) { .head:has(.wcmap) h1, .head:has(.wcmap) .lede, .head:has(.wcmap) .eyebrow { max-width: calc(100% - 240px); } }
+@media (max-width: 640px) {
+  .wcmap { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
+  .head:has(.wcmap) { min-height: 0; }
+}
+
+/* The large map: its hover panel, its legend and the panel a press shows on a touch screen. */
+.wcmaphost { position: relative; }
+.wctip { position: absolute; z-index: 3; width: 220px; padding: 8px 10px; border: 1px solid var(--rule); background: var(--paper); box-shadow: 0 4px 14px rgba(0,0,0,.25); pointer-events: none; font-size: 14px; display: flex; flex-direction: column; gap: 8px; }
+.wctip b { display: block; font: 600 17px/1.1 var(--display); letter-spacing: .02em; }
+.wctip small, .wcpick small { display: block; color: var(--muted); font-size: 13px; }
+.wcdot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; background: var(--tier); margin-inline: 0 6px; border: 1px solid color-mix(in srgb, var(--ink) 25%, transparent); }
+.wclegend { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 4px 16px; font-size: 13px; color: var(--muted); }
+.wclegend li { display: inline-flex; align-items: center; }
+.wcpick { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; }
+.wcpick b { font: 600 18px/1.1 var(--display); }

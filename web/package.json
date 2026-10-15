@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.112.4",
+  "version": "0.113.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -57,7 +57,7 @@
     "test:donut": "node --test scripts/donutCentre.test.ts",
     "test:listtitle": "node --test scripts/listTitle.test.ts",
     "test:player": "node --test scripts/player.test.ts",
-    "test:soccer": "node --test scripts/soccer.test.ts",
+    "test:soccer": "node --test scripts/soccer.test.ts scripts/soccerStrip.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",
     "test:bracket": "node --test scripts/bracket.test.ts",
     "test:playin": "node --test scripts/playIn.test.ts",

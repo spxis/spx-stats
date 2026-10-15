@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRef, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SoccerSquadTable } from "@/components/SoccerSquadTable";
 import { squadPath, squadRowsPath, type SquadLabels, type SquadLine } from "@/lib/soccerSquad";
 import "./soccer.css";
@@ -13,11 +13,27 @@ type Load = { state: "idle" } | { state: "loading" } | { state: "failed" } | { s
  * payload for lists nobody had opened); now the list holds the team's name, and the squad is fetched from its own kept address the first time the
  * list is opened (the rows, as a few kilobytes of JSON). Without script the opened list shows a link to the squad's own page.
  */
-export function LazySquad({ year, slug, labels, texts, children }: {
-  year: number; slug: string; labels: SquadLabels; texts: { loading: string; failed: string; open: string }; children: ReactNode;
+export function LazySquad({ id, year, slug, labels, texts, children }: {
+  /** The list's anchor (`squad-arg`): an address with `#<id>` opens it (the strip and the map of a tournament page lead here). */
+  id?: string; year: number; slug: string; labels: SquadLabels; texts: { loading: string; failed: string; open: string }; children: ReactNode;
 }) {
   const [load, setLoad] = useState<Load>({ state: "idle" });
   const asked = useRef(false);
+  const box = useRef<HTMLDetailsElement>(null);
+
+  // An address that names this list (the strip's links, the map's jump) opens it, and brings it into view once it has its room.
+  useEffect(() => {
+    if (!id) return;
+    const here = () => {
+      const el = box.current;
+      if (!el || window.location.hash !== `#${id}`) return;
+      el.open = true;
+      el.scrollIntoView({ block: "start" });
+    };
+    here();
+    window.addEventListener("hashchange", here);
+    return () => window.removeEventListener("hashchange", here);
+  }, [id]);
 
   async function ask() {
     if (asked.current) return;
@@ -36,7 +52,7 @@ export function LazySquad({ year, slug, labels, texts, children }: {
   }
 
   return (
-    <details className="sc-squad" onToggle={(e) => { if (e.currentTarget.open) void ask(); }}>
+    <details id={id} ref={box} className="sc-squad" onToggle={(e) => { if (e.currentTarget.open) void ask(); }}>
       <summary>{children}</summary>
       {load.state === "done" ? <SoccerSquadTable lines={load.lines} labels={labels} /> : (
         <p className="note">

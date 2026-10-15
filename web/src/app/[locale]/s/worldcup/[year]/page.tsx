@@ -5,6 +5,8 @@ import { positionBook } from "@/components/PositionKey";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerGroups } from "@/components/SoccerGroups";
 import { SoccerKnockout } from "@/components/SoccerKnockout";
+import { TeamStrip } from "@/components/TeamStrip";
+import { TournamentMap } from "@/components/TournamentMap";
 import { SoccerRoad } from "@/components/SoccerRoad";
 import { SoccerSquads } from "@/components/SoccerSquads";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
@@ -19,6 +21,7 @@ import {
 } from "@/lib/soccer";
 import { teamName } from "@/lib/soccerNames";
 import { isYearSeg, soccerMatchPath, soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPath";
+import { stripTeams } from "@/lib/soccerStrip";
 import { groupLabel, reachRank, reached, scoreLines } from "@/lib/soccerView";
 import { tableOf } from "@/lib/sort";
 import { PlaceMedal } from "@/components/PlaceMedal";
@@ -129,6 +132,11 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
   if (third) podium.push([3, say("wc.reach.third"), third.team, third.team_slug, third.flag_code]);
   if (fourth) podium.push([4, say("wc.reach.fourth"), fourth.team, fourth.team_slug, fourth.flag_code]);
 
+  // The strip under the heading and the map in its corner: every team, each pointing at its squad further down (`#squad-<code>`).
+  const withSquad = new Set(squads.map((x) => x.team_id));
+  const strip = stripTeams(teams, say, (x) => teamName({ name: x.team, slug: x.team_slug, flag: x.flag_code }, locale), (id) => withSquad.has(id));
+  const squadAnchors = new Map(strip.map((x) => [x.id, x.anchor]));
+
   const awardGroups = [...new Set(awards.map((a) => a.award))];
 
   return (
@@ -138,7 +146,9 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
         <h1>{title}</h1>
         <p className="lede">{say("wc.t.lede", { hosts, dates: dates ?? String(t.year) })}</p>
         <p className="note"><Link href={WORLDCUP_PATH}>{say("wc.t.all")}</Link></p>
+        {strip.length ? <TournamentMap teams={strip} title={title} /> : null}
       </section>
+      <TeamStrip teams={strip} title={title} />
       <Figures items={[
         [say("wc.col.teams"), t.team_count ?? teams.length], [say("wc.col.matches"), t.matches], [say("wc.col.goals"), t.goals], [say("wc.t.perMatch"), fmt(per)],
       ]} />
@@ -206,7 +216,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       {squads.length ? (
         <section className="section" id="squads">
           <h2>{say("wc.t.squads")}</h2>
-          <SoccerSquads squads={squads} flags={new Map(allTeams.map((x) => [x.team_id, x.flag_code]))} book={book} />
+          <SoccerSquads squads={squads} flags={new Map(allTeams.map((x) => [x.team_id, x.flag_code]))} book={book} anchors={squadAnchors} />
         </section>
       ) : null}
       {book.key()}

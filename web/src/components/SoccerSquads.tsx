@@ -15,9 +15,9 @@ export const squadLabels = (say: Speaker["say"]): SquadLabels => ({
 /**
  * One closed list per team of a tournament. A list holds only the team's name: its squad (shirt number, player, position, matches played, started,
  * goals, cards) is loaded when the list is opened (LazySquad, from /worldcup/<year>/squad/<team>/rows), and without script it links to the squad's
- * page. `flags` maps a team id to its flag code. The positions the squads use are noted for the page's key, which they are not drawn through here.
+ * page. `flags` maps a team id to its flag code, `anchors` a team id to the anchor of its list (`squad-<code>`, from lib/soccerStrip.ts). The positions the squads use are noted for the page's key, which they are not drawn through here.
  */
-export async function SoccerSquads({ squads, flags, book }: { squads: Squad[]; flags: Map<string, string | null>; book: PositionBook }) {
+export async function SoccerSquads({ squads, flags, book, anchors }: { squads: Squad[]; flags: Map<string, string | null>; book: PositionBook; anchors?: Map<string, string> }) {
   const { say } = await currentSpeaker();
   const teams = [...new Map(squads.map((s) => [s.team_id, s])).values()];
   for (const code of squadCodes(squads)) book.note(null, code, ["soccer"]);
@@ -26,7 +26,7 @@ export async function SoccerSquads({ squads, flags, book }: { squads: Squad[]; f
   return (
     <>
       {teams.map((tm) => (
-        <LazySquad key={tm.team_id} year={tm.year} slug={tm.team_slug} labels={labels} texts={texts}>
+        <LazySquad key={tm.team_id} id={anchors?.get(tm.team_id)} year={tm.year} slug={tm.team_slug} labels={labels} texts={texts}>
           <SoccerTeamName slug={tm.team_slug} name={tm.team} flag={flags.get(tm.team_id)} link={false} />
         </LazySquad>
       ))}
