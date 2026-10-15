@@ -37,10 +37,21 @@ create function pg_temp.canon(lg text, lvl text, raw text) returns text[] langua
         when 'pl' then array['Players'' League', 'PL'] when 'fl' then array['Federal League', 'FL'] when 'na' then array['National Association', 'NA'] end
     when lg = 'mlb' then (select array[case left(m[1], 2) when 'AL' then 'American League ' else 'National League ' end || m[2], left(m[1], 2) || ' ' || m[2]]
                           from (select regexp_match(btrim(raw), '^(AL|NL) (East|West|Central)') m) x where m is not null)
+    when lg = 'afl' and lvl = 'conference' then null
+    when lg = 'afl' then case lower(btrim(raw)) when 'eastern' then array['Eastern Division', 'East'] when 'east' then array['Eastern Division', 'East']
+                                                 when 'western' then array['Western Division', 'West'] when 'west' then array['Western Division', 'West'] end
     when lg = 'nfl' and lvl = 'conference' then case lower(btrim(raw))
         when 'afc' then array['American Football Conference', 'AFC'] when 'american football conference' then array['American Football Conference', 'AFC']
-        when 'nfc' then array['National Football Conference', 'NFC'] when 'national football conference' then array['National Football Conference', 'NFC'] end
-    when lg = 'nfl' then (select array[m[1] || ' ' || m[2], m[1] || ' ' || m[2]] from (select regexp_match(btrim(raw), '^(AFC|NFC) (East|West|North|South|Central)') m) x where m is not null)
+        when 'nfc' then array['National Football Conference', 'NFC'] when 'national football conference' then array['National Football Conference', 'NFC']
+        -- the NFL before 1970: the American and National Conferences of 1950-52, the Eastern and Western Conferences of 1953-69
+        when 'american' then array['American Conference', 'American'] when 'national' then array['National Conference', 'National']
+        when 'eastern' then array['Eastern Conference', 'East'] when 'western' then array['Western Conference', 'West'] end
+    when lg = 'nfl' then coalesce(
+        (select array[m[1] || ' ' || m[2], m[1] || ' ' || m[2]] from (select regexp_match(btrim(raw), '^(AFC|NFC) (East|West|North|South|Central)') m) x where m is not null),
+        -- the divisions of 1933-49 (Eastern and Western) and of 1967-69 (Capitol and Century in the East, Central and Coastal in the West)
+        case lower(btrim(raw)) when 'eastern' then array['Eastern Division', 'East'] when 'western' then array['Western Division', 'West']
+             when 'capitol' then array['Capitol Division', 'Capitol'] when 'century' then array['Century Division', 'Century']
+             when 'central' then array['Central Division', 'Central'] when 'coastal' then array['Coastal Division', 'Coastal'] end)
     when lvl = 'conference' then case regexp_replace(lower(btrim(raw)), ' conference$', '')
         when 'eastern' then array['Eastern Conference', 'East'] when 'east' then array['Eastern Conference', 'East']
         when 'western' then array['Western Conference', 'West'] when 'west' then array['Western Conference', 'West']
@@ -55,7 +66,9 @@ create function pg_temp.implied(lg text, dshort text) returns text[] language sq
   select case when lg = 'mlb' and dshort like 'AL %' then array['American League', 'AL']
               when lg = 'mlb' and dshort like 'NL %' then array['National League', 'NL']
               when lg = 'nfl' and dshort like 'AFC %' then array['American Football Conference', 'AFC']
-              when lg = 'nfl' and dshort like 'NFC %' then array['National Football Conference', 'NFC'] end
+              when lg = 'nfl' and dshort like 'NFC %' then array['National Football Conference', 'NFC']
+              when lg = 'nfl' and dshort in ('Capitol', 'Century') then array['Eastern Conference', 'East']
+              when lg = 'nfl' and dshort in ('Central', 'Coastal') then array['Western Conference', 'West'] end
 $$;
 create function pg_temp.flat(x text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(x), 'áàâäãåéèêëíìîïóòôöõúùûüçñ', 'aaaaaaeeeeiiiiooooouuuucn'), '[^a-z0-9]', '', 'g')
@@ -69,7 +82,7 @@ from core.team_season t join core.season s using (season_id)
 left join core.franchise_identity i using (franchise_identity_id)
 left join lateral (select x.full_name, x.nickname from core.franchise_identity x where x.franchise_id = t.franchise_id and i.franchise_identity_id is null
                    order by abs(extract(year from lower(x.valid_during)) - s.start_year) limit 1) n on true  -- a season with no identity of its own: the nearest era's name
-where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl');
+where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl');
 create index on ts (lg, y, franchise_id);
 
 -- ---------------------------------------------------------------------------------------------- evidence
@@ -151,7 +164,18 @@ union all  -- the NFL before 1999: the season's standings templates (step 151 lo
 select 'nfl', season, division, case when division ~ ' (AFC|NFC) standings$' then 'conference' else 'division' end,
        regexp_replace(regexp_replace(division, '^[0-9]{4} ', ''), ' standings$', ''), null, team, pg_temp.flat(team)
 from legacy_wikipedia_nfl.standing
-where season < 1999 and division ~ '^[0-9]{4} (AFC|NFC)( [A-Za-z]+)? standings$';
+where season < 1999 and division ~ '^[0-9]{4} (AFC|NFC)( [A-Za-z]+)? standings$'
+union all  -- the NFL before 1970: no divisions 1920-32; Eastern and Western Divisions 1933-49 ("1946 NFL Eastern standings"); the American and National
+           -- Conferences 1950-52; the Eastern and Western Conferences 1953-66; the Capitol, Century, Central and Coastal Divisions 1967-69
+select 'nfl', season, division,
+       case when (season between 1950 and 1966) then 'conference' else 'division' end,
+       regexp_replace(regexp_replace(division, '^[0-9]{4} NFL ', ''), ' standings$', ''), null, team, pg_temp.flat(team)
+from legacy_wikipedia_nfl.standing
+where season between 1933 and 1969 and division ~ '^[0-9]{4} NFL (Eastern|Western|American|National|Capitol|Century|Central|Coastal) standings$'
+union all  -- the AFL: Eastern and Western Divisions ("1960 AFL Eastern standings")
+select 'afl', season, division, 'division', regexp_replace(regexp_replace(division, '^[0-9]{4} AFL ', ''), ' standings$', ''), null, team, pg_temp.flat(team)
+from legacy_wikipedia_afl.standing
+where division ~ '^[0-9]{4} AFL (Eastern|Western) standings$';
 create temp table wmatch as
 select w.*, coalesce(
     (select min(ts.franchise_id) from ts where ts.lg = w.lg and ts.y = w.y and pg_temp.flat(ts.full_name) = w.fl having count(*) = 1),
@@ -258,7 +282,9 @@ delete from core.division;
 delete from core.conference;
 
 create temp table sord as select league_code lg, start_year::int y, row_number() over (partition by league_code order by start_year) ord from core.season;
-create temp table lastyear as select lg, max(y) ly from pick group by lg;
+-- (a league that no longer plays, the AFL, has no open-ended group: its last season is its last)
+create temp table lastyear as select p.lg, case when l.dissolved_on is null then max(p.y) end as ly
+from pick p join ref.league l on l.league_code = p.lg group by p.lg, l.dissolved_on;
 
 -- A conference (or division) group runs over seasons; a gap of more than one league season starts a new run, so the
 -- NHL's East Division of 1967-73 and of 2020-21 are two rows, and the Eastern Conference skips 2020-21 without breaking.

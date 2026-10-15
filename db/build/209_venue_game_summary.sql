@@ -18,7 +18,7 @@ with po as (
 select p.game_id, p.season_id
 from last_game l
 join po p on p.season_id = l.season_id and ((p.h = l.h and p.a = l.a) or (p.h = l.a and p.a = l.h))
-where (l.league_code not in ('nfl', 'cfl') or p.game_id = l.last_id)
+where (l.league_code not in ('nfl', 'cfl', 'afl', 'aafc') or p.game_id = l.last_id)
   and exists (select 1 from core.award_winner w join core.award aw on aw.award_id = w.award_id and aw.kind = 'championship' where w.season_id = l.season_id);
 create unique index on venue_final (game_id);
 
