@@ -6,7 +6,9 @@ import { getAlignment } from "./alignmentData";
 import { getCities, getPlacements } from "./cityData";
 import { getBrands } from "./data";
 import { logoFor } from "./brand";
-import { LEAGUE_CODES, PARENT } from "./leagues";
+import { LEAGUES, PARENT } from "./leagues";
+
+const LEAGUE_CODES = LEAGUES.map((l) => l.code);   // the list holds the leagues of the menu; a rival league's clubs are listed under its parent
 import { TEAM_FIELDS } from "./teamIndex";
 import { buildGroups, type Conf, type Div, type LeagueGroups } from "./teamGroups";
 import type { BoardTeam } from "./teamBoard";

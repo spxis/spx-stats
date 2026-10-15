@@ -38,8 +38,8 @@ test("the AAFC is a league the site knows, a closed one, with single-year season
 
 test("a rival league is no league of the menu: it hangs off its parent, in one place", () => {
   assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "nba", "mlb", "nfl", "cfl"]);
-  assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl" });
-  assert.deepEqual(CHILDREN, { nfl: ["afl", "aafc"] });
+  assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl" });
+  assert.deepEqual(CHILDREN, { nhl: ["nha", "pcha", "wchl", "wha"], nfl: ["afl", "aafc"] });
   assert.equal(topLeague("afl"), "nfl");
   assert.equal(topLeague("aafc"), "nfl");
   assert.equal(topLeague("nhl"), "nhl");
@@ -82,7 +82,9 @@ test("a club's page points to its seasons in the related leagues: the NFL club t
   assert.deepEqual(RELATED_LEAGUES.nfl, ["afl", "aafc"]);
   assert.deepEqual(RELATED_LEAGUES.aafc, ["nfl"]);
   assert.deepEqual(RELATED_LEAGUES.afl, ["nfl"]);
-  assert.equal(RELATED_LEAGUES.nhl, undefined);
+  assert.deepEqual(RELATED_LEAGUES.nhl, ["nha", "pcha", "wchl", "wha"]);
+  assert.deepEqual(RELATED_LEAGUES.wha, ["nhl"]);
+  assert.equal(RELATED_LEAGUES.mlb, undefined);
 });
 
 test("the parent league's page lists each rival league with its years, seasons and champions; a league without one lists nothing", () => {
@@ -103,4 +105,61 @@ test("the trail of a rival league's pages reads NFL > AFL > 1964, and no other p
   assert.equal(leagueTrail(["aafc", "team", "cleveland-browns"])!.year, null);
   assert.equal(leagueTrail(["aafc", "team", "cleveland-browns"])!.deeper, true);
   for (const p of [["nfl", "1964"], ["nhl"], ["players"], ["teams"], []]) assert.equal(leagueTrail(p), null, p.join("/"));
+});
+
+/** What api.season_summary holds once the hockey leagues are loaded: NHA 1909-1916, PCHA 1911-1923, WCHL 1921-1925, WHA 1972-1978 (a season is named by the year it starts). */
+const span = (league: string, a: number, b: number, champs: string[]) => Array.from({ length: b - a + 1 }, (_, i) =>
+  row(league, a + i, champs[i] ?? null, { games: league === "wha" || league === "wchl" ? 0 : 60, teams: league === "wha" ? 12 : 4, franchise: champs[i] ? 1000 + [...new Set(champs)].indexOf(champs[i]) : null }));
+const nha = span("nha", 1909, 1916, ["Montreal Wanderers", "Ottawa Hockey Club", "Quebec Bulldogs", "Quebec Bulldogs", "Toronto Hockey Club", "Ottawa Senators", "Montreal Canadiens", "Montreal Canadiens"]);
+const pcha = span("pcha", 1911, 1923, ["New Westminster Royals", "Victoria Senators", "Victoria Aristocrats", "Vancouver Millionaires", "Portland Rosebuds", "Seattle Metropolitans", "Vancouver Millionaires", "Seattle Metropolitans", "Seattle Metropolitans", "Vancouver Millionaires", "Vancouver Millionaires", "Vancouver Maroons", "Vancouver Maroons"]);
+const wchl = span("wchl", 1921, 1925, ["Regina Capitals", "Edmonton Eskimos", "Calgary Tigers", "Victoria Cougars", "Victoria Cougars"]);
+const wha = span("wha", 1972, 1978, ["New England Whalers", "Houston Aeros", "Houston Aeros", "Winnipeg Jets", "Quebec Nordiques", "Winnipeg Jets", "Winnipeg Jets"]);
+
+test("the hockey leagues beside the NHL are leagues of their own under the NHL, with two-year seasons", () => {
+  for (const code of ["nha", "pcha", "wchl", "wha"] as const) {
+    assert.ok(isLeague(code), code);
+    assert.equal(PARENT[code], "nhl");
+    assert.equal(topLeague(code), "nhl");
+    assert.ok(ALL_LEAGUES.find((l) => l.code === code)!.closed);
+    assert.ok(!LEAGUES.some((l) => l.code === code));
+  }
+  assert.deepEqual([LG.nha, LG.pcha, LG.wchl, LG.wha], ["NHA", "PCHA", "WCHL", "WHA"]);
+  assert.equal(seasonLabel("nha", 1909), "1909-10");
+  assert.equal(seasonLabel("pcha", 1923), "1923-24");
+  assert.equal(seasonLabel("wchl", 1925), "1925-26");
+  assert.equal(seasonLabel("wha", 1978), "1978-79");
+  assert.equal(seasonLabel("nfl", 1925), "1925");
+});
+
+test("each hockey league's first and last season come from its rows, with no gap inside", () => {
+  const all = [...nha, ...pcha, ...wchl, ...wha];
+  const years = (lg: string) => all.filter((s) => s.league === lg).map((s) => s.year);
+  assert.deepEqual([Math.min(...years("nha")), Math.max(...years("nha")), years("nha").length], [1909, 1916, 8]);
+  assert.deepEqual([Math.min(...years("pcha")), Math.max(...years("pcha")), years("pcha").length], [1911, 1923, 13]);
+  assert.deepEqual([Math.min(...years("wchl")), Math.max(...years("wchl")), years("wchl").length], [1921, 1925, 5]);
+  assert.deepEqual([Math.min(...years("wha")), Math.max(...years("wha")), years("wha").length], [1972, 1978, 7]);
+  assert.equal(withGaps(all).length, all.length);
+  for (const lg of ["nha", "pcha", "wchl", "wha"]) assert.deepEqual([...satYears(all, lg)], [], lg);
+  // the leagues' seasons never merge with the NHL's: 1920 holds an NHL row and a PCHA row side by side
+  assert.equal([...pcha, ...nha].filter((s) => s.year === 1912).length, 2);
+});
+
+test("a hockey league's champions: the PCHA's Millionaires and Maroons, the WHA's Jets", () => {
+  const boxes = championRow(pcha, "pcha");
+  assert.deepEqual(boxes.filter((b) => b.kind === "recent").map((b) => b.year), [1923, 1922, 1921, 1920]);
+  assert.equal(titleHolders(pcha, "pcha").before(1911), null);
+  const jets = championRow(wha, "wha");
+  assert.deepEqual([jets.find((b) => b.kind === "most")?.f, jets.find((b) => b.kind === "most")?.n], [1002, 3]);
+  assert.equal(titleHolders(wha, "wha").before(1972), null);
+});
+
+test("the last game of a hockey league's season is its own championship, and none was played at a neutral site by rule", () => {
+  assert.equal(finalName("nha", 1913, say), "NHA Championship");
+  assert.equal(finalName("pcha", 1919, say), "PCHA Championship");
+  assert.equal(finalName("wchl", 1924, say), "WCHL Championship");
+  assert.equal(finalName("wha", 1975, say), "Avco Cup Final");
+  assert.equal(finalName("nhl", 1925, say), "Stanley Cup Final");
+  assert.equal(roundName("pcha", 1919, 2, 2, say), "PCHA Championship");
+  for (const lg of ["nha", "pcha", "wchl", "wha"]) assert.ok(!neutralSite(lg, 1920, "playoffs", true), lg);
+  assert.equal(championshipName("wha", 1975, "Avco World Trophy"), "Avco World Trophy");
 });

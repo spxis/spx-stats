@@ -6,7 +6,9 @@ import { teamSeasonRows } from "./api/teamSeasons";
 import { brandFor, teamTone } from "./brand";
 import { getBrands } from "./data";
 import { buildCareers, type Career, type Rec, type StaffRow } from "./coachMoves";
-import { LEAGUE_CODES } from "./leagues";
+import { LEAGUES } from "./leagues";
+
+const LEAGUE_CODES = LEAGUES.map((l) => l.code);   // staff are kept for the leagues of the menu
 import { getPlayerPaths } from "./playerLinks";
 import { getPaths } from "./teamSlugs";
 

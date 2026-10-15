@@ -155,7 +155,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const startDay = seasonStartDay(d.games.map((g) => ({ date: g[0], phase: g[5], status: g[6] })));
   const nothingPlayed = !d.games.some((g) => g[6] === "f");
   const standingsNote = [
-    nothingPlayed && !asOf ? say("season.standingsNone") : say("season.standingsNote", { basis }),
+    // (a season with published standings but no game results, the WHA's, is not an unstarted one)
+    nothingPlayed && !asOf && !pub ? say("season.standingsNone") : say("season.standingsNote", { basis }),
     dateWanted && !dateAsked ? say("season.dateLate") : "",
     dateAsked && !asOf ? say("season.dateMissing") : "",
     view === "wildcard" ? say("season.wildCardNote") : "",

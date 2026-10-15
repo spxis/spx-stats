@@ -215,7 +215,8 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   // A rival league's clubs are today's franchises (the AFL's and the AAFC's, now NFL clubs): each league's page points to the same club's seasons in the others.
   const others = (await Promise.all((RELATED_LEAGUES[lg] ?? []).map(async (o) => {
     const ot = await getTeam(o, f).catch(() => null);
-    return ot && ot.seasons.length + ot.unrecorded.length ? { lg: o, seasons: ot.seasons.length + ot.unrecorded.length } : null;
+    // (seasons with results only: a club that met the NHL's in a Stanley Cup final has bare NHL seasons for it, and was no NHL club)
+    return ot && ot.seasons.length ? { lg: o, seasons: ot.seasons.length } : null;
   }))).filter((x): x is { lg: LeagueCode; seasons: number } => x !== null);
   const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: titlesPart })
     : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })

@@ -13,6 +13,7 @@
   --nhl: #0a86ee; --nba: #cf6d12; --mlb: #c169ad; --nfl: #0a7038; --cfl: #5a52ac; --soccer: #00858a;
   --afl: var(--nfl);   /* the AFL is American football: its clubs are the NFL's (pages of the AFL take the NFL's colour) */
   --aafc: var(--nfl);  /* so is the AAFC: three of its clubs joined the NFL in 1950 */
+  --nha: var(--nhl); --pcha: var(--nhl); --wchl: var(--nhl); --wha: var(--nhl);   /* the hockey leagues beside the NHL take its colour */
   --accent: var(--ink);
   /* The accent where it colours text, or carries the page's own paper-coloured text (a chosen chip): the accent pulled toward the ink by --accent-keep,
      so it reads at 4.5:1 on the page and the panel. The graphics keep --accent itself (3:1). */
@@ -492,6 +493,10 @@ a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; tex
 :root:has([data-sport="cfl"]) { --mk-r: var(--cfl); }
 :root:has([data-sport="afl"]) { --mk-r: var(--afl); }
 :root:has([data-sport="aafc"]) { --mk-r: var(--aafc); }
+:root:has([data-sport="nha"]) { --mk-r: var(--nha); }
+:root:has([data-sport="pcha"]) { --mk-r: var(--pcha); }
+:root:has([data-sport="wchl"]) { --mk-r: var(--wchl); }
+:root:has([data-sport="wha"]) { --mk-r: var(--wha); }
 :root:has([data-sport="soccer"]) { --mk-r: var(--soccer); }
 
 .bimg { display: block; }

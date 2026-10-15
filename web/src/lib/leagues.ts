@@ -1,4 +1,4 @@
-export const LEAGUE_CODES = ["nhl", "nba", "mlb", "nfl", "cfl", "afl", "aafc"] as const;
+export const LEAGUE_CODES = ["nhl", "nba", "mlb", "nfl", "cfl", "afl", "aafc", "nha", "pcha", "wchl", "wha"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
 /**
@@ -14,10 +14,14 @@ export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; close
   { code: "cfl", name: "Canadian Football League", short: "CFL" },
   { code: "afl", name: "American Football League", short: "AFL", closed: true },
   { code: "aafc", name: "All-America Football Conference", short: "AAFC", closed: true },
+  { code: "nha", name: "National Hockey Association", short: "NHA", closed: true },
+  { code: "pcha", name: "Pacific Coast Hockey Association", short: "PCHA", closed: true },
+  { code: "wchl", name: "Western Canada Hockey League", short: "WCHL", closed: true },
+  { code: "wha", name: "World Hockey Association", short: "WHA", closed: true },
 ];
 
 /** The league a rival or predecessor league belongs under. One place: the menu, the parent's "Other leagues" section and the trail all read it. */
-export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aafc: "nfl" };
+export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl" };
 
 /** The leagues of the menu and of every league picker: the ones with no parent. */
 export const LEAGUES = ALL_LEAGUES.filter((l) => !(l.code in PARENT));
@@ -35,7 +39,7 @@ export const topLeague = (code: string): string => PARENT[code as LeagueCode] ??
 
 export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL", aafc: "AAFC" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA" };
 
 /**
  * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the
@@ -56,9 +60,12 @@ export function isLeague(code: string): code is LeagueCode {
   return (LEAGUE_CODES as readonly string[]).includes(code);
 }
 
+/** The leagues whose seasons span two calendar years: 1993-94 (the NHL, the NBA and the hockey leagues beside the NHL). The others are one: 2025. */
+const TWO_YEAR_SEASONS: ReadonlySet<string> = new Set(["nhl", "nba", "nha", "pcha", "wchl", "wha"]);
+
 /** NHL and NBA seasons span two calendar years: 1993-94. The others are one: 2025. */
 export function seasonLabel(lg: string, y: number): string {
-  return lg === "nhl" || lg === "nba" ? `${y}-${String(y + 1).slice(2)}` : String(y);
+  return TWO_YEAR_SEASONS.has(lg) ? `${y}-${String(y + 1).slice(2)}` : String(y);
 }
 
 /** Display names of the sources the archive draws on (proper names; `srcName` adds the two that are words). */

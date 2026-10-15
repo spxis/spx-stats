@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { championRow, satYears, titleHolders } from "../src/lib/champions.ts";
 import { gapSeason, isGapYear, withCoverage, withGaps } from "../src/lib/coverage.ts";
 import { neutralSite } from "../src/lib/gameSurface.ts";
-import { ALL_LEAGUES, isLeague, LEAGUE_CODES, LG, seasonLabel, SUPER_BOWL_SINCE } from "../src/lib/leagues.ts";
+import { ALL_LEAGUES, isLeague, LEAGUE_CODES, LG, PARENT, seasonLabel, SUPER_BOWL_SINCE } from "../src/lib/leagues.ts";
 import { datedRound, finalName, roundName } from "../src/lib/series.ts";
 import { championshipName, trophyPhrase } from "../src/lib/trophies.ts";
 import type { Say } from "../src/lib/seriesCopy.ts";
@@ -35,7 +35,7 @@ test("the AFL is a league the site knows, a closed one, and its seasons are sing
   assert.equal(LG.afl, "AFL");
   assert.equal(seasonLabel("afl", 1965), "1965");
   assert.equal(seasonLabel("nfl", 1920), "1920");
-  assert.ok(ALL_LEAGUES.filter((l) => l.code !== "afl" && l.code !== "aafc").every((l) => !l.closed));
+  assert.ok(ALL_LEAGUES.filter((l) => l.closed).every((l) => l.code in PARENT));
 });
 
 test("a league's first and last season come from its rows: the NFL starts in 1920, the AFL in 1960 and ends in 1969", () => {

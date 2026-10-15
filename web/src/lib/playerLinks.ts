@@ -3,7 +3,10 @@ import { cache } from "react";
 import { z } from "zod";
 import { rows } from "./api/client";
 import { canFallBack } from "./api/soften";
-import { LEAGUE_CODES } from "./leagues";
+import { LEAGUES } from "./leagues";
+
+/** The leagues of the menu: no player is filed under a rival or predecessor league (the AFL, the NHA), so the pairs are theirs only. */
+const LEAGUE_CODES = LEAGUES.map((l) => l.code);
 import { playerPath, primaryLeague } from "./playerPath";
 
 const multiRow = z.object({ person_id: z.number(), leagues: z.array(z.string()).nullable() });
