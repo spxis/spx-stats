@@ -463,6 +463,13 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   "Player statistics" tables of the club-season articles on English Wikipedia (CC BY-SA 4.0; `source_key` is `enwiki:<title>@<revision id>`, `stat_basis` says whether the
   numbers are totals or averages), NFL from nflverse's `stats_player` files (CC BY 4.0, 1999 on, one line per club). Fetch, load and build steps, the order and the release
   split are in `scripts/player_stats/README.md`. A line is placed only through a Wikidata number or the NFL's gsis id and a roster stint, never on a name.
+- **The NFL from 1920 (the APFA in 1920-21) and the AFL (1960-1969)** come from English Wikipedia (CC BY-SA 4.0): each season article, its standings templates and every
+  club's season article, fetched and parsed by `scripts/nfl/season.py [--league afl] YEAR` into `legacy_wikipedia_nfl` / `legacy_wikipedia_afl` (migrations 054, 108), the raw wikitext
+  archived first (`wikipedia-<league>/<year>/...`). `db/build/151` builds games, standings, franchises and names, `165` and `166` the champions, `178` the alignment.
+  The AFL is its own league (`afl`: `core.season` is one row per league and year) whose clubs are today's franchises (`core.franchise_league` gives each `afl` to 1970-03-01, `nfl` after);
+  clubs that only existed before today's 32 are franchises of their own (`db/seed/nfl_club.csv` says which name is which franchise in which years). The 1966-69 Super Bowls join two leagues and are not
+  loaded; each league's last playoff game is its own championship game. The AAFC (1946-49) is fetched and checked but not loaded until John says so. Standings that do not agree with the games
+  (the 1920s tables count games against clubs outside the league) are logged in `meta.data_issue` and left out, as for 1973-98.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
@@ -580,7 +587,7 @@ EXCLUSIVE lock for the whole rebuild. So:
    spxn.com (pages are kept a day, refreshed on demand after the release). Migration `033` creates the table.
    **After loading new seasons** (a new league, a new year, a backfill like the NFL before 1999) the load is not done until these
    rerunnable steps have run on DS1, each through `scripts/mac/ds1-apply.sh`, and the load's report names each one that ran:
-   `165` champions from the games, `172` champion links, `175` team brands and logos, `178` alignment (conferences and divisions; a
+   `165` champions from the games (`166` the champions of the NFL seasons without a final and the check of the rest, from the season articles), `172` champion links, `175` team brands and logos, `178` alignment (conferences and divisions; a
    new season needs its standings templates in `legacy_alignment`, fetched by `scripts/alignment/`), `183` season notes (add a row to
    `db/seed/season_note.csv` for a short or cancelled season), `190`, `191` and `192` the indexes, `209` the games and finals held at each venue (`core.venue_game_season`, `core.venue_final_game`; release both tables), then `refresh materialized view api.season_summary`
    (`select api.refresh()` on production). Then run `db/checks/051` to `053` (finished season without a champion, team seasons without
