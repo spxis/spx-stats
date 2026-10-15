@@ -51,7 +51,7 @@ def clean(s):
 
 def link_of(cell):
     """Target of the first club-season link in a cell, else None."""
-    m = re.search(r"\[\[(\d{4} [^\]|]+? season)(?:\|[^\]]*)?\]\]", cell)
+    m = re.search(r"\[\[(\d{4} [^\]|]+? season)\s*(?:\|[^\]]*)?\]\]", cell)
     return m.group(1).strip() if m else None
 
 
@@ -367,7 +367,9 @@ def parse_boxes(text, season, team, have):
                      src="game box: " + re.sub(r"\s+", " ", f"{road} {rs} at {home} {hs} {p.get('time') or p.get('date') or ''}")[:300], box=True)
             if re.search(r"super bowl", heads, re.I): v["loc"] = "N"
             # a club meets an opponent once in a postseason: any playoff row against that opponent is this game
-            dup = any(w["phase"] == "playoffs" and w["opp_text"].split()[-1:] == opp_text.split()[-1:] for w in have if w["opp_text"])
+            # (a row may name its opponent only in a link cell: "1968 Oakland Raiders season", with the opponent's text cell empty)
+            last = opp_text.split()[-1:]
+            dup = bool(last) and any(w["phase"] == "playoffs" and last[0].lower() in ((w["opp_text"] or "") + " " + (w["opp_link"] or "")).lower() for w in have)
             if dup: continue
             views.append(v)   # an undated box takes the date of the other club's view of the game when the two are paired
             continue
