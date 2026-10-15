@@ -5,8 +5,8 @@
   season.py [--league L] [--dry] --range 1973 1998
 
 Leagues: nfl (the default; the APFA of 1920-21 is the same league under its first name, so it loads as NFL), afl (the American Football
-League, 1960-1969) and aafc (the All-America Football Conference, 1946-1949; fetched and checked, loaded only when John says so).
-The NFL's rows go to legacy_wikipedia_nfl (migration 054), the AFL's to legacy_wikipedia_afl (migration 109); the core tables are built
+League, 1960-1969) and aafc (the All-America Football Conference, 1946-1949).
+The NFL's rows go to legacy_wikipedia_nfl (migration 054), the AFL's to legacy_wikipedia_afl (migration 109), the AAFC's to legacy_wikipedia_aafc (migration 111); the core tables are built
 from them by db/build/151_nfl_from_wikipedia.sql, which is a separate, reviewed step.
 
 For each season: fetch.py saves the season article, its standings templates and every club's season

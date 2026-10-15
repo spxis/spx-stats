@@ -29,6 +29,10 @@ LEAGUE_TITLE = {"nfl": "NFL", "afl": "AFL", "aafc": "AAFC"}
 def season_title(y, league="nfl"): return f"{y} {LEAGUE_TITLE[league]} season"
 
 
+# The article about a league that no longer plays: archived with the league's first season (infobox dates, the clubs that joined the NFL).
+LEAGUE_PAGE = {"aafc": ("All-America Football Conference", 1946)}
+
+
 def get(title):
     url = "https://en.wikipedia.org/w/index.php?title=" + urllib.parse.quote(title.replace(" ", "_")) + "&action=raw"
     delay = 20
@@ -106,6 +110,7 @@ def fetch_season(y, league="nfl"):
     files = []
     stext = page("season", season_title(y, league), files)
     if stext is None: return [], [], []
+    if league in LEAGUE_PAGE and y == LEAGUE_PAGE[league][1]: page("league", LEAGUE_PAGE[league][0], files)
     tpl = template_titles(y, stext)
     ttext = ""
     for t in tpl:

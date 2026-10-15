@@ -64,3 +64,12 @@ New York Bulldogs,1949,1949,new:YANKS,the Yanks moved to New York
 New York Yanks,1950,1951,new:YANKS,renamed in 1950
 Dallas Texans,1952,1952,new:YANKS,the Yanks moved to Dallas and folded
 Baltimore Colts,1950,1950,new:BALCOLTS50,not the Colts of 1953 on; they had played in the AAFC from 1947
+Brooklyn Dodgers,1946,1948,new:AAFCDODGERS,the AAFC club; not the NFL's Brooklyn Dodgers of 1930-43. In 1949 the club was combined with the AAFC Yankees
+New York Yankees,1946,1949,new:AAFCYANKEES,the AAFC club; not the NFL's New York Yankees of 1927-28
+Buffalo Bisons,1946,1946,new:AAFCBUFFALO,the AAFC club; not the NFL's Buffalo Bisons of 1924-29
+Buffalo Bills,1947,1949,new:AAFCBUFFALO,renamed in 1947; not the Bills of 1960 on
+Chicago Rockets,1946,1948,new:AAFCCHICAGO,
+Chicago Hornets,1949,1949,new:AAFCCHICAGO,the Rockets under new ownership
+Los Angeles Dons,1946,1949,new:AAFCDONS,
+Miami Seahawks,1946,1946,new:AAFCMIAMI,a club of its own; the Colts replaced it in 1947 (English Wikipedia's articles differ on whether that was a relocation)
+Baltimore Colts,1947,1949,new:BALCOLTS50,the original Colts of the AAFC; they joined the NFL in 1950

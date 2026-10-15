@@ -98,6 +98,14 @@ class Early(unittest.TestCase):
         self.assertEqual(sorted(F.team_titles(1960, text)), ["1960 Buffalo Bills season", "1960 Dallas Texans season"])
         self.assertEqual(F.team_titles(1920, text), set())
 
+    def test_aafc_templates_and_clubs(self):
+        # 1946-48 have an Eastern and a Western template, 1949 one table; the AAFC clubs' articles carry "(AAFC)" when an NFL club had the name
+        self.assertEqual(F.template_titles(1948, "{{1948 AAFC Eastern standings}} {{1948 AAFC Western standings}}"), ["1948 AAFC Eastern standings", "1948 AAFC Western standings"])
+        self.assertEqual(F.template_titles(1949, "{{1949 AAFC standings}}"), ["1949 AAFC standings"])
+        text = "[[1949 Buffalo Bills (AAFC) season|Bills]] [[1949 Cleveland Browns season|Browns]] [[1949 AAFC season|league]] [[1949 NFL season|other]]"
+        self.assertEqual(sorted(F.team_titles(1949, text)), ["1949 Buffalo Bills (AAFC) season", "1949 Cleveland Browns season"])
+        self.assertEqual(F.LEAGUE_PAGE["aafc"], ("All-America Football Conference", 1946))
+
 
 if __name__ == "__main__":
     unittest.main()

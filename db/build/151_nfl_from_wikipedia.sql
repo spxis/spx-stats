@@ -1,6 +1,6 @@
--- The NFL before 1999 (1920 on, when it was the APFA) and the AFL (1960-1969) from English Wikipedia (CC BY-SA 4.0): every game its
+-- The NFL before 1999 (1920 on, when it was the APFA), the AFL (1960-1969) and the AAFC (1946-1949) from English Wikipedia (CC BY-SA 4.0): every game its
 -- clubs' season articles log (regular season and playoffs), each season's published standings, and every franchise's names by
--- season, parsed by scripts/nfl/ into legacy_wikipedia_nfl and legacy_wikipedia_afl, season by season. nflverse (150) starts in
+-- season, parsed by scripts/nfl/ into legacy_wikipedia_nfl, legacy_wikipedia_afl and legacy_wikipedia_aafc, season by season. nflverse (150) starts in
 -- 1999 and SPX in 2002, so these seasons have no other source: Wikipedia's games are added as they are, a published standing is
 -- kept only where it agrees with the games, and a season where another source already holds games for that league is left alone
 -- (that would be a cross-check, not a fill).
@@ -16,6 +16,10 @@
 -- city keeps the franchise (Decatur Staleys, Chicago Staleys and Bears; Chicago and St. Louis Cardinals; Portsmouth Spartans and
 -- Lions; the NFL's own continuity as English Wikipedia gives it). Which name belongs to which franchise in which years is
 -- db/seed/nfl_club.csv (the clubs after 1960 that are still in the league are the amap rows below).
+-- The AAFC is a league of its own ('aafc') in the same way: the Browns and the 49ers are today's franchises (core.franchise_league gives each
+-- 'aafc' from 1946 to 1950-03-01 and 'nfl' after), the original Baltimore Colts (1947-49) are the franchise of the 1950 Colts, and the other
+-- clubs (Brooklyn Dodgers, Buffalo Bisons and Bills, Chicago Rockets and Hornets, Los Angeles Dons, Miami Seahawks, New York Yankees) are
+-- franchises of their own (db/seed/nfl_club.csv, keys AAFC*). AAFC records are not NFL records: nothing is added across the two leagues.
 -- The first two seasons were played as the American Professional Football Association; the league is one league ('nfl') under both
 -- names (ref.league_name). Pro Football's 1966-1969 Super Bowls are games between the two leagues and are not loaded: each league's
 -- last playoff game is its own championship game, and its champion is the winner of that.
@@ -35,9 +39,22 @@ on conflict (code) do update set
   covers_from = least(meta.source.covers_from, excluded.covers_from),
   attribution = case when meta.source.attribution like '%NFL season and club-season%' then meta.source.attribution else meta.source.attribution || ' ' || excluded.attribution end,
   notes = case when meta.source.notes like '%NFL results before 1999%' then meta.source.notes else coalesce(meta.source.notes || ' ', '') || excluded.notes end;
+update meta.source set notes = notes || ' The AAFC''s 1946-1949 seasons were read the same way ("<year> AAFC season", its two standings templates and the club-season articles), fetched 2026-10-15.'
+where code = 'wikipedia' and notes not like '%AAFC''s 1946-1949%';
 update meta.source set notes = notes || ' The NFL''s 1920-1971 seasons and the AFL''s 1960-1969 seasons were read the same way (the "<year> APFA season", "<year> AFL season" and club-season articles), fetched 2026-10-15.'
 where code = 'wikipedia' and notes not like '%AFL''s 1960-1969%';
 create temp table src as select source_id from meta.source where code = 'wikipedia';
+
+-- The AAFC, its award
+insert into ref.league (league_code, sport_code, country_code, founded_on, dissolved_on, notes)
+values ('aafc', 'american_football', 'US', date '1944-06-04', date '1950-03-01',
+        'All-America Football Conference, 1946-1949; the Browns, 49ers and Colts joined the NFL for the 1950 season (the other clubs folded)')
+on conflict (league_code) do nothing;
+insert into ref.league_name (league_code, valid_during, name, short_name)
+values ('aafc', daterange(null, null), 'All-America Football Conference', 'AAFC') on conflict do nothing;
+insert into core.award (league_code, code, name, kind, description, first_season, source_id)
+values ('aafc', 'aafc_championship', 'AAFC Championship', 'championship', 'The AAFC championship game; its winner was the league''s champion (1946-1949).', 1946, (select source_id from src))
+on conflict (code) do nothing;
 
 -- The AFL, its award and the APFA name of the NFL's first seasons.
 insert into ref.league (league_code, sport_code, country_code, founded_on, dissolved_on, notes)
@@ -54,9 +71,9 @@ values ('afl', 'afl_championship', 'AFL Championship', 'championship', 'The AFL 
 on conflict (code) do nothing;
 
 -- Take back what an earlier run wrote.
-delete from core.standing where source_id = (select source_id from src) and (source_key like 'wpnfl:%' or source_key like 'wpafl:%');
-delete from meta.data_issue where source_id = (select source_id from src) and (issue like 'NFL:%' or issue like 'AFL:%');
-delete from core.external_id where source_id = (select source_id from src) and entity_kind = 'game' and (external_key like 'wpnfl:%' or external_key like 'wpafl:%');
+delete from core.standing where source_id = (select source_id from src) and source_key ~ '^wp(nfl|afl|aafc):';
+delete from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL|AAFC):';
+delete from core.external_id where source_id = (select source_id from src) and entity_kind = 'game' and external_key ~ '^wp(nfl|afl|aafc):';
 -- (Wikipedia's games are not deleted wholesale: a game keeps its id from run to run, see the games below.)
 
 -- Club names (lower case, as the article titles give them, "(NFL)" dropped) -> franchise, by the year a season starts.
@@ -64,7 +81,7 @@ delete from core.external_id where source_id = (select source_id from src) and e
 create temp table amap (nm text not null, y0 integer not null, y1 integer not null, spx_team_id integer not null);
 insert into amap values
   ('buffalo bills',1960,9999,130),('miami dolphins',1966,9999,131),('boston patriots',1960,1970,132),('new england patriots',1971,9999,132),
-  ('new york jets',1963,9999,133),('new york titans',1960,1962,133),('cincinnati bengals',1968,9999,134),('cleveland browns',1950,1995,135),('cleveland browns',1999,9999,135),
+  ('new york jets',1963,9999,133),('new york titans',1960,1962,133),('cincinnati bengals',1968,9999,134),('cleveland browns',1946,1995,135),('cleveland browns',1999,9999,135),
   ('pittsburgh pirates',1933,1939,136),('pittsburgh steelers',1940,9999,136),('baltimore ravens',1996,9999,137),
   ('houston oilers',1960,1996,138),('tennessee oilers',1997,1998,138),('tennessee titans',1999,9999,138),
   ('baltimore colts',1953,1983,139),('indianapolis colts',1984,9999,139),('jacksonville jaguars',1995,9999,140),('houston texans',2002,9999,141),
@@ -111,10 +128,10 @@ begin
 end $$;
 
 -- Wikipedia's rows, both leagues.
-create temp table wss as select 'nfl' lg, s.* from legacy_wikipedia_nfl.season s union all select 'afl', s.* from legacy_wikipedia_afl.season s;
-create temp table wgm as select 'nfl' lg, g.* from legacy_wikipedia_nfl.game g union all select 'afl', g.* from legacy_wikipedia_afl.game g;
-create temp table wsd as select 'nfl' lg, g.* from legacy_wikipedia_nfl.standing g union all select 'afl', g.* from legacy_wikipedia_afl.standing g;
-create temp table wts as select 'nfl' lg, g.* from legacy_wikipedia_nfl.team_season g union all select 'afl', g.* from legacy_wikipedia_afl.team_season g;
+create temp table wss as select 'nfl' lg, s.* from legacy_wikipedia_nfl.season s union all select 'afl', s.* from legacy_wikipedia_afl.season s union all select 'aafc', s.* from legacy_wikipedia_aafc.season s;
+create temp table wgm as select 'nfl' lg, g.* from legacy_wikipedia_nfl.game g union all select 'afl', g.* from legacy_wikipedia_afl.game g union all select 'aafc', g.* from legacy_wikipedia_aafc.game g;
+create temp table wsd as select 'nfl' lg, g.* from legacy_wikipedia_nfl.standing g union all select 'afl', g.* from legacy_wikipedia_afl.standing g union all select 'aafc', g.* from legacy_wikipedia_aafc.standing g;
+create temp table wts as select 'nfl' lg, g.* from legacy_wikipedia_nfl.team_season g union all select 'afl', g.* from legacy_wikipedia_afl.team_season g union all select 'aafc', g.* from legacy_wikipedia_aafc.team_season g;
 
 -- Seasons to build: Wikipedia's, except one another source already holds games of that league for.
 create temp table seasons as
@@ -140,8 +157,8 @@ delete from ng where home_f is null or away_f is null or home_f = away_f;
 -- A game Wikipedia's rows no longer give (or of a season another source now holds) goes; every other keeps its game_id from run to run,
 -- so the address of a game, its venue and what a release compares stay put when a season is added.
 delete from core.game g using core.season s
-where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code in ('nfl', 'afl')
-  and (g.source_key like 'wpnfl:%' or g.source_key like 'wpafl:%') and not exists (select 1 from ng n where n.key = g.source_key);
+where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code in ('nfl', 'afl', 'aafc')
+  and g.source_key ~ '^wp(nfl|afl|aafc):' and not exists (select 1 from ng n where n.key = g.source_key);
 
 create temp table nst as
 select s.*, s.season as yr, m.franchise_id from wsd s
@@ -184,12 +201,12 @@ create temp table nm as
 select distinct on (yr, franchise_id) yr, franchise_id, team_name as full_name
 from nts order by yr, franchise_id, team_name;
 create temp table nflfr as
-select franchise_id from core.franchise_league where league_code in ('nfl', 'afl')
+select franchise_id from core.franchise_league where league_code in ('nfl', 'afl', 'aafc')
 union select franchise_id from am;
 update core.team_season ts set franchise_identity_id = null
 where franchise_identity_id in (select franchise_identity_id from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nflfr));
 delete from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nflfr);
-delete from core.franchise_league l where l.source_id = (select source_id from src) and l.league_code in ('nfl', 'afl');
+delete from core.franchise_league l where l.source_id = (select source_id from src) and l.league_code in ('nfl', 'afl', 'aafc');
 
 create temp table isl as
 select franchise_id, full_name, min(yr) first_yr, max(yr) last_yr
@@ -217,17 +234,17 @@ update core.team_season ts set franchise_identity_id = (
 where ts.franchise_identity_id is null
   and ts.season_id in (select s.season_id from core.season s join seasons z on z.lg = s.league_code and z.yr = s.start_year);
 
--- League membership: a franchise with AFL seasons is in the 'afl' from its first AFL season to 1970-03-01 and in the 'nfl' for the rest of
--- its identity (the merger), never overlapping a membership another source wrote.
-create temp table aflspan as
-select ts.franchise_id, daterange(make_date(min(s.start_year), 3, 1), make_date(max(s.start_year) + 1, 3, 1)) as rng
-from core.team_season ts join core.season s using (season_id) where s.league_code = 'afl' group by ts.franchise_id;
+-- League membership: a franchise with AFL (or AAFC) seasons is in the 'afl' (the 'aafc') from its first season there to the March after its
+-- last, and in the 'nfl' for the rest of its identity (the merger), never overlapping a membership another source wrote.
+create temp table clspan as
+select ts.franchise_id, s.league_code as lg, daterange(make_date(min(s.start_year), 3, 1), make_date(max(s.start_year) + 1, 3, 1)) as rng
+from core.team_season ts join core.season s using (season_id) where s.league_code in ('afl', 'aafc') group by ts.franchise_id, s.league_code;
 insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
-select p.franchise_id, 'afl', p.rng, (select source_id from src)
-from (select a.franchise_id, u.rng
-      from aflspan a
+select p.franchise_id, p.lg, p.rng, (select source_id from src)
+from (select a.franchise_id, a.lg, u.rng
+      from clspan a
       cross join lateral unnest(datemultirange(a.rng) -
-            coalesce((select range_agg(l.valid_during) from core.franchise_league l where l.franchise_id = a.franchise_id), '{}'::datemultirange)) as u(rng)) p
+            coalesce((select range_agg(l.valid_during) from core.franchise_league l where l.franchise_id = a.franchise_id),'{}'::datemultirange)) as u(rng)) p
 where not isempty(p.rng);
 insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
 select p.franchise_id, 'nfl', p.rng, (select source_id from src)
@@ -235,7 +252,7 @@ from (select i.franchise_id, u.rng
       from (select franchise_id, range_agg(valid_during) as spans from core.franchise_identity
             where source_id = (select source_id from src) and franchise_id in (select franchise_id from nflfr) group by franchise_id) i
       cross join lateral unnest(i.spans -
-            coalesce((select range_agg(a.rng) from aflspan a where a.franchise_id = i.franchise_id), '{}'::datemultirange) -
+            coalesce((select range_agg(a.rng) from clspan a where a.franchise_id = i.franchise_id), '{}'::datemultirange) -
             coalesce((select range_agg(l.valid_during) from core.franchise_league l where l.franchise_id = i.franchise_id), '{}'::datemultirange)) as u(rng)) p
 where not isempty(p.rng);
 -- A franchise of Wikipedia's own: when it began and ended (the first and last season it played, as a March date).
@@ -272,7 +289,7 @@ select (select source_id from src), 'game', n.key, upper(n.lg) || ': Wikipedia''
 from ng n where n.conflict is not null;
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', game_id, source_id, source_key from core.game
-where source_id = (select source_id from src) and (source_key like 'wpnfl:%' or source_key like 'wpafl:%');
+where source_id = (select source_id from src) and source_key ~ '^wp(nfl|afl|aafc):';
 
 -- Final standings as the season's standings templates publish them, kept only where they agree with the games
 -- (wins, losses, ties, points for and against); a line that does not is logged and the site shows the games' sum.
@@ -312,11 +329,11 @@ on conflict do nothing;
 
 select 'x'::text lg, 'x'::text k, 0::bigint n where false
 union all select lg, 'seasons', count(*) from seasons group by lg
-union all select s.league_code, 'games added', count(*) from core.game g join core.season s using (season_id) where g.source_id = (select source_id from src) and s.league_code in ('nfl', 'afl') group by s.league_code
-union all select s.league_code, 'regular', count(*) from core.game g join core.season s using (season_id) where g.source_id = (select source_id from src) and s.league_code in ('nfl', 'afl') and g.phase = 'regular' group by s.league_code
-union all select s.league_code, 'playoffs', count(*) from core.game g join core.season s using (season_id) where g.source_id = (select source_id from src) and s.league_code in ('nfl', 'afl') and g.phase = 'playoffs' group by s.league_code
-union all select split_part(source_key, ':', 1), 'standings', count(*) from core.standing where source_id = (select source_id from src) and (source_key like 'wpnfl:%' or source_key like 'wpafl:%') group by 1
-union all select null, 'standings left out', count(*) from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL): Wikipedia''s standings'
-union all select null, 'log conflicts', count(*) from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL): Wikipedia''s two logs'
-union all select null, 'unmatched name', count(*) from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL): club name not matched';
+union all select s.league_code, 'games added', count(*) from core.game g join core.season s using (season_id) where g.source_id = (select source_id from src) and s.league_code in ('nfl', 'afl', 'aafc') group by s.league_code
+union all select s.league_code, 'regular', count(*) from core.game g join core.season s using (season_id) where g.source_id = (select source_id from src) and s.league_code in ('nfl', 'afl', 'aafc') and g.phase = 'regular' group by s.league_code
+union all select s.league_code, 'playoffs', count(*) from core.game g join core.season s using (season_id) where g.source_id = (select source_id from src) and s.league_code in ('nfl', 'afl', 'aafc') and g.phase = 'playoffs' group by s.league_code
+union all select split_part(source_key, ':', 1), 'standings', count(*) from core.standing where source_id = (select source_id from src) and source_key ~ '^wp(nfl|afl|aafc):' group by 1
+union all select null, 'standings left out', count(*) from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL|AAFC): Wikipedia''s standings'
+union all select null, 'log conflicts', count(*) from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL|AAFC): Wikipedia''s two logs'
+union all select null, 'unmatched name', count(*) from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NFL|AFL|AAFC): club name not matched';
 commit;
