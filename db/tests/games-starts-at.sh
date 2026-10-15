@@ -1,5 +1,5 @@
 #!/bin/bash
-# Migration 111 adds starts_at to api.games without dropping a column. Scratch Postgres, removed by name.
+# Migration 112 adds starts_at to api.games without dropping a column. Scratch Postgres, removed by name.
 #   bash db/tests/games-starts-at.sh
 set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -49,8 +49,8 @@ select s.league_code as league, s.start_year as year, g.game_id, g.game_date, g.
 from core.game g join core.season s using (season_id) join meta.source src on src.source_id = g.source_id
 where g.status <> 'cancelled';
 SQL
-docker cp "$REPO/db/migrations/111_games_starts_at.sql" "$NAME:/tmp/111.sql"
-docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/111.sql >/dev/null
+docker cp "$REPO/db/migrations/112_games_starts_at.sql" "$NAME:/tmp/112.sql"
+docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/112.sql >/dev/null
 got="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select game_id || '|' || coalesce(starts_at::text, '') from api.games order by game_id;")"
 want=$'7|2026-07-16 02:00:00+00\n8|'
 if [ "$got" = "$want" ]; then echo "ok   starts_at is on the view, and a null stays null"; exit 0; fi
