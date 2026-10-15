@@ -4,14 +4,18 @@ into a dated raw cache. Raw wikitext is saved exactly as served (action=raw), ne
 per 2.5 s, identified User-Agent, backoff on 429/5xx. Existing files are never refetched.
 
 Library for season.py; run directly to fetch one season:  fetch.py YEAR   (1987 = the 1987 NFL season)
-The cache defaults to ~/spx-raw/wikipedia_nfl/<run date> (outside the repository); NFL_CACHE overrides it.
+The cache defaults to ~/Projects/backups/spx-stats/raw/wikipedia_nfl/<run date> (outside the repository); NFL_CACHE overrides it.
+
+Leagues (fetch.py [--league nfl|afl|aafc] YEAR): nfl is the NFL and, in 1920 and 1921, its first name, the APFA (the 1920 and 1921
+"NFL season" titles are redirects to "1920 APFA season"); afl is the American Football League of 1960-1969; aafc is the All-America
+Football Conference of 1946-1949.
 """
 import os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 
 UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 GAP = 2.5
 RUN_DATE = os.environ.get("NFL_RUN_DATE", "2026-10-12")
-CACHE = os.environ.get("NFL_CACHE", os.path.expanduser(f"~/spx-raw/wikipedia_nfl/{RUN_DATE}"))
+CACHE = os.environ.get("NFL_CACHE", os.path.expanduser(f"~/Projects/backups/spx-stats/raw/wikipedia_nfl/{RUN_DATE}"))
 _last = [0.0]
 CTX = ssl.create_default_context()
 
@@ -19,7 +23,10 @@ CTX = ssl.create_default_context()
 def fname(title): return re.sub(r"[^A-Za-z0-9._-]+", "_", title) + ".wikitext"
 
 
-def season_title(y): return f"{y} NFL season"
+LEAGUE_TITLE = {"nfl": "NFL", "afl": "AFL", "aafc": "AAFC"}
+
+
+def season_title(y, league="nfl"): return f"{y} {LEAGUE_TITLE[league]} season"
 
 
 def get(title):
@@ -70,24 +77,34 @@ def page(sub, title, files=None):
 
 def template_titles(y, text):
     """Standings templates a season article transcludes: {{1987 AFC East standings}}."""
-    return sorted(set(m.strip() for m in re.findall(r"\{\{\s*(%d (?:AFC|NFC|AFL|NFL|NFL Eastern|NFL Western|NFL Capitol|NFL Century)[^{}|]*?[Ss]tandings)\s*(?:\|[^{}]*)?\}\}" % y, text)))
+    return sorted(set(m.strip() for m in re.findall(r"\{\{\s*(%d (?:AFC|NFC|AFL|NFL|APFA|AAFC)[^{}|]*?[Ss]tandings)\s*(?:\|[^{}]*)?\}\}" % y, text)))
 
 
 def team_titles(y, text):
     """Club-season articles named in a season's standings templates: [[1987 Chicago Bears season|...]]."""
     out = set()
     for m in re.findall(r"\[\[(%d [^\]|#]+? season)" % y, text):
-        if re.fullmatch(r"%d (NFL|AFL|AFC|NFC) season" % y, m): continue
+        if re.fullmatch(r"%d (NFL|AFL|AFC|NFC|APFA|AAFC) season" % y, m): continue
         if re.search(r"(NFL|AFL|NFL draft|Pro Bowl|Super Bowl)\b.* season$", m) and "(NFL)" not in m and "(AFL)" not in m: continue
         out.add(m.strip())
     return out
 
 
-def fetch_season(y):
+# Clubs the standings templates name without a season article of their own: the two wartime mergers (1943 Eagles + Steelers,
+# 1944 Cardinals + Steelers). Their season is told in the club's article, which is laid out like a club-season article.
+EXTRA_CLUBS = {("nfl", 1943): {"Phil-Pitt Steagles": "Steagles"}, ("nfl", 1944): {"Card-Pitt": "Card-Pitt"}}
+
+
+def extra_clubs(y, league="nfl"):
+    """{club name: article title} for the clubs of that season that have no '<year> <club> season' article."""
+    return dict(EXTRA_CLUBS.get((league, y), {}))
+
+
+def fetch_season(y, league="nfl"):
     """Fetch the season article, its standings templates and every club-season article they name.
     Returns (files relative to CACHE, template titles, club-season titles)."""
     files = []
-    stext = page("season", season_title(y), files)
+    stext = page("season", season_title(y, league), files)
     if stext is None: return [], [], []
     tpl = template_titles(y, stext)
     ttext = ""
@@ -97,9 +114,14 @@ def fetch_season(y):
     teams = team_titles(y, ttext if ttext else stext)
     for t in sorted(teams):
         page("team", t, files)
+    for t in extra_clubs(y, league).values():
+        page("team", t, files)
     return sorted(set(files)), tpl, sorted(teams)
 
 
 if __name__ == "__main__":
-    f, tpl, teams = fetch_season(int(sys.argv[1]))
+    a = sys.argv[1:]
+    lg = "nfl"
+    if a and a[0] == "--league": lg = a[1]; a = a[2:]
+    f, tpl, teams = fetch_season(int(a[0]), lg)
     print(len(f), "files;", len(tpl), "templates;", len(teams), "teams")

@@ -359,10 +359,10 @@ def parse_boxes(text, season, team, have):
             me, opp = (hs, rs) if home_is_me else (rs, hs)
             opp_text = road if home_is_me else home
             mark = "W" if me > opp else "L" if me < opp else "T"
-            is_po = bool(re.search(r"playoff|postseason|post-season", h2, re.I)) or bool(re.match(
+            is_po = bool(re.search(r"playoff|postseason|post-season|(?:NFL|AFL|AAFC|league|division|conference|title) championship|championship game|super bowl", h2, re.I)) or bool(re.match(
                 r"^(?:\d{4}\s+)?(?:AFC|NFC)?\s*(?:wild ?card|divisional|conference|championship|super bowl|first round|second round)", h4 or h3, re.I))
             if not is_po: continue   # regular-season boxes only repeat table rows; the boxes fill the playoff games a club's table lacks
-            v = dict(phase="playoffs", round=(h4 or h3), week=None, date=d, opp_link=None, opp_text=opp_text,
+            v = dict(phase="playoffs", round=(h4 or h3 or h2), week=None, date=d, opp_link=None, opp_text=opp_text,
                      loc="H" if home_is_me else "A", mark=mark, hi=max(me, opp), lo=min(me, opp), ot=ot, rec=None,
                      src="game box: " + re.sub(r"\s+", " ", f"{road} {rs} at {home} {hs} {p.get('time') or p.get('date') or ''}")[:300], box=True)
             if re.search(r"super bowl", heads, re.I): v["loc"] = "N"
@@ -581,10 +581,15 @@ def parse_standings(text, season):
         cs = cells_of(cl)
         if len(cs) < 3 or not cs[0]: continue
         ti = next((k for k, c in enumerate(cs) if link_of(c)), None)
-        if ti is None: continue
-        link = link_of(cs[ti])
-        team = re.sub(r"^\d{4} ", "", link)[:-7]
-        team = re.sub(r"\s*\([^)]*\)$", "", team)
+        if ti is None:
+            # a merged wartime club has no season article of its own: [[Steagles|Phil-Pitt]], [[Card-Pitt]]
+            ti = next((k for k, c in enumerate(cs) if re.search(r"\[\[(?:Steagles|Card-Pitt)(?:\|[^\]]*)?\]\]", c)), None)
+            if ti is None: continue
+            team = {"Phil-Pitt": "Phil-Pitt Steagles"}.get(clean(cs[ti]), clean(cs[ti]))
+        else:
+            link = link_of(cs[ti])
+            team = re.sub(r"^\d{4} ", "", link)[:-7]
+            team = re.sub(r"\s*\([^)]*\)$", "", team)
         sm = re.search(r"\((\d)\)", cs[ti])
         seed = int(sm.group(1)) if sm else None
         if seed is None and ti >= 1 and re.fullmatch(r"\d{1,2}", clean(cs[0])): seed = int(clean(cs[0]))
@@ -615,3 +620,47 @@ def parse_standings(text, season):
 def intr(s):
     m = re.match(r"^\D*(\d+)", s)
     return int(m.group(1)) if m else None
+
+
+# ---- a league-wide game table (the 1920 APFA season article): "Visitor | Score | Home | Score | Location" under dated rows ----
+def parse_league_table(text, season):
+    """Games a season article lists for the whole league, one wikitable of dated rows (date row, then
+    Visitor || Score || Home || Score || Location). A row naming a club outside the league (marked with {{Dagger}}) is left out;
+    the pairing drops any other opponent that is not a club of the season.
+    -> list of dict(date, away, away_pts, home, home_pts, src)."""
+    out = []
+    cur = None
+    for ln in text.split("\n"):
+        s = ln.strip()
+        if s.startswith("!") and "colspan" in s:
+            d = date_of(s.split("|", 1)[1] if "|" in s else s, season)
+            if d: cur = d
+            continue
+        if not s.startswith("|") or s.startswith(("|-", "|}", "|+")) or "||" not in s or cur is None: continue
+        cs = [strip_attr(c) for c in re.split(r"\|\|", s[1:])]
+        if len(cs) < 4: continue
+        if not (re.fullmatch(r"\d{1,2}", clean(cs[1])) and re.fullmatch(r"\d{1,2}", clean(cs[3]))): continue
+        if "dagger" in (cs[0] + cs[2]).lower(): continue   # a club outside the league
+        def nm(c): return re.sub(r"\s*\(\d+\s*[–-]\s*\d+(?:\s*[–-]\s*\d+)?\)\s*$", "", clean(c)).strip()
+        out.append(dict(date=cur, away=nm(cs[0]), away_pts=int(clean(cs[1])), home=nm(cs[2]), home_pts=int(clean(cs[3])),
+                        src="league table: " + " | ".join(clean(c) for c in cs)[:300]))
+    return out
+
+
+def table_views(rows, teams, names=None):
+    """League-table rows -> two views each (one per club), in the shape parse_team_page returns, for the clubs in `teams`.
+    -> (views by club, rows whose two sides do not both name one club of the season)."""
+    views, skipped = {}, []
+    for r in rows:
+        a = resolve((names or {}).get(r["away"], r["away"]), None, teams)
+        h = resolve((names or {}).get(r["home"], r["home"]), None, teams)
+        if len(a) != 1 or len(h) != 1 or a[0] == h[0]:
+            skipped.append(r["src"]); continue
+        a, h = a[0], h[0]
+        hi, lo = max(r["home_pts"], r["away_pts"]), min(r["home_pts"], r["away_pts"])
+        hm = "T" if r["home_pts"] == r["away_pts"] else "W" if r["home_pts"] > r["away_pts"] else "L"
+        am = {"W": "L", "L": "W", "T": "T"}[hm]
+        for me, opp, loc, mark in ((h, a, "H", hm), (a, h, "A", am)):
+            views.setdefault(me, []).append(dict(phase="regular", round=None, week=None, date=r["date"], opp_link=None, opp_text=opp, loc=loc,
+                                                 mark=mark, hi=hi, lo=lo, ot=False, rec=None, src=r["src"], team=me))
+    return views, skipped
