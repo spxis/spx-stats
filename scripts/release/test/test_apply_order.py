@@ -12,6 +12,8 @@ production, seeded with a tiny schema with the same shapes as the real failures:
   - the position release (2026.10.13-11 and -13): a new, empty parent code table (ref.position_code), a list table named with a keyword
     (ref."position"), an alias table with a composite key to it, a person table with a NOT VALID key to the code table and a trigger that
     reads it, a re-keyed stats child of person, removed persons, redirects, and a table that points at itself
+  - exclusion constraints on referenced tables (release 2026.10.15-11): franchise_identity rebuilt with new ids and the same ranges, a
+    child re-pointed, a range that shrinks while a new row takes its old part, and tables where the block must not empty a range
   - a foreign key loop, which must be refused at prepare, with the loop built from both databases' keys
 It runs the real publish_plan, stage_and_apply, snapshot and restore from release.py. Exit code: 0 all passed, 1 a check failed.
 """
@@ -526,6 +528,127 @@ def scenario_publish_filter(snap):
     ok("and after a restore the game rows are removals again", len(diffs3["core.external_id"][1]["only2"]) == 42)
 
 
+EXCL_TABLES = ["core.franchise_identity", "core.team_season", "core.span_check", "core.span_trigger"]
+EXCL_DDL = """
+create extension if not exists btree_gist;
+create schema core; create schema meta; create schema ref;
+create table core.franchise_identity (identity_id int primary key, franchise_id int not null, valid_during daterange not null,
+  name text not null,
+  constraint franchise_identity_franchise_id_valid_during_excl exclude using gist (franchise_id with =, valid_during with &&));
+create table core.team_season (team_season_id int primary key, identity_id int not null references core.franchise_identity, label text);
+create table core.span_check (span_id int primary key, owner_id int not null, valid_during daterange not null,
+  check (not isempty(valid_during)),
+  exclude using gist (owner_id with =, valid_during with &&));
+create table core.span_ref (span_id int primary key references core.span_check);
+create table core.span_trigger (span_id int primary key, owner_id int not null, valid_during daterange not null,
+  exclude using gist (owner_id with =, valid_during with &&));
+create table core.span_trigger_child (id int primary key, span_id int not null references core.span_trigger);
+create function core.span_trigger_noop() returns trigger language plpgsql as $$ begin return new; end $$;
+create trigger span_trigger_upd before update on core.span_trigger for each row execute function core.span_trigger_noop();
+"""
+# production: identity 1 and 2 of franchise 1501; identity 3 of franchise 7 is [2000,2005); every season points at an identity
+EXCL_OLD = """
+insert into core.franchise_identity values (1, 1501, '[1984-03-01,1999-03-01)', 'Old A'), (2, 1501, '[1999-03-01,)', 'Old B'),
+  (3, 7, '[2000-01-01,2005-01-01)', 'Seven'), (4, 8, '[1990-01-01,1995-01-01)', 'Gone');
+insert into core.team_season values (1, 1, 'a'), (2, 2, 'b'), (3, 3, 'c'), (4, 4, 'd');
+insert into core.span_check values (1, 1, '[2000-01-01,2001-01-01)');
+insert into core.span_ref values (1);
+insert into core.span_trigger values (1, 1, '[2000-01-01,2001-01-01)');
+insert into core.span_trigger_child values (1, 1);
+"""
+# DS1's rebuild: the same spans under NEW ids (1 and 2 become 11 and 12, so the new rows overlap the removed ones); identity 3 keeps
+# its id but its range shrinks, and a new identity 13 takes the first part of it (overlapping row 3's OLD range); identity 4 is gone
+EXCL_NEW = """
+insert into core.franchise_identity values (11, 1501, '[1984-03-01,1999-03-01)', 'New A'), (12, 1501, '[1999-03-01,)', 'New B'),
+  (3, 7, '[2003-01-01,2005-01-01)', 'Seven'), (13, 7, '[2000-01-01,2003-01-01)', 'Seven early');
+insert into core.team_season values (1, 11, 'a'), (2, 12, 'b'), (3, 3, 'c');
+insert into core.span_check values (2, 1, '[2000-01-01,2001-01-01)');
+insert into core.span_ref values (2);
+insert into core.span_trigger values (2, 1, '[2000-01-01,2001-01-01)');
+insert into core.span_trigger_child values (1, 2);
+"""
+
+
+def scenario_exclusion(snap):
+    """Release 2026.10.15-11: a referenced table with an exclusion constraint (franchise_id =, valid_during &&). A removed row still
+    present when an incoming row with a new id and the same range is inserted made the block fail with 23P01."""
+    print("--- exclusion constraints on referenced tables")
+    for db, seed in (("excl_prod", EXCL_OLD), ("excl_ds1", EXCL_NEW)):
+        psql("postgres", "create database %s" % db)
+        psql(db, EXCL_DDL + seed)
+    R.SNAP_DIR = snap
+    ds1 = C.PsqlSide("DS1", dsn("excl_ds1"))
+    ctx = types.SimpleNamespace(ds1=ds1, prod=Prod("excl_prod"), w=R.Ds1Writer(dsn("excl_ds1")))
+    names = ["core.franchise_identity", "core.team_season"]
+    cat, cat1 = C.catalog(ctx.prod), C.catalog(ds1)
+    tabs = {n: C.Table(n, cat1[n], cat[n]) for n in EXCL_TABLES}
+    ok("the range column of the gist exclusion is found (&& on a range type)",
+       tabs["core.franchise_identity"].neutral == [("valid_during", "'empty'")], tabs["core.franchise_identity"].neutral)
+    ok("a table with a check on the column is left alone, with the reason",
+       tabs["core.span_check"].neutral == [] and any("check" in x for x in tabs["core.span_check"].excl_notes), tabs["core.span_check"].excl_notes)
+    ok("a table with an update trigger is left alone, with the reason",
+       tabs["core.span_trigger"].neutral == [] and any("trigger" in x for x in tabs["core.span_trigger"].excl_notes), tabs["core.span_trigger"].excl_notes)
+
+    before = dump("excl_prod", names)
+    diffs, blockers, _ = R.diff_tables(ctx, names)
+    ok("no blockers", not any(blockers.values()), blockers)
+    items = [(n, diffs[n][0], diffs[n][1]) for n in R.ordered(ctx, names)]
+    plan = R.publish_plan(ctx, items)
+    ok("identities are referenced, seasons are not",
+       {p["t"].name: p["fresh"] for p in plan} == {"core.franchise_identity": False, "core.team_season": True})
+    R.snapshot(ctx, 1, "2026.10.15-t", items)
+    sent = []
+    R.apply_block = lambda steps: sent.append(REAL_BLOCK(steps)) or sent[-1]
+    try:
+        R.stage_and_apply(ctx, 1, plan)
+        committed, err = True, ""
+    except Exception as e:  # noqa: BLE001
+        committed, err = False, e
+    ok("the block commits although a removed or changed row overlaps an incoming one", committed, err)
+    block = (sent[0] if sent else "").splitlines()
+
+    def at(pattern):
+        hits = [i for i, line in enumerate(block) if re.search(pattern, line)]
+        return hits[0] if hits else None
+
+    upd = at(r'^update "core"\."franchise_identity" t set "valid_during" = \'empty\' from \S+ d ')
+    upd2 = at(r'^update "core"\."franchise_identity" t set "valid_during" = \'empty\' from \S+ u .*is distinct from')
+    ins = at(r'^insert into "core"\."franchise_identity"')
+    dele = at(r'^delete from "core"\."franchise_identity" t using \S+ d ')
+    ok("removed rows are emptied before the insert, and deleted after it", upd is not None and ins is not None and upd < ins < dele, block)
+    ok("rows whose range changes are emptied before the insert", upd2 is not None and ins is not None and upd2 < ins)
+    ok("the neutralised table is the only one touched",
+       not any(re.match(r'^update "core"\."(team_season|span_)', line) for line in block))
+    ok("production now equals DS1", dump("excl_prod", names) == dump("excl_ds1", names), (dump("excl_prod", names), dump("excl_ds1", names)))
+    ok("every season points at an identity that exists",
+       psql("excl_prod", "select count(*) from core.team_season s join core.franchise_identity using (identity_id)") == "3")
+    ok("the constraint itself is unchanged (not deferrable, same definition)",
+       psql("excl_prod", "select condeferrable::text || ':' || pg_get_constraintdef(oid) from pg_constraint where conname = "
+            "'franchise_identity_franchise_id_valid_during_excl'")
+       == "false:EXCLUDE USING gist (franchise_id WITH =, valid_during WITH &&)")
+
+    # the restore goes through the same block and has the same collision the other way round
+    sent.clear()
+    R.restore(ctx, 1, names, orig_rows={n: diffs[n][1]["prod"] for n in names})
+    ok("restore commits through the same block", len(sent) == 1)
+    ok("restore puts production back exactly as it was", dump("excl_prod", names) == before, (dump("excl_prod", names), before))
+
+    # a table where the emptying is not allowed: the old order stays, and a collision fails with the reason named
+    psql("excl_prod", "insert into core.span_check values (5, 2, '[2000-01-01,2001-01-01)'); insert into core.span_ref values (5)")
+    psql("excl_ds1", "insert into core.span_check values (6, 2, '[2000-01-01,2001-01-01)'); insert into core.span_ref values (6)")
+    names2 = ["core.span_check", "core.span_ref"]
+    R.apply_block = REAL_BLOCK
+    d2, _, _ = R.diff_tables(ctx, names2)
+    items2 = [(n, d2[n][0], d2[n][1]) for n in R.ordered(ctx, names2)]
+    try:
+        R.stage_and_apply(ctx, 3, R.publish_plan(ctx, items2))
+        msg = ""
+    except Exception as e:  # noqa: BLE001
+        msg = str(e)
+    ok("a table with a check fails as before, and the error names why it could not be emptied",
+       "violates exclusion constraint" in msg and "cannot be emptied: a check constraint names it" in msg, msg)
+
+
 def main():
     snap = tempfile.mkdtemp(prefix="ordsnap-")
     tmp, stop = start_server()
@@ -533,6 +656,7 @@ def main():
         scenario_divisions(snap)
         scenario_positions(snap, True)
         scenario_positions(snap, False)
+        scenario_exclusion(snap)
         scenario_cycles(snap)
         scenario_publish_filter(snap)
     finally:

@@ -656,12 +656,18 @@ def apply_block(steps):
     references; every other step is a referenced table. In order:
       1. fresh tables, children first: delete the removals and the rows about to be written, so a row that is replaced by one with
          another id but the same natural key (or rows that swap unique values) cannot collide. Nothing references these rows.
+      1b. referenced tables with an exclusion constraint (EXCLUDE ... valid_during WITH &&, production's, not deferrable): set the range
+         column of the rows about to be removed, and of the rows about to be updated to another range, to the empty range, which
+         overlaps nothing (C.neutral_columns decides when that is safe: no check, unique index, foreign key or update trigger on the
+         column). Otherwise an incoming row with a new id and an overlapping range collides with a row that is still there (release
+         2026.10.15-11, core.franchise_identity). Updated rows get their final range in step 2, removed rows go in step 3.
       2. every table, parents first: insert or update the changed rows (new parents exist before the children that point at them,
          and children are re-pointed away from the rows about to go).
       3. referenced tables, children first: delete the removals. By now no kept row points at them.
     Then count checks, sequence resets, drop the stages. A single statement, so it commits or rolls back as a whole whatever the
     API does with a multi-statement text. A table that is both referenced and has a unique natural key that a removed row shares
-    with an incoming one cannot be ordered this way: the block fails on the unique key, and production is unchanged."""
+    with an incoming one cannot be ordered this way: the block fails on the unique key, and production is unchanged. The same goes for
+    an exclusion constraint whose range column step 1b may not empty (the notes are in the error: stage_and_apply adds them)."""
     out = ["do $apply$ begin"]
     for s in reversed(steps):
         if not s.get("fresh"):
@@ -673,6 +679,20 @@ def apply_block(steps):
         if s["up"]:
             cond = " and ".join("t.%s = u.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
             out.append("delete from %s t using %s u where %s;" % (t.fq, s["up"], cond))
+    for s in steps:
+        t = s["t"]
+        neutral = [] if s.get("fresh") else getattr(t, "neutral", [])
+        if not neutral:
+            continue
+        cond = " and ".join("t.%s = %%s.%s" % (C.qi(k), C.qi(k)) for k in t.pk)
+        sets = ", ".join("%s = %s" % (C.qi(c), lit) for c, lit in neutral)
+        if s["del"]:
+            out.append("update %s t set %s from %s d where %s;" % (t.fq, sets, s["del"], cond % "d"))
+        ranged = [(c, lit) for c, lit in neutral if c in t.insert_cols]
+        if s["up"] and ranged:
+            changed = " or ".join("t.%s is distinct from u.%s" % (C.qi(c), C.qi(c)) for c, _ in ranged)
+            out.append("update %s t set %s from %s u where %s and (%s);"
+                       % (t.fq, ", ".join("%s = %s" % (C.qi(c), lit) for c, lit in ranged), s["up"], cond % "u", changed))
     for s in steps:
         t = s["t"]
         cols = ",".join(C.qi(c) for c in t.insert_cols)
@@ -726,7 +746,13 @@ def stage_and_apply(ctx, rid, plan):
                 head = "insert into %s (%s) values\n" % (step["del"], ",".join(C.qi(k) for k in t.pk))
                 send_batches(ctx.prod, (head + ",\n".join(lits[j:j + 1000]) + "\non conflict do nothing" for j in range(0, len(lits), 1000)))
             steps.append(step)
-        prod_exec(ctx.prod, apply_block(steps), attempts=1, timeout=900)
+        try:
+            prod_exec(ctx.prod, apply_block(steps), attempts=1, timeout=900)
+        except Exception as e:
+            notes = [n for s in steps if not s.get("fresh") for n in getattr(s["t"], "excl_notes", [])]
+            if notes and ("23P01" in str(e) or "exclusion constraint" in str(e)):
+                raise RuntimeError("%s (the block could not step these exclusion constraints aside: %s)" % (e, "; ".join(notes))) from e
+            raise
     finally:
         st.drop()
 

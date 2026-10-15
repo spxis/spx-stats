@@ -15,6 +15,7 @@ Exit code: 0 all same, 1 differences found, 2 error.
 import argparse
 import json
 import os
+import re
 import struct
 import subprocess
 import sys
@@ -125,7 +126,36 @@ select c.relnamespace::regnamespace::text as s, c.relname as t,
    from pg_index i
    cross join lateral unnest(i.indkey::int2[]) with ordinality as k(attnum, ord)
    join pg_attribute a on a.attrelid = c.oid and a.attnum = k.attnum
-   where i.indrelid = c.oid and i.indisprimary) as pk
+   where i.indrelid = c.oid and i.indisprimary) as pk,
+  -- what the release's apply block needs to know to step an exclusion constraint aside (Table.neutral): every exclusion constraint
+  -- with, per key element, its column, whether the column is a range or multirange, and its operator; and what would make
+  -- changing such a column unsafe (check constraints, unique indexes, foreign keys, update triggers).
+  json_build_object(
+    'excl', (select coalesce(json_agg(json_build_object('n', k.conname, 'els', (
+        select json_agg(json_build_object('col', a.attname, 'rng', coalesce(ty.typtype in ('r', 'm'), false), 'mr', coalesce(ty.typtype = 'm', false),
+          'op', o.oprname) order by e.ord)
+        from unnest(i.indkey::int2[], k.conexclop) with ordinality as e(attnum, opid, ord)
+        left join pg_attribute a on a.attrelid = c.oid and a.attnum = e.attnum and e.attnum > 0
+        left join pg_type ty on ty.oid = a.atttypid
+        left join pg_operator o on o.oid = e.opid))), '[]'::json)
+      from pg_constraint k join pg_index i on i.indexrelid = k.conindid
+      where k.conrelid = c.oid and k.contype = 'x'),
+    'chk', (select coalesce(json_agg(pg_get_constraintdef(k.oid)), '[]'::json) from pg_constraint k where k.conrelid = c.oid and k.contype = 'c'),
+    'uniq', (select coalesce(json_agg(distinct a.attname), '[]'::json)
+      from pg_index i cross join lateral unnest(i.indkey::int2[]) as u(attnum)
+      join pg_attribute a on a.attrelid = c.oid and a.attnum = u.attnum
+      where i.indrelid = c.oid and i.indisunique),
+    'fk', (select coalesce(json_agg(distinct a.attname), '[]'::json)
+      from (select unnest(k.conkey) as attnum from pg_constraint k where k.contype = 'f' and k.conrelid = c.oid
+            union all select unnest(k.confkey) from pg_constraint k where k.contype = 'f' and k.confrelid = c.oid) u
+      join pg_attribute a on a.attrelid = c.oid and a.attnum = u.attnum),
+    'trg', (select coalesce(json_agg(distinct x.col), '[]'::json)
+      from (select coalesce(a.attname, '*') as col
+            from pg_trigger g
+            left join lateral unnest(g.tgattr::int2[]) as u(attnum) on true
+            left join pg_attribute a on a.attrelid = c.oid and a.attnum = u.attnum
+            where g.tgrelid = c.oid and not g.tgisinternal and (g.tgtype & 16) <> 0) x)
+  ) as guard
 from pg_class c
 where c.relkind in ('r', 'p') and not c.relispartition
   and c.relnamespace::regnamespace::text in (%s)
@@ -200,6 +230,46 @@ def float_text(hexbits):
     return repr(v)
 
 
+def neutral_columns(name, guard, writable):
+    """(columns, notes) for the release's apply block, from production's catalog row (the "guard" part of CATALOG_SQL).
+
+    columns: [(column, literal)] range columns of the table's exclusion constraints that the block may set to the empty range (an empty
+    range overlaps nothing) on a row about to be removed or re-ranged, so that an incoming row that overlaps it can be inserted first.
+    A column qualifies when every exclusion element on it uses && and nothing else cares about its value: no check constraint that
+    names it, no unique index or foreign key on it, no update trigger that fires for it. notes: why a constraint's column did not
+    qualify (the apply block then keeps the plain order, and a collision fails the block with these notes in the error)."""
+    if not guard:
+        return [], []
+    cols, notes = [], []
+    for k in guard.get("excl") or []:
+        els = k.get("els") or []
+        cands = [e["col"] for e in els if e.get("rng") and e.get("op") == "&&" and e.get("col")]
+        if not cands:
+            notes.append("exclusion constraint %s on %s has no range column compared with &&, so no row can be stepped aside" % (k["n"], name))
+            continue
+        for c in cands:
+            why = []
+            if any(e.get("col") == c and e.get("op") != "&&" for e in els):
+                why.append("another element of the constraint uses it with a different operator")
+            if re.search(r'(?<![A-Za-z0-9_])"?%s"?(?![A-Za-z0-9_])' % re.escape(c), " ".join(guard.get("chk") or [])):
+                why.append("a check constraint names it")
+            if c in (guard.get("uniq") or []):
+                why.append("a unique index covers it")
+            if c in (guard.get("fk") or []):
+                why.append("a foreign key covers it")
+            if c in (guard.get("trg") or []) or "*" in (guard.get("trg") or []):
+                why.append("an update trigger may fire")
+            if c not in writable:
+                why.append("it is not a column both databases write")
+            if why:
+                notes.append("%s.%s (constraint %s) cannot be emptied: %s" % (name, c, k["n"], "; ".join(why)))
+            else:
+                mr = any(e.get("col") == c and e.get("mr") for e in els)
+                if (c, "'{}'" if mr else "'empty'") not in cols:
+                    cols.append((c, "'{}'" if mr else "'empty'"))
+    return cols, notes
+
+
 class Table:
     def __init__(self, name, ds1_cat, prod_cat):
         self.name = name
@@ -228,6 +298,7 @@ class Table:
             pp = prod_cat["pk"]
             if pp != self.pk:
                 self.notes.append("primary key differs: DS1 %s, production %s" % (self.pk, pp))
+        self.neutral, self.excl_notes = neutral_columns(name, prod_cat.get("guard"), set(self.insert_cols))
         if self.pk:
             kt = "row(%s)::text" % ",".join(cexpr(k, self.types[k]) for k in self.pk)
             kjson = "json_build_array(%s)" % ",".join(cexpr(k, self.types[k]) for k in self.pk)

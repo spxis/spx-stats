@@ -52,6 +52,14 @@ order by hand.
 1. **Fresh tables, children first:** delete the listed removals, then delete the rows about to be written. A row replaced by one with
    another id but the same natural key (`franchise_brand`, `award_winner`), or rows that swap unique values, cannot collide, and nothing
    references what is deleted. Fresh tables are then written with a plain insert.
+1b. **Exclusion constraints on referenced tables:** a referenced table with `EXCLUDE USING gist (... valid_during WITH &&)` (production's,
+   not deferrable, never changed by the block) can hold a removed row that overlaps an incoming row with a new id (release 2026.10.15-11,
+   `core.franchise_identity`). So before any insert the block sets the range column of the rows about to be removed, and of the rows about
+   to be updated to a different range, to the empty range, which overlaps nothing; updated rows get their final range in step 2 and the
+   removed rows are deleted in step 3. `compare.neutral_columns` reads production's catalog (`guard` in `CATALOG_SQL`) and does this only
+   when it is safe: every exclusion element on the column uses `&&`, no check constraint names the column, no unique index or foreign key
+   covers it and no update trigger fires for it. Otherwise the table keeps the plain order, and a collision fails the block with the reason
+   (`Table.excl_notes`) added to the error. Generic for any table; nothing about `franchise_identity` is special-cased.
 2. **All tables, parents first:** insert or update the changed rows. New parents (a rebuilt `division` with new ids) exist before the
    children that point at them, and children (`team_season`) are re-pointed away from the rows about to go.
 3. **Referenced tables, children first:** delete the listed removals (old divisions, then old conferences). No kept row points at them now.
