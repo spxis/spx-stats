@@ -12,7 +12,6 @@ import { SeasonOutage } from "@/components/SeasonOutage";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SeasonGamesProvider } from "@/components/SeasonGamesData";
 import { SeasonWeek } from "@/components/SeasonWeek";
-import { packGames } from "@/lib/gamesCodec";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
 import { StandingsFocus } from "@/components/StandingsFocus";
@@ -209,7 +208,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
   const sort = parseSort(sp.sort, cols.map((c) => c.key), "pct.desc");
   return (
-    <SeasonGamesProvider games={packGames(d.games)} teams={d.teams.map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))}>
+    <SeasonGamesProvider seasonPath={seasonPath(lg, y)}>
       <AccentStyle league={lg} />
       <section className="head fade">
         <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
@@ -268,7 +267,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />
-      <SeasonPath lg={lg} year={y} />
+      <SeasonPath lg={lg} year={y} seasonPath={seasonPath(lg, y)} />
       {awards.length ? (
         <section className="section">
           <h2>{say("season.awards")}</h2>
@@ -288,7 +287,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={selection}>
             {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
           </SeasonGames>
-
+          <noscript><p className="note"><Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`}>{say("nav.scores")}</Link></p></noscript>
         </section>
       ) : null}
     </SeasonGamesProvider>

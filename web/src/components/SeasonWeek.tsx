@@ -22,11 +22,11 @@ const HEADING: Record<WeekMode, "season.weekLive" | "season.weekFirst" | "season
 /**
  * Seven days of a season as the scores page's day strip, with that day's games shown in place beneath it: a season being played is centred on today (the
  * reader's own day, known only in the browser), a finished one shows its last seven playoff game days, ending with the final. A day's games are compact rows,
- * each leading to its game page, with a link to the full scores of that day. The strip uses the games the page already sent.
+ * each leading to its game page, with a link to the full scores of that day. The strip uses the season's games, which the page fetches once (components/SeasonGamesData.tsx); until they come its place is held.
  */
 export function SeasonWeek({ lg, abbrs, year, complete }: { lg: string; abbrs: AbbrMap; year: number; complete: boolean }) {
   const { say, plural, dt } = useSpeaker();
-  const { games, teams } = useSeasonGames();
+  const { ready, games, teams } = useSeasonGames();
   const today = useSyncExternalStore(() => () => {}, localToday, () => "");
   const [picked, setPicked] = useState("");
   const week = useMemo(() => weekOf(games.map((g) => ({ date: g[0], phase: g[5] })), complete, today), [games, complete, today]);
@@ -36,7 +36,7 @@ export function SeasonWeek({ lg, abbrs, year, complete }: { lg: string; abbrs: A
     return m;
   }, [games]);
   // A season being played waits for the reader's day: until it is known the place is held (the page is drawn once for everyone, without it).
-  if (!complete && !today) return <section className="section weekstrip pending" aria-hidden="true" />;
+  if (!ready || (!complete && !today)) return <section className="section weekstrip pending" aria-hidden="true" />;
   if (!week) return null;
   const chosen = picked && week.days.includes(picked) ? picked : week.chosen;
   const list = byDay.get(chosen) ?? [];
