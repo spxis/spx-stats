@@ -36,6 +36,10 @@ test("a logo URL's key is the wiki and the file name, thumbnail or original", ()
   assert.equal(logoKey(KINGS), "en:Los_Angeles_Kings_2024_Logo.svg");
   assert.equal(logoKey("https://example.com/x.png"), null);
   assert.equal(logoKey(null), null);
+  assert.equal(logoKey("/team-logos/sl/5044.gif"), "sl:5044.gif");
+  assert.equal(logoKey("/team-logos/sl/hyhk1nf6yl2e5aflm7sxagthl.png"), "sl:hyhk1nf6yl2e5aflm7sxagthl.png");
+  assert.equal(logoKey("/team-logos/other/5044.gif"), null);
+  assert.equal(logoKey("/team-logos/sl/../x.gif"), null);
   // the file name stays as the URL spells it
   assert.equal(logoKey("https://thumb.wikimedia.org/wikipedia/en/thumb/a/ab/Nashville_Predators_Logo_%282011%29.svg/250px-N.png"), "en:Nashville_Predators_Logo_%282011%29.svg");
 });

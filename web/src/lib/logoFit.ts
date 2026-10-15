@@ -27,12 +27,15 @@ export type LogoFit = z.infer<typeof logoFitSchema>;
 export const NO_FIT = { wordmark: false, mark_url: null, scale: 1, dx: 0, dy: 0, bg: "auto" } as const;
 
 /**
- * The key of a logo URL: the wiki and the file name inside it, e.g. "commons:BluesWordmark.gif". The same as `core.logo_file(url)` in the
+ * The key of a logo URL: the wiki and the file name inside it, e.g. "commons:BluesWordmark.gif" (or "sl:5044.gif" for one of our own SportsLogos.Net files). The same as `core.logo_file(url)` in the
  * database; the file name stays as the URL spells it (percent-encoded), so neither side decodes it.
  */
 export function logoKey(url: string | null | undefined): string | null {
   const m = url ? /\/wikipedia\/([^/]+)\/(?:thumb\/)?[0-9a-f]\/[0-9a-f]{2}\/([^/?]+)/.exec(url) : null;
-  return m ? `${m[1]}:${m[2]}` : null;
+  if (m) return `${m[1]}:${m[2]}`;
+  // a SportsLogos.Net file the site serves itself (/team-logos/sl/5044.gif) is "sl:5044.gif"
+  const sl = url ? /^\/team-logos\/sl\/([^/?]+)$/.exec(url) : null;
+  return sl ? `sl:${sl[1]}` : null;
 }
 
 /** What a page needs to draw a fit: a short tuple per logo, so that the table sent with every page stays small. [mark, scale, dx, dy, bg, wordmark] */
