@@ -30,14 +30,18 @@ test("a drawing has no stylesheet, no title and no description: it is aria-hidde
   assert.ok(d.width > 0 && d.height > 0);
 });
 
-test("every sport of a league draws, a football field without its hash marks, and the strip is the compact one", () => {
+test("every sport of a league draws, a football field without its hash marks, with the score on the surface and a round mark for each club", () => {
   for (const lg of ["nhl", "nba", "nfl", "cfl", "mlb"]) assert.ok(sportOf(lg), lg);
   assert.equal(sportOf("wwc"), null);
   for (const sport of ["nhl", "nba", "nfl", "cfl", "mlb"] as const) {
     const d = drawGame(game({ sport }))!;
     assert.ok(d, sport);
-    assert.ok(d.svg.includes('data-size="compact"'));
+    assert.ok(d.svg.includes('data-size="full"') && !d.svg.includes('data-size="compact"'), `${sport}: the surface alone, with no strip under it`);
+    assert.ok(/class="ky-plate/.test(d.svg) || d.svg.includes("ky-plate"), `${sport}: the score's plate is on the surface`);
   }
+  const o = gameOptions(game());
+  assert.deepEqual([o.size, o.score, o.markShape], ["full", "centre", "round"]);
+  assert.equal((o.away as { markFit?: string }).markFit, "contain", "a logo is shown whole on its disc");
   assert.equal(gameOptions(game({ sport: "nfl" })).detail, "simple");
   assert.equal(gameOptions(game({ sport: "nhl" })).detail, undefined);
 });
@@ -68,24 +72,24 @@ test("soccer draws a pitch, on a ground kyogijo knows by its Wikidata id, with t
   assert.ok(d.svg.includes("Final · 4–2 on penalties"));
 });
 
-test("a soccer pitch carries each side's round mark at its end, home first, with the codes it is given and the flags as pictures", () => {
+test("a soccer pitch is a pageant: each side's flag as a carpet over its half, the score and the codes on the strip under it", () => {
   const soccer = game({
-    sport: "soccer", year: null, winner: "home", status: "Final",
-    home: { name: "Spain", abbr: "ESP", score: 2, color: "c60b1e", ink: "ffffff", logo: "/soccer-flag/ES.svg" },
-    away: { name: "Argentina", abbr: "ARG", score: 1, color: "74acdf", ink: "12161b", logo: "/soccer-flag/AR.svg" },
+    sport: "soccer", year: null, winner: "home", status: "final-pens",
+    home: { name: "Spain", abbr: "ESP", score: 2, penalties: 4, color: "c60b1e", ink: "ffffff", logo: "/soccer-flag/ES.rect.svg" },
+    away: { name: "Argentina", abbr: "ARG", score: 2, penalties: 3, color: "74acdf", ink: "12161b", logo: "/soccer-flag/AR.rect.svg" },
   });
-  assert.equal(gameOptions(soccer).homeSide, "left");
+  const o = gameOptions(soccer);
+  assert.deepEqual([o.homeSide, o.pageant, o.size], ["left", "carpet", "full"]);
   assert.equal(gameOptions(game()).homeSide, undefined, "the other sports keep kyogijo's away-at-home order");
   const svg = drawGame(soccer)!.svg;
+  assert.ok(svg.includes('data-pageant="carpet"'));
   assert.ok(svg.indexOf(">ESP<") < svg.indexOf(">ARG<"), "home first");
   assert.ok(!svg.includes(">SPA<"));
-  assert.ok(svg.includes("/soccer-flag/ES.svg") && svg.includes("/soccer-flag/AR.svg"));
-  assert.ok(svg.includes('data-size="full"') && svg.includes("ky-banner"), "the marks are over the pitch, at its ends");
-  assert.equal((svg.match(/class="ky-mark-ring"/g) ?? []).length, 2, "one ring for each side's round mark");
-  assert.equal(gameOptions(soccer).markShape, "round");
-  // A club with no picture (MLS) is its code on its banner colour.
-  const club = drawGame({ ...soccer, home: { ...soccer.home, logo: null, abbr: "LAG" }, away: { ...soccer.away, logo: null, abbr: "NYRB" } })!.svg;
-  assert.ok(club.includes('class="ky-mark-i"') && club.includes(">LAG<") && club.includes(">NYRB<") && !club.includes("<image"));
+  assert.ok(svg.includes("/soccer-flag/ES.rect.svg") && svg.includes("/soccer-flag/AR.rect.svg"), "a flag is the site's file for it");
+  assert.equal((svg.match(/ky-pg-carpet /g) ?? []).length, 2, "one carpet for each side");
+  // A club with no picture (MLS) is a carpet of its banner colours with its name.
+  const club = drawGame({ ...soccer, home: { ...soccer.home, logo: null, abbr: "LAG", name: "LA Galaxy" }, away: { ...soccer.away, logo: null, abbr: "NYRB", name: "New York Red Bulls" } })!.svg;
+  assert.ok(club.includes('data-pageant="carpet"') && club.includes(">LAG<") && club.includes(">NYRB<") && !club.includes("<image"));
 });
 
 test("a game only known by its home club claims no venue at a neutral site or in a bubble season", () => {

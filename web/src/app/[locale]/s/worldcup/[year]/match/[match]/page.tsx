@@ -116,9 +116,9 @@ export default guard(async function MatchPage({ params }: Params) {
         ].filter((x): x is string => !!x)}
       />
       <SoccerSurface
-        home={{ name: names[0], abbr: abbrs[0], goals: m.home_goals, logo: soccerFlagAddress(m.home_flag), color: looks[0].block, ink: looks[0].on }}
-        away={{ name: names[1], abbr: abbrs[1], goals: m.away_goals, logo: soccerFlagAddress(m.away_flag), color: looks[1].block, ink: looks[1].on }}
-        note={s.note} winner={winner === 0 ? "home" : winner === 1 ? "away" : "none"}
+        home={{ name: names[0], abbr: abbrs[0], goals: m.home_goals, penalties: m.shootout ? m.home_penalties : null, logo: soccerFlagAddress(m.home_flag, "rect"), color: looks[0].block, ink: looks[0].on }}
+        away={{ name: names[1], abbr: abbrs[1], goals: m.away_goals, penalties: m.shootout ? m.away_penalties : null, logo: soccerFlagAddress(m.away_flag, "rect"), color: looks[1].block, ink: looks[1].on }}
+        note={s.note} finish={m.shootout ? "pens" : m.extra_time ? "aet" : null} winner={winner === 0 ? "home" : winner === 1 ? "away" : "none"}
         competition={`${title} · ${groupLabel(say, m)}`} date={dt.full(new Date(m.match_date))} wikidata={m.venue_wikidata_id}
       />
       {m.checked === 1 ? <p className="note">{say("wc.m.confirmed")}</p> : null}

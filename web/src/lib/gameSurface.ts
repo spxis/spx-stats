@@ -51,13 +51,13 @@ const side = (s: GameSide) => ({
 });
 
 /**
- * Everything kyogijo is told about a SOCCER match, in this one function. The pitch is the "full" size, whose ends carry each side's name and round mark (a
- * national team's flag from /soccer-flag/<CODE>.svg in a ring, or, for a club with no picture, its code on its banner colour), with the score in the middle;
- * home is on the left (soccer is written "home first", as the match page's banner is) and the codes are the explicit FIFA ones. kyogijo 0.5.0's "pageant"
- * (flag carpets for each half, or a crest stage with a centre emblem) is a switch made here and nowhere else: change the options below, not the callers.
+ * Everything kyogijo is told about a SOCCER match, in this one function. The pitch is the "full" size in kyogijo's "pageant" look: each side's flag laid large
+ * over its half as a carpet (the flag's own file, /soccer-flag/<CODE>.rect.svg; a club with no picture is a carpet of its banner colours with its name across
+ * it), the score on the strip under the pitch (kyogijo's "auto" puts it there on a wide pitch, so that nothing covers a flag), and the codes the explicit
+ * FIFA ones. Home is on the left, as soccer is written. The pageant is a switch made here and nowhere
+ * else: change the options below, not the callers.
  */
 function soccerOptions(g: GameDrawing, plain: boolean): ScoreOptions {
-  const mark = (s: GameSide) => ({ ...side(s), mark: "round" as const });
   return {
     sport: "soccer" as const,
     language: g.language,
@@ -65,9 +65,9 @@ function soccerOptions(g: GameDrawing, plain: boolean): ScoreOptions {
     style: "none" as const,
     winner: g.winner ?? ("leader" as const),
     homeSide: "left" as const,
-    markShape: "round" as const,
-    away: mark(g.away),
-    home: mark(g.home),
+    pageant: "carpet" as const,
+    away: side(g.away),
+    home: side(g.home),
     status: g.status,
     ...(g.competition ? { competition: g.competition } : {}),
     ...(g.date ? { date: g.date } : {}),
@@ -82,11 +82,15 @@ export function gameOptions(g: GameDrawing, plain = false): ScoreOptions {
   return {
     sport: g.sport,
     language: g.language,
-    size: "compact" as const,
+    // The score on the surface itself (the plate in the middle, each club's name and round mark at its end): one drawing, no strip under it.
+    size: "full" as const,
+    score: "centre" as const,
+    markShape: "round" as const,
     style: "none" as const,
     winner: g.winner ?? ("leader" as const),
-    away: side(g.away),
-    home: side(g.home),
+    // A club's logo is shown whole on its round disc, never cropped.
+    away: { ...side(g.away), markFit: "contain" as const },
+    home: { ...side(g.home), markFit: "contain" as const },
     status: g.status,
     ...(g.competition ? { competition: g.competition } : {}),
     ...(g.date ? { date: g.date } : {}),

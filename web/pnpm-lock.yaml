@@ -18,8 +18,8 @@ importers:
         specifier: 1.5.0
         version: 1.5.0
       '@johnmorrisdotca/kyogijo-stadiums':
-        specifier: 0.4.0
-        version: 0.4.0
+        specifier: 0.10.1
+        version: 0.10.1(@johnmorrisdotca/hata@1.5.0)
       '@johnmorrisdotca/taisen-brackets':
         specifier: 0.6.0
         version: 0.6.0(@johnmorrisdotca/dougu-sports@0.1.0)(@johnmorrisdotca/hata@1.5.0)
@@ -403,12 +403,15 @@ packages:
     resolution: {integrity: sha512-CAzssK6RXy0rRlCP+v5XLNSr1A+RK7dESqyzB/hz/VRNUySlESSiNsAO+6r5DAQ2oi7iII5ruI79BqJA7X5wCA==}
     engines: {node: '>=24'}
 
-  '@johnmorrisdotca/kyogijo-stadiums@0.4.0':
-    resolution: {integrity: sha512-ydb9vPKLayYtCcLw3r/0d3GjqhwNIyLFbojxGMlgLnJzg6gVKwdN4uTtBW8+V3Gxq9hJb1KW6ncumnZyDgaLdQ==}
+  '@johnmorrisdotca/kyogijo-stadiums@0.10.1':
+    resolution: {integrity: sha512-hpqgeE45o2MStDUfEu1pXItmaO/cgjx4UXDkA5gGo1r8WbOh7PUQuljavGyFvhN4NEM5AsQtald4zo5FFflRBA==}
     engines: {node: '>=22'}
     peerDependencies:
+      '@johnmorrisdotca/hata': '>=1.5.0 <2'
       '@resvg/resvg-js': '>=2.6.0'
     peerDependenciesMeta:
+      '@johnmorrisdotca/hata':
+        optional: true
       '@resvg/resvg-js':
         optional: true
 
@@ -2718,7 +2721,9 @@ snapshots:
 
   '@johnmorrisdotca/hata@1.5.0': {}
 
-  '@johnmorrisdotca/kyogijo-stadiums@0.4.0': {}
+  '@johnmorrisdotca/kyogijo-stadiums@0.10.1(@johnmorrisdotca/hata@1.5.0)':
+    optionalDependencies:
+      '@johnmorrisdotca/hata': 1.5.0
 
   '@johnmorrisdotca/taisen-brackets@0.6.0(@johnmorrisdotca/dougu-sports@0.1.0)(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:

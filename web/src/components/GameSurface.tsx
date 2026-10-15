@@ -101,27 +101,33 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs }
 }
 
 /** A side of a soccer match on the strip: its name and short code, what it scored, its round flag (an address) and its colours (a hex without #). */
-export interface SoccerSide { name: string; abbr: string; goals: number; logo?: string | null; color?: string | null; ink?: string | null }
+export interface SoccerSide { name: string; abbr: string; goals: number; penalties?: number | null; logo?: string | null; color?: string | null; ink?: string | null }
+
+/** How a soccer match was finished past ninety minutes: extra time, a penalty shoot-out, or MLS's skills shoot-out. */
+export type SoccerFinish = "aet" | "pens" | "so";
+
+/** The status kyogijo writes in the strip: its own short words (English and Japanese) for a finish past ninety minutes, the site's "Final" in any other language. */
+const finishStatus = (finish: SoccerFinish | null, locale: string, plain: string): string =>
+  locale !== "en" && locale !== "ja" ? plain : finish === "pens" ? "final-pens" : finish === "aet" ? "final-aet" : finish === "so" ? "final-so" : "final";
 
 /**
- * A soccer match on its pitch: the ground when the stadium is one kyogijo knows by its Wikidata id (the pitch at its published size), else a standard pitch.
- * Each end carries a side's name and round mark and the middle the score, home first on the left as the page's banner does, with each side's three-letter code (the
- * FIFA code of a national team, lib/soccerLook.ts) and the banner's colours. A national team's mark is its round flag (a file, /soccer-flag/ES.svg, which kyogijo
- * clips and rings); a club has no picture (its emblem is not ours to draw), so its mark is its code on its banner colour. `note` is what follows "Final" ("after
- * extra time", "4–2 on penalties"), written in the status; `winner` is given because a shoot-out settles a level score. The options kyogijo gets for soccer are
- * built in one place, soccerOptions in lib/gameSurface.ts.
+ * A soccer match on its pitch, in kyogijo's pageant look: the ground when the stadium is one kyogijo knows by its Wikidata id (the pitch at its published size), else a
+ * standard pitch. Each side's flag lies over its half as a carpet (a national team's own file, /soccer-flag/ES.rect.svg; a club has no picture, its emblem is not ours to
+ * draw, so it is a carpet of its banner colours with its name across it), and the strip under the pitch has each side's three-letter code (the FIFA code of a national
+ * team, lib/soccerLook.ts), its goals and the way the match finished. `note` is the page's own words for that ("after extra time", "4–2 on penalties"), which the
+ * figure's label says; `winner` is given because a shoot-out settles a level score. The options kyogijo gets for soccer are built in one place, soccerOptions in lib/gameSurface.ts.
  */
-export async function SoccerSurface({ home, away, note, winner, competition, date, wikidata }: {
+export async function SoccerSurface({ home, away, note, finish, winner, competition, date, wikidata }: {
   home: SoccerSide; away: SoccerSide;
-  note: string | null; winner: "home" | "away" | "none"; competition?: string; date: string; wikidata?: string | null;
+  note: string | null; finish: SoccerFinish | null; winner: "home" | "away" | "none"; competition?: string; date: string; wikidata?: string | null;
 }) {
   const sp = await currentSpeaker();
   const { say } = sp;
   const ground = groundOf(wikidata);
   const status = note ? `${say("scores.final")} · ${note}` : say("scores.final");
-  const side = (s: SoccerSide): GameDrawing["home"] => ({ name: s.name, abbr: s.abbr, score: s.goals, logo: s.logo, color: s.color, ink: s.ink });
+  const side = (s: SoccerSide): GameDrawing["home"] => ({ name: s.name, abbr: s.abbr, score: s.goals, penalties: s.penalties, logo: s.logo, color: s.color, ink: s.ink });
   const drawing = drawGameOnce({
-    sport: "soccer", year: null, language: sp.locale === "ja" ? "ja" : "en", status, competition, date, ground, winner,
+    sport: "soccer", year: null, language: sp.locale === "ja" ? "ja" : "en", status: finishStatus(finish, sp.locale, say("scores.final")), competition, date, ground, winner,
     away: side(away), home: side(home),
   });
   if (!drawing) return null;

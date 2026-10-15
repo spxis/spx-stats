@@ -99,9 +99,9 @@ export default guard(async function MlsMatchPage({ params }: Params) {
         notes={[sc.note, say("wc.sd.stageDate", { stage: mlsStageName(say, m.stage_key), date: dt.full(new Date(m.match_date)) })].filter((x): x is string => !!x)}
       />
       <SoccerSurface
-        home={{ name: names[0], abbr: abbrs[0], goals: m.home_goals, color: looks[0].block, ink: looks[0].on }}
-        away={{ name: names[1], abbr: abbrs[1], goals: m.away_goals, color: looks[1].block, ink: looks[1].on }}
-        note={sc.note} winner={winner === 0 ? "home" : winner === 1 ? "away" : "none"}
+        home={{ name: names[0], abbr: abbrs[0], goals: m.home_goals, penalties: m.shootout ? m.home_penalties : null, color: looks[0].block, ink: looks[0].on }}
+        away={{ name: names[1], abbr: abbrs[1], goals: m.away_goals, penalties: m.shootout ? m.away_penalties : null, color: looks[1].block, ink: looks[1].on }}
+        note={sc.note} finish={m.shootout ? "pens" : m.shootout_style === "mls" && m.winner_team_id ? "so" : m.extra_time ? "aet" : null} winner={winner === 0 ? "home" : winner === 1 ? "away" : "none"}
         competition={`${say("mls.season", { year: m.year })} · ${mlsStageName(say, m.stage_key)}`} date={dt.full(new Date(m.match_date))} wikidata={m.venue_wikidata_id}
       />
       {m.checked === 1 ? <p className="note">{say("mls.m.confirmed")}</p> : null}
