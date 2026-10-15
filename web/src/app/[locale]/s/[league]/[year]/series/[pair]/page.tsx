@@ -30,6 +30,7 @@ import { datedRound, datePath, describeRounds, deriveSeries, nickname, playedYea
 import { roundSay } from "@/lib/roundWords";
 import { SERIES_COPY, type Say } from "@/lib/seriesCopy";
 import { seriesLooks } from "@/lib/seriesLooks";
+import { inOrder, placeOf, seriesOrder } from "@/lib/sides";
 import { loadPastMeetings, type PastMeeting } from "@/lib/playoffs";
 import { getPairGames } from "@/lib/h2hData";
 import { getPlayoffGames, getSeasonStandings } from "@/lib/seriesData";
@@ -156,7 +157,12 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
   const [A, B] = s.sides;
   const na = nickname(A.name), nb = nickname(B.name);
   const season = seasonLabel(lg, y);
-  const [la, lb] = seriesLooks(lg, brandFor(d.brands, A.f, y), brandFor(d.brands, B.f, y));
+  // The words keep the winner first ("A beat B"); what is drawn side by side (the banner, the deciding game's surface, the bars and the charts, with their colours) follows
+  // the site's one rule for left and right (lib/sides.ts): the team that had home advantage in the first game on the left, a one-game series the visitor on the left.
+  const order = seriesOrder(s);
+  const [left, right] = inOrder(order, s.sides);
+  const place = (i: 0 | 1) => placeOf(order, i);
+  const [la, lb] = seriesLooks(lg, brandFor(d.brands, left.f, y), brandFor(d.brands, right.f, y));
   const unit = say(unitKey(lg));
   const single = s.games.length === 1;
   const champion = titleHolders(summary.seasons, lg).byYear.get(y)?.champion_franchise;
@@ -186,7 +192,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
       ? say("page.ledeOne", { a: A.name, b: B.name, score: scoreText(s), season, round: roundTitle, date: dt.full(atUtc(s.end)) })
       : say("page.ledeMany", { a: A.name, b: B.name, words: scoreWords(s, say), season, round: roundTitle, from: dt.monthDayShort(atUtc(s.start)), to: dt.full(atUtc(s.end)) });
 
-  const chartGames = s.games.filter((g) => g.played).map((g) => ({ n: g.n, date: g.date, score: g.score, winner: g.winner, ot: g.ot, run: g.run }));
+  const chartGames = s.games.filter((g) => g.played).map((g) => ({ n: g.n, date: g.date, score: inOrder(order, g.score), winner: g.winner == null ? null : place(g.winner), ot: g.ot, run: inOrder(order, g.run) }));
   const extra = say(lg === "mlb" ? "extras" : "ot");
   const sources = [...new Set(s.games.map((g) => g.source))];
 
@@ -228,7 +234,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
     { key: "winner", label: sp.say("past.winner"), cls: "team", get: (m: PastMeeting) => (m.s.winner == null ? "" : m.s.sides[0].name), cell: (m: PastMeeting) => (m.s.winner == null ? (m.s.live ? sp.say("past.inProgress") : "–") : <span className="won"><TeamLabel lg={lg} f={m.s.sides[0].f} name={m.s.sides[0].name} year={m.year} logo={logoFor(d.brands, m.s.sides[0].f, m.year)} /></span>) },
     { key: "result", label: sp.say("past.result"), num: true, get: (m: PastMeeting) => m.s.sides[0].wins - m.s.sides[1].wins, cell: (m: PastMeeting) => <Link href={seriesPath(paths, lg, m.year, m.s)} prefetch={false}>{scoreText(m.s)}</Link> },
   ], (m) => `${m.year}-${m.s.meeting}`);
-  const mets = metrics(say, unit, ra, rb);
+  const mets = metrics(say, unit, order[0] === 0 ? ra : rb, order[0] === 0 ? rb : ra);
   const side = (i: 0 | 1): ShowdownSide => {
     const t = s.sides[i], r = i === 0 ? ra : rb, rk = rankText(t.f);
     const logo = logoFor(d.brands, t.f, y);
@@ -249,6 +255,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
     };
   };
   const shown = (i: 0 | 1) => (single ? s.games[0].score[i] ?? "–" : s.basis === "goals" ? s.sides[i].scored : s.sides[i].wins);
+  const [shownLeft, shownRight] = [shown(order[0]), shown(order[1])];
 
   return (
     <>
@@ -263,8 +270,8 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
       </section>
 
       <Showdown
-        label={say("page.aria", { a: A.name, b: B.name })} a={side(0)} b={side(1)} winner={s.winner === 0 ? 0 : s.winner === 1 ? 1 : null}
-        score={[shown(0), shown(1)]} scoreLabel={say("score.aria", { a: shown(0), b: shown(1) })}
+        label={say("page.aria", { a: left.name, b: right.name })} a={side(order[0])} b={side(order[1])} winner={s.winner == null ? null : place(s.winner)}
+        score={[shownLeft, shownRight]} scoreLabel={say("score.aria", { a: shownLeft, b: shownRight })}
         verdict={<>{s.winner != null ? <TeamLogo url={logoFor(d.brands, s.sides[s.winner].f, y)} size={36} shape="circle" /> : null}{verdict}</>}
         notes={[s.live ? say("verdict.noteLive", { bestOf: fmt(s.bestOf), played: fmt(played) }) : s.basis === "goals" ? say("verdict.noteTotal") : single ? say("verdict.noteOne") : s.ties ? say("verdict.noteGamesTied", { count: fmt(n), ties: fmt(s.ties) }) : say("verdict.noteGames", { count: fmt(n) })]}
       />
@@ -272,7 +279,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
       {drawnGame && last ? (
         <section className="section">
           <h2>{surfaceHead}</h2>
-          <GameSurface lg={lg} year={y} game={drawnGame} brands={d.brands} abbrs={d.abbrs}
+          <GameSurface lg={lg} year={y} game={drawnGame} brands={d.brands} abbrs={d.abbrs} leftF={left.f}
             competition={single ? roundTitle : `${roundTitle} · ${say("games.gameN", { n: fmt(last.n) })}`} />
         </section>
       ) : null}
@@ -294,13 +301,13 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
                 : say(g.n === n && settled ? "games.win" : "games.lead", { team: run[0] > run[1] ? na : nb, a: fmt(hi), b: fmt(lo) });
             const row = (i: 0 | 1) => (
               <span className={`grow${g.winner === i ? " won" : ""}`} key={i}>
-                <i className="pip" style={{ background: i === 0 ? "var(--ca)" : "var(--cb)" }} />
+                <i className="pip" style={{ background: place(i) === 0 ? "var(--ca)" : "var(--cb)" }} />
                 <span className="nm" title={s.sides[i].name}>{i === 0 ? na : nb}</span>
                 <b>{g.score[i] ?? "–"}</b>
               </span>
             );
             return (
-              <li key={g.id} className={`gtile${g.played ? "" : " ahead"}${g.ifNeeded ? " ifneeded" : ""}`} style={{ "--tc": g.winner == null ? "var(--rule)" : g.winner === 0 ? "var(--ca)" : "var(--cb)" } as React.CSSProperties}>
+              <li key={g.id} className={`gtile${g.played ? "" : " ahead"}${g.ifNeeded ? " ifneeded" : ""}`} style={{ "--tc": g.winner == null ? "var(--rule)" : place(g.winner) === 0 ? "var(--ca)" : "var(--cb)" } as React.CSSProperties}>
                 <span className="ghead">
                   <b><Link href={gamePath(lg, y, g.id, s.sides[awayIdx].name, s.sides[g.home].name)} prefetch={false} title={sp.say("gm.viewGameTitle", { away: s.sides[awayIdx].name, home: s.sides[g.home].name })}>{single ? say("games.theGame") : say("games.gameN", { n: fmt(g.n) })}</Link></b>
                   {g.ot ? <span className="badge">{extra}</span> : null}
@@ -320,7 +327,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
       {s.games.some((g) => g.score[0] != null) ? (
         <section className="section">
           <h2>{say("charts.title")}</h2>
-          <SeriesCharts games={chartGames} names={[na, nb]} unit={unit} words={chartWords()} />
+          <SeriesCharts games={chartGames} names={[nickname(left.name), nickname(right.name)]} unit={unit} words={chartWords()} />
         </section>
       ) : null}
 
@@ -346,7 +353,7 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
           <h2>{say("cmp.title")}</h2>
           <p className="note">{say("cmp.note", { season })}</p>
           <div className="cmp">
-            <div className="cmphead"><b style={{ color: "var(--ca)" }}>{na}</b><span /><b style={{ color: "var(--cb)" }}>{nb}</b></div>
+            <div className="cmphead"><b style={{ color: "var(--ca)" }}>{nickname(left.name)}</b><span /><b style={{ color: "var(--cb)" }}>{nickname(right.name)}</b></div>
             {mets.map((m) => <CompareRow key={m.label} m={m} />)}
           </div>
         </section>
@@ -370,11 +377,11 @@ export default guard(async function SeriesPage({ params }: PageProps<"/[locale]/
           <h2>{say("road.title")}</h2>
           <p className="note">{say("road.note")}</p>
           <div className="roads">
-            {([0, 1] as const).map((i) => {
+            {order.map((i) => {
               const list = road(s.sides[i].f);
               return list.length ? (
                 <div key={i} className="road">
-                  <h3 style={{ color: i === 0 ? "var(--ca)" : "var(--cb)" }}>{i === 0 ? na : nb}</h3>
+                  <h3 style={{ color: place(i) === 0 ? "var(--ca)" : "var(--cb)" }}>{i === 0 ? na : nb}</h3>
                   {list.map(({ x, name }) => (
                     <div key={`${x.sides[0].f}-${x.sides[1].f}-${x.meeting}`}><span className="rn">{name}{" · "}{dt.monthDayShort(atUtc(x.start))}{x.end !== x.start ? `–${dt.monthDayShort(atUtc(x.end))}` : ""}</span><SeriesCard paths={paths} lg={lg} s={x} brands={d.brands} year={y} say={say} /></div>
                   ))}

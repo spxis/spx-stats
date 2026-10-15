@@ -4,6 +4,7 @@ import { guard } from "@/lib/loadGuard";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { roundSay } from "@/lib/roundWords";
 import { sportOf } from "@/lib/gameSurface";
+import { inOrder, seriesOrder } from "@/lib/sides";
 import { GameSurface } from "./GameSurface";
 
 /**
@@ -24,7 +25,7 @@ export const ChampionSurface = guard(async function ChampionSurface({ lg, year, 
   const name = names.at(-1) ?? "";
   return (
     <GameSurface
-      lg={lg} year={year} brands={brands} abbrs={abbrs}
+      lg={lg} year={year} brands={brands} abbrs={abbrs} leftF={inOrder(seriesOrder(fin), fin.sides)[0].f}
       competition={single ? name : `${name} · ${say("games.gameN", { n: sp.fmt(last.n) })}`}
       game={{
         id: last.id, date: last.date, phase: "playoffs", final: true, overtime: last.ot,

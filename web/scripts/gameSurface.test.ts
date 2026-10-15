@@ -79,11 +79,11 @@ test("a soccer pitch is a pageant: each side's flag as a carpet over its half, t
     away: { name: "Argentina", abbr: "ARG", score: 2, penalties: 3, color: "74acdf", ink: "12161b", logo: "/soccer-flag/AR.rect.svg" },
   });
   const o = gameOptions(soccer);
-  assert.deepEqual([o.homeSide, o.pageant, o.size], ["left", "carpet", "full"]);
-  assert.equal(gameOptions(game()).homeSide, undefined, "the other sports keep kyogijo's away-at-home order");
+  assert.deepEqual([o.homeSide, o.pageant, o.size], ["right", "carpet", "full"]);
+  assert.equal(gameOptions(game()).homeSide, "right", "every sport: kyogijo's `away` is the team on the left (lib/sides.ts)");
   const svg = drawGame(soccer)!.svg;
   assert.ok(svg.includes('data-pageant="carpet"'));
-  assert.ok(svg.indexOf(">ESP<") < svg.indexOf(">ARG<"), "home first");
+  assert.ok(svg.indexOf(">ARG<") < svg.indexOf(">ESP<"), "the side given as away is on the left, whatever the sport");
   assert.ok(!svg.includes(">SPA<"));
   assert.ok(svg.includes("/soccer-flag/ES.rect.svg") && svg.includes("/soccer-flag/AR.rect.svg"), "a flag is the site's file for it");
   assert.equal((svg.match(/ky-pg-carpet /g) ?? []).length, 2, "one carpet for each side");

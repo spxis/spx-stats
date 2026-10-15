@@ -677,6 +677,12 @@ Ask John before deleting or overwriting data. Production changes only through ap
   - `SortTable` for every table.
   - `NoSeason` (grey box, compact "–") for years with no games.
   - `DatePicker` for date choices.
+- **Left and right** are decided in one place, `web/src/lib/sides.ts` (constant `SIDE_RULE`, tested by `pnpm test:sides`); never order two teams by hand. A single game
+  has the visitor on the left and the home team on the right in every sport, soccer's "home first" included; a series has the team that had home advantage
+  (the home side of its first game: the archive holds no seeds) on the left, and a series of one game is a game. The series page and the champion's surface put the deciding game's
+  teams in the series' order, not the game's own, so the banner and the surface under it never swap sides (kyogijo is always told the left team as its `away`, `homeSide: "right"`). It
+  covers the series and game banners, the surfaces, the team panels and the bracket boxes (`seriesTies`, `matchSides`; a later round's top row is the team from the top feeder, which the
+  package decides). The words of a series keep the winner first ("A beat B") and the addresses are unchanged. "winner on the left" is `SIDE_RULE = "winner"`.
 - **Venue addresses** are written one way everywhere: `placeAddress` (`web/src/lib/venueName.ts`) calls `formatVenueAddress`
   (`web/src/lib/venueAddress.ts`, built on address-plus), which shows only the parts the archive holds and never works out a
   postal code. A page that shows one carries the `AddressCredit` line (`address.credit`); `pnpm test:address` covers it.

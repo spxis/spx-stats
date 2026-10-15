@@ -26,6 +26,10 @@ export interface GameSide {
   logo?: string | null;
 }
 
+/**
+ * What kyogijo is told is already in the site's order (lib/sides.ts): its `away` is the team on the LEFT of the drawing and its `home` the team on the RIGHT, and
+ * `homeSide` is "right" for every sport. Which real team is which is decided by the caller, not by kyogijo's own per-sport convention.
+ */
 export interface GameDrawing {
   sport: GameSport;
   /** The season (for the hockey and basketball seasons, the year it starts): the surface is marked as the rules had it then. */
@@ -54,7 +58,7 @@ const side = (s: GameSide) => ({
  * Everything kyogijo is told about a SOCCER match, in this one function. The pitch is the "full" size in kyogijo's "pageant" look: each side's flag laid large
  * over its half as a carpet (the flag's own file, /soccer-flag/<CODE>.rect.svg; a club with no picture is a carpet of its banner colours with its name across
  * it), the score on the strip under the pitch (kyogijo's "auto" puts it there on a wide pitch, so that nothing covers a flag), and the codes the explicit
- * FIFA ones. Home is on the left, as soccer is written. The pageant is a switch made here and nowhere
+ * FIFA ones. Which side is on the left is the site's rule (lib/sides.ts), not soccer's own "home first". The pageant is a switch made here and nowhere
  * else: change the options below, not the callers.
  */
 function soccerOptions(g: GameDrawing, plain: boolean): ScoreOptions {
@@ -64,7 +68,7 @@ function soccerOptions(g: GameDrawing, plain: boolean): ScoreOptions {
     size: "full" as const,
     style: "none" as const,
     winner: g.winner ?? ("leader" as const),
-    homeSide: "left" as const,
+    homeSide: "right" as const,
     pageant: "carpet" as const,
     away: side(g.away),
     home: side(g.home),
@@ -88,6 +92,7 @@ export function gameOptions(g: GameDrawing, plain = false): ScoreOptions {
     markShape: "round" as const,
     style: "none" as const,
     winner: g.winner ?? ("leader" as const),
+    homeSide: "right" as const,
     // A club's logo is shown whole on its round disc, never cropped.
     away: { ...side(g.away), markFit: "contain" as const },
     home: { ...side(g.home), markFit: "contain" as const },

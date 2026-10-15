@@ -15,6 +15,7 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { getMatch, getMatchDetail, getTournamentTeams, tournamentOfYear, type Card, type Goal, type Lineup, type Match } from "@/lib/soccer";
 import { h2hPath } from "@/lib/soccerH2H";
+import { gameOrder, placeOf } from "@/lib/sides";
 import { soccerFlagAddress } from "@/lib/soccerFlagSprite";
 import { soccerAbbr, soccerLooks } from "@/lib/soccerLook";
 import { teamName } from "@/lib/soccerNames";
@@ -79,6 +80,11 @@ export default guard(async function MatchPage({ params }: Params) {
   const abbrs = [soccerAbbr(m.home_team_id, m.home), soccerAbbr(m.away_team_id, m.away)] as const;
   const looks = soccerLooks(m.home_team_id, m.away_team_id);
   const winner: 0 | 1 | null = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : m.home_goals > m.away_goals ? 0 : m.away_goals > m.home_goals ? 1 : null;
+  // Left and right (lib/sides.ts): the visitor on the left, the home team on the right, in the banner, the surface and the panels. The data above stays home first.
+  const order = gameOrder(0, winner);
+  const [ia, ib] = order;
+  const goals = [m.home_goals, m.away_goals] as const;
+  const panels = order.map((i) => sides[i]);
   const bannerSide = (i: 0 | 1): ShowdownSide => {
     const sd = sides[i], entry = entries.find((e) => e.team_id === sd.id);
     const champion = winner === i && m.stage_key === "final" && (!t || !t.winner_team_id || t.winner_team_id === sd.id);
@@ -104,10 +110,10 @@ export default guard(async function MatchPage({ params }: Params) {
           {dt.full(new Date(m.match_date))}{kickoff ? ` · ${kickoff}${m.utc_offset ? ` (UTC${m.utc_offset})` : ""}` : ""}{m.venue_name ? <> · <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={venueRest} /></> : null}
         </p>
       </section>
-      <SeriesStyle a={looks[0]} b={looks[1]} />
+      <SeriesStyle a={looks[ia]} b={looks[ib]} />
       <Showdown
-        label={say("wc.m.result")} a={bannerSide(0)} b={bannerSide(1)} winner={winner} level={winner == null}
-        score={[m.home_goals, m.away_goals]} scoreLabel={say("wc.sd.score", { a: m.home_goals, b: m.away_goals })}
+        label={say("wc.m.result")} a={bannerSide(ia)} b={bannerSide(ib)} winner={winner == null ? null : placeOf(order, winner)} level={winner == null}
+        score={[goals[ia], goals[ib]]} scoreLabel={say("wc.sd.score", { a: goals[ia], b: goals[ib] })}
         verdict={winner == null ? say("wc.sd.draw") : say("wc.sd.win", { team: names[winner] })}
         notes={[
           s.note,
@@ -133,7 +139,7 @@ export default guard(async function MatchPage({ params }: Params) {
         <section className="section">
           <h2>{say("wc.m.shootout")}</h2>
           <div className="sc-two">
-            {sides.map((sd) => (
+            {panels.map((sd) => (
               <div key={sd.id}>
                 <h3>{teamName({ name: sd.name, slug: sd.slug, flag: sd.flag }, locale)}</h3>
                 <p className="sc-kicks">
@@ -168,7 +174,7 @@ export default guard(async function MatchPage({ params }: Params) {
         <h2>{say("wc.m.lineups")}</h2>
         {d.lineups.length ? (
           <div className="sc-two">
-            {sides.map((sd) => (
+            {panels.map((sd) => (
               <div key={sd.id}>
                 <h3><SoccerTeamName slug={sd.slug} name={sd.name} flag={sd.flag} /></h3>
                 <Lineups rows={d.lineups.filter((l) => l.team_id === sd.id)} cards={cardsOf} say={say} book={book} />

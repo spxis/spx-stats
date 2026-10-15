@@ -1,0 +1,60 @@
+/**
+ * Which team is on the left and which on the right, decided in this one file for the whole site: the banner of a series and of a game, the surface a game is
+ * drawn on, the team panels, and the boxes of a bracket. Pure (no server-only imports): the pages and the checks share it.
+ *
+ * The rule (`SIDE_RULE`, one constant, "home" today):
+ * - **a single game**: the visitor on the left and the home team on the right, the scoreboard's order ("away at home"), in every sport (soccer's own "home first" included);
+ * - **a series**: the team that had home advantage on the left, the other on the right. Home advantage is the home side of the series' first game (the higher seed has
+ *   it in every format here, and the archive holds no seeds); a series of one game is a game, so the visitor is on the left;
+ * - **a page about a series that draws its deciding game** (the series page, the champion's surface) puts the deciding game's teams in the series' order, not the game's
+ *   own: the banner and the surface under it must not swap sides (game 7 is at home for the side that is on the left of the banner).
+ *
+ * "winner" would put the winner on the left and the other on the right (the order `Series.sides` is already in). Everything that draws two teams side by side asks
+ * the functions below, so changing `SIDE_RULE` changes the site.
+ */
+import type { Series } from "./series.ts";
+
+export type SideRule = "home" | "winner";
+export const SIDE_RULE: SideRule = "home";
+
+/** The indexes of a pair's two sides, left one first: `[0, 1]` as they stand, `[1, 0]` swapped. */
+export type Order = readonly [0 | 1, 0 | 1];
+const AS_IS: Order = [0, 1];
+const SWAPPED: Order = [1, 0];
+
+/** Where a side is: 0 for the left, 1 for the right. */
+export const placeOf = (order: Order, side: 0 | 1): 0 | 1 => (order[0] === side ? 0 : 1);
+
+/**
+ * The order of the two sides of one game: `home` is the index of the home side (0 or 1), `winner` the index of the side that won (null for a draw or a game not played).
+ */
+export function gameOrder(home: 0 | 1, winner: 0 | 1 | null = null, rule: SideRule = SIDE_RULE): Order {
+  if (rule === "winner" && winner != null) return winner === 0 ? AS_IS : SWAPPED;
+  return home === 0 ? SWAPPED : AS_IS;
+}
+
+/**
+ * The order of the two sides of a series, as indexes into `Series.sides`. Under "home" the side that was at home in the first game is on the left; a series of one
+ * game is that game (the visitor on the left). Under "winner" the order is the one `Series.sides` is in, the winner first (the side ahead, in a series in progress).
+ */
+export function seriesOrder(s: Pick<Series, "games">, rule: SideRule = SIDE_RULE): Order {
+  const first = s.games[0];
+  if (!first || rule === "winner") return AS_IS;
+  return s.games.length === 1 ? gameOrder(first.home, first.winner, rule) : first.home === 0 ? AS_IS : SWAPPED;
+}
+
+/** The two things in the order given: `[x[order[0]], x[order[1]]]`. */
+export const inOrder = <T>(order: Order, pair: readonly [T, T]): [T, T] => [pair[order[0]], pair[order[1]]];
+
+/**
+ * A game's two teams as the left and the right of a drawing. `leftOf` says whether a team is the one that stands on the left of the series the game belongs to; when it picks
+ * one of the two, that team is on the left whichever side of the game it was, otherwise the game's own order. `swapped` says that the left team is the home team.
+ */
+export function leftRight<T>(away: T, home: T, opts: { winner?: "away" | "home" | null; leftOf?: (team: T) => boolean; rule?: SideRule } = {}): { left: T; right: T; swapped: boolean } {
+  const { winner = null, leftOf, rule = SIDE_RULE } = opts;
+  const order: Order = leftOf && leftOf(away) !== leftOf(home)
+    ? (leftOf(away) ? AS_IS : SWAPPED)
+    : gameOrder(1, winner === "away" ? 0 : winner === "home" ? 1 : null, rule);
+  const [left, right] = inOrder(order, [away, home]);
+  return { left, right, swapped: order[0] === 1 };
+}

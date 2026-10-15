@@ -14,6 +14,7 @@ import { getMlsMatch, getMlsSeasonTeams } from "@/lib/mls";
 import { MLS_PATH, mlsClubPath, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
 import { mlsScoreLines, mlsStageName } from "@/lib/mlsView";
 import type { Match } from "@/lib/soccer";
+import { gameOrder, placeOf } from "@/lib/sides";
 import { clubAbbr, neutralLooks } from "@/lib/soccerLook";
 import { soccerMatchIdOf } from "@/lib/soccerPath";
 import "@/components/soccer.css";
@@ -60,6 +61,10 @@ export default guard(async function MlsMatchPage({ params }: Params) {
   const abbrs = [clubAbbr(m.home_team_id, m.home), clubAbbr(m.away_team_id, m.away)] as const;
   const names = [m.home, m.away] as const;
   const winner: 0 | 1 | null = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : m.home_goals > m.away_goals ? 0 : m.away_goals > m.home_goals ? 1 : null;
+  // Left and right (lib/sides.ts): the visitor on the left, the home team on the right. The data above stays home first.
+  const order = gameOrder(0, winner);
+  const [ia, ib] = order;
+  const goals = [m.home_goals, m.away_goals] as const;
   const bannerSide = (i: 0 | 1): ShowdownSide => {
     const id = i === 0 ? m.home_team_id : m.away_team_id, slug = i === 0 ? m.home_slug : m.away_slug;
     const e = entries.find((x) => x.team_id === id);
@@ -91,10 +96,10 @@ export default guard(async function MlsMatchPage({ params }: Params) {
         <h1>{m.home} – {m.away}</h1>
         <p className="lede">{dt.full(new Date(m.match_date))}{m.venue_name ? <> · <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={venueRest} /></> : null}{m.attendance ? ` · ${say("mls.m.crowd", { n: fmt(m.attendance) })}` : ""}</p>
       </section>
-      <SeriesStyle a={looks[0]} b={looks[1]} />
+      <SeriesStyle a={looks[ia]} b={looks[ib]} />
       <Showdown
-        label={say("wc.m.result")} a={bannerSide(0)} b={bannerSide(1)} winner={winner} level={winner == null}
-        score={[m.home_goals, m.away_goals]} scoreLabel={say("wc.sd.score", { a: m.home_goals, b: m.away_goals })}
+        label={say("wc.m.result")} a={bannerSide(ia)} b={bannerSide(ib)} winner={winner == null ? null : placeOf(order, winner)} level={winner == null}
+        score={[goals[ia], goals[ib]]} scoreLabel={say("wc.sd.score", { a: goals[ia], b: goals[ib] })}
         verdict={winner == null ? say("wc.sd.draw") : say("wc.sd.win", { team: names[winner] })}
         notes={[sc.note, say("wc.sd.stageDate", { stage: mlsStageName(say, m.stage_key), date: dt.full(new Date(m.match_date)) })].filter((x): x is string => !!x)}
       />

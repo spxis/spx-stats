@@ -8,6 +8,7 @@ import type { GameRow } from "./api/types";
 import { LG, type LeagueCode } from "./leagues.ts";
 import { bestOfFromGames, bestOfIn, roundKeys, winsNeeded, type RoundKey } from "./playoffFormat.ts";
 import type { Say, SeriesKey } from "./seriesCopy.ts";
+import { inOrder, placeOf, seriesOrder, type Order } from "./sides.ts";
 import { seasonPath, type TeamPaths } from "./slug.ts";
 
 /** The columns of a game a series needs. */
@@ -410,13 +411,21 @@ export function rankIn(rows: readonly { franchise_id: number; pct: number | null
  * How a series was played, in the bracket package's words (`TiePlay`): one game is a game with its score, a series decided on total goals an aggregate of
  * its games, any other a best-of-N series with the games played (the wins of each side are worked out from them).
  */
-export function seriesPlay(s: Series): TiePlay {
+export function seriesPlay(s: Series, order: Order = [0, 1]): TiePlay {
   const played = s.games.filter((g): g is SeriesGame & { score: [number, number] } => g.played && g.score[0] != null && g.score[1] != null);
-  if (s.games.length === 1 && played.length === 1) return { kind: "game", score: played[0].score, home: played[0].home, ...(played[0].ot ? { extraTime: true } : {}) };
-  const games = played.map((g) => ({ score: g.score, ...(g.ot ? { extraTime: true } : {}) }));
-  return s.basis === "goals" ? { kind: "aggregate", legs: games } : { kind: "series", bestOf: s.bestOf, games, score: [s.sides[0].wins, s.sides[1].wins] };
+  if (s.games.length === 1 && played.length === 1) return { kind: "game", score: inOrder(order, played[0].score), home: placeOf(order, played[0].home), ...(played[0].ot ? { extraTime: true } : {}) };
+  const games = played.map((g) => ({ score: inOrder(order, g.score), ...(g.ot ? { extraTime: true } : {}) }));
+  return s.basis === "goals" ? { kind: "aggregate", legs: games } : { kind: "series", bestOf: s.bestOf, games, score: inOrder(order, [s.sides[0].wins, s.sides[1].wins]) };
 }
 
-/** The series as the bracket layout takes them (lib/bracketLayout.ts): the franchises of each, the winner's franchise, the start date, how it was played. */
+/**
+ * The series as the bracket layout takes them (lib/bracketLayout.ts): the franchises of each in the site's order (lib/sides.ts: the side that had home advantage
+ * first, which is on the top row of a first-round box; a one-game series visitor first), the winner's franchise, the start date, how it was played (its scores and games
+ * in the same order).
+ */
 export const seriesTies = (list: readonly Series[]): Tie[] =>
-  list.map((s) => ({ teams: [s.sides[0].f, s.sides[1].f] as const, winner: s.winner == null ? null : s.sides[s.winner].f, start: s.start, play: seriesPlay(s) }));
+  list.map((s) => {
+    const order = seriesOrder(s);
+    const [x, y] = inOrder(order, s.sides);
+    return { teams: [x.f, y.f] as const, winner: s.winner == null ? null : s.sides[s.winner].f, start: s.start, play: seriesPlay(s, order) };
+  });

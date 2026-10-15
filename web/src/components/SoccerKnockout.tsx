@@ -8,7 +8,7 @@ import { soccerFlagAddress } from "@/lib/soccerFlagSprite";
 import { SOCCER_LOOK, soccerAbbr } from "@/lib/soccerLook";
 import { teamName } from "@/lib/soccerNames";
 import { soccerMatchPath } from "@/lib/soccerPath";
-import { knockoutOf, soccerPlay } from "@/lib/soccerBracket";
+import { knockoutOf, matchSides, soccerPlay } from "@/lib/soccerBracket";
 import { stageName } from "@/lib/soccerView";
 import { trophySvg } from "@/lib/trophies";
 import "./soccer.css";
@@ -30,7 +30,7 @@ export async function SoccerKnockout({ matches }: { matches: Match[] }) {
 
   // The third-place match is a tie of its own for the drawing, after the others (it leads nowhere).
   const thirdTie: Tie<string> | null = ko.third
-    ? { teams: [ko.third.home_team_id, ko.third.away_team_id], winner: ko.third.winner_team_id, start: ko.third.match_date, third: true, play: soccerPlay([ko.third], ko.third.home_team_id) }
+    ? { teams: matchSides(ko.third), winner: ko.third.winner_team_id, start: ko.third.match_date, third: true, play: soccerPlay([ko.third], matchSides(ko.third)[0]) }
     : null;
   const ties = [...ko.ties, ...(thirdTie ? [thirdTie] : [])];
   const matchOf = (i: number): Match => (i < ko.ties.length ? ko.ties[i].matches.at(-1)! : ko.third!);

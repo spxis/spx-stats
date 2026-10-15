@@ -6,6 +6,7 @@ import { drawGameOnce, groundOf, homeVenueIn, neutralSite, parkFits, parkOf, spo
 import { getGameVenue } from "@/lib/gameVenue";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, seasonLabel } from "@/lib/leagues";
+import { leftRight } from "@/lib/sides";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { getVenueFacts, getVenueNames, nameIn } from "@/lib/venueName";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
@@ -70,13 +71,19 @@ export async function placeOf(lg: string, year: number, game: DrawnGame, brands:
  * work): the clubs' colours and logos at the ends, the score in the middle, and for an MLB game the outfield fence of the park it was played in.
  * The drawing is decorative: the figure's label says the score as text and the caption says what is drawn.
  */
-export async function GameSurface({ lg, year, game, competition, brands, abbrs }: { lg: string; year: number; game: DrawnGame; competition?: string; brands: BrandMap; abbrs: AbbrMap; }) {
+export async function GameSurface({ lg, year, game, competition, brands, abbrs, leftF }: {
+  lg: string; year: number; game: DrawnGame; competition?: string; brands: BrandMap; abbrs: AbbrMap;
+  /** On the page of a series: the franchise that is on the left of the series' banner, which the surface keeps on its left (lib/sides.ts). */
+  leftF?: number | null;
+}) {
   const sport = sportOf(lg);
   if (!sport || game.home.score == null || game.away.score == null) return null;
   const sp = await currentSpeaker();
   const { say, dt } = sp;
   const { venue, neutral, park } = await placeOf(lg, year, game, brands);
-  const [la, lb] = seriesLooks(lg, brandFor(brands, game.away.f, year), brandFor(brands, game.home.f, year));
+  // The drawing's left and right sides (lib/sides.ts); kyogijo is told the left team as its `away` and the right team as its `home`.
+  const { left, right } = leftRight(game.away, game.home, { leftOf: leftF != null ? (t) => t.f === leftF : undefined });
+  const [la, lb] = seriesLooks(lg, brandFor(brands, left.f, year), brandFor(brands, right.f, year));
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
   const status = game.overtime ? say("scores.finalExtra", { extra }) : say("scores.final");
   const side = (s: DrawnGame["home"], look: typeof la): GameDrawing["home"] => ({
@@ -84,7 +91,7 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs }
   });
   const drawing = drawGameOnce({
     sport, year, language: sp.locale === "ja" ? "ja" : "en", status, competition, date: dt.full(atUtc(game.date)), park,
-    away: side(game.away, la), home: side(game.home, lb),
+    away: side(left, la), home: side(right, lb),
   });
   if (!drawing) return null;
   const league = LG[lg as keyof typeof LG] ?? lg.toUpperCase(), season = seasonLabel(lg, year);
@@ -93,7 +100,7 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs }
       : venue ? say("gs.venue", { venue: venue.name, league, season })
         : say("gs.std", { league, season });
   return (
-    <figure className="gsurf" data-sport={sport} aria-label={say("gs.aria", { away: game.away.name, awayScore: game.away.score, home: game.home.name, homeScore: game.home.score, status })}>
+    <figure className="gsurf" data-sport={sport} aria-label={say("gs.aria", { away: left.name, awayScore: left.score!, home: right.name, homeScore: right.score!, status })}>
       <div className="gsurf-art" style={{ aspectRatio: `${drawing.width} / ${drawing.height}` }} dangerouslySetInnerHTML={{ __html: drawing.svg }} />
       <figcaption className="note">{[competition, dt.full(atUtc(game.date))].filter(Boolean).join(" · ")}<br />{caption} <Credits say={say} use={["surfaces"]} /></figcaption>
     </figure>
@@ -126,15 +133,18 @@ export async function SoccerSurface({ home, away, note, finish, winner, competit
   const ground = groundOf(wikidata);
   const status = note ? `${say("scores.final")} · ${note}` : say("scores.final");
   const side = (s: SoccerSide): GameDrawing["home"] => ({ name: s.name, abbr: s.abbr, score: s.goals, penalties: s.penalties, logo: s.logo, color: s.color, ink: s.ink });
+  // The visitor on the left and the home team on the right (lib/sides.ts); kyogijo is told the left team as its `away` and the right team as its `home`.
+  const { left, right, swapped } = leftRight(away, home, { winner: winner === "none" ? null : winner });
   const drawing = drawGameOnce({
-    sport: "soccer", year: null, language: sp.locale === "ja" ? "ja" : "en", status: finishStatus(finish, sp.locale, say("scores.final")), competition, date, ground, winner,
-    away: side(away), home: side(home),
+    sport: "soccer", year: null, language: sp.locale === "ja" ? "ja" : "en", status: finishStatus(finish, sp.locale, say("scores.final")), competition, date, ground,
+    winner: winner === "none" ? "none" : (winner === "home") === swapped ? "away" : "home",
+    away: side(left), home: side(right),
   });
   if (!drawing) return null;
   const g = ground ? groundById(ground) : null;
   return (
-    // The label's wording is "{away} ..., {home} ..." (the North American order); a soccer match reads home first, so the two are handed over swapped.
-    <figure className="gsurf" data-sport="soccer" aria-label={say("gs.aria", { away: home.name, awayScore: home.goals, home: away.name, homeScore: away.goals, status })}>
+    // The label's wording is "{away} ..., {home} ..." and says the left side first, as the drawing does.
+    <figure className="gsurf" data-sport="soccer" aria-label={say("gs.aria", { away: left.name, awayScore: left.goals, home: right.name, homeScore: right.goals, status })}>
       <div className="gsurf-art" style={{ aspectRatio: `${drawing.width} / ${drawing.height}` }} dangerouslySetInnerHTML={{ __html: drawing.svg }} />
       <figcaption className="note">{[competition, date].filter(Boolean).join(" · ")}<br />{g ? say("gs.ground", { venue: g.name }) : say("gs.stdSoccer")} <Credits say={say} use={["surfaces"]} /></figcaption>
     </figure>

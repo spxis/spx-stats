@@ -1,5 +1,6 @@
 import type { Tie, TiePlay } from "./bracketLayout.ts";
 import type { Match } from "./soccer.ts";
+import { gameOrder, inOrder } from "./sides.ts";
 import { goalsOf } from "./soccerH2H.ts";
 
 /**
@@ -38,6 +39,12 @@ export interface Knockout {
   third: Match | null;
 }
 
+/** A match's two teams as a tie draws them, in the site's order for one game (lib/sides.ts): the visitor first, then the home team. */
+export function matchSides(m: Pick<Match, "home_team_id" | "away_team_id" | "winner_team_id">): readonly [string, string] {
+  const winner = m.winner_team_id === m.home_team_id ? 0 : m.winner_team_id === m.away_team_id ? 1 : null;
+  return inOrder(gameOrder(0, winner), [m.home_team_id, m.away_team_id]);
+}
+
 /** The knockout matches of one tournament (the group stages come before stage_order 4). */
 export function knockoutOf(matches: readonly Match[]): Knockout {
   const ko = matches.filter((m) => m.stage_order >= 4).sort((x, y) => x.match_date.localeCompare(y.match_date) || x.match_id - y.match_id);
@@ -50,7 +57,8 @@ export function knockoutOf(matches: readonly Match[]): Knockout {
   }
   const ties: SoccerTie[] = [...byTie.values()].map((ms) => {
     const last = ms.at(-1)!;
-    return { teams: [last.home_team_id, last.away_team_id] as const, winner: last.winner_team_id, start: ms[0].match_date, stage_key: last.stage_key, matches: ms, play: soccerPlay(ms, last.home_team_id) };
+    const teams = matchSides(last);
+    return { teams, winner: last.winner_team_id, start: ms[0].match_date, stage_key: last.stage_key, matches: ms, play: soccerPlay(ms, teams[0]) };
   });
   const order = new Map<string, number>();
   for (const m of ko) if (m.stage_key !== "third_place") order.set(m.stage_key, Math.min(order.get(m.stage_key) ?? Infinity, m.stage_order));
