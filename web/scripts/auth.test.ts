@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { adminEmails, isAdmin } from "../src/lib/auth/admin.ts";
+import { authConfigured } from "../src/lib/auth/enabled.ts";
 import { sameOrigin } from "../src/lib/auth/origin.ts";
 import { safeDestination } from "../src/lib/auth/redirect.ts";
 
@@ -35,4 +36,15 @@ test("a POST is same-origin only when Origin names the host it was sent to", () 
   assert.equal(sameOrigin(headers({ origin: "https://evil.test", host: "spxn.com" })), false);
   assert.equal(sameOrigin(headers({ host: "spxn.com" })), false);
   assert.equal(sameOrigin(headers({ origin: "null", host: "spxn.com" })), false);
+});
+
+test("sign-in is on when the three variables are set, or when a prebuilt build says so", () => {
+  const all = { AUTH_GOOGLE_ID: "a", AUTH_GOOGLE_SECRET: "b", AUTH_SECRET: "c" };
+  assert.equal(authConfigured(all), true);
+  assert.equal(authConfigured({ GOOGLE_CLIENT_ID: "a", GOOGLE_CLIENT_SECRET: "b", NEXTAUTH_SECRET: "c" }), true);
+  assert.equal(authConfigured({}), false);
+  assert.equal(authConfigured({ ...all, AUTH_SECRET: "  " }), false);
+  // `vercel pull` brings secrets down empty, so the prebuilt build cannot see them: the script's flag stands in for them
+  assert.equal(authConfigured({ AUTH_GOOGLE_ID: "", AUTH_GOOGLE_SECRET: "", AUTH_SECRET: "", SPX_AUTH_CONFIGURED: "1" }), true);
+  assert.equal(authConfigured({ SPX_AUTH_CONFIGURED: "0" }), false);
 });

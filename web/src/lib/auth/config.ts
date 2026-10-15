@@ -1,6 +1,7 @@
 import "server-only";
 import type { NextAuthOptions } from "next-auth";
 import GoogleProvider from "next-auth/providers/google";
+import { AUTH_CLIENT_SECRET, AUTH_ID, AUTH_SECRET, authConfigured, firstEnv } from "./enabled";
 
 /**
  * Google sign-in with next-auth, set up the way Itsutsu and UmaKuma do it and with the same variable
@@ -8,21 +9,13 @@ import GoogleProvider from "next-auth/providers/google";
  * a signed, encrypted JWT in an httpOnly, SameSite=Lax cookie (Secure on https); nothing is stored in a
  * database. next-auth checks the OAuth state and PKCE and only follows same-origin callback URLs.
  */
-function firstEnv(names: string[]): string | null {
-  for (const name of names) {
-    const value = process.env[name]?.trim();
-    if (value) return value;
-  }
-  return null;
-}
+const clientId = firstEnv(process.env, AUTH_ID);
+const clientSecret = firstEnv(process.env, AUTH_CLIENT_SECRET);
+const secret = firstEnv(process.env, AUTH_SECRET);
 
-const clientId = firstEnv(["AUTH_GOOGLE_ID", "GOOGLE_CLIENT_ID"]);
-const clientSecret = firstEnv(["AUTH_GOOGLE_SECRET", "GOOGLE_CLIENT_SECRET"]);
-const secret = firstEnv(["AUTH_SECRET", "NEXTAUTH_SECRET"]);
-
-/** False when any of the three is missing: the login UI is then hidden and every auth route is a 404. */
+/** False when any of the three is missing: the login UI is then hidden and every auth route is a 404. (A prebuilt deploy's build cannot see the secrets and says so with SPX_AUTH_CONFIGURED: lib/auth/enabled.ts.) */
 export function authEnabled(): boolean {
-  return Boolean(clientId && clientSecret && secret);
+  return authConfigured(process.env);
 }
 
 export const authOptions: NextAuthOptions = {

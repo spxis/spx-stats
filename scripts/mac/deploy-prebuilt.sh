@@ -97,7 +97,13 @@ ENVFILE=".vercel/.env.production.local"
 if [ -f "$ENVFILE" ]; then
   # Sensitive variables come down empty (VAR=""); an empty AUTH_URL makes next-auth throw "Invalid URL" while pages are drawn.
   # Drop the empty ones for the build: the deployed functions still read the real values from the project at run time.
-  grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=(""|)$' > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"; mv "$ENVFILE.new" "$ENVFILE"
+  # The kept pages bake in whether sign-in is set up (web/src/lib/auth/enabled.ts). The three variables of it are secrets, so the build sees them empty and would build every
+  # page as "no sign-in": no link, no account menu, and a signed-in browser's hint hiding the theme button for nothing. Say so when the project holds all three.
+  AUTH_FLAG=""
+  if grep -qE '^(AUTH_GOOGLE_ID|GOOGLE_CLIENT_ID)=' "$ENVFILE" && grep -qE '^(AUTH_GOOGLE_SECRET|GOOGLE_CLIENT_SECRET)=' "$ENVFILE" && grep -qE '^(AUTH_SECRET|NEXTAUTH_SECRET)=' "$ENVFILE"; then AUTH_FLAG=1; fi
+  grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=(""|)$' > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"
+  [ -n "$AUTH_FLAG" ] && printf 'SPX_AUTH_CONFIGURED="1"\n' >> "$ENVFILE.new"
+  mv "$ENVFILE.new" "$ENVFILE"
 fi
 say "linked and pulled project settings into $TMP"
 
