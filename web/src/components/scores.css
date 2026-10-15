@@ -1,6 +1,6 @@
 /* The scoreboard: controls, the strip of days around the chosen one, and a card per game. Tokens come from globals.css. */
 .scoresbar { gap: 10px 12px; }
-.scoresbar .daynav { display: inline-flex; gap: 6px; }
+.scoresbar .daynav { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .dayarrow { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-decoration: none; white-space: nowrap; }
 a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
 .dayarrow.off { opacity: .35; }
@@ -19,6 +19,17 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
 .daystrip :is(a, button)[aria-current="date"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .daystrip :is(a, button)[aria-current="date"] .ct { background: color-mix(in srgb, var(--paper) 20%, transparent); color: var(--paper); }
 .daystrip :is(a, button)[aria-current="date"] .ct b { color: var(--paper); }
+/* Today (on the reader's clock, set by DayStrip) is a bar across the top of its cell and an accent weekday, a mark that does not rely on colour alone and is separate from the chosen day's filled cell. --today and --today-on-ink are in globals.css. */
+.daystrip [data-today] { box-shadow: inset 0 4px 0 var(--today); }
+.daystrip [data-today] .wd { color: var(--today); font-weight: 700; }
+.daystrip [data-today][aria-current="date"] { box-shadow: inset 0 4px 0 var(--today-on-ink); }
+.daystrip [data-today][aria-current="date"] .wd { color: var(--today-on-ink); }
+/* Week jumps: a narrow double-chevron at each end (the scores page); narrower than a day cell and the full height of the row. */
+.daystrip.withjump { grid-template-columns: 28px repeat(7, minmax(0, 1fr)) 28px; }
+.daystrip .jump { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-decoration: none; }
+.daystrip a.jump:hover { border-color: var(--accent); color: var(--accent); }
+.daystrip .jump.off { opacity: .35; }
+.daystrip .jump svg { flex: none; }
 @media (min-width: 600px) { .daystrip .ct .cw { display: inline; } }
 
 /* The week strip on a season page: the same strip, with that day's games as compact cards beneath it. */

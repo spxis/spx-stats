@@ -67,6 +67,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
   const at = atUtc(day);
   const first = bounds?.first.game_date ?? day, last = bounds?.last.game_date ?? day;
   const prev = addDay(day, -1), next = addDay(day, 1);
+  const weekBack = addDay(day, -7), weekForward = addDay(day, 7);
   const upcoming = day >= addDay(todayUtc(), -1);
   const strip = [-3, -2, -1, 0, 1, 2, 3].map((n) => {
     const d = addDay(day, n);
@@ -87,7 +88,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
         <ScoresBar lg={lg} day={day} year={year} seasons={years} days={days} min={first} max={last}
           prev={day > first ? prev : ""} next={day < last ? next : ""} prevText={dt.monthDayShort(atUtc(prev))} nextText={dt.monthDayShort(atUtc(next))} />
       </section>
-      <DayStrip aria={say("scores.daysAria")} current={day} days={strip.map(({ d, n }) => ({
+      <DayStrip aria={say("scores.daysAria")} current={day} jump={{ back: weekBack >= first ? scoresPath(lg, weekBack) : "", forward: weekForward <= last ? scoresPath(lg, weekForward) : "" }} days={strip.map(({ d, n }) => ({
         key: d, weekday: dt.weekdays[atUtc(d).getUTCDay()], date: dt.monthDayShort(atUtc(d)), games: n, word: plural("scores.gamesWord", n),
         label: `${dt.full(atUtc(d))}: ${plural("count.games", n)}`, href: scoresPath(lg, d),
       }))} />

@@ -29,7 +29,7 @@ interface Props {
 }
 
 /**
- * The scoreboard's controls: the season, the day before and the day after, a date picker and a Today button.
+ * The scoreboard's controls: the season, then the day before, the date picker, the day after and a Today button, in that order.
  * Every choice is an address (/nhl/scores/2023-04-15; a season is /nhl/scores?season=2022-23), so the back button works.
  */
 export function ScoresBar({ lg, day, year, seasons, days, min, max, prev, next, prevText, nextText }: Props) {
@@ -47,11 +47,11 @@ export function ScoresBar({ lg, day, year, seasons, days, min, max, prev, next, 
       </label>
       <span className="daynav">
         {prev ? <Link href={scoresPath(lg, prev)} rel="prev" prefetch={false} className="dayarrow">{"← " + prevText}</Link> : <span className="dayarrow off" aria-hidden="true">{"← " + prevText}</span>}
+        <DatePicker label={say("scores.dateLabel")} value={day} min={min} max={max} marked={marked} placeholder={say("filter.pickDate")}
+          onChange={(d) => router.push(scoresPath(lg, d || undefined))} />
         {next ? <Link href={scoresPath(lg, next)} rel="next" prefetch={false} className="dayarrow">{nextText + " →"}</Link> : <span className="dayarrow off" aria-hidden="true">{nextText + " →"}</span>}
+        <button type="button" className="todaybtn" disabled={!today} onClick={() => router.push(scoresPath(lg, today))}>{say("picker.today")}</button>
       </span>
-      <DatePicker label={say("scores.dateLabel")} value={day} min={min} max={max} marked={marked} placeholder={say("filter.pickDate")}
-        onChange={(d) => router.push(scoresPath(lg, d || undefined))} />
-      <button type="button" className="todaybtn" disabled={!today} onClick={() => router.push(scoresPath(lg, today))}>{say("picker.today")}</button>
     </div>
   );
 }
