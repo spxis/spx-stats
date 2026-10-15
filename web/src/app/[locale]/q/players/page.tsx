@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Flag } from "@/components/Flag";
+import { NatLink } from "@/components/NatLink";
+import { hasFlag } from "@/lib/flagCodes";
 import { Credits } from "@/components/Credits";
 import { LetterBar } from "@/components/LetterBar";
 import { Pager } from "@/components/Pager";
@@ -29,7 +31,8 @@ import { split, stintLine } from "@/lib/playerTeamModel";
 import { getBrands } from "@/lib/data";
 import { logoFor } from "@/lib/brand";
 import { getLeagueClubs, getPaths, getSlugs, teamOf } from "@/lib/teamSlugs";
-import { PlayerTeamChips, type TeamChip } from "@/components/PlayerTeamChips";
+import { PlayerTeamChips, TeamLogoList } from "@/components/PlayerTeamChips";
+import { chipTuple, type TeamChip } from "@/lib/teamChips";
 import { TeamPicker } from "@/components/TeamPicker";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
@@ -109,6 +112,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
   // The picker's clubs: the league's, the ones still playing first, each by the address segment its page has.
   const pickable = teamsOn && league ? (await getLeagueClubs(league)).map((c) => ({ slug: paths.slug(league, c.f), name: c.name, active: c.active })) : [];
   // One player's teams as small logos, the earliest first: at most four, then "+N" (the name and the years of each are in its tooltip).
+  const logoList: string[] = [];
   const chipsOf = (p: PlayerIndexRow) => {
     const items: TeamChip[] = (teams?.get(p.person_id) ?? []).flatMap((r) => {
       const lg = r.league && isLeague(r.league) ? r.league : p.leagues?.[0];
@@ -129,12 +133,12 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
       key: "teams", label: say("players.teamsCol"), title: say("players.teamsTitle"), cls: "nowrap", get: (p: PlayerIndexRow) => chipsOf(p).length,
       cell: (p: PlayerIndexRow) => {
         const { shown, more } = split(chipsOf(p));
-        return <PlayerTeamChips shown={shown} more={more} moreLabel={say("players.teamsMore", { n: fmt(more.length), list: [...shown, ...more].map((t) => t.tip).join("; ") })} />;
+        return <PlayerTeamChips shown={shown.map((t) => chipTuple(t, logoList))} more={more.map((t) => t.tip)} />;
       },
     } satisfies ColumnSpec<PlayerIndexRow>] : []),
     ...(withCountry ? [{
       key: "country", label: say("players.colCountry"), title: say("players.countryTitle"), get: (p: PlayerIndexRow) => (p.country ? countryName(p.country, locale) : ""),
-      cell: (p: PlayerIndexRow) => (p.country ? <Link href={href({ nat: p.country.toUpperCase() })} prefetch={false} title={say("players.byCountry", { name: countryName(p.country, locale) })}><Flag code={p.country} /></Link> : null),
+      cell: (p: PlayerIndexRow) => (p.country ? <NatLink href={href({ nat: p.country.toUpperCase() })} title={say("players.byCountry", { name: countryName(p.country, locale) })} code={hasFlag(p.country) ? p.country : null} /> : null),
     } satisfies ColumnSpec<PlayerIndexRow>] : []),
     { key: "years", label: say("col.years"), cls: "nowrap", title: say("players.yearsTitle"), rest: "last_season", get: (p: PlayerIndexRow) => p.last_season, cell: (p: PlayerIndexRow) => (p.first_season == null ? "" : p.last_season != null && p.last_season !== p.first_season ? `${p.first_season}–${p.last_season}` : String(p.first_season)) },
     { key: "seasons", label: say("players.colSeasons"), num: true, rest: "seasons_played", get: (p: PlayerIndexRow) => p.seasons_played, cell: (p: PlayerIndexRow) => fmt(p.seasons_played) },
@@ -166,7 +170,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>
             <p className="note">{plural("count.players", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
-            <div className="scroll"><SortTable {...table} def={DEF_SORT} initial={sort} remote /></div>
+            <div className="scroll"><TeamLogoList logos={logoList}><SortTable {...table} def={DEF_SORT} initial={sort} remote /></TeamLogoList></div>
             <Pager page={data.page} pages={data.pages} href={to} label={say("players.pager")} say={say} fmt={fmt} />
             {countries ? <PlayerCountries part="strip" t={countries} reference={reference} league={league} chosen={nat} href={href} /> : null}
             {book.key()}

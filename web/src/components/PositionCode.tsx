@@ -1,3 +1,5 @@
+"use client";
+
 import { POSITION_SEP, POSITIONS_KEY_ID } from "@/lib/positions";
 import "./positions.css";
 
