@@ -94,8 +94,8 @@ test("a soccer pitch is a pageant: each side's flag as a carpet over its half, t
 
 test("a game only known by its home club claims no venue at a neutral site or in a bubble season", () => {
   assert.ok(neutralSite("nfl", 2023, "playoffs", true));
-  assert.ok(neutralSite("nfl", 1966, "playoffs", true));
-  assert.ok(!neutralSite("nfl", 1965, "playoffs", true));
+  assert.ok(neutralSite("nfl", 1970, "playoffs", true));
+  assert.ok(!neutralSite("nfl", 1969, "playoffs", true));   // the NFL Championship Game was at a club's ground
   assert.ok(!neutralSite("nfl", 2023, "playoffs", false));
   assert.ok(neutralSite("cfl", 1950, "playoffs", true));
   // The 2019-20 NHL and NBA seasons are year 2019 (the year they start); MLB's postseason of 2020 is year 2020.

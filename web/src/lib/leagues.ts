@@ -1,15 +1,24 @@
-export const LEAGUE_CODES = ["nhl", "nba", "mlb", "nfl", "cfl"] as const;
+export const LEAGUE_CODES = ["nhl", "nba", "mlb", "nfl", "cfl", "afl"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
-export const LEAGUES: { code: LeagueCode; name: string; short: string }[] = [
+/** `closed`: a league that no longer plays (the AFL, 1960-1969). Its clubs are today's franchises, which keep its seasons in their histories. */
+export const LEAGUES: { code: LeagueCode; name: string; short: string; closed?: true }[] = [
   { code: "nhl", name: "National Hockey League", short: "NHL" },
   { code: "nba", name: "National Basketball Association", short: "NBA" },
   { code: "mlb", name: "Major League Baseball", short: "MLB" },
   { code: "nfl", name: "National Football League", short: "NFL" },
   { code: "cfl", name: "Canadian Football League", short: "CFL" },
+  { code: "afl", name: "American Football League", short: "AFL", closed: true },
 ];
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", mlb: "MLB", nfl: "NFL", cfl: "CFL" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL" };
+
+/**
+ * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the
+ * NFL's last game is its own championship game, 1920-1969 (the one a final was the "NFL Championship"; the AFL played its own: "AFL Championship").
+ * The AFL-NFL World Championship Games of 1966-1969 (Super Bowls I-IV) join two leagues, so neither league's season holds them.
+ */
+export const SUPER_BOWL_SINCE = 1970;
 
 export function isLeague(code: string): code is LeagueCode {
   return (LEAGUE_CODES as readonly string[]).includes(code);

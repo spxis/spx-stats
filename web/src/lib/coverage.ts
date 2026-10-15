@@ -1,6 +1,6 @@
 import { median } from "d3";
 import type { SeasonSummaryRow } from "./api/types";
-import { seasonLabel } from "./leagues";
+import { seasonLabel } from "./leagues.ts";
 
 export type SeasonWithShare = SeasonSummaryRow & { share: number };
 

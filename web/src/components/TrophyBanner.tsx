@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { TROPHY_NAME } from "@/lib/trophies";
+import { trophyPhrase } from "@/lib/trophies";
 import { bannerCupSvg } from "@/lib/cups";
 import type { TurnLeague } from "@/lib/trophyTurn";
 import { TurnTrophy } from "./TurnTrophy";
@@ -11,8 +11,8 @@ import { TurnTrophy } from "./TurnTrophy";
  * with no script. TurnTrophy then lets it turn slowly and be dragged (a few kB, loaded once it is in view). Only the five leagues have one here.
  * The children are the banner's own cells (`.cup`, `.badge`, `.who`, `.how`).
  */
-export async function TrophyBanner({ lg, children }: { lg: string; children: ReactNode }) {
-  const name = lg in TROPHY_NAME ? TROPHY_NAME[lg as keyof typeof TROPHY_NAME] : null;
+export async function TrophyBanner({ lg, year, children }: { lg: string; year?: number; children: ReactNode }) {
+  const name = trophyPhrase(lg, year);
   if (!name) return <section className="banner">{children}</section>;
   const { say } = await currentSpeaker();
   return (

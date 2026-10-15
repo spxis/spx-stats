@@ -5,7 +5,7 @@
  */
 import type { Tie, TiePlay } from "./bracketLayout.ts";
 import type { GameRow } from "./api/types";
-import { LG, type LeagueCode } from "./leagues.ts";
+import { LG, SUPER_BOWL_SINCE, type LeagueCode } from "./leagues.ts";
 import { bestOfFromGames, bestOfIn, roundKeys, winsNeeded, type RoundKey } from "./playoffFormat.ts";
 import type { Say, SeriesKey } from "./seriesCopy.ts";
 import { inOrder, placeOf, seriesOrder, type Order } from "./sides.ts";
@@ -270,7 +270,8 @@ export function finalName(lg: string, year: number, say: Say): string {
     case "nhl": return say("final.nhl");
     case "nba": return say("final.nba");
     case "mlb": return say("final.mlb");
-    case "nfl": return year >= 1966 ? say("final.nfl", { numeral: roman(year - 1965) }) : say("final.nflOld");
+    case "nfl": return year >= SUPER_BOWL_SINCE ? say("final.nfl", { numeral: roman(year - 1965) }) : say("final.nflOld");
+    case "afl": return say("final.afl");
     case "cfl": return say("final.cfl");
     default: return say("final.other");
   }
@@ -329,7 +330,7 @@ export const playedYear = (s: Pick<Series, "end">): number => Number(s.end.slice
 
 /** A round's name with the year it was played: "2023 Stanley Cup Final", "Super Bowl LIII (2019)", "2023 NHL Semifinals". */
 export function datedRound(lg: string, year: number, played: number, name: string, isFinal: boolean, say: Say): string {
-  if (isFinal && lg === "nfl" && year >= 1966) return say("final.nflDated", { numeral: roman(year - 1965), year: played });
+  if (isFinal && lg === "nfl" && year >= SUPER_BOWL_SINCE) return say("final.nflDated", { numeral: roman(year - 1965), year: played });
   return isFinal ? say("round.dated", { year: played, name }) : say("round.datedLeague", { year: played, league: LG[lg as LeagueCode] ?? lg.toUpperCase(), name });
 }
 

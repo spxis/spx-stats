@@ -17,6 +17,7 @@ import { SortTable } from "@/components/SortTable";
 import { StandingsFocus } from "@/components/StandingsFocus";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TrophyBanner } from "@/components/TrophyBanner";
+import { championshipName } from "@/lib/trophies";
 import { Badge, NoSeason } from "@/components/ui";
 import { queryHref, ViewTabs } from "@/components/ViewTabs";
 import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
@@ -238,8 +239,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       </section>
       {champ ? (
         <>
-          <TrophyBanner lg={lg}>
-            <span className="cup">{champ.award}</span>
+          <TrophyBanner lg={lg} year={y}>
+            <span className="cup">{championshipName(lg, y, champ.award)}</span>
             <Badge src={champ.source} />
             <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
             <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} alone /></span>

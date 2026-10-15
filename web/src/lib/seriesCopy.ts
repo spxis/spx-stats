@@ -37,6 +37,7 @@ export const SERIES_COPY = {
   "final.mlb": "World Series",
   "final.nfl": "Super Bowl {numeral}",
   "final.nflOld": "NFL Championship",
+  "final.afl": "AFL Championship",
   "final.cfl": "Grey Cup",
   "final.other": "Final",
   "final.nflDated": "Super Bowl {numeral} ({year})",

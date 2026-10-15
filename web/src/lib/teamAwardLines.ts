@@ -4,6 +4,7 @@ import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { getTeamAwards } from "./people";
 import { getPlayerPaths } from "./playerLinks";
+import { championshipName } from "./trophies";
 
 /** The awards a franchise and its players won, newest first, as plain data (lib/awardLines.ts); null when they could not be read, an empty list when there are none. */
 export async function teamAwardLines(lg: string, f: number): Promise<AwardList | null> {
@@ -11,7 +12,7 @@ export async function teamAwardLines(lg: string, f: number): Promise<AwardList |
   if (!list) return null;
   const logos: string[] = [];
   const lines = list.map((r): AwardLine => {
-    const l: AwardLine = { y: r.year, a: r.award };
+    const l: AwardLine = { y: r.year, a: r.kind === "championship" ? championshipName(lg, r.year, r.award) : r.award };
     if (r.winner) l.w = r.winner;
     if (r.person_id != null) l.h = player(r.person_id, r.winner ?? "", lg);
     else {

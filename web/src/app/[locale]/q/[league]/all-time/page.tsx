@@ -32,7 +32,7 @@ const query = z.object({
   phase: z.enum(["r", "p", "all"]).catch("r"),
   active: z.enum(["1"]).optional().catch(undefined),
 });
-const UNIT = { nhl: "unit.goals", nba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points" } as const satisfies Record<string, PhraseKey>;
+const UNIT = { nhl: "unit.goals", nba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", afl: "unit.points" } as const satisfies Record<string, PhraseKey>;
 const MIN_SEASONS = 3;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/q/[league]/all-time">): Promise<Metadata> {

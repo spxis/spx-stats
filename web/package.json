@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.121.1",
+  "version": "0.122.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -14,6 +14,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "task": "node scripts/task.ts",
+    "test:football": "node --test scripts/earlyFootball.test.ts",
     "test:trophies": "node --conditions=react-server --test scripts/trophies.test.ts",
     "i18n:review": "node scripts/i18n-review.ts",
     "test:i18n": "node --test scripts/i18n.test.ts",

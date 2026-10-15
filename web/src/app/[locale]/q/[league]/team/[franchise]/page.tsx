@@ -212,6 +212,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const country = countryAt(place?.latitude, place?.longitude);
   const city = await getClubCity(lg, f);
   const titlesPart = nTitles ? say("team.titlesSuffix", { titles: plural("count.championships", nTitles) }) : "";
+  // The AFL's clubs are today's NFL franchises: each league's page points to the other's seasons of the same club.
+  const otherLg = lg === "afl" ? "nfl" : lg === "nfl" ? "afl" : null;
+  const otherTeam = otherLg ? await getTeam(otherLg, f).catch(() => null) : null;
+  const otherSeasons = otherTeam ? otherTeam.seasons.length + otherTeam.unrecorded.length : 0;
   const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: titlesPart })
     : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })
       : say("team.ledeBareOnly", { seasons: plural("count.seasons", bare.size), titles: titlesPart });
@@ -235,6 +239,9 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </Link>
         ) : null}
         <p className="lede">{ledeText}</p>
+        {otherLg && otherSeasons ? (
+          <p className="note">{say("team.otherLeague", { league: LG[otherLg], seasons: plural("count.seasons", otherSeasons) })} <Link href={paths.team(otherLg, f)}>{say("team.otherLeagueLink", { league: LG[otherLg] })}</Link></p>
+        ) : null}
         {rows.length ? <CompareControl lg={lg} f={f} name={now} teamPath={at.path} /> : null}
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}

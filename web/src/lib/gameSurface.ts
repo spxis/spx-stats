@@ -1,5 +1,6 @@
 import { drawKyogijo, groundByWikidata, parkById, type ScoreOptions } from "@johnmorrisdotca/kyogijo-stadiums";
 import type { BrandMap } from "./brand.ts";
+import { SUPER_BOWL_SINCE } from "./leagues.ts";
 import { parkIdFor, SURFACE_SPORT, type SurfaceSport } from "./venuePark.ts";
 
 /**
@@ -148,7 +149,7 @@ export function drawGameOnce(g: GameDrawing): Drawn | null {
  */
 export function neutralSite(lg: string, year: number, phase: string, final: boolean): boolean {
   if (phase !== "playoffs") return false;
-  if (lg === "nfl") return final && year >= 1966;
+  if (lg === "nfl") return final && year >= SUPER_BOWL_SINCE;
   if (lg === "cfl") return final;
   if (lg === "nhl" || lg === "nba") return year === 2019;
   return lg === "mlb" && year === 2020;

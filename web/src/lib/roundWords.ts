@@ -33,6 +33,7 @@ const ROUND_PHRASE: Partial<Record<SeriesKey, PhraseKey>> = {
   "final.mlb": "rnd.mlb",
   "final.nfl": "rnd.nfl",
   "final.nflOld": "rnd.nflOld",
+  "final.afl": "rnd.afl",
   "final.cfl": "rnd.cfl",
   "final.other": "rnd.other",
 };

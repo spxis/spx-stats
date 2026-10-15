@@ -56,7 +56,7 @@ export async function GroupPage({ lg, f, group, path, sp }: { lg: LeagueCode; f:
   const team = nameOf(f);
   const groupName = say(`h2h.group.of.${group}` as PhraseKey);
   const q = parseH2hQuery(sp, lg);
-  const unit = say(({ nhl: "unit.goals", nba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points" } as const)[lg]);
+  const unit = say(({ nhl: "unit.goals", nba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", afl: "unit.points" } as const)[lg]);
 
   const all = groupGames(lg, d.history, f, group, d.places);
   const hasPlayoffs = all.some((g) => g.ph === "playoffs"), hasRegular = all.some((g) => g.ph === "regular");
