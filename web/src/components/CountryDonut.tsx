@@ -3,11 +3,13 @@
 import Link from "next/link";
 import { arc, pie, type PieArcDatum } from "d3";
 import { useRef } from "react";
-import { focused, sliceStates } from "@/lib/countryFocus";
+import { focused, holds, sliceStates } from "@/lib/countryFocus";
 import { fillHref } from "@/lib/countryRamp";
 import { countryName, pctText } from "@/lib/people-format";
 import { FlagIcon } from "./FlagIcon";
+import { DonutCentre } from "./DonutCentre";
 import { useCountryFocus } from "./CountryScope";
+import { useDonutLive } from "./useDonutLive";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines, useTooltip } from "./Tooltip";
 import "./country.css";
@@ -42,7 +44,8 @@ export function SliceName({ s, flags, hrefTpl }: { s: Slice; flags: Record<strin
  * A donut of players by country, with the total in the middle and a legend that holds every figure (the legend is the chart's table).
  * Hovering a slice names it; a slice and a legend name link where `hrefTpl` says (the list filtered to that country). Inside a CountryScope the chosen
  * country and the one under the pointer or focus are drawn out and the other slices dimmed, the legend row is marked, and "Other countries" opens the
- * scope's list of more countries. A slice is a link (so it is reached by keyboard and works without script); the unknown ones do nothing.
+ * scope's list of more countries. A slice is a link where `hrefTpl` says (so it works without script), and every slice is reached by keyboard; the middle
+ * shows the figures of the slice (or the country, from a legend row, chip or map) under the pointer or the focus, and the total again when it leaves.
  */
 export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hrefTpl, compact = false }: {
   title: string; sub?: string; slices: Slice[]; flags: Record<string, true>; centre: string; centreSub: string; hrefTpl?: string;
@@ -59,7 +62,10 @@ export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hre
   const slice = arc<PieArcDatum<Slice>>().innerRadius(60).outerRadius(96).padAngle(shown.length > 1 ? 0.015 : 0).cornerRadius(2);
   const parts = pie<Slice>().sort(null).value((s) => s.n)(shown);
   const nameOf = (s: Slice) => (s.kind === "other" ? say("country.other") : s.kind === "unknown" ? say("country.unknown") : countryName(s.code, locale));
+  const live = useDonutLive();
+  const idOf = (s: Slice) => `${s.kind ?? "country"}-${s.code}`;
   const codes = focused(scope.chosen, scope.hover);
+  const under = shown.find((s) => idOf(s) === live.key) ?? (scope.hover ? shown.find((s) => holds(s, [scope.hover!])) : undefined);
   const states = sliceStates(shown, codes);
   const stateOf = new Map(shown.map((s, i) => [s, states[i]]));
   const openMore = () => {
@@ -81,13 +87,16 @@ export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hre
                 const [cx, cy] = slice.centroid(d);
                 const len = Math.hypot(cx, cy) || 1;
                 const style = st === "on" ? { transform: `translate(${(cx / len) * 6}px, ${(cy / len) * 6}px)` } : undefined;
-                const attrs = { className: "dslice", style, "data-on": st === "on" ? "" : undefined, "data-dim": st === "dim" ? "" : undefined };
+                const attrs = {
+                  className: "dslice", style, "data-on": st === "on" ? "" : undefined, "data-dim": st === "dim" ? "" : undefined,
+                  "data-country": s.kind ? undefined : s.code, ...live.bind(idOf(s)),
+                };
                 const path = (
                   <path d={slice(d) ?? undefined} fill={slotColor(s)}
                     onMouseMove={(ev) => tip.show(ev, <TipLines title={nameOf(s)} lines={[`${fmt(s.n)} · ${pc(s.n)}`]} />)} onMouseLeave={tip.hide} />
                 );
                 if (!s.kind && hrefTpl) {
-                  return <Link key={`${s.kind}-${s.code}`} href={fillHref(hrefTpl, s.code)} prefetch={false} data-country={s.code} aria-label={say("country.mapShow", { name: nameOf(s) })} {...attrs}>{path}</Link>;
+                  return <Link key={`${s.kind}-${s.code}`} href={fillHref(hrefTpl, s.code)} prefetch={false} aria-label={say("country.mapShow", { name: nameOf(s) })} {...attrs}>{path}</Link>;
                 }
                 if (s.kind === "other" && scope.hasMore) {
                   return (
@@ -95,11 +104,10 @@ export function CountryDonut({ title, sub, slices, flags, centre, centreSub, hre
                       onKeyDown={(ev) => { if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); openMore(); } }} {...attrs}>{path}</g>
                   );
                 }
-                return <g key={`${s.kind}-${s.code}`} {...attrs}>{path}</g>;
+                return <g key={`${s.kind}-${s.code}`} role="img" tabIndex={0} aria-label={`${nameOf(s)}: ${fmt(s.n)} · ${pc(s.n)}`} {...attrs}>{path}</g>;
               })}
             </g>
-            <text className="big" x={100} y={104}>{centre}</text>
-            <text className="sub" x={100} y={122}>{centreSub}</text>
+            <DonutCentre rest={{ big: centre, sub: centreSub }} item={under ? { label: nameOf(under), n: under.n } : null} total={total} pct={(v) => pctText(v, locale, 1)} />
           </svg>
           {tip.element}
         </div>

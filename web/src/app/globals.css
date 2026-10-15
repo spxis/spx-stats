@@ -389,7 +389,8 @@
   .donut { width: min(100%, 230px); }
   .donut text.big { fill: var(--ink); font: 700 30px var(--display); text-anchor: middle; }
   .donut text.sub { fill: var(--muted); font: 600 11px var(--display); letter-spacing: .1em; text-transform: uppercase; text-anchor: middle; }
-  .donut path { stroke: var(--paper); stroke-width: 1.5; cursor: default; }
+  .donut path { stroke: var(--paper); stroke-width: 1.5; cursor: default; outline: none; }
+  .donut path:focus-visible { stroke: var(--ink); stroke-width: 3px; }
   .seg-w { fill: var(--accent); } .seg-l { fill: color-mix(in srgb, var(--ink) 55%, var(--paper)); }
   .seg-t { fill: color-mix(in srgb, var(--accent) 35%, var(--paper)); } .seg-o { fill: color-mix(in srgb, var(--ink) 25%, var(--paper)); }
   .legend i.seg-w { background: var(--accent); } .legend i.seg-l { background: color-mix(in srgb, var(--ink) 55%, var(--paper)); }

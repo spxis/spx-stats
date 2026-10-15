@@ -492,6 +492,7 @@ export const JA: Dictionary = {
   "chart.noResults": "まだ結果がありません。",
   "donut.share": "勝率",
   "donut.tip": "{total}試合中{n}試合（{pct}）",
+  "donut.centreOf": "{total}中 · {pct}",
 
   // home and road, filters, pickers
   "team.champSeason": "優勝したシーズン",

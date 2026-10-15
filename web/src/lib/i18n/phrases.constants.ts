@@ -660,6 +660,7 @@ export const PHRASES = {
   "chart.noResults": "No results yet.",
   "donut.share": "Win share",
   "donut.tip": "{n} of {total} games ({pct})",
+  "donut.centreOf": "of {total} · {pct}",
 
   // home and road, filters, pickers
   "team.champSeason": "Championship season",

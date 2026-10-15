@@ -492,6 +492,7 @@ export const FR: Dictionary = {
   "chart.noResults": "Aucun résultat pour l’instant.",
   "donut.share": "Taux de victoire",
   "donut.tip": "{n} de {total} matchs ({pct})",
+  "donut.centreOf": "sur {total} · {pct}",
 
   // home and road, filters, pickers
   "team.champSeason": "Saison de championnat",

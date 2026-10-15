@@ -8,8 +8,10 @@ import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 import { seasonLabel } from "@/lib/leagues";
 import { showStat } from "@/lib/playerStats";
 import { useSpeaker } from "./i18n/LocaleProvider";
+import { DonutCentre } from "./DonutCentre";
 import { usePaths } from "./SlugProvider";
 import { TeamLogo } from "./TeamLogo";
+import { useDonutLive } from "./useDonutLive";
 import { usePointCard } from "./usePointCard";
 import type { BoardView } from "./playerView";
 
@@ -23,6 +25,8 @@ function Donut({ title, sub, parts, centre, fmtValue, aria }: { title: string; s
   const total = parts.reduce((a, p) => a + p.value, 0);
   const keys = parts.map((p) => p.key);
   const card = usePointCard(keys);
+  const live = useDonutLive();
+  const under = parts.find((p) => p.key === live.key);
   const slice = arc<PieArcDatum<Part>>().innerRadius(R.inner).outerRadius(R.outer).padAngle(parts.length > 1 ? 0.014 : 0).cornerRadius(2);
   const slices = pie<Part>().sort(null).value((p) => p.value)(parts);
   const pct = (v: number) => `${(v / total * 100).toFixed(v / total < 0.1 ? 1 : 0)}%`;
@@ -33,19 +37,27 @@ function Donut({ title, sub, parts, centre, fmtValue, aria }: { title: string; s
       <div className="chart donut" data-marks>
         <svg viewBox="0 0 200 200" role="group" aria-label={`${aria}: ${parts.map((p) => `${p.label} ${fmtValue(p.value)}`).join(", ")}`}>
           <g transform="translate(100,100)">
-            {slices.map((d) => (
-              <path key={d.data.key} className="slice" d={slice(d) ?? undefined} style={{ fill: d.data.color }} role="img" aria-label={`${d.data.label}: ${fmtValue(d.data.value)} (${pct(d.data.value)})`}
-                {...card.bind(d.data.key, () => (
-                  <>
-                    <b>{d.data.label}</b>
-                    <div>{say("charts.sliceTip", { n: fmt(d.data.value), total: fmt(total), pct: pct(d.data.value) })}</div>
-                    {d.data.note ? <div>{d.data.note}</div> : null}
-                  </>
-                ))} />
-            ))}
+            {slices.map((d) => {
+              const b = card.bind(d.data.key, () => (
+                <>
+                  <b>{d.data.label}</b>
+                  <div>{say("charts.sliceTip", { n: fmt(d.data.value), total: fmt(total), pct: pct(d.data.value) })}</div>
+                  {d.data.note ? <div>{d.data.note}</div> : null}
+                </>
+              ));
+              const l = live.bind(d.data.key);
+              return (
+                <path key={d.data.key} className="slice" d={slice(d) ?? undefined} style={{ fill: d.data.color }} role="img" aria-label={`${d.data.label}: ${fmtValue(d.data.value)} (${pct(d.data.value)})`}
+                  {...b}
+                  onPointerEnter={(ev) => { b.onPointerEnter(ev); l.onPointerEnter(); }}
+                  onPointerLeave={(ev) => { b.onPointerLeave(ev); l.onPointerLeave(); }}
+                  onFocus={(ev) => { b.onFocus(ev); l.onFocus(); }}
+                  onBlur={(ev) => { b.onBlur(ev); l.onBlur(); }} />
+              );
+            })}
           </g>
-          <text className="big" x={100} y={102}>{centre.big}</text>
-          <text className="sub" x={100} y={120}>{centre.small}</text>
+          <DonutCentre rest={{ big: centre.big, sub: centre.small }} item={under ? { label: under.label, n: under.value } : null} total={total} fmtValue={fmtValue}
+            pct={(v) => `${(v * 100).toFixed(v < 0.1 ? 1 : 0)}%`} y={102} />
         </svg>
         {card.element}
       </div>
