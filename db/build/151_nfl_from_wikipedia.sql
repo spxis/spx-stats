@@ -57,7 +57,7 @@ on conflict (code) do nothing;
 delete from core.standing where source_id = (select source_id from src) and (source_key like 'wpnfl:%' or source_key like 'wpafl:%');
 delete from meta.data_issue where source_id = (select source_id from src) and (issue like 'NFL:%' or issue like 'AFL:%');
 delete from core.external_id where source_id = (select source_id from src) and entity_kind = 'game' and (external_key like 'wpnfl:%' or external_key like 'wpafl:%');
-delete from core.game g using core.season s where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code in ('nfl', 'afl');
+-- (Wikipedia's games are not deleted wholesale: a game keeps its id from run to run, see the games below.)
 
 -- Club names (lower case, as the article titles give them, "(NFL)" dropped) -> franchise, by the year a season starts.
 -- spx_team_id is SPX's number for the franchise (the same table nflverse's step 150 uses).
@@ -137,6 +137,11 @@ insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resoluti
 select (select source_id from src), 'game', key, format('%s: club name not matched to a franchise: %s / %s in %s', upper(lg), away_team, home_team, yr), 'Game left out'
 from ng where home_f is null or away_f is null;
 delete from ng where home_f is null or away_f is null or home_f = away_f;
+-- A game Wikipedia's rows no longer give (or of a season another source now holds) goes; every other keeps its game_id from run to run,
+-- so the address of a game, its venue and what a release compares stay put when a season is added.
+delete from core.game g using core.season s
+where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code in ('nfl', 'afl')
+  and (g.source_key like 'wpnfl:%' or g.source_key like 'wpafl:%') and not exists (select 1 from ng n where n.key = g.source_key);
 
 create temp table nst as
 select s.*, s.season as yr, m.franchise_id from wsd s
@@ -241,14 +246,26 @@ where f.franchise_id = x.franchise_id and f.source_id = (select source_id from s
 
 -- Wikipedia's two logs that disagree on a game are flagged on the game they made (the log that agrees with the season's published
 -- standings is kept, else the home club's; the loader writes which, after ' | kept: ').
-insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
-                       home_score, away_score, went_to_overtime, round_label, source_id, source_key, notes)
-select s.season_id, n.phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
-       n.home_pts, n.away_pts, n.overtime, n.round_name, (select source_id from src), n.key,
-       case when n.conflict is not null then 'Wikipedia logs disagree: ' || split_part(n.conflict, ' | kept: ', 1) end
+-- (an update and an insert, not ON CONFLICT: the unique constraint on (source_id, source_key) is not in every copy of core, migration 084)
+create temp table game_new as
+select s.season_id, n.phase, n.game_date, hts.team_season_id home_ts, ats.team_season_id away_ts, n.neutral_site, n.home_pts, n.away_pts, n.overtime,
+       n.round_name, n.key, case when n.conflict is not null then 'Wikipedia logs disagree: ' || split_part(n.conflict, ' | kept: ', 1) end as notes
 from ng n join core.season s on s.league_code = n.lg and s.start_year = n.yr
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id;
+update core.game g set season_id = x.season_id, phase = x.phase, game_date = x.game_date, home_team_season_id = x.home_ts, away_team_season_id = x.away_ts,
+       is_neutral_site = x.neutral_site, home_score = x.home_pts, away_score = x.away_pts, went_to_overtime = x.overtime, round_label = x.round_name,
+       notes = x.notes, updated_at = now()
+from game_new x
+where g.source_id = (select source_id from src) and g.source_key = x.key
+  and (g.season_id, g.phase, g.game_date, g.home_team_season_id, g.away_team_season_id, g.is_neutral_site, g.home_score, g.away_score, g.went_to_overtime, g.round_label, g.notes)
+      is distinct from (x.season_id, x.phase, x.game_date, x.home_ts, x.away_ts, x.neutral_site, x.home_pts, x.away_pts, x.overtime, x.round_name, x.notes);
+insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
+                       home_score, away_score, went_to_overtime, round_label, source_id, source_key, notes)
+select x.season_id, x.phase, x.game_date, x.home_ts, x.away_ts, x.neutral_site, 'final', x.home_pts, x.away_pts, x.overtime, x.round_name,
+       (select source_id from src), x.key, x.notes
+from game_new x
+where not exists (select 1 from core.game g where g.source_id = (select source_id from src) and g.source_key = x.key);
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'game', n.key, upper(n.lg) || ': Wikipedia''s two logs disagree: ' || split_part(n.conflict, ' | kept: ', 1),
        coalesce(nullif('Kept ' || split_part(n.conflict, ' | kept: ', 2), 'Kept '), 'Kept the home club''s log')
