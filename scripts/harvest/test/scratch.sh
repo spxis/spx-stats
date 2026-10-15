@@ -1,5 +1,5 @@
 #!/bin/bash
-# A scratch Postgres in Docker shaped like DS1 for the tables the harvest job uses (port 3170, inside this project's 3100-3199 block).
+# A scratch Postgres in Docker shaped like DS1 for the tables the harvest job uses (port 7770, inside this project's 7700-7799 block).
 #   scratch.sh up      start the container (spx-harvest-scratch), load the real migrations the harvest reads (and 092_legacy_rosters of scripts/rosters), 095, and a few rows (seed.sql)
 #   scratch.sh down    stop and remove only that container
 #   scratch.sh psql    open psql on it       (HARVEST_PSQL for the tests is printed by `scratch.sh env`)
@@ -8,7 +8,7 @@ set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
 NAME="${HARVEST_SCRATCH_NAME:-spx-harvest-scratch}"
-PORT="${HARVEST_SCRATCH_PORT:-3170}"
+PORT="${HARVEST_SCRATCH_PORT:-7770}"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 dpsql() { docker exec -i "$NAME" psql -U postgres -d harvest_test -X -q -v ON_ERROR_STOP=1 "$@"; }
 case "${1:-}" in

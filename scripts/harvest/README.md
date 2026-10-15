@@ -6,7 +6,7 @@ The code of the harvest job (setup, rules, limits, request and size estimates an
     python3 -I scripts/harvest/harvest.py plan [--everything]     one planner run
     python3 -I scripts/harvest/harvest.py run [--once] [--max-seconds N] [--no-plan]
     python3 -I scripts/harvest/harvest.py reparse [--kind K] [--league L] [--all]
-    python3 -I scripts/harvest/test/test_harvest.py               tests (scratch Postgres on port 3170 for the DS1 ones: test/scratch.sh up)
+    python3 -I scripts/harvest/test/test_harvest.py               tests (scratch Postgres on port 7770 for the DS1 ones: test/scratch.sh up)
 
 | File | What it holds |
 |---|---|

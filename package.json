@@ -9,6 +9,8 @@
     "preview:update": "git pull -q --ff-only origin main && bash scripts/mac/ds1-preview.sh --update",
     "preview:install": "bash scripts/mac/ds1-preview.sh --install",
     "preview:uninstall": "bash scripts/mac/ds1-preview.sh --uninstall",
+    "preview:auth": "zsh scripts/mac/spx-credentials.sh auth",
+    "deploy:check-live": "bash scripts/mac/check-live-auth.sh",
     "deploy": "git pull -q --ff-only origin main && bash scripts/mac/deploy-prebuilt.sh",
     "deploy:check": "bash scripts/mac/deploy-prebuilt.sh --check-only",
     "harvest": "python3 -I scripts/harvest/status.py",

@@ -5,7 +5,7 @@
 
 Part 1 is pure (the snapshot builder, the hash, the timer rules, the tick with stand-ins) and needs nothing.
 Part 2 needs a Postgres server: set PGHOST, PGPORT and PGUSER (a scratch server, for example the harvest one:
-`HARVEST_SCRATCH_PORT=3121 bash scripts/harvest/test/scratch.sh up`). It makes two throwaway databases on it, ops_t_ds1 (standing in for DS1:
+`HARVEST_SCRATCH_PORT=7721 bash scripts/harvest/test/scratch.sh up`). It makes two throwaway databases on it, ops_t_ds1 (standing in for DS1:
 the harvest queue, the daily job, releases, the drift table, the raw archive, migration 105) and ops_t_prod (standing in for production:
 045 and 104), serves a stand-in Management API in front of the second, and drops both at the end. It checks the real SQL: the collectors
 against real rows, the request rules and the ring of 96 in migration 104, the secret, the pause switch and a whole tick end to end.

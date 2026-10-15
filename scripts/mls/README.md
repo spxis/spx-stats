@@ -38,7 +38,7 @@ Run, in this order (`day` is the folder name; everything is rerunnable and resum
 
 Files: `fetch.py` (download), `wikihtml.py` (tables of a rendered page), `season.py` (what a season article gives), `wikibox.py` (match boxes),
 `openfootball.py` (the Football.TXT parser; `python3 -I scripts/mls/test_openfootball.py $raw` checks every file's match count against its header),
-`load.py` (raw to `legacy_mls`), `scratch.sh` (a local Postgres on port 3130 with the repo's migrations, for trying the build; `down` removes it).
+`load.py` (raw to `legacy_mls`), `scratch.sh` (a local Postgres on port 7730 with the repo's migrations, for trying the build; `down` removes it).
 A name the loader cannot place in an MLS club is printed as `unplaced:` and left with a null club (those are other competitions' teams); a line
 of an openfootball file it cannot read is printed as `not read:`.
 `DROPBOX_*` variables are not needed: the Dropbox copy is made by `spx-raw-export.sh` from the DS1 archive.

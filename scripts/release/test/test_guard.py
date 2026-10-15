@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 """The release size guard and the per-view refresh after a release.
 
-    TEST_ORDER_PORT=3141 python3 -I scripts/release/test/test_guard.py
+    TEST_ORDER_PORT=7741 python3 -I scripts/release/test/test_guard.py
 
 Part 1 is arithmetic only (estimate_bytes, size_estimate, size_problem, guardrails), with the two releases whose estimates were wrong on
 2026-10-15. Part 2 starts a throwaway Postgres (the helpers of test_apply_order.py: initdb from PATH, else Docker postgres:17-alpine,
-on TEST_ORDER_PORT, default 3150, in 3100-3199) with a small schema api and the real refresh functions of migration 097, and runs
+on TEST_ORDER_PORT, default 7740, in 7700-7799) with a small schema api and the real refresh functions of migration 097, and runs
 refresh_production against it: every view as its own statement, a view that fails or times out is recorded and the rest still run.
 Exit code: 0 all passed, 1 a check failed.
 """

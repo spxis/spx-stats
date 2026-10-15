@@ -3,7 +3,7 @@
 
     python3 -I scripts/release/test/test_apply_order.py
 
-Starts a throwaway Postgres (initdb from PATH, else Docker postgres:17-alpine) on a port in 3100-3199 (TEST_ORDER_PORT, 3150)
+Starts a throwaway Postgres (initdb from PATH, else Docker postgres:17-alpine) on a port in 7700-7799 (TEST_ORDER_PORT, 7740)
 and stops it afterwards. It needs no template database, no DS1 and no Management API. Two databases stand in for DS1 and
 production, seeded with a tiny schema with the same shapes as the real failures:
   - core.conference / core.division / core.team_season: parents rebuilt with NEW ids on DS1, the child re-pointed (release 2026.10.13-8)
@@ -33,7 +33,7 @@ R = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(R)
 C = R.C
 
-PORT = os.environ.get("TEST_ORDER_PORT", "3150")
+PORT = os.environ.get("TEST_ORDER_PORT", "7740")
 HOST = "127.0.0.1"
 OLD, NEW = "ord_prod", "ord_ds1"
 failures = []

@@ -269,16 +269,16 @@ coordinating session, put the ticket in a new create-only Dropbox file
 
     git worktree add ../<name> -b work/<name> origin/main     # or use your harness's worktree
     cd web && pnpm install --frozen-lockfile                  # about 10 seconds (tested)
-    pnpm dev                                                  # http://localhost:3100, no .env needed
+    pnpm dev                                                  # http://localhost:7701, no .env needed
 
-This project owns local ports **3100-3199** (John's port table). Check `lsof -iTCP:<port> -sTCP:LISTEN` first. Never 3000-3099 or
+This project owns local ports **7700-7799** (John's port table; it moved here from 3100-3199 on 2026-10-15). Check `lsof -iTCP:<port> -sTCP:LISTEN` first. Never 3000-3099 or
 another project's block; give every server and headless-browser base URL an explicit port. The map:
 
-- 3100: the main dev server
-- 3101-3149: worktrees, agents' test servers, scratch databases (`ds1-preview.sh` on demand takes 3101-3119 for the site, 3120-3149 for its PostgREST)
-- 3150: the always-on DS1 preview site (`ds1-preview.sh --install`)
-- 3180: its PostgREST
-- 3190: the temporary PostgREST of `deploy-prebuilt.sh`
+- 7700: the always-on DS1 preview site (`ds1-preview.sh --install`), real Google sign-in. **A deliberate fixed port**: the Google OAuth client allows only `http://localhost:7700` and its callback `http://localhost:7700/api/auth/callback/google`, so it cannot move
+- 7701: `pnpm dev`
+- 7702-7749: worktrees, agents' test servers, scratch databases (`ds1-preview.sh` on demand takes 7702-7729 for the site, 7730-7749 for its PostgREST)
+- 7750: the always-on preview's PostgREST (was 3180)
+- 7790: the temporary PostgREST of `deploy-prebuilt.sh` (was 3190)
 - everything else: free
 Several sessions run servers in this block at once: stop only your own server by its PID (`kill <pid>`), never
 `pkill -f next-server` or any other pattern kill.
@@ -286,8 +286,23 @@ Several sessions run servers in this block at once: stop only your own server by
 No `.env` is needed: the defaults point at the live Supabase project's public read-only key.
 
 **Preview with DS1 data** (nothing reaches production): `bash scripts/mac/ds1-preview.sh` runs this checkout's site on the first free port
-from 3101 against a read-only PostgREST on DS1, and stops both on Ctrl-C (`--start` for a production-like build, `--detach` and `--stop` for the background).
-Always on at http://localhost:3150 (Docker, restarts with Docker, pages refresh every 5 minutes): `bash scripts/mac/ds1-preview.sh --install`, then `--update`, `--status`, `--uninstall` (scripts/mac/README.md).
+from 7702 against a read-only PostgREST on DS1, and stops both on Ctrl-C (`--start` for a production-like build, `--detach` and `--stop` for the background).
+Always on at http://localhost:7700 (Docker, restarts with Docker, pages refresh every 5 minutes): `bash scripts/mac/ds1-preview.sh --install`, then `--update`, `--status`, `--uninstall` (scripts/mac/README.md).
+`--update` also moves an install made on the old ports (3150 and 3180): it stops the compose project `spx-ds1-preview` by name and brings it up on 7700 and 7750.
+
+**Signing in on the preview** (so the admin pages and the account menu can be seen locally; the header always has the Sign in link there):
+- **Google, on the always-on site (7700 only).** `zsh scripts/mac/spx-credentials.sh auth` asks once for the Google client id and secret (hidden) and the admin
+  email(s) and stores them in the keychain items `spx-stats AUTH_GOOGLE_ID`, `spx-stats AUTH_GOOGLE_SECRET`, `spx-stats ADMIN_EMAILS`. `ds1-preview.sh --install`
+  or `--update` copies them, with `NEXTAUTH_URL`/`AUTH_URL=http://localhost:7700` and an `AUTH_SECRET` it makes itself once (never printed), into a second 600 file,
+  `~/Library/Application Support/spx-stats/ds1-preview-auth.env`, which only the site container reads. Production keeps the same names as Vercel secrets, which cannot be pulled.
+  Use the address `localhost`, not `127.0.0.1`: that is what the Google client allows.
+- **"Sign in (this Mac)"**, the fallback and the only way on an on-demand port (Google does not allow those). It is a next-auth credentials provider,
+  `web/src/lib/auth/preview.ts`, and exists only when `SPX_PREVIEW=1` (set by the preview image and script, never on Vercel; `VERCEL` set turns it off too) and an
+  `AUTH_SECRET` is present. It answers only a request whose `Host` is `localhost`, `127.0.0.1` or `[::1]` with no forwarding header naming anything else (the published
+  port is bound to 127.0.0.1, and inside Docker the peer address is the bridge, so the host name is what can be checked); the login page shows the button only then,
+  `authorize` checks again, and a session made this way is ignored anywhere else. It signs in as `SPX_PREVIEW_ADMIN`, else the first `ADMIN_EMAILS` entry, else `john@spxis.com`, and
+  that address counts as an admin in the preview only. `pnpm test:auth` covers it (the provider is absent without `SPX_PREVIEW`, and refuses a non-loopback host).
+- The header is the same height signed in, signed out or with only the theme switch: the account button, the theme switch and the Sign in link all use `--control-h`.
 
 **Checks before every push**, in `web/`, in this order (all tested green, about two minutes in total):
 
@@ -333,13 +348,13 @@ production on 2026-10-14). One command from the repo root builds the pages from 
 
     bash scripts/mac/deploy-prebuilt.sh                  # origin/main; --check-only changes nothing; --sha <commit>; --no-deploy; --no-prune; --force
 
-- It starts a PostgREST in Docker (pinned `postgrest/postgrest:v12.2.12`, `127.0.0.1:3190`, schema `api`, role `anon`, read-only sessions) on DS1
+- It starts a PostgREST in Docker (pinned `postgrest/postgrest:v12.2.12`, `127.0.0.1:7790`, schema `api`, role `anon`, read-only sessions) on DS1
   Postgres (host from `ds1_host`, password read in-process from the keychain item `spx-stats-db DS1 55440` or `SPX_DS1_DB_PASSWORD`, never printed),
   checks with `scripts/mac/same-data.py` that it serves what production serves (latest release number and `api.season_summary`; a handful of
   production reads) and **stops if not**: DS1 can be ahead (a release waiting for approval, scores loaded since the last release) or have a stale
   materialized view, and a build from it would publish rows John has not approved. `--force` overrides.
 - It then does what the fallback below does (clean `git archive`, `vercel link`), plus `vercel pull`, `vercel build --prod` with
-  `SPX_REST_URL=http://127.0.0.1:3190/` and `vercel deploy --prebuilt --prod`, stops the container by name, makes one request to spxn.com, and prunes
+  `SPX_REST_URL=http://127.0.0.1:7790/` and `vercel deploy --prebuilt --prod`, stops the container by name, makes one request to spxn.com, and prunes
   Vercel to the live deployment and one previous (plus the pinned `spx-stats-1p836thn0`, one `vercel remove --safe` per URL).
 - `SPX_REST_URL` is read by `web/src/lib/api/config.ts` and accepted only for `127.0.0.1`/`localhost` (`pnpm test:resturl`). It is never set on
   Vercel: pages revalidated at run time (daily ISR, or on demand after a release) still read production, so the data a page shows after its first revalidation is production's.
@@ -384,7 +399,19 @@ match). If the permission check refuses it, stop and report the exact call to th
     list_deployments projectId: prj_MfgGl5vzVccEhmtSyvgze6hhgXJg, target: production, limit: 3
                      -> newest entry is READY and meta.githubCommitSha is your commit
 
-**Then check once**, on the real domain (the `*.vercel.app` URLs sit behind Vercel login):
+**The sign-in guard: every deploy path ends with it.** On 2026-10-15 a prebuilt deploy built every kept page signed-out (no Sign in link, no account menu),
+because the build could not see the sign-in variables, and nothing noticed. Two checks now stand in the way:
+- **Before deploying** (`deploy-prebuilt.sh`, `scripts/mac/lib/build-auth.sh`): the pulled project settings must hold the three sign-in variables, and the built home
+  page (`.vercel/output/functions/en/s.prerender-fallback.html`) must contain the sign-in control (`class="signin-link"`), which is how "sign-in was on at build"
+  shows in the output. Either fails: nothing is deployed.
+- **After deploying**, any path: `bash scripts/mac/check-live-auth.sh [--new <deployment url>]`. One request to `https://spxn.com/api/auth/providers` (must answer 200 and list
+  `google`) and one to `https://spxn.com/` (its HTML must carry the sign-in control). `deploy-prebuilt.sh` runs it itself, **before** it prunes. If it fails it prints the exact
+  rollback command, `vercel promote https://<previous deployment> --scope spxis-projects-0d6306b4 --yes` (the newest READY production deployment that is not the new one),
+  and the deploy stops without pruning, because the previous deployment is the way back. A deploy made with the Vercel connector or the CLI block runs the script by hand
+  right after READY and, on a failure, rolls back (the connector's `request_rollback` also works) and tells John. Never mark the ticket done while it fails.
+  `bash scripts/mac/test/check-live-auth-test.sh` tests both checks against a fake site (nothing reaches production).
+
+**Then check once**, on the real domain (the `*.vercel.app` URLs sit behind Vercel login; `check-live-auth.sh` above already made the two requests for `/` and the auth routes):
 
     curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/
     curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/<the page you changed>

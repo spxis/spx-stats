@@ -124,7 +124,7 @@ Known limits of the parsers (all rows are kept as printed; a hole is a hole):
 
 ## Tests
 
-    bash scripts/harvest/test/scratch.sh up                   # a scratch Postgres in Docker shaped like DS1, port 3170 (this project's block)
+    bash scripts/harvest/test/scratch.sh up                   # a scratch Postgres in Docker shaped like DS1, port 7770 (this project's block)
     eval "$(bash scripts/harvest/test/scratch.sh env)"
     python3 -I scripts/harvest/test/test_harvest.py           # ~50 tests, about 90 seconds; without the scratch DB the DS1 tests are skipped
     bash scripts/harvest/test/scratch.sh down

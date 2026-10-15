@@ -79,7 +79,7 @@ SPX_DS1_SSH_USER="${SPX_DS1_SSH_USER:-${NAS1_SSH_USER:-}}"
 limited() { perl -e 'alarm shift; exec @ARGV' "$@"; }
 # Keychain items every Mac must hold, and the optional ones (set up later on both Macs or neither). One name per line.
 spx_kc_required() { printf '%s\n' "spx-stats-db DS1 55440" "sumilabu board spx-stats" "spx-stats SUPABASE_ACCESS_TOKEN"; }
-spx_kc_optional() { printf '%s\n' "spx-stats dropbox app key" "spx-stats dropbox app secret" "spx-stats dropbox refresh token" "spx-stats tailscale authkey"; }
+spx_kc_optional() { printf '%s\n' "spx-stats dropbox app key" "spx-stats dropbox app secret" "spx-stats dropbox refresh token" "spx-stats tailscale authkey" "spx-stats AUTH_GOOGLE_ID" "spx-stats AUTH_GOOGLE_SECRET" "spx-stats ADMIN_EMAILS"; }
 # kc_has <item>: is the item in the login keychain? Never reads the value (no -w).
 kc_has() { security find-generic-password -s "$1" >/dev/null 2>&1; }
 # The two Macs reach each other with an ssh alias that differs by side (MACHINE1_SSH_ALIAS / MACHINE2_SSH_ALIAS in the private

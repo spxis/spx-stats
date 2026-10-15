@@ -4,11 +4,13 @@
 #   bash scripts/mac/deploy-prebuilt.sh [--sha <commit>] [--check-only] [--no-deploy] [--no-prune] [--force] [--keep]
 #
 # Steps (each prints one line):
-#   1. start a PostgREST in Docker (pinned image, 127.0.0.1:3190) on DS1 Postgres, schema api, role anon, read-only session;
+#   1. start a PostgREST in Docker (pinned image, 127.0.0.1:7790) on DS1 Postgres, schema api, role anon, read-only session;
 #   2. check it serves the same data as production (scripts/mac/same-data.py: latest release number and season_summary);
 #   3. git archive of the commit into a temp dir (default: origin/main), vercel link and pull;
 #   4. `vercel build --prod` there with SPX_REST_URL pointing at that PostgREST (web/src/lib/api/config.ts accepts only loopback addresses);
 #   5. stop the PostgREST (by container name), then `vercel deploy --prebuilt --prod`, one request to spxn.com;
+#   5b. guards (AGENTS.md section 7): before deploying, the built home page must carry the sign-in control (lib/build-auth.sh); after, one request each to
+#       /api/auth/providers and / (check-live-auth.sh, which prints the rollback command on failure and stops before the prune);
 #   6. prune Vercel deployments to the live one and one previous (plus the pinned $PIN).
 # Pages revalidated at run time on Vercel still read production: SPX_REST_URL is never set there.
 #
@@ -22,12 +24,13 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
 . "$HERE/spx-checks.sh"
 . "$HERE/lib/ds1-pgrst.sh"
+. "$HERE/lib/build-auth.sh"
 set -u
 
 SCOPE="spxis-projects-0d6306b4"
 PROJECT="spx-stats"
 PIN="spx-stats-1p836thn0"   # a known-good deployment John keeps
-PORT="${SPX_BUILD_PGRST_PORT:-3190}"   # John's port block for spx-stats is 3100-3199
+PORT="${SPX_BUILD_PGRST_PORT:-7790}"   # John's port block for spx-stats is 7700-7799
 NAME="spx-build-pgrst-$$"
 
 SHA="" CHECK_ONLY=0 NO_DEPLOY=0 NO_PRUNE=0 FORCE=0 KEEP=0 TMP=""
@@ -39,7 +42,7 @@ while [ $# -gt 0 ]; do
     --no-prune) NO_PRUNE=1 ;;
     --force) FORCE=1 ;;
     --keep) KEEP=1 ;;
-    -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,21p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown option: $1"; exit 2 ;;
   esac
   shift
@@ -70,7 +73,7 @@ if [ "$CHECK_ONLY" = 0 ]; then
   git -C "$REPO" merge-base --is-ancestor "$SHA" origin/main || die "$SHA is not on origin/main (deploy only what is pushed and checked)"
   say "commit $(git -C "$REPO" rev-parse --short "$SHA")"
 fi
-lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 && die "port $PORT is in use (SPX_BUILD_PGRST_PORT picks another in 3100-3199)"
+lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 && die "port $PORT is in use (SPX_BUILD_PGRST_PORT picks another in 7700-7799)"
 
 # ---- 1. PostgREST on DS1 -----------------------------------------------------------------------------------------------------------
 # (shared with ds1-preview.sh: scripts/mac/lib/ds1-pgrst.sh; sets LOCAL, calls die on failure)
@@ -94,23 +97,28 @@ vercel link --yes --project "$PROJECT" --scope "$SCOPE" >/dev/null 2>&1 || die "
 vercel pull --yes --environment=production --scope "$SCOPE" >/dev/null 2>&1 || die "vercel pull failed"
 # The footer shows VERCEL_GIT_COMMIT_SHA, and the pulled file holds the last Git deployment's value: put this commit's in its place.
 ENVFILE=".vercel/.env.production.local"
+AUTH_FLAG=""
 if [ -f "$ENVFILE" ]; then
   # Sensitive variables come down empty (VAR=""); an empty AUTH_URL makes next-auth throw "Invalid URL" while pages are drawn.
   # Drop the empty ones for the build: the deployed functions still read the real values from the project at run time.
   # The kept pages bake in whether sign-in is set up (web/src/lib/auth/enabled.ts). The three variables of it are secrets, so the build sees them empty and would build every
   # page as "no sign-in": no link, no account menu, and a signed-in browser's hint hiding the theme button for nothing. Say so when the project holds all three.
-  AUTH_FLAG=""
+
   if grep -qE '^(AUTH_GOOGLE_ID|GOOGLE_CLIENT_ID)=' "$ENVFILE" && grep -qE '^(AUTH_GOOGLE_SECRET|GOOGLE_CLIENT_SECRET)=' "$ENVFILE" && grep -qE '^(AUTH_SECRET|NEXTAUTH_SECRET)=' "$ENVFILE"; then AUTH_FLAG=1; fi
-  grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=(""|)$' > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"
+  grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=("")?$' > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"
   [ -n "$AUTH_FLAG" ] && printf 'SPX_AUTH_CONFIGURED="1"\n' >> "$ENVFILE.new"
   mv "$ENVFILE.new" "$ENVFILE"
 fi
+# The deploy guard (AGENTS.md section 7): this build must have sign-in on, or every kept page is built signed-out (2026-10-15).
+[ -n "$AUTH_FLAG" ] || die "the project settings pulled from Vercel do not hold all three sign-in variables (AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, AUTH_SECRET), so the build would have no sign-in. Nothing was built or deployed. Check the project's Environment Variables for production, then run this again"
 say "linked and pulled project settings into $TMP"
 
 # ---- 4. build against DS1 ----------------------------------------------------------------------------------------------------------
 say "vercel build --prod (reads only $LOCAL)"
 SPX_REST_URL="$LOCAL" VERCEL_GIT_COMMIT_SHA="$SHA" vercel build --prod --yes --scope "$SCOPE" || die "the build failed"
 [ -d .vercel/output ] || die "no .vercel/output after the build"
+build_has_signin || die "the built home page ($(build_home_html || true)) has no sign-in control: the build ran with sign-in off (authEnabled was false). Nothing was deployed. Look at SPX_AUTH_CONFIGURED and the three AUTH_ variables in $ENVFILE (names only)"
+say "build check: the kept home page carries the sign-in control (sign-in was on at build)"
 hits="$(grep -rIl "127\.0\.0\.1:$PORT" .vercel/output/static 2>/dev/null | head -5)"
 [ -z "$hits" ] || die "the local address ended up in the files visitors download: $hits"
 n="$(grep -rIl "127\.0\.0\.1:$PORT" .vercel/output/functions 2>/dev/null | wc -l | tr -d ' ')"
@@ -124,6 +132,9 @@ say "vercel deploy --prebuilt --prod --archive=tgz (one upload, not thousands of
 URL="$(vercel deploy --prebuilt --prod --archive=tgz --yes --scope "$SCOPE")" || die "the deploy failed"
 say "deployed: $URL"
 say "spxn.com answers HTTP $(curl -s -o /dev/null -m 20 -w '%{http_code}' https://spxn.com/) (one request)"
+# The deploy guard (AGENTS.md section 7): sign-in must work on the live site. On failure this prints the rollback command and stops BEFORE the prune,
+# because the previous deployment is the way back.
+bash "$HERE/check-live-auth.sh" --new "$URL" || die "sign-in is broken on the live site (see above); the deployment was made, nothing was pruned. Roll back with the command above, fix the cause and deploy again"
 
 # ---- 6. keep the live deployment and one previous ----------------------------------------------------------------------------------
 prune() {

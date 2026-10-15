@@ -247,7 +247,7 @@ with `select api.refresh_one('api.<view>')`.
     python3 -I scripts/release/test/test_release.py
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
     TEST_ORDER_PORT=<free port> python3 -I scripts/release/test/test_guard.py   # the size estimate with the two real releases of 2026-10-15, and the per-view refresh (own throwaway Postgres; stops it after)
-    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 3150; stops it after; includes the position-release shape and the foreign key loop refusal)
+    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 7740; stops it after; includes the position-release shape and the foreign key loop refusal)
     python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 104/105 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
 

@@ -8,6 +8,8 @@
 #                                  on a terminal it asks for what is still missing. Names already set in the environment win.
 #   spx-credentials.sh dropbox     OAuth flow -> keychain + NAME=value lines on the clipboard
 #   spx-credentials.sh tailscale   save a Tailscale auth key -> keychain + clipboard
+#   spx-credentials.sh auth        paste the Google OAuth client id and secret (hidden) and the admin email(s) once -> keychain items
+#                                  'spx-stats AUTH_GOOGLE_ID', 'spx-stats AUTH_GOOGLE_SECRET', 'spx-stats ADMIN_EMAILS', which ds1-preview.sh reads for Google sign-in on http://localhost:7700
 #   spx-credentials.sh setup       new Mac: the host mapping (`hosts`, from SPX_HOSTS_SOURCE when that file is given), DS1 password
 #                                  and board key from Dropbox -> keychain, then test, then `machine`.
 #                                  Needs SPX_DS1_PASSWORD_FILE and SPX_BOARD_KEY_FILE; the private START-HERE file
@@ -410,6 +412,25 @@ tailscale)
   printf 'TS_AUTHKEY=%s\n' "$tskey" | pbcopy
   echo "Saved to the keychain. TS_AUTHKEY=... is on the clipboard: paste it into your note."
   ;;
+auth)
+  # The sign-in settings of the always-on DS1 preview (http://localhost:7700). Production keeps these as Vercel secrets, which cannot be pulled,
+  # so the Google client is pasted here once. ds1-preview.sh --install/--update reads the three keychain items; nothing is printed.
+  echo "Google sign-in for the local preview. The OAuth client must allow http://localhost:7700 and http://localhost:7700/api/auth/callback/google."
+  printf 'Google client id: '; read -r gid
+  printf 'Google client secret (hidden): '; read -rs gsecret; echo
+  printf 'Admin email(s), comma separated [john@spxis.com]: '; read -r admins
+  admins="${admins:-john@spxis.com}"
+  case "$gid" in *.apps.googleusercontent.com) ;; *) echo "That does not look like a Google client id (...apps.googleusercontent.com)."; exit 1;; esac
+  [ -n "$gsecret" ] || { echo "No client secret entered."; exit 1; }
+  admins="${admins// /}"
+  printf '%s' "$gid$gsecret$admins" | grep -Eq '^[A-Za-z0-9._@,+/=:-]+$' || { echo "Unexpected characters in what you entered; nothing saved."; exit 1; }
+  kc_save "spx-stats AUTH_GOOGLE_ID" "$gid"
+  kc_save "spx-stats AUTH_GOOGLE_SECRET" "$gsecret"
+  kc_save "spx-stats ADMIN_EMAILS" "$admins"
+  unset gsecret
+  for it in "spx-stats AUTH_GOOGLE_ID" "spx-stats AUTH_GOOGLE_SECRET" "spx-stats ADMIN_EMAILS"; do kc_has "$it" && echo "keychain: $it saved" || echo "keychain: $it NOT saved"; done
+  echo "Next: bash scripts/mac/ds1-preview.sh --update   (puts them in the preview's 600 env file and restarts the site)"
+  ;;
 setup)
   : "${SPX_DS1_PASSWORD_FILE:?use the command in the private START-HERE file}" "${SPX_BOARD_KEY_FILE:?}"
   for f in "$SPX_DS1_PASSWORD_FILE" "$SPX_BOARD_KEY_FILE"; do
@@ -462,5 +483,5 @@ parity) shift; parity "$@" ;;
 copy-from) shift; copy from "$@" ;;
 copy-to) shift; copy to "$@" ;;
 *)
-  echo "usage: spx-credentials.sh dropbox | tailscale | setup | hosts [--check] [--from <file>] | machine [--check] [--route lan|tailscale] [--link-macs] | parity [alias] | copy-from <alias> [item...] | copy-to <alias> [item...]" >&2; exit 2;;
+  echo "usage: spx-credentials.sh dropbox | tailscale | auth | setup | hosts [--check] [--from <file>] | machine [--check] [--route lan|tailscale] [--link-macs] | parity [alias] | copy-from <alias> [item...] | copy-to <alias> [item...]" >&2; exit 2;;
 esac
