@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Fragment, type ReactNode } from "react";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { Rich } from "./i18n/Rich";
@@ -18,6 +19,7 @@ export const githubUrl = (lib: Lib) => `https://github.com/johnmorrisdotca/${lib
 /** The data behind the libraries that has to be named too. */
 export const NATURAL_EARTH_URL = "https://www.naturalearthdata.com";
 export const COMMONS_URL = "https://commons.wikimedia.org";
+export const SPORTSLOGOS_URL = "https://www.sportslogos.net";
 
 const link = (href: string, text: string) => <a href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
 
@@ -29,8 +31,8 @@ export function LibCredit({ lib }: { lib: Lib }) {
   return <>{LIB_NAME[lib] ?? lib} ({link(npmUrl(lib), "npm")} · {link(githubUrl(lib), "GitHub")})</>;
 }
 
-/** What a page can credit: the map (Chizu and Natural Earth), the flags (Hata and Wikimedia Commons), the formatted addresses (address-plus), the playing surfaces (Kyogijo Stadiums), the trophy and medal icons (Dougu Sports), the bracket layout (Taisen Brackets). */
-export type CreditKind = "maps" | "flags" | "addresses" | "surfaces" | "emblems" | "brackets";
+/** What a page can credit: the map (Chizu and Natural Earth), the flags (Hata and Wikimedia Commons), the formatted addresses (address-plus), the playing surfaces (Kyogijo Stadiums), the trophy and medal icons (Dougu Sports), the bracket layout (Taisen Brackets), the team logos that come from SportsLogos.Net. */
+export type CreditKind = "maps" | "flags" | "addresses" | "surfaces" | "emblems" | "brackets" | "logos";
 
 /** The credit sentences for `use`, side by side, in the reader's language. Put it in a `<p className="note">`. */
 export function Credits({ say, use }: { say: Speaker["say"]; use: readonly CreditKind[] }) {
@@ -41,6 +43,7 @@ export function Credits({ say, use }: { say: Speaker["say"]; use: readonly Credi
     surfaces: <Rich text={say("credit.surfaces")} parts={{ kyogijo: <LibCredit lib="kyogijo-stadiums" /> }} />,
     emblems: <Rich text={say("credit.emblems")} parts={{ dougu: <LibCredit lib="dougu-sports" /> }} />,
     brackets: <Rich text={say("credit.brackets")} parts={{ taisen: <LibCredit lib="taisen-brackets" /> }} />,
+    logos: <Rich text={say("credit.logos")} parts={{ sportslogos: link(SPORTSLOGOS_URL, "SportsLogos.Net"), link: <Link href="/logos">{say("credit.logosLink")}</Link> }} />,
   };
   return (
     <>

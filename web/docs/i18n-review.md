@@ -17,7 +17,7 @@ reviewed legal copy.
 Not translated on purpose: team, player and venue names, league codes (NHL, NBA, MLB, NFL, CFL), and the names
 SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia Commons, Vercel, Supabase and GitHub.
 
-## 1. About, Terms, Privacy and the footer (113)
+## 1. About, Terms, Privacy and the footer (115)
 
 | Where a reader meets it | English on the site | French | Japanese | What the Japanese says back | Correction |
 | --- | --- | --- | --- | --- | --- |
@@ -111,6 +111,8 @@ SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia 
 | Terms page, /terms (credits) | Playing surfaces: {kyogijo}. | Surfaces de jeu : {kyogijo}. | **競技面：{kyogijo}。** | Playing surfaces: {kyogijo}. |  |
 | Terms page, /terms (credits) | Trophies and medals: {dougu}. | Trophées et médailles : {dougu}. | **トロフィーとメダル：{dougu}。** | Trophies and medals: {dougu}. |  |
 | Terms page, /terms (credits) | Bracket layout: {taisen}. | Disposition du tableau : {taisen}. | **トーナメント表のレイアウト：{taisen}。** | Layout of the tournament chart: {taisen}. |  |
+| Terms page, /terms (credits) | Some historic logos: {sportslogos}, shown small to identify the team ({link}). | Certains logos historiques : {sportslogos}, montrés en petit pour identifier l’équipe ({link}). | **一部の歴史的なロゴ：{sportslogos}。チームを識別するため小さく表示しています（{link}）。** | Some historic logos: {sportslogos}; they are shown small to identify the team ({link}). |  |
+| Terms page, /terms (credits) | about the logos | à propos des logos | **ロゴについて** | about the logos |  |
 | Privacy page, /privacy | SPX Network | SPX Network | **SPX Network** | SPX Network (a name; not translated). |  |
 | Privacy page, /privacy; Privacy page, /privacy (tab title and search result) | Privacy | Confidentialité | **プライバシー** | Privacy. |  |
 | Privacy page, /privacy | In short: SPXN has no accounts, no ads and no tracking. This page says exactly what the site does. | En bref : SPXN n’a ni compte, ni publicité, ni suivi. Cette page dit exactement ce que fait le site. | **要点：SPXNには、アカウントも広告も追跡もありません。このページでは、サイトが実際に行っていることをそのまま説明します。** | In short: SPXN has no accounts, no ads and no tracking. This page explains, as it is, what the site actually does. |  |

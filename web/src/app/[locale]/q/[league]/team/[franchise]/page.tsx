@@ -283,7 +283,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           <FranchiseVenueNotes lg={lg} f={f} />
         </section>
       ) : null}
-      <p className="note"><Credits say={say} use={["flags"]} /></p>
+      <p className="note"><Credits say={say} use={eras.some((e) => e.logo?.startsWith("/team-logos/")) ? ["flags", "logos"] : ["flags"]} /></p>
     </CupsProvider>
   );
 });

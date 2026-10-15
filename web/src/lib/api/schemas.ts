@@ -80,6 +80,8 @@ export const sourceSchema = z.object({
 // colour or an https URL is dropped to null rather than trusted.
 const hex = z.string().regex(/^[0-9A-Fa-f]{6}$/).nullable().catch(null);
 const httpsUrl = z.string().refine((u) => u.startsWith("https://")).nullable().catch(null);
+/** A logo is an https URL (Wikimedia Commons) or one of our own files under /team-logos/ (SportsLogos.Net marks, served from the site, never hotlinked). */
+const logoUrl = z.string().refine((u) => u.startsWith("https://") || /^\/team-logos\/[A-Za-z0-9_\/.-]+$/.test(u)).nullable().catch(null);
 
 export const teamAbbrSchema = z.object({
   league: str, franchise_id: int, valid_from: strN, valid_to: strN, abbreviation: str,
@@ -114,7 +116,7 @@ export const seasonCoachSchema = z.object({
 
 export const teamBrandSchema = z.object({
   league: str, franchise_id: int, brand_from: strN, brand_to: strN,
-  primary_hex: hex, secondary_hex: hex, logo_url: httpsUrl, logo_licence: strN, logo_page: strN,
+  primary_hex: hex, secondary_hex: hex, logo_url: logoUrl, logo_licence: strN, logo_page: strN,
   source: str, home_venue: strN, latitude: intN, longitude: intN,
 }) satisfies z.ZodType<TeamBrandRow>;
 

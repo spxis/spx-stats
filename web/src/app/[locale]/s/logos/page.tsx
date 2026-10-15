@@ -1,5 +1,6 @@
 import { rollups } from "d3";
 import Link from "next/link";
+import { SPORTSLOGOS_URL } from "@/components/Credits";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
 import { getBrands } from "@/lib/data";
@@ -19,6 +20,8 @@ export default guard(async function LogosPage() {
   const { say, fmt } = await currentSpeaker();
   const brands = await getBrands();
   const list = Object.values(brands).flat().filter((b) => b.logo_url);
+  // The SportsLogos.Net section is only there once one of their marks is shown (they are our own files under /team-logos/).
+  const fromSportsLogos = list.some((b) => b.logo_url?.startsWith("/team-logos/"));
   const kinds = rollups(list, (v) => v.length, (b) => b.logo_licence || say("logos.notRecorded")).sort((a, b) => b[1] - a[1]);
   const table = tableOf(kinds, [
     { key: "licence", label: say("logos.colLicence"), get: (k) => k[0] },
@@ -39,6 +42,14 @@ export default guard(async function LogosPage() {
         <p>{say("logos.fair")}</p>
         <h2>{say("logos.sourceTitle")}</h2>
         <p>{say("logos.source")}</p>
+        <h2>{say("logos.pdTitle")}</h2>
+        <p>{say("logos.pd")}</p>
+        {fromSportsLogos ? (
+          <>
+            <h2>{say("logos.slTitle")}</h2>
+            <p><Rich text={say("logos.sl")} parts={{ link: <a href={SPORTSLOGOS_URL} target="_blank" rel="noopener noreferrer">{say("logos.slLink")}</a> }} /></p>
+          </>
+        ) : null}
         {kinds.length ? (
           <SortTable {...table} />
         ) : <p className="note">{say("logos.none")}</p>}
