@@ -20,7 +20,8 @@ import "./game.css";
 /** How many games of the list the server draws; the rest are added when the page is live. */
 const FIRST_GAMES = 16;
 
-function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number; abbrs: AbbrMap }) {
+/** One game as a compact row: the teams, the score (a link to the game's page) and where the result came from. Shared with the season page's week strip. */
+export function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number; abbrs: AbbrMap }) {
   const { say } = useSpeaker();
   const [, a, as, hs, h, , st, src, ot, v, gid] = g;
   const fin = st === "f";

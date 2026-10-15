@@ -1000,6 +1000,8 @@ export const FR: Dictionary = {
   "season.weekLive": "Matchs autour d’aujourd’hui",
   "season.weekPast": "Les sept derniers jours de matchs des séries",
   "season.weekFull": "Tous les pointages de cette journée",
+  "season.weekFirst": "Les sept premiers jours de matchs",
+  "season.weekLast": "Les sept derniers jours de matchs",
   "leaders.gaps": "Incomplet",
   "leaders.gapsNote": "Les fiches complètes de certaines équipes manquent pour cette saison; ses meneurs ne sont donc pas classés par rapport aux autres saisons.",
   // franchise lineage and the Sankey diagrams

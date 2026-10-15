@@ -13,6 +13,7 @@
 .lcard .lwho .logo { flex: none; margin-right: 6px; vertical-align: 0; }
 .lcard .lwho span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .lcard .lmore { color: var(--muted); font-size: 13px; }
+.lcard .lwho .lmore { flex: none; overflow: visible; margin-left: 2px; }
 .lchips { display: flex; flex-wrap: wrap; gap: 4px 6px; min-height: 22px; }
 .lchip { display: inline-block; font: 600 12px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; padding: 4px 6px 3px; border: 1px solid var(--rule); color: var(--muted); background: var(--paper); white-space: nowrap; }
 .lchip.top { color: var(--accent); border-color: var(--accent); }

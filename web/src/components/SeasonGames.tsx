@@ -2,24 +2,24 @@
 
 import { useEffect, useMemo, useState } from "react";
 import type { AbbrMap } from "@/lib/abbr";
-import { unpackGames, type PackedGames } from "@/lib/gamesCodec";
-import { resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
+import { resolveSelection, type Selection } from "@/lib/season";
 import { replaceQuery } from "@/lib/urlQuery";
 import { GameCalendar } from "./GameCalendar";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { Rich } from "./i18n/Rich";
 import { PhaseSwitch } from "./PhaseSwitch";
+import { useSeasonGames } from "./SeasonGamesData";
 import { TeamLogo } from "./TeamLogo";
 
 /**
  * The games of a season: part-of-season buttons, a team filter, a month calendar shaded by games held
  * (or by the team's result on its days), and the games of the chosen day or month.
- * The games come packed (lib/gamesCodec.ts: the page's data is half the size) and are unpacked once here. The selection lives in the address (?phase=&team=&month=&day=), so a reload or shared link keeps it.
+ * The games come packed (lib/gamesCodec.ts: the page's data is half the size) and are unpacked once, by the SeasonGamesProvider around the page (the week strip reads them too). The selection lives in the address (?phase=&team=&month=&day=), so a reload or shared link keeps it.
  */
-export function SeasonGames({ lg, abbrs, year, games: packed, teams: teamList, initial, children }: { lg: string; abbrs: AbbrMap; year?: number; games: PackedGames; teams: ClubTeam[]; initial: Selection; children?: React.ReactNode }) {
+export function SeasonGames({ lg, abbrs, year, initial, children }: { lg: string; abbrs: AbbrMap; year?: number; initial: Selection; children?: React.ReactNode }) {
   const { say } = useSpeaker();
-  const games = useMemo(() => unpackGames(packed), [packed]);
-  const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
+  const { games, teams } = useSeasonGames();
+  const teamList = useMemo(() => [...teams.values()], [teams]);
   const [want, setWant] = useState<Selection>(initial);
   const { byDay, months, month, day } = useMemo(() => resolveSelection(games, want), [games, want]);
   const { phase, team } = want;

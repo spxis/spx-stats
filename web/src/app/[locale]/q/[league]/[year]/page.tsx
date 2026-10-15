@@ -10,6 +10,8 @@ import { SeasonBar } from "@/components/SeasonBar";
 import { LeagueSeasonNav } from "@/components/SeasonNav";
 import { SeasonOutage } from "@/components/SeasonOutage";
 import { SeasonGames } from "@/components/SeasonGames";
+import { SeasonGamesProvider } from "@/components/SeasonGamesData";
+import { SeasonWeek } from "@/components/SeasonWeek";
 import { packGames } from "@/lib/gamesCodec";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
@@ -207,7 +209,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
   const sort = parseSort(sp.sort, cols.map((c) => c.key), "pct.desc");
   return (
-    <>
+    <SeasonGamesProvider games={packGames(d.games)} teams={d.teams.map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))}>
       <AccentStyle league={lg} />
       <section className="head fade">
         <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
@@ -246,6 +248,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <ChampionSurface lg={lg} year={y} champion={champF} />
         </>
       ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}
+      {d.games.length ? <SeasonWeek lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} complete={complete} /> : null}
       {st.length ? (
         <section className="section">
           <h2>{say("season.standings")}</h2>
@@ -282,12 +285,12 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       ) : null}
       {d.games.length ? (
         <section className="section">
-          <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} games={packGames(d.games)} teams={d.teams.map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} initial={selection}>
+          <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={selection}>
             {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
           </SeasonGames>
 
         </section>
       ) : null}
-    </>
+    </SeasonGamesProvider>
   );
 });

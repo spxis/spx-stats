@@ -1185,6 +1185,8 @@ export const PHRASES = {
   "season.weekLive": "Games around today",
   "season.weekPast": "The last seven playoff game days",
   "season.weekFull": "All the scores for this day",
+  "season.weekFirst": "The first seven game days",
+  "season.weekLast": "The last seven game days",
   "leaders.gaps": "Incomplete",
   "leaders.gapsNote": "Some teams’ full-season records are missing for this season, so its leaders are not ranked against other seasons.",
   // franchise lineage (/teams/lineage) and the Sankey diagrams

@@ -9,6 +9,7 @@ import { LG, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { loadScores } from "@/lib/scoresData";
 import { AccentStyle } from "./AccentStyle";
+import { DayStrip } from "./DayStrip";
 import { ScoresBar } from "./ScoresBar";
 import { TeamLabel } from "./TeamLabel";
 import { Badge } from "./ui";
@@ -86,16 +87,10 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
         <ScoresBar lg={lg} day={day} year={year} seasons={years} days={days} min={first} max={last}
           prev={day > first ? prev : ""} next={day < last ? next : ""} prevText={dt.monthDayShort(atUtc(prev))} nextText={dt.monthDayShort(atUtc(next))} />
       </section>
-      <nav className="daystrip" aria-label={say("scores.daysAria")}>
-        {strip.map(({ d, n }) => (
-          <Link key={d} href={scoresPath(lg, d)} prefetch={false} className={n ? "has" : undefined} aria-current={d === day ? "date" : undefined}
-            aria-label={`${dt.full(atUtc(d))}: ${plural("count.games", n)}`}>
-            <span className="wd">{dt.weekdays[atUtc(d).getUTCDay()]}</span>
-            <span className="md">{dt.monthDayShort(atUtc(d))}</span>
-            {n ? <span className="ct"><b>{n}</b><span className="cw">{plural("scores.gamesWord", n)}</span></span> : <span className="ct none" aria-hidden="true">–</span>}
-          </Link>
-        ))}
-      </nav>
+      <DayStrip aria={say("scores.daysAria")} current={day} days={strip.map(({ d, n }) => ({
+        key: d, weekday: dt.weekdays[atUtc(d).getUTCDay()], date: dt.monthDayShort(atUtc(d)), games: n, word: plural("scores.gamesWord", n),
+        label: `${dt.full(atUtc(d))}: ${plural("count.games", n)}`, href: scoresPath(lg, d),
+      }))} />
       <section className="section">
         {games.length ? (
           <ul className="scoreboard">

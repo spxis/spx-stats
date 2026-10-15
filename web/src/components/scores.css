@@ -6,9 +6,9 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
 .dayarrow.off { opacity: .35; }
 
 .daystrip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-block: 16px 22px; }
-.daystrip a { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); text-decoration: none; min-width: 0; }
-.daystrip a:hover { border-color: var(--accent); color: var(--ink); }
-.daystrip a.has { color: var(--ink); }
+.daystrip :is(a, button) { font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); text-decoration: none; min-width: 0; }
+.daystrip :is(a, button):hover { border-color: var(--accent); color: var(--ink); }
+.daystrip :is(a, button).has { color: var(--ink); }
 /* The date is the big thing in a cell; the count is a small badge below it (a dash for a day with no games). */
 .daystrip .wd { font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
 .daystrip .md { font: 700 clamp(15px, 4.2vw, 19px)/1 var(--display); white-space: nowrap; }
@@ -16,10 +16,16 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
 .daystrip .ct b { font: 700 12px/1 var(--mono); color: var(--ink); }
 .daystrip .ct .cw { display: none; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
 .daystrip .ct.none { background: none; font: 500 13px/1 var(--mono); opacity: .6; }
-.daystrip a[aria-current="date"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
-.daystrip a[aria-current="date"] .ct { background: color-mix(in srgb, var(--paper) 20%, transparent); color: var(--paper); }
-.daystrip a[aria-current="date"] .ct b { color: var(--paper); }
+.daystrip :is(a, button)[aria-current="date"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
+.daystrip :is(a, button)[aria-current="date"] .ct { background: color-mix(in srgb, var(--paper) 20%, transparent); color: var(--paper); }
+.daystrip :is(a, button)[aria-current="date"] .ct b { color: var(--paper); }
 @media (min-width: 600px) { .daystrip .ct .cw { display: inline; } }
+
+/* The week strip on a season page: the same strip, with that day's games as compact cards beneath it. */
+.weekstrip .daystrip { margin-block: 10px 12px; }
+.weekstrip.pending { min-height: 168px; }
+.weekgames { gap: 8px 12px; }
+.weekgames .game { border: 1px solid var(--rule); background: var(--panel); padding: 8px 10px; }
 
 .scoreboard { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
 .sgame { border: 1px solid var(--rule); background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 4px; min-width: 0; }

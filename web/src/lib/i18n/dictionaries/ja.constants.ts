@@ -1000,6 +1000,8 @@ export const JA: Dictionary = {
   "season.weekLive": "今日の前後の試合",
   "season.weekPast": "プレーオフ最後の7試合日",
   "season.weekFull": "この日のスコアをすべて見る",
+  "season.weekFirst": "最初の7試合日",
+  "season.weekLast": "最後の7試合日",
   "leaders.gaps": "不完全",
   "leaders.gapsNote": "このシーズンは一部のチームの通年の成績がないため、ほかのシーズンとの順位づけはしていません。",
   // franchise lineage and the Sankey diagrams
