@@ -14,13 +14,17 @@ production, seeded with a tiny schema with the same shapes as the real failures:
     reads it, a re-keyed stats child of person, removed persons, redirects, and a table that points at itself
   - exclusion constraints on referenced tables (release 2026.10.15-11): franchise_identity rebuilt with new ids and the same ranges, a
     child re-pointed, a range that shrinks while a new row takes its old part, and tables where the block must not empty a range
+  - prepare's rehearsal of the apply on production (a statement that always rolls back), on a small meta.data_release (migrations 045
+    and 047), through psql and through mock_api.py (port 7742)
   - a foreign key loop, which must be refused at prepare, with the loop built from both databases' keys
 It runs the real publish_plan, stage_and_apply, snapshot and restore from release.py. Exit code: 0 all passed, 1 a check failed.
 """
 import importlib.util
+import json
 import os
 import re
 import shutil
+import socket
 import subprocess
 import sys
 import tempfile
@@ -649,6 +653,152 @@ def scenario_exclusion(snap):
        "violates exclusion constraint" in msg and "cannot be emptied: a check constraint names it" in msg, msg)
 
 
+RP_DDL = """
+create schema if not exists api; create schema if not exists meta; create schema core; create schema ref;
+\\i %s
+\\i %s
+create table core.grp (grp_id int generated always as identity primary key, name text not null unique);
+create table core.item (item_id int primary key, grp_id int not null references core.grp, label text);
+create table core.other (id int primary key, v text);
+""" % (os.path.join(HERE, "..", "..", "..", "db", "migrations", "045_data_releases.sql"),
+       os.path.join(HERE, "..", "..", "..", "db", "migrations", "047_auto_approval.sql"))
+RP_OLD = """
+insert into core.grp overriding system value values (1, 'a'), (2, 'b');
+insert into core.item values (1, 1, 'x'), (2, 2, 'y');
+insert into core.other values (1, 'one');
+"""
+RP_NEW = """
+insert into core.grp overriding system value values (1, 'a'), (2, 'b'), (3, 'c');
+insert into core.item values (1, 1, 'x'), (2, 3, 'y'), (3, 3, 'z');
+insert into core.other values (1, 'one'), (2, 'two');
+"""
+# the case a release cannot be ordered through: a referenced table whose removed row and incoming row share a unique name
+RP_BAD = """
+insert into core.grp overriding system value values (11, 'a'), (2, 'b');
+insert into core.item values (1, 11, 'x'), (2, 2, 'y');
+insert into core.other values (1, 'one');
+"""
+RP_TABLES = ["core.grp", "core.item", "core.other"]
+
+
+def staging_left(db):
+    return psql(db, "select count(*) from pg_class where relnamespace = 'meta'::regnamespace and relname ~ '^r[sd]_[0-9]'")
+
+
+def seq_state(db):
+    return psql(db, "select last_value || ':' || is_called from core.grp_grp_id_seq")
+
+
+def release_row(db, num):
+    return psql(db, "select status || '|' || coalesce(approved_by, '-') || '|' || coalesce(error, '-') from meta.data_release where number = '%s'" % num)
+
+
+def scenario_rehearsal(snap):
+    """prepare proves the apply on production in a statement that always rolls back."""
+    print("--- rehearsal of the apply")
+    psql("postgres", "do $$ begin create role anon nologin; exception when duplicate_object then null; end $$;"
+         "do $$ begin create role authenticated nologin; exception when duplicate_object then null; end $$")
+    for db, seed in (("rp_prod", RP_OLD), ("rp_ds1", RP_NEW), ("rp2_prod", RP_OLD), ("rp2_ds1", RP_BAD)):
+        psql("postgres", "create database %s" % db)
+        psql(db, RP_DDL + seed)
+    R.SNAP_DIR = snap
+    empty_repo = tempfile.mkdtemp(prefix="rprepo-")
+    os.makedirs(os.path.join(empty_repo, "db", "checks"))
+    R.REPO = empty_repo
+    R.head_sha = lambda: "0123456789abcdef0123456789abcdef01234567"
+    R.apply_block = REAL_BLOCK
+    ds1 = C.PsqlSide("DS1", dsn("rp_ds1"))
+    ctx = types.SimpleNamespace(ds1=ds1, prod=Prod("rp_prod"), w=R.Ds1Writer(dsn("rp_ds1")), by="tester")
+    before = dump("rp_prod", RP_TABLES)
+    seq0 = seq_state("rp_prod")
+
+    # the statement itself: it never completes, so it cannot commit, whatever wraps it
+    diffs, _, _ = R.diff_tables(ctx, RP_TABLES)
+    items = [(n, diffs[n][0], diffs[n][1]) for n in R.ordered(ctx, RP_TABLES)]
+    plan = R.publish_plan(ctx, items)
+    st = R.Stage(ctx.prod, 9_000_000_123)
+    steps = R.stage_plan(ctx, st, plan)
+    block = R.rehearsal_block(steps)
+    ok("the rehearsal is the apply block plus a final raise, and has no sequence reset",
+       block.endswith("raise exception '%s' using errcode = 'RH001';\nend $apply$" % R.REHEARSAL_DONE) and "setval" not in block
+       and "setval" in REAL_BLOCK(steps), block[-200:])
+    for how, wrap in (("autocommit", "%s"), ("single transaction (psql -1)", "%s"), ("inside begin ... commit", "begin;\n%s;\ncommit;")):
+        text = wrap % block
+        if "single" in how:
+            r = subprocess.run(["psql", "-X", "-q", "-1", "-v", "ON_ERROR_STOP=1", dsn("rp_prod"), "-f", "-"], input=text, capture_output=True, text=True)
+        else:
+            r = psql("rp_prod", text, check=False)
+        ok("the rehearsal statement fails with its own message and changes nothing: %s" % how,
+           r.returncode != 0 and R.REHEARSAL_DONE in r.stderr and dump("rp_prod", RP_TABLES) == before and seq_state("rp_prod") == seq0, r.stderr[-300:])
+    st.drop()
+
+    # the same through the HTTP stand-in for the Management API
+    port = "7742"
+    mock = subprocess.Popen([sys.executable, "-I", os.path.join(HERE, "mock_api.py"), port, dsn("rp_prod")])
+    try:
+        for _ in range(50):
+            try:
+                socket.create_connection(("127.0.0.1", int(port)), timeout=0.2).close()
+                break
+            except OSError:
+                time.sleep(0.1)
+        api = C.ApiSide("test", "test", url="http://127.0.0.1:%s/v1/projects/test/database/query" % port)
+        actx = types.SimpleNamespace(ds1=ds1, prod=api, w=ctx.w, by="tester")
+        res = R.rehearse(actx, R.publish_plan(actx, items))
+        ok("rehearse through the API stand-in: ok, nothing changed, nothing left behind",
+           res["ok"] and dump("rp_prod", RP_TABLES) == before and staging_left("rp_prod") == "0" and seq_state("rp_prod") == seq0, res)
+    finally:
+        mock.terminate()
+        mock.wait()
+
+    res = R.rehearse(ctx, R.publish_plan(ctx, items))
+    ok("rehearse ok on a release that applies", res["ok"] and res["error"] is None, res)
+    ok("production is exactly as before, no staging table is left, the sequence did not move",
+       dump("rp_prod", RP_TABLES) == before and staging_left("rp_prod") == "0" and seq_state("rp_prod") == seq0)
+
+    # prepare: rehearsal recorded in the preview
+    row1 = R.prepare_publish(ctx, "First", RP_TABLES, quiet=True)
+    pv = row1["preview"]
+    ok("prepare records the rehearsal in the preview and offers the release", pv["rehearsal"]["ok"] and not pv["blockers"], pv.get("rehearsal"))
+    ok("the copy on production carries it too",
+       json.loads(psql("rp_prod", "select (preview -> 'rehearsal' ->> 'ok') from meta.data_release where number = '%s'" % row1["number"]) or "null") is True)
+    ok("production's rows are untouched by prepare", dump("rp_prod", RP_TABLES) == before and staging_left("rp_prod") == "0")
+
+    # a release the apply cannot do: rehearsal fails, blocker, nothing changed, nothing superseded
+    ds1b = C.PsqlSide("DS1", dsn("rp2_ds1"))
+    ctxb = types.SimpleNamespace(ds1=ds1b, prod=Prod("rp2_prod"), w=R.Ds1Writer(dsn("rp2_ds1")), by="tester")
+    before2 = dump("rp2_prod", RP_TABLES)
+    psql("rp2_ds1", "update core.other set v = 'first' where id = 1")
+    good = R.prepare_publish(ctxb, "Only items", ["core.other"], quiet=True)
+    psql("rp2_ds1", "update core.other set v = 'changed' where id = 1")
+    bad = R.prepare_publish(ctxb, "Impossible", RP_TABLES, quiet=True)
+    ok("a rehearsal that fails is a blocker with the exact error", not bad["preview"]["rehearsal"]["ok"]
+       and any("rehearsal of the apply on production failed" in b and "duplicate key value violates unique constraint" in b for b in bad["preview"]["blockers"]), bad["preview"])
+    ok("the release cannot be approved (the site refuses a release with blockers)",
+       psql("rp2_prod", "select jsonb_array_length(preview -> 'blockers') from meta.data_release where number = '%s'" % bad["number"]) == "1")
+    ok("the failed rehearsal rolled back and left nothing", dump("rp2_prod", RP_TABLES) == before2 and staging_left("rp2_prod") == "0")
+    ok("a blocked release supersedes nothing", release_row("rp2_prod", good["number"]).startswith("pending"))
+
+    # rollback rehearsal
+    row5 = R.prepare_publish(ctx, "To roll back", RP_TABLES, quiet=True)
+    rel = R.release_by_id(ds1, row5["id"])
+    result = R.run_publish(ctx, rel)
+    R.set_release(ctx, rel["id"], {"status": "done", "result": result, "error": None})
+    ok("the release applies for real", dump("rp_prod", RP_TABLES) == dump("rp_ds1", RP_TABLES))
+    rb = R.prepare_rollback(ctx, row5["number"])
+    ok("a rollback is rehearsed too, and it is fine", rb["preview"]["rehearsal"]["ok"] and not rb["preview"]["blockers"], rb["preview"])
+    ok("the rehearsal changed nothing", dump("rp_prod", RP_TABLES) == dump("rp_ds1", RP_TABLES) and staging_left("rp_prod") == "0")
+    shutil.rmtree(empty_repo, ignore_errors=True)
+
+
+def raises(fn):
+    try:
+        fn()
+    except (R.Refused, SystemExit, RuntimeError):
+        return True
+    return False
+
+
 def main():
     snap = tempfile.mkdtemp(prefix="ordsnap-")
     tmp, stop = start_server()
@@ -657,6 +807,7 @@ def main():
         scenario_positions(snap, True)
         scenario_positions(snap, False)
         scenario_exclusion(snap)
+        scenario_rehearsal(snap)
         scenario_cycles(snap)
         scenario_publish_filter(snap)
     finally:

@@ -60,6 +60,7 @@ HEARTBEAT_MINUTES = 30
 DAILY_TIMEOUT = int(os.environ.get("RELEASE_DAILY_TIMEOUT", "2400"))
 REVALIDATE_MAX_TAGS = 100
 STEP_FILE_RE = re.compile(r"^db/(migrations|build)/[A-Za-z0-9_.-]+\.sql$")
+REHEARSE = os.environ.get("RELEASE_REHEARSAL", "on") != "off"   # prepare proves the apply on production in a statement that rolls back
 REQUEST_BYTES = 900_000
 ROWS_PER_INSERT = 500
 RELEASE_FIELDS = ("id", "number", "kind", "title", "notes", "ticket", "tables", "options", "status", "digest", "preview",
@@ -430,6 +431,9 @@ def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, c
     if preview["totals"]["add"] + preview["totals"]["change"] + preview["totals"]["remove"] == 0 and not preview["blockers"]:
         raise Refused("DS1 and production already match for these tables: nothing to release")
     options = {"replace": True} if replace else {}
+    if not preview["blockers"] and REHEARSE:
+        order = ordered(ctx, names)
+        rehearsal_blockers(preview, rehearse(ctx, publish_plan(ctx, [(n, diffs[n][0], diffs[n][1]) for n in order])))
     if kind == "daily_scores":
         preview["auto"] = auto_review(ctx, names, diffs, preview)
     sha = head_sha()
@@ -453,6 +457,9 @@ def print_preview(row):
         print("  file %s at %s" % (pv["file"], (row.get("git_sha") or "")[:10]))
         for k, v in (pv.get("after") or {}).items():
             print("  %-28s %s -> %s" % (k, (pv.get("before") or {}).get(k), v))
+    rh = pv.get("rehearsal")
+    if rh:
+        print("  rehearsal of the apply on production (rolled back, nothing changed): %s (%ds)" % ("ok" if rh["ok"] else "FAILED", rh.get("seconds", 0)))
     for b in pv.get("blockers") or []:
         print("  BLOCKER: " + b)
     for w in pv.get("warnings") or []:
@@ -650,7 +657,7 @@ class Stage:
             log("could not drop the staging tables %s: %s" % (self.names, scrub(e)))
 
 
-def apply_block(steps):
+def apply_block(steps, rehearsal=False):
     """One DO block, ordered so every foreign key and unique key holds after every statement (production's keys are not
     deferrable, and the block must not change them). steps are in parents-first order. A "fresh" step is a table nothing
     references; every other step is a referenced table. In order:
@@ -667,7 +674,9 @@ def apply_block(steps):
     Then count checks, sequence resets, drop the stages. A single statement, so it commits or rolls back as a whole whatever the
     API does with a multi-statement text. A table that is both referenced and has a unique natural key that a removed row shares
     with an incoming one cannot be ordered this way: the block fails on the unique key, and production is unchanged. The same goes for
-    an exclusion constraint whose range column step 1b may not empty (the notes are in the error: stage_and_apply adds them)."""
+    an exclusion constraint whose range column step 1b may not empty (the notes are in the error: stage_and_apply adds them).
+    rehearsal=True is the same block without the sequence resets (the one statement a rollback would not undo); rehearse() adds the
+    final raise."""
     out = ["do $apply$ begin"]
     for s in reversed(steps):
         if not s.get("fresh"):
@@ -718,7 +727,7 @@ def apply_block(steps):
         t = s["t"]
         out.append("if (select count(*) from " + t.fq + ") <> " + str(s["expected"]) + " then raise exception 'row count of "
                    + t.name + " does not match after the change'; end if;")
-        for c in t.identity_cols:
+        for c in ([] if rehearsal else t.identity_cols):  # setval is not undone by a rollback, so a rehearsal never calls it
             out.append("perform setval(pg_get_serial_sequence(%s, %s), coalesce((select max(%s) from %s), 1));"
                        % (C.ql(t.fq), C.ql(c), C.qi(c), t.fq))
     for s in steps:
@@ -729,32 +738,89 @@ def apply_block(steps):
     return "\n".join(out)
 
 
+def stage_plan(ctx, st, plan):
+    """Create and fill the staging tables of a plan on production (committed, unlogged, dropped by st.drop()); returns the steps
+    apply_block takes."""
+    steps = []
+    for i, p in enumerate(plan):
+        t = p["t"]
+        step = {"t": t, "up": None, "del": None, "expected": p["expected"], "fresh": p.get("fresh", False)}
+        if p["ups"] is not None:
+            step["up"] = st.create("s", i, t, t.insert_cols)
+            send_batches(ctx.prod, insert_statements(step["up"], t.insert_cols, p["ups"]))
+        if p["dels"]:
+            step["del"] = st.create("d", i, t, t.pk)
+            lits = key_literals(t, p["dels"])
+            head = "insert into %s (%s) values\n" % (step["del"], ",".join(C.qi(k) for k in t.pk))
+            send_batches(ctx.prod, (head + ",\n".join(lits[j:j + 1000]) + "\non conflict do nothing" for j in range(0, len(lits), 1000)))
+        steps.append(step)
+    return steps
+
+
+def explain_apply_error(e, steps):
+    """The error of a failed apply, with what the block could not step aside when it was an exclusion constraint that failed."""
+    notes = [n for s in steps if not s.get("fresh") for n in getattr(s["t"], "excl_notes", [])]
+    if notes and ("23P01" in str(e) or "exclusion constraint" in str(e)):
+        return RuntimeError("%s (the block could not step these exclusion constraints aside: %s)" % (e, "; ".join(notes)))
+    return e
+
+
 def stage_and_apply(ctx, rid, plan):
     """plan: [{t, ups: iterable of VALUES tuples or None, dels: key list, expected: rows after}] in parents-first order."""
     st = Stage(ctx.prod, rid)
     try:
-        steps = []
-        for i, p in enumerate(plan):
-            t = p["t"]
-            step = {"t": t, "up": None, "del": None, "expected": p["expected"], "fresh": p.get("fresh", False)}
-            if p["ups"] is not None:
-                step["up"] = st.create("s", i, t, t.insert_cols)
-                send_batches(ctx.prod, insert_statements(step["up"], t.insert_cols, p["ups"]))
-            if p["dels"]:
-                step["del"] = st.create("d", i, t, t.pk)
-                lits = key_literals(t, p["dels"])
-                head = "insert into %s (%s) values\n" % (step["del"], ",".join(C.qi(k) for k in t.pk))
-                send_batches(ctx.prod, (head + ",\n".join(lits[j:j + 1000]) + "\non conflict do nothing" for j in range(0, len(lits), 1000)))
-            steps.append(step)
+        steps = stage_plan(ctx, st, plan)
         try:
             prod_exec(ctx.prod, apply_block(steps), attempts=1, timeout=900)
         except Exception as e:
-            notes = [n for s in steps if not s.get("fresh") for n in getattr(s["t"], "excl_notes", [])]
-            if notes and ("23P01" in str(e) or "exclusion constraint" in str(e)):
-                raise RuntimeError("%s (the block could not step these exclusion constraints aside: %s)" % (e, "; ".join(notes))) from e
-            raise
+            raise explain_apply_error(e, steps) from e
     finally:
         st.drop()
+
+
+REHEARSAL_DONE = "rehearsal complete: rolled back"
+
+
+def rehearsal_block(steps):
+    """The apply block, exactly, with one more statement before its end: a raise. The DO statement therefore never completes, so
+    nothing it did can commit, whatever the API does around a query text (a begin/rollback pair inside a text the API wraps in its own
+    transaction is not a guarantee). A real failure raises its own error first and is reported as it is."""
+    block = apply_block(steps, rehearsal=True)
+    tail = "end $apply$"
+    if not block.endswith(tail):
+        raise RuntimeError("the apply block has an unexpected ending: not rehearsing")
+    return block[:-len(tail)] + "raise exception '%s' using errcode = 'RH001';\n%s" % (REHEARSAL_DONE, tail)
+
+
+def rehearse(ctx, plan):
+    """Run the apply for a plan on production inside a statement that always rolls back, to prove the real apply will work
+    (releases 2026.10.15-9 to -11 were approved and then failed on production). Production is touched only by the staging tables (the
+    real apply makes the same ones, dropped again here) and by that statement. Returns {"ok", "error", "seconds"}."""
+    started = time.time()
+    st = Stage(ctx.prod, 9_000_000_000 + os.getpid() % 1_000_000)
+    steps = []
+    try:
+        prod_exec(ctx.prod, "do $c$ declare r record; begin for r in select relname from pg_class where relnamespace = 'meta'::regnamespace "
+                  "and relname ~ '^r[sd]_%d_' loop execute format('drop table meta.%%I', r.relname); end loop; end $c$" % st.rid)
+        steps = stage_plan(ctx, st, plan)
+        block = rehearsal_block(steps)
+        try:
+            prod_exec(ctx.prod, block, attempts=1, timeout=900)
+            return {"ok": False, "error": "the rehearsal statement completed without its final raise: nothing was proven", "seconds": round(time.time() - started)}
+        except Exception as e:  # noqa: BLE001 - the raise is the expected end
+            if REHEARSAL_DONE in str(e):
+                return {"ok": True, "error": None, "seconds": round(time.time() - started)}
+            return {"ok": False, "error": scrub(explain_apply_error(e, steps)), "seconds": round(time.time() - started)}
+    except Exception as e:  # noqa: BLE001 - staging failed (space, API): not proven either
+        return {"ok": False, "error": "could not stage the rehearsal: " + scrub(e), "seconds": round(time.time() - started)}
+    finally:
+        st.drop()
+
+
+def rehearsal_blockers(preview, result):
+    preview["rehearsal"] = result
+    if not result["ok"]:
+        preview["blockers"] = list(preview.get("blockers") or []) + ["rehearsal of the apply on production failed (rolled back, nothing changed): " + result["error"]]
 
 
 def write_gz(path, text):
@@ -1249,6 +1315,12 @@ def prepare_rollback(ctx, number, title=None, notes=None, ticket=None):
                   "bytes_delta": 0, "ds1_fp": None, "prod_fp": (res.get("before_fp") or {}).get(n), "blockers": [], "warnings": []}
     preview = {"tables": per, "blockers": blockers, "warnings": [], "rollback_of": number,
                "totals": {k: sum(p[k] for p in per.values()) for k in ("add", "change", "remove", "bytes_delta")}}
+    if not blockers and REHEARSE:
+        try:
+            plan = restore_plan(ctx, orig["id"], list(orig["tables"]), {n: v["rows_before"] for n, v in (res.get("tables") or {}).items()})
+            rehearsal_blockers(preview, rehearse(ctx, plan))
+        except Refused as e:
+            preview["blockers"] = list(preview["blockers"]) + ["the rollback cannot be planned: %s" % e]
     options = {"rollback_of": number}
     row = {"kind": "rollback", "title": title or "Roll back %s" % number, "notes": notes, "ticket": ticket, "tables": orig["tables"],
            "options": options, "status": "pending", "preview": preview, "git_sha": head_sha(),
@@ -1259,8 +1331,8 @@ def prepare_rollback(ctx, number, title=None, notes=None, ticket=None):
     return row
 
 
-def restore(ctx, rid, names, before_fp=None, orig_rows=None):
-    """Put production back from the snapshot of release id <rid>: restore updated and deleted rows, remove inserted ones."""
+def restore_plan(ctx, rid, names, orig_rows=None):
+    """The stage_and_apply plan that puts production back from the snapshot of release id <rid>."""
     schema = "backup_release_%d" % rid
     tabs = load_tables(ctx, names)
     plan = []
@@ -1277,6 +1349,12 @@ def restore(ctx, rid, names, before_fp=None, orig_rows=None):
         plan.append({"t": t, "ups": read_all_tuples(ctx.ds1, t, bt) if cnt["r"] else None, "dels": keys,
                      "expected": (orig_rows or {}).get(n, now_rows), "_n": n,
                      "fresh": n not in referenced})
+    return plan
+
+
+def restore(ctx, rid, names, before_fp=None, orig_rows=None):
+    """Put production back from the snapshot of release id <rid>: restore updated and deleted rows, remove inserted ones."""
+    plan = restore_plan(ctx, rid, names, orig_rows)
     stage_and_apply(ctx, rid * 1000 + 1, plan)
     if before_fp:
         for p in plan:

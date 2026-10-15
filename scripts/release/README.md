@@ -72,6 +72,20 @@ only then deletes the rows the release had inserted. One restore cannot work: a 
 (`core.person.primary_position` while it still holds free text instead of a position code), because the key is checked on every write of
 that column. The restore then fails as a whole and leaves production as the release made it (the release is marked failed with the error).
 
+### Rehearsal at prepare
+
+Releases 2026.10.15-9 to -11 were approved and then failed on production. So `prepare` (publish, daily_scores and rollback) now proves the
+apply before John sees the release, when it has no other blocker: it stages the release on production exactly as the real apply does
+(`stage_plan`, the same batches), then sends the same DO block with one more statement, a final `raise exception` (`rehearse`,
+`rehearsal_block`). The statement therefore never completes, so nothing in it can commit, whatever the Management API does around a
+query text; it needs no begin/rollback and survives being wrapped in one (tested with psql autocommit, `psql -1` and `begin; ...; commit;`).
+The rehearsal block has no `setval` (the one statement a rollback would not undo), the staging tables are dropped afterwards, and a
+leftover from a killed run is dropped by the next one. The result is `preview.rehearsal` (`ok`, `error`, `seconds`; `prepare` prints it).
+A failure is a blocker with the exact database error, so the release cannot be approved. A release that is still pending needs no
+second proof: the runner's re-check (`run_publish`) compares fingerprints and the apply is the same block. Cost: one more staging upload
+and apply per prepare (a release of 150k staged rows took 5 s against a local Postgres; on the API it is the request round trips, about
+one per 900 KB). `RELEASE_REHEARSAL=off` skips it (tests only).
+
 ## Tables published in part (`PUBLISH_FILTER`)
 
 Production is on the 500 MB plan, so some DS1 rows are not published. `PUBLISH_FILTER` in `scripts/sync/compare.py` maps a table to a
