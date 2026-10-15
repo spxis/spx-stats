@@ -246,6 +246,7 @@ export const JA: Dictionary = {
   "game.extras": "延長",
   "game.ot": "延長",
   "game.noResult": "結果なし",
+  "game.scheduled": "予定",
   "game.confirmed": "確認済み",
   "game.confirmedTitle": "第2の情報源で確認済み",
   "game.disputed": "不一致",

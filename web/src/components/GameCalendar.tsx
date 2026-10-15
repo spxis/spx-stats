@@ -28,7 +28,7 @@ export function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTupl
   const aw = fin && (as ?? 0) > (hs ?? 0), hw = fin && (hs ?? 0) > (as ?? 0);
   const nm = (id: number) => teams.get(id)?.name || "—";
   const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
-  const text = fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : say("game.noResult");
+  const text = fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : say(st === "s" ? "game.scheduled" : "game.noResult");
   return (
     <div className="game">
       <span>

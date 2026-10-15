@@ -128,7 +128,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
     },
     {
       key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
-      cell: (g) => (g.res ? <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> : <span className="note">{say("game.noResult")}</span>),
+      cell: (g) => (g.res ? <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> : <span className="note">{say(g.tuple[6] === "s" ? "game.scheduled" : "game.noResult")}</span>),
     },
     { key: "ot", label: extra, title: say(lg === "mlb" ? "col.extrasTitle" : "col.otTitle"), get: (g) => (g.ot ? 1 : 0), cell: (g) => (g.ot ? extra : "") },
     { key: "rec", label: say("col.record"), num: true, title: say("col.recordTitle"), get: (g) => g.recPct, cell: (g) => g.rec },

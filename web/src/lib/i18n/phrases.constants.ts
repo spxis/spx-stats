@@ -339,6 +339,7 @@ export const PHRASES = {
   "game.extras": "extras",
   "game.ot": "OT",
   "game.noResult": "no result",
+  "game.scheduled": "Scheduled",
   "game.confirmed": "confirmed",
   "game.confirmedTitle": "Confirmed by a second source",
   "game.disputed": "disputed",

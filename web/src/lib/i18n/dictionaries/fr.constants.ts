@@ -246,6 +246,7 @@ export const FR: Dictionary = {
   "game.extras": "manches supp.",
   "game.ot": "prol.",
   "game.noResult": "sans résultat",
+  "game.scheduled": "Prévu",
   "game.confirmed": "confirmé",
   "game.confirmedTitle": "Confirmé par une deuxième source",
   "game.disputed": "contesté",
