@@ -12,6 +12,9 @@
 .groupset { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
 .grouplabel { font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
 .seg.wrap { flex-wrap: wrap; max-width: 100%; }
+.histbox { display: inline-flex; align-items: center; gap: 8px; font: 600 13px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); cursor: pointer; }
+.histbox input { width: 16px; height: 16px; margin: 0; accent-color: var(--accent); cursor: pointer; }
+.histbox:has(input:checked) { color: var(--ink); }
 .groupnote { flex: 1 1 100%; margin: 0; font-size: 14px; }
 
 /* The least number of titles. */

@@ -9,7 +9,7 @@ import {
   currentPlace, DEF_SORT, filterTeams, leagueSpan, mostTitles, pageOf, readFilters, searchTextOf, STATUSES,
   type BoardTeam, type Status,
 } from "@/lib/teamBoard";
-import { placeText, type Conf, type Div } from "@/lib/teamGroups";
+import { currentGroups, placeText, type Conf, type Div } from "@/lib/teamGroups";
 import { replaceQuery } from "@/lib/urlQuery";
 import { RANGE_PAGES, releaseRangeHold, saveRange, savedRange } from "@/lib/yearRange";
 import { PageFlag } from "./PageFlag";
@@ -76,7 +76,11 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
   const span = useMemo(() => leagueSpan(teams, now.league), [teams, now.league]);
   const texts = useMemo(() => new Map(teams.map((t) => [t, searchTextOf(t)])), [teams]);
   const filtered = useMemo(() => filterTeams(teams, f, texts), [teams, f, texts]);
-  const g = f.league ? groups[f.league] : undefined;
+  // The conferences and divisions offered: the league's current ones, or every one it ever had when historic ones are included.
+  const all = f.league ? groups[f.league] : undefined;
+  const current = useMemo(() => (all ? currentGroups(all) : undefined), [all]);
+  const g = all && !f.hist ? current : all;
+  const hasHistoric = !!all && !!current && (all.confs.length > current.confs.length || all.divs.length > current.divs.length);
 
   // The heading and the tab's title say which teams are listed (the league, the division or conference, active or defunct), as the controls below have them.
   const here = now.league ? groups[now.league] : undefined;
@@ -92,6 +96,12 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
   // The head script keeps the list hidden while a wanted range is pending; show it once a render uses that range, not the server's full one.
   useLayoutEffect(() => { if (snap === snapshot()) releaseRangeHold(); }, [snap]);
 
+  // Turning the historic ones off also lets go of a choice that is one of them, so the address never names a group the list does not offer.
+  const setHist = (on: boolean) => {
+    const keepConf = on || !now.conf || !!current?.confs.some((c) => c.id === now.conf);
+    const keepDiv = on || !now.div || !!current?.divs.some((d) => d.id === now.div);
+    change({ hist: on ? "1" : null, conf: keepConf ? now.conf || null : null, div: keepDiv && keepConf ? now.div || null : null, page: null });
+  };
   const setSort = (next: SortKey[]) => { const s = formatSort(next); change({ sort: s === DEF_SORT ? null : s, page: null }); };
   const onRange = (from: number, to: number) => {
     if (!span) return;
@@ -221,7 +231,13 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
                 </div>
               </div>
             ) : null}
-            <p className="note groupnote">{say("teams.groupsNote")}</p>
+            {hasHistoric ? (
+              <label className="histbox">
+                <input type="checkbox" checked={now.hist} onChange={(e) => setHist(e.target.checked)} />
+                <span>{say("teams.historic")}</span>
+              </label>
+            ) : null}
+            <p className="note groupnote">{say(now.hist || !hasHistoric ? "teams.groupsNote" : "teams.groupsNoteNow")}</p>
           </div>
         ) : null}
         {span ? <YearRange min={span.min} max={span.max} from={now.range?.from ?? span.min} to={now.range?.to ?? span.max} onChange={onRange} /> : null}

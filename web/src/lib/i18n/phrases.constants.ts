@@ -110,6 +110,8 @@ export const PHRASES = {
   "teams.movedTitle": "Has also been in: {places}",
   "teams.groupsAria": "Conferences and divisions of the {league}",
   "teams.groupsNote": "A team shows under every conference and division it has ever belonged to. The table gives the one it is in now, or was in last; ↻ marks a team that has moved.",
+  "teams.historic": "Include historic divisions",
+  "teams.groupsNoteNow": "Only the conferences and divisions in use now are offered, and a team shows under the one it plays in now. Tick “Include historic divisions” to add those of the past and every team that was ever in them. ↻ marks a team that has moved.",
   "teams.minTitles": "Minimum titles",
   "teams.titlesAtLeast": "{n} or more",
   "teams.titlesAny": "Any",

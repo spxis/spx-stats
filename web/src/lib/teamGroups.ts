@@ -95,3 +95,14 @@ export function everIn(places: readonly Place[] | undefined, conf: string, div: 
   if (!conf && !div) return true;
   return !!places?.some(([c, d]) => (!conf || c === conf) && (!div || d === div));
 }
+
+/** The last season any conference or division of the league has a row in: the year of its latest alignment. 0 for a league with no groups. */
+export function currentYear(g: Pick<LeagueGroups, "confs" | "divs">): number {
+  return Math.max(0, ...g.confs.map((c) => c.to), ...g.divs.map((d) => d.to));
+}
+
+/** The conferences and divisions of the league's latest alignment: the ones still in use. The rest are historic. */
+export function currentGroups<G extends { confs: Conf[]; divs: Div[] }>(g: G): { confs: Conf[]; divs: Div[] } {
+  const now = currentYear(g);
+  return { confs: g.confs.filter((c) => c.to === now), divs: g.divs.filter((d) => d.to === now) };
+}

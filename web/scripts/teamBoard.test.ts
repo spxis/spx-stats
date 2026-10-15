@@ -2,8 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { BrandMap } from "../src/lib/brand.ts";
 import type { CityRef, Placement } from "../src/lib/cityModel.ts";
-import { buildGroups, everIn, placeText, type AlignLike } from "../src/lib/teamGroups.ts";
-import { filterTeams, leagueSpan, mostTitles, pageOf, readFilters, searchTextOf, type BoardTeam } from "../src/lib/teamBoard.ts";
+import { buildGroups, currentGroups, currentYear, everIn, placeText, type AlignLike } from "../src/lib/teamGroups.ts";
+import { filterTeams, isMember, leagueSpan, mostTitles, pageOf, readFilters, searchTextOf, TEAMS_CLIENT_KEYS, type BoardTeam } from "../src/lib/teamBoard.ts";
 import { formerNames } from "../src/lib/teamFormer.ts";
 import { latestHomes } from "../src/lib/teamHome.ts";
 
@@ -128,17 +128,68 @@ test("a least number of titles hides the teams below it", () => {
   assert.equal(mostTitles(teams, ""), 18);
 });
 
-test("a conference or division keeps the teams that were ever in it, and only the league's own are accepted", () => {
-  assert.deepEqual(names(readFilters("?league=nhl&conf=Wales", teams, groups)), ["Carolina Hurricanes"]);
-  assert.deepEqual(names(readFilters("?league=nhl&conf=East", teams, groups)), ["Carolina Hurricanes"]);
-  assert.deepEqual(names(readFilters("?league=nhl&div=Adams", teams, groups)), ["Carolina Hurricanes"]);
-  assert.deepEqual(names(readFilters("?league=nhl&div=West%20Central", teams, groups)), ["Calgary Flames"]);
-  assert.deepEqual(names(readFilters("?league=nhl&conf=West&div=West%20Central", teams, groups)), ["Calgary Flames"]);
+test("with historic divisions included, a conference or division keeps the teams that were ever in it, and only the league's own are accepted", () => {
+  assert.deepEqual(names(readFilters("?league=nhl&hist=1&conf=Wales", teams, groups)), ["Carolina Hurricanes"]);
+  assert.deepEqual(names(readFilters("?league=nhl&hist=1&conf=East", teams, groups)), ["Carolina Hurricanes"]);
+  assert.deepEqual(names(readFilters("?league=nhl&hist=1&div=Adams", teams, groups)), ["Carolina Hurricanes"]);
+  assert.deepEqual(names(readFilters("?league=nhl&hist=1&div=West%20Central", teams, groups)), ["Calgary Flames"]);
+  assert.deepEqual(names(readFilters("?league=nhl&hist=1&conf=West&div=West%20Central", teams, groups)), ["Calgary Flames"]);
   // a division of another conference than the one chosen is dropped; so is any group with no league
-  assert.equal(readFilters("?league=nhl&conf=East&div=West%20Central", teams, groups).div, "");
-  assert.equal(readFilters("?conf=East", teams, groups).conf, "");
-  assert.equal(readFilters("?league=nba&conf=East", teams, groups).conf, "");
-  assert.equal(readFilters("?league=nhl&conf=Nope", teams, groups).conf, "");
+  assert.equal(readFilters("?league=nhl&hist=1&conf=East&div=West%20Central", teams, groups).div, "");
+  assert.equal(readFilters("?hist=1&conf=East", teams, groups).conf, "");
+  assert.equal(readFilters("?league=nba&hist=1&conf=East", teams, groups).conf, "");
+  assert.equal(readFilters("?league=nhl&hist=1&conf=Nope", teams, groups).conf, "");
+});
+
+test("historic divisions are off unless the address asks, and ?hist=1 is a key the page reads in the browser", () => {
+  assert.equal(readFilters("?league=nhl", teams, groups).hist, false);
+  assert.equal(readFilters("?league=nhl&hist=0", teams, groups).hist, false);
+  assert.equal(readFilters("?league=nhl&hist=1", teams, groups).hist, true);
+  assert.ok((TEAMS_CLIENT_KEYS as readonly string[]).includes("hist"));
+});
+
+test("the current groups are the ones in the league's latest alignment", () => {
+  assert.equal(currentYear(g), 2022);
+  const now = currentGroups(g);
+  assert.deepEqual(now.confs.map((c) => c.id), ["East", "West"]);
+  assert.deepEqual(now.divs.map((d) => d.id), ["Atlantic", "West Central"]);
+  assert.equal(currentYear({ confs: [], divs: [] }), 0);
+});
+
+test("without historic divisions only the current conferences and divisions are accepted", () => {
+  const f = (q: string) => readFilters(q, teams, groups);
+  assert.equal(f("?league=nhl&conf=East").conf, "East");
+  assert.equal(f("?league=nhl&div=Atlantic").div, "Atlantic");
+  assert.equal(f("?league=nhl&conf=Wales").conf, "", "a conference that no longer exists is not offered");
+  assert.equal(f("?league=nhl&div=Northeast").div, "");
+  assert.equal(f("?league=nhl&div=Central").div, "", "the 2020 Central is historic; the current one is West Central");
+  assert.equal(f("?league=nhl").since, 2022);
+  assert.equal(f("?league=nhl&hist=1").since, 0);
+  // a choice that is dropped keeps every team
+  assert.deepEqual(names(f("?league=nhl&conf=Wales")), ["Carolina Hurricanes", "Calgary Flames", "Hamilton Tigers"]);
+});
+
+test("without historic divisions a team counts by where it plays now, not where it once sat", () => {
+  // Carolina sat in Wales/Adams, East/Northeast and now East/Atlantic; Calgary is West/West Central
+  assert.deepEqual(names(readFilters("?league=nhl&conf=East", teams, groups)), ["Carolina Hurricanes"]);
+  assert.deepEqual(names(readFilters("?league=nhl&conf=West", teams, groups)), ["Calgary Flames"]);
+  assert.deepEqual(names(readFilters("?league=nhl&div=Atlantic", teams, groups)), ["Carolina Hurricanes"]);
+  assert.deepEqual(names(readFilters("?league=nhl&conf=East&div=Atlantic", teams, groups)), ["Carolina Hurricanes"]);
+  // with them included, Carolina is also found under its old homes
+  assert.deepEqual(names(readFilters("?league=nhl&hist=1&div=Northeast", teams, groups)), ["Carolina Hurricanes"]);
+});
+
+test("a team that has folded is not a member now, even if its last division is still in use", () => {
+  const folded = team("nhl", 7, "Folded West", { last: 2010, active: false, places: [["West", "West Central"]] });
+  const live = { conf: "West", div: "", hist: false, since: 2022 };
+  assert.equal(isMember(folded, live), false);
+  assert.equal(isMember(folded, { ...live, hist: true, since: 0 }), true);
+  assert.equal(isMember({ last: 2026, places: [["West", "West Central"]] }, live), true);
+  // a team that moved: only its latest place is its place now
+  const moved = { last: 2026, places: [["West", "Pacific"], ["West", "West Central"]] as BoardTeam["places"] };
+  assert.equal(isMember(moved, { conf: "West", div: "Pacific", hist: false, since: 2022 }), true);
+  assert.equal(isMember(moved, { conf: "West", div: "West Central", hist: false, since: 2022 }), false);
+  assert.equal(isMember(moved, { conf: "West", div: "West Central", hist: true, since: 0 }), true);
 });
 
 test("a page of the list, and a page past the last is the last", () => {

@@ -5,7 +5,7 @@
  */
 import { fold } from "./fold.ts";
 import { LEAGUE_CODES } from "./leagues.ts";
-import { everIn, type LeagueGroups, type Place } from "./teamGroups.ts";
+import { currentGroups, currentYear, everIn, type LeagueGroups, type Place } from "./teamGroups.ts";
 import { rangeFromQuery, type YearSpan } from "./yearRange.ts";
 
 /** One franchise as the page sends it to the browser. */
@@ -39,7 +39,7 @@ export const STATUSES = ["all", "active", "defunct"] as const;
 export type Status = (typeof STATUSES)[number];
 
 /** Every address key the teams page reads in the browser (so none of them asks the server for a copy of its own: lib/routing.ts keeps /teams static). */
-export const TEAMS_CLIENT_KEYS = ["league", "q", "status", "from", "to", "sort", "page", "conf", "div", "titles"] as const;
+export const TEAMS_CLIENT_KEYS = ["league", "q", "status", "from", "to", "sort", "page", "conf", "div", "titles", "hist"] as const;
 
 export const TEAMS_PER_PAGE = 50;
 export const DEF_SORT = "name.asc";
@@ -56,6 +56,10 @@ export interface BoardFilters {
   titles: number;
   conf: string;
   div: string;
+  /** Include the conferences and divisions of the past (?hist=1): off, only the league's current ones are offered and a team counts by where it plays now. */
+  hist: boolean;
+  /** With `hist` off, the season a team must still be playing in to count as a member now (the league's latest alignment year); unused with it on. */
+  since: number;
   page: number;
 }
 
@@ -75,7 +79,7 @@ export function leagueSpan(rows: readonly BoardTeam[], league: string): { min: n
 
 /**
  * The filters an address (and what this browser remembers of the years) asks for, kept to what exists: a league that is not one, a conference
- * or division the league never had, a range that covers the whole span and a titles number past the most any franchise holds all count as unset.
+ * or division the league never had (or, without ?hist=1, one that is no longer in use), a range that covers the whole span and a titles number past the most any franchise holds all count as unset.
  * `saved` is the years remembered for this page ("from-to" or ""), used when the address names none.
  */
 export function readFilters(search: string, rows: readonly BoardTeam[], groups: Readonly<Record<string, Pick<LeagueGroups, "confs" | "divs">>>, saved = ""): BoardFilters {
@@ -93,18 +97,30 @@ export function readFilters(search: string, rows: readonly BoardTeam[], groups: 
       if (m) range = rangeFromQuery(m[1], m[2], span.min, span.max);
     }
   }
-  const g = league ? groups[league] : undefined;
+  const hist = q.get("hist") === "1";
+  const all = league ? groups[league] : undefined;
+  const g = all && !hist ? currentGroups(all) : all;
   const conf = g?.confs.some((c) => c.id === q.get("conf")) ? (q.get("conf") as string) : "";
   // A division of another conference than the one chosen cannot be: it is dropped, not kept hidden.
   const div = g?.divs.some((d) => d.id === q.get("div") && (!conf || d.conf === conf)) ? (q.get("div") as string) : "";
   const most = Math.max(0, ...rows.filter((r) => !league || r.lg === league).map((r) => r.titles));
   const titles = Math.min(wholeNumber(q.get("titles")) ?? 0, MAX_TITLES_KEY, most);
   const page = wholeNumber(q.get("page"));
-  return { league, q: cleanText(q.get("q"), 60), status, range, titles, conf, div, page: page && page > 0 ? page : 1 };
+  const since = all && !hist ? currentYear(all) : 0;
+  return { league, q: cleanText(q.get("q"), 60), status, range, titles, conf, div, hist, since, page: page && page > 0 ? page : 1 };
 }
 
 /** What a search compares for a franchise: every name it has had, folded (no accents, lower case). */
 export const searchTextOf = (t: BoardTeam): string => fold([t.name, ...t.former.map((n) => n[0])].join(" "));
+
+/**
+ * Whether a franchise belongs to the conference and division chosen. With historic groups included it is every place it ever sat in; without, only
+ * where it plays now: its latest place, and only if it was still playing in the league's latest alignment year.
+ */
+export function isMember(t: Pick<BoardTeam, "places" | "last">, f: Pick<BoardFilters, "conf" | "div" | "hist" | "since">): boolean {
+  if (f.hist) return everIn(t.places, f.conf, f.div);
+  return t.last != null && t.last >= f.since && everIn(t.places.slice(0, 1), f.conf, f.div);
+}
 
 /** The franchises that pass every filter. `texts` holds searchTextOf for each (the board makes it once). */
 export function filterTeams(rows: readonly BoardTeam[], f: BoardFilters, texts: ReadonlyMap<BoardTeam, string>): BoardTeam[] {
@@ -115,7 +131,7 @@ export function filterTeams(rows: readonly BoardTeam[], f: BoardFilters, texts: 
     // The years the franchise played overlap the range (a club with no seasons drops out of a narrowed range).
     if (f.range && (t.first == null || t.last == null || t.first > f.range.to || t.last < f.range.from)) return false;
     if (f.titles > 0 && t.titles < f.titles) return false;
-    if ((f.conf || f.div) && !everIn(t.places, f.conf, f.div)) return false;
+    if ((f.conf || f.div) && !isMember(t, f)) return false;
     if (words.length) {
       const text = texts.get(t) ?? searchTextOf(t);
       if (!words.every((w) => text.includes(w))) return false;
