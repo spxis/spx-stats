@@ -1049,6 +1049,8 @@ export const PHRASES = {
   "playoffs.robin": "Round robin",
   "playoffs.robinLink": "Seeding round robin: {count} games",
   "playoffs.other": "Other series",
+  "playoffs.playIn": "Play-in",
+  "playoffs.playInNote": "The play-in: the clubs seeded seventh to tenth in each conference play for the last two places. Worked out from the games played just before the playoffs.",
   "playoffs.sideAria": "Show one side of the bracket",
   "playoffs.sideAll": "All",
   "playoffs.divAria": "Highlight one division in the bracket",

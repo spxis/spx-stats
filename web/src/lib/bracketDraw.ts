@@ -12,22 +12,7 @@ export interface Knockout {
 }
 
 /** What the pages choose; the rest is the same everywhere. */
-export type KnockoutOptions = Pick<DrawOptions, "locale" | "roundNames" | "href" | "trophy" | "champion" | "highlightPath" | "thirdPlace" | "flagHref" | "tieClass">;
-
-const CLASS = /class="taisen (tb-[a-z0-9]+)/;
-const STYLE = /<style>([\s\S]*?)<\/style>\n?/;
-
-/**
- * Each drawing carries its own 9 KB stylesheet, scoped to a class of its own, and for one bracket the two are the same rules. The phone's drops its copy and
- * takes the desk's class, so the page holds the stylesheet once (a style element applies whether or not the drawing around it is shown). Left as it is when
- * the two stylesheets are not the same rules, as they would be if the package changed.
- */
-export function shareStyle(wide: string, phone: string): string {
-  const a = CLASS.exec(wide)?.[1], b = CLASS.exec(phone)?.[1];
-  const styleA = STYLE.exec(wide)?.[1], styleB = STYLE.exec(phone)?.[1];
-  if (!a || !b || styleA == null || styleB == null || styleA.split(a).join(b) !== styleB) return phone;
-  return phone.replace(STYLE, "").replace(CLASS, `class="taisen $1 ${a}`);
-}
+export type KnockoutOptions = Pick<DrawOptions, "locale" | "roundNames" | "href" | "trophy" | "champion" | "highlightPath" | "thirdPlace" | "flagHref" | "tieClass" | "layout" | "headers" | "at" | "seeds" | "title">;
 
 const SYMBOL = /<symbol id="([^"]+)"([^>]*)>([\s\S]*?)<\/symbol>/g;
 
@@ -48,8 +33,25 @@ export function shareMarks(wide: string, phone: string): string {
   return out;
 }
 
+/**
+ * The class that carries a bracket's rules (Taisen's `styleScope`): one per layout, since each layout has rules of its own. The desk's drawing writes the
+ * stylesheet under it and the phone's, given the same class and `style: false`, leaves its copy out, so the page holds the rules once (a style element
+ * applies whether or not the drawing around it is shown). Two layouts on one page (a play-in and a tree) each keep their own.
+ */
+export const knockoutScope = (layout: DrawOptions["layout"]): string => `kobk-${layout ?? "tree"}`;
+
 export function drawKnockout(layout: BracketLayout, options: KnockoutOptions): Knockout {
-  const base: DrawOptions = { look: "road", theme: "auto", ...options };
-  const wide = drawBracket(layout, { ...base, size: "wide" });
-  return { wide, phone: shareMarks(wide, shareStyle(wide, drawBracket(layout, { ...base, size: "phone" }))) };
+  const base: DrawOptions = { look: "road", theme: "auto", styleScope: knockoutScope(options.layout), ...options };
+  // The play-in is as tall as its games need; every other layout fills the 1200 by 675 canvas.
+  const wide = drawBracket(layout, { ...base, size: options.layout === "playin" ? { width: 1200, height: null } : "wide" });
+  return { wide, phone: shareMarks(wide, drawBracket(layout, { ...base, size: "phone", style: false })) };
+}
+
+/**
+ * How a league's playoffs are drawn on a season page (the package's `layout`): the NHL's as rows (a name and a mark a line, the score at the end), the NFL's as
+ * columns (tall slots and "AT": a one-game round, the visitor first), every other league's as the tree, in the road look. Each half carries its conference's
+ * name over it where the data knows the halves.
+ */
+export function knockoutLook(lg: string): Pick<DrawOptions, "layout" | "headers" | "at"> {
+  return { layout: lg === "nhl" ? "rows" : lg === "nfl" ? "columns" : "tree", headers: true, ...(lg === "nfl" ? { at: true } : {}) };
 }

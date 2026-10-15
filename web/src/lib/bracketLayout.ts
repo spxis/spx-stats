@@ -24,7 +24,7 @@ export interface Tie<K extends string | number = number> {
 }
 
 /** What a drawing shows of a tie besides its sides and winner (the package's own words for it). */
-export type TiePlay = Pick<Matchup, "kind" | "bestOf" | "games" | "legs" | "score" | "pens" | "extraTime" | "walkover" | "note">;
+export type TiePlay = Pick<Matchup, "kind" | "bestOf" | "games" | "legs" | "score" | "pens" | "extraTime" | "walkover" | "note" | "home">;
 
 /** What a drawing needs of a side besides its key: the name, the short name, the mark (a logo's address) or flag code, the name in other languages. */
 export type SideLook = Omit<Team, "id" | "group">;
@@ -42,12 +42,33 @@ const rank = (c: Conf) => (/west/i.test(`${c.short} ${c.name}`) ? 0 : /east/i.te
  * in the order of `list`; `confOf` names a side's conference (or null for none: the halves are then plain halves).
  */
 export function buildBracket<K extends string | number>(list: readonly Tie<K>[], round: readonly number[], confOf: (side: K) => Conf | null, look: (side: K) => SideLook = (side) => ({ name: String(side) }), shape: "auto" | "ltr" = "auto"): Bracket {
-  const matchups: Matchup[] = list.map((t, i) => ({ ...t.play, id: `t${i}`, sides: t.teams, winner: t.winner, round: round[i], date: t.start, ...(t.third ? { third: true } : {}) }));
+  const { teams, groupOrder } = teamsOf(list, confOf, look);
+  return layoutBracket({ matchups: matchupsOf(list, round), teams }, { groupOrder, shape });
+}
+
+/** The ties as the package's matchups: `t0`, `t1`... by position, in the order of `list`. */
+export const matchupsOf = <K extends string | number>(list: readonly Tie<K>[], round: readonly number[]): Matchup[] =>
+  list.map((t, i) => ({ ...t.play, id: `t${i}`, sides: t.teams, winner: t.winner, round: round[i], date: t.start, ...(t.third ? { third: true } : {}) }));
+
+/** Every side once, with its look and the conference it belongs to, and the halves' order (the site's: West before East, any other pair by name). */
+export function teamsOf<K extends string | number>(list: readonly Tie<K>[], confOf: (side: K) => Conf | null, look: (side: K) => SideLook = (side) => ({ name: String(side) })): { teams: Team[]; groupOrder: string[] } {
   const confs = new Map<K, Conf>();
   for (const t of list) for (const side of t.teams) { const c = confOf(side); if (c && !confs.has(side)) confs.set(side, c); }
   const teams: Team[] = [...new Set(list.flatMap((t) => t.teams))].map((id) => ({ id, ...look(id), ...(confs.has(id) ? { group: confs.get(id)!.name } : {}) }));
-  // The halves' order is the site's: West before East, any other pair by name.
   const byName = new Map<string, Conf>([...confs.values()].map((c) => [c.name, c]));
   const groupOrder = [...byName.values()].sort((a, b) => rank(a) - rank(b) || (a.name < b.name ? -1 : a.name > b.name ? 1 : 0)).map((c) => c.name);
-  return layoutBracket({ matchups, teams }, { groupOrder, shape });
+  return { teams, groupOrder };
+}
+
+/**
+ * The halves of a season's bracket by franchise: the conference, or, in a season that has divisions and no conferences (the NHL's East and West Divisions of
+ * 1967 to 1973), the division. The CFL's East and West are its divisions, and the halves are called so ("East Division").
+ */
+export function halvesOf(lg: string, align: readonly { franchise_id: number; conference: string | null; conference_short: string | null; division: string | null; division_short: string | null }[]): Map<number, Conf> {
+  const hasConf = align.some((a) => a.conference);
+  const pick = (a: (typeof align)[number]): Conf | null => {
+    if (a.conference) return { name: lg === "cfl" && !/division/i.test(a.conference) ? `${a.conference} Division` : a.conference, short: a.conference_short ?? a.conference };
+    return !hasConf && a.division ? { name: a.division, short: a.division_short } : null;
+  };
+  return new Map(align.flatMap((a) => { const c = pick(a); return c ? [[a.franchise_id, c] as const] : []; }));
 }

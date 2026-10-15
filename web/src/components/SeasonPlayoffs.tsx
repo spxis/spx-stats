@@ -5,7 +5,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { roundSay } from "@/lib/roundWords";
 import type { Say } from "@/lib/seriesCopy";
 import { logoFor } from "@/lib/brand";
-import { drawKnockout } from "@/lib/bracketDraw";
+import { drawKnockout, knockoutLook } from "@/lib/bracketDraw";
 import type { Bracket } from "@/lib/bracketLayout";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
@@ -43,18 +43,21 @@ export function SeriesCard({ paths, lg, s, brands, year, say }: { paths: TeamPat
 export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
   const say = roundSay(sp);
-  const [{ series, names, bracket, layoutOf, align }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
+  const [{ series, names, bracket, layoutOf, align, playIn }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
   if (!series.length) return null;
   const b: Bracket = bracket;
   const slug = (label: string | null) => (label ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
   const choices = b.sides.length === 2 && b.sides.every((s) => s.label) ? b.sides.map((s) => ({ key: slug(s.label), label: s.label! })) : [];
-  const only = choices.find((c) => c.key === conf)?.key ?? "";
+  // (the CFL's halves were once "east" and "west": an address with those still finds them in "east-division" and "west-division")
+  const only = choices.find((c) => c.key === conf || c.key.replace(/-division$/, "") === conf)?.key ?? "";
   // One conference chosen: its half alone, as a bracket of its own (the series of that half, up to its final), with no champion.
   const half = only ? b.sides.find((s) => slug(s.label) === only) : undefined;
   const keep = half ? half.boxes.map((x) => x.i) : null;
   // Divisions the season had (two or more), within the chosen conference if one is chosen; picking one dims the series that have no club of it.
   const divMap = new Map<string, { label: string; conference: string; short: string | null; ids: Set<number> }>();
-  for (const a of align) {
+  // (a season with divisions and no conferences already shows its divisions as the halves above)
+  const halvesAreDivisions = !align.some((a) => a.conference);
+  for (const a of halvesAreDivisions ? [] : align) {
     if (!a.division || (only && slug(a.conference) !== only)) continue;
     const key = `${a.conference ?? ""}|${a.division}`;
     const d = divMap.get(key) ?? { label: a.division_short ?? a.division, conference: a.conference ?? "", short: a.conference_short, ids: new Set<number>() };
@@ -81,7 +84,13 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
     href: (t) => seriesPath(paths, lg, year, tieAt(t.index)),
     tieClass: (t) => (dims(tieAt(t.index)) && tieAt(t.index) !== finalSeries ? "ko-dim" : null),
     ...(keep ? { champion: false } : { trophy: trophySvg(lg) }),
+    ...knockoutLook(lg),
   });
+  // The NBA's play-in (2020-21 on), under the bracket it leads to: drawn only where the games fit the known shape (lib/nbaPlayIn.ts).
+  const playInLayout = await playIn();
+  const playInArt = playInLayout
+    ? drawKnockout(playInLayout.layout, { locale: sp.locale, layout: "playin", seeds: true })
+    : null;
   return (
     <section className="section" id="playoffs">
       <h2>{say("bracket.title")}</h2>
@@ -103,6 +112,13 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
       <Knockout art={art} />
+      {playInArt && !only ? (
+        <>
+          <h3>{sp.say("playoffs.playIn")}</h3>
+          <p className="note">{sp.say("playoffs.playInNote")}</p>
+          <Knockout art={playInArt} />
+        </>
+      ) : null}
       <p className="note">
         {names.map((n, i) => (
           <Fragment key={n + i}>{i ? " · " : null}<Link href={roundPath(lg, year, i + 1)} prefetch={false} title={sp.say("playoffs.round.title", { round: n })}>{n}</Link></Fragment>

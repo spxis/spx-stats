@@ -11,6 +11,10 @@ import type { GameRow, StandingRow } from "./api/types";
 export const getPlayoffGames = cache(async (lg: string, y: number): Promise<GameRow[]> =>
   rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema));
 
+/** The regular-season games of a season played from `from` up to (not including) `to`: the NBA's play-in is among the last days before its playoffs (lib/nbaPlayIn.ts). */
+export const getGamesBetween = cache(async (lg: string, y: number, from: string, to: string): Promise<GameRow[]> =>
+  rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.regular&game_date=gte.${from}&game_date=lt.${to}&select=*&order=game_date,game_id`, gameSchema));
+
 /** The team-season ids of two franchises in a league, in the seasons both played before `before`, and those seasons. a and b are validated integers. */
 const getSharedSeasons = cache(async (lg: string, a: number, b: number, before: number): Promise<{ ia: number[]; ib: number[]; years: number[] }> => {
   const list = await getFranchiseSeasons(lg, [a, b]);

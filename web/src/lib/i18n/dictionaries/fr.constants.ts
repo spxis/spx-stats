@@ -864,6 +864,8 @@ export const FR: Dictionary = {
   "playoffs.robin": "Tournoi à la ronde",
   "playoffs.robinLink": "Tournoi à la ronde de classement : {count} matchs",
   "playoffs.other": "Autres séries",
+  "playoffs.playIn": "Tournoi play-in",
+  "playoffs.playInNote": "Le tournoi play-in : les clubs classés du septième au dixième rang de chaque conférence se disputent les deux dernières places. Établi à partir des matchs joués juste avant les séries.",
   "playoffs.round.title": "Tous les duels : {round}",
   "playoffs.round.bracket": "Tableau complet",
   "playoffs.round.lede": "Les {count} séries des séries éliminatoires {season} de la {league} : {round}.",

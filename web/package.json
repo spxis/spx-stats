@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.109.1",
+  "version": "0.110.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -58,6 +58,7 @@
     "test:soccer": "node --test scripts/soccer.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",
     "test:bracket": "node --test scripts/bracket.test.ts",
+    "test:playin": "node --test scripts/playIn.test.ts",
     "test:road": "node --test scripts/soccerRoad.test.ts",
     "test:playerlist": "node --test scripts/playerList.test.ts",
     "test:buildshare": "node --conditions=react-server --test scripts/buildShare.test.ts"
@@ -67,7 +68,7 @@
     "@johnmorrisdotca/chizu": "1.4.0",
     "@johnmorrisdotca/hata": "1.5.0",
     "@johnmorrisdotca/kyogijo-stadiums": "0.4.0",
-    "@johnmorrisdotca/taisen-brackets": "0.5.0",
+    "@johnmorrisdotca/taisen-brackets": "0.6.0",
     "d3": "7.9.0",
     "d3-sankey": "0.12.3",
     "next": "^16.4.0",

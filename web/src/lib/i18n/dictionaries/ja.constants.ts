@@ -864,6 +864,8 @@ export const JA: Dictionary = {
   "playoffs.robin": "ラウンドロビン",
   "playoffs.robinLink": "順位決めのラウンドロビン：{count}試合",
   "playoffs.other": "その他のシリーズ",
+  "playoffs.playIn": "プレイイン・トーナメント",
+  "playoffs.playInNote": "各カンファレンスの第7〜10シードのクラブが、残る2枠をかけて戦うプレイイン・トーナメント。プレーオフ直前の試合から割り出しています。",
   "playoffs.round.title": "{round}の全対戦",
   "playoffs.round.bracket": "トーナメント表全体",
   "playoffs.round.lede": "{season}シーズン{league}プレーオフ「{round}」の全{count}シリーズ。",

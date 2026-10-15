@@ -412,7 +412,7 @@ export function rankIn(rows: readonly { franchise_id: number; pct: number | null
  */
 export function seriesPlay(s: Series): TiePlay {
   const played = s.games.filter((g): g is SeriesGame & { score: [number, number] } => g.played && g.score[0] != null && g.score[1] != null);
-  if (s.games.length === 1 && played.length === 1) return { kind: "game", score: played[0].score, ...(played[0].ot ? { extraTime: true } : {}) };
+  if (s.games.length === 1 && played.length === 1) return { kind: "game", score: played[0].score, home: played[0].home, ...(played[0].ot ? { extraTime: true } : {}) };
   const games = played.map((g) => ({ score: g.score, ...(g.ot ? { extraTime: true } : {}) }));
   return s.basis === "goals" ? { kind: "aggregate", legs: games } : { kind: "series", bestOf: s.bestOf, games, score: [s.sides[0].wins, s.sides[1].wins] };
 }

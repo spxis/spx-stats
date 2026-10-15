@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { drawKnockout } from "../src/lib/bracketDraw.ts";
-import { buildBracket, type Tie } from "../src/lib/bracketLayout.ts";
+import { drawKnockout, knockoutLook, knockoutScope } from "../src/lib/bracketDraw.ts";
+import { buildBracket, halvesOf, type Tie } from "../src/lib/bracketLayout.ts";
 import { buildSeries, seriesPlay, seriesTies, type PlayoffGame } from "../src/lib/series.ts";
 import type { Match } from "../src/lib/soccer.ts";
 import { knockoutOf, soccerPlay } from "../src/lib/soccerBracket.ts";
@@ -152,8 +152,8 @@ test("a bracket is drawn twice, the desk's and the phone's, with a real link on 
   }
   assert.ok(art.wide.includes('viewBox="0 0 1200') && art.phone.includes('viewBox="0 0 390'));
   assert.equal((art.wide.match(/<style>/g) ?? []).length + (art.phone.match(/<style>/g) ?? []).length, 1, "the stylesheet is in the page once");
-  const own = /class="taisen (tb-[a-z0-9]+)/.exec(art.wide)![1];
-  assert.ok(new RegExp(`class="taisen tb-[a-z0-9]+ ${own} `).test(art.phone), "the phone's drawing wears the desk's class, so the one stylesheet draws both");
+  assert.ok(art.wide.includes(`class="taisen tb-`) && art.wide.includes(` ${knockoutScope("tree")}`) && art.phone.includes(` ${knockoutScope("tree")}`), "both drawings wear the one class (styleScope) that the one stylesheet is written under");
+  assert.ok(art.wide.includes("<style>") && !art.phone.includes("<style>"), "only the desk's drawing carries the stylesheet");
   assert.ok(/quarter-finals/i.test(art.wide), "the round names are the ones given");
   assert.ok(art.wide.includes(">Team E<") || art.wide.includes(">E<"), "a team is its name or its short name");
 });
@@ -170,4 +170,30 @@ test("a team's mark is written once for the page: the phone's drawing uses the d
   assert.ok(used.length > 0 && used.every((id) => symbols.includes(id)), "every mark the phone draws is a symbol of the desk's drawing");
   assert.ok(art.wide.includes('href="/soccer-flag/GB-ENG.svg"') && art.wide.includes('href="/soccer-flag/ES.svg"'), "a flag is the site's file for its code");
   for (const svg of [art.wide, art.phone]) assert.equal((svg.match(/class="tb-tie ko-dim/g) ?? []).length, 1, "the tie the page picked carries its class");
+});
+
+test("each league's playoffs have their layout: rows, columns with AT, the tree; two layouts on one page keep a stylesheet each", () => {
+  assert.deepEqual(knockoutLook("nhl"), { layout: "rows", headers: true });
+  assert.deepEqual(knockoutLook("nfl"), { layout: "columns", headers: true, at: true });
+  for (const lg of ["nba", "mlb", "cfl"]) assert.equal(knockoutLook(lg).layout, "tree");
+  const ko = knockoutOf(eight);
+  const layout = buildBracket(ko.ties, ko.round, () => null, (id) => ({ name: `Team ${id}`, abbr: id }));
+  for (const lg of ["nhl", "nfl", "nba"]) {
+    const art = drawKnockout(layout, { ...knockoutLook(lg) });
+    assert.equal((art.wide.match(/<style>/g) ?? []).length + (art.phone.match(/<style>/g) ?? []).length, 1, `${lg}: one stylesheet for the desk's and the phone's drawing`);
+    assert.ok(art.wide.includes(knockoutScope(knockoutLook(lg).layout)) && art.phone.includes(knockoutScope(knockoutLook(lg).layout)));
+  }
+  assert.notEqual(knockoutScope("rows"), knockoutScope("tree"));
+});
+
+test("a conference decides the halves, and where a season has divisions and no conferences the divisions do; the CFL's halves are its divisions", () => {
+  const row = (f: number, conference: string | null, division: string | null) => ({ franchise_id: f, conference, conference_short: null, division, division_short: null });
+  const nhl = halvesOf("nhl", [row(1, "Eastern Conference", "Atlantic"), row(2, "Western Conference", "Pacific")]);
+  assert.equal(nhl.get(1)?.name, "Eastern Conference");
+  const old = halvesOf("nhl", [row(1, null, "East Division"), row(2, null, "West Division")]);
+  assert.equal(old.get(2)?.name, "West Division");
+  const cfl = halvesOf("cfl", [row(1, "East", null), row(2, "West", null)]);
+  assert.deepEqual([cfl.get(1)?.name, cfl.get(2)?.name], ["East Division", "West Division"]);
+  assert.equal(halvesOf("nfl", [row(1, "AFC", "East"), row(2, "NFC", null)]).get(1)?.name, "AFC", "a season with conferences ignores the divisions");
+  assert.equal(halvesOf("nhl", [row(1, null, null)]).size, 0);
 });
