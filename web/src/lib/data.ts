@@ -12,6 +12,7 @@ import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons";
 import { isSpx } from "./leagues";
+import { logoFitSchema, type LogoFit } from "./logoFit";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
@@ -54,6 +55,10 @@ export const getBrands = cache(async (): Promise<BrandMap> => {
   const all = await rows("team_brand", "select=*&order=franchise_id,brand_from.nullsfirst", teamBrandSchema).catch(() => []);
   return groupBrands(all);
 });
+
+/** How each logo is fitted into the site's logo boxes (api.logo_fit, migration 107); none while the view or its rows are missing. */
+export const getLogoFits = cache(async (): Promise<LogoFit[]> =>
+  rows("logo_fit", "select=*&order=logo_file", logoFitSchema).catch(() => []));
 
 /* ---------- a season ------------------------------------------------------------------- */
 

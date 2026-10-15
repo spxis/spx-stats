@@ -1,0 +1,26 @@
+/* The logo contact sheet (/admin/logos). Each logo is one grid row: who it is, then its boxes on a light page and a dark page,
+   without and with the proposed fit. The two pages carry the site's own tokens (globals.css) so both show at once whatever the theme. */
+.ls { display: flex; flex-direction: column; gap: 0; min-width: 0; overflow-x: auto; }
+.ls-head, .ls-item { display: grid; grid-template-columns: 230px repeat(4, minmax(210px, 1fr)); gap: 8px; align-items: stretch; min-width: 1140px; }
+.ls-head { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 8px 0; font: 600 13px var(--body); color: var(--muted); border-bottom: 1px solid var(--rule); }
+.ls-item { padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.ls-who { display: flex; flex-direction: column; gap: 2px; font-size: 14px; min-width: 0; }
+.ls-file { overflow-wrap: anywhere; }
+.ls-raw { margin-top: 6px; }
+.ls-raw img { max-width: 100%; height: 64px; width: auto; object-fit: contain; background: repeating-conic-gradient(#d9d9d9 0 25%, #fff 0 50%) 0 0 / 12px 12px; }
+.ls-fit { margin-top: 4px; font-size: 13px; }
+.ls-status { display: inline-block; padding: 0 6px; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--soft); }
+.ls-status.ls-proposed { background: var(--warn); color: #fff; }
+.ls-status.ls-approved { background: var(--ok); color: #fff; }
+.ls-status.ls-rejected { background: var(--bad); color: #fff; }
+.ls-same { align-self: center; grid-column: span 2; }
+.ls-panel { border: 1px solid var(--rule); border-radius: 6px; padding: 10px; display: flex; align-items: center; min-width: 0; overflow: hidden; }
+.ls-light { background: #f5f6f2; color: #17202a; --paper: #f5f6f2; --panel: #fff; --ink: #17202a; --muted: #5d6874; --rule: #dde1dc; --soft: #eceee9; --logo-tile: #ffffff; color-scheme: light; }
+.ls-dark { background: #12161b; color: #e8ebe6; --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931; --logo-tile: #e9ecef; color-scheme: dark; }
+.ls-boxes { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; }
+.ls-boxes .logo { margin-right: 0; vertical-align: middle; }
+.ls-row { border-collapse: collapse; font-size: 14px; }
+.ls-row td { padding: 3px 8px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); white-space: nowrap; }
+.ls-row td .logo { margin-right: 8px; }
+.ls-row td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.ls-proposals td, .ls-proposals th { vertical-align: top; }

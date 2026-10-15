@@ -1,8 +1,14 @@
-/* The one team-logo size. Keep the numbers in step with LOGO_SIZE in TeamLogo.tsx. A logo keeps its own proportions at a fixed
-   height (regular), or sits inside a square or round tile of the same box (square, circle). */
+/* The one team-logo size. Keep the numbers in step with LOGO_SIZE (TeamLogo.tsx) and INLINE_MAX (lib/logoFit.ts).
+   A logo keeps its own proportions at a fixed height (regular), or sits inside a square or round tile of the same box (square, circle).
+   The standard table box: 20 px high, between 20 and 36 px wide (--wmax is 1.8 up to 28 px, 2.4 above), the picture contained in it,
+   so a wordmark cannot widen a row. A fitted tile (.fit) is a span holding the picture, which TeamLogo scales and moves inside it. */
 @layer components {
-  .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; height: var(--s, 20px); width: auto; min-width: var(--s, 20px); max-width: calc(var(--s, 20px) * 2.2); }
+  .logo { display: inline-block; vertical-align: -4px; margin-right: 8px; object-fit: contain; height: var(--s, 20px); width: auto; min-width: var(--s, 20px); max-width: calc(var(--s, 20px) * var(--wmax, 1.8)); }
   .logo.square, .logo.circle { width: var(--s, 20px); min-width: 0; max-width: none; padding: calc(var(--s, 20px) * .1); background: var(--logo-tile); border: 1px solid var(--rule); border-radius: 4px; }
   .logo.dim { opacity: .5; filter: grayscale(.7); }
   .logo.circle { padding: calc(var(--s, 20px) * .17); border-radius: 50%; }
+  .logo.chip { background: light-dark(transparent, var(--logo-tile)); border-radius: 3px; padding: 1px 2px; }
+  .logo.fit.square, .logo.fit.circle { padding: 0; overflow: hidden; }
+  .logo.fit > img { display: block; width: 100%; height: 100%; padding: calc(var(--s, 20px) * .1); object-fit: contain; }
+  .logo.fit.circle > img { padding: calc(var(--s, 20px) * .17); }
 }

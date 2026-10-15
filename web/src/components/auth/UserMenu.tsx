@@ -84,6 +84,7 @@ export function UserMenu({ user, version, waiting = 0 }: { user: MenuUser; versi
               <Link role="menuitem" href="/admin/data">{waiting > 0 ? say("menu.dataReleasesWaiting", { count: waiting }) : say("menu.dataReleases")}</Link>
               <Link role="menuitem" href="/admin/ops">Ops (DS1 and backups)</Link>
               <Link role="menuitem" href="/admin/people">People to check</Link>
+              <Link role="menuitem" href="/admin/logos">Logos to review</Link>
             </div>
           ) : null}
           <div className="usermenu-sec">

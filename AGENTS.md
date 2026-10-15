@@ -727,7 +727,13 @@ Ask John before deleting or overwriting data. Production changes only through ap
 - **Venue addresses** are written one way everywhere: `placeAddress` (`web/src/lib/venueName.ts`) calls `formatVenueAddress`
   (`web/src/lib/venueAddress.ts`, built on address-plus), which shows only the parts the archive holds and never works out a
   postal code. A page that shows one carries the `AddressCredit` line (`address.credit`); `pnpm test:address` covers it.
-- **Logos** are shown small, under fair use, explained on `/logos`.
+- **Logos** are shown small, under fair use, explained on `/logos`. A logo in a table row or beside a name is drawn in one standard box (`TeamLogo`,
+  `teamlogo.css`: 20 px high, 20 to 36 px wide, picture contained), so a wordmark never widens a row.
+  - **Logo fit** (`db/seed/logo_fit.csv`, migration 107, `db/build/175_team_logo_fit.sql`, `api.logo_fit`, `lib/logoFit.ts`): per logo file (key `commons:File.svg`
+    or `en:File.svg`) a wordmark flag, the club's primary mark for circles, squares and table cells (`mark_url`, with its licence and file page; Commons first,
+    else the English Wikipedia infobox file the site's other fair-use logos already use), scale, nudge and tile colour. No row means drawn as always.
+    `status` is `proposed` (shown only on `/admin/logos`, admin only), `approved` (shown on the site) or `rejected`; John approves on that page by telling an
+    agent, who edits the CSV. Needs migration 107 on production, then a data release of `core.logo_fit`; the site draws nothing differently until then.
 - Never build a public endpoint that runs SQL.
 
 ## 10. Git

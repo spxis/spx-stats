@@ -3,13 +3,16 @@ import { Barlow_Condensed, JetBrains_Mono, Source_Sans_3 } from "next/font/googl
 import type { ReactNode } from "react";
 import { AccountProvider, AdminBar, type Account } from "@/components/auth/Account";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
+import { LogoFitProvider } from "@/components/LogoFitProvider";
 import { SlugProvider } from "@/components/SlugProvider";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { authEnabled } from "@/lib/auth/config";
+import { getLogoFits } from "@/lib/data";
 import { HINT_SCRIPT } from "@/lib/auth/hint";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { SITE_URL } from "@/lib/leagues";
 import { LOCALE_OG, type Locale } from "@/lib/locale";
+import { approvedTable } from "@/lib/logoFit";
 import { tableOf } from "@/lib/slug";
 import { getSlugs } from "@/lib/teamSlugs";
 import { RANGE_HOLD_SCRIPT } from "@/lib/yearRange";
@@ -43,7 +46,7 @@ const themeScript = `try { const t = localStorage.getItem('spxn-theme'); if (t =
  * The signed-in pages (app/(dyn)) pass `account`, which they know.
  */
 export async function SiteShell({ locale, account, children }: { locale: Locale; account?: Account; children: ReactNode }) {
-  const slugs = await getSlugs().catch(() => null);
+  const [slugs, fits] = await Promise.all([getSlugs().catch(() => null), getLogoFits()]);
   return (
     <html lang={locale} className={`${barlow.variable} ${source.variable} ${mono.variable}`} suppressHydrationWarning>
       {/* eslint-disable-next-line @next/next/no-head-element -- this is the root layout's own <head> */}
@@ -55,14 +58,16 @@ export async function SiteShell({ locale, account, children }: { locale: Locale;
       <body>
         <LocaleProvider locale={locale}>
           <SlugProvider table={slugs ? tableOf(slugs) : {}}>
-            <AccountProvider enabled={authEnabled()} initial={account}>
-              <AdminBar />
-              <SiteHeader />
-              <main id="app" tabIndex={-1} className="page">
-                {children}
-              </main>
-              <SiteFooter />
-            </AccountProvider>
+            <LogoFitProvider table={approvedTable(fits)}>
+              <AccountProvider enabled={authEnabled()} initial={account}>
+                <AdminBar />
+                <SiteHeader />
+                <main id="app" tabIndex={-1} className="page">
+                  {children}
+                </main>
+                <SiteFooter />
+              </AccountProvider>
+            </LogoFitProvider>
           </SlugProvider>
         </LocaleProvider>
       </body>
