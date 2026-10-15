@@ -2,6 +2,7 @@
 
 import { useActionState } from "react";
 import { ConfirmAction } from "@/components/ConfirmAction";
+import { Stamped } from "@/components/LocalTime";
 import { requestDrift, requestUpdate, type DecideState } from "./actions";
 
 /**
@@ -15,8 +16,8 @@ export function RequestButton({ kind = "scores", blocked }: { kind?: "scores" | 
       <ConfirmAction kind={kind} className="signin-btn" disabled={pending || blocked !== null || state?.ok === true}>
         {pending ? "Working…" : kind === "drift" ? "Check now" : "Request scores update"}
       </ConfirmAction>
-      {blocked ? <p className="note">{blocked}</p> : null}
-      {state ? <p className={state.ok ? "note" : "dr-alert"} role={state.ok ? "status" : "alert"}>{state.message}</p> : null}
+      {blocked ? <p className="note"><Stamped text={blocked} /></p> : null}
+      {state ? <p className={state.ok ? "note" : "dr-alert"} role={state.ok ? "status" : "alert"}><Stamped text={state.message} /></p> : null}
     </form>
   );
 }

@@ -1,3 +1,5 @@
+import { mark } from "../localTime.ts";
+
 /** Pure helpers for the /admin/data page: no network, no server-only, so they can be reasoned about on their own. */
 
 export const DRIFT_STALE_HOURS = 36;
@@ -107,10 +109,15 @@ export function requestBlock(requests: RequestLike[], now: number = Date.now(), 
   if (open) return `Request #${open.id} is ${open.status}. Wait for it to finish.`;
   const last = Math.max(0, ...requests.filter((r) => (r.kind ?? "scores") === kind).map((r) => Date.parse(r.finished_at ?? r.requested_at)).filter((t) => !Number.isNaN(t)));
   const until = last + cooldownMinutes * 60_000;
-  return last > 0 && until > now ? `The last request ended recently. You can ask again at ${stamp(new Date(until).toISOString())?.slice(11)} UTC.` : null;
+  return last > 0 && until > now ? `The last request ended recently. You can ask again at ${mark(new Date(until).toISOString(), "clock")}.` : null;
 }
 
-export type BarSummary = { waiting: number; drift: number; paused: boolean };
+/**
+ * The counts of release_summary. `waiting`: pending releases that will not approve themselves (held ones and a proposed drift fix are
+ * pending releases, so they are in it). `drift`: pending drift fixes, auto-approvable or not. `failed` (migration 106, absent before it):
+ * releases that failed in the last two days and that no later release has made good.
+ */
+export type BarSummary = { waiting: number; drift: number; paused: boolean; failed?: number };
 
 /** The short notices of the admin bar; empty means the bar is not shown at all. */
 export function barMessages(s: BarSummary | null | undefined): string[] {
@@ -118,8 +125,21 @@ export function barMessages(s: BarSummary | null | undefined): string[] {
   const out: string[] = [];
   if (s.waiting > 0) out.push(s.waiting === 1 ? "1 release is waiting for approval" : `${s.waiting} releases are waiting for approval`);
   if (s.drift > 0) out.push("a drift fix is proposed");
+  if ((s.failed ?? 0) > 0) out.push(s.failed === 1 ? "1 failed release needs a look" : `${s.failed} failed releases need a look`);
   if (s.paused) out.push("auto-approval is on Hold");
   return out;
+}
+
+/**
+ * How many things wait for the admin, for "Data releases (N)" in the account menu. The same summary the bar reads, so no extra request:
+ * the pending releases (a held one and a drift fix are pending releases, counted once in `waiting`; a drift fix that approves itself is
+ * not waiting but is still counted through `drift`, never twice) plus the failed ones that need a look. Auto-approval on Hold is a state,
+ * not an item, so it is not counted.
+ */
+export function waitingCount(s: BarSummary | null | undefined): number {
+  if (!s) return 0;
+  const count = (n: number | undefined) => (Number.isFinite(n) && (n as number) > 0 ? Math.floor(n as number) : 0);
+  return Math.max(count(s.waiting), count(s.drift)) + count(s.failed);
 }
 
 export type HealthEvent = {
@@ -134,19 +154,17 @@ export type HealthEvent = {
 
 export type HealthLine = { kind: "none" | "down" | "past"; text: string };
 
-const clock = (iso: string | null | undefined) => (stamp(iso) ?? "?").slice(11) || "?";
-
 /**
- * The "API health" line of /admin/data, from the runner watchdog's incident list (newest first). "down" is an incident the watchdog has
+ * The "API health" line of /admin/data (its times are marks: draw it with <Stamped>), from the runner watchdog's incident list (newest first). "down" is an incident the watchdog has
  * not seen end; "past" is the latest one that has. The watchdog records an incident only after 5 failed probes in a row, so a blip leaves no row.
  */
 export function healthLine(events: HealthEvent[]): HealthLine {
   const e = events[0];
   if (!e) return { kind: "none", text: "No outage of the public API recorded." };
-  const actions = [e.reload_at ? `schema reload ${clock(e.reload_at)}` : null, e.restart_at ? `project restart ${clock(e.restart_at)}` : null].filter(Boolean);
-  const did = actions.length ? ` The watchdog did: ${actions.join(", ")} UTC.` : " The watchdog has not acted yet.";
-  if (!e.recovered_at) return { kind: "down", text: `The public API was failing from ${stamp(e.failing_since)} UTC and has not been seen working since.${did}` };
+  const actions = [e.reload_at ? `schema reload ${mark(e.reload_at, "clock")}` : null, e.restart_at ? `project restart ${mark(e.restart_at, "clock")}` : null].filter(Boolean);
+  const did = actions.length ? ` The watchdog did: ${actions.join(", ")}.` : " The watchdog has not acted yet.";
+  if (!e.recovered_at) return { kind: "down", text: `The public API was failing from ${mark(e.failing_since)} and has not been seen working since.${did}` };
   const minutes = Math.max(0, Math.round((Date.parse(e.recovered_at) - Date.parse(e.failing_since)) / 60000));
   const rest = events.length > 1 ? ` ${events.length} outages recorded in all.` : "";
-  return { kind: "past", text: `Last outage ${stamp(e.failing_since)} to ${clock(e.recovered_at)} UTC (${minutes} min).${did}${rest}` };
+  return { kind: "past", text: `Last outage ${mark(e.failing_since)} to ${mark(e.recovered_at, "clock")} (${minutes} min).${did}${rest}` };
 }

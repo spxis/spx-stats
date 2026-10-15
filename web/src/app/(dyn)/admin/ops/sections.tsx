@@ -1,9 +1,11 @@
 import Link from "next/link";
+import { LocalTime, Stamped } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import type { PluralBase, Speaker } from "@/lib/i18n/i18n";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
-import { age, clock, exportVerdict, harvesterTone, minutesBetween, pauseControl, queuedOf, series, syncRows } from "@/lib/ops/rules";
+import { age, exportVerdict, harvesterTone, minutesBetween, pauseControl, queuedOf, series, syncRows } from "@/lib/ops/rules";
 import { isFailed, type Backup, type Daily, type Failed, type HistoryPoint, type OpsRequest, type Releases, type Sync, type Watchdog, type Harvester } from "@/lib/ops/schema";
+import { mark } from "@/lib/localTime";
 import { bytesLabel } from "@/lib/releases/rules";
 import { parseSort, type SortColumn } from "@/lib/sort";
 import { RequestButton } from "../data/RequestButton";
@@ -16,7 +18,10 @@ type Section<T> = T | Failed;
 const dash = <span className="note">–</span>;
 const phrase = (s: Speaker, key: string, vars?: Record<string, string | number>) => s.say(key as PhraseKey, vars);
 const keysOf = (c: SortColumn[]) => c.map((x) => x.key);
-const time = (iso: string | null | undefined) => clock(iso) ?? "?";
+/** A time of day inside a sentence: a mark that <Stamped> draws in the reader's own time zone (the server draws UTC). */
+const time = (iso: string | null | undefined) => mark(iso, "clock");
+/** A phrase whose times are marks, drawn so. */
+const sayT = (s: Speaker, key: PhraseKey, vars?: Record<string, string | number>) => <Stamped text={s.say(key, vars)} />;
 
 /** "5 minutes", "3 hours", "2 days". */
 export function agoText(s: Speaker, minutes: number | null): string {
@@ -25,7 +30,7 @@ export function agoText(s: Speaker, minutes: number | null): string {
   return s.plural(`ops.ago.${a.unit}` as PluralBase, a.n);
 }
 
-/** The time a moment happened and how long before the snapshot (`at`) it was, for lines that read "X UTC, N minutes before the snapshot". */
+/** The time a moment happened and how long before the snapshot (`at`) it was, for lines that read "X, N minutes before the snapshot". */
 const before = (s: Speaker, iso: string | null | undefined, at: string) => agoText(s, minutesBetween(iso, at));
 
 function Heading({ s, id, title, children }: { s: Speaker; id: string; title: PhraseKey; children?: React.ReactNode }) {
@@ -64,16 +69,16 @@ export function HarvesterSection({ s, h, at, history, requests, query }: { s: Sp
     <Heading s={s} id="ops-harvester" title="ops.harvester.title">
       <p className="note">{s.say("ops.harvester.intro")}</p>
       <p><span className={`tk-badge ${harvesterTone(h.state)}`}>{phrase(s, `ops.state.${h.state}`)}</span></p>
-      {h.paused ? <p className="note">{s.say("ops.harvester.pausedBy", { who: h.paused.by ?? "?", time: clock(h.paused.at) ?? "?" })}</p> : null}
+      {h.paused ? <p className="note">{sayT(s, "ops.harvester.pausedBy", { who: h.paused.by ?? "?", time: time(h.paused.at) })}</p> : null}
       <ul className="ops-facts">
-        {h.last_beat_at ? <li>{s.say("ops.harvester.heartbeat", { time: time(h.last_beat_at), ago: before(s, h.last_beat_at, at) })}</li> : null}
-        {h.run ? <li>{s.say("ops.harvester.run", { id: h.run.id ?? "?", time: time(h.run.started_at), sha: h.run.sha ?? "?" })}</li> : null}
+        {h.last_beat_at ? <li>{sayT(s, "ops.harvester.heartbeat", { time: time(h.last_beat_at), ago: before(s, h.last_beat_at, at) })}</li> : null}
+        {h.run ? <li>{sayT(s, "ops.harvester.run", { id: h.run.id ?? "?", time: time(h.run.started_at), sha: h.run.sha ?? "?" })}</li> : null}
         <li>{s.say("ops.harvester.hour", { requests: s.fmt(h.hour.requests), pages: s.fmt(h.hour.archived), size: bytesLabel(h.hour.bytes) })}</li>
         <li>{s.say("ops.harvester.today", { requests: s.fmt(h.today.requests), pages: s.fmt(h.today.archived), size: bytesLabel(h.today.bytes) })}</li>
         <li>{s.say("ops.harvester.archive", { n: s.fmt(h.archive_rows) })}</li>
         <li>
           {h.last_error
-            ? s.say("ops.harvester.lastError", { kind: h.last_error.kind ?? "?", target: h.last_error.target ?? "?", time: time(h.last_error.at), error: h.last_error.error ?? "?" })
+            ? sayT(s, "ops.harvester.lastError", { kind: h.last_error.kind ?? "?", target: h.last_error.target ?? "?", time: time(h.last_error.at), error: h.last_error.error ?? "?" })
             : s.say("ops.harvester.noError")}
         </li>
       </ul>
@@ -132,13 +137,13 @@ export function BackupSection({ s, b, at }: { s: Speaker; b: Section<Backup>; at
         <li>{s.say("ops.backup.archive", { rows: s.fmt(b.archive_rows), size: bytesLabel(b.archive_bytes) })}</li>
         {e === null ? <li>{s.say("ops.backup.never")}</li> : isFailed(e) ? <li>{s.say("ops.backup.missing")}</li> : (
           <li>
-            {s.say("ops.backup.last", {
+            {sayT(s, "ops.backup.last", {
               time: time(e.at), ago: before(s, e.at, at), checked: s.fmt(e.checked), copied: s.fmt(e.copied), present: s.fmt(e.present), failed: s.fmt(e.failed),
               size: bytesLabel(e.bytes), seconds: e.seconds ?? "?",
             })}
           </li>
         )}
-        {b.last_ok_at && e !== null && !isFailed(e) && e.failed > 0 ? <li>{s.say("ops.backup.lastOk", { time: time(b.last_ok_at) })}</li> : null}
+        {b.last_ok_at && e !== null && !isFailed(e) && e.failed > 0 ? <li>{sayT(s, "ops.backup.lastOk", { time: time(b.last_ok_at) })}</li> : null}
       </ul>
       {e === null || verdict === "stale" ? <p className="note">{s.say("ops.backup.schedule")}</p> : null}
     </Heading>
@@ -163,7 +168,7 @@ export function SyncSection({ s, y, at, query }: { s: Speaker; y: Section<Sync>;
       <p className="note">{s.say("ops.sync.intro")}</p>
       {y.checked_at === null ? <p className="dr-alert" role="alert">{s.say("ops.sync.never")}</p> : (
         <p className={y.differs > 0 ? "dr-alert" : "note"} role={y.differs > 0 ? "alert" : "status"}>
-          {s.say("ops.sync.checked", { time: time(y.checked_at), ago: before(s, y.checked_at, at), differs: y.differs, count: y.count })}
+          {sayT(s, "ops.sync.checked", { time: time(y.checked_at), ago: before(s, y.checked_at, at), differs: y.differs, count: y.count })}
           {y.differs === 0 ? ` ${s.say("ops.sync.allSame")}` : ""}
         </p>
       )}
@@ -200,14 +205,14 @@ export function DailySection({ s, d, at }: { s: Speaker; d: Section<Daily>; at: 
       {d.last === null ? <p className="note">{s.say("ops.daily.never")}</p> : (
         <ul className="ops-facts">
           <li>
-            {s.say("ops.daily.last", { time: time(d.last.started_at), ago: before(s, d.last.started_at, at), outcome: phrase(s, `ops.outcome.${d.last.outcome ?? "running"}`) })}
+            {sayT(s, "ops.daily.last", { time: time(d.last.started_at), ago: before(s, d.last.started_at, at), outcome: phrase(s, `ops.outcome.${d.last.outcome ?? "running"}`) })}
           </li>
           <li>{s.say("ops.daily.week", { ok: d.ok_7d, failed: d.failed_7d })}</li>
           {counts ? <li>{s.say("ops.daily.counts", { counts })}</li> : null}
         </ul>
       )}
       <p className="note">
-        {d.release ? s.say("ops.daily.release", { number: d.release.number ?? "?", status: d.release.status ?? "?", time: time(d.release.at) }) : s.say("ops.daily.noRelease")}
+        {d.release ? sayT(s, "ops.daily.release", { number: d.release.number ?? "?", status: d.release.status ?? "?", time: time(d.release.at) }) : s.say("ops.daily.noRelease")}
       </p>
     </Heading>
   );
@@ -225,16 +230,16 @@ export function WatchdogSection({ s, w, at }: { s: Speaker; w: Section<Watchdog>
       {w.enabled && !w.known ? <p className="note">{s.say("ops.watchdog.unknown")}</p> : null}
       {w.known ? (
         <ul className="ops-facts">
-          <li>{s.say("ops.watchdog.probe", { time: time(w.last_probe_at), ago: before(s, w.last_probe_at, at), result: s.say(w.last_probe_ok ? "ops.watchdog.up" : "ops.watchdog.down") })}</li>
-          {w.last_ok_at && !w.last_probe_ok ? <li>{s.say("ops.watchdog.okAt", { time: time(w.last_ok_at) })}</li> : null}
+          <li>{sayT(s, "ops.watchdog.probe", { time: time(w.last_probe_at), ago: before(s, w.last_probe_at, at), result: s.say(w.last_probe_ok ? "ops.watchdog.up" : "ops.watchdog.down") })}</li>
+          {w.last_ok_at && !w.last_probe_ok ? <li>{sayT(s, "ops.watchdog.okAt", { time: time(w.last_ok_at) })}</li> : null}
         </ul>
       ) : null}
       {w.open ? (
         <p className="dr-alert" role="alert">
-          {s.say("ops.watchdog.open", { since: time(w.open.since), probes: w.open.probes_failed, reload: w.open.reload_at ? time(w.open.reload_at) : notYet, restart: w.open.restart_at ? time(w.open.restart_at) : notYet })}
+          {sayT(s, "ops.watchdog.open", { since: time(w.open.since), probes: w.open.probes_failed, reload: w.open.reload_at ? time(w.open.reload_at) : notYet, restart: w.open.restart_at ? time(w.open.restart_at) : notYet })}
         </p>
       ) : w.last_incident ? (
-        <p className="note">{s.say("ops.watchdog.last", { since: time(w.last_incident.since), recovered: w.last_incident.recovered_at ? time(w.last_incident.recovered_at) : notYet })}</p>
+        <p className="note">{sayT(s, "ops.watchdog.last", { since: time(w.last_incident.since), recovered: w.last_incident.recovered_at ? time(w.last_incident.recovered_at) : notYet })}</p>
       ) : <p className="note">{s.say("ops.watchdog.noIncident")}</p>}
     </Heading>
   );
@@ -248,10 +253,10 @@ export function ReleasesSection({ s, r }: { s: Speaker; r: Section<Releases> }) 
     <Heading s={s} id="ops-releases" title="ops.releases.title">
       <ul className="ops-facts">
         <li>{s.say("ops.releases.counts", { pending: r.pending, approved: r.approved, running: r.running })}</li>
-        <li>{r.last_done ? s.say("ops.releases.lastDone", { number: r.last_done.number ?? "?", title: r.last_done.title ?? "", time: time(r.last_done.at) }) : s.say("ops.releases.noneDone")}</li>
-        {r.last_failed ? <li>{s.say("ops.releases.lastFailed", { number: r.last_failed.number ?? "?", title: r.last_failed.title ?? "", time: time(r.last_failed.at) })}</li> : null}
+        <li>{r.last_done ? sayT(s, "ops.releases.lastDone", { number: r.last_done.number ?? "?", title: r.last_done.title ?? "", time: time(r.last_done.at) }) : s.say("ops.releases.noneDone")}</li>
+        {r.last_failed ? <li>{sayT(s, "ops.releases.lastFailed", { number: r.last_failed.number ?? "?", title: r.last_failed.title ?? "", time: time(r.last_failed.at) })}</li> : null}
         <li>{s.say("ops.releases.runner", { sha: r.runner.sha ?? "?", ref: r.runner.ref ?? "?" })}</li>
-        <li>{s.say("ops.releases.drift", { time: r.drift_checked_at ? time(r.drift_checked_at) : "?", day: r.nightly_drift_day ?? "?" })}</li>
+        <li>{sayT(s, "ops.releases.drift", { time: r.drift_checked_at ? time(r.drift_checked_at) : "?", day: r.nightly_drift_day ?? "?" })}</li>
       </ul>
       <p><Link href="/admin/data">{s.say("ops.links.releases")}</Link></p>
     </Heading>
@@ -282,7 +287,7 @@ export function RequestsSection({ s, requests, query }: { s: Speaker; requests: 
                 id: r.id,
                 what: phrase(s, `ops.kind.${r.kind}`),
                 who: r.requested_by,
-                asked: <time dateTime={r.requested_at}>{r.requested_at.slice(0, 16).replace("T", " ")}</time>,
+                asked: <LocalTime iso={r.requested_at} />,
                 status: <span className={`tk-badge ${r.status === "done" ? "done" : r.status === "failed" ? "stale" : "live"}`}>{phrase(s, `ops.status.${r.status}`)}</span>,
                 result: r.summary ?? dash,
               },

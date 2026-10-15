@@ -164,7 +164,8 @@ export async function requestDriftCheck(actor: string): Promise<void> {
   await rpc("request_drift_check", { p_secret: secret(), p_actor: actor });
 }
 
-const summary = z.object({ waiting: z.number(), drift: z.number(), paused: z.boolean() });
+// `failed` arrives with migration 106; until it is on production the summary has no such key and nothing is counted.
+const summary = z.object({ waiting: z.number(), drift: z.number(), paused: z.boolean(), failed: z.number().default(0) });
 export type AdminSummary = z.infer<typeof summary>;
 
 const cachedSummary = unstable_cache(
@@ -177,7 +178,7 @@ const cachedSummary = unstable_cache(
   { revalidate: 60, tags: ["admin-bar"] },
 );
 
-/** Three small counts for the admin bar, kept for a minute and refreshed after an admin's own action. Null when it cannot be read. Call it only for a signed-in admin. */
+/** The small counts for the admin bar and the account menu, kept for a minute and refreshed after an admin's own action. Null when it cannot be read. Call it only for a signed-in admin. */
 export async function adminBarSummary(): Promise<AdminSummary | null> {
   try {
     return await cachedSummary();

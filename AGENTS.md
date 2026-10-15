@@ -632,7 +632,14 @@ Ask John before deleting or overwriting data. Production changes only through ap
     `pnpm test:routing` checks the rewrites and scans the source for both mistakes.
   - **Who is signed in** is learned in the browser: the header, footer and admin bar fetch `/api/me`, only for a browser
     that carries the `spxn-in` hint cookie (or has never been asked; `lib/auth/hint.ts`). The signed-in pages (`/me`,
-    `/admin`, `/login`, `/tickets`) live in `app/(dyn)`, drawn per request.
+    `/admin`, `/login`, `/tickets`) live in `app/(dyn)`, drawn per request. `/api/me` also carries `waiting`, the count in the
+    menu's "Data releases (N)" (pending releases plus failed ones, from the same cached admin summary the banner reads;
+    `waitingCount` in `lib/releases/rules.ts`). A page drawn per request passes `initial` to `AccountProvider`, which takes a changed
+    `initial` over, so an approval on `/admin/data` (which expires the summary) updates the banner and the count at once.
+  - **Times on admin pages** are shown in the reader's own time zone and language: draw a time with `<LocalTime iso=...>`
+    (`components/LocalTime.tsx`), or put `mark(iso)` (`lib/localTime.ts`) in a sentence and draw it with `<Stamped text=...>`. The
+    server and the first browser render show UTC (no hydration mismatch), the browser then swaps in the local form, the tooltip
+    keeps the UTC value. Never write "UTC" after a time by hand. `pnpm test:localtime`.
   - Check a change with `pnpm build` (the route table shows `●` for kept pages, `ƒ` for `q/` and `(dyn)`) and `pnpm start`:
     a second request to the same address answers with `x-nextjs-cache: HIT`.
 - **`site/`** is the retired plain-JS site; don't add to it.

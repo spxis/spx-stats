@@ -4,6 +4,7 @@ import { test } from "node:test";
 import { REVALIDATE } from "../src/lib/api/config.ts";
 import { tagsFor } from "../src/lib/api/tags.ts";
 import { MAX_TAGS, bearer, parseTags, secretMatches } from "../src/lib/revalidate.ts";
+import { plainMarks } from "../src/lib/localTime.ts";
 import { barMessages, parseTab, requestBlock } from "../src/lib/releases/rules.ts";
 
 /** Run in web/: pnpm test:revalidate */
@@ -57,7 +58,7 @@ test("a scores update request waits for the open one, then for the cooldown", ()
   assert.equal(requestBlock([], now), null);
   assert.match(requestBlock([{ id: 4, status: "queued", requested_at: new Date(now).toISOString(), finished_at: null }, done(30)], now) ?? "", /#4 is queued/);
   assert.match(requestBlock([{ id: 4, status: "running", requested_at: new Date(now).toISOString(), finished_at: null }], now) ?? "", /running/);
-  assert.match(requestBlock([done(3)], now) ?? "", /ask again at 12:07 UTC/);
+  assert.match(plainMarks(requestBlock([done(3)], now) ?? ""), /ask again at 12:07 UTC/);
   assert.equal(requestBlock([done(11)], now), null);
 });
 

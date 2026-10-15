@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Stamped } from "@/components/LocalTime";
 import { requireAdmin } from "@/lib/auth/user";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 import { opsDashboard } from "@/lib/ops/client";
+import { mark } from "@/lib/localTime";
 import { asOf, issues, queuedOf } from "@/lib/ops/rules";
 import type { Dashboard } from "@/lib/ops/schema";
 import { ReleaseError } from "@/lib/releases/client";
@@ -49,7 +51,7 @@ export default async function AdminOpsPage({ searchParams }: { searchParams: Pro
         {data && !latest ? <p className="dr-alert" role="alert">{s.say("ops.noSnapshot")}</p> : null}
         {when && latest ? (
           <p className={when.stale ? "dr-alert" : "note"} role={when.stale ? "alert" : "status"}>
-            <strong>{s.say("ops.asOf", { time: when.clock ?? "?", ago: agoText(s, when.minutes) })}</strong>
+            <strong><Stamped text={s.say("ops.asOf", { time: mark(latest.taken_at, "clock"), ago: agoText(s, when.minutes) })} /></strong>
           </p>
         ) : null}
         <div className="ops-top">

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { setHint } from "@/lib/auth/hint";
+import { useSpeaker } from "../i18n/LocaleProvider";
 import { LanguagePicker } from "../i18n/LanguagePicker";
 import { ThemeToggle } from "../ThemeToggle";
 
@@ -32,8 +33,12 @@ export function SignInLink() {
   );
 }
 
-/** Top-right account menu: who you are, Profile, Settings, the admin section for admins, version, Sign out. */
-export function UserMenu({ user, version }: { user: MenuUser; version: string }) {
+/**
+ * Top-right account menu: who you are, Profile, Settings, the admin section for admins, version, Sign out. `waiting` is how many things
+ * wait for the admin (pending releases, a drift fix, failed releases), from the admin summary the banner reads: "Data releases (2)".
+ */
+export function UserMenu({ user, version, waiting = 0 }: { user: MenuUser; version: string; waiting?: number }) {
+  const { say } = useSpeaker();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
 
@@ -76,7 +81,7 @@ export function UserMenu({ user, version }: { user: MenuUser; version: string })
               <b>Admin</b>
               <Link role="menuitem" href="/admin/tickets">Tickets</Link>
               <Link role="menuitem" href="/admin/tickets/new">File a ticket</Link>
-              <Link role="menuitem" href="/admin/data">Data releases</Link>
+              <Link role="menuitem" href="/admin/data">{waiting > 0 ? say("menu.dataReleasesWaiting", { count: waiting }) : say("menu.dataReleases")}</Link>
               <Link role="menuitem" href="/admin/ops">Ops (DS1 and backups)</Link>
               <Link role="menuitem" href="/admin/people">People to check</Link>
             </div>

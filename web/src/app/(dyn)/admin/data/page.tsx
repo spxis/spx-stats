@@ -2,10 +2,11 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { ConfirmSummary } from "@/components/ConfirmSummary";
+import { LocalTime, Stamped } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
 import { ReleaseError, apiHealth, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
-import { TABS, TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, stamp, type Tab } from "@/lib/releases/rules";
+import { TABS, TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, type Tab } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
 import { AutoSwitch } from "./AutoSwitch";
 import { DecisionCard } from "./DecisionCard";
@@ -25,10 +26,8 @@ export const metadata: Metadata = { title: "Data releases", robots: { index: fal
 type Query = Record<string, string | string[] | undefined>;
 
 const dash = <span className="note">–</span>;
-const when = (iso: string | null) => {
-  const s = stamp(iso);
-  return s ? <time dateTime={iso ?? undefined}>{s}</time> : dash;
-};
+/** A time in the reader's own zone and language (the server draws UTC, the browser swaps it; the tooltip holds the UTC value). */
+const when = (iso: string | null | undefined) => (iso && !Number.isNaN(Date.parse(iso)) ? <LocalTime iso={iso} /> : dash);
 const tone = (status: string) => (status === "done" ? "done" : status === "failed" ? "stale" : status === "running" || status === "approved" || status === "queued" ? "live" : "");
 
 const PREVIEW_COLUMNS: SortColumn[] = [
@@ -127,12 +126,12 @@ const kindLabel = (kind: string) => (kind === "ds1_step" ? "DS1 step" : kind ===
 function AutoNote({ r, paused }: { r: Release; paused: boolean }) {
   const a = r.preview?.auto;
   if (r.kind !== "daily_scores" || !a) return null;
-  if (r.held_at) return <p className="note">Held by {r.held_by} at {when(r.held_at)} UTC. It will not be approved automatically.</p>;
+  if (r.held_at) return <p className="note">Held by {r.held_by} at {when(r.held_at)}. It will not be approved automatically.</p>;
   if (a.eligible) {
     return (
       <p className="note">
         Meets the auto-approval policy ({a.games ?? 0} games).{" "}
-        {paused ? "Auto-approvals are paused, so it waits for you." : <>It approves itself after {when(autoApproveAt(r.created_at, a.hold_minutes))} UTC unless you hold it.</>}
+        {paused ? "Auto-approvals are paused, so it waits for you." : <>It approves itself after {when(autoApproveAt(r.created_at, a.hold_minutes))} unless you hold it.</>}
       </p>
     );
   }
@@ -281,12 +280,12 @@ const finished = (data: Dashboard) => data.recent.map((r) => ({ number: r.number
 /** What the comparison says, and when it was taken. A "differs" that a later release overtook is called out of date, not a mismatch. */
 function DriftNote({ data }: { data: Dashboard }) {
   const drift = driftState(data.sync, finished(data));
-  const at = stamp(drift.lastChecked);
+  const at = when(drift.lastChecked);
   return (
     <>
       {drift.differs.length > 0 ? (
         <p className="dr-alert" role="alert">
-          Production differed from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"} when compared at {at} UTC: {drift.differs.map((d) => d.table_name).join(", ")}. A fix is proposed under Pending.
+          Production differed from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"} when compared at {at}: {drift.differs.map((d) => d.table_name).join(", ")}. A fix is proposed under Pending.
         </p>
       ) : null}
       {drift.outdated.length > 0 ? (
@@ -295,8 +294,8 @@ function DriftNote({ data }: { data: Dashboard }) {
           but release {drift.newerRelease} finished after that comparison, so they may match now. Press Check now to compare again.
         </p>
       ) : null}
-      {drift.lastChecked === null ? <p className="dr-alert" role="alert">No drift check has run yet.</p> : drift.stale ? <p className="dr-alert" role="alert">The last drift check was {at} UTC, more than 36 hours ago.</p> : null}
-      {drift.differs.length === 0 && drift.outdated.length === 0 && drift.lastChecked !== null && !drift.stale ? <p className="note">DS1 and production agreed on every table when compared at {at} UTC.</p> : null}
+      {drift.lastChecked === null ? <p className="dr-alert" role="alert">No drift check has run yet.</p> : drift.stale ? <p className="dr-alert" role="alert">The last drift check was {at}, more than 36 hours ago.</p> : null}
+      {drift.differs.length === 0 && drift.outdated.length === 0 && drift.lastChecked !== null && !drift.stale ? <p className="note">DS1 and production agreed on every table when compared at {at}.</p> : null}
     </>
   );
 }
@@ -361,7 +360,7 @@ function SettingsTab({ data, query, paused }: { data: Dashboard; query: Query; p
           <>
             {paused ? (
               <p className="dr-alert" role="alert">
-                Auto-approval paused since {stamp(data.auto.paused_at)} UTC by {data.auto.paused_by} ({data.auto.reason}). Releases are still prepared but wait for you.
+                Auto-approval paused since {when(data.auto.paused_at)} by {data.auto.paused_by} ({data.auto.reason}). Releases are still prepared but wait for you.
               </p>
             ) : (
               <p className="note">Auto-approval is on. A daily scores release that meets the policy approves itself 10 minutes after it is prepared.</p>
@@ -396,16 +395,16 @@ function Report({ data, query, tab }: { data: Dashboard; query: Query; tab: Tab 
     <>
       {paused && tab !== "settings" ? (
         <p className="dr-alert" role="alert">
-          Auto-approval paused since {stamp(data.auto?.paused_at)} UTC by {data.auto?.paused_by} ({data.auto?.reason}). Releases are still prepared but wait for you. <Link href="?tab=settings">Settings</Link>
+          Auto-approval paused since {when(data.auto?.paused_at)} by {data.auto?.paused_by} ({data.auto?.reason}). Releases are still prepared but wait for you. <Link href="?tab=settings">Settings</Link>
         </p>
       ) : null}
       {drift.differs.length > 0 && tab !== "drift" ? (
         <p className="dr-alert" role="alert">
-          Production differed from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"} when compared at {stamp(drift.lastChecked)} UTC. <Link href="?tab=drift">Drift</Link>
+          Production differed from DS1 in {drift.differs.length} {drift.differs.length === 1 ? "table" : "tables"} when compared at {when(drift.lastChecked)}. <Link href="?tab=drift">Drift</Link>
         </p>
       ) : null}
       {drift.outdated.length > 0 && drift.differs.length === 0 && tab !== "drift" ? (
-        <p className="note" role="status">The last comparison ({stamp(drift.lastChecked)} UTC) is out of date: release {drift.newerRelease} finished after it. <Link href="?tab=drift">Drift</Link></p>
+        <p className="note" role="status">The last comparison ({when(drift.lastChecked)}) is out of date: release {drift.newerRelease} finished after it. <Link href="?tab=drift">Drift</Link></p>
       ) : null}
       <nav className="dr-tabs" aria-label="Data releases">
         {TABS.map((t) => (
@@ -448,7 +447,7 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
         {problem ? <p className="note" role="alert">{problem}</p> : null}
         {health ? (
           <p className={health.kind === "down" ? "dr-alert" : "note"} role={health.kind === "down" ? "alert" : "status"}>
-            <strong>API health:</strong> {health.text}
+            <strong>API health:</strong> <Stamped text={health.text} />
           </p>
         ) : null}
       </section>

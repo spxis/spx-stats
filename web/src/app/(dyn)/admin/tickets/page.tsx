@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CopyId } from "@/components/auth/CopyId";
+import { LocalTime } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import { BoardError, boardList } from "@/lib/board/client";
 import { BOARD_KINDS, BOARD_PRIORITIES, byQuickWin, holdLabel, isHeldNow, type BoardStatus, type Ticket } from "@/lib/board/rules";
@@ -33,18 +34,14 @@ const KEYS = COLUMNS.map((c) => c.key);
 
 type Query = { status?: string; kind?: string; priority?: string; q?: string; sort?: string };
 
-const stamp = (iso: string | null) => (iso && !Number.isNaN(Date.parse(iso)) ? iso.slice(0, 16).replace("T", " ") : null);
-
 function statusTone(t: Ticket): string {
   if (t.status === "inProgress") return isHeldNow(t) ? "live" : "stale";
   return t.status;
 }
 
 function rowOf(t: Ticket): SortRow {
-  const when = (iso: string | null) => {
-    const s = stamp(iso);
-    return s ? <time dateTime={iso ?? undefined}>{s}</time> : <span className="note">–</span>;
-  };
+  // the reader's own time zone and language; the server draws UTC and the browser swaps it
+  const when = (iso: string | null) => (iso && !Number.isNaN(Date.parse(iso)) ? <LocalTime iso={iso} /> : <span className="note">–</span>);
   const dash = <span className="note">–</span>;
   return {
     id: t.id,

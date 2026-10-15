@@ -7,8 +7,8 @@ import { LanguagePicker } from "../i18n/LanguagePicker";
 import { ThemeToggle } from "../ThemeToggle";
 import { SignInLink, UserMenu, type MenuUser } from "./UserMenu";
 
-/** What /api/me answers: the signed-in reader and, for an admin, the line the admin bar shows. */
-export interface Account { user: MenuUser | null; bar: string | null }
+/** What /api/me answers: the signed-in reader and, for an admin, the line the admin bar shows and how many things wait for them. */
+export interface Account { user: MenuUser | null; bar: string | null; waiting?: number }
 
 const NOBODY: Account = { user: null, bar: null };
 const AccountContext = createContext<Account>(NOBODY);
@@ -21,6 +21,15 @@ const AccountContext = createContext<Account>(NOBODY);
  */
 export function AccountProvider({ enabled, initial, children }: { enabled: boolean; initial?: Account; children: ReactNode }) {
   const [account, setAccount] = useState<Account>(initial ?? NOBODY);
+
+  // A page drawn per request passes what the server knows. When the page is drawn again (an approval on /admin/data re-draws it, after
+  // expiring the admin summary) that answer replaces the old one: state taken from a prop once kept showing the first draw's banner.
+  const initialKey = initial ? JSON.stringify(initial) : "";
+  const [seen, setSeen] = useState(initialKey);
+  if (initialKey !== seen) {
+    setSeen(initialKey);
+    if (initial) setAccount(initial);
+  }
 
   useEffect(() => {
     if (!enabled) return;
@@ -49,8 +58,8 @@ export const useAccount = (): Account => useContext(AccountContext);
 
 /** Top right of the header: the account menu for a signed-in reader, else the theme switch and the way in. */
 export function HeaderAccount({ version, signIn }: { version: string; signIn: boolean }) {
-  const { user } = useAccount();
-  if (user) return <UserMenu user={user} version={version} />;
+  const { user, waiting } = useAccount();
+  if (user) return <UserMenu user={user} version={version} waiting={waiting ?? 0} />;
   return (
     <>
       <span className="anon"><ThemeToggle /></span>

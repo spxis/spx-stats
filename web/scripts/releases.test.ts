@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { driftState, healthLine, requestBlock, type SyncRow } from "../src/lib/releases/rules.ts";
+import { plainMarks, splitMarks } from "../src/lib/localTime.ts";
+import { barMessages, driftState, healthLine, requestBlock, waitingCount, type SyncRow } from "../src/lib/releases/rules.ts";
 
 /** Run in web/: pnpm test:releases */
 const row = (table_name: string, state: "same" | "differs", checked_at: string): SyncRow => ({ table_name, ds1_rows: 1, prod_rows: 1, state, checked_at, detail: null });
@@ -43,7 +44,7 @@ test("no comparison at all, or an old one, is stale", () => {
 
 test("the cooldown of a drift check does not block a scores request, but an open request of any kind blocks both", () => {
   const drift = { id: 7, kind: "drift", status: "done", requested_at: "2026-10-13T11:55:00Z", finished_at: "2026-10-13T11:56:00Z" };
-  assert.match(requestBlock([drift], NOW, 10, "drift") ?? "", /ask again at 12:06 UTC/);
+  assert.match(plainMarks(requestBlock([drift], NOW, 10, "drift") ?? ""), /ask again at 12:06 UTC/);
   assert.equal(requestBlock([drift], NOW, 10, "scores"), null);
   const open = { id: 8, kind: "scores", status: "queued", requested_at: "2026-10-13T12:00:00Z", finished_at: null };
   assert.match(requestBlock([open], NOW, 10, "drift") ?? "", /#8 is queued/);
@@ -54,11 +55,52 @@ test("the API health line: no outage, one that is over, one still going", () => 
   assert.equal(healthLine([]).kind, "none");
   const down = healthLine([e]);
   assert.equal(down.kind, "down");
-  assert.match(down.text, /failing from 2026-10-14 07:00 UTC/);
-  assert.match(down.text, /schema reload 07:04, project restart 07:09 UTC/);
+  assert.match(plainMarks(down.text), /failing from 2026-10-14 07:00 UTC/);
+  assert.match(plainMarks(down.text), /schema reload 07:04 UTC, project restart 07:09 UTC/);
+  assert.equal(splitMarks(down.text).filter((p) => typeof p !== "string").length, 3, "the three times are marks, drawn in the reader's zone");
   const past = healthLine([{ ...e, recovered_at: "2026-10-14T07:30:00+00:00" }, { ...e, failing_since: "2026-10-10T01:00:00+00:00" }]);
   assert.equal(past.kind, "past");
-  assert.match(past.text, /2026-10-14 07:00 to 07:30 UTC \(30 min\)/);
+  assert.match(plainMarks(past.text), /2026-10-14 07:00 UTC to 07:30 UTC \(30 min\)/);
   assert.match(past.text, /2 outages recorded/);
   assert.match(healthLine([{ ...e, reload_at: null, restart_at: null }]).text, /has not acted yet/);
+});
+
+test("the account menu counts what waits for the admin, from the summary the banner reads", () => {
+  assert.equal(waitingCount(null), 0);
+  assert.equal(waitingCount(undefined), 0);
+  assert.equal(waitingCount({ waiting: 0, drift: 0, paused: false }), 0);
+  assert.equal(waitingCount({ waiting: 1, drift: 0, paused: false }), 1);
+  assert.equal(waitingCount({ waiting: 2, drift: 0, paused: false }), 2);
+  // a drift fix that is not auto-approvable is a pending release: it is in `waiting` already and counts once
+  assert.equal(waitingCount({ waiting: 1, drift: 1, paused: false }), 1);
+  assert.equal(waitingCount({ waiting: 3, drift: 1, paused: false }), 3);
+  // a drift fix that approves itself is not waiting, but the bar names it, so the menu does too
+  assert.equal(waitingCount({ waiting: 0, drift: 1, paused: false }), 1);
+  // failed releases that need a look are added; summaries from before migration 106 have no `failed`
+  assert.equal(waitingCount({ waiting: 1, drift: 1, paused: false, failed: 1 }), 2);
+  assert.equal(waitingCount({ waiting: 0, drift: 0, paused: false, failed: 2 }), 2);
+  assert.equal(waitingCount({ waiting: 1, drift: 0, paused: false, failed: 0 }), 1);
+  // Hold is a state, not an item
+  assert.equal(waitingCount({ waiting: 0, drift: 0, paused: true }), 0);
+  assert.equal(waitingCount({ waiting: 2, drift: 0, paused: true }), 2);
+  // junk never counts
+  assert.equal(waitingCount({ waiting: -1, drift: Number.NaN, paused: false, failed: 1.9 }), 1);
+});
+
+test("the bar names a failed release, and the menu count and the bar agree on whether anything waits", () => {
+  const cases = [
+    { waiting: 0, drift: 0, paused: false },
+    { waiting: 1, drift: 0, paused: false },
+    { waiting: 0, drift: 1, paused: false },
+    { waiting: 0, drift: 0, paused: false, failed: 1 },
+    { waiting: 2, drift: 1, paused: true, failed: 3 },
+    { waiting: 0, drift: 0, paused: true },
+  ];
+  for (const c of cases) {
+    const items = barMessages(c).filter((m) => !m.includes("Hold"));
+    assert.equal(waitingCount(c) > 0, items.length > 0, JSON.stringify(c));
+  }
+  assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false, failed: 1 }), ["1 failed release needs a look"]);
+  assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false, failed: 2 }), ["2 failed releases need a look"]);
+  assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false, failed: 0 }), []);
 });

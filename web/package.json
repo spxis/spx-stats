@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.115.0",
+  "version": "0.115.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -21,6 +21,7 @@
     "test:auth": "node --test scripts/auth.test.ts",
     "test:revalidate": "node --test scripts/revalidate.test.ts",
     "test:releases": "node --test scripts/releases.test.ts",
+    "test:localtime": "node --test scripts/localTime.test.ts",
     "test:ops": "node --test scripts/ops.test.ts",
     "test:resturl": "node --test scripts/restUrl.test.ts",
     "test:idle": "node --test scripts/idleTeams.test.ts",
