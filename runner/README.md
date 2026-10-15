@@ -75,6 +75,44 @@ causes one. It uses the `SUPABASE_ACCESS_TOKEN` the runner already holds; nothin
 - **Version.** `entry.sh` changed (it starts the watchdog), so the first time needs Build: copy `entry.sh` over and
   `cd "$NAS1_DOCKER_DIR/spx-release-runner" && sudo "$NAS1_DOCKER_BIN" compose up -d --build` (on nas1, with those two values from the private host mapping). After that the watchdog code follows `RELEASE_REF` like the rest.
 
+## Ops snapshot and controls (`/admin/ops`)
+
+`/admin/ops` is a very internal admin page about the DS1 side: the harvester, the Dropbox backup, DS1 against production row counts, the daily scores job,
+the watchdog and the releases. Production (Vercel) cannot reach DS1 and must not, so `scripts/release/ops.py` is started by `entry.sh` next to the
+watchdog (one tick a minute, its own process) and pushes the facts to production. One tick makes at most two Management API calls:
+
+1. **Every tick:** one small read of `meta.ops_request` (an admin's clicks: **Snapshot now**, **Pause harvester**, **Resume harvester**). Pause writes the
+   switch the harvester reads (`ingest.harvest_state` key `ops_pause`, checked every 15 s by `scripts/harvest/pause.py`: it finishes the request it is
+   on, then stands still); Resume deletes it. Each request is marked `done` or `failed` on production, and the runner then writes a snapshot at once.
+   "Check drift now" is not here: it is the existing drift request that `release.py run` handles.
+2. **Every 15 minutes (`OPS_SNAPSHOT_EVERY`, 900 s):** build one snapshot from DS1 (psql only; no production call to build it) and write it with
+   `meta.ops_status_put` if it differs from the last one written (a sha256 of the payload without its own time, the heartbeat and the last probe), or
+   if the last write is an hour old (`OPS_HEARTBEAT_EVERY`, 3600 s: the page tells a quiet system from a dead runner by this). Production keeps the
+   newest 96 rows (a day at 15 minutes). The snapshot is a few KB (limit 24 KB; an oversized one keeps only the tables that differ).
+
+What is in it: harvester (state, queue depth by kind and state, gap targets left by kind and league, requests and pages in the last hour and today,
+last error, heartbeat), daily scores job (last run, outcome, last `daily_scores` release), watchdog (last probe, open incident; the watchdog now keeps
+`last_probe_at` and `last_ok_at` in `data/watchdog.json`), releases (waiting, running, last done and failed, the runner's code sha), DS1 against
+production (the latest drift comparison, `meta.sync_status`: counts and a differs flag per table, when it was made) and the backup (rows and bytes of
+`legacy_files.raw_archive`, and the last report of `spx-raw-export.sh` from `ingest.raw_export_run`; no row at all is shown as "never ran").
+A section the runner cannot read says so and the others still go out. State is `data/ops.json`.
+
+- **Switch off:** `OPS_SNAPSHOT=0` in `release-runner.env`, then Build. The log says `ops snapshot: off`.
+- **Cost:** per day 1,440 one-row reads of production plus at most 96 snapshot writes (about 100 KB to 1 MB a day of churn, a ring of 96 rows
+  of a few KB, so production grows by under 1 MB in all). Nothing Vercel-side runs on a timer: the page refreshes itself once a minute only while a tab
+  is visible and used (stops after 10 idle minutes).
+- **Needs** migration 099 on production (`meta.ops_status`, `meta.ops_request`, `api.ops_dashboard`, `api.request_ops`) and, for the Backups section,
+  migration 100 on DS1 (`ingest.raw_export_run`). Without 099 the runner logs `could not read the requests` once an hour and keeps going.
+  The Mac export script writes its row at the end of each run; it must be the new `scripts/mac/spx-raw-export.sh` on machine1 (copy it over `~/bin/`).
+- **Code is `entry.sh`'s first change since the watchdog:** it now also starts `ops.py`, so the first time needs Build. From the Mac, in the checkout (one command):
+
+      cd ~/Projects/spx-stats && . scripts/mac/lib/hosts.sh && git pull -q && tar -C runner -cf - entry.sh | ssh "$NAS1_SSH_ALIAS" "B='$NAS1_DOCKER_BIN' R='$NAS1_DOCKER_DIR'; "'set -e; D=$R/spx-release-runner; sudo tar -C $D -xf -; cd $D && sudo $B compose up -d --build 2>&1 | tail -4; sleep 25; sudo $B logs --tail 12 spx-release-runner'
+
+  If `RELEASE_REF` pins a commit, set it to the new `main` first (`release.py` and `compare.py` changed: the two new tables are in the reserved list).
+  A quiet minute logs nothing; the first `ops: snapshot N written` appears within a minute of the start.
+- Tests: `python3 -I scripts/release/test/test_ops.py` (the pure builder always; the SQL, collectors, requests and a whole tick against a scratch
+  Postgres when `PGHOST`, `PGPORT`, `PGUSER` are set) and, in `web/`, `pnpm test:ops`.
+
 ## What it does and where things are
 
 - Code: the public repo, fetched from GitHub every minute and checked out at `RELEASE_REF` (default `origin/main`). Pin the

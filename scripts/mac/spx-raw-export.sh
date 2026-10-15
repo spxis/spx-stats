@@ -458,6 +458,22 @@ summary() {
   fi
 }
 
+# report_status: tell DS1 how this run went (one row in ingest.raw_export_run, migration 100) so the status snapshot on /admin/ops can say
+# when the last export ran and how it went. Best effort: a missing table or a lost connection is one line in the log, never a failed export.
+# Keeps the newest 200 rows. A run that could not reach DS1 at all (or --check) reports nothing: no row is "never ran" on the page.
+report_status() {
+  local outcome=ok failed host sql
+  [ "$MODE" = export ] || return 0
+  [ -n "$HOST" ] || return 0
+  failed=$((BAD + DIFFERS + UNSAFE))
+  if [ "$failed" -gt 0 ]; then outcome=problems; fi
+  host=$(hostname -s 2>/dev/null | tr -cd 'A-Za-z0-9._-' | cut -c1-40)
+  sql="insert into ingest.raw_export_run (host, outcome, checked, copied, present, failed, bytes, seconds) values ('${host:-unknown}', '$outcome', $TOTAL_ROWS, $WRITTEN, $SKIPPED, $failed, $BYTES, $SECONDS); delete from ingest.raw_export_run where id <= (select max(id) - 200 from ingest.raw_export_run);"
+  if ! dbq "$sql" "$TMP/status.out" "$TMP/status.err" 30; then
+    note "could not report this run to DS1 (is migration 100, ingest.raw_export_run, applied?): $(head -n 1 "$TMP/status.err" | cut -c1-100)"
+  fi
+}
+
 do_export() {
   local hex esc sha size
   if [ "$MODE" != check ]; then mkdir -p "$DEST_ROOT" || die "Cannot create $DEST_ROOT"; fi
@@ -471,6 +487,7 @@ do_export() {
   done 3<"$TMP/list.tsv"
   if [ "$MODE" != check ]; then drain_queue; fi
   summary
+  report_status
   if [ $((DIFFERS + BAD + UNSAFE)) -gt 0 ]; then exit 2; fi
   exit 0
 }

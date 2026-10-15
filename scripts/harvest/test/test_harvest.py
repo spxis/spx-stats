@@ -217,7 +217,7 @@ class Pause(unittest.TestCase):
         def lock():
             probes["n"] += 1
             return probes["lock"]
-        g = pause.PauseGuard(Config(), lock_probe=lock, running_probe=lambda: probes["running"], clock=c.now,
+        g = pause.PauseGuard(Config(), lock_probe=lock, running_probe=lambda: probes["running"], switch_probe=lambda: probes.get("switch"), clock=c.now,
                              utcnow=lambda: datetime(2026, 10, 14, 18, 0, tzinfo=timezone.utc))
         self.assertIsNone(g.check())
         probes["lock"] = True
@@ -232,14 +232,29 @@ class Pause(unittest.TestCase):
     def test_guard_stands_still_in_the_window_without_asking_ds1(self):
         def boom():
             raise AssertionError("no probe in the window")
-        g = pause.PauseGuard(Config(), lock_probe=boom, running_probe=boom, utcnow=lambda: datetime(2026, 10, 14, 14, 5, tzinfo=timezone.utc))
+        g = pause.PauseGuard(Config(), lock_probe=boom, running_probe=boom, switch_probe=boom, utcnow=lambda: datetime(2026, 10, 14, 14, 5, tzinfo=timezone.utc))
         self.assertIn("window", g.check())
 
     def test_guard_pauses_when_ds1_does_not_answer(self):
         def boom():
             raise RuntimeError("no route to host")
-        g = pause.PauseGuard(Config(), lock_probe=boom, utcnow=lambda: datetime(2026, 10, 14, 18, 0, tzinfo=timezone.utc))
+        g = pause.PauseGuard(Config(), lock_probe=boom, switch_probe=lambda: None, utcnow=lambda: datetime(2026, 10, 14, 18, 0, tzinfo=timezone.utc))
         self.assertIn("DS1 not answering", g.check())
+
+    def test_guard_obeys_the_admin_switch_first_and_resumes(self):
+        c, sw = FakeClock(), {"v": {"by": "john@example.test", "at": "2026-10-14T18:00:00Z"}}
+
+        def lock():
+            raise AssertionError("the admin switch is checked before the lock")
+        g = pause.PauseGuard(Config(), lock_probe=lock, running_probe=lambda: False, switch_probe=lambda: sw["v"], clock=c.now,
+                             utcnow=lambda: datetime(2026, 10, 14, 18, 0, tzinfo=timezone.utc))
+        why = g.check()
+        self.assertIn("/admin/ops", why)
+        self.assertIn("john@example.test", why)
+        sw["v"] = None                                 # Resume harvester: the runner deleted the flag
+        c.t += 16
+        g.lock_probe = lambda: False
+        self.assertIsNone(g.check())
 
 
 # ---------------------------------------------------------------- parsers on saved answers
@@ -672,6 +687,24 @@ class Ds1(unittest.TestCase):
         self.assertEqual((w.wp.requests, w.wd.requests, w.wdqs.requests), (0, 0, 0))
         self.assertGreaterEqual(w.paused_secs, 300)
         self.assertEqual(one("select count(*) from ingest.harvest_job where state <> 'queued'"), 0)
+
+    def test_the_admin_switch_in_ds1_stops_and_resumes_the_worker(self):
+        seed_jobs()
+        self.assertIsNone(pause.ops_pause())
+        db.run("insert into ingest.harvest_state (key, value) values ('ops_pause', %s) on conflict (key) do update set value = excluded.value;"
+               % db.lit({"by": "john@example.test", "at": "2026-10-14T18:00:00Z"}))
+        try:
+            self.assertEqual(pause.ops_pause()["by"], "john@example.test")
+            c = FakeClock()
+            cfg = Config(wp_gap=0, wd_gap=0, wdqs_gap=0)
+            w, c = make_worker(guard=pause.PauseGuard(cfg, lock_probe=lambda: False, running_probe=lambda: False, clock=c.now,
+                                                      utcnow=lambda: datetime(2026, 10, 14, 18, 0, tzinfo=timezone.utc)), clock=c)
+            w.run(max_seconds=300, plan=False)
+            self.assertEqual((w.wp.requests, w.wd.requests, w.wdqs.requests), (0, 0, 0))
+            self.assertEqual(one("select count(*) from ingest.harvest_job where state <> 'queued'"), 0)
+        finally:
+            db.run("delete from ingest.harvest_state where key = 'ops_pause';")
+        self.assertIsNone(pause.ops_pause())
 
     def test_the_real_lock_is_seen(self):
         spec = __import__("importlib.util").util.spec_from_file_location("daily_lock", pause.LOCK_PATH)

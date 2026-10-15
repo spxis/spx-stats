@@ -51,7 +51,7 @@ newenv() {
   E="$ROOT/s$N"; mkdir -p "$E/home" "$E/tmp" "$E/dropbox"
   export STUB_LOG="$E/log" STUB_FIXTURE="$E/fixture.json" HOME="$E/home" TMPDIR="$E/tmp"
   export SPX_DROPBOX_DIR="$E/dropbox" SPX_RETRY_PAUSE=0 SPX_PROBE_LIMIT=3 SPX_FETCH_LIMIT=20 PATH="$STUBS:/usr/bin:/bin:/sbin"
-  unset SPX_DS1_HOST SPX_DS1_DB_PASSWORD STUB_FLAKY
+  unset SPX_DS1_HOST SPX_DS1_DB_PASSWORD STUB_FLAKY STUB_NO_STATUS_TABLE
   # stand-in addresses (documentation ranges); the real mapping is private and HOME here is a scratch folder, so none is read
   export NAS1_LAN_HOSTS="nas.example.test 192.0.2.101 192.0.2.102 192.0.2.103 192.0.2.104" NAS1_VPN_HOST=198.51.100.77
   : >"$STUB_LOG"
@@ -273,6 +273,32 @@ check "launchctl asked to load" has "$STUB_LOG" 'launchctl bootstrap'
 run --remove-schedule
 check "plist removed" test ! -e "$P"
 check "launchctl asked to unload" has "$STUB_LOG" 'launchctl bootout'
+
+echo "(n) the run is reported to DS1 (ingest.raw_export_run, for /admin/ops)"
+newenv; fixture "$BASIC"
+export STUB_HOSTS="198.51.100.77=up"
+run
+S="$STUB_LOG.status"
+check "one status row written" test "$(grep -c 'insert into ingest.raw_export_run' "$S")" = 1
+check "it says ok, 3 checked, 3 copied, 0 present, 0 failed" has "$S" "'ok', 3, 3, 0, 0, "
+check "it trims the table to the newest 200" has "$S" 'max(id) - 200'
+run
+check "second run reports 3 present, 0 copied" test "$(tail -n 1 "$S" | grep -c "'ok', 3, 0, 3, 0, ")" = 1
+newenv; fixture "$BASIC"
+mkdir -p "$RAW/nhl/2026-10-01"; printf 'LOCAL EDIT\n' >"$RAW/nhl/2026-10-01/a.txt"
+run
+check "a run with a DIFFERS reports problems and the failure count" has "$STUB_LOG.status" "'problems', 3, 2, 0, 1, "
+newenv; fixture "$BASIC"
+STUB_NO_STATUS_TABLE=1 run
+check "without migration 100 the export still succeeds" test "$RC" = 0 && has "$E/out" 'written 3'
+check "and says so in one line" has "$E/out" 'could not report this run to DS1'
+newenv; fixture "$BASIC"
+run --check
+check "--check reports nothing" test ! -e "$STUB_LOG.status"
+newenv; fixture "$BASIC"
+export STUB_HOSTS="$ALLDOWN"
+run
+check "a run that never reached DS1 reports nothing" test ! -e "$STUB_LOG.status"
 
 echo "(m) help and bad flags"
 newenv

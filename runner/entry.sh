@@ -36,6 +36,20 @@ else
   ) &
 fi
 
+# The ops snapshot and controls (scripts/release/ops.py) run beside the release loop too, for the same reason: one tick a minute reads the
+# requests an admin made on /admin/ops (pause and resume the harvester, snapshot now) and every 15 minutes pushes one status snapshot of
+# the DS1 side to production. OPS_SNAPSHOT=0 in release-runner.env switches it off. It runs the code at REF, so no rebuild is needed.
+if [ "${OPS_SNAPSHOT:-1}" = "0" ]; then
+  log "ops snapshot: off (OPS_SNAPSHOT=0)"
+else
+  (
+    while true; do
+      [ -f "$DIR/scripts/release/ops.py" ] && python3 -I "$DIR/scripts/release/ops.py" || true
+      sleep "${OPS_INTERVAL:-60}"
+    done
+  ) &
+fi
+
 while true; do
   if git -C "$DIR" fetch --quiet origin && git -C "$DIR" checkout --quiet --detach "$REF"; then
     python3 -I "$RELEASE" run || log "run exited with $?"

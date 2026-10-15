@@ -139,6 +139,11 @@ def test_loop():
     check("loop: finished incident is dropped once written", s["episode"] is None and s["synced"] == {})
     check("loop: no write before the 5th failure", True)
 
+    check("loop: the state remembers the last probe and the last good one (for /admin/ops)",
+          s["last_probe_ok"] is True and s["last_probe_at"] == 1000.0 + 10 * 60 and s["last_ok_at"] == s["last_probe_at"], s)
+    s, _ = loop([True, False], cfg=cfg)
+    check("loop: a failed probe moves last_probe_at but not last_ok_at", s["last_probe_ok"] is False and s["last_ok_at"] == 1000.0 and s["last_probe_at"] == 1060.0, s)
+
     wrote2 = []
     s, calls = loop([False] * 4 + [True], cfg=cfg, writers={"ds1": wrote2.append})
     check("loop: a short blip writes nothing", wrote2 == [] and calls == [])

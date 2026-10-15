@@ -7,8 +7,8 @@
 set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../../.." && pwd)"
-NAME=spx-harvest-scratch
-PORT=3170
+NAME="${HARVEST_SCRATCH_NAME:-spx-harvest-scratch}"
+PORT="${HARVEST_SCRATCH_PORT:-3170}"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
 dpsql() { docker exec -i "$NAME" psql -U postgres -d harvest_test -X -q -v ON_ERROR_STOP=1 "$@"; }
 case "${1:-}" in

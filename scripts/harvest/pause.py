@@ -1,9 +1,11 @@
 """When the harvest must stand still: around the daily scores run, and while it (or a requested scores update) is running.
 
-Three signals, checked at most every `pause_check_secs`:
+Four signals, checked at most every `pause_check_secs`:
   1. the clock: a window in local time (default 09:50-10:30 America/Toronto; the daily job starts at 10:00);
   2. the shared lock scripts/release/daily_lock.py (a Postgres advisory lock on DS1), probed and let go at once, never held;
-  3. a `running` row in ingest.daily_run started in the last 30 minutes (the heartbeat of the scheduled daily job, which does not take the lock yet).
+  3. a `running` row in ingest.daily_run started in the last 30 minutes (the heartbeat of the scheduled daily job, which does not take the lock yet);
+  4. the switch an admin sets on /admin/ops ("Pause harvester"): the release runner writes ingest.harvest_state key `ops_pause`
+     (value {"by": ..., "at": ...}) and deletes it again on "Resume harvester". Checked first, so the reason names the admin.
 """
 import importlib.util
 import os
@@ -53,11 +55,19 @@ def daily_running():
     return bool(db.value("select exists (select 1 from ingest.daily_run where outcome = 'running' and started_at > now() - interval '30 minutes')"))
 
 
+def ops_pause():
+    """The admin's pause switch (ingest.harvest_state key ops_pause) as {"by", "at"}, or None when the harvester may run."""
+    v = db.query_json("select value from ingest.harvest_state where key = 'ops_pause'")
+    return v if isinstance(v, dict) else ({"by": "an admin", "at": None} if v else None)
+
+
 class PauseGuard:
     """check() -> None when the harvest may go on, else a short reason. The DS1 signals are cached for `cfg.pause_check_secs`."""
 
-    def __init__(self, cfg, lock_probe=lock_is_held, running_probe=daily_running, clock=time.monotonic, utcnow=lambda: datetime.now(timezone.utc)):
+    def __init__(self, cfg, lock_probe=lock_is_held, running_probe=daily_running, clock=time.monotonic, utcnow=lambda: datetime.now(timezone.utc),
+                 switch_probe=ops_pause):
         self.cfg, self.lock_probe, self.running_probe, self.clock, self.utcnow = cfg, lock_probe, running_probe, clock, utcnow
+        self.switch_probe = switch_probe
         self._at, self._reason = None, None
 
     def check(self):
@@ -67,7 +77,10 @@ class PauseGuard:
         if self._at is None or t - self._at >= self.cfg.pause_check_secs:
             self._at = t
             try:
-                if self.lock_probe():
+                flag = self.switch_probe()
+                if flag:
+                    self._reason = "paused from /admin/ops by %s%s" % (flag.get("by") or "an admin", (" at " + str(flag["at"])[:16]) if flag.get("at") else "")
+                elif self.lock_probe():
                     self._reason = "daily scores lock held"
                 elif self.running_probe():
                     self._reason = "daily scores run in progress"

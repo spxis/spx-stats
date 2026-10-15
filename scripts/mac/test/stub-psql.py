@@ -4,6 +4,7 @@
 STUB_HOSTS   "host=mode ..." where mode is up, timeout, refused, noroute, noname or hang
 STUB_FIXTURE JSON list of {"name", "data", optional "recorded_sha", optional "served"}
 STUB_FLAKY   label (batch, list, fetch) whose first call fails with a timeout
+STUB_NO_STATUS_TABLE  set: the status insert (ingest.raw_export_run) fails as if migration 100 were missing
 STUB_LOG     file that gets one line per call (host, port, a short label: probe, list, batch or fetch), never the password
 """
 import hashlib, json, os, re, sys, time
@@ -25,6 +26,7 @@ mode = modes.get(host, "refused")
 if sql and sql.strip() == "select 1": label = "probe"
 elif sql and "order by name" in sql: label = "list"
 elif sql and "(name, sha256) in" in sql: label = "batch"
+elif sql and "ingest.raw_export_run" in sql: label = "status"
 else: label = "fetch"
 with open(os.environ["STUB_LOG"], "a") as f:
     f.write("%s %s %s %s\n" % (host, port, label, mode))
@@ -67,6 +69,11 @@ elif label == "batch":
                 h = hexname
                 esc = "".join("\\x" + h[k:k + 2] for k in range(0, len(h), 2))
                 lines.append("|".join([h, esc, sha, r.get("served", r["data"]).encode().hex()]))
+elif label == "status":
+    if os.environ.get("STUB_NO_STATUS_TABLE"):
+        sys.stderr.write('ERROR:  relation "ingest.raw_export_run" does not exist\n'); sys.exit(2)
+    with open(os.environ["STUB_LOG"] + ".status", "a") as f:
+        f.write(sql + "\n")
 else:
     hexname = re.search(r"decode\('([0-9a-f]*)'", sql).group(1)
     sha = re.search(r"sha256 = '([0-9a-f]+)'", sql).group(1)

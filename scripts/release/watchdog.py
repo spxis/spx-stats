@@ -256,6 +256,10 @@ def run_once(cfg, state, now, probe_fn=probe, reload_fn=send_reload, restart_fn=
     state, actions = step(state, ok, now, cfg)
     state.setdefault("episode", None)
     state.setdefault("synced", {})
+    # what /admin/ops shows (scripts/release/ops.py reads this file): when the last probe ran and when one last worked
+    state["last_probe_at"], state["last_probe_ok"] = now, bool(ok)
+    if ok:
+        state["last_ok_at"] = now
     if not ok:
         state["last_error"] = why
         log("probe failed (%d in a row): %s" % (state["streak"], why))

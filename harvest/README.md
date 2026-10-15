@@ -69,6 +69,10 @@ request) and replaces their rows. Nothing about ethnicity, religion, health, sex
 - **Stands still for the daily scores job** (`scripts/harvest/pause.py`): inside `HARVEST_PAUSE_WINDOW` (09:50-10:30 America/Toronto), while
   `scripts/release/daily_lock.py`'s lock is held (probed and let go at once, never held), and while `ingest.daily_run` has a `running` row started in the
   last 30 minutes. It checks every 15 seconds and sends nothing while paused.
+- **Paused by an admin** (`/admin/ops`, "Pause harvester"): the release runner writes `ingest.harvest_state` key `ops_pause` (`{"by", "at"}`) on DS1 and the
+  worker stands still the same way (checked first, so the log says `paused from /admin/ops by <who>`); "Resume harvester" deletes the key. By hand:
+  `insert into ingest.harvest_state (key, value) values ('ops_pause', '{"by": "me"}');` and `delete from ingest.harvest_state where key = 'ops_pause';`.
+  The queue is untouched either way; a pause survives a restart of the container.
 - The job is capped at half a CPU and 512 MB in `docker-compose.yml`, and its log at 30 MB.
 
 ## How big, how many requests
