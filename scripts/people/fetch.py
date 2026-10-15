@@ -4,6 +4,8 @@
   fetch.py titles <wplinks.json> <raw dir>   the person items named by Wikipedia article titles (wbgetentities, 50 titles a call)
   fetch.py persons <raw dir>                 the other person items, by Wikidata id (50 ids a call)
   fetch.py items <raw dir>                   the places, countries, teams, positions and honours those items name
+  fetch.py labels <raw dir> <qids file>      names for items whose answer carried no English label (one id a line, 50 a call)
+  fetch.py labelseed <raw dir> <csv>         the labels-*.json files of <raw dir> as db/seed/wikidata_label.csv (qid,label,language)
 
 Every answer is saved as compact JSON in <raw dir>; a file that exists is never fetched again. At most one request
 every 2 seconds, with the project's User-Agent; a 429 or 5xx backs off and retries.
@@ -52,8 +54,10 @@ def prune(e):
         for k in ("site", "title"):
             if k in e: out[k] = e[k]
         return out
-    lab = (e.get("labels") or {}).get("en")
-    if lab: out["labels"] = {"en": {"value": lab["value"]}}
+    # A name that reads the same in every language is stored under "mul" only, with no "en" label: take it as the name.
+    labs = e.get("labels") or {}
+    lab = labs.get("en") or labs.get("mul")
+    if lab: out["labels"] = {lab.get("language", "en"): {"value": lab["value"]}}
     sl = (e.get("sitelinks") or {}).get("enwiki")
     if sl: out["sitelinks"] = {"enwiki": {"title": sl["title"]}}
     cl = {}
@@ -77,7 +81,7 @@ def entities(ids, prefix, raw, titles=False):
         p = f"{raw}/{prefix}-{i:03d}.json"
         if os.path.exists(p): continue
         q = urllib.parse.urlencode({"action": "wbgetentities", **({"sites": "enwiki", "titles": "|".join(b)} if titles else {"ids": "|".join(b)}),
-                                    "props": "labels|claims|sitelinks", "languages": "en", "sitefilter": "enwiki", "format": "json", "formatversion": "2"})
+                                    "props": "labels|claims|sitelinks", "languages": "en|mul", "sitefilter": "enwiki", "format": "json", "formatversion": "2"})
         d = get("https://www.wikidata.org/w/api.php?" + q)
         if "error" in d: raise RuntimeError(json.dumps(d["error"])[:300])
         ents = d.get("entities") or {}
@@ -111,6 +115,32 @@ def cmd_titles(links, raw):
     this host; en.wikipedia.org's API rate-limits it)."""
     entities(json.load(open(links, encoding="utf-8"))["titles"], "persontitles", raw, titles=True)
 
+def cmd_labels(raw, qids_file):
+    """Only the names of items that have none in the raw files (an English label, else the all-languages "mul" one)."""
+    ids = sorted({l.strip() for l in open(qids_file, encoding="utf-8") if re.fullmatch(r"Q[0-9]+", l.strip())}, key=lambda x: int(x[1:]))
+    for i, b in enumerate(batches(ids), 1):
+        p = f"{raw}/labels-{i:03d}.json"
+        if os.path.exists(p): continue
+        q = urllib.parse.urlencode({"action": "wbgetentities", "ids": "|".join(b), "props": "labels|sitelinks", "languages": "en|mul",
+                                    "sitefilter": "enwiki", "format": "json", "formatversion": "2"})
+        d = get("https://www.wikidata.org/w/api.php?" + q)
+        if "error" in d: raise RuntimeError(json.dumps(d["error"])[:300])
+        ents = d.get("entities") or {}
+        if isinstance(ents, list): ents = {e["id"]: e for e in ents}
+        save(p, {"requested": b, "entities": {k: prune(v) for k, v in ents.items()}}); print(p, len(ents), flush=True)
+
+def cmd_labelseed(raw, csv_path):
+    import csv
+    rows = {}
+    for f in sorted(os.listdir(raw)):
+        if not f.startswith("labels-"): continue
+        for k, e in json.load(open(f"{raw}/{f}", encoding="utf-8"))["entities"].items():
+            for lang, v in (e.get("labels") or {}).items(): rows.setdefault(e.get("id", k), (lang, v["value"]))
+    with open(csv_path, "w", encoding="utf-8", newline="") as o:
+        w = csv.writer(o, lineterminator="\n"); w.writerow(["qid", "label", "language"])
+        for qid in sorted(rows, key=lambda x: int(x[1:])): w.writerow([qid, rows[qid][1], rows[qid][0]])
+    print(len(rows), "labels")
+
 def person_ids(raw):
     ids = set(subprocess.run(CONN + ["-c", "select distinct regexp_replace(row->>'winner', '.*/', '') from legacy_wikidata.result where query_name = 'award_winners' and row->>'isHuman' = 'true'"],
                              capture_output=True, text=True, check=True).stdout.split())
@@ -119,6 +149,8 @@ def person_ids(raw):
 if __name__ == "__main__":
     c = sys.argv[1]
     if c == "titles": cmd_titles(sys.argv[2], sys.argv[3])
+    elif c == "labels": cmd_labels(sys.argv[2], sys.argv[3])
+    elif c == "labelseed": cmd_labelseed(sys.argv[2], sys.argv[3])
     elif c == "persons":
         raw = sys.argv[2]; ids = person_ids(raw); print(len(ids), "persons"); entities(ids, "persons", raw)
     elif c == "items":

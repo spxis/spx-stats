@@ -50,19 +50,29 @@ CLAIM_COLS = ["qid", "prop", "n", "rank", "value_qid", "value_on", "value_prec",
 def main(raw, links):
     items, redirects, claims, titles = {}, {}, [], {}
     files = sorted(f for f in os.listdir(raw) if f.endswith(".json"))
+    fixes = {}
     for f in files:
         d = json.load(open(f"{raw}/{f}", encoding="utf-8"))
+        if f.startswith("labels-"):  # names fetched later for items whose first answer had none (fetch.py labels); no statements
+            for k, e in d["entities"].items():
+                labs = e.get("labels") or {}
+                v = (labs.get("en") or labs.get("mul") or {}).get("value")
+                if v and e.get("id"): fixes[e["id"]] = v
+            continue
         redirects.update(d.get("redirects") or {})
         for k, e in d["entities"].items():
             if e.get("missing") or not e.get("id"): continue
             qid = e["id"]
             if qid in items: continue
-            items[qid] = (qid, (e.get("labels") or {}).get("en", {}).get("value"), (e.get("sitelinks") or {}).get("enwiki", {}).get("title"), FETCHED)
+            labs = e.get("labels") or {}
+            items[qid] = (qid, (labs.get("en") or labs.get("mul") or {}).get("value"), (e.get("sitelinks") or {}).get("enwiki", {}).get("title"), FETCHED)
             if e.get("sitelinks"): titles[e["sitelinks"]["enwiki"]["title"]] = qid
             for prop, lst in (e.get("claims") or {}).items():
                 for n, c in enumerate(lst):
                     r = claim_row(qid, prop, n, c)
                     if r: claims.append(r)
+    for qid, v in fixes.items():
+        if qid in items and items[qid][1] is None: items[qid] = (qid, v, *items[qid][2:])
     wl = json.load(open(links, encoding="utf-8"))["rows"]
     def tkey(t): return t[:1].upper() + t[1:]
     tmap = {tkey(t): v for t, v in titles.items()}
