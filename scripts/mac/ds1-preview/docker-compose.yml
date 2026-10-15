@@ -1,7 +1,7 @@
 # The always-on local copy of the site, reading DS1 (scripts/mac/ds1-preview.sh --install | --update | --status | --uninstall).
 # Project name spx-ds1-preview; both containers restart unless stopped; ports are published on SPX_PREVIEW_BIND only (127.0.0.1 unless a
-# caller says otherwise). Nothing here is Mac-only: the script passes the variables below, and the same file runs under /usr/local/bin/docker
-# compose on DS1 (only the env file path, the bind address and the DS1 host in that env file would differ). No cpus limits (the Synology
+# caller says otherwise). Nothing here is Mac-only: the script passes the variables below, and the same file runs under docker
+# compose on DS1 (only the env file path, the bind address and the DS1 host in that env file would differ). No cpus limits (the NAS
 # kernel rejects NanoCPUs), only mem_limit.
 #
 # Variables (all set by the script; defaults are for a hand-run `docker compose config`):

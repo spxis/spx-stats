@@ -2,10 +2,12 @@
 # SessionStart hook for spx-stats cloud sessions. No secret values in this file.
 # Idempotent; skips fast when the database already has data. Never drops or overwrites anything.
 #   DRY_RUN=1 prints what it would do and changes nothing.
-# Env (cloud environment settings; see AGENTS.md): TS_AUTHKEY, SPX_DS1_DB_PASSWORD
+# Env (cloud environment settings; see AGENTS.md): TS_AUTHKEY, SPX_DS1_DB_PASSWORD, NAS1_VPN_HOST (the address of DS1 over the VPN: it is
+# private, so it is not in this repository; scripts/mac/lib/hosts.sh reads it from the environment here, from a file on a Mac)
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$HERE/../mac/lib/hosts.sh"
 if [ "${CLAUDE_CODE_REMOTE:-}" != "true" ] && [ "${DRY_RUN:-}" != "1" ]; then
   # Not a cloud session: on a Mac, print the connection check so it lands in the agent's context.
   if [ "$(uname)" = "Darwin" ]; then bash "$HERE/../mac/spx-check.sh" || true; fi
@@ -19,8 +21,8 @@ TS_DIR="$WORK/ts"
 PGDATA="$WORK/pg17"
 PGBIN=/usr/lib/postgresql/17/bin
 PGPORT_LOCAL=55432
-DS1_IP=100.87.30.7
-DS1_PORT=55440
+DS1_IP="${NAS1_VPN_HOST:-}"
+DS1_PORT="$NAS1_DB_PORT"
 FWD_PORT=15440
 TS="$TS_DIR/tailscale"
 TSD="$TS_DIR/tailscaled"
@@ -36,15 +38,16 @@ db_ready() {
 
 # One-line summary on stdout at every exit, in the same style as scripts/mac/spx-check.sh.
 report() {
-  local prod=MISSING db=MISSING ds1="MISSING: set TS_AUTHKEY and SPX_DS1_DB_PASSWORD in the cloud environment (AGENTS.md section 12)"
+  local prod=MISSING db=MISSING ds1="MISSING: set TS_AUTHKEY, SPX_DS1_DB_PASSWORD and NAS1_VPN_HOST in the cloud environment (AGENTS.md section 12)"
   [ "$(curl -s -m 8 -o /dev/null -w '%{http_code}' -H "apikey: sb_publishable_FmeiL6oX9_Mrb8psQZFSQg_YO_O4afC" \
     -H "Accept-Profile: api" "https://njpvfrceahkvnrduerkk.supabase.co/rest/v1/season_summary?select=league&limit=1" 2>/dev/null)" = 200 ] && prod=ok
   db_ready && db=ok
-  [ -S "$SOCK" ] && "$TS" --socket="$SOCK" status >/dev/null 2>&1 && ds1="ok (Tailscale up)"
-  [ "$db" = ok ] && [ "$ds1" != "ok (Tailscale up)" ] && ds1="not needed, local database is loaded"
+  [ -S "$SOCK" ] && "$TS" --socket="$SOCK" status >/dev/null 2>&1 && ds1="ok (VPN up)"
+  if [ "$ds1" = "ok (VPN up)" ] && [ -z "$DS1_IP" ]; then ds1="MISSING: the VPN is up but NAS1_VPN_HOST (DS1's VPN address) is not set in the cloud environment (AGENTS.md section 12)"; fi
+  [ "$db" = ok ] && [ "$ds1" != "ok (VPN up)" ] && [ "${ds1#MISSING: the VPN is up}" = "$ds1" ] && ds1="not needed, local database is loaded"
   echo "[spx-check] production Supabase (read): $prod"
   echo "[spx-check] local database spx_stats: $db"
-  echo "[spx-check] DS1 over Tailscale: $ds1"
+  echo "[spx-check] DS1 over the VPN: $ds1"
   if [ -n "${SUMILABU_BOARD_TOKEN:-}" ]; then echo "[spx-check] board key: set"
   else echo "[spx-check] board key: MISSING: set SUMILABU_BOARD_TOKEN in the cloud environment"; fi
   return 0
@@ -96,6 +99,10 @@ if [ "$DRY" = "1" ] || ! "$TS" --socket="$SOCK" status >/dev/null 2>&1; then
 fi
 
 # 3. Restore from DS1 into a fresh spx_stats (skipped if a database of that name exists).
+if [ "$DRY" != "1" ] && [ -z "$DS1_IP" ]; then
+  say "NAS1_VPN_HOST is not set (DS1's address over the VPN is private); cannot reach DS1. Add NAS1_VPN_HOST to the environment settings (AGENTS.md section 12)."
+  exit 0
+fi
 if [ "$DRY" != "1" ] && [ -z "${SPX_DS1_DB_PASSWORD:-}" ]; then
   say "SPX_DS1_DB_PASSWORD is not set; cannot restore"
   exit 0
@@ -108,8 +115,8 @@ if [ "$EXISTS" = "1" ]; then
   say "database spx_stats exists but is empty or partial; not touching it. Drop it by hand to restore."
   exit 0
 fi
-say "forwarding DS1 $DS1_IP:$DS1_PORT to 127.0.0.1:$FWD_PORT"
-run bash -c "nohup python3 $HERE/fwd.py $FWD_PORT $DS1_IP $DS1_PORT >$TS_DIR/fwd.log 2>&1 &"
+say "forwarding DS1 (NAS1_VPN_HOST):$DS1_PORT to 127.0.0.1:$FWD_PORT"
+run bash -c "nohup python3 $HERE/fwd.py $FWD_PORT ${DS1_IP:-<NAS1_VPN_HOST>} $DS1_PORT >$TS_DIR/fwd.log 2>&1 &"
 run sleep 2
 run "$PGBIN/createdb" -h /tmp -p "$PGPORT_LOCAL" -U postgres spx_stats
 say "restoring (dump from DS1 piped into the local database)"

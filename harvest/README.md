@@ -1,6 +1,6 @@
-# Harvest job (Synology NAS)
+# Harvest job (on nas1)
 
-A container that sits next to DS1 and reads **English Wikipedia** (CC BY-SA 4.0) and **Wikidata** (CC0) all day, one request at a time, for the
+A container that sits next to DS1 (nas1, the always-on NAS that hosts the source database) and reads **English Wikipedia** (CC BY-SA 4.0) and **Wikidata** (CC0) all day, one request at a time, for the
 history DS1 does not have yet. It writes to **DS1 only**: the raw answers into `legacy_files.raw_archive` (the Mac export script copies them to
 Dropbox), and what it could read from them into `legacy_wikipedia_harvest.*` and `legacy_wikidata_harvest.*`. It builds **no `core` rows**: that is
 the job of `db/build` steps ([below](#what-reads-the-tables-and-what-is-missing)). It never touches production. $0, no cloud.
@@ -25,18 +25,18 @@ John, 2026-10-14: "first be sure to scrape the data that we don't have."
 
 Apply the migration first (the coordinator does this; rerunnable): `bash scripts/mac/ds1-apply.sh db/migrations/095_harvest_queue.sql`.
 
-    cd ~/Projects/spx-stats && git pull -q && tar -C harvest -cf - Dockerfile entry.sh docker-compose.yml harvest.env.example | ssh ds1 'rm -rf /tmp/spx-harvest && mkdir -p /tmp/spx-harvest && tar -C /tmp/spx-harvest -xf -' && security find-generic-password -s 'spx-stats-db DS1 55440' -w | ssh ds1 'set -e; IFS= read -r T; D=/volume2/docker/spx-harvest; sudo mkdir -p $D/data; sudo cp /tmp/spx-harvest/Dockerfile /tmp/spx-harvest/entry.sh /tmp/spx-harvest/docker-compose.yml $D/; { grep -v "^PGPASSWORD=" /tmp/spx-harvest/harvest.env.example; printf "PGPASSWORD=%s\n" "$T"; } | sudo tee $D/harvest.env >/dev/null; sudo chmod 600 $D/harvest.env; unset T; rm -rf /tmp/spx-harvest; echo "password lines: $(sudo grep -c "^PGPASSWORD=." $D/harvest.env)"; cd $D && sudo /usr/local/bin/docker compose up -d --build 2>&1 | tail -4; sleep 45; sudo /usr/local/bin/docker logs --tail 25 spx-harvest'
+    cd ~/Projects/spx-stats && . scripts/mac/lib/hosts.sh && git pull -q && tar -C harvest -cf - Dockerfile entry.sh docker-compose.yml harvest.env.example | ssh "$NAS1_SSH_ALIAS" 'rm -rf /tmp/spx-harvest && mkdir -p /tmp/spx-harvest && tar -C /tmp/spx-harvest -xf -' && security find-generic-password -s 'spx-stats-db DS1 55440' -w | ssh "$NAS1_SSH_ALIAS" "B='$NAS1_DOCKER_BIN' R='$NAS1_DOCKER_DIR'; "'set -e; IFS= read -r T; D=$R/spx-harvest; sudo mkdir -p $D/data; sudo cp /tmp/spx-harvest/Dockerfile /tmp/spx-harvest/entry.sh /tmp/spx-harvest/docker-compose.yml $D/; { grep -v "^PGPASSWORD=" /tmp/spx-harvest/harvest.env.example; printf "PGPASSWORD=%s\n" "$T"; } | sudo tee $D/harvest.env >/dev/null; sudo chmod 600 $D/harvest.env; unset T; rm -rf /tmp/spx-harvest; echo "password lines: $(sudo grep -c "^PGPASSWORD=." $D/harvest.env)"; cd $D && sudo $B compose up -d --build 2>&1 | tail -4; sleep 45; sudo $B logs --tail 25 spx-harvest'
 
 It prints `password lines: 1`, the build result, and the first log lines: `harvest: started (run N, wikipedia 1.0s/request ...)`, then
 `planner: {"pass": 1, "gap_targets": ...}` and the first requests. The password is never printed. To change a setting later, edit
-`/volume2/docker/spx-harvest/harvest.env` the way `daily/README.md` shows and run the `docker compose up -d --build` part again.
+`$NAS1_DOCKER_DIR/spx-harvest/harvest.env` on nas1 the way `daily/README.md` shows and run the `docker compose up -d --build` part again.
 
 Look at it any time, from the Mac (read-only, no container needed) or from the NAS:
 
     python3 -I scripts/harvest/status.py                  # queue depth, gap targets left by kind and league, today's requests and bytes, last error, growth
     python3 -I scripts/harvest/status.py --measure        # also the gaps in core right now (a few seconds more)
-    ssh ds1 'sudo /usr/local/bin/docker exec spx-harvest bash /usr/local/bin/entry.sh status'
-    ssh ds1 'sudo /usr/local/bin/docker logs --tail 40 spx-harvest'
+    ssh "$NAS1_SSH_ALIAS" "sudo $NAS1_DOCKER_BIN exec spx-harvest bash /usr/local/bin/entry.sh status"
+    ssh "$NAS1_SSH_ALIAS" "sudo $NAS1_DOCKER_BIN logs --tail 40 spx-harvest"
 
 The same numbers from SQL: `select ingest.harvest_progress();`. The heartbeat is `ingest.harvest_run` (one row per worker process, about one an hour;
 `last_beat_at` moves every 30 seconds; a row stuck on `running` with an old `last_beat_at` is a worker that died). The per-request log is `ingest.harvest_fetch`.
@@ -111,7 +111,7 @@ Known limits of the parsers (all rows are kept as printed; a hole is a hole):
 
 - **Pin the code:** `HARVEST_REF=<commit sha>` in `harvest.env`, then run the `docker compose up -d --build` part again. Without it the job follows `origin/main`,
   fetched at the start of every hourly cycle, so a pushed fix is live within the hour with no rebuild. Changing the `Dockerfile` or `entry.sh` needs a rebuild.
-- **Stop:** `ssh ds1 'cd /volume2/docker/spx-harvest && sudo /usr/local/bin/docker compose stop'`. It resumes where it was: every job is settled in DS1 as soon
+- **Stop:** `ssh "$NAS1_SSH_ALIAS" "cd $NAS1_DOCKER_DIR/spx-harvest && sudo $NAS1_DOCKER_BIN compose stop"` (after `. scripts/mac/lib/hosts.sh`). It resumes where it was: every job is settled in DS1 as soon
   as it is read, and a job that was claimed and not settled comes back when its 15-minute lease passes.
 - **Ask for something now:** `insert into ingest.harvest_job (kind, target, priority, gap) values ('wp_team_season', '2024–25 Boston Celtics season', 99999, true);` (DS1).
   **Read a failed one again:** `update ingest.harvest_job set state = 'queued', attempts = 0, next_check_at = now() where state = 'failed' and kind = '...';`

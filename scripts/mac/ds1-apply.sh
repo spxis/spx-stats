@@ -3,7 +3,7 @@
 # Usage: bash scripts/mac/ds1-apply.sh <file.sql> [--dry-run] [--force]
 #   --dry-run  runs everything inside the transaction, shows the counts, then rolls back
 #   --force    allows a file outside db/ and the scratchpad
-# Host: $SPX_DS1_HOST, else found like spx-check.sh does. Port $SPX_DS1_PORT (55440), user $SPX_DS1_USER (postgres),
+# Host: $SPX_DS1_HOST, else found like spx-check.sh does (addresses: the private host mapping, scripts/mac/lib/hosts.sh). Port $SPX_DS1_PORT (NAS1_DB_PORT, 55440), user $SPX_DS1_USER (postgres),
 # database $SPX_DS1_DB (spx_stats). Password: $PGPASSWORD if set, else keychain item 'spx-stats-db DS1 55440'.
 # Prints the file, then row counts before and after for the tables the file mentions. The coordinating session runs it.
 set -eu
@@ -31,16 +31,16 @@ if grep -qiE '^[[:space:]]*rollback[[:space:]]*;' "$file"; then
   echo "refused: the file contains a rollback; it must not manage its own transaction" >&2; exit 2
 fi
 
+# shellcheck source=spx-checks.sh
+. "$HERE/spx-checks.sh"
 if [ -z "${SPX_DS1_HOST:-}" ]; then
-  # shellcheck source=spx-checks.sh
-  . "$HERE/spx-checks.sh"
   SPX_DS1_HOST="$(ds1_host)" || { echo "DS1 not reachable: $(ds1_missing)" >&2; exit 1; }
 fi
 if [ -z "${PGPASSWORD:-}" ]; then
   PGPASSWORD="$(security find-generic-password -s 'spx-stats-db DS1 55440' -w 2>/dev/null || true)"
   [ -n "$PGPASSWORD" ] || { echo "no DS1 password: keychain item 'spx-stats-db DS1 55440' is missing (zsh scripts/mac/spx-credentials.sh setup)" >&2; exit 1; }
 fi
-export PGPASSWORD PGHOST="$SPX_DS1_HOST" PGPORT="${SPX_DS1_PORT:-55440}" PGUSER="${SPX_DS1_USER:-postgres}" \
+export PGPASSWORD PGHOST="$SPX_DS1_HOST" PGPORT="$SPX_DS1_PORT" PGUSER="${SPX_DS1_USER:-postgres}" \
   PGDATABASE="${SPX_DS1_DB:-spx_stats}" PGCONNECT_TIMEOUT=10
 
 work="$(mktemp -d)"

@@ -1,6 +1,7 @@
 #!/bin/bash
 # Startup check on John's Mac: one line per connection, "ok" or "MISSING: <the one fix>". Read-only, no values printed.
-# DS1 is tried on the home LAN and on Tailscale; a Mac on the home network needs no Tailscale.
+# DS1 (nas1) is tried on the home LAN and over the VPN; a Mac on the home network needs no VPN. Addresses and names come from the
+# private host mapping (scripts/mac/lib/hosts.sh); without it the lines say MISSING and how to create it.
 # Run it any time: bash scripts/mac/spx-check.sh. The session-start hook runs it too. Always exits 0.
 # claude.ai connectors (Supabase, Vercel, Dropbox, GitHub) cannot be seen from a script: the agent checks its tool list.
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -41,9 +42,9 @@ check_gh() {
 }
 check_tailscale() {
   local host
-  if limited 5 "$SPX_TAILSCALE_BIN" status >/dev/null 2>&1; then line 6 "Tailscale: ok"
-  elif host=$(ds1_host); then line 6 "Tailscale: off (not needed: DS1 answers on $(ds1_route "$host"))"
-  else line 6 "Tailscale: MISSING: off, and DS1 does not answer on the home LAN either; open the Tailscale app and turn it on, or join the home network"; fi
+  if limited 5 "$SPX_TAILSCALE_BIN" status >/dev/null 2>&1; then line 6 "Tailscale (VPN): ok"
+  elif host=$(ds1_host); then line 6 "Tailscale (VPN): off (not needed: DS1 answers on $(ds1_route "$host"))"
+  else line 6 "Tailscale (VPN): MISSING: off, and DS1 does not answer on the home LAN either; open the Tailscale app and turn it on, or join the home network"; fi
 }
 check_tools() {
   local bad=""
@@ -57,14 +58,15 @@ check_turso() {
   else line 8 "Turso CLI: installed, not logged in (optional: turso auth login)"; fi
 }
 
-# Key login to DS1 over ssh (alias ds1, set up by `spx-credentials.sh machine`); the route is whichever the config chose.
+# Key login to DS1 over ssh (alias NAS1_SSH_ALIAS, default ds1, set up by `spx-credentials.sh machine`); the route is whichever the config chose.
+ssh_fix() { if [ "$SPX_HOSTS_LOADED" = 1 ] || [ -n "${NAS1_LAN_PRIMARY:-}" ]; then printf "zsh scripts/mac/spx-credentials.sh machine"; else printf "no private host mapping yet: %s" "$(spx_hosts_fix)"; fi; }
 check_ssh() {
   local out addr
-  out=$(limited 14 ssh -o BatchMode=yes -o ConnectTimeout=6 -o ControlMaster=no -o ControlPath=none ds1 hostname 2>/dev/null | tail -n 1)
+  out=$(limited 14 ssh -o BatchMode=yes -o ConnectTimeout=6 -o ControlMaster=no -o ControlPath=none "$NAS1_SSH_ALIAS" hostname 2>/dev/null | tail -n 1)
   if [ -n "$out" ]; then
-    addr=$(limited 6 ssh -G ds1 2>/dev/null | awk '$1=="hostname"{print $2}')
-    if [ "$addr" = "$SPX_DS1_TAILSCALE_HOST" ]; then line 11 "ssh ds1: ok (Tailscale)"; else line 11 "ssh ds1: ok (home LAN)"; fi
-  else line 11 "ssh ds1: MISSING: no key login to DS1 (zsh scripts/mac/spx-credentials.sh machine)"; fi
+    addr=$(limited 6 ssh -G "$NAS1_SSH_ALIAS" 2>/dev/null | awk '$1=="hostname"{print $2}')
+    if [ -n "$SPX_DS1_VPN_HOST" ] && [ "$addr" = "$SPX_DS1_VPN_HOST" ]; then line 11 "ssh $NAS1_SSH_ALIAS: ok (VPN)"; else line 11 "ssh $NAS1_SSH_ALIAS: ok (home LAN)"; fi
+  else line 11 "ssh $NAS1_SSH_ALIAS: MISSING: no key login to DS1 ($(ssh_fix))"; fi
 }
 # Keychain parity: every required item is on this Mac (names only; a value is never read).
 check_keychain() {
@@ -101,18 +103,41 @@ check_counts() {
   else line 9 "row counts DS1 vs production: MISMATCH: DS1 [$d] production [$p]; run scripts/sync/compare.py (see scripts/sync/README.md); DS1 first, then production"; fi
 }
 
+# The private host mapping (addresses, names, the NAS login live there, never in the repository).
+check_hosts() {
+  local miss=""
+  [ "$SPX_HOSTS_LOADED" = 1 ] || miss="file $SPX_MAP_FILE does not exist"
+  if [ -z "$miss" ]; then
+    for v in NAS1_LAN_HOSTS NAS1_LAN_PRIMARY NAS1_VPN_HOST NAS1_SSH_USER NAS1_DOCKER_DIR MACHINE1_LOCALNAME MACHINE2_LOCALNAME MACHINE1_HOST MACHINE2_HOST MACHINE_SSH_USER; do
+      eval "[ -n \"\${$v:-}\" ]" || miss="${miss:+$miss, }$v empty"
+    done
+  fi
+  if [ -z "$miss" ]; then line 13 "host mapping ($SPX_MAP_FILE): ok"
+  else line 13 "host mapping: MISSING: $miss; $(spx_hosts_fix)"; fi
+}
+
+# The repository must hold no private address or name (scripts/check_private_hosts.sh).
+check_repo_private() {
+  local out
+  if out=$(bash "$HERE/../check_private_hosts.sh" 2>&1); then line 14 "repository holds no private host data: ok"
+  else line 14 "repository holds private host data: MISSING: remove it before any push ($(echo "$out" | head -n 1 | cut -c1-160))"; fi
+}
+
 check_migrations() {
   local out
   if out=$(bash "$HERE/../check_migration_numbers.sh" 2>&1); then line 10 "$out"
   else line 10 "migration numbers: MISSING: fix the clash (git fetch && git rebase origin/main, renumber your file): $(echo "$out" | head -n 1)"; fi
 }
 
-for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations check_ssh check_keychain; do "$c" & done
+# Tests source this file with SPX_CHECK_LIB_ONLY=1 to call one check without running them all (nothing is requested).
+[ -z "${SPX_CHECK_LIB_ONLY:-}" ] || return 0 2>/dev/null || exit 0
+
+for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations check_ssh check_keychain check_hosts check_repo_private; do "$c" & done
 wait
 
 echo "[spx-check] connections on this Mac (claude.ai connectors: the agent checks its own tool list)"
 n=0
-for i in 1 2 3 4 5 6 7 8 9 10 11 12; do
+for i in 13 14 1 2 3 4 5 6 7 8 9 10 11 12; do
   l=$(cat "$OUT/$i" 2>/dev/null || echo "check $i: MISSING: check did not finish")
   echo "[spx-check] $l"
   case "$l" in *MISSING*) n=$((n + 1));; esac

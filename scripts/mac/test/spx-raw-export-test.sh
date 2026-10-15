@@ -50,8 +50,10 @@ newenv() {
   N=$((N + 1))
   E="$ROOT/s$N"; mkdir -p "$E/home" "$E/tmp" "$E/dropbox"
   export STUB_LOG="$E/log" STUB_FIXTURE="$E/fixture.json" HOME="$E/home" TMPDIR="$E/tmp"
-  export SPX_DROPBOX_DIR="$E/dropbox" SPX_RETRY_PAUSE=0 SPX_PROBE_LIMIT=3 SPX_FETCH_LIMIT=20 PATH="$STUBS:/usr/bin:/bin"
+  export SPX_DROPBOX_DIR="$E/dropbox" SPX_RETRY_PAUSE=0 SPX_PROBE_LIMIT=3 SPX_FETCH_LIMIT=20 PATH="$STUBS:/usr/bin:/bin:/sbin"
   unset SPX_DS1_HOST SPX_DS1_DB_PASSWORD STUB_FLAKY
+  # stand-in addresses (documentation ranges); the real mapping is private and HOME here is a scratch folder, so none is read
+  export NAS1_LAN_HOSTS="nas.example.test 192.0.2.101 192.0.2.102 192.0.2.103 192.0.2.104" NAS1_VPN_HOST=198.51.100.77
   : >"$STUB_LOG"
   RAW="$E/dropbox/Backups/spx-stats/raw"
 }
@@ -63,15 +65,15 @@ run() { # runs the script; output in $E/out, status in $RC, elapsed seconds in $
 }
 
 BASIC='[{"name":"nhl/2026-10-01/a.txt","data":"alpha\n"},{"name":"nba/2026-10-02/b.csv","data":"x,y\n1,2\n"},{"name":"mlb/2026-10-03/empty","data":""}]'
-ALLDOWN="diskstation1.local=noname 10.0.0.101=timeout 10.0.0.102=hang 10.0.0.103=noroute 10.0.0.104=refused 100.87.30.7=hang"
+ALLDOWN="nas.example.test=noname 192.0.2.101=timeout 192.0.2.102=hang 192.0.2.103=noroute 192.0.2.104=refused 198.51.100.77=hang"
 
-echo "(a) only the Tailscale host answers"
+echo "(a) only the VPN host answers"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="diskstation1.local=noname 10.0.0.101=timeout 10.0.0.102=refused 10.0.0.103=noroute 10.0.0.104=timeout 100.87.30.7=up"
+export STUB_HOSTS="nas.example.test=noname 192.0.2.101=timeout 192.0.2.102=refused 192.0.2.103=noroute 192.0.2.104=timeout 198.51.100.77=up"
 run
 check "exit 0" test "$RC" = 0
-check "says Tailscale" has "$E/out" '^using DS1 at 100.87.30.7 (Tailscale)$'
-check "three files written" test "$(find "$RAW" -type f | wc -l)" = 3
+check "says VPN" has "$E/out" '^using DS1 at 198.51.100.77 (VPN)$'
+check "three files written" test "$(find "$RAW" -type f | wc -l | tr -d " ")" = 3
 check "content right" test "$(cat "$RAW/nhl/2026-10-01/a.txt")" = alpha
 check "empty file written" test -f "$RAW/mlb/2026-10-03/empty"
 check "no .part left" test -z "$(find "$E/dropbox" -name '*.part')"
@@ -84,20 +86,20 @@ check "second run exit 0" test "$RC" = 0
 
 echo "(b) only a home-network address answers"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="diskstation1.local=noname 10.0.0.101=timeout 10.0.0.102=up 10.0.0.103=up 10.0.0.104=refused 100.87.30.7=hang"
+export STUB_HOSTS="nas.example.test=noname 192.0.2.101=timeout 192.0.2.102=up 192.0.2.103=up 192.0.2.104=refused 198.51.100.77=hang"
 run
 check "exit 0" test "$RC" = 0
-check "first answering host wins, home network" has "$E/out" '^using DS1 at 10.0.0.102 (home network)$'
-check "files written" test "$(find "$RAW" -type f | wc -l)" = 3
-check "later hosts not used for data" test -z "$(grep -E '^(10.0.0.103|100.87.30.7) .* (list|fetch)' "$STUB_LOG")"
+check "first answering host wins, home network" has "$E/out" '^using DS1 at 192.0.2.102 (home network)$'
+check "files written" test "$(find "$RAW" -type f | wc -l | tr -d " ")" = 3
+check "later hosts not used for data" test -z "$(grep -E '^(192.0.2.103|198.51.100.77) .* (list|fetch)' "$STUB_LOG")"
 
 echo "(b2) SPX_DS1_HOST is tried first; mDNS name works"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="diskstation1.local=up 10.0.0.101=up 100.87.30.7=up myhost=up"
+export STUB_HOSTS="nas.example.test=up 192.0.2.101=up 198.51.100.77=up myhost=up"
 SPX_DS1_HOST=myhost run
 check "custom host first" has "$E/out" '^using DS1 at myhost (home network)$'
 SPX_DS1_HOST='' run
-check "then diskstation1.local" has "$E/out" '^using DS1 at diskstation1.local (home network)$'
+check "then the LAN name" has "$E/out" '^using DS1 at nas.example.test (home network)$'
 
 echo "(c) nothing answers"
 newenv; fixture "$BASIC"
@@ -105,22 +107,32 @@ export STUB_HOSTS="$ALLDOWN"
 run
 check "exit 1" test "$RC" = 1
 check "quick (under 10s with a 3s watchdog)" test "$SECS" -lt 10
-for h in diskstation1.local 10.0.0.101 10.0.0.102 10.0.0.103 10.0.0.104 100.87.30.7; do check "lists $h" has "$E/out" "$h"; done
+for h in nas.example.test 192.0.2.101 192.0.2.102 192.0.2.103 192.0.2.104 198.51.100.77; do check "lists $h" has "$E/out" "$h"; done
 check "explains timeout" has "$E/out" 'timed out'
 check "explains refused" has "$E/out" 'refused'
 check "explains no route" has "$E/out" 'no route'
 check "explains hung host" has "$E/out" 'no answer in 3s'
 check "explains name" has "$E/out" 'name not found'
-check "fix 1 Tailscale" has "$E/out" 'Turn Tailscale on'
-check "fix 2 DSM firewall" has "$E/out" 'Control Panel > Security > Firewall'
+check "fix 1 VPN" has "$E/out" 'Turn the VPN'
+check "fix 2 NAS firewall" has "$E/out" "NAS's firewall settings"
 check "nothing written" test -z "$(find "$E/dropbox" -type f)"
 SPX_PROBE_LIMIT=3 bash "$SCRIPT" --scheduled >"$E/out" 2>&1; RC=$?
 check "scheduled run: exit 0 and one line" test "$RC" = 0 -a "$(wc -l <"$E/out" | tr -d ' ')" = 1
 check "scheduled line says skipping" has "$E/out" 'skipping'
 
+echo "(c1) no private host mapping at all"
+newenv; fixture "$BASIC"
+export NAS1_LAN_HOSTS="" NAS1_VPN_HOST=""
+run
+check "exit 1" test "$RC" = 1
+check "says MISSING and the one fix" has "$E/out" 'MISSING: the private host mapping .* does not exist'
+check "names the fix command" has "$E/out" 'spx-credentials.sh hosts'
+SPX_PROBE_LIMIT=3 bash "$SCRIPT" --scheduled >"$E/out" 2>&1; RC=$?
+check "scheduled run: exit 0 and skips" test "$RC" = 0 && has "$E/out" 'skipping'
+
 echo "(c2) wrong password is named"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 mkdir -p "$E/bin2"; printf '#!/bin/bash\necho wrongpw\n' >"$E/bin2/security"; chmod +x "$E/bin2/security"
 PATH="$E/bin2:$PATH" run
 check "exit 1" test "$RC" = 1
@@ -128,7 +140,7 @@ check "password refused named" has "$E/out" 'password was refused'
 
 echo "(d) file already present with the same hash is skipped"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 mkdir -p "$RAW/nhl/2026-10-01"; printf 'alpha\n' >"$RAW/nhl/2026-10-01/a.txt"
 run
 check "written 2, skipped 1" has "$E/out" 'written 2, skipped 1'
@@ -167,7 +179,7 @@ check "plain name written" test "$(cat "$RAW/nhl/ok/fine.txt")" = ok
 check "four unsafe reported" test "$(grep -c '^UNSAFE' "$E/out")" = 4
 check "dotdot not written" test ! -e "$E/dropbox/Backups/spx-stats/etc/passwd"
 check "absolute not written" test ! -e /abs/path
-check "only two files in Dropbox" test "$(find "$E/dropbox" -type f | wc -l)" = 2
+check "only two files in Dropbox" test "$(find "$E/dropbox" -type f | wc -l | tr -d " ")" = 2
 check "summary counts unsafe" has "$E/out" 'written 2, skipped 0, differs 0, bad 0, unsafe 4'
 check "exit 2" test "$RC" = 2
 
@@ -180,7 +192,7 @@ rows.append({"name": "src/d/big.bin", "data": "B" * 1500000})
 rows.append({"name": "src/d/corrupt.txt", "data": "ok\n", "served": "no\n"})
 json.dump(rows, open(sys.argv[1], "w"))
 PY
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 run
 check "97 written... 96 good" has "$E/out" 'written 96, skipped 0, differs 0, bad 1'
 check "big file exact" test "$(wc -c <"$RAW/src/d/big.bin" | tr -d ' ')" = 1500000
@@ -193,18 +205,18 @@ check "second run: nothing to write" has "$E/out" 'written 0, skipped 96, differ
 
 echo "(g3) a flaky link: the first batch times out and is retried"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 STUB_FLAKY=batch SPX_RETRY_PAUSE=0 run
 check "all written after the retry" has "$E/out" 'written 3, skipped 0, differs 0, bad 0'
 check "the batch was asked twice" test "$(grep -c ' batch ' "$STUB_LOG")" = 2
 check "exit 0" test "$RC" = 0
 newenv; fixture "$BASIC"
-STUB_HOSTS="100.87.30.7=up" STUB_FLAKY=list SPX_RETRY_PAUSE=0 run
+STUB_HOSTS="198.51.100.77=up" STUB_FLAKY=list SPX_RETRY_PAUSE=0 run
 check "a flaky listing is retried too" has "$E/out" 'written 3'
 
 echo "(h) --check writes nothing"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 mkdir -p "$RAW/nhl/2026-10-01"; printf 'alpha\n' >"$RAW/nhl/2026-10-01/a.txt"
 before=$(find "$E/dropbox" | sort | tr '\n' ' ')
 run --check
@@ -219,15 +231,15 @@ check "--check on an empty Dropbox creates no folder" test ! -e "$E/dropbox/Back
 
 echo "(i) no xxd on the Mac: perl fallback"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 mkdir -p "$E/noxxd"; for t in psql security shasum; do ln -s "$STUBS/$t" "$E/noxxd/$t"; done
-PATH="$E/noxxd:/usr/bin:/bin" run
+PATH="$E/noxxd:/usr/bin:/bin:/sbin" run
 check "written without xxd" has "$E/out" 'written 3'
 check "content right" test "$(cat "$RAW/nhl/2026-10-01/a.txt")" = alpha
 
 echo "(j) Dropbox folder detection"
 newenv; fixture "$BASIC"
-export STUB_HOSTS="100.87.30.7=up"
+export STUB_HOSTS="198.51.100.77=up"
 unset SPX_DROPBOX_DIR
 run
 check "no Dropbox: exit 1 with a message" test "$RC" = 1 && has "$E/out" 'No Dropbox folder found'

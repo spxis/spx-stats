@@ -1,6 +1,6 @@
-# Daily scores job (Synology NAS)
+# Daily scores job (on nas1)
 
-A small container that sits next to DS1. Once a day at 10:00 Toronto time it runs `scripts/daily/run.py --apply`: it reads the
+A small container that sits next to DS1 (nas1, the always-on NAS that hosts the source database). Once a day at 10:00 Toronto time it runs `scripts/daily/run.py --apply`: it reads the
 clubs' season articles on English Wikipedia (plus nflverse for the NFL), cross-checks them and writes the results to **DS1 only**,
 through `ingest.report_results`, re-checking the last 7 days for late edits. Between runs it only sleeps: nothing is polled, and
 nothing contacts Wikipedia, GitHub or DS1 except at the daily run. It costs $0 and uses no cloud.
@@ -8,21 +8,22 @@ It never touches production. Production gets the results through a data release 
 
 ## Set up once (about 15 minutes)
 
-1. In File Station create the folder `docker/spx-daily-scores` and put four files in it, taken from this folder of the repo
+1. On nas1 (its file manager, or ssh) create the folder `spx-daily-scores` inside the job-folder base (`NAS1_DOCKER_DIR` in the private host mapping)
+   and put four files in it, taken from this folder of the repo
    (https://github.com/spxis/spx-stats/tree/main/daily): `Dockerfile`, `entry.sh`, `docker-compose.yml`, and a copy of
    `daily.env.example` named `daily.env`.
-2. In File Station create an empty folder named `data` inside `docker/spx-daily-scores`. The bind mount `./data:/data` fails on
+2. Create an empty folder named `data` inside `spx-daily-scores`. The bind mount `./data:/data` fails on
    first start if it is missing.
 3. Open `daily.env` in a text editor and fill in the one empty value (names only here):
    - `PGPASSWORD`: the DS1 password. On your Mac, copy it without showing it: `security find-generic-password -s 'spx-stats-db DS1 55440' -w | pbcopy`,
      then paste it after `PGPASSWORD=`. `PGHOST=127.0.0.1` stays (DS1 is on the same NAS and the container uses host networking,
-     because the NAS runs AdGuard Home and bridge containers had no DNS). `PGPORT`, `PGUSER`, `PGDATABASE` are already right.
-4. In DSM open Container Manager, then Project, then Create. Name `spx-daily-scores`, path the folder from step 1, source
+     because bridge containers had no DNS on that NAS). `PGPORT`, `PGUSER`, `PGDATABASE` are already right.
+4. In the NAS's container UI (its Docker or Compose project screen) open Project, then Create. Name `spx-daily-scores`, path the folder from step 1, source
    "Use existing docker-compose.yml". Next until it asks to build and start; accept.
-5. Read the log: Container Manager, Container, `spx-daily-scores`, Log. You should see
+5. Read the log: in the container UI, Container, `spx-daily-scores`, Log. You should see
    `daily: waiting for 10:00 America/Toronto each day` and then `daily: sleeping until <tomorrow or today> 10:00 EDT`.
    If you see `... is not set`, a name in `daily.env` is empty.
-6. Try one run now, without writing anything: Container Manager, Container, `spx-daily-scores`, Action (or Details), Terminal,
+6. Try one run now, without writing anything: in the container UI, Container, `spx-daily-scores`, Action (or Details), Terminal,
    Create (bash), then run `bash /usr/local/bin/entry.sh once --dry-run`. It prints the Wikipedia pages, the games found and the
    comparison with DS1 (about a minute; the first run fetches all 134 pages, 17 requests). `once` with no argument does the real
    `--apply`. The daily loop itself is not affected.
@@ -34,7 +35,7 @@ A failed run is tried again after an hour, up to 3 times that day (`DAILY_MAX_TR
 ## What it does and where things are
 
 - Code: the public repo, fetched from GitHub at each daily run and checked out at `DAILY_REF` (default `origin/main`). Pin the job to a
-  reviewed `main` commit: set `DAILY_REF=<commit sha>` in `daily.env`, then Container Manager, Project, `spx-daily-scores`, Action, Build.
+  reviewed `main` commit: set `DAILY_REF=<commit sha>` in `daily.env`, then in the container UI, Project, `spx-daily-scores`, Action, Build.
   Changing the `Dockerfile` or `entry.sh` needs a rebuild the same way.
 - State and downloads: the `data` folder next to `docker-compose.yml` (`data/cache/state.json`, `data/cache/raw/` the wikitext as served,
   `data/logs/` the run output and the DS1 transaction logs, kept 60 days, `last_ok` and `tries` for the schedule). Deleting `data/cache`
@@ -73,19 +74,20 @@ tables DS1 changed (`scripts/release/README.md`):
 
 ## Working on it from a Mac
 
-A new or rebuilt Mac needs nothing for the daily job or the release runner (`/volume2/docker/spx-release-runner`, same pattern
-with `release-runner.env`) except `ssh ds1` (`zsh scripts/mac/spx-credentials.sh machine`, see `scripts/mac/README.md`).
-Both containers run on the NAS by themselves. To edit `daily.env`: `ssh ds1`, then `vi /volume2/docker/spx-daily-scores/daily.env`.
+A new or rebuilt Mac needs nothing for the daily job or the release runner (`$NAS1_DOCKER_DIR/spx-release-runner`, same pattern
+with `release-runner.env`) except the private host mapping and the ssh alias (`zsh scripts/mac/spx-credentials.sh hosts`, then `machine`; see `scripts/mac/README.md`).
+Both containers run on the NAS by themselves. To edit `daily.env`: run `. scripts/mac/lib/hosts.sh` loads the private host mapping (nas1's ssh alias `$NAS1_SSH_ALIAS` and the job-folder base `$NAS1_DOCKER_DIR`; see `scripts/mac/README.md`), then `ssh "$NAS1_SSH_ALIAS"` and `vi "$NAS1_DOCKER_DIR/spx-daily-scores/daily.env"`.
 
 To **write a secret into `daily.env` without showing it**, take the value from this Mac's keychain, pipe it over ssh stdin, replace the
 line on the NAS and print only a count (`1` means the name is there once, with a non-empty value). Set `n` to the variable name and
 use the matching keychain item (`PGPASSWORD` is `spx-stats-db DS1 55440`, `SUPABASE_ACCESS_TOKEN` is `spx-stats SUPABASE_ACCESS_TOKEN`):
 
-    security find-generic-password -s 'spx-stats SUPABASE_ACCESS_TOKEN' -w | ssh ds1 \
-      'f=/volume2/docker/spx-daily-scores/daily.env; n=SUPABASE_ACCESS_TOKEN; IFS= read -r T; { grep -v "^$n=" "$f"; printf "%s=%s\n" "$n" "$T"; } > "$f.new" && cat "$f.new" > "$f" && rm "$f.new"; unset T; grep -c "^$n=." "$f"'
+    . scripts/mac/lib/hosts.sh
+    security find-generic-password -s 'spx-stats SUPABASE_ACCESS_TOKEN' -w | ssh "$NAS1_SSH_ALIAS" \
+      "f=$NAS1_DOCKER_DIR/spx-daily-scores/daily.env; "'n=SUPABASE_ACCESS_TOKEN; IFS= read -r T; { grep -v "^$n=" "$f"; printf "%s=%s\n" "$n" "$T"; } > "$f.new" && cat "$f.new" > "$f" && rm "$f.new"; unset T; grep -c "^$n=." "$f"'
 
 It is safe for values with quotes, spaces or `$` (tested against a dummy keychain item), keeps the file's owner and mode, and replaces rather than
-duplicates. The container reads `daily.env` when it starts, so then Container Manager, Project, `spx-daily-scores`, Action, Build (a plain restart can keep the old values).
+duplicates. The container reads `daily.env` when it starts, so then, in the container UI, Project, `spx-daily-scores`, Action, Build (a plain restart can keep the old values).
 
 ## Safety
 

@@ -1,6 +1,6 @@
-# Release runner (Synology NAS)
+# Release runner (on nas1)
 
-A small container that sits next to DS1. Every 60 seconds it runs `release.py run` (applies the data releases John approved at
+A small container that sits next to DS1 (nas1, the always-on NAS that hosts the source database). Every 60 seconds it runs `release.py run` (applies the data releases John approved at
 `/admin/data`) and once a night `release.py drift` (compares DS1 and production). It needs DS1 on the local network and the
 internet (Supabase and GitHub). Production cannot reach DS1, so this is the only way data gets to production.
 It cannot approve anything on its own: approval is a button on the site. Two exceptions, both limited to `daily_scores` releases and
@@ -9,20 +9,21 @@ of the release prepared for an admin's **Request scores update** (below).
 
 ## Set up once (about 15 minutes)
 
-1. In File Station create the folder `docker/spx-release-runner` and put four files in it, taken from this folder of the
+1. On nas1 (its file manager, or ssh) create the folder `spx-release-runner` inside the job-folder base (`NAS1_DOCKER_DIR` in the private host
+   mapping) and put four files in it, taken from this folder of the
    repo (https://github.com/spxis/spx-stats/tree/main/runner): `Dockerfile`, `entry.sh`, `docker-compose.yml`, and a copy of
    `release-runner.env.example` named `release-runner.env`.
-2. In File Station create an empty folder named `data` inside `docker/spx-release-runner`. The bind mount `./data:/data` fails
+2. Create an empty folder named `data` inside `spx-release-runner`. The bind mount `./data:/data` fails
    on first start if it is missing.
 3. Open `release-runner.env` in a text editor and fill in (names only here; the values are in the private file):
    - `SUPABASE_ACCESS_TOKEN`: the production access token.
    - `PGPASSWORD`: the DS1 password. `PGHOST=127.0.0.1` (DS1 is on the same NAS and the container uses host networking, because
-     the NAS runs AdGuard Home and bridge containers had no DNS). `PGPORT`, `PGUSER`, `PGDATABASE` are already right.
-4. In DSM open Container Manager, then Project, then Create. Name `spx-release-runner`, path the folder from step 1, source
+     bridge containers had no DNS on that NAS). `PGPORT`, `PGUSER`, `PGDATABASE` are already right.
+4. In the NAS's container UI (its Docker or Compose project screen) open Project, then Create. Name `spx-release-runner`, path the folder from step 1, source
    "Use existing docker-compose.yml". Next until it asks to build and start; accept.
-5. Read the log in DSM: Container (or Container Manager), then Container, then `spx-release-runner`, then Log. Within a minute you should see lines like
+5. Read the log in the container UI: Container, then `spx-release-runner`, then Log. Within a minute you should see lines like
    `nothing approved` repeating. If you see `... is not set`, a name in `release-runner.env` is empty.
-6. Check DS1 access from the NAS once: in Container Manager open the container's Terminal and run
+6. Check DS1 access from the NAS once: in the container UI open the container's Terminal and run
    `python3 -I /work/repo/scripts/release/release.py checks`. It prints one line per check, all `ok`.
 
 ## Score update requests, drift checks and the site refresh
@@ -39,7 +40,7 @@ of the release prepared for an admin's **Request scores update** (below).
   REVALIDATE_SECRET, 32 or more characters>`. Without them nothing is sent and pages refresh within the hour. The secret only lets a caller
   refresh cache tags; it cannot read or change data.
 - After each committed release the runner also compares that release's tables again and updates `meta.sync_status`.
-- Rebuild after pulling this change: Container Manager, Project, `spx-release-runner`, Action, Build (only needed for a new `Dockerfile` or
+- Rebuild after pulling this change: in the container UI, Project, `spx-release-runner`, Action, Build (only needed for a new `Dockerfile` or
   `entry.sh`; this change touches neither, so setting `RELEASE_REF` to the new sha and restarting is enough).
 
 ## API watchdog (keeps production's REST API up)
@@ -72,19 +73,19 @@ causes one. It uses the `SUPABASE_ACCESS_TOKEN` the runner already holds; nothin
 - **Cost:** one single-row read a minute (Supabase Free has no request limit; nothing Vercel-side is touched) and, during an outage only, one
   Management API call per action. The unit tests are `python3 -I scripts/release/test/test_watchdog.py` (no database, no network).
 - **Version.** `entry.sh` changed (it starts the watchdog), so the first time needs Build: copy `entry.sh` over and
-  `cd /volume2/docker/spx-release-runner && sudo docker compose up -d --build`. After that the watchdog code follows `RELEASE_REF` like the rest.
+  `cd "$NAS1_DOCKER_DIR/spx-release-runner" && sudo "$NAS1_DOCKER_BIN" compose up -d --build` (on nas1, with those two values from the private host mapping). After that the watchdog code follows `RELEASE_REF` like the rest.
 
 ## What it does and where things are
 
 - Code: the public repo, fetched from GitHub every minute and checked out at `RELEASE_REF` (default `origin/main`). Pin the
   runner to a reviewed `main` commit: set `RELEASE_REF=<commit sha>` in `release-runner.env`. To update it, edit `RELEASE_REF`
-  to the newly reviewed sha, then in DSM open Container Manager, Project, `spx-release-runner`, Action, Build.
+  to the newly reviewed sha, then in the container UI open Project, `spx-release-runner`, Action, Build.
 - Before changing production a release saves the old rows to `data/snapshots/<release number>/` (gzip TSV, in the `data`
   folder next to `docker-compose.yml`) and to schema `backup_release_<id>` on DS1. Never in production. Delete old ones
   now and then; keep the last few.
 - One job at a time. A release that was running when the container stopped is marked failed; run the drift check or look at
   `/admin/data` to see whether production matches DS1.
-- Changing the `Dockerfile` or `entry.sh` needs a rebuild: Container Manager, Project, Action, Build.
+- Changing the `Dockerfile` or `entry.sh` needs a rebuild: in the container UI, Project, Action, Build.
 
 ## Safety
 

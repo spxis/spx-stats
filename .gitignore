@@ -7,6 +7,10 @@ runner/release-runner.env
 runner/data/
 release-snapshots/
 daily/daily.env
+# the private host mapping lives outside the repository (scripts/mac/lib/hosts.sh); never let a copy in
+hosts.env
+*.hosts.env
+.config/
 daily/data/
 harvest/harvest.env
 harvest/data/

@@ -13,6 +13,7 @@
     "deploy:check": "bash scripts/mac/deploy-prebuilt.sh --check-only",
     "harvest": "python3 -I scripts/harvest/status.py",
     "check": "bash scripts/mac/spx-check.sh",
+    "check:hosts": "bash scripts/check_private_hosts.sh && bash scripts/mac/test/hosts-test.sh",
     "task": "pnpm -s --dir web task"
   }
 }

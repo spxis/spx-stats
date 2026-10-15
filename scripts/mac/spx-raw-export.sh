@@ -13,7 +13,9 @@
 #   spx-raw-export.sh --remove-schedule  undo that
 #   spx-raw-export.sh --help
 #
-# Environment (all optional): SPX_DS1_HOST (tried first), SPX_DS1_PORT (default 55440), SPX_DROPBOX_DIR (the Dropbox
+# Where DS1 (nas1) is comes from the private host mapping (NAS1_LAN_HOSTS, NAS1_VPN_HOST, NAS1_DB_PORT in
+# ~/.config/spx-stats/hosts.env, scripts/mac/lib/hosts.sh); without it this script says MISSING and how to create it.
+# Environment (all optional): SPX_DS1_HOST (tried first), SPX_DS1_PORT (default NAS1_DB_PORT, 55440), SPX_DROPBOX_DIR (the Dropbox
 # root), SPX_DS1_DB_PASSWORD (used only when the keychain has none), SPX_PROBE_LIMIT / SPX_FETCH_LIMIT (seconds).
 
 export LC_ALL=C
@@ -25,8 +27,10 @@ PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
 LOGFILE="$HOME/Library/Logs/spx-raw-export.log"
 DB_NAME="spx_stats"
 DB_USER="postgres"
-PORT="${SPX_DS1_PORT:-55440}"
-TAILSCALE_HOST="100.87.30.7"
+_RAW_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+. "$_RAW_DIR/lib/hosts.sh"
+PORT="${SPX_DS1_PORT:-$NAS1_DB_PORT}"
+VPN_HOST="${NAS1_VPN_HOST:-}"
 PROBE_LIMIT="${SPX_PROBE_LIMIT:-12}"
 FETCH_LIMIT="${SPX_FETCH_LIMIT:-300}"
 KEYCHAIN_LIMIT=15
@@ -56,7 +60,7 @@ Exports legacy_files.raw_archive from DS1 to <Dropbox>/Backups/spx-stats/raw/<na
   --remove-schedule    undo --install-schedule
   --help               this text
 
-DS1 is found on the home network or over Tailscale, whichever answers first.
+DS1 is found on the home network or over the VPN, whichever answers first (addresses: the private host mapping).
 Set SPX_DS1_HOST to try a host of your own first. The log of scheduled runs is ~/Library/Logs/spx-raw-export.log.
 EOF
 }
@@ -166,7 +170,7 @@ get_password() {
 
 host_label() {
   case "$1" in
-    100.*) printf 'Tailscale' ;;
+    "$VPN_HOST") printf 'VPN' ;;
     127.*|localhost) printf 'local forward' ;;
     *) printf 'home network' ;;
   esac
@@ -204,11 +208,16 @@ why_failed() { # index
 
 detect_ds1() {
   local cands="" h i=0 n total j found="" waited
-  for h in "${SPX_DS1_HOST:-}" diskstation1.local 10.0.0.101 10.0.0.102 10.0.0.103 10.0.0.104 "$TAILSCALE_HOST"; do
+  for h in "${SPX_DS1_HOST:-}" ${NAS1_LAN_HOSTS:-} "$VPN_HOST"; do
     [ -n "$h" ] || continue
     case " $cands " in *" $h "*) continue ;; esac
     cands="$cands $h"
   done
+  if [ -z "$cands" ]; then
+    if [ "$SCHEDULED" = 1 ]; then note "DS1 not configured (no private host mapping), skipping this run"; exit 0; fi
+    spx_hosts_need NAS1_LAN_HOSTS NAS1_VPN_HOST || true
+    exit 1
+  fi
   for h in $cands; do
     i=$((i + 1))
     eval "CAND_$i=\$h"
@@ -233,7 +242,7 @@ detect_ds1() {
     return 0
   fi
   if [ "$SCHEDULED" = 1 ]; then
-    note "DS1 not reachable (no home network or Tailscale), skipping this run"
+    note "DS1 not reachable (no home network or VPN), skipping this run"
     exit 0
   fi
   {
@@ -245,8 +254,8 @@ detect_ds1() {
       j=$((j + 1))
     done
     say "Fix one of these:"
-    say "  1. Turn Tailscale on (the Tailscale menu should show diskstation1 connected), or"
-    say "  2. Allow TCP $PORT from the home network in DSM: Control Panel > Security > Firewall."
+    say "  1. Turn the VPN (Tailscale) on (its menu should show the NAS connected), or"
+    say "  2. Allow TCP $PORT from the home network in the NAS's firewall settings."
     say "Then run this again."
   } >&2
   exit 1

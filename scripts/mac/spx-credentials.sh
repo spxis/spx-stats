@@ -1,13 +1,20 @@
 #!/bin/zsh
-# Per-Mac credential and connection setup on John's Macs. Contains no values; secrets are never printed.
+# Per-Mac credential and connection setup on John's Macs (machine1 = the main desktop Mac, machine2 = the laptop). Contains no
+# values; secrets are never printed. Addresses, host names and the NAS login are NOT here: they come from the private host
+# mapping ~/.config/spx-stats/hosts.env (scripts/mac/lib/hosts.sh), which the `hosts` subcommand writes.
+#   spx-credentials.sh hosts [--check] [--from <file>]
+#                                  write (or check) the private host mapping, mode 600, outside the repository. --from reads
+#                                  NAME=value lines from a file (the private START-HERE file works, block in a code fence);
+#                                  on a terminal it asks for what is still missing. Names already set in the environment win.
 #   spx-credentials.sh dropbox     OAuth flow -> keychain + NAME=value lines on the clipboard
 #   spx-credentials.sh tailscale   save a Tailscale auth key -> keychain + clipboard
-#   spx-credentials.sh setup       new Mac: DS1 password and board key from Dropbox -> keychain, then test, then `machine`.
+#   spx-credentials.sh setup       new Mac: the host mapping (`hosts`, from SPX_HOSTS_SOURCE when that file is given), DS1 password
+#                                  and board key from Dropbox -> keychain, then test, then `machine`.
 #                                  Needs SPX_DS1_PASSWORD_FILE and SPX_BOARD_KEY_FILE; the private START-HERE file
-#                                  has the full command. DS1 is found on the home LAN or Tailscale by itself
+#                                  has the full command. DS1 is found on the home LAN or over the VPN by itself
 #                                  (SPX_DS1_HOST is an optional override).
 #   spx-credentials.sh machine [--check] [--route lan|tailscale] [--link-macs]
-#                                  the ds1 hosts name, the ds1 ssh key and `Host ds1` block, and ssh to the other Mac.
+#                                  the ds1 hosts name, the ds1 ssh key and `Host ds1` block (name = NAS1_SSH_ALIAS), and ssh to the other Mac.
 #                                  Idempotent: a step already done prints ok and changes nothing. --check changes nothing.
 #   spx-credentials.sh parity [<other-mac-alias>]
 #                                  which keychain items are present here and on the other Mac (names only)
@@ -48,15 +55,15 @@ add_ssh_block() {
   { [ -s "$SSH_CONFIG" ] && printf '\n'; printf '%s\n' "$1"; } >> "$SSH_CONFIG"
   chmod 600 "$SSH_CONFIG"
 }
-# make_key <file> <comment>: ed25519, no passphrase (an unattended login; a passphrase key was refused by DS1).
+# make_key <file> <comment>: ed25519, no passphrase (an unattended login; a passphrase key was refused by the NAS).
 make_key() { mkdir -p -m 700 "$SSH_DIR"; ssh-keygen -q -t ed25519 -N '' -C "$2" -f "$1"; }
-# ds1_identity: the key the Host ds1 block uses (the last IdentityFile ssh resolves that exists), for authorizing.
+# ds1_identity: the key the Host block of the DS1 alias uses (the last IdentityFile ssh resolves that exists), for authorizing.
 ds1_identity() {
   local f r=""
-  for f in $(ssh -F "$SSH_CONFIG" -G ds1 2>/dev/null | awk '$1=="identityfile"{print $2}'); do f="${f/#\~/$HOME}"; [ -f "$f" ] && r="$f"; done
+  for f in $(ssh -F "$SSH_CONFIG" -G "$NAS1_SSH_ALIAS" 2>/dev/null | awk '$1=="identityfile"{print $2}'); do f="${f/#\~/$HOME}"; [ -f "$f" ] && r="$f"; done
   printf '%s' "$r"
 }
-ds1_ssh_test() { spx_ssh -F "$SSH_CONFIG" -o StrictHostKeyChecking=accept-new -o ControlMaster=no -o ControlPath=none ds1 hostname 2>/dev/null | tail -n 1; }
+ds1_ssh_test() { spx_ssh -F "$SSH_CONFIG" -o StrictHostKeyChecking=accept-new -o ControlMaster=no -o ControlPath=none "$NAS1_SSH_ALIAS" hostname 2>/dev/null | tail -n 1; }
 # authorize <key.pub> <user@address> <Host-key-alias> <what-for>: one password login to install the public key.
 authorize() {
   if [ ! -t 0 ]; then
@@ -67,68 +74,80 @@ authorize() {
   ssh-copy-id -i "$1" -o PubkeyAuthentication=no -o StrictHostKeyChecking=accept-new -o HostKeyAlias="$3" "$2" >/dev/null
 }
 
+# need_or_fail <label> <names...>: the private mapping must hold these names; else print "<label>: MISSING: ..." (one line) and return 1.
+need_or_fail() {
+  local label="$1" msg; shift
+  spx_hosts_need "$@" 2>/dev/null && return 0
+  msg=$(spx_hosts_need "$@" 2>&1 >/dev/null) || true
+  echo "$label: ${msg:-MISSING: $*}"
+  return 1
+}
+
 machine_hosts() {
-  local route="$1" check="$2" cur addr
-  cur=$(awk '$1 !~ /^#/ { for (i = 2; i <= NF; i++) if ($i == "ds1") { print $1; exit } }' "$HOSTS_FILE" 2>/dev/null)
+  local route="$1" check="$2" cur addr A="$NAS1_SSH_ALIAS"
+  need_or_fail "hosts $A" NAS1_LAN_PRIMARY NAS1_VPN_HOST || return 1
+  cur=$(awk -v a="$A" '$1 !~ /^#/ { for (i = 2; i <= NF; i++) if ($i == a) { print $1; exit } }' "$HOSTS_FILE" 2>/dev/null)
   if [ -z "$cur" ]; then
     if [ -z "$route" ]; then
-      # Always-on-Tailscale Mac -> the Tailscale address; a Mac that sits on the home LAN -> the LAN address.
+      # Always-on-VPN Mac -> the VPN address; a Mac that sits on the home LAN -> the LAN address.
       if limited 5 "$SPX_TAILSCALE_BIN" status >/dev/null 2>&1; then route=tailscale; else route=lan; fi
     fi
-    if [ "$route" = tailscale ]; then addr="$SPX_DS1_TAILSCALE_HOST"; else addr="$SPX_DS1_LAN_PRIMARY"; fi
-    if [ "$check" = 1 ]; then echo "hosts ds1: WOULD add '$addr  ds1' to $HOSTS_FILE (route $route; sudo asks for this Mac's password)"; return 0; fi
-    echo "hosts ds1: adding '$addr  ds1' to $HOSTS_FILE (route $route). sudo will ask for this Mac's login password."
-    { [ -z "$(tail -c1 "$HOSTS_FILE" 2>/dev/null)" ] || printf '\n'; printf '%s  ds1\n' "$addr"; } | ${SPX_SUDO-sudo} tee -a "$HOSTS_FILE" >/dev/null || {
-      echo "hosts ds1: FAIL, could not write $HOSTS_FILE. Run in Terminal: echo '$addr  ds1' | sudo tee -a /etc/hosts"; return 1; }
+    if [ "$route" = tailscale ]; then addr="$SPX_DS1_VPN_HOST"; else addr="$SPX_DS1_LAN_PRIMARY"; fi
+    if [ "$check" = 1 ]; then echo "hosts $A: WOULD add the name '$A' to $HOSTS_FILE (route $route; sudo asks for this Mac's password)"; return 0; fi
+    echo "hosts $A: adding the name '$A' to $HOSTS_FILE (route $route). sudo will ask for this Mac's login password."
+    { [ -z "$(tail -c1 "$HOSTS_FILE" 2>/dev/null)" ] || printf '\n'; printf '%s  %s\n' "$addr" "$A"; } | ${SPX_SUDO-sudo} tee -a "$HOSTS_FILE" >/dev/null || {
+      echo "hosts $A: FAIL, could not write $HOSTS_FILE (it needs sudo; run this from a Terminal)"; return 1; }
     if [ "$HOSTS_FILE" = /etc/hosts ]; then ${SPX_SUDO-sudo} dscacheutil -flushcache || true; ${SPX_SUDO-sudo} killall -HUP mDNSResponder 2>/dev/null || true; fi
     cur="$addr"
   fi
-  if nc -z -G 3 ds1 "$SPX_DS1_PORT" >/dev/null 2>&1; then echo "hosts ds1: ok ($cur, DS1 Postgres answers on $SPX_DS1_PORT)"
+  if nc -z -G 3 "$A" "$SPX_DS1_PORT" >/dev/null 2>&1; then echo "hosts $A: ok (DS1 Postgres answers on $SPX_DS1_PORT)"
   else
-    echo "hosts ds1: FAIL, $cur is set but DS1 does not answer on port $SPX_DS1_PORT there (wrong network for that address? edit $HOSTS_FILE: LAN $SPX_DS1_LAN_PRIMARY or Tailscale $SPX_DS1_TAILSCALE_HOST)"
+    echo "hosts $A: FAIL, the address set for $A does not answer on port $SPX_DS1_PORT (wrong network for that address? edit $HOSTS_FILE: the LAN address is NAS1_LAN_PRIMARY and the VPN one NAS1_VPN_HOST in the private mapping)"
     return 1
   fi
 }
 
 machine_ssh_ds1() {
-  local check="$1" key="$SSH_DIR/id_ed25519_ds1" name out addr id
+  local check="$1" A="$NAS1_SSH_ALIAS" key name out addr id
+  key="$SSH_DIR/id_ed25519_$A"
   name=$(spx_this_mac)
-  if has_host_block ds1; then
-    echo "ssh config Host ds1: ok (already present, left alone)"
+  need_or_fail "ssh $A" NAS1_LAN_PRIMARY NAS1_VPN_HOST NAS1_SSH_USER || return 1
+  if has_host_block "$A"; then
+    echo "ssh config Host $A: ok (already present, left alone)"
   else
-    if [ -f "$key" ]; then echo "ssh key $(cfg_path id_ed25519_ds1): ok (exists)"
-    elif [ "$check" = 1 ]; then echo "ssh key $(cfg_path id_ed25519_ds1): WOULD create (ed25519, no passphrase, comment john@$name-ds1)"
-    else make_key "$key" "john@$name-ds1" && echo "ssh key $(cfg_path id_ed25519_ds1): ok (created)"; fi
-    if [ "$check" = 1 ]; then echo "ssh config Host ds1: WOULD add (home LAN first, Tailscale otherwise) to $SSH_CONFIG"
+    if [ -f "$key" ]; then echo "ssh key $(cfg_path id_ed25519_$A): ok (exists)"
+    elif [ "$check" = 1 ]; then echo "ssh key $(cfg_path id_ed25519_$A): WOULD create (ed25519, no passphrase, comment spx-stats-$name-$A)"
+    else make_key "$key" "spx-stats-$name-$A" && echo "ssh key $(cfg_path id_ed25519_$A): ok (created)"; fi
+    if [ "$check" = 1 ]; then echo "ssh config Host $A: WOULD add (home LAN first, VPN otherwise) to $SSH_CONFIG"
     else
-      add_ssh_block "# DS1 (DiskStation1): home LAN first, Tailscale otherwise. Same on every Mac.
-Match host ds1 exec \"nc -z -G 1 $SPX_DS1_LAN_PRIMARY 22 >/dev/null 2>&1\"
+      add_ssh_block "# DS1 (nas1): home LAN first, VPN otherwise. Same on every Mac.
+Match host $A exec \"nc -z -G 1 $SPX_DS1_LAN_PRIMARY 22 >/dev/null 2>&1\"
   HostName $SPX_DS1_LAN_PRIMARY
-Host ds1
-  HostName $SPX_DS1_TAILSCALE_HOST
-  HostKeyAlias ds1
+Host $A
+  HostName $SPX_DS1_VPN_HOST
+  HostKeyAlias $A
   User $SPX_DS1_SSH_USER
-  IdentityFile $(cfg_path id_ed25519_ds1)
+  IdentityFile $(cfg_path id_ed25519_$A)
   IdentitiesOnly yes"
-      echo "ssh config Host ds1: ok (added)"
+      echo "ssh config Host $A: ok (added)"
     fi
   fi
   out=$(ds1_ssh_test || true)
   if [ -z "$out" ]; then
-    if [ "$check" = 1 ]; then echo "ssh ds1: WOULD authorize the key on DS1 (asks once for the $SPX_DS1_SSH_USER DSM password)"; return 0; fi
+    if [ "$check" = 1 ]; then echo "ssh $A: WOULD authorize the key on DS1 (asks once for the NAS password of $SPX_DS1_SSH_USER)"; return 0; fi
     id="$key"; [ -f "$key" ] || id=$(ds1_identity)
-    if [ -z "$id" ] || [ ! -f "$id.pub" ]; then echo "ssh ds1: FAIL, no public key found to authorize (ssh-keygen -t ed25519 -N '' -f $key)"; return 1; fi
-    if nc -z -G 2 "$SPX_DS1_LAN_PRIMARY" 22 >/dev/null 2>&1; then addr="$SPX_DS1_LAN_PRIMARY"; else addr="$SPX_DS1_TAILSCALE_HOST"; fi
-    if authorize "$id.pub" "$SPX_DS1_SSH_USER@$addr" ds1 "DS1"; then
+    if [ -z "$id" ] || [ ! -f "$id.pub" ]; then echo "ssh $A: FAIL, no public key found to authorize (ssh-keygen -t ed25519 -N '' -f $key)"; return 1; fi
+    if nc -z -G 2 "$SPX_DS1_LAN_PRIMARY" 22 >/dev/null 2>&1; then addr="$SPX_DS1_LAN_PRIMARY"; else addr="$SPX_DS1_VPN_HOST"; fi
+    if authorize "$id.pub" "$SPX_DS1_SSH_USER@$addr" "$A" "DS1"; then
       out=$(ds1_ssh_test || true)
-      if [ -n "$out" ]; then spx_ssh -F "$SSH_CONFIG" -o ControlPath=none ds1 'chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys' >/dev/null 2>&1 || true; fi
+      if [ -n "$out" ]; then spx_ssh -F "$SSH_CONFIG" -o ControlPath=none "$A" 'chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys' >/dev/null 2>&1 || true; fi
     fi
   fi
   if [ -n "$out" ]; then
-    addr=$(ssh -F "$SSH_CONFIG" -G ds1 2>/dev/null | awk '$1=="hostname"{print $2}')
-    if [ "$addr" = "$SPX_DS1_TAILSCALE_HOST" ]; then echo "ssh ds1: ok ($out, Tailscale)"; else echo "ssh ds1: ok ($out, home LAN)"; fi
+    addr=$(ssh -F "$SSH_CONFIG" -G "$A" 2>/dev/null | awk '$1=="hostname"{print $2}')
+    if [ "$addr" = "$SPX_DS1_VPN_HOST" ]; then echo "ssh $A: ok ($out, VPN)"; else echo "ssh $A: ok ($out, home LAN)"; fi
   else
-    echo "ssh ds1: FAIL, key login refused or DS1 unreachable. If the key is installed, DSM wants the home folder not group-writable: ssh $SPX_DS1_SSH_USER@$SPX_DS1_LAN_PRIMARY 'chmod 755 ~; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys'"
+    echo "ssh $A: FAIL, key login refused or DS1 unreachable. If the key is installed, the NAS wants the home folder not group-writable: log in once as $SPX_DS1_SSH_USER and run: chmod 755 ~; chmod 700 ~/.ssh; chmod 600 ~/.ssh/authorized_keys"
     return 1
   fi
 }
@@ -136,33 +155,112 @@ Host ds1
 machine_ssh_mac() {
   local check="$1" link="$2" peer host keyname key out
   peer=$(spx_other_mac_alias); host=$(spx_other_mac_host); keyname=$(spx_other_mac_key); key="$SSH_DIR/$keyname"
+  if [ "$(spx_this_mac)" = machine-unknown ] || [ -z "$host" ] || [ -z "${MACHINE_SSH_USER:-}" ]; then
+    echo "ssh other Mac: SKIP, this Mac is not named in the private mapping (MACHINE1_LOCALNAME, MACHINE2_LOCALNAME, MACHINE1_HOST, MACHINE2_HOST, MACHINE_SSH_USER; $(spx_hosts_fix))"
+    return 0
+  fi
   if ! has_host_block "$peer"; then
     if [ "$link" != 1 ]; then
       echo "ssh $peer (other Mac): SKIP, no 'Host $peer' in the ssh config. Run machine --link-macs to create a passphrase-less key $(cfg_path $keyname) for it and authorize it on the other Mac (asks once for that Mac's login password; Remote Login must be on there)."
       return 0
     fi
-    if [ "$check" = 1 ]; then echo "ssh $peer (other Mac): WOULD create key $(cfg_path $keyname), add 'Host $peer' ($host), authorize it"; return 0; fi
-    [ -f "$key" ] || make_key "$key" "john@$(spx_this_mac)-$peer"
-    add_ssh_block "# The other Mac (alias $peer). Same pair of aliases on both Macs: laptop <-> macstudio.
+    if [ "$check" = 1 ]; then echo "ssh $peer (other Mac): WOULD create key $(cfg_path $keyname), add 'Host $peer', authorize it"; return 0; fi
+    [ -f "$key" ] || make_key "$key" "spx-stats-$(spx_this_mac)-$peer"
+    add_ssh_block "# The other Mac (alias $peer). The two Macs use each other's alias from the private mapping (MACHINE1_SSH_ALIAS, MACHINE2_SSH_ALIAS).
 Host $peer
   HostName $host
-  User john
+  User $MACHINE_SSH_USER
   IdentityFile $(cfg_path $keyname)
   IdentitiesOnly yes"
     echo "ssh config Host $peer: ok (added)"
   fi
   if ! nc -z -G 3 "$host" 22 >/dev/null 2>&1; then
-    echo "ssh $peer (other Mac): SKIP, $host does not answer on port 22 (asleep, off, another network, or Remote Login is off: System Settings > General > Sharing > Remote Login)"
+    echo "ssh $peer (other Mac): SKIP, the other Mac does not answer on port 22 (asleep, off, another network, or Remote Login is off: System Settings > General > Sharing > Remote Login)"
     return 0
   fi
   out=$(spx_ssh -F "$SSH_CONFIG" -o StrictHostKeyChecking=accept-new -o ControlPath=none "$peer" 'scutil --get LocalHostName' 2>/dev/null | tail -n 1 || true)
   if [ -z "$out" ] && [ "$link" = 1 ] && [ "$check" != 1 ] && [ -f "$key.pub" ]; then
-    if authorize "$key.pub" "john@$host" "$peer" "the other Mac"; then
+    if authorize "$key.pub" "$MACHINE_SSH_USER@$host" "$peer" "the other Mac"; then
       out=$(spx_ssh -F "$SSH_CONFIG" -o ControlPath=none "$peer" 'scutil --get LocalHostName' 2>/dev/null | tail -n 1 || true)
     fi
   fi
-  if [ -n "$out" ]; then echo "ssh $peer (other Mac): ok ($out)"
-  else echo "ssh $peer (other Mac): FAIL, key login refused. Run: ssh-copy-id -i $(cfg_path $keyname).pub -o PubkeyAuthentication=no john@$host   (or machine --link-macs)"; return 1; fi
+  if [ -n "$out" ]; then echo "ssh $peer (other Mac): ok"
+  else echo "ssh $peer (other Mac): FAIL, key login refused. Run: zsh scripts/mac/spx-credentials.sh machine --link-macs"; return 1; fi
+}
+
+# ---------- hosts: the private host mapping file ----------
+# Names the file may hold (scripts/mac/lib/hosts.sh explains each). REQUIRED ones have no default.
+HOSTS_REQUIRED="NAS1_LAN_HOSTS NAS1_LAN_PRIMARY NAS1_VPN_HOST NAS1_SSH_USER NAS1_DOCKER_DIR MACHINE1_LOCALNAME MACHINE2_LOCALNAME MACHINE1_HOST MACHINE2_HOST MACHINE_SSH_USER"
+HOSTS_OPTIONAL="NAS2_LAN_HOST NAS1_SSH_ALIAS NAS1_DB_PORT NAS1_DOCKER_BIN MACHINE1_SSH_ALIAS MACHINE2_SSH_ALIAS HOSTS_GUARD_WORDS"
+# hosts_parse <file>: KEY<TAB>value for each known name found as NAME=value in the file (a plain env file, or a START-HERE
+# file with the block pasted in a code fence). Quotes around the value are removed; other text is ignored.
+hosts_parse() {
+  awk -v keys="$HOSTS_REQUIRED $HOSTS_OPTIONAL" 'BEGIN { n = split(keys, a, " "); for (i = 1; i <= n; i++) ok[a[i]] = 1 }
+    { l = $0; sub(/^[ \t]*(export[ \t]+)?/, "", l); i = index(l, "="); if (i < 2) next
+      k = substr(l, 1, i - 1); v = substr(l, i + 1); if (!(k in ok)) next
+      sub(/[ \t\r]+$/, "", v)
+      if (v ~ /^".*"$/ || v ~ /^'"'"'.*'"'"'$/) v = substr(v, 2, length(v) - 2)
+      print k "\t" v }' "$1"
+}
+hosts() {
+  local check=0 from="" target="$SPX_MAP_FILE" k v line missing="" tmp dest tty=0
+  local -A V
+  while [ $# -gt 0 ]; do
+    case "$1" in
+      --check) check=1 ;;
+      --from) from="${2:-}"; shift ;;
+      *) echo "usage: spx-credentials.sh hosts [--check] [--from <file with NAME=value lines>]" >&2; return 2 ;;
+    esac
+    shift
+  done
+  [ -t 0 ] && tty=1
+  # 1. what is there now, 2. what --from gives (wins), 3. names already set in the environment (win over both)
+  if [ -r "$target" ]; then
+    while IFS=$'\t' read -r k v; do [ -n "$k" ] && V[$k]="$v"; done < <(hosts_parse "$target")
+  fi
+  for k in ${=HOSTS_REQUIRED} ${=HOSTS_OPTIONAL}; do
+    if [ -n "${(P)k:-}" ]; then V[$k]="${(P)k}"; fi
+  done
+  if [ -n "$from" ]; then
+    [ -r "$from" ] || { echo "hosts: FAIL, cannot read $from"; return 1; }
+    while IFS=$'\t' read -r k v; do [ -n "$k" ] && V[$k]="$v"; done < <(hosts_parse "$from")
+  fi
+  for k in ${=HOSTS_REQUIRED}; do [ -n "${V[$k]:-}" ] || missing="${missing:+$missing }$k"; done
+  if [ $check = 1 ]; then
+    for k in ${=HOSTS_REQUIRED}; do printf '%-22s %s\n' "$k" "$([ -n "${V[$k]:-}" ] && echo set || echo MISSING)"; done
+    for k in ${=HOSTS_OPTIONAL}; do printf '%-22s %s\n' "$k" "$([ -n "${V[$k]:-}" ] && echo set || echo '(optional, default used)')"; done
+    if [ -r "$target" ]; then
+      echo "hosts: file $target exists, mode $(stat -f '%Lp' "$target")$([ "$(stat -f '%Lp' "$target")" = 600 ] || echo ' (should be 600)')"
+    else echo "hosts: file $target does not exist"; fi
+    if [ -z "$missing" ] && [ -r "$target" ]; then echo "hosts: ok"; return 0; fi
+    echo "hosts: MISSING: ${missing:-nothing, but the file is not written yet}; run: zsh scripts/mac/spx-credentials.sh hosts [--from <private START-HERE file>]"
+    return 1
+  fi
+  # 4. ask for what is still missing (a terminal only), showing optional ones with their defaults
+  if [ -n "$missing" ] && [ $tty = 1 ]; then
+    echo "hosts: values for the private host mapping (they are in the private START-HERE file). Nothing is sent anywhere; the file stays on this Mac."
+    for k in ${=missing}; do read -r "v?$k: "; [ -n "$v" ] && V[$k]="$v"; done
+    missing=""
+    for k in ${=HOSTS_REQUIRED}; do [ -n "${V[$k]:-}" ] || missing="${missing:+$missing }$k"; done
+  fi
+  if [ -n "$missing" ]; then
+    echo "hosts: MISSING: $missing (not written). Run it in a Terminal to be asked, or: zsh scripts/mac/spx-credentials.sh hosts --from <file holding NAME=value lines>"
+    return 1
+  fi
+  # 5. write: directory 700, file 600, an existing different file saved first under the backups folder
+  mkdir -p -m 700 "$(dirname "$target")"
+  tmp="$target.new.$$"
+  ( umask 077
+    { echo "# Private host mapping for spx-stats. Never commit, never paste into chat. Written by spx-credentials.sh hosts."
+      for k in ${=HOSTS_REQUIRED} ${=HOSTS_OPTIONAL}; do if [ -n "${V[$k]:-}" ]; then printf '%s="%s"\n' "$k" "${V[$k]}"; fi; done
+    } > "$tmp" )
+  chmod 600 "$tmp"
+  if [ -f "$target" ] && ! cmp -s "$tmp" "$target"; then
+    dest="$BACKUP_DIR/$(date +%Y-%m-%d)-hosts.env"; [ -e "$dest" ] && dest="$dest-$(date +%H%M%S)"
+    mkdir -p "$BACKUP_DIR" && cp -p "$target" "$dest" && echo "hosts: (old mapping saved to $dest)"
+  fi
+  mv "$tmp" "$target"; chmod 600 "$target"
+  echo "hosts: ok, wrote $target (mode 600)"
 }
 
 machine() {
@@ -319,6 +417,17 @@ setup)
   done
   path+=(/opt/homebrew/opt/libpq/bin)
 
+  # The private host mapping first: without it DS1 cannot be found. SPX_HOSTS_SOURCE (optional) is a file holding the NAME=value
+  # lines (the private START-HERE file works); on a terminal the script asks for what is missing. Then run again with the file in place.
+  if [ -r "$SPX_MAP_FILE" ] && hosts --check >/dev/null 2>&1; then echo "hosts: ok ($SPX_MAP_FILE)"
+  else
+    if hosts ${SPX_HOSTS_SOURCE:+--from "$SPX_HOSTS_SOURCE"}; then
+      [ "${SPX_HOSTS_RELOADED:-}" = 1 ] || SPX_HOSTS_RELOADED=1 exec zsh "${0:A}" "$@"   # start over so every address read below comes from the new file
+    else
+      echo "hosts: MISSING: no complete private host mapping yet; DS1 and the other Mac cannot be found until it exists. Fix: $(spx_hosts_fix)"
+    fi
+  fi
+
   if ! command -v psql >/dev/null; then echo "DS1: FAIL, no psql (run: brew install libpq)"
   elif ! SPX_DS1_FOUND=$(ds1_host); then echo "DS1: FAIL, $(ds1_missing)"
   elif ds1_ok "$(kc_get "spx-stats-db DS1 55440")"; then echo "DS1: ok (keychain, $(ds1_route "$SPX_DS1_FOUND"))"
@@ -347,10 +456,11 @@ setup)
     kc_has "$it" || echo "keychain: MISSING '$it'. If the other Mac has it: zsh scripts/mac/spx-credentials.sh copy-from $(spx_other_mac_alias)"
   done
   ;;
+hosts) shift; hosts "$@" ;;
 machine) shift; machine "$@" ;;
 parity) shift; parity "$@" ;;
 copy-from) shift; copy from "$@" ;;
 copy-to) shift; copy to "$@" ;;
 *)
-  echo "usage: spx-credentials.sh dropbox | tailscale | setup | machine [--check] [--route lan|tailscale] [--link-macs] | parity [alias] | copy-from <alias> [item...] | copy-to <alias> [item...]" >&2; exit 2;;
+  echo "usage: spx-credentials.sh dropbox | tailscale | setup | hosts [--check] [--from <file>] | machine [--check] [--route lan|tailscale] [--link-macs] | parity [alias] | copy-from <alias> [item...] | copy-to <alias> [item...]" >&2; exit 2;;
 esac

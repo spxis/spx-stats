@@ -45,11 +45,17 @@ end. **manual** = a person or the coordinating session has to do it.
 - **DS1 is the permanent source of truth for data; cloud and Mac Postgres are temporary working copies.** Every
   download goes to DS1 (archive row plus `legacy_<source>` load) and to Dropbox before anything reaches production,
   and a cloud session pushes its new data to DS1 before its container is discarded.
-- **DS1 has two routes from a Mac: the home LAN and Tailscale.** Try both before saying DS1 is unreachable:
-  `bash scripts/mac/spx-check.sh` does (addresses in `scripts/mac/spx-checks.sh`). Never ask John to turn Tailscale on
-  at the Mac Studio: it is on the home LAN and DS1 answers there. DS1 is DiskStation1; DiskStation15 (DS15, 10.0.0.115)
-  is another NAS, not the database. John adds a `ds1` hosts-file name on each Mac (Mac Studio: home LAN, MacBook:
-  Tailscale); the scripts try it first. The cloud container is not on the home LAN, so it uses Tailscale only.
+- **Machines are named by role, never by model, host name or address** (the repository is public): **machine1** is the main
+  desktop Mac (on the home LAN all day), **machine2** is the laptop Mac, **nas1** is the always-on NAS that hosts the source
+  database (written DS1 in code, docs and keychain item names), **nas2** is a second NAS with no spx database (never touch it).
+  What each role really is (addresses, host names, the NAS login, folders) is in ONE private file outside the repository,
+  `~/.config/spx-stats/hosts.env`, created by `zsh scripts/mac/spx-credentials.sh hosts` ([section 4](#4-cold-start)). Never write
+  a real address, host name, model name or login into a file, a commit, a ticket or a comment: `bash scripts/check_private_hosts.sh` fails on it.
+- **DS1 has two routes from a Mac: the home LAN and the VPN (Tailscale).** Try both before saying DS1 is unreachable:
+  `bash scripts/mac/spx-check.sh` does (the addresses come from the private host mapping). Never ask John to turn the VPN on
+  at machine1: it is on the home LAN and DS1 answers there. John adds a `ds1` hosts-file name on each Mac (machine1: home LAN,
+  machine2: VPN); the scripts try it first. The cloud container is not on the home LAN, so it uses the VPN only
+  (`NAS1_VPN_HOST` in its environment settings).
 - **First step of every session:** read the hook's `[spx-check]` lines and check your connector tools
   ([section 4](#4-cold-start)); report anything MISSING.
 - Short answers. When you need something from John, start with `NEED FROM YOU:` and a copy-paste block.
@@ -70,7 +76,7 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   his Mac (keychain, `.env` files) or in the private file. Then give him ONE command that fetches or builds it without
   printing a secret. Only then ask for a UI step, and say exactly where to click.
 - **One command, never a multi-step routine, and no web dashboards.** John hates being sent into Supabase, Vercel,
-  DSM or any other web console, and hates "copy this, then open that, then paste" sequences. If one Terminal command
+  the NAS's web console or any other web console, and hates "copy this, then open that, then paste" sequences. If one Terminal command
   can do the whole job through a CLI or API, give that single command. Examples:
   - **Production SQL or a migration:** the Supabase Management API with the token from the keychain (`curl -X POST
     https://api.supabase.com/v1/projects/<ref>/database/query`, body built from the file).
@@ -81,8 +87,8 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   why no command can do it.
 - Never ask him to paste a secret into chat. No wildcard or guessed paths: look every name up first. Test scripts
   before handing them over and say what is untested.
-- He is at his Mac Studio (Terminal) most of the time with Tailscale off, because it breaks his Dropbox sync. Do not
-  make him turn it on there: DS1 is still reachable from it over the home LAN. His MacBook runs with Tailscale on and Dropbox still syncs; there DS1 is reached directly.
+- He is at machine1 (Terminal) most of the time with the VPN off, because it breaks his Dropbox sync. Do not
+  make him turn it on there: DS1 is still reachable from it over the home LAN. machine2 runs with the VPN on and Dropbox still syncs; there DS1 is reached directly.
 - He wants features published as they are finished, and work done by Sonnet agents.
 - When a command works, add it to the private file so the next session does not ask again.
 - **Check before you tell.** Before saying something is pending, waiting on John, not done or broken, check the live state
@@ -123,7 +129,8 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 1. Read the `[spx-check]` lines the SessionStart hook printed (Mac: `bash scripts/mac/spx-check.sh` re-runs them;
    cloud: the hook ends with the same kind of lines). Each is `ok` or `MISSING: <the one fix>`.
    A `DS1 Postgres: MISSING` line means neither the home LAN nor Tailscale answered; an `ok (home LAN ...)` line with
-   `Tailscale: off` is healthy, so do not report Tailscale as a problem.
+   `Tailscale (VPN): off` is healthy, so do not report Tailscale as a problem. A `host mapping: MISSING` line means the private
+   file `~/.config/spx-stats/hosts.env` is absent or incomplete: report it with its fix (`zsh scripts/mac/spx-credentials.sh hosts`).
 2. Check your own tool list for the four claude.ai connectors (a script cannot see them): tools named like
    `mcp__*Supabase*`, `*Vercel*`, `*Dropbox*`, `*GitHub*` (use ToolSearch if tools are deferred). The claude.ai
    "GitHub Integration" connector gives Claude Code no `mcp__*GitHub*` tools: GitHub is fine when the hook prints
@@ -146,12 +153,13 @@ ticket work. Each row says what breaks without it. Exact commands with private v
 | Turso CLI (Mac, optional, later) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks today |
 | Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
 | GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
-| Tailscale (Mac) | the app, signed in, on (MacBook: stays on). Needed only off the home network: on the home LAN (Mac Studio) leave it off | no DS1 when away from home |
+| Private host mapping (Mac) | `zsh scripts/mac/spx-credentials.sh hosts [--from <private START-HERE file>]` writes `~/.config/spx-stats/hosts.env` (mode 600, outside the repository): the addresses, host names and NAS login behind machine1, machine2 and nas1. Every script reads it through `scripts/mac/lib/hosts.sh`; `setup` runs it first. `hosts --check` lists which names are set, never a value | every DS1, ssh and keychain-parity line says `MISSING` |
+| Tailscale (Mac) | the app, signed in, on (machine2: stays on). Needed only off the home network: on the home LAN (machine1) leave it off | no DS1 when away from home |
 | Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`, which then runs `machine`) | no DS1, no `pnpm task` |
-| DS1 Postgres (Mac) | on the home LAN, or with Tailscale on elsewhere, plus the keychain password: `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok (home LAN ...)` or `ok (Tailscale)` | no access to the source of truth |
-| `ds1` hosts name + ssh to DS1 and the other Mac (Mac) | `zsh scripts/mac/spx-credentials.sh machine` (`--check` first; `--link-macs` once to link the two Macs). It adds `ds1` to `/etc/hosts` (home LAN address on a Mac that is always at home, Tailscale address on a Mac with Tailscale always on), makes a passphrase-less key `~/.ssh/id_ed25519_ds1`, adds `Host ds1` to `~/.ssh/config` (home LAN first, Tailscale otherwise) and authorizes the key once. `bash scripts/mac/spx-check.sh` prints `ssh ds1: ok (...)` | no `ssh ds1`, no editing the NAS jobs' env files |
-| Keychain parity (both Macs) | both Macs hold the same required items (`spx-stats-db DS1 55440`, `sumilabu board spx-stats`, `spx-stats SUPABASE_ACCESS_TOKEN`). `zsh scripts/mac/spx-credentials.sh parity` lists present/missing by name; `copy-from <laptop or macstudio>` pulls what this Mac lacks from the other, no value shown | `spx-check.sh` prints `keychain: MISSING`; no production count compare |
-| Docker (MacBook, optional) | Docker Desktop running; then the working-copy block in [section 8](#8-data-work) | no local working copy |
+| DS1 Postgres (Mac) | on the home LAN, or with Tailscale on elsewhere, plus the keychain password: `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok (home LAN ...)` or `ok (VPN)` | no access to the source of truth |
+| `ds1` hosts name + ssh to DS1 and the other Mac (Mac) | `zsh scripts/mac/spx-credentials.sh machine` (`--check` first; `--link-macs` once to link the two Macs). It adds `ds1` to `/etc/hosts` (home LAN address on a Mac that is always at home, VPN address on a Mac with the VPN always on), makes a passphrase-less key `~/.ssh/id_ed25519_ds1`, adds `Host ds1` to `~/.ssh/config` (home LAN first, Tailscale otherwise) and authorizes the key once. `bash scripts/mac/spx-check.sh` prints `ssh ds1: ok (...)` | no `ssh ds1`, no editing the NAS jobs' env files |
+| Keychain parity (both Macs) | both Macs hold the same required items (`spx-stats-db DS1 55440`, `sumilabu board spx-stats`, `spx-stats SUPABASE_ACCESS_TOKEN`). `zsh scripts/mac/spx-credentials.sh parity` lists present/missing by name; `copy-from <other-mac-alias>` pulls what this Mac lacks from the other, no value shown | `spx-check.sh` prints `keychain: MISSING`; no production count compare |
+| Docker (machine2, optional) | Docker Desktop running; then the working-copy block in [section 8](#8-data-work) | no local working copy |
 | Production Supabase, read-only | nothing to set up: the public URL and key the site uses; `spx-check.sh` and the cloud hook both test it | no way to compare counts against production |
 | Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
 | Permission rules | Nothing to do: the deploy rules (`vercel deploy`, `link`, `ls`, `whoami`) are in the committed `.claude/settings.json`. The only per-machine step is `vercel login` (or the Vercel connector) | an agent deploy is refused; credential reads are still refused and John runs those blocks himself |
@@ -167,7 +175,7 @@ prints the value. If one is missing, say which and carry on with what does not n
 | Name | Used for | Needed by |
 |---|---|---|
 | `SUMILABU_BOARD_URL`, `SUMILABU_BOARD_TOKEN` | the ticket board | `pnpm task` |
-| `SPX_DS1_DB_PASSWORD`, `TS_AUTHKEY` | reaching DS1 over Tailscale (cloud only: a Mac uses the home LAN or Tailscale itself) | the session-start hook |
+| `SPX_DS1_DB_PASSWORD`, `TS_AUTHKEY`, `NAS1_VPN_HOST` | reaching DS1 over the VPN (cloud only: a Mac reads its addresses from the private host mapping instead); `NAS1_VPN_HOST` is DS1's VPN address, private, so it is not in this repository | the session-start hook |
 | `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN` | archive uploads | `scripts/dropbox_put.py` |
 | `SUPABASE_ACCESS_TOKEN` | data releases and production reads | `scripts/release/release.py`, `scripts/sync/compare.py` |
 
@@ -197,17 +205,17 @@ current as DS1, and the container is not permanent: push new data to DS1 before 
 ([section 8](#8-data-work), item 8).
 
 **On one of John's Macs** (new or existing; no cloud container). One command sets it up:
-`zsh scripts/mac/spx-credentials.sh setup` with the variables the private file gives (tested on the MacBook,
-keychain path; the Dropbox path is **untested** end to end). It copies the DS1 password and the board key from his
+`zsh scripts/mac/spx-credentials.sh setup` with the variables the private file gives (tested on machine2,
+keychain path; the Dropbox path is **untested** end to end). It first creates the private host mapping (`hosts`, from `SPX_HOSTS_SOURCE`, a file holding its NAME=value lines, or by asking). It copies the DS1 password and the board key from his
 synced Dropbox into the keychain and prints one ok/FAIL line each for DS1, board, node, pnpm and gh. After that
-`pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` on the home LAN or over Tailscale (the scripts try both).
-The MacBook reaches DS1 over the home LAN or Tailscale and runs Docker; the Mac Studio is reached over ssh.
+`pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` on the home LAN or over the VPN (the scripts try both).
+machine2 reaches DS1 over the home LAN or the VPN and runs Docker; machine1 is reached over ssh.
 Agents may not read the Dropbox key files or another Mac's keychain (the permission check refuses it): give John
 the command from the private file instead.
 
 **Is it alive?** Four checks, seconds each:
 
-    pg_isready -h /tmp -p 55432                                      # cloud working copy (MacBook: the Docker container)
+    pg_isready -h /tmp -p 55432                                      # cloud working copy (machine2: the Docker container)
     cd web && pnpm task                                              # board list (section 5)
     curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/       # 200
     # Supabase MCP execute_sql, project njpvfrceahkvnrduerkk: select count(*) from core.game
@@ -288,6 +296,9 @@ Always on at http://localhost:3150 (Docker, restarts with Docker, pages refresh 
     pnpm exec tsc --noEmit
     pnpm build
     pnpm test:routing             # when you touch a page, a query parameter or next.config.ts (section 9, "Kept pages")
+
+From the repo root, also: `bash scripts/check_private_hosts.sh` (fails on a private-range address, a machine or NAS name, or a home path
+in any file; section 1, "Machines are named by role") and, when you touch `scripts/mac` or the host mapping, `bash scripts/mac/test/hosts-test.sh`.
 
 On a fresh checkout `tsc` fails with "Cannot find name 'PageProps'" until `next typegen` (or a build or dev run) has
 generated the route types. That is not a bug in your change.
@@ -392,7 +403,7 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
 
 **Where data lives.**
 
-- **DS1** (Postgres in Docker on John's Synology NAS, reached on the home LAN or over Tailscale; the LAN and Tailscale addresses are in `scripts/mac/spx-checks.sh`) is the
+- **DS1** (Postgres in Docker on nas1, reached on the home LAN or over the VPN; the addresses are in the private host mapping, `scripts/mac/lib/hosts.sh`) is the
   permanent **source of truth**: all `legacy_*` schemas, `legacy_files.raw_archive`, `core`, `meta`, `ref`, `api`.
 - **Dropbox** `/Backups/spx-stats/raw/<source>/<year or date>/` holds a hard copy of every raw download.
 - **Production** is Supabase project `njpvfrceahkvnrduerkk`: a published subset (schemas meta, ref, core and api only;
@@ -402,7 +413,7 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   which nothing on the site reads; the Supabase Free cap is 500 MB). DS1 keeps them all. The rule is `PUBLISH_FILTER` in
   `scripts/sync/compare.py`, applied to the DS1 side of every release comparison, apply, verification and drift check, so
   "production equals DS1" means "equals DS1 filtered" (`scripts/release/README.md`). Add a table there only if nothing reads it.
-- Any other Postgres (the cloud session's port 55432, the MacBook Docker container in item 8) is a temporary
+- Any other Postgres (the cloud session's port 55432, the machine2 Docker container in item 8) is a temporary
   **working copy**. Its work counts only once it is on DS1.
 - Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,
   then a data release to production.
@@ -551,7 +562,7 @@ EXCLUSIVE lock for the whole rebuild. So:
    Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without
    asking John. The DS1 commands below are all **untested**.
    - **Cloud to DS1** (the sync direction stays): a cloud session pushes its new data to DS1 before its container is
-     discarded. With Tailscale up and the `scripts/cloud/fwd.py` forwarder running (the session-start hook shows the
+     discarded. With the VPN up and the `scripts/cloud/fwd.py` forwarder running (the session-start hook shows the
      paths), dump the changed schemas or tables and restore them into a **new** database on DS1 (or apply the
      rerunnable steps in a transaction, below); check counts, and ask John before replacing anything. The cloud
      container cannot be reached from outside, so this is always a push from the cloud.
@@ -565,7 +576,7 @@ EXCLUSIVE lock for the whole rebuild. So:
      DS1, report the exact command as `NEED FROM YOU:`.
    - **Compare counts** for each table you touched (`select count(*) from core.game`, and so on): working copy, DS1,
      then production with the Supabase MCP `execute_sql`.
-   - **MacBook working copy** (Docker, **untested**: the restore is in progress and not yet confirmed done):
+   - **machine2 working copy** (Docker, **untested**: the restore is in progress and not yet confirmed done):
 
          docker run -d --name spx-stats-local --restart unless-stopped -e POSTGRES_HOST_AUTH_METHOD=trust \
            -e POSTGRES_DB=spx_stats -p 127.0.0.1:55432:5432 -v spx-stats-pgdata:/var/lib/postgresql/data postgres:17-alpine
@@ -705,6 +716,9 @@ Ask John before deleting or overwriting data. Production changes only through ap
 ## 11. Safety
 
 - The repository is **public**. Never commit database dumps, member data, secrets, private notes or internal reviews.
+- Never write a real IP address, host name, machine or NAS model name, platform admin tool, NAS login or home path into a file, commit, ticket or
+  comment: use machine1, machine2, nas1, nas2 and the `NAS1_*` / `MACHINE*_` names; the values live in `~/.config/spx-stats/hosts.env`
+  (`scripts/mac/lib/hosts.sh`). `scripts/check_private_hosts.sh` enforces it. Tests use documentation addresses (192.0.2.x, 198.51.100.x).
 - Never print or store passwords or tokens in files, logs or commits. Delete any credential file after use.
 - Do not open credential files kept in Dropbox in plain text; fetch values with the keychain commands in the private
   file instead.
@@ -713,7 +727,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
 ## 12. Secrets and the environment
 
 Names only. Values are never in this repository, in a log or in a message. Where each value lives and the one command
-that fetches it are in the private file. John keeps one unlocked Apple Note called `spx-stats env` (a locked note cannot
+that fetches it are in the private file. John keeps one unlocked private note called `spx-stats env` (a locked note cannot
 be read by `scripts/mac/spx-note-copy.sh`, which copies the whole note to the clipboard) and pastes it into the cloud
 environment's settings. Do not ask John to dig for a value: give him the one command.
 
@@ -724,6 +738,7 @@ Template for the note (replace each `<value>`):
     SUMILABU_BOARD_TOKEN=<value>                      # required for tickets: the spx-stats board key
     SPX_DS1_DB_PASSWORD=<value>                       # required for the working copy to come up: DS1 Postgres password
     TS_AUTHKEY=<value>                                # required for the working copy to come up; expires every 90 days
+    NAS1_VPN_HOST=<value>                             # required for the working copy to come up: DS1's address over the VPN (private; the private file has it)
     DROPBOX_APP_KEY=<value>                           # optional: archive uploads (scripts/dropbox_put.py)
     DROPBOX_APP_SECRET=<value>
     DROPBOX_REFRESH_TOKEN=<value>

@@ -21,7 +21,7 @@ Docker on the NAS ([Stage 3](#stage-3-the-docker-job-on-the-nas), `daily/README.
     scripts/daily/run.py --apply --league nhl,nfl    # only some leagues (the others' rows are left alone)
 
 Python 3 stdlib only, plus `psql`. DS1 is reached through `ds1.sh`: it finds the host with `ds1_host` from
-`scripts/mac/spx-checks.sh` (hosts-file name `ds1`, home LAN, then Tailscale) and reads the password from the keychain
+`scripts/mac/spx-checks.sh` (hosts-file name `ds1`, home LAN, then the VPN: the addresses are in the private host mapping) and reads the password from the keychain
 item `spx-stats-db DS1 55440` inside its own process; nothing is printed. On Linux (the Docker job) there is no keychain: `ds1.sh` uses
 `PGHOST`, `PGPASSWORD` (and `PGPORT` 55440, `PGUSER` postgres, `PGDATABASE` spx_stats) from the environment. On a Mac the `PG*` variables
 are ignored on purpose, so a stray `PGHOST` for another database can never be written to. Club names come from DS1 (current franchise
@@ -108,7 +108,7 @@ requests are 13 s apart; a 429 waits at least 30 s (up to 3 retries); a 401/403 
 run goes on without it.
 
 - **Key.** On a Mac the keychain item `spx-stats balldontlie api key`, read inside the process (`security find-generic-password -s ... -w`);
-  anywhere else `BALLDONTLIE_API_KEY` from the environment (the NAS: `/volume2/docker/spx-daily-scores/daily.env`, see `daily/daily.env.example`).
+  anywhere else `BALLDONTLIE_API_KEY` from the environment (the NAS: `$NAS1_DOCKER_DIR/spx-daily-scores/daily.env`, see `daily/daily.env.example`).
   It is never printed or logged. **No key: the source is skipped with one line** (`balldontlie skipped (no key ...)`) and nothing is requested.
 - **What is read.** The first run of a season, and one a week, reads the whole season (`seasons[]=<start year>`, 100 a page: 13 requests for 1,200
   games, about 3 minutes). The other days read only the games from `--since` to tomorrow (a result can only be there): 0 or 1 request
