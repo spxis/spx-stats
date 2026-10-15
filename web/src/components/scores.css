@@ -2,7 +2,7 @@
 .scoresbar { gap: 10px 12px; }
 .scoresbar .daynav { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 6px; }
 .dayarrow { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-decoration: none; white-space: nowrap; }
-a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
+a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 .dayarrow.off { opacity: .35; }
 
 .daystrip { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-block: 16px 22px; }
@@ -27,7 +27,7 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent); }
 /* Week jumps: a narrow double-chevron at each end (the scores page); narrower than a day cell and the full height of the row. */
 .daystrip.withjump { grid-template-columns: 28px repeat(7, minmax(0, 1fr)) 28px; }
 .daystrip .jump { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-decoration: none; }
-.daystrip a.jump:hover { border-color: var(--accent); color: var(--accent); }
+.daystrip a.jump:hover { border-color: var(--accent); color: var(--accent-text); }
 .daystrip .jump.off { opacity: .35; }
 .daystrip .jump svg { flex: none; }
 @media (min-width: 600px) { .daystrip .ct .cw { display: inline; } }

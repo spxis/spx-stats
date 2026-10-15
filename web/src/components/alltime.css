@@ -29,7 +29,7 @@
 .rank .rk-mid { position: absolute; top: -3px; bottom: -3px; left: 50%; width: 1px; background: var(--muted); }
 .rank .rk-val { text-align: right; font: 600 16px/1 var(--display); font-variant-numeric: tabular-nums; }
 .rank-more { margin-top: 6px; }
-.rank-more summary { cursor: pointer; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--accent); padding: 6px 0; }
+.rank-more summary { cursor: pointer; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--accent-text); padding: 6px 0; }
 .rank-more[open] summary { margin-bottom: 4px; }
 @media (prefers-reduced-motion: no-preference) {
   .rank .rk-bar { animation: rk-grow .7s cubic-bezier(.22, 1, .36, 1) both; }

@@ -17,7 +17,7 @@
 
 /* A squad the strip or the map jumps to keeps clear of the top of the screen. */
 details.sc-squad { scroll-margin-top: 12px; }
-details.sc-squad:target { background: color-mix(in srgb, var(--soccer, #1d8a5b) 8%, transparent); }
+details.sc-squad:target { background: color-mix(in srgb, var(--soccer) 8%, transparent); }
 
 /* The small map in the top-right corner of the heading, as on a city page (city.css). */
 .wcmap { position: absolute; top: 0; right: 0; width: 220px; display: flex; flex-direction: column; gap: 4px; }

@@ -23,7 +23,7 @@
 .hcard .hl { font: 600 13px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
 .hcard .hv { font: 600 38px/1 var(--display); font-variant-numeric: tabular-nums; letter-spacing: .01em; }
 .hcard .hs, .hcard .hp, .hcard .hr { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
-.hcard .hp { color: var(--accent); font-weight: 600; }
+.hcard .hp { color: var(--accent-text); font-weight: 600; }
 .hcard .hr { color: var(--ink); }
 @media (max-width: 480px) { .hcard .hv { font-size: 32px; } }
 

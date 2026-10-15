@@ -7,8 +7,14 @@
 :root {
   --paper: #f5f6f2; --panel: #ffffff; --ink: #17202a; --muted: #5d6874; --rule: #dde1dc; --soft: #eceee9;
   --ok: #2f7d4f; --warn: #b07a12; --bad: #b3372b; --logo-tile: #ffffff;
-  --nhl: #1f6fb2; --nba: #c8571b; --mlb: #b5283a; --nfl: #2f6b3c; --cfl: #9b2335; --soccer: #1d8a5b;
+  /* The six sport colours (light set; the dark sets are in the two dark blocks below). Chosen as a set, each at CIEDE2000 20 or more from every
+     other and from the SPX red (--mk-r), in both themes and under the three colour-vision simulations; scripts/sportColours.test.ts (pnpm test:sportcolours)
+     measures it and fails if an edit brings two together. Keep lib/seriesLooks.ts LEAGUE_HEX in step (the test checks it too). */
+  --nhl: #0a86ee; --nba: #cf6d12; --mlb: #c169ad; --nfl: #0a7038; --cfl: #5a52ac; --soccer: #00858a;
   --accent: var(--ink);
+  /* The accent where it colours text, or carries the page's own paper-coloured text (a chosen chip): the accent pulled toward the ink by --accent-keep,
+     so it reads at 4.5:1 on the page and the panel. The graphics keep --accent itself (3:1). */
+  --accent-keep: 70%;
   /* Today in a day strip: an amber that reads on the panel (5:1) and, for the chosen (inked) cell, its pair for the other theme (also over 4.5:1 there). */
   --today: #a84a00; --today-on-ink: #f0b24a;
   /* One height for every form control and button (select, search box, segmented toggle, date picker, day arrows, chips), so a row of them lines up. */
@@ -24,14 +30,17 @@
   :root:not([data-theme="light"]) {
     --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
     --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
-    --nhl: #5aa6e6; --nba: #f08a4b; --mlb: #ef5a6c; --nfl: #6fb37f; --cfl: #e06a7c; --soccer: #4fbf8a; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
+    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
   --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
-  --nhl: #5aa6e6; --nba: #f08a4b; --mlb: #ef5a6c; --nfl: #6fb37f; --cfl: #e06a7c; --soccer: #4fbf8a; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
+  --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
 }
+
+/* Declared on the root and on the soccer pages (which set their own --accent), so each reads the --accent of its own element. */
+:root, .soccer { --accent-text: color-mix(in srgb, var(--accent) var(--accent-keep), var(--ink)); }
 
 @theme inline {
   --color-paper: var(--paper);
@@ -193,7 +202,7 @@
      instead (a flex item takes a z-index without being positioned). Every popover class is listed here: add a new one to this rule. */
   .page > :has(.dp-pop, .pickpop, .sbox [role="listbox"]) { z-index: var(--z-pop); }
   .lede { color: var(--muted); font-size: 18px; max-width: min(100%, 120ch); }
-  .eyebrow { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+  .eyebrow { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent-text); }
   .head { display: flex; flex-direction: column; gap: 10px; position: relative; }
   .section { display: flex; flex-direction: column; gap: 14px; min-width: 0; }
   .note { color: var(--muted); font-size: 14px; }
@@ -238,7 +247,7 @@
 
   .banner { display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; background: var(--panel); border: 1px solid var(--rule); border-left: 8px solid var(--accent); padding: 16px 20px; }
   .banner .badge { justify-self: start; }
-  .banner .cup { font: 700 15px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent); }
+  .banner .cup { font: 700 15px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent-text); }
   .banner .who { font: 700 34px/1.05 var(--display); text-transform: uppercase; grid-column: 1 / -1; }
   .banner .who .logo { vertical-align: middle; margin-right: 12px; }
   .banner .how { color: var(--muted); grid-column: 1 / -1; }
@@ -251,7 +260,7 @@
   @media (max-width: 480px) { .banner.withcup { padding: 14px 14px; gap: 12px 14px; } .banner.withcup .who { font-size: 26px; } .banner.withcup .who .logo { margin-right: 8px; } }
 
   .badge { display: inline-block; font: 500 11px/1 var(--mono); padding: 3px 5px 2px; border: 1px solid var(--rule); color: var(--muted); white-space: nowrap; text-transform: uppercase; letter-spacing: .03em; }
-  .badge.spx { color: var(--accent); border-color: currentColor; }
+  .badge.spx { color: var(--accent-text); border-color: currentColor; }
   .ok { color: var(--ok); font-weight: 600; }
   .bad { color: var(--bad); font-weight: 600; }
 
@@ -306,7 +315,7 @@
   @media (min-width: 760px) { .foot-links a { padding-block: 3px; } }
   .foot .ver { font: 400 13px/1.4 var(--mono); }
   .langpick { margin-top: 6px; font-size: 15px; }
-  .langpick button { font: inherit; color: var(--accent); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
+  .langpick button { font: inherit; color: var(--accent-text); background: none; border: 0; padding: 4px 2px; text-decoration: underline; cursor: pointer; }
   .langpick button:disabled { opacity: .6; cursor: default; }
   .langpick .here { color: var(--ink); font-weight: 600; }
 
@@ -330,7 +339,7 @@
   .calhead .nav:disabled { opacity: .35; cursor: default; }
   .months { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: thin; flex: 1; min-width: 0; }
   .months .mo { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
-  .months .mo[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: var(--paper); }
+  .months .mo[aria-pressed="true"] { background: var(--accent-text); border-color: var(--accent-text); color: var(--paper); }
   .grid { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; }
   .grid .wd { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); text-align: center; padding-bottom: 4px; }
   .cell { position: relative; min-height: 58px; border: 1px solid var(--rule); background: var(--panel); display: flex; flex-direction: column; justify-content: space-between; padding: 5px 6px; text-align: left; font: inherit; color: var(--muted); }
@@ -345,14 +354,14 @@
   .cell.res.W { background: color-mix(in srgb, var(--ok) 26%, var(--panel)); border-color: color-mix(in srgb, var(--ok) 55%, var(--rule)); }
   .cell.res.L { background: color-mix(in srgb, var(--bad) 22%, var(--panel)); border-color: color-mix(in srgb, var(--bad) 50%, var(--rule)); }
   .daylist { display: flex; flex-direction: column; gap: 8px; }
-  .linkish { font: inherit; color: var(--accent); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
+  .linkish { font: inherit; color: var(--accent-text); background: none; border: 0; padding: 0; text-decoration: underline; cursor: pointer; }
 
   td.note .logo, .banner .how .logo { vertical-align: middle; margin: 0 6px 0 2px; }
   h1.teamname { display: flex; align-items: center; gap: 14px; }
   h1.teamname .logo { margin: 0; vertical-align: middle; }
   .namerow { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 6px 24px; }
   .namerow h1 { min-width: 0; }
-  .seasonlabel { font: 700 clamp(24px, 3.4vw, 40px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; color: var(--accent); text-decoration: none; }
+  .seasonlabel { font: 700 clamp(24px, 3.4vw, 40px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; color: var(--accent-text); text-decoration: none; }
   .seasonlabel:hover { text-decoration: underline; }
   .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
   .prose { max-width: 70ch; }
@@ -375,12 +384,12 @@
   .seasonnav { position: absolute; top: 0; right: 0; display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 6px; max-width: 100%; }
   .seasonnav a { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 1px solid var(--rule); background: var(--panel); text-decoration: none; }
   .seasonnav select { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 8px; border: 1px solid var(--rule); background: var(--panel); color: inherit; }
-  .seasonnav a:hover { border-color: var(--accent); color: var(--accent); }
-  .reigning { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font: 700 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; padding: 7px 12px; background: var(--accent); color: var(--paper); text-decoration: none; }
+  .seasonnav a:hover { border-color: var(--accent); color: var(--accent-text); }
+  .reigning { display: inline-flex; align-items: center; gap: 8px; align-self: flex-start; font: 700 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; padding: 7px 12px; background: var(--accent-text); color: var(--paper); text-decoration: none; }
   .reigning .rcup { display: inline-block; width: 22px; height: 22px; }
   .reigning .rcup svg { width: 100%; height: 100%; }
-  .defending { margin-left: 8px; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border: 1px solid var(--accent); color: var(--accent); vertical-align: 1px; white-space: nowrap; }
-  .defending.winner { background: var(--accent); color: var(--paper); }
+  .defending { margin-left: 8px; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; padding: 3px 6px; border: 1px solid var(--accent); color: var(--accent-text); vertical-align: 1px; white-space: nowrap; }
+  .defending.winner { background: var(--accent-text); color: var(--paper); }
 
   /* Sortable tables: the header is a button inside the th. */
   th { padding: 0; }
@@ -390,11 +399,11 @@
   th .arrow { font-size: 10px; opacity: .35; }
   th .sortbtn:hover .arrow { opacity: .8; }
   th[aria-sort="ascending"], th[aria-sort="descending"] { color: var(--ink); }
-  th[aria-sort="ascending"] .arrow, th[aria-sort="descending"] .arrow { opacity: 1; color: var(--accent); }
+  th[aria-sort="ascending"] .arrow, th[aria-sort="descending"] .arrow { opacity: 1; color: var(--accent-text); }
   table[aria-busy="true"] { opacity: .6; }
   /* The button under a table that shows its first rows (SortTable `limit`). */
   .showall { margin: 10px 0 0; }
-  .showall button, .showall a { display: inline-block; font: inherit; padding: 6px 12px; border: 1px solid var(--rule); background: none; color: var(--accent); cursor: pointer; text-decoration: none; }
+  .showall button, .showall a { display: inline-block; font: inherit; padding: 6px 12px; border: 1px solid var(--rule); background: none; color: var(--accent-text); cursor: pointer; text-decoration: none; }
   .showall button:hover, .showall a:hover { border-color: var(--accent); }
   .showall button:focus-visible, .showall a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
   .showall a[aria-busy] { cursor: progress; opacity: .7; }

@@ -85,11 +85,11 @@ function shades(h: string, awayFrom?: string): string[] {
   return out;
 }
 
-/** The league's own colour in each theme (the --nhl... tokens), used when a team has no colours on record. */
+/** The league's own colour in each theme (the --nhl... tokens), used when a team has no colours on record. Kept equal to globals.css by pnpm test:sportcolours. */
 const LEAGUE_HEX: Record<string, { light: string; dark: string }> = {
-  nhl: { light: "1f6fb2", dark: "5aa6e6" }, nba: { light: "c8571b", dark: "f08a4b" }, mlb: { light: "b5283a", dark: "ef5a6c" },
-  nfl: { light: "2f6b3c", dark: "6fb37f" }, cfl: { light: "9b2335", dark: "e06a7c" },
-  soccer: { light: "2f7a4b", dark: "6fb37f" },
+  nhl: { light: "0a86ee", dark: "6cd0ff" }, nba: { light: "cf6d12", dark: "e08a1a" }, mlb: { light: "c169ad", dark: "f194cc" },
+  nfl: { light: "0a7038", dark: "7fe05a" }, cfl: { light: "5a52ac", dark: "8d91fe" },
+  soccer: { light: "00858a", dark: "11a695" },
 };
 const NEUTRALS = [{ light: "5d6874", dark: "9aa4ad" }, { light: "b07a12", dark: "e0a83d" }];
 

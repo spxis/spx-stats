@@ -75,11 +75,11 @@ a.gchip:hover { border-color: var(--accent); }
 
 /* A score in a list or a table that opens its game. */
 a.scorelink { color: inherit; font-variant-numeric: tabular-nums; text-decoration-color: color-mix(in srgb, currentColor 35%, transparent); }
-a.scorelink:hover { color: var(--accent); text-decoration-color: currentColor; }
+a.scorelink:hover { color: var(--accent-text); text-decoration-color: currentColor; }
 
 /* The "Game N" heading of a series tile opens that game. */
 .ghead b a { margin-left: 0; color: inherit; text-decoration-color: color-mix(in srgb, currentColor 30%, transparent); }
-.ghead b a:hover { color: var(--accent); }
+.ghead b a:hover { color: var(--accent-text); }
 
 /* A club's season leaders on a game's page: the statistic, the player, the number. */
 .gleaders .gl { display: block; font: 600 12px/1.2 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 3px; }
