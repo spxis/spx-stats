@@ -5,7 +5,9 @@
 #
 # Steps (each prints one line):
 #   1. start a PostgREST in Docker (pinned image, 127.0.0.1:7790) on DS1 Postgres, schema api, role anon, read-only session;
-#   2. check it serves the same data as production (scripts/mac/same-data.py: latest release number and season_summary);
+#   2. check it serves the same data as production (scripts/mac/same-data.py: latest release number, season_summary,
+#      and every published table by row count and bucket hash; a difference stops the deploy unless --force; a side
+#      that cannot be read always stops);
 #   3. git archive of the commit into a temp dir (default: origin/main), vercel link and pull; then the SportsLogos.Net logo files are written from
 #      DS1 into web/public/team-logos/sl (scripts/logos/export_hosted.py, sha256 checked; it stops when a file a brand row names is missing);
 #   4. `vercel build --prod` there with SPX_REST_URL pointing at that PostgREST (web/src/lib/api/config.ts accepts only loopback addresses);
@@ -16,7 +18,7 @@
 # Pages revalidated at run time on Vercel still read production: SPX_REST_URL is never set there.
 #
 #   --check-only  steps 1 and 2 only (a dry run that changes nothing)   --no-deploy  stop after the build, keep the temp dir
-#   --no-prune    skip step 6       --force  go on although step 2 found a difference       --keep  keep the temp dir
+#   --no-prune    skip step 6       --force  go on when step 2 found a data difference (a side that cannot be read still stops)       --keep  keep the temp dir
 # Needs: Docker running, vercel (logged in), git, node 22.18+, pnpm, python3, jq, DS1 on the home LAN or Tailscale, and the DS1 password
 # (the keychain item 'spx-stats-db DS1 55440', or SPX_DS1_DB_PASSWORD; it is read here and never printed or put on a command line).
 # Settings for tests: SPX_DS1_HOST, SPX_DS1_PORT, SPX_DS1_DB_NAME, SPX_DS1_DB_USER, SPX_BUILD_PGRST_PORT, SPX_PROD_URL.
@@ -27,6 +29,7 @@ REPO="$(cd "$HERE/../.." && pwd)"
 . "$HERE/lib/ds1-pgrst.sh"
 . "$HERE/lib/build-auth.sh"
 . "$HERE/lib/hosted-logos.sh"
+. "$HERE/lib/same-data-gate.sh"
 set -u
 
 SCOPE="spxis-projects-0d6306b4"
@@ -83,12 +86,21 @@ ds1_pgrst_start "$NAME" "$PORT"
 
 # ---- 2. same data as production? ---------------------------------------------------------------------------------------------------
 PROD="${SPX_SAME_DATA_PROD:-$SPX_PROD_URL/rest/v1/}"   # SPX_SAME_DATA_PROD: tests only
-if python3 -I "$HERE/same-data.py" "$LOCAL" "$PROD" "$SPX_PROD_KEY"; then
-  say "DS1 and production serve the same data"
-else
-  if [ "$FORCE" = 1 ]; then say "DIFFERENT, going on because of --force"
-  else die "DS1 is not what production serves (see above). Approve or finish the open releases and let the drift check run, or use --force"; fi
+export PGHOST="${SPX_DS1_HOST:-$(ds1_host)}" PGPORT="$SPX_DS1_PORT" PGUSER="${SPX_DS1_DB_USER:-postgres}" PGDATABASE="${SPX_DS1_DB_NAME:-spx_stats}"
+if [ -z "${PGPASSWORD:-}" ]; then
+  PGPASSWORD="${SPX_DS1_DB_PASSWORD:-}"
+  [ -n "$PGPASSWORD" ] || PGPASSWORD="$(kc_get 'spx-stats-db DS1 55440')"
+  export PGPASSWORD
 fi
+python3 -I "$HERE/same-data.py" "$LOCAL" "$PROD" "$SPX_PROD_KEY"
+rc=$?
+unset PGPASSWORD
+case "$(same_data_gate "$rc" "$FORCE")" in
+  ok) say "DS1 and production serve the same data" ;;
+  warn) say "DIFFERENT, going on because of --force" ;;
+  differ) die "DS1 is not what production serves (see above). Approve or finish the open releases and let the drift check run, or use --force" ;;
+  *) die "could not compare DS1 with production (see above). Nothing was built" ;;
+esac
 [ "$CHECK_ONLY" = 1 ] && { say "check only: done"; exit 0; }
 
 # ---- 3. a clean copy of the commit, linked -----------------------------------------------------------------------------------------

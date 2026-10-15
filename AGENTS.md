@@ -350,9 +350,10 @@ production on 2026-10-14). One command from the repo root builds the pages from 
 
 - It starts a PostgREST in Docker (pinned `postgrest/postgrest:v12.2.12`, `127.0.0.1:7790`, schema `api`, role `anon`, read-only sessions) on DS1
   Postgres (host from `ds1_host`, password read in-process from the keychain item `spx-stats-db DS1 55440` or `SPX_DS1_DB_PASSWORD`, never printed),
-  checks with `scripts/mac/same-data.py` that it serves what production serves (latest release number and `api.season_summary`; a handful of
-  production reads) and **stops if not**: DS1 can be ahead (a release waiting for approval, scores loaded since the last release) or have a stale
-  materialized view, and a build from it would publish rows John has not approved. `--force` overrides.
+  checks with `scripts/mac/same-data.py` that it serves what production serves (latest release number, `api.season_summary`, and every
+  published table by row count and the drift check's bucket hashes; the DS1 side of `PUBLISH_FILTER` is filtered) and **stops if not**: DS1 can be
+  ahead (a release waiting for approval, scores loaded since the last release) or have a stale materialized view, and a build from it would publish
+  rows John has not approved. `--force` continues when the data differs. A side that cannot be read (exit 2) always stops, `--force` included.
 - It then does what the fallback below does (clean `git archive`, `vercel link`), plus `vercel pull`, `vercel build --prod` with
   `SPX_REST_URL=http://127.0.0.1:7790/` and `vercel deploy --prebuilt --prod`, stops the container by name, makes one request to spxn.com, and prunes
   Vercel to the live deployment and one previous (plus the pinned `spx-stats-1p836thn0`, one `vercel remove --safe` per URL).
@@ -363,7 +364,7 @@ production on 2026-10-14). One command from the repo root builds the pages from 
   `api`, so the DS1 build needs no filter. If a view ever reads that table, filter it in the view or add the same condition to the build.
 - Needs Docker Desktop, so a Mac, not the cloud container. Untested: `vercel build` and `vercel deploy --prebuilt` for this project (project settings:
   root directory `web`, install `pnpm install --frozen-lockfile`), whether the footer's commit sha survives the first revalidation on Vercel (it reads
-  `VERCEL_GIT_COMMIT_SHA`, which the script sets for the build only), and DS1's own api views matching production's beyond the two compared.
+  `VERCEL_GIT_COMMIT_SHA`, which the script sets for the build only). The table check reuses `scripts/sync/compare.py` (`bash scripts/mac/test/same-data-test.sh`).
 
 **Deploy** with the Vercel MCP `create_deployment` (the fallback; the way earlier production deployments were made, and still right when Docker or DS1 is not available):
 
