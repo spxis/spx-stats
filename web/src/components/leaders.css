@@ -106,8 +106,8 @@ td .dim { color: var(--muted); font-weight: 400; }
 
 .ltable { max-height: none; }
 .ltable td { white-space: nowrap; }
-.lnote { color: var(--muted); font-size: 14px; max-width: 78ch; }
+.lnote { color: var(--muted); font-size: 14px; max-width: min(100%, 120ch); }
 .lnotes { display: flex; flex-direction: column; gap: 6px; }
 .lviews { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px; }
 .lback { font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
-.lunavail { background: var(--panel); border: 1px dashed var(--rule); padding: 12px 16px; color: var(--muted); max-width: 78ch; }
+.lunavail { background: var(--panel); border: 1px dashed var(--rule); padding: 12px 16px; color: var(--muted); max-width: min(100%, 120ch); }

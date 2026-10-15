@@ -1,6 +1,6 @@
 /* The page of a season the league did not play (SeasonOutage, OutageSlope). */
 .outage-article h2 { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 0; }
-.outage-text { font-size: 18px; line-height: 1.55; max-width: 72ch; margin: 0; }
+.outage-text { font-size: 18px; line-height: 1.55; max-width: min(100%, 120ch); margin: 0; }
 .outfacts { display: flex; flex-wrap: wrap; gap: 10px 32px; margin: 0; padding: 12px 0; border-block: 1px solid var(--rule); }
 .outfacts div { display: flex; flex-direction: column; gap: 2px; }
 .outfacts dt { color: var(--muted); font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }

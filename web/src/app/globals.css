@@ -59,7 +59,7 @@
   h1 { font-size: clamp(34px, 5vw, 52px); line-height: 1; text-transform: uppercase; }
   h2 { font-size: 24px; text-transform: uppercase; letter-spacing: .04em; }
   h3 { font-size: 19px; }
-  p { margin: 0; max-width: 70ch; }
+  p { margin: 0; max-width: min(100%, 120ch); }
   table { border-collapse: separate; border-spacing: 0; width: 100%; font-size: 15px; font-variant-numeric: tabular-nums; }
   th { text-align: left; font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 8px 10px; border-bottom: 2px solid var(--ink); white-space: nowrap; position: sticky; top: 0; z-index: 2; background: var(--paper); }
   td { padding: 7px 10px; border-bottom: 1px solid var(--rule); vertical-align: top; }

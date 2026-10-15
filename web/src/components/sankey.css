@@ -24,7 +24,7 @@
 
 .sk-pop { pointer-events: auto; max-width: min(300px, 92%); z-index: 6; font-size: 14px; padding: 8px 12px; border-left: 4px solid var(--accent); }
 .sk-pop b { display: block; font: 700 17px/1.2 var(--display); letter-spacing: .02em; }
-.sk-hint { color: var(--muted); font-size: 13px; margin: 0; max-width: 80ch; }
+.sk-hint { color: var(--muted); font-size: 13px; margin: 0; max-width: min(100%, 120ch); }
 .sk-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
 .sk-open { display: inline-block; margin-top: 6px; font-weight: 600; }
 
@@ -33,7 +33,7 @@
 .sk-controls select { font-size: 15px; padding-inline: 10px; }
 .sk-controls .sk-check { display: flex; align-items: center; gap: 8px; min-height: 40px; font: 600 14px var(--body); letter-spacing: 0; text-transform: none; color: var(--ink); }
 .sk-controls .sk-check input { width: 18px; height: 18px; }
-.sk-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; max-width: 80ch; }
+.sk-note { color: var(--muted); font-size: 13px; margin: 8px 0 0; max-width: min(100%, 120ch); }
 .sk-skeleton { min-height: 360px; display: grid; place-items: center; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
 
 .sk-controls .seg button { padding: 0 14px; }
