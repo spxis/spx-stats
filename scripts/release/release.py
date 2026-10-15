@@ -4,6 +4,7 @@
   prepare   check DS1, compare DS1 with production, write a pending release (with a preview) on both sides
   run       (the NAS runner calls this every minute) apply the releases John approved at /admin/data
   rollback  prepare a release that restores the snapshot of an earlier one (it needs approval like any other)
+  withdraw  take a pending release off the approval list (shown as rejected, with the reason)
   drift     compare every table, write meta.sync_status, and propose one pending fix release when anything differs
   checks    run db/checks/*.sql on DS1 and print the result
   status    list the releases
@@ -443,9 +444,52 @@ def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, c
     if created_by:
         row["created_by"] = created_by
     row = create_release(ctx, row)
+    if not preview["blockers"]:
+        row["superseded"] = supersede_older(ctx, row)
     if not quiet:
         print_preview(row)
+        for n in row.get("superseded") or []:
+            print("  withdrew the older pending release %s (superseded by this one)" % n)
     return row
+
+
+def withdraw_release(ctx, number, reason, by=None):
+    """Take a pending release off John's list: status 'rejected' (a status the site, the runner and the dashboard already know, so no
+    migration), no approver, the reason and who in error (which /admin/data shows under the title) and in result.withdrawn. Production
+    first, because that is where John approves: a release approved there in the meantime is refused here and nothing changes on DS1."""
+    by = (by or ctx.by or "").strip()
+    reason = (reason or "").strip()
+    if not reason:
+        raise Refused("a reason is required")
+    r = ctx.ds1.run("select id, number, status from meta.data_release where number = %s" % C.ql(number))
+    if not r:
+        raise Refused("no release %s" % number)
+    r = r[0]
+    if r["status"] != "pending":
+        raise Refused("release %s is %s, not pending: only a pending release can be withdrawn" % (number, r["status"]))
+    fields = {"status": "rejected", "approved_by": None, "approved_at": None, "finished_at": "NOW",
+              "error": "Withdrawn by %s: %s" % (by, reason), "result": {"withdrawn": {"by": by, "reason": reason}}}
+    if not prod_exec(ctx.prod, update_sql(r["id"], fields, "pending")):
+        raise Refused("release %s is no longer pending on production (approved or decided meanwhile): nothing was changed" % number)
+    ctx.w.exec(update_sql(r["id"], fields, "pending"))
+    return r["id"]
+
+
+def supersede_older(ctx, row):
+    """A new publish release withdraws the older pending ones of the same tables and kind prepared by the same actor (and not held),
+    so stale ones never sit on John's list. Never an approved or running one. Returns the numbers withdrawn."""
+    a = text_array(row["tables"])
+    older = ctx.ds1.run("select number from meta.data_release r where status = 'pending' and id < %d and kind = %s and created_by = %s "
+                        "and tables @> %s and tables <@ %s and (to_jsonb(r) ->> 'held_at') is null order by id"
+                        % (row["id"], C.ql(row["kind"]), C.ql(row["created_by"]), a, a))
+    done = []
+    for o in older:
+        try:
+            withdraw_release(ctx, o["number"], "superseded by %s" % row["number"], by=row["created_by"])
+            done.append(o["number"])
+        except (Refused, RuntimeError) as e:
+            log("could not withdraw %s: %s" % (o["number"], scrub(e)))
+    return done
 
 
 def print_preview(row):
@@ -1836,6 +1880,12 @@ def cmd_prepare(ctx, args):
     return 0
 
 
+def cmd_withdraw(ctx, args):
+    withdraw_release(ctx, args.release, args.reason)
+    print("withdrew release %s: %s" % (args.release, args.reason.strip()))
+    return 0
+
+
 def cmd_rollback(ctx, args):
     prepare_rollback(ctx, args.release, args.title, args.notes, args.ticket)
     return 0
@@ -1881,6 +1931,10 @@ def main():
     p.add_argument("--ticket")
     p.add_argument("--notes")
     p.set_defaults(fn=cmd_rollback)
+    p = sub.add_parser("withdraw", help="take a pending release off the approval list (shown as rejected, with the reason)")
+    p.add_argument("--release", required=True, help="the number of the pending release, e.g. 2026.10.15-11")
+    p.add_argument("--reason", required=True)
+    p.set_defaults(fn=cmd_withdraw)
     p = sub.add_parser("drift")
     p.set_defaults(fn=cmd_drift)
     p = sub.add_parser("checks")

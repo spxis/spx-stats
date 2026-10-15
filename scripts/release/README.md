@@ -86,6 +86,20 @@ second proof: the runner's re-check (`run_publish`) compares fingerprints and th
 and apply per prepare (a release of 150k staged rows took 5 s against a local Postgres; on the API it is the request round trips, about
 one per 900 KB). `RELEASE_REHEARSAL=off` skips it (tests only).
 
+### Withdrawing a pending release
+
+    python3 -I scripts/release/release.py --by "<who>" withdraw --release 2026.10.15-11 --reason "<why>"
+
+Takes a pending release off John's list. It is stored as status `rejected` (a status the site, the runner and the dashboard already
+handle, so there is no migration and no change to `api.approve_release`), with no approver, `error` = `Withdrawn by <who>: <why>` (which
+`/admin/data` shows under the title) and `result.withdrawn` = `{by, reason}`. Production is updated first, only while it is still
+`pending` there: a release John approved in the meantime is refused and nothing changes on DS1. An approved, running or finished release
+cannot be withdrawn; a reason is required.
+
+`prepare` withdraws by itself the older pending releases a new one supersedes: same tables (as a set), same kind, same `created_by`, not
+held, still pending, and only when the new release has no blocker (a blocked release cannot replace a good one). The reason names the new
+number. Another actor's releases and approved ones are never touched.
+
 ## Tables published in part (`PUBLISH_FILTER`)
 
 Production is on the 500 MB plan, so some DS1 rows are not published. `PUBLISH_FILTER` in `scripts/sync/compare.py` maps a table to a
@@ -269,7 +283,7 @@ with `select api.refresh_one('api.<view>')`.
     python3 -I scripts/release/test/test_release.py
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
     TEST_ORDER_PORT=<free port> python3 -I scripts/release/test/test_guard.py   # the size estimate with the two real releases of 2026-10-15, and the per-view refresh (own throwaway Postgres; stops it after)
-    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 7740; stops it after; includes the position-release shape and the foreign key loop refusal)
+    python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 7740; stops it after; includes the position-release shape, exclusion constraints, the rehearsal, withdraw and superseding, and the foreign key loop refusal)
     python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 104/105 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
 

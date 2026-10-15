@@ -14,8 +14,8 @@ production, seeded with a tiny schema with the same shapes as the real failures:
     reads it, a re-keyed stats child of person, removed persons, redirects, and a table that points at itself
   - exclusion constraints on referenced tables (release 2026.10.15-11): franchise_identity rebuilt with new ids and the same ranges, a
     child re-pointed, a range that shrinks while a new row takes its old part, and tables where the block must not empty a range
-  - prepare's rehearsal of the apply on production (a statement that always rolls back), on a small meta.data_release (migrations 045
-    and 047), through psql and through mock_api.py (port 7742)
+  - prepare's rehearsal of the apply on production (a statement that always rolls back), withdraw, and the older pending releases a new
+    prepare withdraws, on a small meta.data_release (migrations 045 and 047), through psql and through mock_api.py (port 7742)
   - a foreign key loop, which must be refused at prepare, with the loop built from both databases' keys
 It runs the real publish_plan, stage_and_apply, snapshot and restore from release.py. Exit code: 0 all passed, 1 a check failed.
 """
@@ -791,6 +791,59 @@ def scenario_rehearsal(snap):
     shutil.rmtree(empty_repo, ignore_errors=True)
 
 
+def scenario_withdraw(snap):
+    """withdraw, and the older pending releases a new prepare withdraws."""
+    print("--- withdraw and superseding at prepare")
+    for db, seed in (("wd_prod", RP_OLD), ("wd_ds1", RP_NEW)):
+        psql("postgres", "create database %s" % db)
+        psql(db, RP_DDL + seed)
+    R.SNAP_DIR = snap
+    empty_repo = tempfile.mkdtemp(prefix="wdrepo-")
+    os.makedirs(os.path.join(empty_repo, "db", "checks"))
+    R.REPO = empty_repo
+    R.head_sha = lambda: "0123456789abcdef0123456789abcdef01234567"
+    R.apply_block = REAL_BLOCK
+    ds1 = C.PsqlSide("DS1", dsn("wd_ds1"))
+    ctx = types.SimpleNamespace(ds1=ds1, prod=Prod("wd_prod"), w=R.Ds1Writer(dsn("wd_ds1")), by="tester")
+    row1 = R.prepare_publish(ctx, "First", RP_TABLES, quiet=True)
+    # superseding: same tables, same actor, still pending
+    psql("wd_ds1", "update core.other set v = 'uno' where id = 1")
+    other = R.prepare_publish(ctx, "Other table", ["core.other"], quiet=True)
+    ctx_b = types.SimpleNamespace(ds1=ds1, prod=ctx.prod, w=ctx.w, by="someone-else")
+    row2 = R.prepare_publish(ctx, "Second", RP_TABLES, quiet=True)
+    ok("a newer release of the same tables by the same actor withdraws the older pending one, naming the new number",
+       release_row("wd_prod", row1["number"]).startswith("rejected|-|Withdrawn by tester: superseded by %s" % row2["number"]), release_row("wd_prod", row1["number"]))
+    ok("DS1 agrees", release_row("wd_ds1", row1["number"]) == release_row("wd_prod", row1["number"]))
+    ok("the new release and a release of other tables stay pending",
+       release_row("wd_prod", row2["number"]).startswith("pending") and release_row("wd_prod", other["number"]).startswith("pending"))
+    row3 = R.prepare_publish(ctx_b, "Third", RP_TABLES, quiet=True)
+    ok("another actor's pending release is not withdrawn", release_row("wd_prod", row2["number"]).startswith("pending")
+       and release_row("wd_prod", row3["number"]).startswith("pending"))
+    psql("wd_prod", "update meta.data_release set status = 'approved', approved_by = 'John', approved_at = now() where number = '%s'" % row2["number"])
+    row4 = R.prepare_publish(ctx, "Fourth", RP_TABLES, quiet=True)
+    ok("an approved release is never withdrawn by a newer one", release_row("wd_prod", row2["number"]).startswith("approved|John"), release_row("wd_prod", row2["number"]))
+
+    # withdraw by hand
+    args = types.SimpleNamespace(release=row4["number"], reason="wrong tables")
+    ok("withdraw refuses an empty reason", raises(lambda: R.cmd_withdraw(ctx, types.SimpleNamespace(release=row4["number"], reason="  "))))
+    ok("withdraw refuses an unknown release", raises(lambda: R.cmd_withdraw(ctx, types.SimpleNamespace(release="2026.01.01-999", reason="x"))))
+    ok("withdraw refuses an approved release", raises(lambda: R.cmd_withdraw(ctx, types.SimpleNamespace(release=row2["number"], reason="x"))))
+    ok("a refused withdraw changes nothing", release_row("wd_prod", row2["number"]).startswith("approved|John") and release_row("wd_ds1", row2["number"]).startswith("pending"))
+    ok("withdraw of a pending release works", R.cmd_withdraw(ctx, args) == 0)
+    ok("it is rejected with the reason and who, on both sides, and keeps no approver",
+       release_row("wd_prod", row4["number"]) == "rejected|-|Withdrawn by tester: wrong tables" == release_row("wd_ds1", row4["number"]),
+       release_row("wd_prod", row4["number"]))
+    ok("the result says it was a withdrawal",
+       psql("wd_prod", "select result -> 'withdrawn' ->> 'by' from meta.data_release where number = '%s'" % row4["number"]) == "tester")
+    ok("withdrawing twice is refused", raises(lambda: R.cmd_withdraw(ctx, args)))
+    # production decided first (John approved between the read and the write): nothing on DS1 changes
+    psql("wd_prod", "update meta.data_release set status = 'approved', approved_by = 'John', approved_at = now() where number = '%s'" % row3["number"])
+    ok("a release approved on production meanwhile is not withdrawn", raises(lambda: R.cmd_withdraw(ctx, types.SimpleNamespace(release=row3["number"], reason="late"))))
+    ok("and DS1 still shows it pending", release_row("wd_ds1", row3["number"]).startswith("pending"))
+
+    shutil.rmtree(empty_repo, ignore_errors=True)
+
+
 def raises(fn):
     try:
         fn()
@@ -808,6 +861,7 @@ def main():
         scenario_positions(snap, False)
         scenario_exclusion(snap)
         scenario_rehearsal(snap)
+        scenario_withdraw(snap)
         scenario_cycles(snap)
         scenario_publish_filter(snap)
     finally:
