@@ -45,9 +45,12 @@ select w.source_id, 'award_winner', 'final:' || s.league_code || ':' || s.start_
 from core.award_winner w join core.award a using (award_id) join core.season s using (season_id)
 join core.team_season ts on ts.team_season_id = w.team_season_id
 where a.kind = 'championship' and w.source_id = (select source_id from meta.source where code = 'spx_stats_derived')
-  and not exists (select 1 from core.team_season t join core.standing_from_games c on c.team_season_id = t.team_season_id and c.phase = 'regular'
+  -- (in this league: a club of the PCHA or WCHL that won the NHL's Stanley Cup final has standings, but not in the NHL)
+  and not exists (select 1 from core.team_season t join core.season ls on ls.season_id = t.season_id and ls.league_code = s.league_code
+                  join core.standing_from_games c on c.team_season_id = t.team_season_id and c.phase = 'regular'
                   where t.franchise_id = ts.franchise_id)
-  and not exists (select 1 from core.team_season t join core.standing x on x.team_season_id = t.team_season_id where t.franchise_id = ts.franchise_id);
+  and not exists (select 1 from core.team_season t join core.season ls on ls.season_id = t.season_id and ls.league_code = s.league_code
+                  join core.standing x on x.team_season_id = t.team_season_id where t.franchise_id = ts.franchise_id);
 
 select 'champions linked' as k, count(*) from pick
 union all select 'outside the league', count(*) from meta.data_issue where entity_kind = 'award_winner' and entity_key like 'final:%:outside';

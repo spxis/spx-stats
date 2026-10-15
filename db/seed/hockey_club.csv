@@ -1,0 +1,59 @@
+club,league,first_year,last_year,franchise,country,display,note
+Montreal Wanderers,nha,1909,1916,nhl_api:MWN,CA,,from the ECHA; the NHL's Wanderers of 1917-18 are the same club
+Ottawa Hockey Club,nha,1909,1911,nhl_api:SEN,CA,,the original Senators (the NHL's Senators of 1917-34 are the same club)
+Ottawa Senators,nha,1912,1916,nhl_api:SEN,CA,,the Ottawa Hockey Club
+Les Canadiens,nha,1909,1909,spx:14,CA,Montreal Canadiens,
+Montreal Canadiens,nha,1910,1916,spx:14,CA,,
+Quebec Hockey Club,nha,1910,1911,nhl_api:QBD,CA,Quebec Bulldogs,the Bulldogs; the NHL's Quebec Bulldogs of 1919-20 are the same club
+Quebec Bulldogs,nha,1912,1916,nhl_api:QBD,CA,,
+Renfrew Creamery Kings,nha,1909,1910,new:RENFREW,CA,,folded in 1911
+Cobalt Silver Kings,nha,1909,1909,new:COBALT,CA,,returned to the Timiskaming league in 1910
+Haileybury Hockey Club,nha,1909,1909,new:HAILEYBURY,CA,Haileybury Comets,returned to the Timiskaming league in 1910
+Montreal Shamrocks,nha,1909,1909,new:MTLSHAMROCKS,CA,,folded after one NHA season
+Toronto Hockey Club,nha,1912,1916,new:TORBLUESHIRTS,CA,Toronto Blueshirts,the Blueshirts; not the club the NHL's Toronto Arenas continue
+Toronto Tecumsehs,nha,1912,1912,new:TORTECUMSEHS,CA,,renamed the Ontarios in 1913 and the Shamrocks in 1915
+Toronto Ontarios,nha,1913,1913,new:TORTECUMSEHS,CA,,
+Toronto Ontarios-Shamrocks,nha,1914,1914,new:TORTECUMSEHS,CA,,
+Toronto 228th Battalion,nha,1916,1916,new:TOR228,CA,,a military club that took the place of the Tecumsehs' successor for 1916-17
+New Westminster Royals,pcha,1911,1913,new:PORTROYALS,CA,,moved to Portland in 1914 as the Rosebuds
+Portland Rosebuds,pcha,1914,1917,new:PORTROYALS,US,,the New Westminster Royals moved to Portland; not the Rosebuds of 1925-26
+Vancouver Millionaires,pcha,1911,1921,nhl_api:VMI,CA,,renamed the Maroons in 1922 (the NHL API's Maroons of the Cup finals are this club)
+Vancouver Maroons,pcha,1922,1923,nhl_api:VMI,CA,,
+Victoria Senators,pcha,1911,1912,nhl_api:VIC,CA,,the Aristocrats from 1913 and the Cougars from 1922
+Victoria Aristocrats,pcha,1913,1921,nhl_api:VIC,CA,,
+Spokane Canaries,pcha,1916,1916,nhl_api:VIC,US,,the Victoria Aristocrats played 1916-17 in Spokane
+Victoria Cougars,pcha,1922,1923,nhl_api:VIC,CA,,
+Seattle Metropolitans,pcha,1915,1923,nhl_api:SMT,US,,
+Edmonton Eskimos,wchl,1921,1925,nhl_api:EDE,CA,,
+Calgary Tigers,wchl,1921,1925,nhl_api:CAT,CA,,
+Regina Capitals,wchl,1921,1924,new:REGINA,CA,,moved to Portland in 1925 as the Rosebuds
+Portland Rosebuds,wchl,1925,1925,new:REGINA,US,,the Regina Capitals moved to Portland; not the PCHA Rosebuds of 1914-17
+Saskatoon Crescents,wchl,1921,1924,new:SASKATOON,CA,,also the Moose Jaw Sheiks (1922) and the Saskatoon Sheiks (1925)
+Saskatoon Sheiks,wchl,1925,1925,new:SASKATOON,CA,,
+Victoria Cougars,wchl,1924,1925,nhl_api:VIC,CA,,
+Vancouver Maroons,wchl,1924,1925,nhl_api:VMI,CA,,
+Alberta Oilers,wha,1972,1972,spx:11,CA,,the Edmonton Oilers of the NHL from 1979
+Edmonton Oilers,wha,1973,1978,spx:11,CA,,
+New England Whalers,wha,1972,1978,spx:6,US,,the Hartford Whalers of the NHL from 1979
+Quebec Nordiques,wha,1972,1978,spx:8,CA,,the NHL's Nordiques from 1979
+Winnipeg Jets,wha,1972,1978,spx:21,CA,,the NHL's Jets from 1979
+Chicago Cougars,wha,1972,1974,new:WHACHICAGO,US,,folded in 1975
+Cincinnati Stingers,wha,1975,1978,new:WHACINCINNATI,US,,
+Cleveland Crusaders,wha,1972,1975,new:WHACLEVELAND,US,,moved to Minnesota in 1976 as the second Fighting Saints
+Minnesota Fighting Saints,wha,1976,1976,new:WHACLEVELAND,US,,the Cleveland Crusaders moved to Minnesota; not the first Fighting Saints of 1972-75
+Minnesota Fighting Saints,wha,1972,1975,new:WHAMINNESOTA,US,,the first Fighting Saints
+Houston Aeros,wha,1972,1977,new:WHAHOUSTON,US,,
+Indianapolis Racers,wha,1974,1978,new:WHAINDIANAPOLIS,US,,
+Los Angeles Sharks,wha,1972,1973,new:WHALOSANGELES,US,,the Michigan Stags and the Baltimore Blades followed
+Michigan Stags / Baltimore Blades,wha,1974,1974,new:WHALOSANGELES,US,,one table row for the club that moved during the season
+New York Raiders,wha,1972,1972,new:WHANEWYORK,US,,the Golden Blades and Jersey Knights in 1973 and the San Diego Mariners from 1974
+NY Golden Blades / Jersey Knights,wha,1973,1973,new:WHANEWYORK,US,New York Golden Blades / Jersey Knights,one table row for the club that moved during the season
+San Diego Mariners,wha,1974,1976,new:WHANEWYORK,US,,
+Ottawa Nationals,wha,1972,1972,new:WHAOTTAWA,CA,,the Toronto Toros from 1973 and the Birmingham Bulls from 1976
+Toronto Toros,wha,1973,1975,new:WHAOTTAWA,CA,,
+Birmingham Bulls,wha,1976,1978,new:WHAOTTAWA,US,,
+Philadelphia Blazers,wha,1972,1972,new:WHAPHILADELPHIA,US,,the Vancouver Blazers from 1973 and the Calgary Cowboys from 1975
+Vancouver Blazers,wha,1973,1974,new:WHAPHILADELPHIA,CA,,
+Calgary Cowboys,wha,1975,1976,new:WHAPHILADELPHIA,CA,,
+Phoenix Roadrunners,wha,1974,1976,new:WHAPHOENIX,US,,
+Denver Spurs / Ottawa Civics,wha,1975,1975,new:WHADENVER,US,,one table row for the club that moved during the season

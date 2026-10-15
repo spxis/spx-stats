@@ -471,6 +471,16 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   clubs that only existed before today's 32 are franchises of their own (`db/seed/nfl_club.csv` says which name is which franchise in which years). The 1966-69 Super Bowls join two leagues and are not
   loaded; each league's last playoff game is its own championship game. The AAFC (1946-49, `scripts/nfl/season.py --league aafc` into `legacy_wikipedia_aafc`, migration 111) is a league of its own the same way: the Browns and the 49ers are today's franchises and the original Colts the franchise of the 1950 Colts, each with an `aafc` membership to 1950-03-01; its other clubs are franchises of their own (`AAFC*` keys in the seed), and AAFC records are never added to NFL records. Standings that do not agree with the games
   (the 1920s tables count games against clubs outside the league) are logged in `meta.data_issue` and left out, as for 1973-98.
+- **The NHL's rival and predecessor leagues** (NHA 1909-10 to 1916-17, PCHA 1911-12 to 1923-24, WCHL and its last season as the WHL 1921-22 to 1925-26, WHA 1972-73 to 1978-79) come from English Wikipedia
+  (CC BY-SA 4.0): the season articles, their standings templates, the league articles' tables of seasons and histories, a few club articles, fetched and parsed by `scripts/hockey/season.py LEAGUE`
+  into `legacy_wikipedia_hockey` (migration 113, one `league` column), the raw wikitext archived first (`wikipedia-hockey/<league>/<year>/...`; `season.py --extras` archives the league and club articles).
+  `db/build/154` builds them: each is a league of its own (`nha`, `pcha`, `wchl`, `wha`), never counted in the NHL's; their clubs that played on are one franchise across leagues (`db/seed/hockey_club.csv`
+  says which club name is which franchise: the Canadiens, Wanderers, Senators and Bulldogs in the NHA, the WHA's Oilers, Whalers, Nordiques and Jets, the Millionaires/Maroons, Aristocrats/Cougars,
+  Metropolitans, Tigers and Eskimos of the PCHA and WCHL). Standings and champions for every season, games where the articles tabulate them (the NHA's and PCHA's regular seasons and playoffs, the WCHL's playoffs),
+  playoff series told as results in `core.series`. A Stanley Cup challenge or final stays in `core.cup_series` and the NHL's own season, and a game between clubs of two leagues (an interlocking PCHA-WCHL game)
+  is in neither league's games (so none is counted twice). The champions come from the league article's table (a season's infobox may name the regular-season winner), not from the games (165 skips these leagues).
+  Step 154 merges the NHL API's two franchises for the Millionaires and Maroons (VMI, VMA): run it again after any rerun of 145. A rival league has a parent (`PARENT` in `web/src/lib/leagues.ts`):
+  no menu entry of its own, the parent's page lists it under "Other leagues", its pages carry the trail "NHL > PCHA > 1919-20", addresses `/pcha/...`.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.

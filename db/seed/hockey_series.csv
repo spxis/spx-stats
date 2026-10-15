@@ -1,0 +1,5 @@
+league,season,round,winner,loser,winner_wins,loser_wins,winner_goals,loser_goals,format,source
+pcha,1921,League final,Vancouver Millionaires,Seattle Metropolitans,2,0,2,0,two-game total-goals series (1-0 and 1-0),1921-22 PCHA season
+pcha,1922,League final,Vancouver Maroons,Victoria Cougars,1,1,5,3,two-game total-goals series (3-0 and 2-3),1922-23 PCHA season
+wchl,1921,Semifinal,Regina Capitals,Calgary Tigers,1,0,2,1,two-game total-goals series (1-0 and 1-1),1921-22 WCHL season
+wchl,1921,League final,Regina Capitals,Edmonton Eskimos,1,0,3,2,two-game total-goals series (1-1 and 2-1),1921-22 WCHL season

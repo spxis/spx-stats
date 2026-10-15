@@ -37,7 +37,9 @@ create function pg_temp.canon(lg text, lvl text, raw text) returns text[] langua
         when 'pl' then array['Players'' League', 'PL'] when 'fl' then array['Federal League', 'FL'] when 'na' then array['National Association', 'NA'] end
     when lg = 'mlb' then (select array[case left(m[1], 2) when 'AL' then 'American League ' else 'National League ' end || m[2], left(m[1], 2) || ' ' || m[2]]
                           from (select regexp_match(btrim(raw), '^(AL|NL) (East|West|Central)') m) x where m is not null)
-    when lg in ('afl', 'aafc') and lvl = 'conference' then null
+    when lg in ('afl', 'aafc', 'wha') and lvl = 'conference' then null
+    when lg = 'wha' then case regexp_replace(lower(btrim(raw)), ' division$', '') when 'eastern' then array['Eastern Division', 'East'] when 'western' then array['Western Division', 'West']
+                                                                      when 'canadian' then array['Canadian Division', 'Canadian'] end
     when lg in ('afl', 'aafc') then case lower(btrim(raw)) when 'eastern' then array['Eastern Division', 'East'] when 'east' then array['Eastern Division', 'East']
                                                  when 'western' then array['Western Division', 'West'] when 'west' then array['Western Division', 'West'] end
     when lg = 'nfl' and lvl = 'conference' then case lower(btrim(raw))
@@ -82,7 +84,7 @@ from core.team_season t join core.season s using (season_id)
 left join core.franchise_identity i using (franchise_identity_id)
 left join lateral (select x.full_name, x.nickname from core.franchise_identity x where x.franchise_id = t.franchise_id and i.franchise_identity_id is null
                    order by abs(extract(year from lower(x.valid_during)) - s.start_year) limit 1) n on true  -- a season with no identity of its own: the nearest era's name
-where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc');
+where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha');
 create index on ts (lg, y, franchise_id);
 
 -- ---------------------------------------------------------------------------------------------- evidence
@@ -179,7 +181,11 @@ where division ~ '^[0-9]{4} AFL (Eastern|Western) standings$'
 union all  -- the AAFC: Eastern and Western Divisions 1946-48 ("1946 AAFC Eastern standings"); 1949 was one table, with no divisions
 select 'aafc', season, division, 'division', regexp_replace(regexp_replace(division, '^[0-9]{4} AAFC ', ''), ' standings$', ''), null, team, pg_temp.flat(team)
 from legacy_wikipedia_aafc.standing
-where division ~ '^[0-9]{4} AAFC (Eastern|Western) standings$';
+where division ~ '^[0-9]{4} AAFC (Eastern|Western) standings$'
+union all  -- the WHA: Eastern and Western Divisions, and the Canadian Division of 1974-76 (the standings templates' captions); 1977-78 and 1978-79 had none
+select 'wha', season, division, 'division', division, null, team, pg_temp.flat(team)
+from legacy_wikipedia_hockey.standing
+where league = 'wha' and division ~ '^(Eastern|Western|Canadian) Division$';
 create temp table wmatch as
 select w.*, coalesce(
     (select min(ts.franchise_id) from ts where ts.lg = w.lg and ts.y = w.y and pg_temp.flat(ts.full_name) = w.fl having count(*) = 1),

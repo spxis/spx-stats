@@ -38,7 +38,8 @@ left join core.franchise_identity li on li.franchise_identity_id = l.franchise_i
 left join lateral (select greatest(home_score, away_score) ws, least(home_score, away_score) ls
                    from po where season_id = f.season_id and ((h = f.t1 and a = f.t2) or (h = f.t2 and a = f.t1))
                    order by game_date desc, game_id desc limit 1) sc on true
-where f.finals = f.games and f.t1_wins <> f.t2_wins;
+-- (The NHA, PCHA, WCHL and WHA name their champions from the articles, db/build/154: their playoffs were often two-game total-goals series.)
+where f.finals = f.games and f.t1_wins <> f.t2_wins and f.league_code not in ('nha', 'pcha', 'wchl', 'wha');
 
 select a.league_code, count(*), min(s.start_year), max(s.start_year) from core.award_winner w join core.award a using (award_id) join core.season s using (season_id)
 where w.source_id = (select source_id from meta.source where code = 'spx_stats_derived') group by 1 order by 1;
