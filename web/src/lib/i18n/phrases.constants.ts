@@ -1179,6 +1179,12 @@ export const PHRASES = {
   "streaks.note": "Regular-season games only.",
   "streaks.noteBreak": "Regular-season games only. A tie, or an overtime or shootout loss, counts as neither a win nor a loss, so it ends both winning and losing streaks.",
   "streaks.noteMin": "Only streaks of two games or more are shown.",
+  "season.bestHome": "Best home team",
+  "season.bestRoad": "Best road team",
+  "season.mapNote": "{n} of {total} teams placed, each at the venue it used in {season}. Press a dot to open the team’s season.",
+  "season.weekLive": "Games around today",
+  "season.weekPast": "The last seven playoff game days",
+  "season.weekFull": "All the scores for this day",
   "leaders.gaps": "Incomplete",
   "leaders.gapsNote": "Some teams’ full-season records are missing for this season, so its leaders are not ranked against other seasons.",
   // franchise lineage (/teams/lineage) and the Sankey diagrams

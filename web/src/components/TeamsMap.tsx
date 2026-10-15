@@ -17,9 +17,9 @@ function signature(pins: Pin[]): string {
 /**
  * A small map in the top-right corner of the teams page, framed on the teams the list shows now. Pressing it opens the large map (MapViewer) in a
  * dialog with the same teams: a dot opens its team. It follows the page's filters (the page gives it the dots of every team that passes them, not only
- * the page of the table on screen). Nothing is drawn if no team can be placed.
+ * the page of the table on screen). Nothing is drawn if no team can be placed. A season page gives its own `text` (its season's wording) and its dots.
  */
-export function TeamsMapCorner({ pins }: { pins: Pin[] }) {
+export function TeamsMapCorner({ pins, text }: { pins: Pin[]; text?: { title: string; open: string; caption: string; note: string } }) {
   const { say, fmt } = useSpeaker();
   const [open, setOpen] = useState(false);
   const [failed, setFailed] = useState("");
@@ -27,13 +27,13 @@ export function TeamsMapCorner({ pins }: { pins: Pin[] }) {
   useEffect(() => { if (open) dlg.current?.showModal(); }, [open]);
   const sig = signature(pins);
   if (!pins.length || failed === sig) return null;
-  const title = say("teams.mapTitle");
+  const title = text?.title ?? say("teams.mapTitle");
   return (
-    <div className="citymap teamsmap">
-      <button type="button" className="mapbtn" aria-label={say("teams.mapOpen")} onClick={() => setOpen(true)}>
+    <div className={"citymap teamsmap" + (text ? " seasonmap" : "")}>
+      <button type="button" className="mapbtn" aria-label={text?.open ?? say("teams.mapOpen")} onClick={() => setOpen(true)}>
         <MapHost key={sig} pins={pins} title={title} onEmpty={() => setFailed(sig)} />
       </button>
-      <span className="note">{say("teams.mapCaption", { n: fmt(pins.length) })}</span>
+      <span className="note">{text?.caption ?? say("teams.mapCaption", { n: fmt(pins.length) })}</span>
       {open ? (
         <dialog ref={dlg} className="mapdlg" aria-label={title} onClose={() => setOpen(false)}
           onClick={(e) => { if (e.target === dlg.current) dlg.current?.close(); }}>
@@ -41,7 +41,7 @@ export function TeamsMapCorner({ pins }: { pins: Pin[] }) {
             <h2>{title}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          <MapViewer pins={pins} title={title} total={pins.length} note={say("teams.mapNote", { n: fmt(pins.length) })} onNavigate={() => dlg.current?.close()} />
+          <MapViewer pins={pins} title={title} total={pins.length} note={text?.note ?? say("teams.mapNote", { n: fmt(pins.length) })} onNavigate={() => dlg.current?.close()} />
         </dialog>
       ) : null}
     </div>

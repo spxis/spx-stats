@@ -51,4 +51,9 @@
   .citymap { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
   .head:has(.citymap) { min-height: 0; }
 }
+/* On a season page the map sits under the season picker in the heading's top-right corner, and the heading keeps clear of it. */
+.head:has(.seasonmap) { min-height: 260px; }
+.seasonmap { top: 52px; }
+@media (min-width: 641px) { .head:has(.seasonmap) :is(h1, .lede) { max-width: calc(100% - 250px); } }
+@media (max-width: 640px) { .head:has(.seasonmap) { min-height: 0; } }
 .cityboard .cityrangenote { margin-top: 0; }

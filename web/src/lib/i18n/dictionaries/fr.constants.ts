@@ -994,6 +994,12 @@ export const FR: Dictionary = {
   "streaks.note": "Matchs de la saison régulière seulement.",
   "streaks.noteBreak": "Matchs de la saison régulière seulement. Un match nul ou une défaite en prolongation ou en tirs de barrage n’est ni une victoire ni une défaite : il met fin aux séquences de victoires comme de défaites.",
   "streaks.noteMin": "Seules les séquences d’au moins deux matchs sont affichées.",
+  "season.bestHome": "Meilleure équipe à domicile",
+  "season.bestRoad": "Meilleure équipe à l’étranger",
+  "season.mapNote": "{n} équipes sur {total} placées, chacune au domicile qu’elle utilisait en {season}. Appuyez sur un point pour ouvrir la saison de l’équipe.",
+  "season.weekLive": "Matchs autour d’aujourd’hui",
+  "season.weekPast": "Les sept derniers jours de matchs des séries",
+  "season.weekFull": "Tous les pointages de cette journée",
   "leaders.gaps": "Incomplet",
   "leaders.gapsNote": "Les fiches complètes de certaines équipes manquent pour cette saison; ses meneurs ne sont donc pas classés par rapport aux autres saisons.",
   // franchise lineage and the Sankey diagrams

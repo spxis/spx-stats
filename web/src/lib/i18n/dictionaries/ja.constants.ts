@@ -994,6 +994,12 @@ export const JA: Dictionary = {
   "streaks.note": "レギュラーシーズンの試合のみ。",
   "streaks.noteBreak": "レギュラーシーズンの試合のみ。引き分けや延長戦・シュートアウトの負けは勝ちでも負けでもないものとして扱うため、連勝も連敗もそこで途切れます。",
   "streaks.noteMin": "2試合以上の連続のみ表示します。",
+  "season.bestHome": "ホーム最強チーム",
+  "season.bestRoad": "ビジター最強チーム",
+  "season.mapNote": "{total}チーム中{n}チームを、{season}に使った本拠地に表示しています。点を押すとそのチームのシーズンを開きます。",
+  "season.weekLive": "今日の前後の試合",
+  "season.weekPast": "プレーオフ最後の7試合日",
+  "season.weekFull": "この日のスコアをすべて見る",
   "leaders.gaps": "不完全",
   "leaders.gapsNote": "このシーズンは一部のチームの通年の成績がないため、ほかのシーズンとの順位づけはしていません。",
   // franchise lineage and the Sankey diagrams

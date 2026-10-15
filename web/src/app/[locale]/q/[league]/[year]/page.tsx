@@ -19,7 +19,7 @@ import { TrophyBanner } from "@/components/TrophyBanner";
 import { Badge, NoSeason } from "@/components/ui";
 import { queryHref, ViewTabs } from "@/components/ViewTabs";
 import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
-import { getStandingsAsOf } from "@/lib/alignmentData";
+import { getSeasonAlignment, getStandingsAsOf } from "@/lib/alignmentData";
 import { chosenGroup, groupChoices, placeHeading, placeLabel, rowClasses } from "@/lib/standingsGroups";
 import type { StandingRow } from "@/lib/api/types";
 import { abbrFor, abbrsForYear } from "@/lib/abbr";
@@ -44,6 +44,10 @@ import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { franchiseOfName, getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
+import { clubPins } from "@/lib/venueMap";
+import { getVenuePlaces } from "@/lib/venuePlace";
+import { getVenueFacts, getVenueNames } from "@/lib/venueName";
+import { TeamsMapCorner } from "@/components/TeamsMap";
 
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/q/[league]/[year]">): Promise<Metadata> => {
@@ -110,6 +114,13 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
     );
   }
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
+  // The corner map: every club of the season at the venue it used that year, each leading to its team-season page.
+  const [alignment, venuePlaces, venueNames, venueFacts] = await Promise.all([getSeasonAlignment(lg, y).catch(() => []), getVenuePlaces(lg).catch(() => new Map()), getVenueNames().catch(() => new Map()), getVenueFacts().catch(() => new Map())]);
+  // Only what the map needs travels with the page (the page is one kept copy; a team's own page has the addresses, facts and logos).
+  const mapPins = clubPins({
+    year: y, me: -1, clubs: d.teams.flatMap((t) => (t.f != null ? [{ franchise_id: t.f, team: t.name }] : [])), brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts, say,
+    href: (f) => paths.teamSeason(lg, f, y),
+  }).map(({ f, name, abbr, lat, lon, venue, place, href, cc, conf, div }) => ({ f, name, abbr, lat, lon, venue, place, href, cc, conf, div }));
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, d.standings, complete);
   const winner = complete ? holders.byYear.get(y)?.champion_franchise : null;
   const selection = parseSelection(sp);
@@ -217,6 +228,12 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
               </p>
             )}
         <SeasonBar days={days} date={asOfDate} />
+        {mapPins.length ? (
+          <TeamsMapCorner pins={mapPins} text={{
+            title: say("map.label", { league: LG[lg], season: d.label }), open: say("map.open", { league: LG[lg], season: d.label }),
+            caption: say("teams.mapCaption", { n: fmt(mapPins.length) }), note: say("season.mapNote", { n: fmt(mapPins.length), total: fmt(d.teams.length), season: d.label }),
+          }} />
+        ) : null}
       </section>
       {champ ? (
         <>
