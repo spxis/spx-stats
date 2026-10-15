@@ -1,0 +1,48 @@
+header,key,kind
+GP,gp,count
+G,gp,count
+Games played,gp,count
+GS,gs,count
+Games started,gs,count
+Games starter,gs,count
+MIN,min,count
+MP,min,count
+Minutes,min,count
+Minutes played,min,count
+MPG,a_min,avg
+Minutes per game,a_min,avg
+PTS,pts,count
+Pts.,pts,count
+Points,pts,count
+PPG,a_pts,avg
+Points per game,a_pts,avg
+AVG,a_pts,avg_if_pts
+REB,reb,count
+Reb.,reb,count
+TRB,reb,count
+Rebounds,reb,count
+RPG,a_reb,avg
+Rebounds per game,a_reb,avg
+AST,ast,count
+Ast.,ast,count
+Assists,ast,count
+APG,a_ast,avg
+Assists per game,a_ast,avg
+STL,stl,count
+Stl.,stl,count
+Steals,stl,count
+SPG,a_stl,avg
+Steals per game,a_stl,avg
+BLK,blk,count
+Blk.,blk,count
+Blocks,blk,count
+BPG,a_blk,avg
+Blocks per game,a_blk,avg
+FG%,p_fg,pct
+3P%,p_3p,pct
+3FG%,p_3p,pct
+FT%,p_ft,pct
+POS,,skip
+Pos.,,skip
+Position,,skip
+Age,,skip

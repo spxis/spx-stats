@@ -432,6 +432,10 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   club-season articles on English Wikipedia, NFL from nflverse's `roster_<season>.csv` (its ESPN and Pro Football Reference id columns are dropped at
   download and never stored). Fetch, load and build order are in `scripts/rosters/README.md` (build steps 179 and 181; the roster table on a club's
   season page reads `api.team_season_roster`, migration 093, for leagues with no player statistics).
+- **Player season statistics, NBA and NFL** (`core.player_season_stat`, groups `basketball`, `passing rushing receiving defense kicking punting`): NBA from the
+  "Player statistics" tables of the club-season articles on English Wikipedia (CC BY-SA 4.0; `source_key` is `enwiki:<title>@<revision id>`, `stat_basis` says whether the
+  numbers are totals or averages), NFL from nflverse's `stats_player` files (CC BY 4.0, 1999 on, one line per club). Fetch, load and build steps, the order and the release
+  split are in `scripts/player_stats/README.md`. A line is placed only through a Wikidata number or the NFL's gsis id and a roster stint, never on a name.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
