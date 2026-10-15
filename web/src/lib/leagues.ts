@@ -1,8 +1,12 @@
 export const LEAGUE_CODES = ["nhl", "nba", "mlb", "nfl", "cfl", "afl", "aafc"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
-/** `closed`: a league that no longer plays (the AFL, 1960-1969; the AAFC, 1946-1949). Its clubs that played on are today's franchises, which keep its seasons in their histories. */
-export const LEAGUES: { code: LeagueCode; name: string; short: string; closed?: true }[] = [
+/**
+ * Every league the archive holds, in the order of the menu. A league with a PARENT is a rival or predecessor league (the AFL, the AAFC): its records are kept
+ * apart and never counted as the parent's, but it is no league of its own in the menu: it hangs off its parent (the parent's page lists it, its pages carry a
+ * "NFL > AFL > 1964" trail and light the parent's tab). `closed`: a league that no longer plays.
+ */
+export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; closed?: true }[] = [
   { code: "nhl", name: "National Hockey League", short: "NHL" },
   { code: "nba", name: "National Basketball Association", short: "NBA" },
   { code: "mlb", name: "Major League Baseball", short: "MLB" },
@@ -11,6 +15,25 @@ export const LEAGUES: { code: LeagueCode; name: string; short: string; closed?: 
   { code: "afl", name: "American Football League", short: "AFL", closed: true },
   { code: "aafc", name: "All-America Football Conference", short: "AAFC", closed: true },
 ];
+
+/** The league a rival or predecessor league belongs under. One place: the menu, the parent's "Other leagues" section and the trail all read it. */
+export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aafc: "nfl" };
+
+/** The leagues of the menu and of every league picker: the ones with no parent. */
+export const LEAGUES = ALL_LEAGUES.filter((l) => !(l.code in PARENT));
+
+/** A league's rival and predecessor leagues, oldest first. */
+export const CHILDREN: Partial<Record<LeagueCode, readonly LeagueCode[]>> = Object.fromEntries(
+  LEAGUES.flatMap((l) => {
+    const kids = ALL_LEAGUES.filter((k) => PARENT[k.code] === l.code).map((k) => k.code);
+    return kids.length ? [[l.code, kids] as const] : [];
+  }),
+);
+
+/** The menu league a league's pages belong under: itself, or its parent. */
+export const topLeague = (code: string): string => PARENT[code as LeagueCode] ?? code;
+
+export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
 export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL", aafc: "AAFC" };
 
@@ -22,9 +45,12 @@ export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", mlb: "ML
 export const SUPER_BOWL_SINCE = 1970;
 
 /** The leagues a franchise can have seasons in besides the page's own: a club's page points to its seasons there (the AAFC's Browns, the AFL's Oilers). */
-export const RELATED_LEAGUES: Partial<Record<LeagueCode, readonly LeagueCode[]>> = {
-  nfl: ["afl", "aafc"], afl: ["nfl"], aafc: ["nfl"],
-};
+export const RELATED_LEAGUES: Partial<Record<LeagueCode, readonly LeagueCode[]>> = Object.fromEntries(
+  ALL_LEAGUES.flatMap((l) => {
+    const rel = [...(CHILDREN[l.code] ?? []), ...(PARENT[l.code] ? [PARENT[l.code]!] : [])];
+    return rel.length ? [[l.code, rel] as const] : [];
+  }),
+);
 
 export function isLeague(code: string): code is LeagueCode {
   return (LEAGUE_CODES as readonly string[]).includes(code);

@@ -25,6 +25,9 @@ export const JA: Dictionary = {
 
   // nav, theme, footer
   "nav.leagues": "リーグ",
+  "nav.crumbs": "パンくずリスト",
+  "league.otherLeagues": "ほかのリーグ",
+  "league.otherNote": "{league}と並行して、またはその前に行われたリーグです。記録は別に保管し、{league}自身の記録には加算しません。",
   "nav.about": "データについて",
   "nav.sources": "情報源",
   "nav.quality": "データの品質",

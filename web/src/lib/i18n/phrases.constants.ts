@@ -30,6 +30,9 @@ export const PHRASES = {
 
   // nav, theme, footer
   "nav.leagues": "Leagues",
+  "nav.crumbs": "You are here",
+  "league.otherLeagues": "Other leagues",
+  "league.otherNote": "Leagues that played alongside or before the {league}. Their records are kept apart and never count in the {league}'s own.",
   "nav.about": "About the data",
   "nav.sources": "Sources",
   "nav.quality": "Data quality",

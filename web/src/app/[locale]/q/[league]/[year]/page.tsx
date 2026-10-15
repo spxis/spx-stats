@@ -32,7 +32,7 @@ import { getOutage, getOutageYears, getTitleNotAwarded } from "@/lib/outageData"
 import { NotAwarded } from "@/components/NotAwarded";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, isSpx, LEAGUES, LG, seasonLabel, srcName } from "@/lib/leagues";
+import { isLeague, isSpx, leagueInfo, LG, seasonLabel, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { isGapYear, withGaps } from "@/lib/coverage";
 import { leadersPath } from "@/lib/leaderStats";
@@ -148,7 +148,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const choices = groupChoices(view, st);
   const group = chosenGroup(choices, sp.group);
   const shown = group ? st.filter(group.has) : st;
-  const grouped = groupStandings(say, shown, view, LEAGUES.find((l) => l.code === lg)?.name);
+  const grouped = groupStandings(say, shown, view, leagueInfo(lg)?.name);
   const heading = placeHeading(lg, st);
   const pub = d.standings.find((r) => r.basis === "published");
   const basis = asOf ? say("season.basisAsOf") : pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");

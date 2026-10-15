@@ -154,7 +154,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
       <div className="pfilters">
         <div className="controls">
           <nav className="seg views" aria-label={say("players.leagueAria")}>
-            {[{ code: "", short: say("phase.all") }, ...LEAGUES.filter((l) => !l.closed)].map((l) => (
+            {[{ code: "", short: say("phase.all") }, ...LEAGUES].map((l) => (
               <Link key={l.code} href={href({ league: l.code || null, team: null })} prefetch={false} aria-current={l.code === league ? "page" : undefined}>{l.short}</Link>
             ))}
           </nav>

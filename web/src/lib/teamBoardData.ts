@@ -6,7 +6,7 @@ import { getAlignment } from "./alignmentData";
 import { getCities, getPlacements } from "./cityData";
 import { getBrands } from "./data";
 import { logoFor } from "./brand";
-import { LEAGUE_CODES } from "./leagues";
+import { LEAGUE_CODES, PARENT } from "./leagues";
 import { TEAM_FIELDS } from "./teamIndex";
 import { buildGroups, type Conf, type Div, type LeagueGroups } from "./teamGroups";
 import type { BoardTeam } from "./teamBoard";
@@ -55,7 +55,8 @@ export async function getTeamBoard(french: boolean): Promise<TeamBoardData> {
   };
   const dot = (n: number | null) => (n == null ? null : Math.round(n * 1000) / 1000);
 
-  const teams: BoardTeam[] = index.map((t) => {
+  // A rival or predecessor league (the AFL, the AAFC) is no league of the list: its clubs are listed under their parent league, which links to them.
+  const teams: BoardTeam[] = index.filter((t) => !(t.league in PARENT)).map((t) => {
     const home = homes.get(`${t.league}|${t.franchise_id}`);
     return {
       lg: t.league, f: t.franchise_id, name: t.name,

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Barlow_Condensed, JetBrains_Mono, Source_Sans_3 } from "next/font/google";
 import type { ReactNode } from "react";
 import { AccountProvider, AdminBar, type Account } from "@/components/auth/Account";
+import { LeagueCrumbs } from "@/components/LeagueCrumbs";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
 import { LogoFitProvider } from "@/components/LogoFitProvider";
 import { SlugProvider } from "@/components/SlugProvider";
@@ -66,6 +67,7 @@ export async function SiteShell({ locale, account, children }: { locale: Locale;
                 <AdminBar />
                 <SiteHeader />
                 <main id="app" tabIndex={-1} className="page">
+                  <LeagueCrumbs />
                   {children}
                 </main>
                 <SiteFooter />

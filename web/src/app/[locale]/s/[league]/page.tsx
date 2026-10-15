@@ -19,7 +19,8 @@ import { championRow } from "@/lib/champions";
 import { getCupTitles } from "@/lib/cupData";
 import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LEAGUE_CODES, LEAGUES, srcName } from "@/lib/leagues";
+import { isLeague, LEAGUE_CODES, leagueInfo, srcName } from "@/lib/leagues";
+import { otherLeagues } from "@/lib/otherLeagues";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
@@ -32,7 +33,7 @@ export const generateStaticParams = () => LEAGUE_CODES.map((league) => ({ league
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/s/[league]">): Promise<Metadata> => {
   const { league } = await params;
-  const info = LEAGUES.find((l) => l.code === league);
+  const info = leagueInfo(league);
   if (!info) return {};
   const { say, plural, locale } = await currentSpeaker();
   const { seasons } = await getSummary();
@@ -49,7 +50,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
 export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/s/[league]">) {
   const { league: lg } = await params;
   if (!isLeague(lg)) notFound();
-  const info = LEAGUES.find((l) => l.code === lg)!;
+  const info = leagueInfo(lg)!;
   const { say, plural, fmt } = await currentSpeaker();
   const [s, brands, paths] = await Promise.all([getSummary(), getBrands(), getPaths()]);
   const list = withCoverage(s.seasons).filter((x) => x.league === lg).sort((a, b) => a.year - b.year);
@@ -70,6 +71,8 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
     { key: "league", label: say("col.league"), get: (c) => c.league ?? "" },
     { key: "wins", label: say("cup.wins"), num: true, get: (c) => c.wins },
   ], (c) => `${c.year}-${c.club}`);
+  // The league's rival and predecessor leagues (the NFL's AFL and AAFC): their years, seasons and champions, each kept apart from this league's own.
+  const others = otherLeagues(lg, s.seasons);
   const boxes = championRow(list, lg);
   const latest = boxes.find((b) => b.kind === "recent");
   const most = boxes.find((b) => b.kind === "most");
@@ -116,6 +119,22 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           </section>
         ) : null}
       </SeasonSync>
+      {others.length ? (
+        <section className="section">
+          <h2>{say("league.otherLeagues")}</h2>
+          <p className="note">{say("league.otherNote", { league: info.short })}</p>
+          <ul className="otherleagues">
+            {others.map((o) => (
+              <li key={o.code}>
+                <Link href={`/${o.code}`}>{o.name} ({o.short})</Link>
+                {" · "}{o.first === o.last ? o.first : `${o.first}–${o.last}`}
+                {" · "}{plural("count.seasons", o.seasons)}
+                {" · "}{plural("count.champions", o.champions)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <section className="section">
         <h2>{say("league.champions")}</h2>
         {champs.length ? (

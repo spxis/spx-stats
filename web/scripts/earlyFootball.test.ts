@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { championRow, satYears, titleHolders } from "../src/lib/champions.ts";
 import { gapSeason, isGapYear, withCoverage, withGaps } from "../src/lib/coverage.ts";
 import { neutralSite } from "../src/lib/gameSurface.ts";
-import { isLeague, LEAGUE_CODES, LEAGUES, LG, seasonLabel, SUPER_BOWL_SINCE } from "../src/lib/leagues.ts";
+import { ALL_LEAGUES, isLeague, LEAGUE_CODES, LG, seasonLabel, SUPER_BOWL_SINCE } from "../src/lib/leagues.ts";
 import { datedRound, finalName, roundName } from "../src/lib/series.ts";
 import { championshipName, trophyPhrase } from "../src/lib/trophies.ts";
 import type { Say } from "../src/lib/seriesCopy.ts";
@@ -31,11 +31,11 @@ const afl = AFL_CHAMPIONS.map(([name, franchise], i) => row("afl", 1960 + i, nam
 test("the AFL is a league the site knows, a closed one, and its seasons are single years", () => {
   assert.ok(isLeague("afl"));
   assert.ok(LEAGUE_CODES.includes("afl"));
-  assert.deepEqual(LEAGUES.find((l) => l.code === "afl"), { code: "afl", name: "American Football League", short: "AFL", closed: true });
+  assert.deepEqual(ALL_LEAGUES.find((l) => l.code === "afl"), { code: "afl", name: "American Football League", short: "AFL", closed: true });
   assert.equal(LG.afl, "AFL");
   assert.equal(seasonLabel("afl", 1965), "1965");
   assert.equal(seasonLabel("nfl", 1920), "1920");
-  assert.ok(LEAGUES.filter((l) => l.code !== "afl" && l.code !== "aafc").every((l) => !l.closed));
+  assert.ok(ALL_LEAGUES.filter((l) => l.code !== "afl" && l.code !== "aafc").every((l) => !l.closed));
 });
 
 test("a league's first and last season come from its rows: the NFL starts in 1920, the AFL in 1960 and ends in 1969", () => {

@@ -25,6 +25,9 @@ export const FR: Dictionary = {
 
   // nav, theme, footer
   "nav.leagues": "Ligues",
+  "nav.crumbs": "Fil d'Ariane",
+  "league.otherLeagues": "Autres ligues",
+  "league.otherNote": "Ligues qui ont existé à côté de la {league} ou avant elle. Leurs dossiers sont tenus à part et ne comptent jamais dans ceux de la {league}.",
   "nav.about": "À propos des données",
   "nav.sources": "Sources",
   "nav.quality": "Qualité des données",

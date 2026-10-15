@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { getCityData } from "@/lib/cityData";
 import { getLeagueCounts } from "@/lib/countryData";
 import { getSummary, getTeamIndex, getTeamSeasonIndex } from "@/lib/data";
-import { LEAGUES, SITE_URL } from "@/lib/leagues";
+import { ALL_LEAGUES, SITE_URL } from "@/lib/leagues";
 import { getPaths } from "@/lib/teamSlugs";
 import { getVenueSlugs } from "@/lib/venueData";
 import { leadersPath } from "@/lib/leaderStats";
@@ -58,10 +58,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const worldUrls = countryData.status === "fulfilled" && countryData.value ? [...new Set(countryData.value.map((r) => r.league))].map((l) => ({ url: url(`/${l}/world`), lastModified })) : [];
   return [
     { url: url("/"), lastModified },
-    ...LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
-    ...LEAGUES.map((l) => ({ url: url(`/${l.code}/alignment`), lastModified })),
-    ...LEAGUES.map((l) => ({ url: url(`/${l.code}/all-time`), lastModified })),
-    ...LEAGUES.map((l) => ({ url: url(scoresPath(l.code)), lastModified })),
+    ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
+    ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}/alignment`), lastModified })),
+    ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}/all-time`), lastModified })),
+    ...ALL_LEAGUES.map((l) => ({ url: url(scoresPath(l.code)), lastModified })),
     ...withGaps(seasons).map((s) => ({ url: url(seasonPath(s.league, s.year)), lastModified })),
     ...seasons.filter((s) => s.games > 0).map((s) => ({ url: url(leadersPath(s.league, s.year)), lastModified })),
     ...teamUrls,

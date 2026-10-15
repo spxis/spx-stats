@@ -3,9 +3,10 @@ import { test } from "node:test";
 import { championRow, satYears, titleHolders } from "../src/lib/champions.ts";
 import { isGapYear, withGaps } from "../src/lib/coverage.ts";
 import { neutralSite } from "../src/lib/gameSurface.ts";
-import { isLeague, LEAGUE_CODES, LEAGUES, LG, RELATED_LEAGUES, seasonLabel } from "../src/lib/leagues.ts";
+import { ALL_LEAGUES, CHILDREN, isLeague, LEAGUE_CODES, LEAGUES, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague } from "../src/lib/leagues.ts";
 import { finalName, roundName } from "../src/lib/series.ts";
 import { championshipName, trophyPhrase } from "../src/lib/trophies.ts";
+import { leagueTrail, otherLeagues, trailLabels } from "../src/lib/otherLeagues.ts";
 import type { Say } from "../src/lib/seriesCopy.ts";
 import { readFileSync } from "node:fs";
 
@@ -29,10 +30,23 @@ const nfl = Array.from({ length: 2025 - 1920 + 1 }, (_, i) => row("nfl", 1920 + 
 test("the AAFC is a league the site knows, a closed one, with single-year seasons", () => {
   assert.ok(isLeague("aafc"));
   assert.ok(LEAGUE_CODES.includes("aafc"));
-  assert.deepEqual(LEAGUES.find((l) => l.code === "aafc"), { code: "aafc", name: "All-America Football Conference", short: "AAFC", closed: true });
+  assert.deepEqual(ALL_LEAGUES.find((l) => l.code === "aafc"), { code: "aafc", name: "All-America Football Conference", short: "AAFC", closed: true });
   assert.equal(LG.aafc, "AAFC");
   assert.equal(seasonLabel("aafc", 1947), "1947");
-  assert.ok(LEAGUES.filter((l) => l.closed).map((l) => l.code).every((c) => ["afl", "aafc"].includes(c)));
+  assert.ok(ALL_LEAGUES.filter((l) => l.closed).map((l) => l.code).every((c) => c in PARENT));
+});
+
+test("a rival league is no league of the menu: it hangs off its parent, in one place", () => {
+  assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "nba", "mlb", "nfl", "cfl"]);
+  assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl" });
+  assert.deepEqual(CHILDREN, { nfl: ["afl", "aafc"] });
+  assert.equal(topLeague("afl"), "nfl");
+  assert.equal(topLeague("aafc"), "nfl");
+  assert.equal(topLeague("nhl"), "nhl");
+  // every league the archive holds is either a menu league or has a parent that is one; the codes the routes accept are all of them
+  assert.deepEqual(ALL_LEAGUES.map((l) => l.code), [...LEAGUE_CODES]);
+  for (const l of ALL_LEAGUES) assert.ok(LEAGUES.some((m) => m.code === topLeague(l.code)), l.code);
+  assert.ok(LEAGUES.every((l) => !(l.code in PARENT)));
 });
 
 test("the AAFC's first and last season come from its rows: 1946 and 1949, four seasons, no gap inside", () => {
@@ -69,4 +83,24 @@ test("a club's page points to its seasons in the related leagues: the NFL club t
   assert.deepEqual(RELATED_LEAGUES.aafc, ["nfl"]);
   assert.deepEqual(RELATED_LEAGUES.afl, ["nfl"]);
   assert.equal(RELATED_LEAGUES.nhl, undefined);
+});
+
+test("the parent league's page lists each rival league with its years, seasons and champions; a league without one lists nothing", () => {
+  const rows = [...nfl, ...aafc, row("afl", 1960, "Houston Oilers"), row("afl", 1961, null)].map((r) => ({ league: r.league, year: r.year, label: r.label, champion: r.champion }));
+  const list = otherLeagues("nfl", rows);
+  assert.deepEqual(list.map((o) => [o.code, o.first, o.last, o.seasons, o.champions]), [["afl", "1960", "1961", 2, 1], ["aafc", "1946", "1949", 4, 4]]);
+  assert.equal(list[1]!.name, "All-America Football Conference");
+  assert.deepEqual(otherLeagues("nhl", rows), []);
+  assert.deepEqual(otherLeagues("afl", rows), []);
+  assert.deepEqual(otherLeagues("nfl", rows.filter((r) => r.league === "aafc")).map((o) => o.code), ["aafc"]);
+});
+
+test("the trail of a rival league's pages reads NFL > AFL > 1964, and no other page has one", () => {
+  assert.deepEqual(trailLabels(leagueTrail(["afl", "1964"])!), ["NFL", "AFL", "1964"]);
+  assert.deepEqual(trailLabels(leagueTrail(["afl"])!), ["NFL", "AFL"]);
+  assert.equal(leagueTrail(["afl"])!.deeper, false);
+  assert.deepEqual(trailLabels(leagueTrail(["aafc", "1948", "team", "cleveland-browns"])!), ["NFL", "AAFC", "1948"]);
+  assert.equal(leagueTrail(["aafc", "team", "cleveland-browns"])!.year, null);
+  assert.equal(leagueTrail(["aafc", "team", "cleveland-browns"])!.deeper, true);
+  for (const p of [["nfl", "1964"], ["nhl"], ["players"], ["teams"], []]) assert.equal(leagueTrail(p), null, p.join("/"));
 });
