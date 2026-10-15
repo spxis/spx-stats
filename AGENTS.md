@@ -768,6 +768,15 @@ Ask John before deleting or overwriting data. Production changes only through ap
     else the English Wikipedia infobox file the site's other fair-use logos already use), scale, nudge and tile colour. No row means drawn as always.
     `status` is `proposed` (shown only on `/admin/logos`, admin only), `approved` (shown on the site) or `rejected`; John approves on that page by telling an
     agent, who edits the CSV. Needs migration 107 on production, then a data release of `core.logo_fit`; the site draws nothing differently until then.
+  - **Logos Wikidata lacks** (migrations 108 and 109, `scripts/logos/`, `db/build/175_team_logo_extra.sql`, assignments in `db/seed/logo_extra.csv`, the review record in
+    `db/seed/logo_extra_review.csv`): public-domain files found on Wikimedia Commons by `commons_sweep.py` (Commons API only, 1.5 s apart; `commons_report.py --plan`
+    proposes, a person looks at every one, `plan_finalize.py` writes the seed) are hotlinked from Commons like the others, source `wikimedia_commons`; marks Commons
+    does not hold come from SportsLogos.Net (source `sportslogos`; `sportslogos_fetch.py`, one request at a time and at least 5 s apart, only for marks we lack; terms: credit
+    and link back, no commercial use). Those images are kept byte for byte in `legacy_files.raw_archive` (`legacy_sportslogos`, DS1 only), shown small and as received (no
+    upscaling, no vectorising, no enhancement; a redraw only of a mark published before 1931 in the US or a simple text mark, credited as a redraw), and served from
+    our own `/team-logos/sl/<key>.<ext>`: not in git (git-ignored), written from DS1 into `web/public` by `scripts/logos/export_hosted.py` at the start of
+    `deploy-prebuilt.sh` and `ds1-preview.sh --install/--update` (sha256 checked; the run stops when a logo a brand row names is missing; `bash scripts/mac/test/hosted-logos-test.sh`).
+    A new SportsLogos.Net file alone does not move the preview's commit: `ds1-preview.sh --update --force`. Their logo_fit key is `sl:<key>.<ext>`.
 - **The SPXIS marks** (the swoosh, the star, the shields, the lockups; John's own corporate logos, © SportsInteractive, not under the site's data licences)
   live in `web/public/brand/` as small minified SVGs in a light and a `-dark` file, cut from his Illustrator sheets by `web/scripts/brand/extractBrand.ts`
   (originals stay in his Dropbox; the script also writes `lib/brandMarks.ts`, `brandSwoosh.ts`, `brandShield.ts`); `scripts/brand/rasterize.ts` draws the favicon,

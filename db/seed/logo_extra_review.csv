@@ -1,0 +1,86 @@
+league,team,era_from,action,file_key,dating,wordmark,decision,use_file,reason
+nhl,Anaheim Ducks,1993,upgrade,Anaheim_Ducks_2024-25_Wordmark_Dark.svg,dated,1,reject,,"a different wordmark in other colours, not the same mark"
+nhl,Boston Bruins,1924,upgrade,Boston_Bruins_100th_anniversary_logo.svg,dated,0,reject,,"the 100th-anniversary variant, not the same mark"
+nhl,Hartford Whalers,1979,fill,Hartford_Whalers_1992.svg,dated,0,accept,,
+nhl,Carolina Hurricanes,1997,replace,Canes_Crew_Logo.jpg,undated,0,reject,,"a secondary promotional mark (Canes Crew), not the primary logo"
+nhl,Quebec Nordiques,1979,fill,NordiquesdeQuebecwordmark.png,dated,1,accept,,
+nhl,Minnesota North Stars,1967,fill,Minnesota_North_Stars_Logo_1967-1974.svg,dated,0,accept,,
+nhl,Detroit Falcons,1930,fill,Falcons_de_Detroit.gif,dated,0,accept,,
+nhl,Detroit Red Wings,1932,upgrade,DetroitCougars.svg,undated,0,reject,,"DetroitCougars.svg, the old Cougars mark, not the Red Wings logo"
+nhl,Colorado Rockies,1976,fill,Colorado_Rockies_logo1.svg,undated,0,reject,,"the baseball Rockies' CR logo, not the hockey club's"
+nhl,Utah Hockey Club,2024,fill,Utah_Hockey_Club_2024-25_Logo.svg,dated,0,accept,,
+nhl,San Jose Sharks,1991,replace,San_Jose_Sharks_2023_Secondary_Logo.png,dated,0,reject,,the 2023 secondary fin logo; the era's primary logo stays
+nhl,Toronto Arenas,1917,fill,Toronto_Arenas_Logo.svg,dated,0,accept,,
+nhl,Toronto St. Patricks,1919,fill,St._Patricks_de_Toronto.gif,dated,0,accept,,
+nhl,Toronto Maple Leafs,1927,replace,Toronto_Maple_Leafs_Logo_1939_-_1967.svg,dated,0,reject,,the 1939-67 logo for an era that runs to today
+nba,Detroit Pistons,1957,upgrade,Detroit_Pistons_alternate_logo.svg,undated,0,reject,,"the alternate P logo, not the primary"
+nba,Detroit Pistons,2002,upgrade,Detroit_Pistons_alternate_logo.svg,undated,0,reject,,"the alternate P logo, not the primary"
+nba,Detroit Pistons,2012,upgrade,Logo_of_the_Detroit_Pistons_(2017–present).svg,dated,0,accept,,
+nba,Buffalo Braves,1970,fill,Buffalo_Braves_(black_and_orange_varient)_logo.svg,dated,0,accept,,
+nba,San Diego Clippers,1978,fill,Logo_san_diego_clippers_1982_bis_1984.png,dated,0,accept,,
+nba,New Jersey Nets,1977,fill,Nets97-12Wordmark.gif,undated,1,reject,,the 1997-2012 wordmark covers only 5 of this era's 25 years
+nba,New Jersey Nets,2002,fill,Nets97-12Wordmark.gif,undated,1,accept,,
+nba,New Jersey Nets,2012,fill,Nets97-12Wordmark.gif,undated,1,accept,,
+nba,Brooklyn Nets,2012,replace,Brooklyn_Nets_logo_primario_2024.png,dated,0,accept,,
+nba,Portland Trail Blazers,1970,replace,Portland-Trail-Blazers-Logo-1970_01.png,dated,0,accept,,
+nba,Portland Trail Blazers,2002,replace,Portland-Trail-Blazers-Logo-1990.png,dated,0,accept,Portland-Trail-Blazers-Logo-2004.png,
+nba,Portland Trail Blazers,2012,replace,Portland-Trail-Blazers-Logo-2004.png,dated,0,reject,,the 2004 logo for an era that runs to today; the 2004 file is used for 2002-2012 instead
+nba,Rochester Royals,1948,fill,Rochester_Royals_logo.svg,undated,0,accept,,
+nba,New Orleans Jazz,1974,fill,"New_Orleans_Jazz_Logo,_1975-1979.png",dated,0,accept,,
+nba,Vancouver Grizzlies,1995,fill,Vancouver-Grizzlies-program-inductee-fotor-2025032991215-preview-rev-1.png,undated,0,reject,,"an illustration from a program, not a logo"
+mlb,California Angels,1965,fill,California_Angels_logo_(1966-1970).svg,dated,0,accept,,
+mlb,Anaheim Angels,1997,fill,Anaheim_Angels_02-04_cap_logo.gif,dated,0,accept,,
+mlb,Boston Braves,1912,fill,TonyCuccinelloGoudeycard.jpg,dated,0,reject,,"a baseball card photograph, not a logo"
+mlb,Boston Braves,1941,fill,Boston_Braves_Cap_Logo_(1946_to_1952).svg,dated,0,accept,,
+mlb,Milwaukee Brewers,1901,fill,Milwaukee_Brewers_Primary_Logo_(1901).png,dated,0,accept,,
+mlb,St. Louis Browns,1902,fill,St._Louis_Browns_Cap_Logo_(1950_to_1951).svg,dated,0,accept,,
+mlb,Boston Americans,1901,fill,Boston_Americans_logo.png,dated,0,accept,,
+mlb,Cleveland Indians,1915,fill,Cleveland_Indians_primary_logo.svg,dated,0,accept,,
+mlb,Cleveland Guardians,2022,upgrade,Cleveland_Guardians_wordmark_logo.svg,undated,1,reject,,"a wordmark, while the era wears the C mark"
+mlb,Brooklyn Dodgers,1911,fill,Brooklyn_Dodgers_1910-1913_logo.png,dated,0,accept,,
+mlb,Brooklyn Dodgers,1932,fill,"Brooklyn_Dodgers_Cap_Logo_(1934_to_1936,_1938_to_1955).svg",dated,0,accept,,
+mlb,Seattle Pilots,1969,fill,Seattle_Pilots_Cap_Logo.svg,undated,0,accept,,
+mlb,Washington Senators,1901,fill,"Washington_Senators_Cap_Logo_(1916_to_1925,_1928_to_1932,_1935,_1938_to_1948).svg",dated,0,accept,,
+mlb,Montreal Expos,1969,fill,Montreal_Expos_Cap_Logo_(1992_to_2004).svg,dated,0,accept,,
+mlb,New York Highlanders,1903,fill,New_York_Highlanders_logo_1903.png,dated,0,accept,,
+mlb,Philadelphia Athletics,1901,fill,Philadelphia_Athletics_Cap_(1902_-_1954).svg,dated,0,accept,,
+mlb,Kansas City Athletics,1955,fill,Kansas_City_Athletics_Cap_Logo_(1955_to_1959).svg,dated,0,accept,,
+mlb,San Diego Padres,1969,upgrade,San_Diego_Padres_(2020)_cap_logo.svg,dated,0,accept,,
+mlb,New York Giants,1885,fill,"New_York_Giants_MLB_Cap_Logo_(1917_to_1922,_1928_to_1929).svg",dated,0,accept,,
+mlb,Seattle Mariners,1977,replace,Seattle_Mariners_Baseball_Club.gif,dated,0,reject,,the 1977 logo for an era that runs to today
+mlb,Washington Senators,1961,fill,Washington_Senators_Cap_Logo_(1961_to_1962).svg,dated,0,accept,,
+nfl,New England Patriots,1973,replace,New_England_Patriots_NE_logo.png,undated,0,reject,,the NE logo was worn 1993-99 only; the era's flying-Elvis logo stays
+nfl,New England Patriots,1999,replace,New_England_Patriots_NE_logo.png,undated,0,reject,,the NE logo was worn 1993-99 only; the era's logo stays
+nfl,Tennessee Titans,1999,upgrade,"Tennessee_Titans_wordmark,_2018.svg",dated,1,reject,,the current wordmark would orphan the logo_fit row that draws the primary mark in circles and squares for the existing file
+nfl,San Diego Chargers,1973,fill,San_Diego_Chargers_wordmark.svg,undated,1,accept,,
+nfl,San Diego Chargers,1999,fill,1795_san_diego_chargers-wordmark-2007.png,dated,1,accept,,
+nfl,Washington Redskins,1973,fill,Washington_Football_Team_logo_formerly_known_as_the_Washington_Redskins.png,undated,0,reject,,"the 2020 Washington Football Team logo, wrong era"
+nfl,Washington Redskins,1999,fill,Washington_Football_Team_logo_formerly_known_as_the_Washington_Redskins.png,undated,0,reject,,"the 2020 Washington Football Team logo, wrong era"
+nfl,Washington Football Team,2020,fill,Washington_Football_Team_(2).png,dated,0,accept,,
+nfl,Minnesota Vikings,1973,replace,Minnesota_Vikings_V_logo.png,dated,0,reject,,"the V is a secondary mark, not the primary logo"
+nfl,Minnesota Vikings,1999,replace,Minnesota_Vikings_V_logo.png,dated,0,reject,,"the V is a secondary mark, not the primary logo"
+nfl,Atlanta Falcons,1973,replace,UBX_Atlanta_Falcons.png,undated,0,reject,,"a black-background graphic, not the primary logo"
+nfl,Atlanta Falcons,1999,replace,UBX_Atlanta_Falcons.png,undated,0,reject,,"a black-background graphic, not the primary logo"
+nfl,St. Louis Cardinals,1973,fill,Fanny_Pack_with_St._Louis_Cardinal's_Logo_-_DPLA_-_a65bd331f832a12d771774572e4f7b85_(page_1).jpg,undated,0,reject,,a photograph of a fanny pack
+cfl,Toronto Argonauts,2012,replace,Argonauts_Logo.svg,dated,0,accept,,
+cfl,Edmonton Eskimos,1960,fill,Edmonton_eskimos_wordmark.png,undated,1,accept,,
+cfl,Edmonton Eskimos,2002,fill,Edmonton_eskimos_wordmark.png,undated,1,accept,,
+cfl,Edmonton Eskimos,2012,fill,Edmonton_eskimos_wordmark.png,undated,1,accept,,
+mlb,New York Giants,1890,fill,New_York_Giants_wordmark2.png,undated,1,reject,,"a 20th-century wordmark, not the Players League club's"
+mlb,Chicago Whales,1914,fill,Chicago_Federals_logo.png,dated,0,accept,,
+mlb,St. Paul Saints,1884,fill,St._Paul_Saints_logo.svg,undated,0,reject,,"a modern minor-league logo, not the 1884 club's"
+mlb,Kansas City Packers,1914,fill,Kansas_City_Packers_logo.png,dated,0,accept,,
+nhl,Montreal Maroons,1924,fill,Maroons_de_Montréal.svg,dated,0,accept,,
+nhl,Pittsburgh Pirates,1925,fill,Pittsburgh_Pirates_Logo.svg,dated,0,accept,,
+nhl,Philadelphia Quakers,1930,fill,Logo_Philadelphia_Quakers.svg,undated,0,accept,,
+nhl,Ottawa Senators,1917,fill,Original_Ottawa_Senators_Logo.png,dated,0,accept,,
+nhl,Ottawa Senators,1932,fill,Original_Ottawa_Senators_Logo.png,dated,0,accept,,
+nhl,New York Americans,1925,fill,New_York_Americans_Logo_1926-1938.svg,dated,0,accept,,
+nhl,Brooklyn Americans,1941,fill,Logo_Brooklyn_Americans.gif,undated,0,accept,,
+nhl,Montreal Wanderers,1917,fill,Montreal_Wanderers_Logo.svg,undated,0,accept,,
+other:hockey,Victoria Cougars,1924,fill,Victoria_Cougars_1926.svg,dated,0,accept,,
+other:hockey,Seattle Metropolitans,1918,fill,Seattle_Metropolitans_logo.svg,undated,0,accept,,
+other:hockey,Vancouver Millionaires,1917,fill,Vancouver_Millionaires_blue_logo.svg,undated,0,accept,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,
+other:hockey,Vancouver Millionaires,1920,fill,Vancouver_Millionaires_blue_logo.svg,undated,0,accept,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,
+cfl,Ottawa Rough Riders,1960,fill,Ottawa_Rough_Riders_logo_1950s.jpg,dated,0,reject,,"a 1950s logo as a JPEG, outside the era"
+nba,Cleveland Rebels,1946,fill,Cleveland_Rebels_logo.png,undated,0,accept,,

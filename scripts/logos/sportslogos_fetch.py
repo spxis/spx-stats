@@ -77,8 +77,10 @@ def parse_team(out, tid, body):
     for m in CARD.finditer(h):
         path, key, slug, year, kind_slug, title, thumb = m.groups()
         t = TITLE.search(html.unescape(title))
+        kind = re.sub(r"-Logo$", "", kind_slug).replace("-", " ")
+        nm = re.match(rf"^(.*?)\s+{re.escape(kind)}\s+Logo\b", html.unescape(title))
         entry = {"key": key, "team_id": int(tid), "page": BASE + path, "title": html.unescape(title), "image": thumb,
-                 "kind": re.sub(r"-Logo$", "", kind_slug).replace("-", " "),
+                 "kind": kind, "name": nm.group(1).strip() if nm else None,
                  "from": int(t.group("a")) if t else None, "to": int(t.group("b")) if t else None}
         logos[key] = entry
         n += 1

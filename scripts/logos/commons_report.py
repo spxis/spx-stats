@@ -1,13 +1,16 @@
 """Read what commons_sweep.py collected and say, per league, how many name eras have a public-domain (or other free) logo on Commons,
 how many of those fill a gap, how many replace a non-free file and how many upgrade a raster to an SVG. Writes candidates.csv.
 
-Usage: commons_report.py <identities.json> <commons dir> [<out csv> [<load.sql> <YYYY-MM-DD>]]
+Usage: commons_report.py <identities.json> <commons dir> [<out csv> [<load.sql> <YYYY-MM-DD>]] [--plan <plan.csv>]
+  --archived <dir> names the folder of the Commons files kept in raw_archive (commons-logos/<day>/files/<name>); their rows carry that archive_name.
+  --plan writes one proposed assignment per era (a gap, a non-free crest a PD mark can replace, a raster a PD SVG can upgrade) for review,
+  with the columns of db/seed/logo_extra.csv first and review columns after them.
   with <load.sql>, also writes the SQL that loads every logo-like file read into legacy_team_brand.commons_logo (replacing its rows;
   apply with scripts/mac/ds1-apply.sh; the table is created by migration 108).
 A file is matched to a name era only when the era's whole name (or its location and nickname, both) is in the file's title or categories,
 and the file reads as a logo. A year range in the file's title, description or categories dates it; an undated file fits every era of
 the name and is marked undated (lower confidence). Nothing here writes to a database."""
-import csv, json, re, sys, collections, urllib.parse
+import csv, json, os, re, sys, collections, urllib.parse
 
 FREE_PD = re.compile(r"public domain|\bpd\b|cc0|cc-zero|no known copyright", re.I)
 NON_FREE = re.compile(r"non-free|fair use|copyright(ed)? \(c\)|all rights", re.I)
@@ -45,19 +48,20 @@ def q(v):
     return "null" if v is None or v == "" else "'" + str(v).replace("'", "''") + "'"
 
 
-def write_load_sql(files, path, day):
+def write_load_sql(files, path, day, archived=()):
     with open(path, "w") as fh:
         fh.write("delete from legacy_team_brand.commons_logo;\n")
         for f in files:
             name = f["title"].removeprefix("File:").replace(" ", "_")
             yf, yt = (f["years"] or (None, None))
             fh.write("insert into legacy_team_brand.commons_logo (file, page_url, file_url, thumb_url, mime, width, height, bytes, licence, licence_class, "
-                     "restrictions, categories, years_from, years_to, fetched_on) values "
+                     "restrictions, categories, years_from, years_to, fetched_on, archive_name) values "
                      f"({q(name)}, {q(f['page'])}, {q(f['url'])}, {q(f.get('thumb'))}, {q(f['mime'])}, {q(f['w'])}, {q(f['h'])}, {q(f['bytes'])}, "
-                     f"{q(f['licence'])}, {q(f['cls'])}, {q(f['restr'])}, {q(f['cats'])}, {q(yf)}, {q(yt)}, {q(day)}) on conflict (file) do nothing;\n")
+                     f"{q(f['licence'])}, {q(f['cls'])}, {q(f['restr'])}, {q(f['cats'])}, {q(yf)}, {q(yt)}, {q(day)}, "
+                     f"{q(f'commons-logos/{day}/files/{name}' if name in archived else None)}) on conflict (file) do nothing;\n")
 
 
-def main(ident_file, cdir, out_csv, sql_out=None, day=None):
+def main(ident_file, cdir, out_csv, sql_out=None, day=None, plan_out=None, archived_dir=None):
     idents = json.load(open(ident_file))
     raw = json.load(open(f"{cdir}/raw.json"))
     info = {t: i for t, i in raw["info"].items() if not i.get("missing")}
@@ -105,7 +109,7 @@ def main(ident_file, cdir, out_csv, sql_out=None, day=None):
         f["sports"] = sports_of(f["text"] + " " + f["cats"])
 
     if sql_out:
-        write_load_sql(files, sql_out, day)
+        write_load_sql(files, sql_out, day, set(os.listdir(archived_dir)) if archived_dir else ())
 
     def cur_ext(cur):
         u = (cur or {}).get("url") or ""
@@ -120,6 +124,7 @@ def main(ident_file, cdir, out_csv, sql_out=None, day=None):
         return "non-free" if NON_FREE.search(lic) else "free"
 
     rows = []
+    plan = []
     per = collections.defaultdict(lambda: collections.Counter())
     for r in idents:
         lg = r["lg"]
@@ -175,10 +180,35 @@ def main(ident_file, cdir, out_csv, sql_out=None, day=None):
                 c["other_free_fills_gap"] += 1
         if cc == "gap" and not free:
             c["still_missing"] += 1
+        # the plan: one proposed assignment per era. A gap takes the best free file (a PD wordmark is allowed there); a non-free crest is replaced only by a
+        # PD file that is a mark, not a wordmark; a free raster is upgraded only by a PD SVG of the same kind (wordmark for wordmark).
+        cur_word = "wordmark" in ((r["cur"] or {}).get("url") or "").lower()
+        pick = None
+        if cc == "gap":
+            pick, act = best, "fill"
+        elif cc == "non-free":
+            c2 = [(f, d) for f, d in pd if not word(f)]
+            pick, act = (sorted(c2, key=lambda x: (x[1] != "dated", not x[0]["title"].lower().endswith(".svg"), x[0]["title"]))[0] if c2 else None), "replace"
+        elif ext != "svg":
+            c2 = [(f, d) for f, d in pd if f["title"].lower().endswith(".svg") and word(f) == cur_word]
+            pick, act = (sorted(c2, key=lambda x: (x[1] != "dated", x[0]["title"]))[0] if c2 else None), "upgrade"
+        if pick and plan_out is not None:
+            f, d = pick
+            plan.append({"league": lg, "team": r["name"], "from_year": "", "to_year": "", "source": "wikimedia_commons",
+                         "file_key": f["title"].removeprefix("File:").replace(" ", "_"),
+                         "replaces": {"fill": "", "replace": "nonfree", "upgrade": "free"}[act], "note": f"Commons {f['licence']}; {d}",
+                         "action": act, "dating": d, "wordmark": int(word(f)), "cls": f["cls"], "era_from": r["y0"], "era_to": r["y1"],
+                         "cur_url": (r["cur"] or {}).get("url") or "", "thumb": f.get("thumb") or "", "page": f["page"], "iid": r["iid"]})
         rows.append({"league": lg, "iid": r["iid"], "fid": r["fid"], "era": r["name"], "from": r["y0"], "to": r["y1"], "now": cc, "now_ext": ext,
                      "n_pd": len(pd), "n_free": len(free), "best": best[0]["title"] if best else "", "best_class": best[0]["cls"] if best else "",
                      "best_dating": best[1] if best else "", "best_licence": best[0]["licence"] if best else "",
                      "best_page": best[0]["page"] if best else "", "best_wordmark": word(best[0]) if best else ""})
+    if plan_out is not None:
+        with open(plan_out, "w", newline="") as fh:
+            w = csv.DictWriter(fh, fieldnames=list(plan[0]))
+            w.writeheader()
+            w.writerows(plan)
+        print("plan:", len(plan), "proposed assignments ->", plan_out)
     with open(out_csv, "w", newline="") as fh:
         w = csv.DictWriter(fh, fieldnames=list(rows[0]))
         w.writeheader()
@@ -196,4 +226,14 @@ def main(ident_file, cdir, out_csv, sql_out=None, day=None):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    main(a[0], a[1], a[2] if len(a) > 2 else "candidates.csv", a[3] if len(a) > 3 else None, a[4] if len(a) > 4 else None)
+    plan_out = None
+    if "--plan" in a:
+        i = a.index("--plan")
+        plan_out = a[i + 1]
+        del a[i:i + 2]
+    archived_dir = None
+    if "--archived" in a:
+        i = a.index("--archived")
+        archived_dir = a[i + 1]
+        del a[i:i + 2]
+    main(a[0], a[1], a[2] if len(a) > 2 else "candidates.csv", a[3] if len(a) > 3 else None, a[4] if len(a) > 4 else None, plan_out, archived_dir)

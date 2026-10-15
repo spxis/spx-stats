@@ -3,7 +3,7 @@
 --   legacy_team_brand.commons_logo  one row per Commons file the sweep read (scripts/logos/commons_sweep.py, commons_load.py)
 --   legacy_sportslogos.team / logo  one row per SportsLogos.Net team page and per logo on it (scripts/logos/sportslogos_fetch.py,
 --                                   sportslogos_load.py); the page HTML and each image are kept byte for byte in legacy_files.raw_archive
--- core.franchise_brand is filled from these by db/build/176_team_logo_extra.sql, from the assignments in db/seed/logo_extra.csv.
+-- core.franchise_brand is filled from these by db/build/175_team_logo_extra.sql, from the assignments in db/seed/logo_extra.csv.
 -- Nothing here is published by itself: the legacy_* tables stay on DS1; production gets the core.franchise_brand rows and the
 -- 'sportslogos' meta.source row through a data release.
 
@@ -30,7 +30,8 @@ create table if not exists legacy_team_brand.commons_logo (
   categories    text,
   years_from    integer,                 -- the years the file's title, description or categories name
   years_to      integer,
-  fetched_on    date not null
+  fetched_on    date not null,
+  archive_name  text references legacy_files.raw_archive(name)   -- the file's own bytes, kept for the files a brand row uses (commons-logos/<day>/files/<name>)
 );
 comment on table legacy_team_brand.commons_logo is 'Logo files of clubs and name eras found on Wikimedia Commons by the sweep, with the licence each file page gives.';
 

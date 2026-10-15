@@ -3,13 +3,17 @@
 -- served from our own file). Which file goes to which name era is db/seed/logo_extra.csv, checked by hand:
 --   league       nhl, nba, mlb, nfl, cfl, or 'other' for a club that never played in one (the PCHA clubs)
 --   team         the identity's full name, as core.franchise_identity.full_name has it
---   from_year    first year the logo applies (empty: the identity's first day); to_year the last year (empty: the identity's last day)
+--   from_year    first season (its first year) the logo applies (empty: the identity's first day, open for a club's first name like 175_team_brand)
+--   to_year      last season it applies (empty: the identity's last day, open for the current name). A name that several identity rows
+--                share (a split era) must give both, or the row would reach every one of them.
 --   source       wikimedia_commons or sportslogos
 --   file_key     the Commons file name (underscores) or the SportsLogos.Net logo key
---   replaces     'nonfree' when it stands in for a non-free (fair use) logo the identity wears now; empty when it fills a gap
+--   replaces     empty: fills a gap; 'nonfree': stands in for the non-free (fair use) logo the era wears; 'free': replaces a free logo
+--                (a PD SVG for a raster of the same kind). The rows it replaces lose their logo and keep their colours and venue.
 --   note         why this file, for whoever reads the CSV
--- Run after 175_team_brand.sql (the Wikidata rows exist) from the repo root, as scripts/build_core.sh does. Rerunnable: it first removes
--- the rows of the two sources it writes. A file the seed names that the legacy tables lack is reported, not guessed.
+-- Runs after 175_team_brand.sql (the Wikidata rows exist) and before 175_team_logo_fit.sql (which checks its files against the logos), from
+-- the repo root, as scripts/build_core.sh does. Rerunnable: it first removes the rows of the two sources it writes. A file the seed names
+-- that the legacy tables lack is reported, not guessed.
 drop table if exists pg_temp.seed_logo_extra;
 create temp table seed_logo_extra (league text, team text, from_year integer, to_year integer, source text, file_key text, replaces text, note text);
 \copy seed_logo_extra from 'db/seed/logo_extra.csv' with (format csv, header true)
@@ -39,22 +43,31 @@ where url is null or url = '' or page is null having count(*) > 0;
 
 with ident as (
   select i.franchise_id, i.valid_during, pg_temp.norm(i.full_name) n,
+         i.valid_during = first_value(i.valid_during) over w as is_first,
+         i.valid_during = last_value(i.valid_during) over w as is_last,
          coalesce((select min(fl.league_code) from core.franchise_league fl where fl.franchise_id = i.franchise_id), 'other') as league
   from core.franchise_identity i
-), pick as (   -- the identity each seed row is for, and the days it covers
-  select f.*, i.franchise_id, i.valid_during as ivd,
-         daterange(case when f.from_year is null then lower(i.valid_during) else greatest(make_date(f.from_year, 1, 1), lower(i.valid_during)) end,
-                   case when f.to_year is null then upper(i.valid_during) else least(make_date(f.to_year + 1, 1, 1), coalesce(upper(i.valid_during), 'infinity')) end) as rng
+  window w as (partition by i.franchise_id order by lower(i.valid_during) nulls first rows between unbounded preceding and unbounded following)
+), pick as (   -- the identity each seed row is for, and the days it covers (a club's first and last identity are open at the ends, as in 175_team_brand)
+  select f.*, i.franchise_id,
+         -- a year that reaches the identity's own first or last season means the identity's own bound (so a row that covers a whole identity
+         -- lines up exactly with the Wikidata rows it may replace, whatever the club's other identities of the same name)
+         daterange(case when f.from_year is null or f.from_year <= extract(year from lower(i.valid_during))::int
+                        then (case when i.is_first then null else lower(i.valid_during) end)
+                        else make_date(f.from_year, 1, 1) end,
+                   case when f.to_year is null or (upper(i.valid_during) is not null and f.to_year >= extract(year from upper(i.valid_during))::int - 1)
+                        then (case when i.is_last then null else upper(i.valid_during) end)
+                        else make_date(f.to_year + 1, 1, 1) end) as rng
   from logo_extra_file f
   join ident i on i.league = f.league and i.n = pg_temp.norm(f.team)
   where f.url is not null and f.url <> '' and f.page is not null
-    and (f.from_year is null or f.from_year < coalesce(extract(year from upper(i.valid_during))::int + 1, 9999))
+    and (f.from_year is null or f.from_year <= coalesce(extract(year from upper(i.valid_during))::int - 1, 9999))   -- a year is a season's first year
     and (f.to_year is null or f.to_year >= extract(year from lower(i.valid_during))::int)
-), gone as (   -- a non-free logo this one replaces: removed from the rows it fully covers (the row keeps its colours and venue)
+), gone as (   -- a logo this one replaces: removed from the rows it fully covers (the row keeps its colours and venue)
   update core.franchise_brand b set logo_url = null, logo_licence = null, logo_page = null
   from pick p
-  where p.replaces = 'nonfree' and b.franchise_id = p.franchise_id and b.logo_url is not null
-    and b.logo_licence ilike 'Non-free%' and b.valid_during <@ p.rng
+  where p.replaces in ('nonfree', 'free') and b.franchise_id = p.franchise_id and b.logo_url is not null
+    and (b.logo_licence ilike 'Non-free%') = (p.replaces = 'nonfree') and b.valid_during <@ p.rng
   returning b.franchise_brand_id
 )
 insert into core.franchise_brand (franchise_id, valid_during, logo_url, logo_licence, logo_page, source_id, source_key)
@@ -63,14 +76,18 @@ from pick p
 where not isempty(p.rng)
 on conflict (franchise_id, valid_during, source_id) do nothing;
 
+-- A row left with no logo, no colours and no venue after a replacement carries nothing.
+delete from core.franchise_brand where logo_url is null and primary_hex is null and secondary_hex is null and home_venue is null and latitude is null;
+
 -- A seed row that matched no identity (a typo, a renamed club, years outside the identity).
 select 'logo_extra seed rows matching no name era' as what, count(*) as n from logo_extra_file f
 where not exists (select 1 from core.franchise_identity i
                   where pg_temp.norm(i.full_name) = pg_temp.norm(f.team)
                     and coalesce((select min(fl.league_code) from core.franchise_league fl where fl.franchise_id = i.franchise_id), 'other') = f.league)
 having count(*) > 0;
--- A non-free logo this file was meant to replace that only partly overlaps it stays, and both would draw: list them.
+-- A logo this file was meant to replace that only partly overlaps it stays, and both would draw: list them.
 select 'logo_extra replacements left partly overlapping' as what, count(*) as n
-from core.franchise_brand n join core.franchise_brand o on o.franchise_id = n.franchise_id and o.logo_licence ilike 'Non-free%' and o.valid_during && n.valid_during
+from core.franchise_brand n join core.franchise_brand o on o.franchise_id = n.franchise_id and o.franchise_brand_id <> n.franchise_brand_id
+  and o.logo_url is not null and o.valid_during && n.valid_during and n.logo_url is not null
 where n.source_id in (select source_id from meta.source where code in ('wikimedia_commons', 'sportslogos'))
 having count(*) > 0;
