@@ -444,6 +444,7 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
       <section className="head fade">
         <h1>Data releases</h1>
         <p className="lede">Production changes only through numbered releases. Approve or reject each one here; the runner next to DS1 applies the approved ones and checks the result.</p>
+        <p className="note">The machine side (harvester, Dropbox backup, DS1 against production, watchdog): <Link href="/admin/ops">Ops</Link>.</p>
         {problem ? <p className="note" role="alert">{problem}</p> : null}
         {health ? (
           <p className={health.kind === "down" ? "dr-alert" : "note"} role={health.kind === "down" ? "alert" : "status"}>

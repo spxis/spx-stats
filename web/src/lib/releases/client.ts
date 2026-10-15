@@ -25,13 +25,13 @@ export class ReleaseError extends Error {
 
 const TIMEOUT_MS = 10_000;
 
-function secret(): string {
+export function secret(): string {
   const value = (process.env.RELEASE_APPROVAL_SECRET ?? "").trim();
   if (value.length < 32) throw new ReleaseError("Not set up: RELEASE_APPROVAL_SECRET is missing or shorter than 32 characters.");
   return value;
 }
 
-async function rpc(fn: string, body: Record<string, unknown>, options: { noStore?: boolean } = {}): Promise<unknown> {
+export async function rpc(fn: string, body: Record<string, unknown>, options: { noStore?: boolean } = {}): Promise<unknown> {
   let res: Response;
   try {
     res = await fetch(`${REST_URL}rpc/${fn}`, {
