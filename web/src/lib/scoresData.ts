@@ -7,6 +7,7 @@ import { currentSpeaker } from "./i18n/currentLocale";
 import { LG, type LeagueCode } from "./leagues";
 import { pageMeta } from "./meta";
 import { addDay, scoresPath, todayUtc } from "./scores";
+import { stripWindow } from "./weekStrip";
 
 /** The day /lg/scores opens on: today's games, else the latest game day before today (the first day if the league has none yet). */
 export async function defaultDay(lg: string): Promise<string | null> {
@@ -30,10 +31,18 @@ export async function seasonDay(lg: string, y: number): Promise<string | null> {
  * either side when the day is empty, the league's first and last day, and the days of the season the day belongs to.
  */
 export const loadScores = cache(async (lg: string, day: string) => {
-  const [around, bounds] = await Promise.all([getGamesBetween(lg, addDay(day, -3), addDay(day, 3)), getGameBounds(lg)]);
+  const window = stripWindow(day);
+  const from = window[0], to = window[window.length - 1];
+  const [around, bounds] = await Promise.all([getGamesBetween(lg, from, to), getGameBounds(lg)]);
   const games = around.filter((g) => g.game_date === day);
   const [before, after] = games.length ? [null, null] : await Promise.all([getGameDay(lg, day, "before"), getGameDay(lg, day, "after")]);
-  const year = games[0]?.year ?? around[0]?.year ?? before?.year ?? after?.year ?? null;
+  const nearest = around.reduce<(typeof around)[number] | null>((best, game) => {
+    if (!best) return game;
+    const distance = Math.abs(Date.parse(`${game.game_date}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`));
+    const bestDistance = Math.abs(Date.parse(`${best.game_date}T00:00:00Z`) - Date.parse(`${day}T00:00:00Z`));
+    return distance < bestDistance ? game : best;
+  }, null);
+  const year = games[0]?.year ?? nearest?.year ?? before?.year ?? after?.year ?? null;
   const days = year != null ? await getSeasonDays(lg, year) : [];
   return { games, around, bounds, before: before?.game_date ?? null, after: after?.game_date ?? null, year, days };
 });

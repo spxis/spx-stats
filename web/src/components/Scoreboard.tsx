@@ -9,6 +9,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { loadScores } from "@/lib/scoresData";
+import { stripWindow } from "@/lib/weekStrip";
 import { AccentStyle } from "./AccentStyle";
 import { OfficialLinks } from "./OfficialLinks";
 import { StartTime } from "./StartTime";
@@ -76,10 +77,13 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
   const prev = addDay(day, -1), next = addDay(day, 1);
   const weekBack = addDay(day, -7), weekForward = addDay(day, 7);
   const upcoming = day >= addDay(todayUtc(), -1);
-  const strip = [-3, -2, -1, 0, 1, 2, 3].map((n) => {
-    const d = addDay(day, n);
-    return { d, n: around.filter((g) => g.game_date === d).length };
+  const counts = new Map<string, number>();
+  for (const g of around) counts.set(g.game_date, (counts.get(g.game_date) ?? 0) + 1);
+  const makeDay = (d: string) => ({
+    key: d, weekday: dt.weekdays[atUtc(d).getUTCDay()], date: dt.monthDayShort(atUtc(d)), games: counts.get(d) ?? 0,
+    word: plural("scores.gamesWord", counts.get(d) ?? 0), label: `${dt.full(atUtc(d))}: ${plural("count.games", counts.get(d) ?? 0)}`, href: scoresPath(lg, d),
   });
+  const strip = stripWindow(day).map(makeDay);
   const years = seasons.filter((s) => s.league === lg && s.games > 0).map((s) => s.year).sort((a, b) => b - a);
   const nearest = [
     before ? { d: before, text: say("scores.earlier", { date: dt.short(atUtc(before)) }) } : null,
@@ -95,10 +99,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
         <ScoresBar lg={lg} day={day} year={year} seasons={years} days={days} min={first} max={last}
           prev={day > first ? prev : ""} next={day < last ? next : ""} prevText={dt.monthDayShort(atUtc(prev))} nextText={dt.monthDayShort(atUtc(next))} />
       </section>
-      <DayStrip aria={say("scores.daysAria")} current={day} jump={{ back: weekBack >= first ? scoresPath(lg, weekBack) : "", forward: weekForward <= last ? scoresPath(lg, weekForward) : "" }} days={strip.map(({ d, n }) => ({
-        key: d, weekday: dt.weekdays[atUtc(d).getUTCDay()], date: dt.monthDayShort(atUtc(d)), games: n, word: plural("scores.gamesWord", n),
-        label: `${dt.full(atUtc(d))}: ${plural("count.games", n)}`, href: scoresPath(lg, d),
-      }))} />
+      <DayStrip aria={say("scores.daysAria")} current={day} jump={{ back: scoresPath(lg, weekBack), forward: scoresPath(lg, weekForward) }} days={strip} />
       <section className="section">
         {games.length ? (
           <ul className="scoreboard">

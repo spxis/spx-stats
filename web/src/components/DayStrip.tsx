@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { localToday } from "@/lib/format";
+import { stripDates, usHolidayDates, weekDirection, type HolidayKey, type StripLayout } from "@/lib/weekStrip";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./scores.css";
 
@@ -32,24 +33,49 @@ const Chevrons = ({ dir }: { dir: "back" | "forward" }) => (
 );
 
 /**
- * The strip of seven days with an "N games" badge under each date, shared by a league's scores page (every day a link to its scoreboard) and a season page
- * (every day a button: the page shows that day's games in place). The cell for the chosen day is marked `aria-current="date"`; the cell for today, on the
- * reader's own clock (known only in the browser, so the pages around it stay kept), carries `data-today` and "today" in its spoken label.
- * `jump` adds a narrow double-chevron link at each end that moves the chosen day back or forward by exactly seven days (the scores page only).
+ * The shared seven-day strip for a league's scores page (days link to their scoreboard) and a season page (buttons select that day's games). It shows a
+ * calendar week by default, with an explicit centered `dynamic` layout for other callers. The chosen day is marked `aria-current="date"`; today comes from
+ * the reader's browser clock, so the kept pages stay date-independent. `jump` links or `onWeekChange` buttons move exactly seven days.
  */
-export function DayStrip({ days, current, aria, onPick, jump }: { days: StripDay[]; current: string; aria: string; onPick?: (day: string) => void; jump?: StripJump }) {
+export function DayStrip({ days, current, aria, onPick, jump, layout = "fixed", weekStartsOn = 0, holidays, shadeWeekends = true, shadeHolidays = true, onWeekChange }: {
+  days: StripDay[];
+  current: string;
+  aria: string;
+  onPick?: (day: string) => void;
+  jump?: StripJump;
+  layout?: StripLayout;
+  weekStartsOn?: number;
+  /** Custom holiday labels keyed by ISO date. Omit for US federal holidays, or pass false to omit holidays. */
+  holidays?: Readonly<Record<string, string>> | false;
+  shadeWeekends?: boolean;
+  shadeHolidays?: boolean;
+  onWeekChange?: (direction: "back" | "forward") => void;
+}) {
   const { say } = useSpeaker();
   const today = useSyncExternalStore(subscribe, localToday, () => "");
-  const arrow = (dir: "back" | "forward", href: string) => {
+  const start = weekDirection(current, today, weekStartsOn);
+  const todayArrow = start === "past" ? "forward" : start === "future" ? "back" : null;
+  const keys = stripDates(current, layout, weekStartsOn);
+  const source = new Map(days.map((d) => [d.key, d]));
+  const visible = keys.map((key) => source.get(key) ?? { key, weekday: "", date: key, games: 0, word: "", label: key });
+  const holidayMap = holidays === false ? new Map<string, string>() : holidays ? new Map(Object.entries(holidays)) : new Map(
+    [...usHolidayDates([...new Set(keys.map((d) => Number(d.slice(0, 4))))].flatMap((year) => [year - 1, year, year + 1]))]
+      .map(([date, key]) => [date, say(key as HolidayKey)]),
+  );
+  const arrow = (dir: "back" | "forward", href: string | undefined) => {
     const label = say(dir === "back" ? "scores.weekBack" : "scores.weekForward");
-    return href
-      ? <Link href={href} prefetch={false} className="jump" aria-label={label} title={label}><Chevrons dir={dir} /></Link>
-      : <span className="jump off" aria-hidden="true"><Chevrons dir={dir} /></span>;
+    const marked = todayArrow === dir;
+    const aria = marked ? `${label} (${say(dir === "forward" ? "scores.todayLater" : "scores.todayEarlier")})` : label;
+    const className = "jump" + (marked ? " has-today" : "");
+    const inside = <><Chevrons dir={dir} />{marked ? <span className="jump-today">{say("scores.todayMark")}</span> : null}</>;
+    if (href) return <Link href={href} rel={dir === "back" ? "prev" : "next"} prefetch={false} className={className} aria-label={aria} title={aria}>{inside}</Link>;
+    if (onWeekChange) return <button type="button" className={className} aria-label={aria} title={aria} onClick={() => onWeekChange(dir)}>{inside}</button>;
+    return <span className="jump off" aria-hidden="true"><Chevrons dir={dir} /></span>;
   };
   return (
-    <nav className={"daystrip" + (jump ? " withjump" : "")} aria-label={aria}>
-      {jump ? arrow("back", jump.back) : null}
-      {days.map((d) => {
+    <nav className={"daystrip" + (jump || onWeekChange ? " withjump" : "")} aria-label={aria}>
+      {jump || onWeekChange ? arrow("back", jump?.back) : null}
+      {visible.map((d) => {
         const inside = (
           <>
             <span className="wd">{d.weekday}</span>
@@ -59,12 +85,17 @@ export function DayStrip({ days, current, aria, onPick, jump }: { days: StripDay
         );
         const on = d.key === current ? "date" : undefined;
         const isToday = d.key === today ? "" : undefined;
-        const label = isToday === undefined ? d.label : `${d.label} (${say("scores.todayMark")})`;
+        const holiday = holidayMap.get(d.key);
+        const weekday = new Date(`${d.key}T00:00:00Z`).getUTCDay();
+        const weekend = weekday === 0 || weekday === 6;
+        const label = [d.label, shadeWeekends && weekend ? say("scores.weekend") : null, holiday && shadeHolidays ? holiday : null,
+          isToday !== undefined ? say("scores.todayMark") : null].filter(Boolean).join("; ");
+        const className = [d.games ? "has" : "", shadeWeekends && weekend ? "weekend" : "", shadeHolidays && holiday ? "holiday" : ""].filter(Boolean).join(" ") || undefined;
         return d.href && !onPick
-          ? <Link key={d.key} href={d.href} prefetch={false} className={d.games ? "has" : undefined} aria-current={on} data-today={isToday} aria-label={label}>{inside}</Link>
-          : <button key={d.key} type="button" className={d.games ? "has" : undefined} aria-current={on} data-today={isToday} aria-label={label} onClick={() => onPick?.(d.key)}>{inside}</button>;
+          ? <Link key={d.key} href={d.href} prefetch={false} className={className} aria-current={on} data-today={isToday} data-weekend={shadeWeekends && weekend ? "" : undefined} data-holiday={shadeHolidays && holiday ? "" : undefined} title={holiday && shadeHolidays ? holiday : undefined} aria-label={label}>{inside}{isToday !== undefined && start === "current" ? <span className="nowmark">{say("scores.nowMark")}</span> : null}</Link>
+          : <button key={d.key} type="button" className={className} aria-current={on} data-today={isToday} data-weekend={shadeWeekends && weekend ? "" : undefined} data-holiday={shadeHolidays && holiday ? "" : undefined} title={holiday && shadeHolidays ? holiday : undefined} aria-label={label} onClick={() => onPick?.(d.key)}>{inside}{isToday !== undefined && start === "current" ? <span className="nowmark">{say("scores.nowMark")}</span> : null}</button>;
       })}
-      {jump ? arrow("forward", jump.forward) : null}
+      {jump || onWeekChange ? arrow("forward", jump?.forward) : null}
     </nav>
   );
 }

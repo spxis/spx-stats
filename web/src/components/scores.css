@@ -9,6 +9,8 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 .daystrip :is(a, button) { font: inherit; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 8px 2px 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); text-decoration: none; min-width: 0; }
 .daystrip :is(a, button):hover { border-color: var(--accent); color: var(--ink); }
 .daystrip :is(a, button).has { color: var(--ink); }
+.daystrip :is(a, button).weekend { background: color-mix(in srgb, var(--soft) 72%, var(--panel)); }
+.daystrip :is(a, button).holiday { background: color-mix(in srgb, var(--today) 13%, var(--panel)); }
 /* The date is the big thing in a cell; the count is a small badge below it (a dash for a day with no games). */
 .daystrip .wd { font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
 .daystrip .md { font: 700 clamp(15px, 4.2vw, 19px)/1 var(--display); white-space: nowrap; }
@@ -19,17 +21,25 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 .daystrip :is(a, button)[aria-current="date"] { background: var(--ink); border-color: var(--ink); color: var(--paper); }
 .daystrip :is(a, button)[aria-current="date"] .ct { background: color-mix(in srgb, var(--paper) 20%, transparent); color: var(--paper); }
 .daystrip :is(a, button)[aria-current="date"] .ct b { color: var(--paper); }
+.daystrip :is(a, button)[aria-current="date"].weekend,
+.daystrip :is(a, button)[aria-current="date"].holiday { background: var(--ink); }
 /* Today (on the reader's clock, set by DayStrip) is a bar across the top of its cell and an accent weekday, a mark that does not rely on colour alone and is separate from the chosen day's filled cell. --today and --today-on-ink are in globals.css. */
 .daystrip [data-today] { box-shadow: inset 0 4px 0 var(--today); }
 .daystrip [data-today] .wd { color: var(--today); font-weight: 700; }
 .daystrip [data-today][aria-current="date"] { box-shadow: inset 0 4px 0 var(--today-on-ink); }
 .daystrip [data-today][aria-current="date"] .wd { color: var(--today-on-ink); }
 /* Week jumps: a narrow double-chevron at each end (the scores page); narrower than a day cell and the full height of the row. */
-.daystrip.withjump { grid-template-columns: 28px repeat(7, minmax(0, 1fr)) 28px; }
+.daystrip.withjump { grid-template-columns: minmax(28px, 36px) repeat(7, minmax(0, 1fr)) minmax(28px, 36px); }
 .daystrip .jump { display: flex; align-items: center; justify-content: center; padding: 0; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-decoration: none; }
+.daystrip button.jump { font: inherit; cursor: pointer; }
+.daystrip .jump.has-today { flex-direction: column; gap: 1px; color: var(--today); }
+.daystrip .jump-today { writing-mode: vertical-rl; font: 700 8px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }
 .daystrip a.jump:hover { border-color: var(--accent); color: var(--accent-text); }
+.daystrip button.jump:hover { border-color: var(--accent); color: var(--accent-text); }
 .daystrip .jump.off { opacity: .35; }
 .daystrip .jump svg { flex: none; }
+.daystrip .nowmark { font: 700 8px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--today); }
+.daystrip [data-today][aria-current="date"] .nowmark { color: var(--today-on-ink); }
 @media (min-width: 600px) { .daystrip .ct .cw { display: inline; } }
 
 /* The week strip on a season page: the same strip, with that day's games as compact cards beneath it. */
