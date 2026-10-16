@@ -88,6 +88,14 @@ data repair. If you start a subagent, copy this section into its instructions; i
 - **Check a name is free before you create it.** Before `create table`/`view`/`function`, look for the name in `db/migrations` and on
   DS1 (`\d core.<name>` through a read-only session) and production's schema. *Broken:* a migration created `core.game_official`,
   which already is the referees table.
+- **Production is not your scratch database.** Every statement there runs through the Management API and is cut at about 60 s
+  (the release runner too); nobody has a direct `psql` connection or `\copy` to it. A migration, build step or materialized view
+  must finish each statement in about 40 s on production's size, so time it on scratch at full volume. Anything visitors read must
+  work as `anon`, which has no usage on schema `core`: test with `set role anon`. A view must never be left empty or unpopulated
+  for visitors (build beside it, then swap). *Broken:* migration 117 gave visitors "permission denied for schema core", and
+  `api.stat_reference` could not be rebuilt on production at all.
+- **Don't go quiet.** If your work stops (a limit, a worker that died, a question), say so to John at once with your name and
+  ticket; never leave a ticket held with nothing running.
 - **A build step deletes only what it owns.** A step that removes rows must limit the delete to rows it wrote (a source, a marker, its
   own candidate set), never "everything not in my list". *Broken:* step 177 deleted 11,073 Wikidata ids other steps had added.
 - **Merging or deleting a row that others point at** (people, franchises, identities) means every table with a foreign key to it goes in
