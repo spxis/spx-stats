@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.131.0",
+  "version": "0.132.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -79,6 +79,7 @@
     "test:road": "node --test scripts/soccerRoad.test.ts",
     "test:playerlist": "node --test scripts/playerList.test.ts",
     "test:titles": "node --test scripts/rosterTitles.test.ts",
+    "test:opheat": "node --test scripts/opponentHeat.test.ts",
     "test:buildshare": "node --conditions=react-server --test scripts/buildShare.test.ts"
   },
   "dependencies": {

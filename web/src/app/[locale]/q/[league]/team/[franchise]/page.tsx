@@ -10,6 +10,7 @@ import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { FranchiseCountries } from "@/components/FranchiseCountries";
 import { TeamChartsLazy } from "@/components/TeamChartsLazy";
+import { OpponentHeatLazy } from "@/components/OpponentHeatLazy";
 import { Credits } from "@/components/Credits";
 import { AddressLink } from "@/components/AddressLink";
 import { venueMapsUrl } from "@/lib/venueAddress";
@@ -269,6 +270,13 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         </section>
       )}
       {rows.length ? <Suspense fallback={null}><FranchiseCountries lg={lg} f={f} name={now} teamPath={at.path} /></Suspense> : null}
+      {rows.length ? (
+        <section className="section">
+          <h2>{say("opheat.title")}</h2>
+          <p className="note">{say("opheat.lede", { name: now })}</p>
+          <OpponentHeatLazy teamPath={at.path} />
+        </section>
+      ) : null}
       {rows.length || bare.size ? (
         <section className="section">
           <h2>{say("team.standings")}</h2>

@@ -1,0 +1,58 @@
+/* The record-against-each-opponent heat map on a team page. Win and loss are a blue-red pair around a neutral middle, not the team's colour. Tokens come from globals.css. */
+
+.oh { --oh-name: 150px; --oh-life: 136px; --oh-cell: 15px; --oh-row: 24px; --hm-mid: var(--soft); --hm-win: #2f6fb3; --hm-loss: #c0502f; }
+@media (max-width: 640px) { .oh { --oh-name: 112px; --oh-life: 100px; } .oh .ohlife .rec span { display: none; } }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .oh { --hm-win: #5aa0e6; --hm-loss: #e8785a; } }
+:root[data-theme="dark"] .oh { --hm-win: #5aa0e6; --hm-loss: #e8785a; }
+
+.oh .ohcontrols { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; margin-bottom: 10px; }
+.oh .ohcontrols .grp { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.oh .ohcontrols .lbl { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.oh .ohcontrols .seg button { white-space: nowrap; }
+.oh .ohcontrols .seg button .dir { margin-left: 5px; font-size: 10px; }
+.oh .ohcontrols select { min-height: var(--control-h, 32px); }
+
+.oh .ohlegend { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; margin-bottom: 8px; font-size: 13px; color: var(--muted); }
+.oh .ohlegend .ramp { display: inline-flex; align-items: center; gap: 6px; }
+.oh .ohlegend .bar { width: 120px; height: 10px; border: 1px solid var(--rule); background: linear-gradient(to right, color-mix(in srgb, var(--hm-loss) 90%, var(--hm-mid)), var(--hm-mid), color-mix(in srgb, var(--hm-win) 90%, var(--hm-mid))); }
+.oh .ohlegend .none { display: inline-flex; align-items: center; gap: 6px; }
+.oh .ohlegend .none i { width: 14px; height: 10px; display: inline-block; background: var(--paper); border: 1px solid var(--rule); }
+
+.oh .ohscroll { overflow: auto; max-height: min(78vh, 760px); border: 1px solid var(--rule); background: var(--panel); overscroll-behavior: contain; }
+.oh .ohscroll { scroll-padding-left: calc(var(--oh-name) + 4px); scroll-padding-top: 30px; }
+.oh .ohgrid { width: max-content; min-width: 100%; font-size: 13px; }
+.oh .ohrow { display: flex; height: var(--oh-row); align-items: stretch; border-bottom: 1px solid var(--rule); }
+.oh .ohrow:last-child { border-bottom: 0; }
+.oh .ohhead { position: sticky; top: 0; z-index: 3; background: var(--panel); height: 26px; border-bottom: 2px solid var(--ink); }
+
+.oh .ohname { position: sticky; left: 0; z-index: 2; flex: 0 0 var(--oh-name); width: var(--oh-name); display: flex; align-items: center; gap: 5px; padding: 0 8px; background: var(--panel); border-right: 1px solid var(--rule); min-width: 0; }
+.oh .ohname a { color: var(--ink); text-decoration: none; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; font-weight: 600; }
+.oh .ohname a:hover { text-decoration: underline; }
+.oh .ohname .tag { font: 600 10px/1 var(--display); letter-spacing: .06em; color: var(--muted); border: 1px solid var(--rule); padding: 2px 3px 1px; flex: none; }
+.oh .ohhead .ohname { z-index: 4; font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+
+.oh .ohlife { flex: 0 0 var(--oh-life); width: var(--oh-life); display: flex; flex-direction: column; justify-content: center; gap: 3px; padding: 0 8px; border-right: 1px solid var(--rule); cursor: pointer; font-variant-numeric: tabular-nums; line-height: 1; }
+.oh .ohlife .rec { display: flex; justify-content: space-between; gap: 6px; white-space: nowrap; font-size: 12px; }
+.oh .ohlife .rec b { font-weight: 700; }
+.oh .ohlife .rec span { color: var(--muted); }
+.oh .ohlife .bar { height: 5px; background: var(--soft); position: relative; }
+.oh .ohlife .bar i { position: absolute; top: 0; bottom: 0; left: 0; }
+.oh .ohlife .bar::after { content: ""; position: absolute; left: 50%; top: -1px; bottom: -1px; width: 1px; background: var(--muted); opacity: .6; }
+.oh .ohhead .ohlife { cursor: default; font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); justify-content: center; }
+
+.oh .ohc { flex: 0 0 var(--oh-cell); width: var(--oh-cell); box-sizing: border-box; border-right: 1px solid color-mix(in srgb, var(--panel) 70%, transparent); }
+.oh .ohc.n { background: color-mix(in srgb, var(--paper) 70%, var(--panel)); }
+.oh .ohc.y { cursor: pointer; }
+.oh .ohhead .ohc { position: relative; border-right: 0; font-size: 11px; color: var(--muted); }
+.oh .ohhead .ohc span { position: absolute; left: 0; bottom: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+.oh .ohhead .ohc.tick::after { content: ""; position: absolute; left: 0; bottom: 0; height: 4px; width: 1px; background: var(--muted); }
+
+.oh .ohc.y:hover, .oh .ohc.y:focus-visible, .oh .ohlife:hover, .oh .ohlife:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; position: relative; z-index: 1; }
+.oh .ohrow.hl .ohname { background: color-mix(in srgb, var(--ink) 8%, var(--panel)); }
+.oh .ohrow.hl .ohc.n { background: color-mix(in srgb, var(--ink) 7%, var(--paper)); }
+.oh .ohhead .ohc.hl { color: var(--ink); font-weight: 700; }
+
+.oh .ohnote { margin-top: 8px; }
+.oh .ohempty { padding: 18px 12px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .oh .ohc.y, .oh .ohname { transition: background-color .08s; } }
+@media (forced-colors: active) { .oh .ohc.y { forced-color-adjust: none; } }
