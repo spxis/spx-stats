@@ -21,9 +21,9 @@ values (
 )
 on conflict (code) do nothing;
 
-create temp table mg on commit drop as
+create temp table mg as
 select source_id from meta.source where code = 'wikidata_meigen';
-create temp table wd on commit drop as
+create temp table wd as
 select source_id from meta.source where code = 'wikidata';
 do $$ begin
   if not exists (select 1 from mg) then
@@ -39,7 +39,7 @@ delete from meta.data_issue
  where source_id = (select source_id from mg)
    and entity_key like 'meigen-people:%';
 
-create temp table want on commit drop as
+create temp table want as
 select a.qid,
        min(a.label) as full_name,
        min(a.birth_on) filter (where a.birth_prec = 11) as birth_date,
@@ -50,13 +50,13 @@ where a.qid ~ '^Q[0-9]+$'
   and nullif(btrim(a.label), '') is not null
 group by a.qid;
 
-create temp table sports on commit drop as
+create temp table sports as
 select distinct a.qid, a.sport
 from legacy_wikidata_meigen.athlete a
 where a.qid ~ '^Q[0-9]+$'
   and a.sport ~ '^[a-z][a-z0-9_]*$';
 
-create temp table by_qid on commit drop as
+create temp table by_qid as
 select distinct on (x.external_key) x.external_key as qid, x.entity_id
 from core.external_id x
 where x.entity_kind = 'person' and x.external_key ~ '^Q[0-9]+$'
@@ -64,7 +64,7 @@ order by x.external_key,
          (x.source_id = (select source_id from wd)) desc,
          x.entity_id;
 
-create temp table pp on commit drop as
+create temp table pp as
 select w.qid,
        coalesce(b.entity_id, nextval(pg_get_serial_sequence('core.person', 'person_id'))) as person_id,
        (b.entity_id is not null) as existed
