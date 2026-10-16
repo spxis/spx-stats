@@ -2,10 +2,11 @@
 
 Builds index.html from a fake catalog. No DS1.
 """
-import os, sys, tempfile
+import hashlib, os, sys, tempfile
 from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import archive_library_gap
 import library
 
 PAYLOAD = {
@@ -78,6 +79,37 @@ def test_index():
 def test_source_has_no_home_folder():
     text = Path(library.__file__).read_text(encoding="utf-8")
     assert "/Users/" not in text
+    gap = Path(archive_library_gap.__file__).read_text(encoding="utf-8")
+    assert "/Users/" not in gap
+
+
+def test_archive_gap_sql():
+    assert len(archive_library_gap.FILES) == 10
+    assert len(set(archive_library_gap.FILES)) == 10
+    data = b"\x00\xffGIF"
+    sql = archive_library_gap.statement(archive_library_gap.FILES[0], data)
+    assert sql.startswith("insert into legacy_files.raw_archive (name, saved_on, sha256, data) values ")
+    assert f"commons-logos/2026-10-15/files/{archive_library_gap.FILES[0]}" in sql
+    assert hashlib.sha256(data).hexdigest() in sql
+    assert f"decode('{data.hex()}', 'hex')" in sql
+    assert sql.endswith("on conflict (name) do nothing;")
+    try:
+        archive_library_gap.statement("not-one-of-the-ten.svg", data)
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("extra file")
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        for leaf in archive_library_gap.FILES:
+            (folder / leaf).write_bytes(leaf.encode())
+        dest = folder / "out.sql"
+        assert archive_library_gap.write_sql(folder, dest) == 10
+        text = dest.read_text()
+        assert text.count("insert into legacy_files.raw_archive") == 10
+        assert "begin" not in text.lower() and "commit" not in text.lower()
+        for leaf in archive_library_gap.FILES:
+            assert f"commons-logos/2026-10-15/files/{leaf}" in text
 
 
 if __name__ == "__main__":
@@ -86,4 +118,5 @@ if __name__ == "__main__":
     test_commons_name()
     test_index()
     test_source_has_no_home_folder()
+    test_archive_gap_sql()
     print("ok")
