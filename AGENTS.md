@@ -92,6 +92,9 @@ data repair. If you start a subagent, copy this section into its instructions; i
 - **Changing what a club belongs to** (`core.franchise_league`, a new league, a new parent) reruns `175_team_brand`,
   `175_team_logo_extra`, `175_team_logo_fit` and their orphan lines must stay empty. *Broken:* 13 logos lost their club when clubs got
   AFL, NHA and PCHA memberships.
+- **Nothing on GitHub but pushes to `main`.** No issues, pull requests, discussions, releases or comments on any of John's
+  repositories: the `gh` login is John's own account, so they appear publicly under his name. The queue is the Sumilabu board.
+  *Broken:* four issues appeared on a package repository on 2026-10-15.
 - **Stop only your own processes, by PID.** Never `pkill`, `killall` or a pattern kill: other sessions' servers run on the same Mac.
 - **Next writes `web/AGENTS.md` and may edit `tsconfig.json` on `next dev`.** Delete that file and revert the edit; never commit them.
 - **One ticket at a time**, the ones John gave you, in a new worktree each from the latest `origin/main`. Do not deploy and do not
