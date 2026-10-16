@@ -5,14 +5,17 @@ politics is requested into a table: wbgetentities returns every statement of an 
 """
 import json
 import re
+from datetime import date
 
 PERSON_PROPS = {"P569", "P570", "P19", "P27", "P413", "P2048", "P2067"}   # birth, death, birth place, citizenship, position, height, mass
 LABEL_PROPS = {"P297", "P298", "P17", "P31"}                              # ISO 3166 alpha-2 and alpha-3, country, instance of
+GREGORIAN = "http://www.wikidata.org/entity/Q1985727"
+HUMAN = "Q5"
 
-TEAM_QUERY = """SELECT ?person ?name ?start ?startPrec ?end ?endPrec ?rank WHERE {
+TEAM_QUERY = """SELECT ?person ?name ?start ?startPrec ?startCal ?end ?endPrec ?endCal ?rank WHERE {
   ?person p:P54 ?st . ?st ps:P54 wd:%s . ?st wikibase:rank ?rank .
-  OPTIONAL { ?st pqv:P580 [ wikibase:timeValue ?start ; wikibase:timePrecision ?startPrec ] }
-  OPTIONAL { ?st pqv:P582 [ wikibase:timeValue ?end ; wikibase:timePrecision ?endPrec ] }
+  OPTIONAL { ?st pqv:P580 [ wikibase:timeValue ?start ; wikibase:timePrecision ?startPrec ; wikibase:timeCalendarModel ?startCal ] }
+  OPTIONAL { ?st pqv:P582 [ wikibase:timeValue ?end ; wikibase:timePrecision ?endPrec ; wikibase:timeCalendarModel ?endCal ] }
   OPTIONAL { ?person rdfs:label ?name FILTER(lang(?name) = "en") }
 } ORDER BY ?person ?start ?end ?rank LIMIT 20000"""
 
@@ -23,15 +26,129 @@ def is_qid(s):
     return bool(_QID.match(s or ""))
 
 
-def parse_time(v):
+def _title_key(title):
+    """MediaWiki title normalization for spaces/underscores and first-letter case only."""
+    value = " ".join((title or "").replace("_", " ").split())
+    return (value[:1].upper() + value[1:])
+
+
+def resolve_title_pages(body, requested_titles):
+    """Resolve exact linked page titles (including MediaWiki normalization/redirects) to pageprops QIDs."""
+    query = json.loads(body).get("query", {})
+    aliases = {}
+    for row in query.get("normalized", []) + query.get("redirects", []):
+        aliases[row.get("from")] = row.get("to")
+    pages = {page.get("title"): page for page in query.get("pages", [])}
+    out = {}
+    for requested in requested_titles:
+        resolved = requested
+        for _ in range(8):
+            next_title = aliases.get(resolved)
+            if not next_title or next_title == resolved:
+                break
+            resolved = next_title
+        page = pages.get(resolved)
+        if page is None:
+            matches = [p for title, p in pages.items() if _title_key(title) == _title_key(resolved)]
+            page = matches[0] if len(matches) == 1 else None
+        qid = ((page or {}).get("pageprops") or {}).get("wikibase_item")
+        if page and not page.get("missing") and is_qid(qid):
+            out[requested] = {"qid": qid, "title": page.get("title"), "pageid": page.get("pageid")}
+    return out
+
+
+def title_people(body, candidates):
+    """Keep pageprop candidates only when their canonical sitelink and non-deprecated P31 confirm a human item."""
+    entities = json.loads(body).get("entities", {})
+    out = {}
+    for requested, candidate in candidates.items():
+        qid = candidate["qid"]
+        entity = entities.get(qid) or {}
+        sitelink = (entity.get("sitelinks") or {}).get("enwiki", {}).get("title")
+        human = any(
+            statement.get("rank") != "deprecated"
+            and ((statement.get("mainsnak") or {}).get("datavalue") or {}).get("value", {}).get("id") == HUMAN
+            for statement in (entity.get("claims") or {}).get("P31", [])
+        )
+        if not entity.get("missing") and is_qid(qid) and _title_key(sitelink) == _title_key(candidate["title"]) and human:
+            out[requested] = {"qid": qid, "title": sitelink, "lastrevid": entity.get("lastrevid")}
+    return out
+
+
+def prune_title_lookup(wikipedia_body, wikidata_body, requested_titles, candidates, people):
+    """Keep only canonical title, pageprop QID and P31 evidence needed to archive this lookup."""
+    query = json.loads(wikipedia_body).get("query", {})
+    aliases = {}
+    for row in query.get("normalized", []) + query.get("redirects", []):
+        aliases[row.get("from")] = row.get("to")
+    pages = {page.get("title"): page for page in query.get("pages", [])}
+    raw_entities = json.loads(wikidata_body).get("entities", {})
+    archived = {"wikipedia_pageprops_raw": wikipedia_body.decode("utf-8"), "pages": [], "entities": {}}
+    for requested in sorted(requested_titles):
+        resolved = requested
+        for _ in range(8):
+            next_title = aliases.get(resolved)
+            if not next_title or next_title == resolved:
+                break
+            resolved = next_title
+        page = pages.get(resolved)
+        if page is None:
+            matches = [p for title, p in pages.items() if _title_key(title) == _title_key(resolved)]
+            page = matches[0] if len(matches) == 1 else None
+        candidate = candidates.get(requested)
+        archived["pages"].append({"requested_title": requested, "canonical_title": (candidate or {}).get("title") or (page or {}).get("title"),
+                                  "qid": (candidate or {}).get("qid") or (((page or {}).get("pageprops") or {}).get("wikibase_item")),
+                                  "pageid": (candidate or {}).get("pageid") or (page or {}).get("pageid"),
+                                  "missing": bool(not page or page.get("missing"))})
+    for requested, match in people.items():
+        raw = raw_entities.get(match["qid"], {})
+        entity = archived["entities"].setdefault(match["qid"], {
+            "id": match["qid"], "lastrevid": match.get("lastrevid"), "enwiki": match["title"], "requested_titles": [],
+            "claims": {"P31": [
+                {"rank": c.get("rank"), "id": (((c.get("mainsnak") or {}).get("datavalue") or {}).get("value") or {}).get("id")}
+                for c in (raw.get("claims") or {}).get("P31", [])
+            ]},
+        })
+        entity["requested_titles"].append(requested)
+    for entity in archived["entities"].values():
+        entity["requested_titles"].sort()
+    return archived
+
+
+def parse_time(v, calendar_model=GREGORIAN):
     """'+1956-12-07T00:00:00Z' -> ('1956-12-07', precision-agnostic date). A month or year precision date gets day/month 01 (the precision says which part is real)."""
     m = re.match(r"^([+-]?)(\d{1,4})-(\d{2})-(\d{2})T", v or "")
-    if not m or m.group(1) == "-":
+    if not m or m.group(1) == "-" or calendar_model != GREGORIAN:
         return None
     y, mo, d = int(m.group(2)), int(m.group(3)) or 1, int(m.group(4)) or 1
-    if y < 1 or not (1 <= mo <= 12) or not (1 <= d <= 31):
+    try:
+        # Wikidata's year/month placeholders (00) become a stored lower-bound
+        # date, with value_prec retaining what is actually known. Validate any
+        # supplied month/day as a real Gregorian calendar date before casting
+        # to Postgres DATE; an impossible exact day is stored as unknown.
+        parsed = date(y, mo, d)
+    except ValueError:
         return None
-    return "%04d-%02d-%02d" % (y, mo, d)
+    return parsed.isoformat()
+
+
+def invalid_time_claims(entities):
+    """Describe invalid P569/P570 Wikidata times that will be stored as NULL.
+
+    The exact (privacy-filtered) source value remains in the archived answer;
+    this short request note makes the conversion issue visible without a schema
+    change or a guessed replacement date.
+    """
+    issues = []
+    for qid, entity in sorted(entities.items()):
+        for prop in ("P569", "P570"):
+            for claim in entity.get("claims", {}).get(prop, []):
+                if claim.get("snaktype") != "value" or claim.get("type") != "time":
+                    continue
+                value = claim.get("value") or {}
+                if parse_time(value.get("time"), value.get("calendarmodel")) is None:
+                    issues.append("%s/%s precision %s" % (qid, prop, value.get("precision", "unknown")))
+    return issues
 
 
 def members(body, team_qid):
@@ -43,8 +160,8 @@ def members(body, team_qid):
             continue
         g = lambda k: b[k]["value"] if k in b else None
         rows.append({"person_qid": q, "person_label": g("name"), "rank": (g("rank") or "").rsplit("#", 1)[-1].replace("Rank", "").lower() or None,
-                     "start_on": parse_time(g("start")), "start_prec": int(g("startPrec")) if g("startPrec") else None,
-                     "end_on": parse_time(g("end")), "end_prec": int(g("endPrec")) if g("endPrec") else None})
+                     "start_on": parse_time(g("start"), g("startCal")), "start_prec": int(g("startPrec")) if g("startPrec") else None,
+                     "end_on": parse_time(g("end"), g("endCal")), "end_prec": int(g("endPrec")) if g("endPrec") else None})
     return rows
 
 
@@ -106,7 +223,7 @@ def claim_rows(qid, claims):
             if t == "wikibase-entityid" and isinstance(v, dict):
                 r["value_qid"] = v.get("id")
             elif t == "time" and isinstance(v, dict):
-                r["value_on"], r["value_prec"] = parse_time(v.get("time")), v.get("precision")
+                r["value_on"], r["value_prec"] = parse_time(v.get("time"), v.get("calendarmodel")), v.get("precision")
             elif t == "quantity" and isinstance(v, dict):
                 try:
                     r["value_num"] = float(v.get("amount"))

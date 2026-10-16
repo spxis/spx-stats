@@ -16,7 +16,7 @@ import db
 import jobs
 import tiers
 import wikitext as W
-from config import LEAGUES
+from config import LEAGUES, PARSER_VERSION
 
 DRAFT_FROM = {"nba": 1947, "nfl": 1936, "cfl": 1950, "nhl": 1963, "mlb": 1965}      # no draft article before these years: not asked for
 TITLE_ALIAS = {("mlb", "Sacramento Athletics"): "Athletics"}                         # Wikipedia's article name where it differs from the club's name
@@ -62,6 +62,81 @@ where t.league_code in {leagues} and t.qid ~ '^Q[0-9]+$'
 group by 1, 2"""
 
 HELD_WD = "\n       exists (select 1 from legacy_rosters.league_team lt where lt.team_qid = t.qid) as held_wd"
+
+# Historical competitions that predate or are absent from core.season. Titles are
+# generated only for series with verified Wikipedia title patterns. WHL remains
+# deliberately omitted because the alias spans distinct historical competitions.
+HISTORIC_LEAGUE_RANGES = {
+    "nfl": (1920, 1971), "afl": (1960, 1969), "aafc": (1946, 1949),
+    "nha": (1910, 1916), "pcha": (1912, 1923), "wchl": (1921, 1925),
+    "wha": (1972, 1978), "aba": (1967, 1975), "nbl": (1937, 1948),
+    "wfl": (1974, 1975), "usfl": (1983, 1985),
+}
+EXTRA_DRAFTS = {
+    "afl": (1960, 1969, lambda y: "%d American Football League draft" % y),
+    "wfl": (1974, 1974, lambda y: "%d WFL Draft" % y),
+    "aba": (1967, 1976, lambda y: "%d ABA draft" % y),
+    "usfl": (1983, 1985, lambda y: "%d USFL draft" % y),
+    "wha": (1972, 1972, lambda y: "WHA general player draft"),
+}
+
+
+def historic_league_title(league, year, initial=False):
+    if league == "nfl":
+        return "%d %s season" % (year, "APFA" if year < 1922 else "NFL")
+    if league == "afl":
+        return "%d American Football League season" % year
+    if league == "aafc":
+        return "%d AAFC season" % year
+    if league == "nha":
+        return "%d NHA season" % year if initial else "%d–%02d NHA season" % (year, (year + 1) % 100)
+    if league == "pcha":
+        return "%d PCHA season" % year if initial else "%d–%02d PCHA season" % (year, (year + 1) % 100)
+    if league in ("wchl", "aba"):
+        return "%d–%02d %s season" % (year, (year + 1) % 100, league.upper())
+    if league == "nbl":
+        return "%d–%02d National Basketball League (United States) season" % (year, (year + 1) % 100)
+    if league == "wfl":
+        return "%d World Football League season" % year
+    if league == "usfl":
+        return "%d USFL season" % year
+    if league == "wha":
+        return "%d–%02d WHA season" % (year, (year + 1) % 100)
+    raise ValueError("no verified historical title rule for %s" % league)
+
+
+def historic_season_rows():
+    """Potential old league seasons independent of core.season/team_season rows."""
+    rows = []
+    for lg, (start, end) in HISTORIC_LEAGUE_RANGES.items():
+        if lg in ("nha", "pcha"):
+            rows.append({"league": lg, "season": start, "title": historic_league_title(lg, start, initial=True)})
+        rows.extend({"league": lg, "season": y, "title": historic_league_title(lg, y)} for y in range(start, end + 1))
+    return rows
+
+
+HISTORIC_SEASONS_SQL = """
+select v.league, v.season, v.title, true as no_awards
+from (values %s) v(league, season, title)
+where not exists (select 1 from legacy_wikipedia_harvest.page p
+                  where p.kind = 'wp_league_season' and p.title = v.title
+                    and p.parser_version >= %d)
+""" % (",\n".join("(%s, %d, %s)" % ("'%s'" % row["league"], row["season"], "'%s'" % row["title"])
+                    for row in historic_season_rows()), PARSER_VERSION)
+
+
+def historic_draft_rows():
+    return [{"league": lg, "year": y, "title": title(y)}
+            for lg, (start, end, title) in EXTRA_DRAFTS.items() for y in range(start, end + 1)]
+
+
+HISTORIC_DRAFTS_SQL = """
+select v.league, v.year, v.title, true as no_draft
+from (values %s) v(league, year, title)
+where not exists (select 1 from legacy_wikipedia_harvest.page p
+                  where p.kind = 'wp_draft' and p.title = v.title
+                    and p.parser_version >= %d)
+""" % (",\n".join("('%s', %d, '%s')" % (r["league"], r["year"], r["title"]) for r in historic_draft_rows()), PARSER_VERSION)
 
 
 def have_rosters():
@@ -119,7 +194,7 @@ def refresh_days(cfg, season, now):
     return cfg.recent_refresh_days if season is not None and season >= now.year - 1 else cfg.old_refresh_days
 
 
-def build_targets(cfg, now, team_seasons, seasons, drafts, team_items, everything=False):
+def build_targets(cfg, now, team_seasons, seasons, drafts, team_items, everything=False, historic_seasons=(), historic_drafts=()):
     """The queue rows for the given DS1 measurements. Pass 1 keeps only gaps; with everything=True every target is returned (gap=false where DS1 has it)."""
     out = {}
 
@@ -137,19 +212,26 @@ def build_targets(cfg, now, team_seasons, seasons, drafts, team_items, everythin
         lg, y = r["league"], int(r["season"])
         if not r["name"]:
             continue
+        forced_player_stats = lg in ("nhl", "mlb") and not 1997 <= y <= 2013
         if r["no_roster"] and not r.get("held_wp"):          # held_wp: scripts/rosters already holds the article (legacy_rosters), a build step away from core
             add("wp_team_season", team_title(lg, y, r["name"]), lg, y, tiers.gap_priority(tiers.ROSTER[lg], y), True)
-        elif r["no_stat"]:
+        elif r["no_stat"] or forced_player_stats:
             add("wp_team_season", team_title(lg, y, r["name"]), lg, y, tiers.gap_priority(tiers.SEASON[lg], y), True)
         else:
             add("wp_team_season", team_title(lg, y, r["name"]), lg, y, 0, False)
     for r in seasons:
         lg, y = r["league"], int(r["season"])
         add("wp_league_season", league_title(lg, y), lg, y, tiers.gap_priority(tiers.SEASON[lg], y), bool(r["no_awards"]))
+    for r in historic_seasons:
+        lg, y = r["league"], int(r["season"])
+        add("wp_league_season", r["title"], lg, y, tiers.gap_priority(5200, y), bool(r["no_awards"]))
     for r in drafts:
         lg, y = r["league"], int(r["year"])
         if y >= DRAFT_FROM[lg]:
             add("wp_draft", draft_title(lg, y), lg, y, tiers.gap_priority(tiers.SEASON[lg], y), bool(r["no_draft"]))
+    for r in historic_drafts:
+        lg, y = r["league"], int(r["year"])
+        add("wp_draft", r["title"], lg, y, tiers.gap_priority(5200, y), bool(r["no_draft"]))
     for r in team_items:
         lg = r["league"]
         gap = bool(r["no_roster"]) and not r.get("held_wd")      # held_wd: legacy_rosters.league_team already lists the club
@@ -166,15 +248,15 @@ def plan(cfg, now=None, force_everything=False):
     """One planner run. -> {"pass": 1|2, "enqueued": n, "by_kind": {...}, "gap_jobs_left": n}"""
     now = now or datetime.now(timezone.utc)
     held = have_rosters()
-    ts, se, dr, ti = (db.rows(q) for q in (team_seasons_sql(held), SEASONS, DRAFTS, team_items_sql(held)))
-    targets = build_targets(cfg, now, ts, se, dr, ti)
+    ts, se, dr, ti, historic, historic_drafts = (db.rows(q) for q in (team_seasons_sql(held), SEASONS, DRAFTS, team_items_sql(held), HISTORIC_SEASONS_SQL, HISTORIC_DRAFTS_SQL))
+    targets = build_targets(cfg, now, ts, se, dr, ti, historic_seasons=historic, historic_drafts=historic_drafts)
     sql = jobs.enqueue_sql(targets) + PERSON_INSERT.format(prio=tiers.BIOS, gap="true", cond=PERSON_MISSING)
     db.run(sql)
     left = gap_jobs_left()
     passed = 1
     if left == 0 or force_everything:
         passed = 2
-        rest = build_targets(cfg, now, ts, se, dr, ti, everything=True)
+        rest = build_targets(cfg, now, ts, se, dr, ti, everything=True, historic_seasons=historic, historic_drafts=historic_drafts)
         db.run(jobs.enqueue_sql(rest) + PERSON_INSERT.format(prio=tiers.refresh_priority(None), gap="false", cond="true"))
     by = {}
     for t in targets:

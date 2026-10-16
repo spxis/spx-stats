@@ -121,7 +121,7 @@ class Worker:
     def size_for(self, head):
         if head["kind"] in jobs.WP_KINDS:
             return 50 if head.get("last_revision") else self.cfg.wp_batch
-        if head["kind"] in ("wd_person", "wd_label"):
+        if head["kind"] in ("wd_person", "wd_label", "wd_person_title"):
             return self.cfg.wd_batch
         return 1
 
@@ -193,6 +193,8 @@ class Worker:
                 self.do_wp(batch)
             elif kind == "wd_team_members":
                 self.do_team(batch[0])
+            elif kind == "wd_person_title":
+                self.do_person_titles(batch)
             elif kind in ("wd_person", "wd_label"):
                 self.do_entities(batch)
             else:
@@ -233,14 +235,21 @@ class Worker:
         todo = [j for j in batch if not j.get("last_revision")]
         checks = [j for j in batch if j.get("last_revision")]
         if checks:
-            res, nb = self.wp_query([j["target"] for j in checks], content=False)
+            titles = [j["target"] for j in checks]
+            res, nb = self.wp_query(titles, content=False)
+            versions = {r["title"]: int(r["parser_version"]) for r in db.rows(
+                "select title, max(parser_version) as parser_version from legacy_wikipedia_harvest.page where title in (%s) group by title"
+                % ",".join(db.lit(t) for t in titles))}
             self.fetch_log("wp_check", len(checks), self.wp, nb, 0)
             for j in checks:
                 r = res[j["target"]]
                 if r["missing"]:
                     self.settle(j, jobs.after_missing(j, cfg, now), "gone")
                 elif int(r["page"]["revisions"][0]["revid"]) == int(j["last_revision"]):
-                    self.settle(j, jobs.after_success(j, cfg, now, changed=False), "unchanged")
+                    if versions.get(j["target"], 0) < PARSER_VERSION:
+                        todo.append(j)                  # same source revision, but the parser has new semantics
+                    else:
+                        self.settle(j, jobs.after_success(j, cfg, now, changed=False), "unchanged")
                 else:
                     todo.append(j)
         for i in range(0, len(todo), cfg.wp_batch):
@@ -272,10 +281,55 @@ class Worker:
         text = rev.get("slots", {}).get("main", {}).get("content") or rev.get("content") or ""
         parsed = parse.parse_page(job["kind"], text, job["league"])
         db.run(load.page_sql(job["kind"], job["league"], job["season"], job["target"], r["resolved"], revid, revat, payload, name, now.isoformat(), parsed))
+        if job["kind"] == "wp_team_season":
+            titles = sorted({row.get("link") for row in parsed["roster"] if row.get("link")})
+            db.run(self.discover_titles_sql(titles, job.get("league")))
         self.settle(job, jobs.after_success(job, self.cfg, now, revision=revid, sha256=load.sha256(payload)), "done")
         if parsed["status"] == "error":
             self.count(job["kind"], "parse_errors")
         return 1
+
+    def discover_titles_sql(self, titles, league):
+        """Queue exact Wikipedia roster article titles for Wikidata sitelink resolution."""
+        if not titles:
+            return ""
+        rows = ",\n".join("(%s, %s, %d, true, 365)" % (db.lit(t), db.lit(league), tiers.BIOS) for t in titles)
+        return ("insert into ingest.harvest_job (kind, target, league, priority, gap, refresh_days) "
+                "select 'wd_person_title', v.title, v.league, v.priority, v.gap, v.refresh_days from (values %s) v(title, league, priority, gap, refresh_days) "
+                "on conflict (kind, target) do update set priority = greatest(ingest.harvest_job.priority, excluded.priority), "
+                "gap = ingest.harvest_job.gap or excluded.gap, updated_at = now() where ingest.harvest_job.state = 'queued';\n" % rows)
+
+    def do_person_titles(self, batch):
+        """Resolve roster article sitelinks in batches; only Q5 entities enter wd_person."""
+        cfg, now = self.cfg, self.utcnow()
+        titles = [j["target"] for j in batch]
+        wp_body = self.wp.get({"action": "query", "prop": "pageprops", "ppprop": "wikibase_item", "redirects": "1",
+                               "format": "json", "formatversion": "2", "titles": "|".join(titles)})
+        candidates = WD.resolve_title_pages(wp_body, titles)
+        qids = sorted({candidate["qid"] for candidate in candidates.values()})
+        wd_body = (self.wd.get({"action": "wbgetentities", "ids": "|".join(qids), "props": "info|claims|sitelinks",
+                                "sitefilter": "enwiki", "format": "json"}) if qids else b'{"entities":{}}')
+        people = WD.title_people(wd_body, candidates)
+        pruned = WD.prune_title_lookup(wp_body, wd_body, titles, candidates, people)
+        payload = json.dumps(pruned, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
+        sha = load.sha256(payload)
+        name = "harvest/wikidata/%s/roster-titles-%s.json" % (now.date().isoformat(), sha[:16])
+        db.run(load.archive_sql(name, now.date(), payload), transaction=False)
+        sql = ""
+        for job in batch:
+            match = people.get(job["target"])
+            if match:
+                sql += self.discover_sql("wd_person", [match["qid"]], job.get("league"), True)
+        db.run(sql)
+        for job in batch:
+            match = people.get(job["target"])
+            self.settle(job, jobs.after_success(job, cfg, now, sha256=sha, changed=bool(match)), "done" if match else "not_person")
+        self.fetch_log("wp_person_title_pages", len(titles), self.wp, len(wp_body), len(candidates),
+                       note="exact pageprops wikibase_item via canonical title/redirects")
+        if qids:
+            self.fetch_log("wd_person_title_verify", len(qids), self.wd, len(wd_body), len(people),
+                           note="canonical enwiki sitelink + non-deprecated P31=Q5 required")
+        self.count("wd_person_title", "human_items", len(people))
 
     # ---------------------------------------------------------------- Wikidata
 
@@ -325,6 +379,7 @@ class Worker:
         body = self.wd.get({"action": "wbgetentities", "ids": "|".join(ids), "props": "info|claims|labels|sitelinks", "languages": "en",
                             "sitefilter": "enwiki", "format": "json"})
         pruned = WD.prune_response(body, {q: keep for q in ids})["entities"]
+        date_issues = WD.invalid_time_claims(pruned)
         payload = json.dumps({"entities": pruned}, ensure_ascii=False, sort_keys=True, separators=(",", ":")).encode("utf-8")
         name = "harvest/wikidata/%s/%s-%s-%d-%s.json" % (now.date().isoformat(), "people" if kind == "wd_person" else "labels", ids[0], len(ids), load.sha256(payload)[:10])
         store, claims, refs = {}, {}, set()
@@ -350,7 +405,8 @@ class Worker:
             for j in batch:
                 if j["target"] in store:
                     self.settle(j, jobs.after_success(j, cfg, now, revision=store[j["target"]].get("lastrevid"), sha256=load.sha256(payload)), "done")
-        self.fetch_log(kind, len(ids), self.wd, len(body), len(store))
+        note = ("invalid or unsupported Wikidata dates stored unknown: " + ", ".join(date_issues))[:500] if date_issues else None
+        self.fetch_log(kind, len(ids), self.wd, len(body), len(store), note=note)
 
 
 def reparse(cfg, kind=None, league=None, only_old=True, limit=None, log=print):

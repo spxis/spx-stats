@@ -22,6 +22,17 @@ def parse_page(kind, text, league=None):
     try:
         out["infobox"] = W.infobox(text)
         if kind == "wp_team_season":
+            # Keep staff as explicit, queryable fields in the existing infobox table.
+            # The source field and original wikitext remain alongside these normalized keys.
+            staff_keys = {
+                "head_coach": {"coach", "head coach", "head_coach", "headcoach"},
+                "captain": {"captain", "team captain"},
+            }
+            for field, aliases in staff_keys.items():
+                source = next((f for f in out["infobox"] if f["field"].strip().lower() in aliases and f["value"]), None)
+                if source:
+                    out["infobox"].append({"field": "staff_" + field, "value": source["value"],
+                                           "raw": source["raw"], "links": source["links"]})
             out["roster"], out["how"] = W.parse_roster(text, league)
             out["tables"] = [t for t in W.parse_tables(text)
                              if t.section and STAT_SECTIONS.search(t.section) and not re.search(r"game log|schedule|roster", t.section, re.I)]

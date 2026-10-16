@@ -14,6 +14,7 @@ import json
 import os
 import sys
 import unittest
+from unittest.mock import patch
 from datetime import datetime, timedelta, timezone
 
 HERE = os.path.dirname(os.path.abspath(__file__))
@@ -354,6 +355,15 @@ class Parse(unittest.TestCase):
         self.assertEqual(parse.parse_page("wp_draft", wikitext_of("cfl_draft"))["status"], "ok")
         self.assertEqual(parse.parse_page("wp_team_season", "just a redirect line")["status"], "no_data")
 
+    def test_team_season_exposes_coach_and_captain_as_named_fields(self):
+        text = "{{Infobox basketball club season|coach=[[Coach One]]|captain=[[Player One]]|MVP=[[Player Two]]}}"
+        fields = {f["field"]: f for f in parse.parse_page("wp_team_season", text, "nba")["infobox"]}
+        self.assertEqual(fields["staff_head_coach"]["value"], "Coach One")
+        self.assertEqual(fields["staff_head_coach"]["links"], ["Coach One"])
+        self.assertEqual(fields["staff_captain"]["value"], "Player One")
+        self.assertEqual(fields["staff_captain"]["links"], ["Player One"])
+        self.assertNotIn("staff_head_coach", {f["field"] for f in parse.parse_page("wp_league_season", text)["infobox"]})
+
     def test_clean_and_links(self):
         t = "[[Foo (bar)|Foo]] {{small|(x)}}<ref>cite</ref> {{flag|France}} '''bold''' <!-- c -->"
         self.assertEqual(W.clean(t), "Foo (x) France bold")
@@ -367,6 +377,124 @@ class Parse(unittest.TestCase):
 
 
 class WikidataParse(unittest.TestCase):
+    def test_roster_title_resolution_requires_canonical_human_sitelink(self):
+        wp = json.dumps({"query": {
+            "normalized": [{"from": "Player_Name", "to": "Player Name"}, {"from": "Player_Nom", "to": "Player Name"}],
+            "redirects": [{"from": "Player Name", "to": "Player Name (athlete)"}],
+            "pages": [{"pageid": 101, "title": "Player Name (athlete)", "pageprops": {"wikibase_item": "Q1"}},
+                      {"pageid": 202, "title": "Club One", "pageprops": {"wikibase_item": "Q2"}}],
+        }}).encode()
+        candidates = WD.resolve_title_pages(wp, ["Player_Name", "Player_Nom", "Club One"])
+        self.assertEqual(candidates["Player_Name"], {"qid": "Q1", "title": "Player Name (athlete)", "pageid": 101})
+        self.assertEqual(candidates["Player_Nom"], candidates["Player_Name"])
+        wd = json.dumps({"entities": {
+            "Q1": {"lastrevid": 12, "sitelinks": {"enwiki": {"title": "Player Name (athlete)"}},
+                   "claims": {"P31": [{"rank": "normal", "mainsnak": {"datavalue": {"value": {"id": "Q5"}}}}]}},
+            "Q2": {"lastrevid": 13, "sitelinks": {"enwiki": {"title": "Club One"}},
+                   "claims": {"P31": [{"rank": "normal", "mainsnak": {"datavalue": {"value": {"id": "Q515"}}}}]}},
+        }}).encode()
+        people = WD.title_people(wd, candidates)
+        self.assertEqual(set(people), {"Player_Name", "Player_Nom"})
+        archived = WD.prune_title_lookup(wp, wd, ["Player_Name", "Player_Nom", "Club One"], candidates, people)
+        self.assertEqual(archived["wikipedia_pageprops_raw"], wp.decode())
+        self.assertEqual(set(archived["entities"]["Q1"]["claims"]), {"P31"})
+        self.assertEqual(archived["entities"]["Q1"]["requested_titles"], ["Player_Name", "Player_Nom"])
+        self.assertNotIn("Q2", archived["entities"])
+
+    def test_worker_title_resolution_archives_and_queues_only_verified_humans(self):
+        wp_body = json.dumps({"query": {"pages": [
+            {"title": "Player One", "pageprops": {"wikibase_item": "Q1"}},
+            {"title": "Club One", "pageprops": {"wikibase_item": "Q2"}},
+        ]}}).encode()
+        wd_body = json.dumps({"entities": {
+            "Q1": {"lastrevid": 21, "sitelinks": {"enwiki": {"title": "Player One"}},
+                   "claims": {"P31": [{"rank": "normal", "mainsnak": {"datavalue": {"value": {"id": "Q5"}}}}]}},
+            "Q2": {"lastrevid": 22, "sitelinks": {"enwiki": {"title": "Club One"}},
+                   "claims": {"P31": [{"rank": "normal", "mainsnak": {"datavalue": {"value": {"id": "Q476028"}}}}]}},
+        }}).encode()
+
+        class FakeWP:
+            last_status = 200
+            def get(self, params):
+                self.params = params
+                return wp_body
+
+        class FakeWD:
+            last_status = 200
+            def get(self, params):
+                self.params = params
+                return wd_body
+
+        fake_wp, fake_wd = FakeWP(), FakeWD()
+        w = worker.Worker(cfg=Config(), wp=fake_wp, wd=fake_wd, wdqs=object(), utcnow=lambda: NOW)
+        resolved = []
+        settled = []
+        archived_payloads = []
+        w.discover_sql = lambda kind, qids, league, unknown: resolved.append((kind, qids, league, unknown)) or "enqueue verified QID"
+        w.settle = lambda job, new, what: settled.append((job["target"], new["state"], what))
+        archive = lambda _name, _date, data: archived_payloads.append(json.loads(data)) or "archive raw-safe payload"
+        with patch.object(worker.db, "run") as run, patch.object(worker.load, "archive_sql", side_effect=archive), \
+             patch.object(w, "fetch_log"):
+            w.do_person_titles([{"job_id": 1, "target": "Player One", "league": "nba", "season": 2023},
+                                {"job_id": 2, "target": "Club One", "league": "nba", "season": 2023}])
+        self.assertEqual(fake_wp.params["prop"], "pageprops")
+        self.assertEqual(fake_wp.params["redirects"], "1")
+        self.assertEqual(fake_wd.params["ids"], "Q1|Q2")
+        self.assertEqual(resolved, [("wd_person", ["Q1"], "nba", True)])
+        self.assertEqual([x[0] for x in settled], ["Player One", "Club One"])
+        self.assertEqual(run.call_count, 2)
+        self.assertEqual(set(archived_payloads[0]["entities"]), {"Q1"})
+        self.assertEqual(set(archived_payloads[0]["entities"]["Q1"]["claims"]), {"P31"})
+        self.assertEqual([p["missing"] for p in archived_payloads[0]["pages"]], [False, False])
+
+    def test_worker_keeps_invalid_date_raw_and_logs_unknown_conversion(self):
+        raw = json.dumps({"entities": {"Q1": {
+            "id": "Q1", "lastrevid": 33,
+            "labels": {"en": {"value": "Test Person"}},
+            "claims": {"P569": [{"rank": "normal", "mainsnak": {"snaktype": "value", "datavalue": {
+                "type": "time", "value": {"time": "+1962-02-29T00:00:00Z", "precision": 11,
+                                        "calendarmodel": WD.GREGORIAN}}}}]},
+        }}}).encode()
+
+        class FakeWD:
+            last_status = 200
+            def get(self, _params):
+                return raw
+
+        w = worker.Worker(cfg=Config(), wp=object(), wd=FakeWD(), wdqs=object(), utcnow=lambda: NOW)
+        settlements, fetches, archives, inserts = [], [], [], []
+        w.settle = lambda job, new, what: settlements.append((job["target"], new["state"], what))
+        w.discover_sql = lambda *_args: ""
+        archive = lambda _name, _date, data: archives.append(json.loads(data)) or "archive invalid date"
+        item_insert = lambda entities, claims, _name, _fetched: inserts.append((entities, claims)) or "insert unknown date"
+        with patch.object(worker.db, "run"), patch.object(worker.load, "archive_sql", side_effect=archive), \
+             patch.object(worker.load, "items_sql", side_effect=item_insert), \
+             patch.object(w, "fetch_log", side_effect=lambda *args, **kwargs: fetches.append(kwargs)):
+            w.do_entities([{"job_id": 1, "kind": "wd_person", "target": "Q1", "last_revision": None}])
+        archived_claim = archives[0]["entities"]["Q1"]["claims"]["P569"][0]["value"]
+        self.assertEqual(archived_claim["time"], "+1962-02-29T00:00:00Z")
+        self.assertEqual(archived_claim["calendarmodel"], WD.GREGORIAN)
+        claim = inserts[0][1]["Q1"][0]
+        self.assertEqual((claim["value_on"], claim["value_prec"]), (None, 11))
+        self.assertIn("Q1/P569 precision 11", fetches[0]["note"])
+        self.assertEqual(settlements, [("Q1", "done", "done")])
+
+    def test_worker_fetches_content_for_same_revision_when_parser_is_stale(self):
+        w = worker.Worker(cfg=Config(), wp=object(), wd=object(), wdqs=object(), utcnow=lambda: NOW)
+        job = {"job_id": 9, "kind": "wp_team_season", "target": "2023–24 Example Team season", "league": "nba",
+               "season": 2023, "last_revision": 77, "last_sha256": "same"}
+        revision = {"missing": False, "page": {"revisions": [{"revid": 77}]}}
+        calls, stored, settled = [], [], []
+        w.wp_query = lambda titles, content: calls.append((titles, content)) or ({job["target"]: revision}, 10)
+        w.store_page = lambda _job, _page: stored.append(True) or 1
+        w.settle = lambda _job, _new, result: settled.append(result)
+        with patch.object(worker.db, "rows", return_value=[{"title": job["target"], "parser_version": 1}]), \
+             patch.object(w, "fetch_log"):
+            w.do_wp([job])
+        self.assertEqual(calls, [([job["target"]], False), ([job["target"]], True)])
+        self.assertEqual(stored, [True])
+        self.assertEqual(settled, [])
+
     def test_team_members(self):
         rows = WD.members(fixture("wdqs_team"), "Q131371")
         self.assertEqual(len(rows), 8)
@@ -403,13 +531,55 @@ class WikidataParse(unittest.TestCase):
     def test_times(self):
         self.assertEqual(WD.parse_time("+1956-12-07T00:00:00Z"), "1956-12-07")
         self.assertEqual(WD.parse_time("+1956-00-00T00:00:00Z"), "1956-01-01")
+        self.assertEqual(WD.parse_time("+1960-02-29T00:00:00Z"), "1960-02-29")
+        self.assertIsNone(WD.parse_time("+1962-02-29T00:00:00Z"))
+        self.assertIsNone(WD.parse_time("+1962-02-28T00:00:00Z", "http://www.wikidata.org/entity/Q1985786"))
         self.assertIsNone(WD.parse_time("-0500-01-01T00:00:00Z"))
         self.assertIsNone(WD.parse_time(None))
+
+    def test_invalid_wikidata_birth_dates_stay_unknown_and_are_reportable(self):
+        entities = {"Q1": {"claims": {"P569": [{"snaktype": "value", "type": "time", "rank": "normal",
+                                                      "value": {"time": "+1962-02-29T00:00:00Z", "precision": 11,
+                                                                "calendarmodel": WD.GREGORIAN}}]}}}
+        rows = WD.claim_rows("Q1", entities["Q1"]["claims"])
+        self.assertEqual((rows[0]["value_on"], rows[0]["value_prec"]), (None, 11))
+        self.assertEqual(WD.invalid_time_claims(entities), ["Q1/P569 precision 11"])
 
 
 # ---------------------------------------------------------------- the planner (pure part)
 
 class Planner(unittest.TestCase):
+    def test_historical_league_seasons_exist_without_core_season_rows(self):
+        rows = planner.historic_season_rows()
+        by_title = {row["title"]: row for row in rows}
+        self.assertEqual(by_title["1920 APFA season"]["league"], "nfl")
+        self.assertEqual(by_title["1960 American Football League season"]["league"], "afl")
+        self.assertEqual(by_title["1946 AAFC season"]["league"], "aafc")
+        self.assertEqual(by_title["1937–38 National Basketball League (United States) season"]["league"], "nbl")
+        self.assertEqual(by_title["1974 World Football League season"]["league"], "wfl")
+        self.assertEqual(by_title["1983 USFL season"]["league"], "usfl")
+        self.assertEqual(by_title["1910 NHA season"]["league"], "nha")
+        self.assertEqual(by_title["1910–11 NHA season"]["season"], 1910)
+        self.assertEqual(by_title["1972–73 WHA season"]["league"], "wha")
+        self.assertNotIn("1920 NFL season", by_title)
+        self.assertEqual(len(rows), sum(end - start + 1 for start, end in planner.HISTORIC_LEAGUE_RANGES.values()) + 2)
+        drafts = {(r["league"], r["year"]): r["title"] for r in planner.historic_draft_rows()}
+        self.assertEqual(drafts[("afl", 1960)], "1960 American Football League draft")
+        self.assertEqual(drafts[("wha", 1972)], "WHA general player draft")
+
+    def test_nhl_and_mlb_pre_spx_stats_targets_ignore_existing_roster_and_stat_rows(self):
+        rows = [dict(league="nhl", season=1996, team_season_id=1, name="Montreal Canadiens", no_roster=False,
+                     no_stat=False, held_wp=False),
+                dict(league="mlb", season=2014, team_season_id=2, name="Toronto Blue Jays", no_roster=False,
+                     no_stat=False, held_wp=False),
+                dict(league="nhl", season=2000, team_season_id=3, name="Montreal Canadiens", no_roster=False,
+                     no_stat=False, held_wp=False)]
+        got = {(t["league"], t["season"]): t for t in planner.build_targets(Config(), NOW, rows, [], [], [])
+               if t["kind"] == "wp_team_season"}
+        self.assertIn(("nhl", 1996), got)
+        self.assertIn(("mlb", 2014), got)
+        self.assertNotIn(("nhl", 2000), got)
+
     cfg = Config()
     ts = [dict(league="nba", season=2023, name="Boston Celtics", no_roster=True, no_stat=True),
           dict(league="nfl", season=2023, name="Kansas City Chiefs", no_roster=True, no_stat=True),
@@ -429,10 +599,10 @@ class Planner(unittest.TestCase):
         self.assertTrue(all(x["gap"] for x in t))
         order = [(x["kind"], x["league"], x["season"]) for x in t if x["kind"] == "wp_team_season"]
         self.assertEqual(order, [("wp_team_season", "nba", 2023), ("wp_team_season", "nba", 1995), ("wp_team_season", "nfl", 2023),
-                                 ("wp_team_season", "cfl", 2023), ("wp_team_season", "nhl", 2023)])     # NBA, then NFL, then CFL, then team stats; newest first in a league
+                                 ("wp_team_season", "cfl", 2023), ("wp_team_season", "nhl", 2023), ("wp_team_season", "mlb", 2023)])
         self.assertEqual(t[0]["priority"], max(x["priority"] for x in t))
         titles = {x["target"] for x in t}
-        self.assertNotIn("2023 Athletics season", titles)                                               # nothing missing there
+        self.assertIn("2023 Athletics season", titles)                                                # MLB player stats are targeted outside 1997–2013 even when core holds a stat row
         self.assertNotIn("2022–23 NBA season", titles)                                             # awards held
         self.assertNotIn("2023 NFL draft", titles)                                                      # picks held
         self.assertNotIn("1930 NBA draft", titles)                                                      # before the first draft
@@ -783,7 +953,7 @@ class Ds1(unittest.TestCase):
         n = worker.reparse(Config(), log=lambda m: None)
         self.assertEqual(n, 7)
         self.assertEqual(one("select count(*) from legacy_wikipedia_harvest.roster_row"), EXPECT_ROSTER_ROWS)
-        self.assertEqual(one("select count(*) from legacy_wikipedia_harvest.page where parser_version = 1"), 7)
+        self.assertEqual(one("select count(*) from legacy_wikipedia_harvest.page where parser_version = 2"), 7)
 
 
 if __name__ == "__main__":

@@ -7,7 +7,7 @@ WIKIDATA_API = "https://www.wikidata.org/w/api.php"
 WDQS = "https://query.wikidata.org/sparql"
 
 LEAGUES = ["nba", "nfl", "cfl", "nhl", "mlb"]
-PARSER_VERSION = 1
+PARSER_VERSION = 2
 
 
 def _f(name, default):
