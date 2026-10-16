@@ -7,6 +7,7 @@ bash scripts/daily/ds1.sh -X -qAt -v ON_ERROR_STOP=1 -f scripts/people/audit_mis
 python3 scripts/people/missing_only.py "$PRIVATE_DIR/person-audit.jsonl" "$PRIVATE_DIR/missing-properties.tsv" --summary "$PRIVATE_DIR/audit-summary.json"
 python3 scripts/people/enrichment_batch.py "$PRIVATE_DIR/missing-properties.tsv" "$PRIVATE_DIR/batch"
 python3 scripts/people/test_enrichment_batch.py
+bash scripts/people/test_person_facts.sh  # disposable Postgres integration fixture (Docker + psql)
 ```
 
 The planner classifies properties as `held` (the corresponding core field is already populated), `usable` (an active claim has a usable value), `reviewneeded` (deprecated-only, conflicting, unsupported, or coarse evidence), `absent` (a complete archived snapshot covered the property and had no claim), or `not_queried` (there is no complete archived item snapshot). Only `not_queried` properties enter the request TSV; a known absence is never fetched repeatedly. The snapshot coverage list matches the existing harvester's person-property set: P19, P27, P413, P569, P570, P2048 and P2067. A year-only or month-only birth date is never treated as an annual birthday; it stays `reviewneeded` and is not fetched again automatically. Conflicts and unsupported date conversions are reported for review, not used to trigger duplicate requests. Birthplace (P19) and citizenship (P27) are separate fields; `core.person.birth_country_code` is not a citizenship mapping. Redirected or missing Wikidata items are skipped. No name-based identity guesses are made.

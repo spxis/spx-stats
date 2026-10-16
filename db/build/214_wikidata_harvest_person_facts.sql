@@ -30,9 +30,10 @@ create unique index on dates(qid,prop);
 
 create temp table birthplace on commit drop as
 select c.qid,min(c.value_qid) place_qid,min(i.label) label
-from c join legacy_wikidata_harvest.item i on i.qid=c.value_qid
-where c.prop='P19' and c.value_qid is not null and nullif(btrim(i.label),'') is not null
-group by c.qid having count(*)=count(c.value_qid) and count(distinct c.value_qid)=1;
+from c left join legacy_wikidata_harvest.item i on i.qid=c.value_qid
+where c.prop='P19'
+group by c.qid having count(*)=count(c.value_qid)
+  and count(*)=count(nullif(btrim(i.label),'')) and count(distinct c.value_qid)=1;
 create unique index on birthplace(qid);
 
 -- Birth country uses P19 -> place's P17 -> country's P297. P27 below is
@@ -40,8 +41,8 @@ create unique index on birthplace(qid);
 create temp table birth_country on commit drop as
 with place_country_qid as (
   select qid,min(value_qid) country_qid from legacy_wikidata_harvest.claim
-  where prop='P17' and coalesce(rank,'normal')<>'deprecated' and value_qid is not null
-  group by qid having count(distinct value_qid)=1 and count(*)=count(value_qid)
+  where prop='P17' and coalesce(rank,'normal')<>'deprecated'
+  group by qid having count(*)=count(value_qid) and count(distinct value_qid)=1
 ), alpha2 as (
   select qid,min(value_text) code from legacy_wikidata_harvest.claim
   where prop='P297' and coalesce(rank,'normal')<>'deprecated'
@@ -55,7 +56,7 @@ create unique index on birth_country(qid);
 
 create temp table nationality on commit drop as
 with p27 as (
-  select qid,min(value_qid) country_qid from c where prop='P27' and value_qid is not null
+  select qid,min(value_qid) country_qid from c where prop='P27'
   group by qid having count(*)=count(value_qid) and count(distinct value_qid)=1
 ), alpha2 as (
   select qid,min(value_text) code from legacy_wikidata_harvest.claim
@@ -75,8 +76,9 @@ select qid,min(cm)::smallint cm from (
 ) v group by qid having count(*)=count(cm) and count(distinct cm)=1 and min(cm) between 120 and 250;
 create unique index on height(qid);
 create temp table mass on commit drop as
-select qid,min(value_num)::smallint kg from c where prop='P2067' and unit_qid='Q11570'
-group by qid having count(*)=count(value_num) and count(distinct value_num)=1 and min(value_num) between 30 and 250;
+select qid,min(value_num)::smallint kg from c where prop='P2067'
+group by qid having count(*)=count(case when unit_qid='Q11570' then value_num end)
+ and count(distinct value_num)=1 and min(value_num) between 30 and 250;
 create unique index on mass(qid);
 
 -- P413 is mapped only when the person has a league from existing player history,
@@ -136,6 +138,17 @@ select 'wikidata-enrichment:'||t.qid||':P19:ambiguous',
 from target t join c using(qid) where c.prop='P19' group by t.qid
 having count(*)<>count(c.value_qid) or count(distinct c.value_qid)<>1
    or not exists(select 1 from birthplace b where b.qid=t.qid);
+insert into issues
+select 'wikidata-enrichment:'||t.qid||':P17:birth-country-ambiguous',
+       format('Wikidata %s birthplace has conflicting active country claims',t.qid),
+       'Left derived birth country unchanged'
+from target t join birthplace b using(qid)
+where exists(select 1 from legacy_wikidata_harvest.claim c
+  where c.qid=b.place_qid and c.prop='P17' and coalesce(c.rank,'normal')<>'deprecated')
+group by t.qid,b.place_qid
+having exists(select 1 from legacy_wikidata_harvest.claim c
+  where c.qid=b.place_qid and c.prop='P17' and coalesce(c.rank,'normal')<>'deprecated'
+  group by c.qid having count(*)<>count(c.value_qid) or count(distinct c.value_qid)<>1);
 insert into issues
 select 'wikidata-enrichment:'||t.qid||':P27:ambiguous',
        format('Wikidata %s has multiple or unmapped active citizenship claims',t.qid),
