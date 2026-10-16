@@ -56,13 +56,13 @@ insert into core.player_season_stat (person_id, team_season_id, phase, stat_grou
 select pp.person_id, ts.team_season_id,
        case ps.game_type when 3 then 'playoffs'::core.season_phase else 'regular'::core.season_phase end,
        ps.kind,
-       jsonb_strip_nulls(case ps.kind
+       core.stats_pack(ps.kind, jsonb_strip_nulls(case ps.kind
          when 'skater' then jsonb_build_object('gp', ps.stats->'gamesPlayed', 'g', ps.stats->'goals', 'a', ps.stats->'assists', 'pts', ps.stats->'points',
               'pim', ps.stats->'penaltyMinutes', 'pm', ps.stats->'plusMinus', 'sog', ps.stats->'shots', 'ppg', ps.stats->'ppGoals',
               'shg', ps.stats->'shGoals', 'gwg', ps.stats->'gameWinningGoals')
          else jsonb_build_object('gp', ps.stats->'gamesPlayed', 'gs', ps.stats->'gamesStarted', 'w', ps.stats->'wins', 'l', ps.stats->'losses',
               't', ps.stats->'ties', 'otl', ps.stats->'otLosses', 'ga', ps.stats->'goalsAgainst', 'sa', ps.stats->'shotsAgainst',
-              'sv', ps.stats->'saves', 'so', ps.stats->'shutouts', 'toi', ps.stats->'timeOnIce') end),
+              'sv', ps.stats->'saves', 'so', ps.stats->'shutouts', 'toi', ps.stats->'timeOnIce') end)),
        (select source_id from src), (ps.stats->>'gamesPlayed')::smallint, (ps.stats->>'gamesStarted')::smallint, false
 from legacy_nhlapi.player_season ps
 join pp on pp.player_id = ps.player_id
@@ -70,7 +70,7 @@ join core.season s on s.league_code = 'nhl' and s.start_year = ps.season
 join core.franchise_identity fi on fi.abbreviation = ps.team_abbrev and fi.valid_during @> make_date(ps.season, 10, 1)
 join core.team_season ts on ts.season_id = s.season_id and ts.franchise_identity_id = fi.franchise_identity_id
 on conflict (person_id, team_season_id, phase, stat_group, source_id) do update
-  set stats = core.player_season_stat.stats || excluded.stats,
+  set stats = core.stats_merge(core.player_season_stat.stats, excluded.stats),
       games_played = coalesce(core.player_season_stat.games_played, 0) + coalesce(excluded.games_played, 0);
 
 commit;

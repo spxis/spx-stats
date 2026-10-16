@@ -129,8 +129,8 @@ from legacy_lahman.pitchingpost b join pp on pp.playerid = b.playerid join lteam
 where lt.team_season_id is not null group by 1, 2;
 
 insert into core.player_season_stat (person_id, team_season_id, phase, stat_group, stats, source_id, games_played, games_started, is_total)
-select person_id, team_season_id, phase, stat_group, stats, (select source_id from src), gp, gs, false from bat
-union all select person_id, team_season_id, phase, stat_group, stats, (select source_id from src), gp, gs, false from pit;
+select person_id, team_season_id, phase, stat_group, core.stats_pack(stat_group, stats), (select source_id from src), gp, gs, false from bat
+union all select person_id, team_season_id, phase, stat_group, core.stats_pack(stat_group, stats), (select source_id from src), gp, gs, false from pit;
 
 -- People made here who played only for clubs we do not hold (Negro leagues, 1880s leagues) have no seasons: drop them.
 delete from core.external_id x where x.entity_kind = 'person' and x.source_id = (select source_id from src)

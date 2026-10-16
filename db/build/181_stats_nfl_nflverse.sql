@@ -91,7 +91,7 @@ select distinct on (person_id, team_season_id, phase, grp) *
 from rows order by person_id, team_season_id, phase, grp, games desc, gsis_id;
 
 insert into core.player_season_stat (person_id, team_season_id, phase, stat_group, stats, source_id, games_played, games_started, is_total, stat_basis, source_key)
-select person_id, team_season_id, phase, grp, stats, (select source_id from nsrc), games, null, false, 'total', null from rows1;
+select person_id, team_season_id, phase, grp, core.stats_pack(grp, stats), (select source_id from nsrc), games, null, false, 'total', null from rows1;
 
 -- ---- 3. What could not be placed ------------------------------------------------------------------------------------------------------
 delete from meta.data_issue where source_id = (select source_id from nsrc) and entity_kind in ('stat_team', 'stat_player', 'stat_roster');

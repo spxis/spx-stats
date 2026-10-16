@@ -130,7 +130,7 @@ create temp table ok on commit drop as
 select b.*, (b.pub ->> 'gp')::numeric as gp, (b.pub ->> 'gs')::numeric as gs from built b;
 
 insert into core.player_season_stat (person_id, team_season_id, phase, stat_group, stats, source_id, games_played, games_started, is_total, stat_basis, source_key)
-select person_id, team_season_id, phase::core.season_phase, 'basketball', stats, (select source_id from wsrc),
+select person_id, team_season_id, phase::core.season_phase, 'basketball', core.stats_pack('basketball', stats), (select source_id from wsrc),
        gp::smallint, gs::smallint, false,
        case when derived then 'per_game' when has_total and has_avg then 'both' when has_total then 'total' when has_avg then 'per_game' else 'total' end,
        'enwiki:' || page_title || '@' || revid
