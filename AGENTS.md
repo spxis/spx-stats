@@ -79,7 +79,8 @@ data repair. If you start a subagent, copy this section into its instructions; i
   (`release.py withdraw`). `prepare` rehearses the apply on production in a transaction that always rolls back; a failed rehearsal is a
   blocker. Never tell John which release to approve unless you are the coordinating session.
 - **Hand-off, not action.** When your work needs a data step, write the files, test them on scratch and end your report with a block
-  headed `FOR THE COORDINATING SESSION:`: each command in order (from the repo root), the row counts you expect after it, the tables
+  headed `FOR THE COORDINATING SESSION:` and, on the same line, who you are (the name John uses for you, and "subagent of ..." if
+  you were started by another agent) and the ticket id and title, e.g. `FOR THE COORDINATING SESSION: <your name>, ticket cmv... (title)`; then each command in order (from the repo root), the row counts you expect after it, the tables
   the release must carry, and a loud line if you changed `db/checks`, `scripts/release` or `scripts/sync` (the release runner must
   then be rebuilt at your commit before any prepare).
 - **Check a name is free before you create it.** Before `create table`/`view`/`function`, look for the name in `db/migrations` and on
