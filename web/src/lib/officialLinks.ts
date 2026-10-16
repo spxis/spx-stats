@@ -3,6 +3,9 @@
  * numeric game id. The addresses are built here, in the browser, so a kept page does not carry them.
  * A missing id, or an abbreviation we do not have for that season, still gets the day's page.
  * Nothing here is fetched. No ESPN or Sports Reference address is ever built.
+ *
+ * Game notes are posted close to the start. They stay in the list once the game is no longer
+ * scheduled, or once a known start is no longer ahead of the clock the browser reads at view time.
  */
 
 export type OfficialKind = "box" | "notes" | "day";
@@ -31,6 +34,19 @@ function nhlId(value: number | string | null | undefined): string | null {
   if (value == null || value === "") return null;
   const s = String(value);
   return NHL_ID.test(s) ? s : null;
+}
+
+/**
+ * Whether to link the notes PDF. A status other than `scheduled` means the game has started or is
+ * over. A scheduled game waits for `startsAt`: no start, or a start still ahead of `now`, leaves
+ * the link out. `now` is milliseconds since the epoch. A missing status keeps the link, so a
+ * caller that is only checking the address still gets it.
+ */
+export function gameNotesReady(status: string | null | undefined, startsAt: string | null | undefined, now: number): boolean {
+  if (status !== "scheduled") return true;
+  if (startsAt == null || startsAt === "") return false;
+  const t = Date.parse(startsAt);
+  return Number.isFinite(t) && t <= now;
 }
 
 /** The NHL game page, the notes PDF, and that day's scores. Box and notes need the id and both abbreviations. */
@@ -79,8 +95,18 @@ export function officialLinks(p: {
   away?: string | null;
   home?: string | null;
   nhlId?: number | string | null;
+  /** core.game status. Omitted only when the caller is checking the address, not whether to show it. */
+  status?: string | null;
+  /** Scheduled start, UTC, when a source recorded one. */
+  startsAt?: string | null;
+  /** The viewer's clock, milliseconds since the epoch, read in the browser. */
+  now?: number;
 }): OfficialLink[] {
-  if (p.league === "nhl") return nhlLinks(p.date, p.away ?? null, p.home ?? null, p.nhlId);
-  const one = dayLink(p.league, p.date);
-  return one ? [one] : [];
+  if (p.league !== "nhl") {
+    const one = dayLink(p.league, p.date);
+    return one ? [one] : [];
+  }
+  const now = p.now ?? Number.NaN;
+  return nhlLinks(p.date, p.away ?? null, p.home ?? null, p.nhlId)
+    .filter((link) => link.kind !== "notes" || gameNotesReady(p.status, p.startsAt, now));
 }

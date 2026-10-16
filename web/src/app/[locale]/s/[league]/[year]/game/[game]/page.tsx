@@ -263,7 +263,7 @@ export default guard(async function GamePage({ params }: Params) {
           </div>
           <div>
             <dt>{say("scores.leagueSite")}</dt>
-            <dd><OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, fa, y)} home={officialAbbr(abbrs, fh, y)} nhlId={g.nhl_id} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} /></dd>
+            <dd><OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, fa, y)} home={officialAbbr(abbrs, fh, y)} nhlId={g.nhl_id} status={g.status} startsAt={g.starts_at} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} /></dd>
           </div>
           <div>
             <dt>{say("col.source")}</dt>

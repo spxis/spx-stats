@@ -49,6 +49,45 @@ test("an abbreviation that changed is the one for that season, not the club's la
   assert.match(now[1].href, /UTA@VGK\.pdf$/);
 });
 
+const NOW = Date.parse("2026-10-16T23:00:00Z");
+
+function timed(status: string, startsAt: string | null) {
+  return officialLinks({
+    league: "nhl", date: DAY, away: "BOS", home: "ANA", nhlId: 2026020001, status, startsAt, now: NOW,
+  });
+}
+
+test("a future scheduled game has the box score and the day's scores, and no game notes", () => {
+  const links = timed("scheduled", "2026-10-17T02:00:00Z");
+  assert.deepEqual(links.map((l) => l.kind), ["box", "day"]);
+  assert.equal(links[0].href, "https://www.nhl.com/gamecenter/bos-vs-ana/2026/10/16/2026020001");
+  assert.equal(links[1].href, "https://www.nhl.com/scores/2026-10-16");
+  assert.equal(links.some((l) => l.href.includes("gamenotes")), false);
+});
+
+test("a game in progress has game notes", () => {
+  const links = timed("in_progress", "2026-10-17T02:00:00Z");
+  assert.deepEqual(links.map((l) => l.kind), ["box", "notes", "day"]);
+  assert.match(links[1].href, /gn-2026-10-16-0001-BOS@ANA\.pdf$/);
+});
+
+test("a final game has game notes", () => {
+  const links = timed("final", null);
+  assert.deepEqual(links.map((l) => l.kind), ["box", "notes", "day"]);
+  assert.match(links[1].href, /gn-2026-10-16-0001-BOS@ANA\.pdf$/);
+});
+
+test("a scheduled game whose start has passed has game notes", () => {
+  const links = timed("scheduled", "2026-10-16T22:00:00Z");
+  assert.deepEqual(links.map((l) => l.kind), ["box", "notes", "day"]);
+});
+
+test("a scheduled game with no start, or a start still ahead, has no game notes", () => {
+  assert.deepEqual(timed("scheduled", null).map((l) => l.kind), ["box", "day"]);
+  assert.deepEqual(timed("scheduled", "2026-10-16T23:00:01Z").map((l) => l.kind), ["box", "day"]);
+  assert.ok(timed("scheduled", "2026-10-16T23:00:00Z").some((l) => l.kind === "notes"));
+});
+
 test("the other four leagues link to that day's scores, or the schedule where the site has no dated page", () => {
   assert.equal(officialLinks({ league: "mlb", date: DAY })[0].href, "https://www.mlb.com/scores/2026-10-16");
   assert.equal(officialLinks({ league: "nba", date: "2026-10-20" })[0].href, "https://www.nba.com/games?date=2026-10-20");
