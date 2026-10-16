@@ -8,7 +8,7 @@ Q11459,Serena Williams,tennis,1981-09-26,11,,,Q719,125,priority1000
 Q615,Lionel Messi,soccer,,,,,,,priority1000
 Q209518,Wayne Gretzky,ice_hockey,1961-01-26,11,,,Q34180,72,priority1000
 Q7520267,Simone Biles,gymnastics,,,,,,,priority1000
-Q313591,Donald Bradman,cricket,,,,,,,priority1000
+Q313591,Donald Bradman,cricket,1908-08-27,11,2001-02-25,11,Q2595446,55,priority1000
 Q5812,Novak Djokovic,tennis,,,,,,,priority1000
 Q10993,Tiger Woods,golf,,,,,,,priority1000
 Q11571,Cristiano Ronaldo,soccer,1985-02-05,11,,,Q25444,214,priority1000
@@ -30,7 +30,7 @@ Q101942,Paavo Nurmi,athletics,1897-06-13,11,1973-10-02,11,Q38511,70,priority1000
 Q221482,Jim Thorpe,athletics,,,,,,,priority1000
 Q209390,Jackie Joyner-Kersee,athletics,,,,,,,priority1000
 Q22102,Larisa Latynina,gymnastics,1934-12-27,11,,,Q156732,69,priority1000
-Q33228,Nadia Comăneci,gymnastics,,,,,,,priority1000
+Q33228,Nadia Comăneci,gymnastics,1961-11-12,11,,,Q543436,91,priority1000
 Q171500,Haile Gebrselassie,athletics,,,,,,,priority1000
 Q9119,Kenenisa Bekele,athletics,,,,,,,priority1000
 Q9124,Eliud Kipchoge,athletics,,,,,,,priority1000
@@ -39,7 +39,7 @@ Q17163,Johan Cruyff,soccer,1947-04-25,11,2016-03-24,11,Q582916,128,priority1000
 Q164546,Alfredo Di Stéfano,soccer,1926-07-04,11,2014-07-07,11,Q1486,90,priority1000
 Q228616,Marta,soccer,1986-02-19,11,,,Q988800,64,priority1000
 Q222086,Mia Hamm,soccer,,,,,,,priority1000
-Q262802,Christine Sinclair,soccer,,,,,,,priority1000
+Q262802,Christine Sinclair,soccer,1983-06-12,11,,,Q244025,45,priority1000
 Q313381,Tom Brady,american_football,,,,,,,priority1000
 Q505423,Jerry Rice,american_football,,,,,,,priority1000
 Q927916,Jim Brown,american_football,,,,,,,priority1000
@@ -56,19 +56,19 @@ Q213854,Virat Kohli,cricket,,,,,,,priority1000
 Q379709,Muttiah Muralitharan,cricket,,,,,,,priority1000
 Q982801,Wasim Akram,cricket,,,,,,,priority1000
 Q982650,Jacques Kallis,cricket,,,,,,,priority1000
-Q316706,Sugar Ray Robinson,boxing,,,,,,,priority1000
-Q273206,Joe Louis,boxing,,,,,,,priority1000
+Q316706,Sugar Ray Robinson,boxing,1921-05-03,11,1989-04-12,11,Q405097,49,priority1000
+Q273206,Joe Louis,boxing,1914-05-13,11,1981-04-12,11,Q79492,63,priority1000
 Q318204,Floyd Mayweather Jr.,boxing,,,,,,,priority1000
 Q486359,Manny Pacquiao,boxing,,,,,,,priority1000
 Q471571,Roberto Durán,boxing,,,,,,,priority1000
-Q242185,Bill Russell,basketball,,,,,,,priority1000
+Q242185,Bill Russell,basketball,1934-02-12,11,2022-07-31,11,Q947115,66,priority1000
 Q182455,Wilt Chamberlain,basketball,1936-08-21,11,1999-10-12,11,Q1345,71,priority1000
 Q134183,Magic Johnson,basketball,1959-08-14,11,,,Q28237,83,priority1000
 Q190152,Larry Bird,basketball,1956-12-07,11,,,Q2799225,79,priority1000
 Q25369,Kobe Bryant,basketball,,,,,,,priority1000
-Q240726,Diana Taurasi,basketball,,,,,,,priority1000
+Q240726,Diana Taurasi,basketball,1982-06-11,11,,,Q485716,38,priority1000
 Q2151006,Birgit Fischer,canoeing,1962-02-25,11,,,Q3931,38,priority1000
-Q257980,Lisa Leslie,basketball,,,,,,,priority1000
+Q257980,Lisa Leslie,basketball,1972-07-07,11,,,Q846409,35,priority1000
 Q358519,Gordie Howe,ice_hockey,,,,,,,priority1000
 Q348017,Bobby Orr,ice_hockey,,,,,,,priority1000
 Q316249,Mario Lemieux,ice_hockey,,,,,,,priority1000
@@ -82,8 +82,8 @@ Q139075,Mikaela Shiffrin,alpine_skiing,,,,,,,priority1000
 Q10068,Lindsey Vonn,alpine_skiing,,,,,,,priority1000
 Q216256,Marit Bjørgen,cross_country_skiing,1980-03-21,11,,,Q25804,48,priority1000
 Q189408,Ole Einar Bjørndalen,biathlon,1974-01-27,11,,,Q26525,63,priority1000
-Q311289,Eric Heiden,speed_skating,,,,,,,priority1000
-Q239546,Ireen Wüst,speed_skating,,,,,,,priority1000
+Q311289,Eric Heiden,speed_skating,1958-06-14,11,,,Q43788,45,priority1000
+Q239546,Ireen Wüst,speed_skating,1986-04-01,11,,,Q4681121,46,priority1000
 Q204205,Sonja Henie,figure_skating,,,,,,,priority1000
 Q597023,Yuzuru Hanyu,figure_skating,,,,,,,priority1000
 Q741690,Jahangir Khan,squash,,,,,,,priority1000
@@ -115,10 +115,10 @@ Q185044,Ian Thorpe,swimming,1982-10-13,11,,,Q3130,57,priority1000
 Q229015,Krisztina Egerszegi,swimming,1974-08-16,11,,,Q1781,33,priority1000
 Q235315,Sarah Sjöström,swimming,,,,,,,priority1000
 Q667655,Katinka Hosszú,swimming,,,,,,,priority1000
-Q294676,Alexander Popov,swimming,,,,,,,priority1000
+Q294676,Aleksandr Popov,swimming,1971-11-16,11,,,Q157523,35,priority1000
 Q312690,Kosuke Kitajima,swimming,,,,,,,priority1000
 Q5799,Allyson Felix,athletics,,,,,,,priority1000
-Q31082,Florence Griffith Joyner,athletics,,,,,,,priority1000
+Q31082,Florence Griffith Joyner,athletics,1959-12-21,11,1998-09-21,11,Q65,57,priority1000
 Q190924,Michael Johnson,athletics,1967-09-13,11,,,Q16557,45,priority1000
 Q52620,Edwin Moses,athletics,,,,,,,priority1000
 Q83905,Hicham El Guerrouj,athletics,,,,,,,priority1000
@@ -132,9 +132,9 @@ Q193020,Tim Duncan,basketball,,,,,,,priority1000
 Q352159,Stephen Curry,basketball,,,,,,,priority1000
 Q273256,Hakeem Olajuwon,basketball,,,,,,,priority1000
 Q17717,Oscar Robertson,basketball,1938-11-24,11,,,Q2682370,46,priority1000
-Q240672,Sue Bird,basketball,,,,,,,priority1000
-Q270653,Lauren Jackson,basketball,,,,,,,priority1000
-Q267765,Cheryl Miller,basketball,,,,,,,priority1000
+Q240672,Sue Bird,basketball,1980-10-16,11,,,Q3056724,37,priority1000
+Q270653,Lauren Jackson,basketball,1981-05-11,11,,,Q331764,34,priority1000
+Q267765,Cheryl Miller,basketball,,,,,Q49243,21,priority1000
 Q529207,Ronaldo Nazário,soccer,,,,,,,priority1000
 Q1835,Zinedine Zidane,soccer,1972-06-23,11,,,Q194401,146,priority1000
 Q4457,Franz Beckenbauer,soccer,,,,,,,priority1000
@@ -151,7 +151,7 @@ Q552828,Ty Cobb,baseball,,,,,,,priority1000
 Q1316903,Honus Wagner,baseball,1874-02-24,11,1955-12-06,11,Q21272239,22,priority1000
 Q357444,Lou Gehrig,baseball,,,,,,,priority1000
 Q1328142,Stan Musial,baseball,1920-11-21,11,2013-01-19,11,Q1134745,25,priority1000
-Q262945,Rogers Hornsby,baseball,,,,,,,priority1000
+Q262945,Rogers Hornsby,baseball,1896-04-27,11,1963-01-05,11,Q969524,18,priority1000
 Q345004,Mickey Mantle,baseball,,,,,,,priority1000
 Q555730,Satchel Paige,baseball,,,,,,,priority1000
 Q684020,Roberto Clemente,baseball,,,,,,,priority1000
@@ -175,8 +175,8 @@ Q79031,Mike Tyson,boxing,,,,,,,priority1000
 Q335798,Sugar Ray Leonard,boxing,,,,,,,priority1000
 Q560421,Marvin Hagler,boxing,,,,,,,priority1000
 Q311280,Sidney Crosby,ice_hockey,,,,,,,priority1000
-Q325138,Maurice Richard,ice_hockey,,,,,,,priority1000
-Q312695,Dominik Hašek,ice_hockey,,,,,,,priority1000
+Q325138,Maurice Richard,ice_hockey,1921-08-04,11,2000-05-27,11,Q340,36,priority1000
+Q312695,Dominik Hašek,ice_hockey,1965-01-29,11,,,Q36989,38,priority1000
 Q357465,Martin Brodeur,ice_hockey,,,,,,,priority1000
 Q235029,Hayley Wickenheiser,ice_hockey,,,,,,,priority1000
 Q190782,Ronnie O'Sullivan,snooker,,,,,,,priority1000
@@ -188,8 +188,8 @@ Q174595,Jansher Khan,squash,,,,,,,priority1000
 Q457594,Carolina Marín,badminton,,,,,,,priority1000
 Q319346,Lee Chong Wei,badminton,,,,,,,priority1000
 Q316664,Kohei Uchimura,gymnastics,,,,,,,priority1000
-Q299095,Vitaly Scherbo,gymnastics,,,,,,,priority1000
-Q312684,Sawao Kato,gymnastics,,,,,,,priority1000
+Q299095,Vitaly Scherbo,gymnastics,1972-01-13,11,,,Q2280,42,priority1000
+Q312684,Sawao Katō,gymnastics,1946-10-11,11,,,Q179691,40,priority1000
 Q229503,Věra Čáslavská,gymnastics,1942-05-03,11,2016-08-30,11,Q1085,49,priority1000
 Q530,Ingemar Stenmark,alpine_skiing,,,,,,,priority1000
 Q1956,Hermann Maier,alpine_skiing,,,,,,,priority1000
@@ -211,7 +211,7 @@ Q532111,Tom Watson,golf,,,,,,,priority1000
 Q27194,Lorena Ochoa,golf,,,,,,,priority1000
 Q16474,John McEnroe,tennis,,,,,,,priority1000
 Q53393,Jimmy Connors,tennis,,,,,,,priority1000
-Q312728,Ken Rosewall,tennis,,,,,,,priority1000
+Q312728,Ken Rosewall,tennis,1934-11-02,11,,,Q3130,41,priority1000
 Q11682,Justine Henin,tennis,1982-06-01,11,,,Q3992,67,priority1000
 Q228559,Evonne Goolagong Cawley,tennis,1951-07-31,11,,,Q2884432,49,priority1000
 Q134720,Martina Hingis,tennis,1980-09-30,11,,,Q25409,83,priority1000
@@ -219,14 +219,14 @@ Q53550,Althea Gibson,tennis,,,,,,,priority1000
 Q29545,Kevin Durant,basketball,,,,,,,priority1000
 Q17281073,Nikola Jokić,basketball,,,,,,,priority1000
 Q8991894,Giannis Antetokounmpo,basketball,,,,,,,priority1000
-Q316179,Moses Malone,basketball,,,,,,,priority1000
+Q316179,Moses Malone,basketball,1955-03-23,11,2015-09-13,11,Q511964,47,priority1000
 Q209921,Julius Erving,basketball,1950-02-22,11,,,Q2026633,51,priority1000
 Q44068,Dirk Nowitzki,basketball,,,,,,,priority1000
 Q189240,Kevin Garnett,basketball,,,,,,,priority1000
 Q609527,Maya Moore,basketball,,,,,,,priority1000
-Q242278,Candace Parker,basketball,,,,,,,priority1000
-Q270683,Sheryl Swoopes,basketball,,,,,,,priority1000
-Q2654539,Breanna Stewart,basketball,,,,,,,priority1000
+Q242278,Candace Parker,basketball,1986-04-19,11,,,Q38022,33,priority1000
+Q270683,Sheryl Swoopes,basketball,1971-03-25,11,,,Q981849,27,priority1000
+Q2654539,Breanna Stewart,basketball,1994-08-27,11,,,Q128069,26,priority1000
 Q21623331,A'ja Wilson,basketball,1996-08-08,11,,,Q38453,27,priority1000
 Q314712,Barry Bonds,baseball,,,,,,,priority1000
 Q473208,Roger Clemens,baseball,,,,,,,priority1000
@@ -240,7 +240,7 @@ Q536900,Ken Griffey Jr.,baseball,,,,,,,priority1000
 Q148726,Albert Pujols,baseball,,,,,,,priority1000
 Q319247,Mark Messier,ice_hockey,,,,,,,priority1000
 Q357502,Patrick Roy,ice_hockey,,,,,,,priority1000
-Q295345,Jaromír Jágr,ice_hockey,,,,,,,priority1000
+Q295345,Jaromír Jágr,ice_hockey,1972-02-15,11,,,Q155993,43,priority1000
 Q434200,Nicklas Lidström,ice_hockey,,,,,,,priority1000
 Q456688,Bobby Hull,ice_hockey,,,,,,,priority1000
 Q726199,Dan Carter,rugby_union,,,,,,,priority1000
@@ -252,11 +252,11 @@ Q3473360,Sarah Hunter,rugby_union,,,,,,,priority1000
 Q470774,MS Dhoni,cricket,,,,,,,priority1000
 Q558182,Sunil Gavaskar,cricket,,,,,,,priority1000
 Q470772,Rahul Dravid,cricket,,,,,,,priority1000
-Q3011889,AB de Villiers,cricket,,,,,,,priority1000
+Q3011889,AB de Villiers,cricket,1984-02-17,11,,,Q3926,28,priority1000
 Q349516,Adam Gilchrist,cricket,,,,,,,priority1000
 Q743209,Malcolm Marshall,cricket,,,,,,,priority1000
 Q6807995,Meg Lanning,cricket,,,,,,,priority1000
-Q3195953,Belinda Clark,cricket,,,,,,,priority1000
+Q3195953,Belinda Clark,cricket,1970-09-10,11,,,Q57278,10,priority1000
 Q17500,Xavi Hernández,soccer,,,,,,,priority1000
 Q43729,Andrés Iniesta,soccer,,,,,,,priority1000
 Q43744,Gerd Müller,soccer,,,,,,,priority1000
@@ -266,10 +266,10 @@ Q164521,George Best,soccer,1946-05-22,11,2005-11-25,11,Q10686,88,priority1000
 Q230865,Homare Sawa,soccer,1978-09-06,11,,,Q208818,50,priority1000
 Q8573,Sun Wen,soccer,,,,,,,priority1000
 Q4721366,Alexia Putellas,soccer,,,,,,,priority1000
-Q27995553,Aitana Bonmatí,soccer,,,,,,,priority1000
+Q27995553,Aitana Bonmatí,soccer,1998-01-18,11,,,Q15555,54,priority1000
 Q2069,Juan Manuel Fangio,formula_one,1911-06-24,11,1995-07-17,11,Q2365352,77,priority1000
 Q10494,Alain Prost,formula_one,1955-02-24,11,,,Q471422,71,priority1000
-Q3137,Jim Clark,formula_one,,,,,,,priority1000
+Q3137,Jim Clark,formula_one,1936-03-04,11,1968-04-07,11,Q3815260,54,priority1000
 Q42311,Sebastian Vettel,formula_one,,,,,,,priority1000
 Q2239218,Max Verstappen,formula_one,1997-09-30,11,,,Q58780,105,priority1000
 Q253450,Giacomo Agostini,motorcycle_racing,,,,,,,priority1000
@@ -401,7 +401,7 @@ Q238551,Dan Gable,freestyle_wrestling,,,,,,,priority1000
 Q252667,Jordan Burroughs,freestyle_wrestling,,,,,,,priority1000
 Q19816279,Hassan Yazdani,freestyle_wrestling,,,,,,,priority1000
 Q352640,Edoardo Mangiarotti,fencing,,,,,,,priority1000
-Q312971,Aladár Gerevich,fencing,,,,,,,priority1000
+Q312971,Aladár Gerevich,fencing,1910-03-16,11,1991-05-14,11,Q281371,38,priority1000
 Q33783,Nedo Nadi,fencing,,,,,,,priority1000
 Q1657750,Inna Deriglazova,fencing,,,,,,,priority1000
 Q239901,Kim Soo-nyung,archery,,,,,,,priority1000
@@ -432,7 +432,7 @@ Q962176,Manuel Estiarte,water_polo,,,,,,,priority1000
 Q2915418,Maggie Steffens,water_polo,,,,,,,priority1000
 Q2563685,Brenda Villa,water_polo,,,,,,,priority1000
 Q439085,Sarah Storey,para_cycling,,,,,,,priority1000
-Q2917073,Daniel Dias,para_swimming,,,,,,,priority1000
+Q2917073,Daniel Dias,para_swimming,1988-05-24,11,,,Q171617,13,priority1000
 Q3637275,Beatrice Vio,wheelchair_fencing,,,,,,,priority1000
 Q959958,Shingo Kunieda,wheelchair_tennis,,,,,,,priority1000
 Q24574661,Diede de Groot,wheelchair_tennis,,,,,,,priority1000
@@ -444,7 +444,7 @@ Q64748123,Rayssa Leal,skateboarding,,,,,,,priority1000
 Q26251631,Pardeep Narwal,kabaddi,,,,,,,priority1000
 Q64853314,Pawan Sehrawat,kabaddi,,,,,,,priority1000
 Q83837,Lisa Carrington,canoe_sprint,,,,,,,priority1000
-Q327145,Danuta Kozák,canoe_sprint,,,,,,,priority1000
+Q327145,Danuta Kozák,canoe_sprint,1987-01-11,11,,,Q1781,27,priority1000
 Q381531,Robert Scheidt,sailing,,,,,,,priority1000
 Q50893,Paul Elvstrøm,sailing,,,,,,,priority1000
 Q44176,Hulk Hogan,professional_wrestling,,,,,,,priority1000
@@ -528,9 +528,9 @@ Q666580,Nino Schurter,mountain_biking,,,,,,,priority1000
 Q382060,Julien Absalon,mountain_biking,,,,,,,priority1000
 Q390519,Rachel Atherton,mountain_biking,,,,,,,priority1000
 Q2358275,Mariana Pajón,bmx,,,,,,,priority1000
-Q310383,Chris Hoy,track_cycling,,,,,,,priority1000
+Q310383,Chris Hoy,track_cycling,1976-03-23,11,,,Q23436,40,priority1000
 Q460643,Jason Kenny,track_cycling,,,,,,,priority1000
-Q272598,Laura Kenny,track_cycling,,,,,,,priority1000
+Q272598,Laura Kenny,track_cycling,1992-04-24,11,,,Q852729,29,priority1000
 Q263464,Kristina Vogel,track_cycling,,,,,,,priority1000
 Q270657,Anna Meares,track_cycling,,,,,,,priority1000
 Q232666,Kerri Walsh Jennings,beach_volleyball,,,,,,,priority1000
@@ -565,7 +565,7 @@ Q430937,Olga Kharlan,fencing,,,,,,,priority1000
 Q537353,John Tavares,box_lacrosse,,,,,,,priority1000
 Q3006027,Crystl Bustos,softball,,,,,,,priority1000
 Q3130743,Natasha Watley,softball,,,,,,,priority1000
-Q312454,Falcão,futsal,,,,,,,priority1000
+Q312454,Paulo Roberto Falcão,futsal,1953-10-16,11,,,Q1637506,52,priority1000
 Q362447,Ricardinho,futsal,,,,,,,priority1000
 Q1367228,Madjer,beach_soccer,,,,,,,priority1000
 Q7159603,Pedro Gil,rink_hockey,,,,,,,priority1000
@@ -604,7 +604,7 @@ Q25935617,Bethany Shriever,bmx,,,,,,,priority1000
 Q462104,Pauline Ferrand-Prévot,mountain_biking,,,,,,,priority1000
 Q2607845,Sanne Cant,cyclo_cross,,,,,,,priority1000
 Q3078910,Mathieu van der Poel,cyclo_cross,,,,,,,priority1000
-Q242776,Svetlana Romashina,artistic_swimming,,,,,,,priority1000
+Q242776,Svetlana Romashina,artistic_swimming,1989-09-21,11,,,Q649,32,priority1000
 Q1800208,Natalia Ishchenko,artistic_swimming,1986-04-08,11,,,Q2337,31,priority1000
 Q2208967,Sharon van Rouwendaal,open_water_swimming,,,,,,,priority1000
 Q482912,Ana Marcela Cunha,open_water_swimming,,,,,,,priority1000
@@ -751,28 +751,28 @@ Q6111044,Jack Armytage,ice_hockey,,,,,,,priority1000
 Q15711700,Ernie McLea,ice_hockey,,,,,,,priority1000
 Q7347216,Robert MacDougall,ice_hockey,,,,,,,priority1000
 Q5672911,Harry Trihey,ice_hockey,,,,,,,priority1000
-Q288572,Dan Bain,ice_hockey,,,,,,,priority1000
+Q288572,Dan Bain,ice_hockey,1874-02-14,11,1962-08-15,11,Q34227,11,priority1000
 Q5496224,Fred Scanlan,ice_hockey,,,,,,,priority1000
 Q284733,Jack Marshall,ice_hockey,,,,,,,priority1000
 Q3530843,Tommy Phillips,ice_hockey,,,,,,,priority1000
 Q7633671,Suddy Gilmour,ice_hockey,,,,,,,priority1000
-Q3028377,Frank McGee,ice_hockey,,,,,,,priority1000
+Q3028377,Frank McGee,ice_hockey,1882-11-04,11,1916-09-16,11,Q1930,10,priority1000
 Q4797756,Arthur A. C. Moore,ice_hockey,,,,,,,priority1000
 Q7295408,Rat Westwick,ice_hockey,,,,,,,priority1000
 Q1366313,Lester Patrick,ice_hockey,1883-12-30,11,1960-06-01,11,Q141940,12,priority1000
 Q7372461,Roxy Beaudro,ice_hockey,,,,,,,priority1000
 Q5499030,Fred Whitcroft,ice_hockey,,,,,,,priority1000
-Q3323628,Moose Johnson,ice_hockey,,,,,,,priority1000
+Q3323628,Moose Johnson,ice_hockey,1886-02-26,11,1963-03-25,11,Q340,6,priority1000
 Q5486868,Frank Glass,ice_hockey,,,,,,,priority1000
 Q3565899,Walter Smaill,ice_hockey,,,,,,,priority1000
 Q3126369,Hamby Shore,ice_hockey,,,,,,,priority1000
-Q3127840,Harry Hyland,ice_hockey,,,,,,,priority1000
+Q3127840,Harry Hyland,ice_hockey,1889-01-02,11,1969-08-08,11,Q340,8,priority1000
 Q15126384,Marty Walsh,ice_hockey,,,,,,,priority1000
 Q1691516,Joe Malone,ice_hockey,1890-02-28,11,1969-05-15,11,Q3483898,11,priority1000
 Q3531353,Tommy Smith,ice_hockey,,,,,,,priority1000
-Q3074880,Scotty Davidson,ice_hockey,,,,,,,priority1000
+Q3074880,Scotty Davidson,ice_hockey,1892-03-06,11,1915-06-16,11,Q202973,7,priority1000
 Q1365935,Harry Cameron,ice_hockey,1890-02-06,11,1953-10-20,11,Q1075086,10,priority1000
-Q245865,Barney Stanley,ice_hockey,,,,,,,priority1000
+Q245865,Barney Stanley,ice_hockey,1893-01-01,11,1971-05-16,11,Q7125167,7,priority1000
 Q1785324,George Prodgers,ice_hockey,,,,,,,priority1000
 Q4894458,Bernie Morris,ice_hockey,,,,,,,priority1000
 Q936397,Corb Denneny,ice_hockey,,,,,,,priority1000
@@ -798,8 +798,8 @@ Q359645,Bryan Hextall,ice_hockey,,,,,,,priority1000
 Q324631,Bobby Bauer,ice_hockey,,,,,,,priority1000
 Q7172086,Pete Langelle,ice_hockey,,,,,,,priority1000
 Q3180003,Joe Carveth,ice_hockey,,,,,,,priority1000
-Q285583,Toe Blake,ice_hockey,,,,,,,priority1000
-Q325966,Babe Pratt,ice_hockey,,,,,,,priority1000
+Q285583,Toe Blake,ice_hockey,1912-08-21,11,1995-05-17,11,Q1904,14,priority1000
+Q325966,Babe Pratt,ice_hockey,1916-01-07,11,1988-12-16,11,Q7619579,9,priority1000
 Q134549,Ted Kennedy,ice_hockey,,,,,,,priority1000
 Q52614,Ben Johnson,athletics,,,,,,,priority1000
 Q1026120,Cal Gardner,ice_hockey,,,,,,,priority1000
@@ -902,13 +902,13 @@ Q1141174,Oriole Park at Camden Yards,baseball,,,,,,,priority1000
 Q710916,Paul Waner,baseball,,,,,,,priority1000
 Q1329352,Jimmie Foxx,baseball,1907-10-22,11,1967-07-21,11,Q756521,15,priority1000
 Q3082840,Frank Thomas,baseball,,,,,,,priority1000
-Q326416,Mickey Cochrane,baseball,,,,,,,priority1000
+Q326416,Mickey Cochrane,baseball,1903-04-06,11,1962-06-28,11,Q2086280,12,priority1000
 Q3569094,Willie McCovey,baseball,,,,,,,priority1000
 Q7808412,Tino Martinez,baseball,,,,,,,priority1000
 Q6193756,Jim Bottomley,baseball,,,,,,,priority1000
 Q751263,Lefty Grove,baseball,,,,,,,priority1000
 Q3051017,Ernie Banks,baseball,,,,,,,priority1000
-Q2739073,Frankie Frisch,baseball,,,,,,,priority1000
+Q2739073,Frankie Frisch,baseball,,,1973-03-12,11,Q18426,12,priority1000
 Q590424,Eddie Mathews,baseball,,,,,,,priority1000
 Q1683912,Jason Giambi,baseball,,,,,,,priority1000
 Q735354,Miguel Cabrera,baseball,,,,,,,priority1000
@@ -916,16 +916,16 @@ Q3098450,Garret Anderson,baseball,,,,,,,priority1000
 Q5115567,Chuck Klein,baseball,,,,,,,priority1000
 Q726655,Mel Ott,baseball,,,,,,,priority1000
 Q1185158,Miguel Tejada,baseball,,,,,,,priority1000
-Q2938945,Carl Hubbell,baseball,,,,,,,priority1000
+Q2938945,Carl Hubbell,baseball,1903-06-22,11,1988-11-21,11,Q729304,11,priority1000
 Q3098626,Gary Sheffield,baseball,,,,,,,priority1000
 Q1322518,Bobby Abreu,baseball,,,,,,,priority1000
-Q3032684,Dizzy Dean,baseball,,,,,,,priority1000
+Q3032684,Dizzy Dean,baseball,1910-01-16,11,1974-07-17,11,Q61363,14,priority1000
 Q326992,Eddie Murray,baseball,,,,,,,priority1000
 Q705213,Ryan Howard,baseball,,,,,,,priority1000
 Q687282,Hank Greenberg,baseball,,,,,,,priority1000
 Q2726999,Fred McGriff,baseball,,,,,,,priority1000
 Q1185254,Vladimir Guerrero,baseball,,,,,,,priority1000
-Q3093501,Gabby Hartnett,baseball,,,,,,,priority1000
+Q3093501,Gabby Hartnett,baseball,1900-12-20,11,1972-12-20,11,Q54276,11,priority1000
 Q1062204,Adrián Beltré,baseball,,,,,,,priority1000
 Q127585,Justin Morneau,baseball,,,,,,,priority1000
 Q711944,Charlie Gehringer,baseball,,,,,,,priority1000
@@ -937,7 +937,35 @@ Q5394605,Ernie Lombardi,baseball,,,,,,,priority1000
 Q948508,Chipper Jones,baseball,,,,,,,priority1000
 Q1173396,Dave Winfield,baseball,,,,,,,priority1000
 Q592231,Robinson Canó,baseball,,,,,,,priority1000
-Q297142,Joe DiMaggio,baseball,,,,,,,priority1000
+Q297142,Joe DiMaggio,baseball,1914-11-25,11,1999-03-08,11,Q506439,50,priority1000
 Q1133784,Nelson Cruz,baseball,,,,,,,priority1000
 Q739866,Pete Rose,baseball,,,,,,,priority1000
 Q955322,Shoeless Joe Jackson,baseball,,,,,,,priority1000
+Q295053,Terry Fox,athletics,,,,,,,priority1000
+Q7612565,Steve Fonyo,athletics,,,,,,,priority1000
+Q978803,Rick Hansen,wheelchair_racing,,,,,,,priority1000
+Q311048,Donovan Bailey,athletics,1967-12-16,11,,,Q920496,39,priority1000
+Q19952288,Andre De Grasse,athletics,1994-11-10,11,,,Q1025401,39,priority1000
+Q436070,Percy Williams,athletics,,,,,,,priority1000
+Q596560,Harry Jerome,athletics,,,,,,,priority1000
+Q441217,Bruny Surin,athletics,,,,,,,priority1000
+Q20035636,Elaine Thompson-Herah,athletics,1992-06-28,11,,,Q920496,51,priority1000
+Q64514634,Sha'Carri Richardson,athletics,,,,,,,priority1000
+Q229046,Fanny Blankers-Koen,athletics,1918-04-26,11,2004-01-25,11,Q10027,44,priority1000
+Q31083,Wilma Rudolph,athletics,1940-06-23,11,1994-11-12,11,Q328941,57,priority1000
+Q217354,Gail Devers,athletics,1966-11-19,11,,,Q5083,39,priority1000
+Q234762,Cathy Freeman,athletics,1973-02-16,11,,,Q7538462,50,priority1000
+Q228808,Marie-José Pérec,athletics,1968-05-09,11,,,Q167024,43,priority1000
+Q14623252,Dina Asher-Smith,athletics,,,,,,,priority1000
+Q9336004,Shericka Jackson,athletics,,,,,,,priority1000
+Q111507605,Julien Alfred,athletics,2001-06-10,11,,,Q41699,42,priority1000
+Q310019,Linford Christie,athletics,1960-04-02,11,,,Q2212935,37,priority1000
+Q296309,Maurice Greene,athletics,1974-07-23,11,,,Q486472,39,priority1000
+Q182747,Asafa Powell,athletics,,,,,,,priority1000
+Q1651,Yohan Blake,athletics,1989-12-26,11,,,Q1421939,49,priority1000
+Q52656,Tommie Smith,athletics,,,,,,,priority1000
+Q370729,John Carlos,athletics,,,,,,,priority1000
+Q505289,Bob Hayes,athletics,,,,,,,priority1000
+Q107323240,Summer McIntosh,swimming,,,,,,,priority1000
+Q23772068,Penny Oleksiak,swimming,,,,,,,priority1000
+Q21005673,Caeleb Dressel,swimming,1996-08-16,11,,,Q367316,38,priority1000
