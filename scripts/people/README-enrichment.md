@@ -3,7 +3,7 @@
 `audit_missing.sql` is a read-only coordinator export, and `missing_only.py` turns its newline-delimited JSON into a request list containing only absent Wikidata properties. The export joins a stable Wikidata QID to the existing person, the current core fields, archived claim ranks/values/precision, the harvested item revision/archive hash, and roster membership. It does not write to the database. Only the coordinating session runs that SQL; never connect to DS1 from a worker.
 
 ```sh
-psql -X -qAt -f scripts/people/audit_missing.sql > "$PRIVATE_DIR/person-audit.jsonl"
+bash scripts/daily/ds1.sh -X -qAt -v ON_ERROR_STOP=1 -f scripts/people/audit_missing.sql > "$PRIVATE_DIR/person-audit.jsonl"
 python3 scripts/people/missing_only.py "$PRIVATE_DIR/person-audit.jsonl" "$PRIVATE_DIR/missing-properties.tsv" --summary "$PRIVATE_DIR/audit-summary.json"
 python3 scripts/people/enrichment_batch.py "$PRIVATE_DIR/missing-properties.tsv" "$PRIVATE_DIR/batch"
 python3 scripts/people/test_enrichment_batch.py

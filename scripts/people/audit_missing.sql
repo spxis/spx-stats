@@ -7,7 +7,8 @@ with wd as (
   select source_id from meta.source where code = 'wikidata'
 ), mapped as (
   select p.person_id, p.full_name, p.birth_date, p.death_date, p.birth_place,
-         p.birth_country_code, p.height_cm, x.external_key as qid
+         p.birth_country_code, p.nationality_code, p.height_cm, p.weight_kg,
+         p.primary_position, p.positions, x.external_key as qid
   from core.external_id x
   join wd on wd.source_id = x.source_id
   join core.person p on p.person_id = x.entity_id
@@ -17,7 +18,8 @@ with wd as (
          i.lastrevid, i.archive_name, i.fetched_at, i.missing, i.redirect_to,
          a.sha256 as archive_sha256,
          coalesce(c.claims, '[]'::jsonb) as claims,
-         coalesce(tm.membership_count, 0) as team_membership_count
+         coalesce(tm.membership_count, 0) as team_membership_count,
+         coalesce(pl.leagues, '[]'::jsonb) as league_codes
   from mapped m
   left join legacy_wikidata_harvest.item i on i.qid = m.qid
   left join legacy_files.raw_archive a on a.name = i.archive_name
@@ -26,11 +28,13 @@ with wd as (
       'prop', c.prop, 'n', c.n, 'rank', c.rank,
       'value_qid', c.value_qid, 'value_on', c.value_on,
       'value_prec', c.value_prec, 'value_num', c.value_num,
-      'unit_qid', c.unit_qid, 'value_text', c.value_text
+      'unit_qid', c.unit_qid, 'value_text', c.value_text,
+      'value_label', vi.label
     ) order by c.prop, c.n) as claims
     from legacy_wikidata_harvest.claim c
+    left join legacy_wikidata_harvest.item vi on vi.qid = c.value_qid
     where c.qid = m.qid
-      and c.prop in ('P19','P20','P27','P106','P166','P413','P569','P570','P641',
+      and c.prop in ('P17','P19','P20','P27','P106','P166','P297','P413','P569','P570','P641',
                      'P735','P734','P1477','P1559','P2048','P2067','P423','P741')
   ) c on true
   left join lateral (
@@ -38,6 +42,24 @@ with wd as (
     from legacy_wikidata_harvest.team_member tm
     where tm.person_qid = m.qid
   ) tm on true
+  left join lateral (
+    select coalesce(jsonb_agg(distinct leagues.league_code order by leagues.league_code), '[]'::jsonb) as leagues
+    from (
+      select s.league_code from core.roster_stint rs
+      join core.team_season ts using (team_season_id)
+      join core.season s using (season_id)
+      where rs.person_id = m.person_id
+      union
+      select s.league_code from core.player_season_stat ps
+      join core.team_season ts using (team_season_id)
+      join core.season s using (season_id)
+      where ps.person_id = m.person_id
+      union
+      select s.league_code from core.award_winner aw
+      join core.season s using (season_id)
+      where aw.person_id = m.person_id
+    ) leagues
+  ) pl on true
 )
 select jsonb_build_object(
   'schema', 'spx.wikidata-person-audit/v1',
@@ -47,7 +69,9 @@ select jsonb_build_object(
   'core', jsonb_build_object(
     'birth_date', birth_date, 'death_date', death_date,
     'birth_place', birth_place, 'birth_country_code', birth_country_code,
-    'height_cm', height_cm
+    'nationality_code', nationality_code, 'height_cm', height_cm,
+    'weight_kg', weight_kg, 'primary_position', primary_position,
+    'positions', to_jsonb(positions)
   ),
   'item', jsonb_build_object(
     'lastrevid', lastrevid, 'archive_name', archive_name,
@@ -56,6 +80,7 @@ select jsonb_build_object(
   ),
   'claims', claims,
   'reference_status', 'not_retained_by_existing_harvest_claims',
+  'league_codes', league_codes,
   'team_membership_count', team_membership_count,
   'coverage_properties', case
     when archive_sha256 is not null and lastrevid is not null
