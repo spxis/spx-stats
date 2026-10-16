@@ -147,7 +147,9 @@ def invalid_time_claims(entities):
                     continue
                 value = claim.get("value") or {}
                 if parse_time(value.get("time"), value.get("calendarmodel")) is None:
-                    issues.append("%s/%s precision %s" % (qid, prop, value.get("precision", "unknown")))
+                    issues.append("%s/%s value=%s precision=%s calendar=%s" % (
+                        qid, prop, value.get("time", "unknown"), value.get("precision", "unknown"),
+                        (value.get("calendarmodel") or "unknown").rsplit("/", 1)[-1]))
     return issues
 
 

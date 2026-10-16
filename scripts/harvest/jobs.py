@@ -79,15 +79,23 @@ def update_sql(job_id, new):
 
 def enqueue_sql(targets, chunk=1000):
     """Upsert targets (dicts: kind, target, league, season, priority, gap, refresh_days). A job that is already queued only gets a higher priority
-    or the gap flag; one that was read (done, gone, failed) or is running is left alone, so a planner run never undoes a result."""
+    or the gap flag. A target marked `reparse` may reopen a `done` row once when its archived page is stale or missing; gone, failed, and running
+    rows keep their scheduled state so planner runs do not erase a source-missing result, retry backoff, or active lease."""
     out = []
     for i in range(0, len(targets), chunk):
+        part = targets[i:i + chunk]
         vals = ",\n".join("(%s,%s,%s,%s,%d,%s,%d)" % (db.lit(t["kind"]), db.lit(t["target"]), db.lit(t.get("league")), db.lit(t.get("season")),
-                                                       t["priority"], db.lit(bool(t.get("gap"))), t.get("refresh_days", 120)) for t in targets[i:i + chunk])
+                                                       t["priority"], db.lit(bool(t.get("gap"))), t.get("refresh_days", 120)) for t in part)
         out.append("insert into ingest.harvest_job as j (kind, target, league, season, priority, gap, refresh_days) values\n%s\n"
                    "on conflict (kind, target) do update set priority = greatest(j.priority, excluded.priority), gap = j.gap or excluded.gap, "
                    "league = coalesce(j.league, excluded.league), season = coalesce(j.season, excluded.season), updated_at = now() "
                    "where j.state = 'queued';\n" % vals)
+        reparses = [t for t in part if t.get("reparse")]
+        if reparses:
+            force_vals = ",\n".join("(%s,%s,%d)" % (db.lit(t["kind"]), db.lit(t["target"]), t["priority"]) for t in reparses)
+            out.append("update ingest.harvest_job j set state = 'queued', attempts = 0, gap = true, priority = greatest(j.priority, v.priority), "
+                       "next_check_at = now(), error = null, updated_at = now() from (values %s) v(kind, target, priority) "
+                       "where j.kind = v.kind and j.target = v.target and j.state = 'done';\n" % force_vals)
     return "".join(out)
 
 

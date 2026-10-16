@@ -18,10 +18,22 @@ sys.path.insert(0, HERE)
 
 import db  # noqa: E402
 import planner  # noqa: E402
+from config import Config  # noqa: E402
 
 # raw bytes archived per item when there is no history yet (measured 2026-10-14 on real articles; Wikidata items are pruned before archiving)
 DEFAULT_BYTES = {"wp_team_season": 70_000, "wp_league_season": 170_000, "wp_draft": 100_000, "wd_team_members": 150_000, "wd_person": 2_500, "wd_label": 800}
 STORED_FRACTION = 0.45      # bytea is compressed by the database; the parsed rows add to it, so about this share of the raw bytes lands on DS1 (to be checked against real growth)
+
+
+def team_page_state(page_version, job_state, target_planned=False):
+    """Explain why a team-season is or is not in the next queue plan."""
+    if page_version is not None:
+        if int(page_version) >= planner.PARSER_VERSION:
+            return "current_archive"
+        return "stale_%s" % (job_state or "not_queued")
+    if job_state:
+        return "no_archive_%s" % job_state
+    return "new_target" if target_planned else "not_a_gap"
 
 
 def mb(n):
@@ -39,15 +51,61 @@ def measure():
     ts = db.rows(planner.team_seasons_sql(planner.have_rosters()))
     se = db.rows(planner.SEASONS)
     dr = db.rows(planner.DRAFTS)
+    pages = {r["title"]: int(r["parser_version"]) for r in db.rows(planner.TEAM_PAGE_STATE_SQL)}
+    team_jobs = {r["target"]: r["state"] for r in db.rows(planner.TEAM_JOB_STATE_SQL)}
+    planned = planner.build_targets(Config(), datetime.now(timezone.utc), ts, [], [], [], team_pages=pages, team_jobs=team_jobs)
+    planned_team_titles = {t["target"] for t in planned if t["kind"] == "wp_team_season"}
+    team_articles = {}
+    team_states = {}
+    team_actionability = {}
+    for item in planned:
+        if item["kind"] == "wp_team_season":
+            team_articles[item["league"]] = team_articles.get(item["league"], 0) + 1
+    for r in ts:
+        lg, y = r["league"], int(r["season"])
+        if not r["name"]:
+            state = "no_name"
+        else:
+            title = planner.team_title(lg, y, r["name"])
+            page_version, job_state = pages.get(title), team_jobs.get(title)
+            state = team_page_state(page_version, job_state, title in planned_team_titles)
+        by_state = team_states.setdefault(lg, {})
+        by_state[state] = by_state.get(state, 0) + 1
+        bucket = team_actionability.setdefault(lg, {"new_targets": 0, "done_requeues": 0, "already_queued": 0,
+                                                     "running": 0, "gone_waiting": 0, "failed_waiting": 0, "stale_unqueued": 0})
+        if state == "new_target":
+            bucket["new_targets"] += 1
+        elif state in ("stale_done", "no_archive_done"):
+            bucket["done_requeues"] += 1
+        elif state in ("stale_queued", "no_archive_queued"):
+            bucket["already_queued"] += 1
+        elif state in ("stale_running", "no_archive_running"):
+            bucket["running"] += 1
+        elif state in ("stale_gone", "no_archive_gone"):
+            bucket["gone_waiting"] += 1
+        elif state in ("stale_failed", "no_archive_failed"):
+            bucket["failed_waiting"] += 1
+        elif state in ("stale_not_queued", "no_archive_not_queued"):
+            bucket["stale_unqueued"] += 1
     out = {}
-    for lg in planner.LEAGUES:
+    for lg in planner.TEAM_LEAGUES:
         t = [r for r in ts if r["league"] == lg]
-        out[lg] = {"team_seasons": len(t), "no_roster": sum(1 for r in t if r["no_roster"]), "no_team_stat": sum(1 for r in t if r["no_stat"]),
+        out[lg] = {"team_seasons": len(t), "no_name": sum(1 for r in t if not r["name"]),
+                   "no_roster": sum(1 for r in t if r["no_roster"]), "no_team_stat": sum(1 for r in t if r["no_stat"]),
                    "seasons_no_awards": sum(1 for r in se if r["league"] == lg and r["no_awards"]),
-                   "draft_years_no_picks": sum(1 for r in dr if r["league"] == lg and r["no_draft"] and int(r["year"]) >= planner.DRAFT_FROM[lg])}
+                   "draft_years_no_picks": sum(1 for r in dr if r["league"] == lg and r["no_draft"] and int(r["year"]) >= planner.DRAFT_FROM[lg]) if lg in planner.DRAFT_FROM else 0,
+                   "team_articles_to_plan": team_articles.get(lg, 0),
+                   "team_articles_estimated_raw_bytes": team_articles.get(lg, 0) * DEFAULT_BYTES["wp_team_season"],
+                   "team_page_states": team_states.get(lg, {}), "team_actionability": team_actionability.get(lg, {})}
     people = db.value("select count(*) from core.external_id x join core.person p on p.person_id = x.entity_id where x.entity_kind = 'person' "
                       "and x.source_id = (select source_id from meta.source where code = 'wikidata') and (%s)" % planner.PERSON_MISSING)
     out["people_missing_facts"] = people
+    out["team_articles_to_plan"] = sum(team_articles.values())
+    out["team_articles_estimated_raw_bytes"] = out["team_articles_to_plan"] * DEFAULT_BYTES["wp_team_season"]
+    out["team_articles_actionable"] = sum(v.get("new_targets", 0) + v.get("done_requeues", 0) + v.get("stale_unqueued", 0)
+                                          for v in team_actionability.values())
+    out["team_articles_already_queued"] = sum(v.get("already_queued", 0) for v in team_actionability.values())
+    out["team_articles_estimated_raw_bytes_actionable"] = out["team_articles_actionable"] * DEFAULT_BYTES["wp_team_season"]
     return out
 
 
@@ -96,9 +154,13 @@ def render(prog, gaps=None, now=None):
     le = prog.get("last_error")
     out.append("last error: " + ("%s %s at %s: %s" % (le["kind"], le["target"], le["at"][:19], le["error"]) if le else "none"))
     if gaps:
-        rows = [[lg, v["team_seasons"], v["no_roster"], v["no_team_stat"], v["seasons_no_awards"], v["draft_years_no_picks"]] for lg, v in gaps.items() if lg in planner.LEAGUES]
+        rows = [[lg, v["team_seasons"], v["no_name"], v["no_roster"], v["no_team_stat"], v["team_articles_to_plan"],
+                 v["team_actionability"], v["team_page_states"], v["seasons_no_awards"], v["draft_years_no_picks"]]
+                for lg, v in gaps.items() if lg in planner.TEAM_LEAGUES]
         out += ["", "gaps in core now (read-only measure; they close when a db/build step reads what the harvest filled)",
-                table(rows, ["league", "team seasons", "no roster", "no team stats", "no awards", "no draft"]),
+                table(rows, ["league", "team seasons", "no name", "no roster", "no team stats", "selected", "actionability", "page/job states", "no awards", "no draft"]),
+                "new/done-requeue/stale-unqueued are actionable; queued is counted separately. Estimate: %s raw per selected team-season page, %s raw actionable."
+                % (mb(DEFAULT_BYTES["wp_team_season"]), mb(gaps["team_articles_estimated_raw_bytes_actionable"])),
                 "people with a Wikidata id and a missing birth date, place, country or position: %s" % gaps["people_missing_facts"]]
     return "\n".join(out)
 

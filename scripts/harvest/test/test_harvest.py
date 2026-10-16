@@ -476,7 +476,7 @@ class WikidataParse(unittest.TestCase):
         self.assertEqual(archived_claim["calendarmodel"], WD.GREGORIAN)
         claim = inserts[0][1]["Q1"][0]
         self.assertEqual((claim["value_on"], claim["value_prec"]), (None, 11))
-        self.assertIn("Q1/P569 precision 11", fetches[0]["note"])
+        self.assertIn("Q1/P569 value=+1962-02-29T00:00:00Z precision=11", fetches[0]["note"])
         self.assertEqual(settlements, [("Q1", "done", "done")])
 
     def test_worker_fetches_content_for_same_revision_when_parser_is_stale(self):
@@ -543,7 +543,11 @@ class WikidataParse(unittest.TestCase):
                                                                 "calendarmodel": WD.GREGORIAN}}]}}}
         rows = WD.claim_rows("Q1", entities["Q1"]["claims"])
         self.assertEqual((rows[0]["value_on"], rows[0]["value_prec"]), (None, 11))
-        self.assertEqual(WD.invalid_time_claims(entities), ["Q1/P569 precision 11"])
+        issue = WD.invalid_time_claims(entities)[0]
+        self.assertIn("Q1/P569", issue)
+        self.assertIn("value=+1962-02-29T00:00:00Z", issue)
+        self.assertIn("precision=11", issue)
+        self.assertIn("calendar=Q1985727", issue)
 
 
 # ---------------------------------------------------------------- the planner (pure part)
@@ -567,6 +571,43 @@ class Planner(unittest.TestCase):
         self.assertEqual(drafts[("afl", 1960)], "1960 American Football League draft")
         self.assertEqual(drafts[("wha", 1972)], "WHA general player draft")
 
+    def test_historic_team_leagues_are_measured_and_missing_articles_are_targeted(self):
+        self.assertTrue(set(planner.HISTORIC_LEAGUE_RANGES).issubset(planner.TEAM_LEAGUES))
+        sql = planner.team_seasons_sql(False)
+        for league in ("afl", "aafc", "nha", "pcha", "wchl", "wha", "aba", "nbl", "wfl", "usfl"):
+            self.assertIn("'%s'" % league, sql)
+        rows = [
+            dict(league="afl", season=1960, name="Boston Patriots", no_roster=False, no_stat=False),
+            dict(league="nha", season=1910, name="Montreal Canadiens", no_roster=False, no_stat=False),
+            dict(league="nfl", season=2020, name="Kansas City Chiefs", no_roster=False, no_stat=False),
+        ]
+        pending = {(t["league"], t["season"]): t for t in planner.build_targets(Config(), NOW, rows, [], [], [])
+                   if t["kind"] == "wp_team_season"}
+        self.assertIn(("afl", 1960), pending)
+        self.assertIn(("nha", 1910), pending)
+        self.assertNotIn(("nfl", 2020), pending)
+
+    def test_harvested_team_page_state_prevents_duplicates_and_requeues_parser_stale_done(self):
+        rows = [dict(league="nfl", season=1950, name="Los Angeles Rams", no_roster=False, no_stat=False)]
+        title = "1950 Los Angeles Rams season"
+        current = planner.build_targets(Config(), NOW, rows, [], [], [], team_pages={title: planner.PARSER_VERSION})
+        self.assertFalse(any(t["kind"] == "wp_team_season" for t in current))
+        stale = planner.build_targets(Config(), NOW, rows, [], [], [], team_pages={title: planner.PARSER_VERSION - 1})
+        target = next(t for t in stale if t["kind"] == "wp_team_season")
+        self.assertTrue(target["reparse"])
+        sql = jobs.enqueue_sql(stale)
+        self.assertIn("j.state = 'done';", sql)
+        self.assertIn("state = 'queued', attempts = 0, gap = true", sql)
+
+    def test_status_explains_current_stale_and_missing_page_queue_states(self):
+        self.assertEqual(status.team_page_state(planner.PARSER_VERSION, "done", True), "current_archive")
+        self.assertEqual(status.team_page_state(planner.PARSER_VERSION - 1, "done", True), "stale_done")
+        self.assertEqual(status.team_page_state(planner.PARSER_VERSION - 1, "failed", True), "stale_failed")
+        self.assertEqual(status.team_page_state(None, "done", True), "no_archive_done")
+        self.assertEqual(status.team_page_state(None, "gone", True), "no_archive_gone")
+        self.assertEqual(status.team_page_state(None, None, True), "new_target")
+        self.assertEqual(status.team_page_state(None, None, False), "not_a_gap")
+
     def test_nhl_and_mlb_pre_spx_stats_targets_ignore_existing_roster_and_stat_rows(self):
         rows = [dict(league="nhl", season=1996, team_season_id=1, name="Montreal Canadiens", no_roster=False,
                      no_stat=False, held_wp=False),
@@ -579,6 +620,16 @@ class Planner(unittest.TestCase):
         self.assertIn(("nhl", 1996), got)
         self.assertIn(("mlb", 2014), got)
         self.assertNotIn(("nhl", 2000), got)
+
+    def test_pre_spx_player_stats_requeue_when_page_is_absent_but_not_when_current(self):
+        rows = [dict(league="nhl", season=1996, name="Montreal Canadiens", no_roster=False, no_stat=False),
+                dict(league="mlb", season=2014, name="Toronto Blue Jays", no_roster=False, no_stat=False)]
+        absent = planner.build_targets(Config(), NOW, rows, [], [], [])
+        self.assertEqual({t["target"] for t in absent if t["kind"] == "wp_team_season"},
+                         {"1996–97 Montreal Canadiens season", "2014 Toronto Blue Jays season"})
+        pages = {t["target"]: planner.PARSER_VERSION for t in absent}
+        present = planner.build_targets(Config(), NOW, rows, [], [], [], team_pages=pages)
+        self.assertFalse(any(t["kind"] == "wp_team_season" for t in present))
 
     cfg = Config()
     ts = [dict(league="nba", season=2023, name="Boston Celtics", no_roster=True, no_stat=True),

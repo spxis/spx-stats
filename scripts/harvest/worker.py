@@ -405,7 +405,7 @@ class Worker:
             for j in batch:
                 if j["target"] in store:
                     self.settle(j, jobs.after_success(j, cfg, now, revision=store[j["target"]].get("lastrevid"), sha256=load.sha256(payload)), "done")
-        note = ("invalid or unsupported Wikidata dates stored unknown: " + ", ".join(date_issues))[:500] if date_issues else None
+        note = ("invalid or unsupported Wikidata dates stored unknown: " + ", ".join(date_issues)) if date_issues else None
         self.fetch_log(kind, len(ids), self.wd, len(body), len(store), note=note)
 
 
