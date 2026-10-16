@@ -2140,6 +2140,7 @@ export const PHRASES = {
   "peopleAdmin.bornTo.placeholder": "Born to",
   "peopleAdmin.bornTo.aria": "Birth year to",
   "peopleAdmin.sportsAria": "Sports",
+  "peopleAdmin.sportsMore": "More sports ({n})",
   "peopleAdmin.seasons.aria": "Club seasons",
   "peopleAdmin.seasons.any": "Club seasons: any",
   "peopleAdmin.seasons.yes": "Has club seasons",

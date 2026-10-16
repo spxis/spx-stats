@@ -1961,6 +1961,7 @@ export const JA: Dictionary = {
   "peopleAdmin.bornTo.placeholder": "生年（まで）",
   "peopleAdmin.bornTo.aria": "生年の終了",
   "peopleAdmin.sportsAria": "競技",
+  "peopleAdmin.sportsMore": "ほかの競技（{n}）",
   "peopleAdmin.seasons.aria": "クラブシーズン",
   "peopleAdmin.seasons.any": "クラブシーズン：すべて",
   "peopleAdmin.seasons.yes": "クラブシーズンあり",

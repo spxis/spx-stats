@@ -1961,6 +1961,7 @@ export const FR: Dictionary = {
   "peopleAdmin.bornTo.placeholder": "Né à",
   "peopleAdmin.bornTo.aria": "Année de naissance, fin",
   "peopleAdmin.sportsAria": "Sports",
+  "peopleAdmin.sportsMore": "Plus de sports ({n})",
   "peopleAdmin.seasons.aria": "Saisons de club",
   "peopleAdmin.seasons.any": "Saisons de club : toutes",
   "peopleAdmin.seasons.yes": "Avec saisons de club",

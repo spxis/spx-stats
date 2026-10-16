@@ -127,6 +127,12 @@
 .plist { gap: 12px; }
 .pfilters { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .pfilters .controls { gap: 8px 12px; }
+.pfilters .controls > .seg, .pfilters-extra { max-width: 100%; min-width: 0; }
+.pfilters-extra { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: center; flex: 1 1 100%; }
+.pfilters-extra > .seg { max-width: 100%; min-width: 0; }
+.pfilters-sportrow { display: flex; flex-wrap: wrap; gap: 8px 12px; align-items: flex-start; flex: 1 1 100%; max-width: 100%; min-width: 0; }
+.pfilters-sportrow > .seg { max-width: 100%; min-width: 0; }
+.pfilters-sportrow .pmore-list { flex-basis: 100%; }
 .pfilters .azrow { margin-top: 0; gap: 8px 12px; }
 .pfilters .pchips { margin: 0; gap: 4px; }
 .pfilters .listrange { margin: 0; }

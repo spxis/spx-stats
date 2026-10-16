@@ -9,6 +9,7 @@ export interface SegChip {
 
 /**
  * The segmented chip row `/players` draws for leagues. Same CSS (alignment.css `.seg.views`), same Link, same aria-current.
+ * Chips wrap at `--control-h` (A–Z, `.seg.views.sub`): a long sport row never scrolls the page sideways.
  * `href(code)` is the address with that chip chosen; empty code is "All" and should drop the query key.
  */
 export function SegChips({ aria, current, items, href }: {
@@ -18,7 +19,7 @@ export function SegChips({ aria, current, items, href }: {
   href: (code: string) => string;
 }) {
   return (
-    <nav className="seg views" aria-label={aria}>
+    <nav className="seg views wrap" aria-label={aria}>
       {items.map((item) => (
         <Link key={item.code || "all"} href={href(item.code)} prefetch={false} aria-current={item.code === current ? "page" : undefined}>{item.short}</Link>
       ))}

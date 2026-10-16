@@ -273,6 +273,7 @@
 
   .controls { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; }
   .seg { display: inline-flex; border: 1px solid var(--rule); }
+  .seg.wrap { flex-wrap: wrap; max-width: 100%; min-width: 0; }
   .seg button { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 12px; border: 0; background: var(--panel); color: var(--muted); cursor: pointer; }
   .seg button[aria-pressed="true"] { background: var(--ink); color: var(--paper); }
 

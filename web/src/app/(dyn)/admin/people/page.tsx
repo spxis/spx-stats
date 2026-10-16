@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "@/components/Link";
+import { ChipsMore } from "@/components/ChipsMore";
 import { ListHeading } from "@/components/ListHeading";
 import { NatLink } from "@/components/NatLink";
 import { Pager } from "@/components/Pager";
+import { CHIPS_SHOWN } from "@/components/PlayerCountries";
 import { PlayersFilterBar } from "@/components/PlayersFilterBar";
 import { SegChips } from "@/components/SegChips";
 import { SortTable } from "@/components/SortTable";
@@ -12,6 +14,7 @@ import { hasFlag } from "@/lib/flagCodes";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
 import { countryName } from "@/lib/people-format";
+import { chipSplit } from "@/lib/playerCountryModel";
 import { playerPath } from "@/lib/playerPath";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
@@ -78,11 +81,14 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   };
   const href = (changes: Record<string, string | null>) => queryHref("/admin/people", query, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
-  const sportChips = sports?.length
-    ? [{ code: "", short: say("phase.all") }, ...sports.map((s) => ({ code: s.code, short: s.code }))]
+  const sportLabel = (code: string) => code.replaceAll("_", " ");
+  const sportSplit = sports?.length ? chipSplit(sports, sport, CHIPS_SHOWN) : null;
+  const sportChips = sportSplit
+    ? [{ code: "", short: say("phase.all") }, ...sportSplit.shown.map((s) => ({ code: s.code, short: sportLabel(s.code) }))]
     : [];
+  const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportLabel(s.code) })) ?? [];
   const sourceChips = sources?.length
-    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: s.code }))]
+    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: s.code.replaceAll("_", " ") }))]
     : [];
   const seasonChips = [
     { code: "", short: say("phase.all") },
@@ -168,7 +174,18 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
           }}
           extra={
             <>
-              {sportChips.length ? <SegChips aria={say("peopleAdmin.sportsAria")} current={sport} items={sportChips} href={(code) => href({ sport: code || null })} /> : null}
+              {sportChips.length ? (
+                <div className="pfilters-sportrow">
+                  <SegChips aria={say("peopleAdmin.sportsAria")} current={sport} items={sportChips} href={(code) => href({ sport: code || null })} />
+                  {sportMore.length ? (
+                    <ChipsMore label={say("peopleAdmin.sportsMore", { n: fmt(sportMore.length) })}>
+                      {sportMore.map((item) => (
+                        <Link key={item.code} href={href({ sport: item.code })} prefetch={false} aria-current={item.code === sport ? "page" : undefined}>{item.short}</Link>
+                      ))}
+                    </ChipsMore>
+                  ) : null}
+                </div>
+              ) : null}
               <SegChips aria={say("peopleAdmin.seasons.aria")} current={seasons} items={seasonChips} href={(code) => href({ seasons: code || null })} />
               {sourceChips.length ? <SegChips aria={say("peopleAdmin.sourcesAria")} current={source} items={sourceChips} href={(code) => href({ source: code || null })} /> : null}
             </>
