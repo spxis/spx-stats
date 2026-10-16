@@ -125,7 +125,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
             <Link className="scorelink" href={gamePath(lg, year, g.id, away, home)} prefetch={false} title={say("gm.viewGameTitle", { away: away ?? "—", home: home ?? "—" })}>
               {g.res ? `${g.mine}–${g.theirs}` : say("gm.viewGame")}
             </Link>
-            <OfficialLinks league={lg} date={g.date} away={g.loc === "Home" ? officialAbbr(abbrs, g.oppF, year) : officialAbbr(abbrs, teams.get(meId)?.f, year)} home={g.loc === "Home" ? officialAbbr(abbrs, teams.get(meId)?.f, year) : officialAbbr(abbrs, g.oppF, year)} nhlId={g.nhlId} status={g.status} startsAt={g.startsAt} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
+            <OfficialLinks league={lg} date={g.date} away={g.loc === "Home" ? officialAbbr(abbrs, g.oppF, year) : officialAbbr(abbrs, teams.get(meId)?.f, year)} home={g.loc === "Home" ? officialAbbr(abbrs, teams.get(meId)?.f, year) : officialAbbr(abbrs, g.oppF, year)} awayName={away} homeName={home} year={year} phase={g.ph === "p" ? "playoffs" : g.ph === "s" ? "preseason" : g.ph === "a" ? "all_star" : "regular"} nhlId={g.nhlId} nflWeek={g.nflWeek} retroBox={g.retroBox} status={g.status} startsAt={g.startsAt} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
           </>
         );
       },

@@ -71,6 +71,10 @@ export interface GameRow {
   starts_at?: string | null;
   /** The NHL's numeric game id. Absent until the view exposes it, and null for every other game. */
   nhl_id?: number | null;
+  /** The nflverse week, when this game's source key is that id. Null otherwise. Not derived from the date. */
+  nfl_week?: number | null;
+  /** Retrosheet home code and game number, TOR:0, when this game's source key is that id. */
+  retro_box?: string | null;
 }
 
 export interface StandingRow {

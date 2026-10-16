@@ -55,7 +55,7 @@ function Game({ lg, g, brands, abbrs, say, upcoming }: { lg: LeagueCode; g: Game
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}
         {g.checked === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠ " + say("game.disputed")}</span> : null}
         <Link href={page} prefetch={false} className="viewgame" title={title}>{say("gm.viewGame")}</Link>
-        <OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, g.away_f, g.year)} home={officialAbbr(abbrs, g.home_f, g.year)} nhlId={g.nhl_id} status={g.status} startsAt={g.starts_at} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
+        <OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, g.away_f, g.year)} home={officialAbbr(abbrs, g.home_f, g.year)} awayName={g.away} homeName={g.home} year={g.year} phase={g.phase} nhlId={g.nhl_id} nflWeek={g.nfl_week} retroBox={g.retro_box} status={g.status} startsAt={g.starts_at} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
       </div>
     </li>
   );

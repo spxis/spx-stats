@@ -51,6 +51,8 @@ export const gameSchema = z.object({
   overtime: z.boolean().nullable(), source: str, checked: intN, away_f: intN, home_f: intN,
   starts_at: z.string().nullable().optional(),
   nhl_id: z.number().int().nullable().optional(),
+  nfl_week: z.number().int().nullable().optional(),
+  retro_box: z.string().nullable().optional(),
 }) satisfies z.ZodType<GameRow>;
 
 export const standingSchema = z.object({

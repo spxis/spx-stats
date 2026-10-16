@@ -27,6 +27,10 @@ export interface TeamGame {
   tuple: GameTuple;
   /** The NHL's numeric game id, when the row carries one. */
   nhlId: number | null;
+  /** The nflverse week, when the row carries one. */
+  nflWeek: number | null;
+  /** Retrosheet home code and game number, when the row carries one. */
+  retroBox: string | null;
   /** core.game status, so game notes can wait until the game has started. */
   status: string;
   /** Scheduled start, UTC, when a source recorded one. */
@@ -62,6 +66,8 @@ export function deriveTeamGames(games: GameRow[], franchise: number, standing: S
       recPct: res && played ? (c.w + c.t / 2) / played : null,
       tuple: [g.game_date, g.away_id, g.away_score, g.home_score, g.home_id, ph, g.status[0] ?? "", g.source, g.overtime ? 1 : 0, g.checked, g.game_id],
       nhlId: g.nhl_id ?? null,
+      nflWeek: g.nfl_week ?? null,
+      retroBox: g.retro_box ?? null,
       status: g.status,
       startsAt: g.starts_at ?? null,
     });

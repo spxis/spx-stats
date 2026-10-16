@@ -22,16 +22,23 @@ function useViewNow(): number | null {
 }
 
 /**
- * The league's own pages for this game. The server draws nothing: the addresses are built in the
- * browser from the date, the two abbreviations and, for the NHL, the numeric id. Game notes wait
- * until the game has started.
+ * The league's own pages for this game, and Retrosheet's box score for MLB. The server draws
+ * nothing: the addresses are built in the browser from the date, the two clubs and, where the row
+ * has one, the NHL id, the NFL week or the Retrosheet home code. Game notes wait until the game
+ * has started.
  */
-export function OfficialLinks({ league, date, away, home, nhlId, status, startsAt, box, notes, day }: {
+export function OfficialLinks({ league, date, away, home, awayName, homeName, year, phase, nhlId, nflWeek, retroBox, status, startsAt, box, notes, day }: {
   league: string;
   date: string;
   away: string | null;
   home: string | null;
+  awayName?: string | null;
+  homeName?: string | null;
+  year?: number | null;
+  phase?: string | null;
   nhlId?: number | null;
+  nflWeek?: number | null;
+  retroBox?: string | null;
   status?: string | null;
   startsAt?: string | null;
   box: string;
@@ -40,7 +47,7 @@ export function OfficialLinks({ league, date, away, home, nhlId, status, startsA
 }) {
   const now = useViewNow();
   if (now == null) return null;
-  const links = officialLinks({ league, date, away, home, nhlId, status, startsAt, now });
+  const links = officialLinks({ league, date, away, home, awayName, homeName, year, phase, nhlId, nflWeek, retroBox, status, startsAt, now });
   if (!links.length) return null;
   const label: Record<OfficialKind, string> = { box, notes, day };
   return (

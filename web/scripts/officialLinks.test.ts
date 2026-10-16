@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { officialAbbr, type AbbrMap } from "../src/lib/abbr.ts";
-import { nhlLinks, officialLinks } from "../src/lib/officialLinks.ts";
+import { mlbLinks, nflLinks, nhlLinks, officialLinks } from "../src/lib/officialLinks.ts";
 
 const DAY = "2026-10-16";
 
@@ -95,4 +95,58 @@ test("the other four leagues link to that day's scores, or the schedule where th
   assert.equal(officialLinks({ league: "cfl", date: DAY })[0].href, "https://www.cfl.ca/schedule/");
   assert.equal(officialLinks({ league: "nhl", date: "not-a-date" }).length, 0);
   assert.equal(officialLinks({ league: "mls", date: DAY }).length, 0);
+});
+
+test("an NFL week builds the game page from the season, the week and the two clubs, then the schedule", () => {
+  const links = nflLinks(2024, "regular", 1, "Baltimore Ravens", "Kansas City Chiefs", "2024-09-05");
+  assert.deepEqual(links.map((l) => l.kind), ["box", "day"]);
+  assert.equal(links[0].href, "https://www.nfl.com/games/ravens-at-chiefs-2024-reg-1");
+  assert.equal(links[1].href, "https://www.nfl.com/schedules/");
+});
+
+test("a playoff week uses the postseason round, not the week number in the id", () => {
+  assert.equal(
+    nflLinks(2024, "playoffs", 22, "Kansas City Chiefs", "Philadelphia Eagles", "2025-02-09")[0].href,
+    "https://www.nfl.com/games/chiefs-at-eagles-2024-post-4",
+  );
+  assert.equal(
+    nflLinks(2020, "playoffs", 21, "Kansas City Chiefs", "Tampa Bay Buccaneers", "2021-02-07")[0].href,
+    "https://www.nfl.com/games/chiefs-at-buccaneers-2020-post-4",
+  );
+  assert.equal(
+    nflLinks(2021, "regular", 18, "San Francisco 49ers", "Los Angeles Rams", "2022-01-09")[0].href,
+    "https://www.nfl.com/games/49ers-at-rams-2021-reg-18",
+  );
+  assert.equal(
+    nflLinks(2020, "playoffs", 18, "Washington Football Team", "Tampa Bay Buccaneers", "2021-01-09")[0].href,
+    "https://www.nfl.com/games/football-team-at-buccaneers-2020-post-1",
+  );
+});
+
+test("a missing NFL week, or a week that does not belong to that phase, leaves only the schedule", () => {
+  assert.deepEqual(nflLinks(2024, "regular", null, "Baltimore Ravens", "Kansas City Chiefs", "2024-09-05").map((l) => l.kind), ["day"]);
+  assert.deepEqual(nflLinks(2024, "playoffs", 1, "Baltimore Ravens", "Kansas City Chiefs", "2024-09-05").map((l) => l.kind), ["day"]);
+  assert.deepEqual(nflLinks(2024, "regular", 1, null, "Kansas City Chiefs", "2024-09-05").map((l) => l.kind), ["day"]);
+  assert.equal(officialLinks({ league: "nfl", date: "2024-09-05", year: 2024, phase: "regular", awayName: "Baltimore Ravens", homeName: "Kansas City Chiefs" })[0].href, "https://www.nfl.com/schedules/");
+});
+
+test("a Retrosheet id builds Retrosheet's box score, and the day's scores stay on MLB.com", () => {
+  const links = mlbLinks("2025-11-01", "TOR:0");
+  assert.deepEqual(links.map((l) => l.kind), ["box", "day"]);
+  assert.equal(links[0].href, "https://www.retrosheet.org/boxesetc/2025/B11010TOR2025.htm");
+  assert.equal(links[1].href, "https://www.mlb.com/scores/2025-11-01");
+  assert.equal(links.some((l) => l.href.includes("mlb.com") && l.kind === "box"), false);
+});
+
+test("a missing or unusable Retrosheet id leaves only that day's scores", () => {
+  for (const box of [null, undefined, "", "TOR:4", "20251101:TOR:LAN:0:worldseries"]) {
+    const links = mlbLinks("2025-11-01", box);
+    assert.deepEqual(links.map((l) => l.kind), ["day"], String(box));
+    assert.equal(links[0].href, "https://www.mlb.com/scores/2025-11-01");
+  }
+});
+
+test("NBA and CFL stay on the day's page when an NFL week or a Retrosheet id is passed", () => {
+  assert.equal(officialLinks({ league: "nba", date: "2026-10-20", nflWeek: 1, retroBox: "TOR:0", year: 2026, phase: "regular" })[0].href, "https://www.nba.com/games?date=2026-10-20");
+  assert.equal(officialLinks({ league: "cfl", date: DAY, nflWeek: 1, retroBox: "TOR:0" })[0].href, "https://www.cfl.ca/schedule/");
 });
