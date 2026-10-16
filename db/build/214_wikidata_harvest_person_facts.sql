@@ -99,10 +99,14 @@ create temp table position_fact on commit drop as
 with mapped_claims as (
  select distinct t.qid,c.n
  from c join target t using(qid)
- join legacy_wikidata_harvest.item it on it.qid=c.value_qid
+ left join legacy_wikidata_harvest.item it on it.qid=c.value_qid
  join person_league pl on pl.person_id=t.person_id
  join ref.position_alias a on a.source_code='wikidata' and a.league_code=pl.league_code
-      and a.raw_value=lower(btrim(it.label))
+      and (a.raw_value=lower(c.value_qid) or
+           (a.raw_value=lower(btrim(it.label)) and not exists (
+             select 1 from ref.position_alias qid_alias
+             where qid_alias.source_code='wikidata' and qid_alias.league_code=pl.league_code
+               and qid_alias.raw_value=lower(c.value_qid))))
  where c.prop='P413'
 ), fully_mapped as (
  select all_claims.qid from
@@ -112,10 +116,14 @@ with mapped_claims as (
 ), mapped as (
  select t.qid,a.code,bool_or(c.rank='preferred') preferred,min(c.n*100+a.ord) ord
  from c join target t using(qid)
- join legacy_wikidata_harvest.item it on it.qid=c.value_qid
+ left join legacy_wikidata_harvest.item it on it.qid=c.value_qid
  join person_league pl on pl.person_id=t.person_id
  join ref.position_alias a on a.source_code='wikidata' and a.league_code=pl.league_code
-      and a.raw_value=lower(btrim(it.label))
+      and (a.raw_value=lower(c.value_qid) or
+           (a.raw_value=lower(btrim(it.label)) and not exists (
+             select 1 from ref.position_alias qid_alias
+             where qid_alias.source_code='wikidata' and qid_alias.league_code=pl.league_code
+               and qid_alias.raw_value=lower(c.value_qid))))
  where c.prop='P413' group by t.qid,a.code
 ), ordered as (
  select qid,array_agg(code order by preferred desc,ord,code) codes from mapped group by qid

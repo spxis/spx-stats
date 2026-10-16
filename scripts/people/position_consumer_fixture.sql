@@ -1,0 +1,34 @@
+-- Empty legacy source schemas needed to run the real 186 consumer in the scratch harness.
+create schema legacy_people;
+create table legacy_people.claim(qid text,prop text,rank text,n int,value_qid text);
+create table legacy_people.redirect(from_qid text,to_qid text);
+create table legacy_people.item(qid text,label text);
+create schema legacy_rosters;
+create table legacy_rosters.claim(qid text,prop text,rank text,n int,value_qid text);
+create table legacy_rosters.redirect(from_qid text,to_qid text);
+create table legacy_rosters.item(qid text,label text);
+create schema legacy_nhlapi;
+create table legacy_nhlapi.player_season(player_id bigint,position text,season int,game_type int);
+create schema legacy_spx;
+create table legacy_spx.tbl_nhl_rosters(player_position text);
+create table legacy_spx.tbl_nhl_rosters_raw_yahoo(player_position text);
+create table legacy_spx.tbl_nhl_player_games_raw(player_position text);
+create table legacy_spx.tbl_nhl_player_injuries(position_name text);
+create table legacy_spx.tbl_nhl_goalie_injuries(position_name text);
+create table legacy_spx.tbl_nhl_injuries_raw(position_name text);
+create table legacy_spx.tbl_mlb_rosters(player_position text);
+create table legacy_spx.tbl_mlb_rosters_raw_yahoo(player_position text);
+create table legacy_spx.tbl_mlb_player_injuries(player_position text);
+create table legacy_spx.tbl_mlb_player_injuries_raw(player_position text);
+create table legacy_spx.tbl_nba_rosters(player_position text);
+create table legacy_spx.tbl_nba_player_games_raw(player_position text);
+create table legacy_spx.tbl_nfl_rosters(player_position text);
+create table legacy_spx.tbl_nfl_rosters_raw_yahoo(player_position text);
+create schema legacy_wikipedia_awards;
+create table legacy_wikipedia_awards.winner(award_code text,position text);
+alter table core.roster_stint add column source_id smallint;
+alter table core.roster_stint add column position text;
+alter table core.person add constraint person_primary_position_fk
+  foreign key (primary_position) references ref.position_code(code) not valid;
+insert into legacy_people.item(qid,label) values ('Q273199','Point guard');
+insert into legacy_people.claim(qid,prop,rank,n,value_qid) values ('Q151','P413','normal',0,'Q273199');

@@ -10,7 +10,14 @@
 --    ("utility player", SPX's "U4") has no row here: the build step logs it in meta.data_issue and leaves the position empty. Nothing is guessed.
 begin;
 
-delete from ref.position_alias;
+-- Keep aliases for other leagues and source partitions; this seed owns only these pairs.
+delete from ref.position_alias a
+where (a.source_code, a.league_code) in (
+  ('nflverse', 'nfl'), ('nhl_api', 'nhl'),
+  ('spx', 'cfl'), ('spx', 'mlb'), ('spx', 'nba'), ('spx', 'nfl'), ('spx', 'nhl'),
+  ('wikidata', 'cfl'), ('wikidata', 'mlb'), ('wikidata', 'nba'), ('wikidata', 'nfl'), ('wikidata', 'nhl'),
+  ('wikipedia', 'cfl'), ('wikipedia', 'mlb'), ('wikipedia', 'nba'), ('wikipedia', 'nfl'), ('wikipedia', 'nhl')
+);
 
 insert into ref.position_code (code) values
   ('1B'),
@@ -181,10 +188,19 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('spx', 'nba', 'g-f', 1, 'G-F'),
   ('spx', 'nba', 'f-c', 1, 'F-C'),
   ('wikidata', 'nba', 'point guard', 1, 'PG'),
+  -- Wikidata Q212413: basketball point guard; https://www.wikidata.org/wiki/Q212413
+  ('wikidata', 'nba', 'q212413', 1, 'PG'),
   ('wikidata', 'nba', 'shooting guard', 1, 'SG'),
+  -- Stable item mappings (lowercase QID key) take precedence over mutable/missing labels.
+  -- Wikidata Q273199: basketball shooting guard; https://www.wikidata.org/wiki/Q273199
+  ('wikidata', 'nba', 'q273199', 1, 'SG'),
   ('wikidata', 'nba', 'small forward', 1, 'SF'),
   ('wikidata', 'nba', 'power forward', 1, 'PF'),
+  -- Wikidata Q462471: basketball power forward; https://www.wikidata.org/wiki/Q462471
+  ('wikidata', 'nba', 'q462471', 1, 'PF'),
   ('wikidata', 'nba', 'center', 1, 'C'),
+  -- Wikidata Q222052: basketball center; https://www.wikidata.org/wiki/Q222052
+  ('wikidata', 'nba', 'q222052', 1, 'C'),
   ('wikidata', 'nba', 'guard', 1, 'G'),
   ('wikidata', 'nba', 'forward', 1, 'F'),
   ('wikidata', 'nba', 'forward center', 1, 'F-C'),
@@ -217,6 +233,8 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('spx', 'mlb', 'rf', 1, 'RF'),
   ('spx', 'mlb', 'dh', 1, 'DH'),
   ('wikidata', 'mlb', 'pitcher', 1, 'P'),
+  -- Wikidata Q1048902: baseball pitcher; https://www.wikidata.org/wiki/Q1048902
+  ('wikidata', 'mlb', 'q1048902', 1, 'P'),
   ('wikidata', 'mlb', 'starting pitcher', 1, 'P'),
   ('wikidata', 'mlb', 'relief pitcher', 1, 'P'),
   ('wikidata', 'mlb', 'closer', 1, 'P'),
@@ -320,6 +338,8 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'nfl', 'halfback', 1, 'RB'),
   ('wikidata', 'nfl', 'fullback', 1, 'FB'),
   ('wikidata', 'nfl', 'wide receiver', 1, 'WR'),
+  -- Wikidata Q918224: American and Canadian football wide receiver; https://www.wikidata.org/wiki/Q918224
+  ('wikidata', 'nfl', 'q918224', 1, 'WR'),
   ('wikidata', 'nfl', 'tight end', 1, 'TE'),
   ('wikidata', 'nfl', 'offensive tackle', 1, 'T'),
   ('wikidata', 'nfl', 'tackle', 1, 'T'),
@@ -341,6 +361,7 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'cfl', 'halfback', 1, 'RB'),
   ('wikidata', 'cfl', 'fullback', 1, 'FB'),
   ('wikidata', 'cfl', 'wide receiver', 1, 'WR'),
+  ('wikidata', 'cfl', 'q918224', 1, 'WR'),
   ('wikidata', 'cfl', 'tight end', 1, 'TE'),
   ('wikidata', 'cfl', 'offensive tackle', 1, 'T'),
   ('wikidata', 'cfl', 'tackle', 1, 'T'),

@@ -25,6 +25,7 @@ create index on pl (person_id);
 -- What each source states for each person, in the order to use it.
 create temp table raw0 on commit drop as
 select x.entity_id as person_id, 'wikidata'::text as src, lower(btrim(it.label)) as raw,
+       lower(coalesce(r.to_qid, cl.value_qid)) as value_qid,
        row_number() over (partition by x.entity_id order by (cl.rank = 'preferred') desc, cl.n) as ord
 from core.external_id x
 join meta.source s on s.source_id = x.source_id and s.code = 'wikidata'
@@ -33,7 +34,7 @@ left join legacy_people.redirect r on r.from_qid = cl.value_qid
 join legacy_people.item it on it.qid = coalesce(r.to_qid, cl.value_qid)
 where x.entity_kind = 'person' and it.label is not null and btrim(it.label) <> '' and it.label !~* '(^| )(coach|manager)$'
 union all
-select x.entity_id, 'nhl_api', lower(btrim(ps.position)),
+select x.entity_id, 'nhl_api', lower(btrim(ps.position)), null::text,
        1000 + dense_rank() over (partition by x.entity_id order by ps.last desc, ps.position)
 from core.external_id x
 join meta.source s on s.source_id = x.source_id and s.code = 'nhl_api'
@@ -42,7 +43,7 @@ join (select player_id, position, max(season * 10 + game_type) as last from lega
 where x.entity_kind = 'person'
 union all
 -- Wikidata's statements for the players of the NBA and CFL clubs (legacy_rosters, db/build/179), after the ones above
-select x.entity_id, 'wikidata', lower(btrim(it.label)),
+select x.entity_id, 'wikidata', lower(btrim(it.label)), lower(coalesce(r.to_qid, cl.value_qid)),
        500 + row_number() over (partition by x.entity_id order by (cl.rank = 'preferred') desc, cl.n)
 from core.external_id x
 join meta.source s on s.source_id = x.source_id and s.code = 'wikidata'
@@ -52,7 +53,7 @@ join legacy_rosters.item it on it.qid = coalesce(r.to_qid, cl.value_qid)
 where x.entity_kind = 'person' and it.label is not null and btrim(it.label) <> '' and it.label !~* '(^| )(coach|manager)$'
 union all
 -- the position codes of a person's nflverse rosters (db/build/181), the most often held first, then the latest
-select z.person_id, 'nflverse', lower(z.position), 3000 + dense_rank() over (partition by z.person_id order by z.n desc, z.last desc, z.position)
+select z.person_id, 'nflverse', lower(z.position), null::text, 3000 + dense_rank() over (partition by z.person_id order by z.n desc, z.last desc, z.position)
 from (select rs.person_id, rs.position, count(*) as n, max(se.start_year) as last
         from core.roster_stint rs join core.team_season ts using (team_season_id) join core.season se using (season_id)
        where rs.source_id = (select source_id from meta.source where code = 'nflverse') and rs.position is not null
@@ -60,7 +61,7 @@ from (select rs.person_id, rs.position, count(*) as n, max(se.start_year) as las
 
 -- A value that names two positions ("rf/lf", "Forward/center") is split.
 create temp table tok on commit drop as
-select r.person_id, r.src, t.tok, r.ord * 100 + t.n as ord
+select r.person_id, r.src, t.tok, r.value_qid, r.ord * 100 + t.n as ord
 from raw0 r cross join lateral regexp_split_to_table(r.raw, '\s*[/,]\s*') with ordinality as t(tok, n)
 where t.tok <> '';
 
@@ -70,7 +71,12 @@ select t.person_id, t.ord * 10 + a.ord as ord, a.code, a.league_code,
        ((select count(*) from ref.position_alias b where b.source_code = a.source_code and b.league_code = a.league_code and b.raw_value = a.raw_value) = 1
         and not (a.league_code = 'nhl' and a.code = 'F')) as sure
 from tok t join pl on pl.person_id = t.person_id
-join ref.position_alias a on a.source_code = t.src and a.raw_value = t.tok and a.league_code = any (pl.lg);
+join ref.position_alias a on a.source_code = t.src and a.league_code = any (pl.lg)
+  and (a.raw_value = t.value_qid or
+       (a.raw_value = t.tok and not exists (
+         select 1 from ref.position_alias qid_alias
+         where qid_alias.source_code = t.src and qid_alias.league_code = a.league_code
+           and qid_alias.raw_value = t.value_qid and t.value_qid is not null)));
 
 -- The main position is the first sure one in the order the sources gave them, else the first. A "forward" (F) is dropped when the person
 -- also has a more exact forward position (C, LW or RW) from any source.
@@ -99,7 +105,11 @@ select (select source_id from meta.source where code = u.src), 'position', u.src
        'Position left empty'
 from (select t.src, array_to_string(pl.lg, '+') as leagues, t.tok, count(distinct t.person_id) as n
       from tok t join pl on pl.person_id = t.person_id
-      where not exists (select 1 from ref.position_alias a where a.source_code = t.src and a.raw_value = t.tok and a.league_code = any (pl.lg))
+      where not exists (select 1 from ref.position_alias a where a.source_code = t.src and a.league_code = any (pl.lg)
+        and (a.raw_value = t.value_qid or (a.raw_value = t.tok and not exists (
+          select 1 from ref.position_alias qid_alias where qid_alias.source_code = t.src
+            and qid_alias.league_code = a.league_code and qid_alias.raw_value = t.value_qid
+            and t.value_qid is not null))))
       group by t.src, array_to_string(pl.lg, '+'), t.tok) u;
 
 -- Raw values in tables that are not tied to a person (SPX's rosters, injuries and game logs, Wikipedia's award tables), by league.
