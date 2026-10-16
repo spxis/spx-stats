@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.128.1",
+  "version": "0.129.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -53,6 +53,7 @@
     "test:positions": "node --test scripts/positions.test.ts",
     "test:flags": "node --test scripts/flags.test.ts",
     "test:review": "node --test scripts/personReview.test.ts",
+    "test:adminPeople": "node --test scripts/adminPeople.test.ts",
     "test:looks": "node --test scripts/seriesLooks.test.ts",
     "test:label": "node --test scripts/teamLabel.test.ts",
     "test:logofit": "node --test scripts/logoFit.test.ts",
