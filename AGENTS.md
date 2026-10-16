@@ -40,6 +40,8 @@ end. **manual** = a person or the coordinating session has to do it.
   coordinating session starts, and outside agents John runs himself on his Macs. Every one of them, and every subagent they start,
   follows [Who may change what](#who-may-change-what-every-agent-every-subagent) below.
 - Work in your own git worktree. Never touch another agent's files.
+- **Say who you are.** Every report, hand-off and message to John starts with your name and your ticket (`<name>, ticket cmv… (title)`); a
+  subagent writes `subagent of <name>`. Before any work, read [Who may change what](#who-may-change-what-every-agent-every-subagent).
 - Commit as John Morris <john@johnmorris.ca> (GitHub user johnmorrisdotca), Conventional Commits, subject 50 characters or less, no AI attribution,
   add files by name, never `git add -A`.
 - The repository is public: no dumps, member data, secrets, private notes or internal reviews.
