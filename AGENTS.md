@@ -92,6 +92,13 @@ data repair. If you start a subagent, copy this section into its instructions; i
 - **Changing what a club belongs to** (`core.franchise_league`, a new league, a new parent) reruns `175_team_brand`,
   `175_team_logo_extra`, `175_team_logo_fit` and their orphan lines must stay empty. *Broken:* 13 logos lost their club when clubs got
   AFL, NHA and PCHA memberships.
+- **John's rules for his other projects too** (his npm packages: dougu-sports, senshu-jerseys, kyogijo-stadiums, taisen-brackets,
+  meigen-sports, hata, chizu, kuni, address-plus and the rest; their tickets live on this board): publish patch and minor releases by
+  tag only when every check is green, and ask John first for a new package name, a first publish, a major version, a deprecation or a
+  licence change; never put John's SPX, SPXN or SPXIS marks in an MIT package; a docs page is in one language (a languages-comparison
+  page is the only exception; one page per language, linked); each project uses only its own port block (John's port table); nothing
+  that bills (GitHub Actions only on public repositories, no paid plan, service or add-on without John's yes); whenever you write
+  Japanese that John will see or send, give him the English beside it, because he does not read Japanese.
 - **Nothing on GitHub but pushes to `main`.** No issues, pull requests, discussions, releases or comments on any of John's
   repositories: the `gh` login is John's own account, so they appear publicly under his name. The queue is the Sumilabu board.
   *Broken:* four issues appeared on a package repository on 2026-10-15.
