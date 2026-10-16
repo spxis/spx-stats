@@ -575,6 +575,8 @@ export const FR: Dictionary = {
   "cal.jumpPlaceholder": "Aller à un jour…",
   "flag.of": "Drapeau : {name}",
   "players.colCountry": "Pays",
+  "titles.col": "Titres",
+  "titles.career": "Championnats gagnés avec une équipe, pour toute la carrière. Le même nombre que sur la page du joueur.",
   "players.countryTitle": "Pays de naissance; à défaut, pays de la nationalité",
   "players.byCountry": "Filtrer par pays : {name}",
   "players.countryOnly": "Pays : {name}",
@@ -1935,6 +1937,8 @@ export const FR: Dictionary = {
   "roster.number": "N°",
   "roster.noteList": "Joueurs de l’effectif de ce club en {season}, par poste. Un joueur qui a changé de club figure sous chacun. Aucune statistique de joueur n’est encore archivée pour cette ligue.",
   "roster.noteHidden": "Les joueurs libérés avant la saison et l’équipe d’entraînement ne sont pas listés.",
+  "roster.cupWinners": "Vainqueurs de coupe",
+  "roster.cupWinnersNote": "Joueurs de cet effectif qui ont gagné un championnat à un moment de leur carrière, pas seulement cette saison. La colonne Titres est ce total de carrière.",
   // /admin/ops: the DS1 side (web/src/lib/ops, web/src/app/(dyn)/admin/ops)
   "ops.title": "Exploitation : le côté DS1",
   "ops.lede": "Un coup d’œil très interne sur les machines derrière le site : le moissonneur, la sauvegarde Dropbox, la concordance entre DS1 et la production, la tâche quotidienne des pointages, le chien de garde et les versions. L’exécuteur à côté de DS1 envoie un instantané environ aux 15 minutes; cette page ne parle jamais à DS1.",

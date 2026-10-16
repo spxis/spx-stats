@@ -76,7 +76,7 @@ interface Props {
 export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort, limit, partial }: Props) {
   const router = useRouter();
   const { say } = useSpeaker();
-  const known = useMemo(() => columns.map((c) => c.key), [columns]);
+  const known = useMemo(() => columns.filter((c) => !c.nosort).map((c) => c.key), [columns]);
   const [pending, startTransition] = useTransition();
   const defSpec = useMemo(() => parseSort(def, known), [def, known]);
 
@@ -120,11 +120,17 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
       <thead>
         <tr>
           {columns.map((c) => {
+            const cls = `${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined;
+            if (c.nosort) {
+              return (
+                <th key={c.key} className={cls} scope="col" title={c.title}>{c.hideLabel ? <span className="sr-only">{c.label}</span> : c.label}</th>
+              );
+            }
             const on = first?.key === c.key;
             const state = on ? (first.dir === "desc" ? "descending" : "ascending") : "none";
             const next = on ? (first.dir === "desc" ? "ascending" : "descending") : c.num ? "descending" : "ascending";
             return (
-              <th key={c.key} className={`${c.num ? "num " : ""}${c.cls ?? ""}`.trim() || undefined} aria-sort={state} scope="col">
+              <th key={c.key} className={cls} aria-sort={state} scope="col">
                 <button type="button" className="sortbtn" title={c.title} aria-label={say(next === "ascending" ? "table.sortAsc" : "table.sortDesc", { label: c.label })} onClick={() => press(c)}>
                   <span className={c.hideLabel ? "sr-only" : undefined}>{c.label}</span>
                   <span className="arrow" aria-hidden="true">{on ? (first.dir === "desc" ? "▼" : "▲") : "↕"}</span>

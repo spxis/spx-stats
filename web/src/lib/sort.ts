@@ -46,6 +46,8 @@ export interface SortColumn {
   rest?: string;
   /** The label is for screen readers only (a column of icons); the header still sorts. */
   hideLabel?: boolean;
+  /** The header is a label, not a sort button. For a value the remote list cannot order by (it is not a field of that view). */
+  nosort?: boolean;
 }
 
 /** One row: what each cell draws, and the value each column sorts by (a column without one sorts as blank). */

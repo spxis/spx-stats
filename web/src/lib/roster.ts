@@ -5,11 +5,15 @@ import { rows } from "./api/client";
 import { canFallBack } from "./api/soften";
 import type { StatNumbers } from "./api/player";
 import { playerIndexSchema } from "./api/people";
+import { championshipCounts } from "./playerTitles";
 import { positionCode, positionCodes } from "./positions";
+import { countedRoster } from "./titles";
 
 const statSchema = z.object({ person_id: z.number(), stat_group: z.string(), games_played: z.number().nullable(), stats: z.record(z.string(), z.number()) });
 
-const natSchema = z.object({ person_id: z.number(), nationality_code: z.string().nullable(), birth_country_code: z.string().nullable() });
+const natSchema = z.object({
+  person_id: z.number(), nationality_code: z.string().nullable(), birth_country_code: z.string().nullable(), championship_count: z.number(),
+});
 
 /** The tables a team's roster is drawn in. */
 export type RosterGroup = "forwards" | "defense" | "goalies" | "skaters" | "batters" | "pitchers";
@@ -28,6 +32,8 @@ export interface RosterPlayer {
   stats: StatNumbers;
   /** The statistic group the numbers belong to, to pick the columns. */
   kind: "skater" | "goalie" | "batting" | "pitching";
+  /** Career championships (api.people.championship_count, the player page's total). Null when that count could not be read. */
+  titles: number | null;
 }
 
 /** A position as the short code a table shows: its code; older words become their codes. */
@@ -46,8 +52,11 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
     if (!stats.length) return [];
     const ids = [...new Set(stats.map((s) => s.person_id))];
     const people = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,positions,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
-    const nats = new Map((await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code`, natSchema)
-      .catch((e) => { if (!canFallBack(e)) throw e; return []; })).map((n) => [n.person_id, n.birth_country_code ?? n.nationality_code]));
+    // championship_count is the player page's career total. A soft failure leaves the roster up and the Titles column off.
+    const bios = await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code,championship_count`, natSchema)
+      .catch((e) => { if (!canFallBack(e)) throw e; return null; });
+    const nats = new Map((bios ?? []).map((n) => [n.person_id, n.birth_country_code ?? n.nationality_code]));
+    const titleOf = bios ? new Map(bios.map((n) => [n.person_id, n.championship_count])) : null;
     const out: RosterPlayer[] = [];
     for (const id of ids) {
       const mine = stats.filter((s) => s.person_id === id);
@@ -62,7 +71,7 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
       else if (sk) row = { kind: "skater", group: pos === "D" ? "defense" : pos && FORWARD.has(pos) ? "forwards" : "skaters", stats: sk.stats };
       else if (pitch && (!bat || (pitch.games_played ?? 0) >= (bat.games_played ?? 0))) row = { kind: "pitching", group: "pitchers", stats: pitch.stats };
       else if (bat) row = { kind: "batting", group: "batters", stats: bat.stats };
-      if (row) out.push({ id, name: p.name, pos, positions, nat: nats.get(id)?.toUpperCase() ?? null, ...row });
+      if (row) out.push({ id, name: p.name, pos, positions, nat: nats.get(id)?.toUpperCase() ?? null, titles: titleOf ? (titleOf.get(id) ?? 0) : null, ...row });
     }
     return out;
   } catch (e) {
@@ -92,24 +101,35 @@ export interface ListedPlayer {
   number: number | null;
   /** nflverse's roster status (ACT, RES, CUT, DEV ...), else null. */
   status: string | null;
+  /** Career championships (api.people.championship_count). Null when that count could not be read. */
+  titles: number | null;
 }
 
 /**
- * The players listed on one club's season (api.team_season_roster, migration 093) for a league whose rosters are loaded without statistics. One request.
- * Empty for any other league (a few award winners' stints would be a partial list), when nothing is listed and when the read fails softly.
+ * The players listed on one club's season (api.team_season_roster, migration 093) for a league whose rosters are loaded without statistics.
+ * A second read brings each player's career championships from api.people. Empty for any other league (a few award winners' stints would be a
+ * partial list), when nothing is listed and when the read fails softly.
  */
 export const getTeamList = cache(async (league: string, teamSeasonId: number): Promise<ListedPlayer[]> => {
   if (!LISTED.has(league)) return [];
   try {
     const list = await rows("team_season_roster", `team_season_id=eq.${teamSeasonId}&select=person_id,name,position,positions,country,jersey_number,status`, listSchema);
+    const titleOf = await championshipCounts(list.map((p) => p.person_id)).catch((e) => { if (!canFallBack(e)) throw e; return null; });
     return list.map((p) => ({
       id: p.person_id, name: p.name, pos: short(p.position), positions: positionCodes(p.positions, p.position), nat: p.country?.toUpperCase() ?? null,
-      number: p.jersey_number, status: p.status,
+      number: p.jersey_number, status: p.status, titles: titleOf ? (titleOf.get(p.person_id) ?? 0) : null,
     }));
   } catch (e) {
     if (!canFallBack(e)) throw e;
     return [];
   }
+});
+
+/** The players the roster table draws for one club season, statistics first, else the listed roster without cuts and the practice squad. */
+export const rosterShownPlayers = cache(async (league: string, teamSeasonId: number): Promise<Array<{ titles: number | null }>> => {
+  const roster = await getRoster(teamSeasonId);
+  if (roster.length) return countedRoster(roster);
+  return countedRoster(await getTeamList(league, teamSeasonId));
 });
 
 const staffSchema = z.object({

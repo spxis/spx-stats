@@ -575,6 +575,8 @@ export const JA: Dictionary = {
   "cal.jumpPlaceholder": "日を指定…",
   "flag.of": "国旗：{name}",
   "players.colCountry": "国",
+  "titles.col": "優勝",
+  "titles.career": "チームで勝ち取った優勝の数（キャリア全体）。選手ページと同じ数です。",
   "players.countryTitle": "出生国（出生国が不明な場合は国籍の国）",
   "players.byCountry": "国で絞り込む：{name}",
   "players.countryOnly": "国：{name}",
@@ -1935,6 +1937,8 @@ export const JA: Dictionary = {
   "roster.number": "背番号",
   "roster.noteList": "{season}のこのクラブの選手名簿（ポジション順）です。移籍した選手はそれぞれのクラブに載ります。このリーグの選手成績はまだ保管していません。",
   "roster.noteHidden": "シーズン前に解雇された選手と練習生は載せていません。",
+  "roster.cupWinners": "優勝経験者",
+  "roster.cupWinnersNote": "この名簿の選手のうち、このシーズンだけでなくキャリアのどこかで優勝した人数です。優勝の列はその通算で、選手ページと同じ数です。",
   // /admin/ops: the DS1 side (web/src/lib/ops, web/src/app/(dyn)/admin/ops)
   "ops.title": "運用：DS1側の状況",
   "ops.lede": "サイトの裏側にある機械の状況を見る、ごく内部向けのページです。ハーベスター、Dropboxのバックアップ、DS1と本番環境が一致しているか、毎日のスコア更新、ウォッチドッグ、リリースを扱います。DS1の隣のランナーが約15分ごとにスナップショットを送ります。このページがDS1に直接つながることはありません。",

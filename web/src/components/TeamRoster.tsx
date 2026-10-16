@@ -11,7 +11,16 @@ import { getPositions } from "@/lib/positionData";
 import { positionsShort } from "@/lib/positions";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
 import { countryName } from "@/lib/people-format";
+import { countedRoster } from "@/lib/titles";
 import { queryHref } from "./ViewTabs";
+
+/** The Titles column, after the name. Left off when the career count could not be read. */
+function titleColumn<T extends { titles: number | null }>(
+  label: string, title: string, fmt: (n: number) => string, rows: readonly T[],
+): ColumnSpec<T>[] {
+  if (!rows.some((p) => p.titles != null)) return [];
+  return [{ key: "titles", label, title, num: true, get: (p) => p.titles, cell: (p) => (p.titles == null ? "" : fmt(p.titles)) }];
+}
 
 /** The columns each kind of player shows, from lib/playerStats, and the order the table opens in. */
 const SHOW = {
@@ -36,6 +45,7 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
     return listed.length ? <ListedRoster lg={lg} season={season} listed={listed} path={path} sp={sp} /> : null;
   }
   const { say, fmt, locale } = await currentSpeaker();
+  const titles = titleColumn<RosterPlayer>(say("titles.col"), say("titles.career"), fmt, everyone);
   const playerPath = await getPlayerPaths();
   const book = await positionBook();
   const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
@@ -76,6 +86,7 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
         const specs: ColumnSpec<RosterPlayer>[] = [
           ...(hasNat ? [{ key: "nat", label: say("roster.nat"), get: (p) => p.nat, cell: (p) => <Flag code={p.nat} /> } satisfies ColumnSpec<RosterPlayer>] : []),
           { key: "player", label: say("roster.player"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={playerPath(p.id, p.name, lg)} prefetch={false}>{p.name}</Link> },
+          ...titles,
           ...(hasPos ? [{ key: "pos", label: say("roster.pos"), get: (p) => positionsShort(p.positions), cell: (p) => book.list(p.positions, null, [lg]) } satisfies ColumnSpec<RosterPlayer>] : []),
           ...cols.map((c): ColumnSpec<RosterPlayer> => ({
             key: c.key, label: say(c.label as PhraseKey), title: say(c.title as PhraseKey), num: true,
@@ -95,9 +106,6 @@ export async function TeamRoster({ lg, season, teamSeasonId, path, sp }: {
   );
 }
 
-/** Players the roster sources hide: released before the season (nflverse CUT) and the practice squad (DEV); they are in the archive, not on this table. */
-const HIDDEN = new Set(["CUT", "DEV"]);
-
 /**
  * The roster of a club in a league whose player statistics are not archived (NBA, NFL, CFL): one table of the players listed for the season in
  * position order (the league's own list), with the number, the country and the position, and the same position and country filters.
@@ -105,10 +113,10 @@ const HIDDEN = new Set(["CUT", "DEV"]);
 async function ListedRoster({ lg, season, listed, path, sp }: {
   lg: string; season: string; listed: ListedPlayer[]; path: string; sp: Record<string, string | string[] | undefined>;
 }) {
-  const { say, locale } = await currentSpeaker();
+  const { say, fmt, locale } = await currentSpeaker();
   const [playerPath, book, positions] = await Promise.all([getPlayerPaths(), positionBook(), getPositions()]);
   const order = new Map(positions.filter((x) => x.league === lg).map((x) => [x.code, x.sort]));
-  const shown = listed.filter((p) => !p.status || !HIDDEN.has(p.status)).sort((a, c) => a.name.localeCompare(c.name, locale));
+  const shown = countedRoster(listed).sort((a, c) => a.name.localeCompare(c.name, locale));
   const hidden = listed.length - shown.length;
   const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
   const poss = [...new Set(shown.map((p) => p.pos).filter((x): x is string => !!x))].sort((a, c) => (order.get(a) ?? 999) - (order.get(c) ?? 999) || a.localeCompare(c));
@@ -121,6 +129,7 @@ async function ListedRoster({ lg, season, listed, path, sp }: {
     ...(shown.some((p) => p.nat) ? [{ key: "nat", label: say("roster.nat"), get: (p) => p.nat, cell: (p) => <Flag code={p.nat} /> } satisfies ColumnSpec<ListedPlayer>] : []),
     ...(shown.some((p) => p.number != null) ? [{ key: "no", label: say("roster.number"), num: true, get: (p) => p.number } satisfies ColumnSpec<ListedPlayer>] : []),
     { key: "player", label: say("roster.player"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={playerPath(p.id, p.name, lg)} prefetch={false}>{p.name}</Link> },
+    ...titleColumn(say("titles.col"), say("titles.career"), fmt, shown),
     ...(shown.some((p) => p.positions.length) ? [{ key: "pos", label: say("roster.pos"), get: (p) => (p.pos ? (order.get(p.pos) ?? 999) : null), cell: (p) => book.list(p.positions, null, [lg]) } satisfies ColumnSpec<ListedPlayer>] : []),
   ];
   const table = tableOf(players, specs, (p) => p.id);

@@ -27,6 +27,7 @@ import { getPlayerCountries, getReferenceCountries } from "@/lib/playerCountries
 import { coverage, referenceOf, type CountryFilters } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { getPlayerTeams, playerTeamsReady } from "@/lib/playerTeams";
+import { championshipCounts } from "@/lib/playerTitles";
 import { split, stintLine } from "@/lib/playerTeamModel";
 import { getBrands } from "@/lib/data";
 import { logoFor } from "@/lib/brand";
@@ -97,10 +98,12 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
     getReferenceCountries(choices),
   ]);
   // The Teams column: every player of the page's teams in one read; without the view there is no column.
-  const [teams, brands, slugs] = await Promise.all([
+  const [teams, brands, slugs, titles] = await Promise.all([
     teamsOn && data ? getPlayerTeams(data.list.map((p) => p.person_id)).catch(() => null) : null,
     teamsOn ? getBrands() : null,
     teamsOn ? getSlugs() : null,
+    // The same career total as the player page. Not a field of the index, so the column is not a sort of the whole list.
+    data ? championshipCounts(data.list.map((p) => p.person_id)) : null,
   ]);
   const keep = { league: league || null, team: teamSlug || null, nat: nat || null, q: q || null, letter: letter ? letter.toUpperCase() : null, letter_by: letterBy === "first" ? "first" : null, sort: sortText === DEF_SORT ? null : sortText, from: range ? String(range.from) : null, to: range ? String(range.to) : null };
   const href = (changes: Record<string, string | null>) => queryHref("/players", sp, { ...keep, page: null, ...changes });
@@ -143,6 +146,10 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
     { key: "years", label: say("col.years"), cls: "nowrap", title: say("players.yearsTitle"), rest: "last_season", get: (p: PlayerIndexRow) => p.last_season, cell: (p: PlayerIndexRow) => (p.first_season == null ? "" : p.last_season != null && p.last_season !== p.first_season ? `${p.first_season}–${p.last_season}` : String(p.first_season)) },
     { key: "seasons", label: say("players.colSeasons"), num: true, rest: "seasons_played", get: (p: PlayerIndexRow) => p.seasons_played, cell: (p: PlayerIndexRow) => fmt(p.seasons_played) },
     { key: "awards", label: say("players.colAwards"), num: true, rest: "award_count", get: (p: PlayerIndexRow) => p.award_count, cell: (p: PlayerIndexRow) => fmt(p.award_count) },
+    ...(titles ? [{
+      key: "titles", label: say("titles.col"), title: say("titles.career"), num: true, nosort: true,
+      get: (p: PlayerIndexRow) => titles.get(p.person_id) ?? 0, cell: (p: PlayerIndexRow) => fmt(titles.get(p.person_id) ?? 0),
+    } satisfies ColumnSpec<PlayerIndexRow>] : []),
   ], (p) => p.person_id) : null;
 
   // The country filter is a row of chips among the other filters; the donut and the map are a small strip under the list. They share one scope, so a country

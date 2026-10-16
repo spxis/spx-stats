@@ -43,6 +43,8 @@ import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getFigureRanks } from "@/lib/teamFigures";
 import { teamRanks } from "@/lib/teamRanks";
 import { getPaths, teamSeasonOf } from "@/lib/teamSlugs";
+import { rosterShownPlayers } from "@/lib/roster";
+import { cupWinnerCount } from "@/lib/titles";
 import { clubPins } from "@/lib/venueMap";
 import { SeasonNav } from "@/components/SeasonNav";
 import { getVenuePlaces } from "@/lib/venuePlace";
@@ -166,6 +168,10 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
     ...longest(streaks.loss, "streaks.longestLoss"),
   ];
   figs.push(...streakFigs);
+  // Cup winners: players on this roster with a career championship (api.people.championship_count), not titles won only this season.
+  const rosterShown = st ? await rosterShownPlayers(lg, st.team_id) : [];
+  const cupWinners = rosterShown.length > 0 && rosterShown.every((p) => p.titles != null) ? cupWinnerCount(rosterShown.map((p) => p.titles)) : null;
+  if (cupWinners != null) figs.push([say("roster.cupWinners"), cupWinners]);
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, leagueSt, complete, { name, played: st?.gp ?? null, franchise: f });
   const here = summary.seasons.find((x) => x.league === lg && x.year === y);
   const ranks = teamRanks(leagueSt, f, !!here && here.games > 0 && here.finals < 0.9 * here.games, LG[lg]);
@@ -209,6 +215,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       </section>
       {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
       <Figures items={figs} />
+      {cupWinners != null ? <p className="note">{say("roster.cupWinnersNote")}</p> : null}
       {streakFigs.length ? <p className="note">{say(streakBreaks ? "streaks.noteBreak" : "streaks.note")}</p> : null}
       {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
       <TeamPlayoffSeries lg={lg} year={y} f={f} />
