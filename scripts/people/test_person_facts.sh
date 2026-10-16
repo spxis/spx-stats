@@ -30,9 +30,11 @@ do $$ begin
   if not exists(select 1 from core.person where person_id=51 and primary_position='SG' and positions=array['SG']) then raise exception '186 ignored QID mapping or accepted conflicting label'; end if;
 end $$;
 update core.person set primary_position='C',positions=array['C'] where person_id=53;
+update core.person set primary_position='SG',positions=array['SG'] where person_id=55;
 SQL
 "${P[@]}" -f "$REPO/db/build/214_wikidata_harvest_person_facts.sql"
 "${P[@]}" -f "$REPO/scripts/people/audit_unmapped_position_qids.sql" >/dev/null
+"${P[@]}" -f "$REPO/scripts/people/audit_position_issue_coverage.sql" >/dev/null
 "${P[@]}" <<'SQL'
 do $$ begin
   if not exists(select 1 from core.person where person_id=1 and birth_date='1980-01-02') then raise exception 'exact birth date not filled'; end if;
@@ -44,10 +46,15 @@ do $$ begin
   if not exists(select 1 from core.person where person_id=51 and primary_position='SG' and positions=array['SG']) then raise exception 'QID position mapping did not beat conflicting label'; end if;
   if exists(select 1 from core.person where person_id in (52,54) and primary_position is not null) then raise exception 'unknown or unsupported-league position was guessed'; end if;
   if not exists(select 1 from core.person where person_id=53 and primary_position='C' and positions=array['C']) then raise exception 'existing position was overwritten'; end if;
+  if not exists(select 1 from core.person where person_id=56 and primary_position='G' and positions=array['G']) then raise exception 'combo guard QID was not conservatively mapped to generic guard'; end if;
+  if not exists(select 1 from core.person where person_id=55 and primary_position='SG' and positions=array['SG']) then raise exception 'unknown position affected an existing position'; end if;
+  if exists(select 1 from meta.data_issue where entity_key='wikidata-enrichment:Q155:P413:unmapped') then raise exception 'unmapped issue was emitted despite an existing position'; end if;
+  if not exists(select 1 from meta.data_issue where entity_key='wikidata-enrichment:Q152:P413:unmapped') then raise exception 'unmapped issue was suppressed for an empty position'; end if;
   if not exists(select 1 from ref.position_alias where source_code='external' and league_code='nba' and raw_value='preserve-me') then raise exception '185 deleted an alias owned by another source'; end if;
   if not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='nba' and raw_value='q212413' and code='PG') then raise exception 'NBA point-guard QID alias missing'; end if;
   if not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='nba' and raw_value='q462471' and code='PF') then raise exception 'NBA power-forward QID alias missing'; end if;
   if not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='nba' and raw_value='q222052' and code='C') then raise exception 'NBA center QID alias missing'; end if;
+  if not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='nba' and raw_value='q1113709' and code='G') then raise exception 'NBA combo-guard QID alias missing'; end if;
   if not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='mlb' and raw_value='q1048902' and code='P') then raise exception 'MLB pitcher QID alias missing'; end if;
   if not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='nfl' and raw_value='q918224' and code='WR') or not exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='cfl' and raw_value='q918224' and code='WR') then raise exception 'gridiron wide-receiver QID aliases missing'; end if;
   if exists(select 1 from ref.position_alias where source_code='wikidata' and league_code='nhl' and raw_value='q273199') then raise exception 'basketball QID mapped to hockey'; end if;
@@ -69,6 +76,8 @@ ISSUES_BEFORE_RERUN=$("${P[@]}" -Atc "select count(*) from meta.data_issue where
 do $$ begin
   if not exists(select 1 from core.person where person_id=1 and birth_date='1980-01-02') or not exists(select 1 from core.person where person_id=3 and death_date='2020-05-06') then raise exception 'positive facts disappeared on rerun'; end if;
   if not exists(select 1 from core.person where person_id=51 and primary_position='SG' and positions=array['SG']) then raise exception 'QID position mapping disappeared on rerun'; end if;
+  if not exists(select 1 from core.person where person_id=56 and primary_position='G' and positions=array['G']) then raise exception 'combo guard QID mapping disappeared on rerun'; end if;
+  if exists(select 1 from meta.data_issue where entity_key='wikidata-enrichment:Q155:P413:unmapped') then raise exception 'existing-position unmapped issue returned on rerun'; end if;
   if (select count(*) from meta.data_issue where entity_kind='person_wikidata_enrichment') < 11 then raise exception 'owned issue set is incomplete'; end if;
   if not exists(select 1 from meta.data_issue where entity_kind='game' and entity_key='unrelated:game:1') then raise exception 'unrelated data issue removed on rerun'; end if;
 end $$;

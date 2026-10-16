@@ -201,6 +201,9 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'nba', 'center', 1, 'C'),
   -- Wikidata Q222052: basketball center; https://www.wikidata.org/wiki/Q222052
   ('wikidata', 'nba', 'q222052', 1, 'C'),
+  -- Wikidata Q1113709: combo guard (point/shooting guard); generic G is the
+  -- narrowest existing NBA code. https://en.wikipedia.org/wiki/Combo_guard
+  ('wikidata', 'nba', 'q1113709', 1, 'G'),
   ('wikidata', 'nba', 'guard', 1, 'G'),
   ('wikidata', 'nba', 'forward', 1, 'F'),
   ('wikidata', 'nba', 'forward center', 1, 'F-C'),

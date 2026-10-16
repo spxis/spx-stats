@@ -186,7 +186,8 @@ select 'wikidata-enrichment:'||t.qid||':P413:unmapped',
        format('Wikidata %s position claims have no alias in its known leagues',t.qid),
        'Left position unchanged; no league or position was guessed'
 from target t join c using(qid) where c.prop='P413'
-  and not exists(select 1 from position_fact p where p.qid=t.qid);
+  and not exists(select 1 from position_fact p where p.qid=t.qid)
+  and t.primary_position is null and coalesce(cardinality(t.positions),0)=0;
 
 -- Record conflicts with existing values, never overwrite them.
 insert into issues
