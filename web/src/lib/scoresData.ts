@@ -7,7 +7,7 @@ import { currentSpeaker } from "./i18n/currentLocale";
 import { LG, type LeagueCode } from "./leagues";
 import { pageMeta } from "./meta";
 import { addDay, scoresPath, todayUtc } from "./scores";
-import { stripWindow } from "./weekStrip";
+import { stripDates } from "./weekStrip";
 
 /** The day /lg/scores opens on: today's games, else the latest game day before today (the first day if the league has none yet). */
 export async function defaultDay(lg: string): Promise<string | null> {
@@ -31,7 +31,7 @@ export async function seasonDay(lg: string, y: number): Promise<string | null> {
  * either side when the day is empty, the league's first and last day, and the days of the season the day belongs to.
  */
 export const loadScores = cache(async (lg: string, day: string) => {
-  const window = stripWindow(day);
+  const window = stripDates(day);
   const from = window[0], to = window[window.length - 1];
   const [around, bounds] = await Promise.all([getGamesBetween(lg, from, to), getGameBounds(lg)]);
   const games = around.filter((g) => g.game_date === day);

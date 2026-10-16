@@ -13,7 +13,7 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 .daystrip :is(a, button).holiday { background: color-mix(in srgb, var(--today) 13%, var(--panel)); }
 /* The date is the big thing in a cell; the count is a small badge below it (a dash for a day with no games). */
 .daystrip .wd { font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
-.daystrip .md { font: 700 clamp(15px, 4.2vw, 19px)/1 var(--display); white-space: nowrap; }
+.daystrip .md { font: 700 clamp(12px, 3.5vw, 19px)/1 var(--display); white-space: nowrap; }
 .daystrip .ct { display: inline-flex; align-items: baseline; justify-content: center; gap: 4px; min-width: 22px; padding: 3px 6px; background: var(--soft); color: var(--muted); }
 .daystrip .ct b { font: 700 12px/1 var(--mono); color: var(--ink); }
 .daystrip .ct .cw { display: none; font: 600 11px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; }

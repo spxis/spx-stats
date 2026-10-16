@@ -9,7 +9,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { loadScores } from "@/lib/scoresData";
-import { stripWindow } from "@/lib/weekStrip";
+import { stripDates } from "@/lib/weekStrip";
 import { AccentStyle } from "./AccentStyle";
 import { OfficialLinks } from "./OfficialLinks";
 import { StartTime } from "./StartTime";
@@ -83,7 +83,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
     key: d, weekday: dt.weekdays[atUtc(d).getUTCDay()], date: dt.monthDayShort(atUtc(d)), games: counts.get(d) ?? 0,
     word: plural("scores.gamesWord", counts.get(d) ?? 0), label: `${dt.full(atUtc(d))}: ${plural("count.games", counts.get(d) ?? 0)}`, href: scoresPath(lg, d),
   });
-  const strip = stripWindow(day).map(makeDay);
+  const strip = stripDates(day).map(makeDay);
   const years = seasons.filter((s) => s.league === lg && s.games > 0).map((s) => s.year).sort((a, b) => b - a);
   const nearest = [
     before ? { d: before, text: say("scores.earlier", { date: dt.short(atUtc(before)) }) } : null,

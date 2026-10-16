@@ -30,20 +30,17 @@ export function stripDates(day: string, layout: StripLayout = "fixed", weekStart
   return layout === "fixed" ? calendarWeek(day, weekStartsOn) : around(day);
 }
 
-/** Small contiguous input window sufficient for either fixed or dynamic rendering. */
-export function stripWindow(day: string, weekStartsOn = 0): string[] {
-  const fixed = calendarWeek(day, weekStartsOn), dynamic = around(day);
-  const first = fixed[0] < dynamic[0] ? fixed[0] : dynamic[0];
-  const last = fixed[6] > dynamic[6] ? fixed[6] : dynamic[6];
-  const length = (Date.parse(`${last}T00:00:00Z`) - Date.parse(`${first}T00:00:00Z`)) / 86_400_000;
-  return Array.from({ length: length + 1 }, (_, i) => addDay(first, i));
-}
-
 export type WeekDirection = "past" | "future" | "current" | "unknown";
 export function weekDirection(day: string, today: string, weekStartsOn = 0): WeekDirection {
   if (!day || !today) return "unknown";
   const start = calendarWeekStart(day, weekStartsOn), current = calendarWeekStart(today, weekStartsOn);
   return start < current ? "past" : start > current ? "future" : "current";
+}
+
+/** Where the today hint goes for the week holding `day`: the chevron toward today, today's own chip ("now"), or nowhere while today is unknown. */
+export function todayHint(day: string, today: string, weekStartsOn = 0): "back" | "forward" | "now" | null {
+  const dir = weekDirection(day, today, weekStartsOn);
+  return dir === "past" ? "forward" : dir === "future" ? "back" : dir === "current" ? "now" : null;
 }
 
 const ymd = (year: number, month: number, date: number): string => `${year}-${String(month).padStart(2, "0")}-${String(date).padStart(2, "0")}`;
@@ -89,8 +86,6 @@ export function usHolidayDates(years: number[]): Map<string, HolidayKey> {
 
 export interface Week {
   mode: WeekMode;
-  /** Up to seven days, oldest first. */
-  days: string[];
   /** The day shown open until the reader picks another: today, the first day, or the final's day. */
   chosen: string;
 }
@@ -107,11 +102,10 @@ export function weekOf(games: { date: string; phase: string }[], complete: boole
   if (!dates.length) return null;
   const first = dates[0], last = dates[dates.length - 1];
   if (!complete && today) {
-    if (today >= addDay(first, -3) && today <= addDay(last, 3)) return { mode: "today", days: around(today), chosen: today };
-    if (today < first) return { mode: "first", days: dates.slice(0, 7), chosen: first };
+    if (today >= addDay(first, -3) && today <= addDay(last, 3)) return { mode: "today", chosen: today };
+    if (today < first) return { mode: "first", chosen: first };
   }
   const playoff = [...new Set(games.filter((g) => g.phase === "p").map((g) => g.date))].sort();
   const pool = playoff.length ? playoff : dates;
-  const days = pool.slice(-7);
-  return { mode: playoff.length ? "playoffs" : "last", days, chosen: days[days.length - 1] };
+  return { mode: playoff.length ? "playoffs" : "last", chosen: pool[pool.length - 1] };
 }

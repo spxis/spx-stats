@@ -3,7 +3,7 @@
 import Link from "@/components/Link";
 import { useSyncExternalStore } from "react";
 import { localToday } from "@/lib/format";
-import { stripDates, usHolidayDates, weekDirection, type HolidayKey, type StripLayout } from "@/lib/weekStrip";
+import { stripDates, todayHint, usHolidayDates, type HolidayKey, type StripLayout } from "@/lib/weekStrip";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./scores.css";
 
@@ -53,8 +53,7 @@ export function DayStrip({ days, current, aria, onPick, jump, layout = "fixed", 
 }) {
   const { say } = useSpeaker();
   const today = useSyncExternalStore(subscribe, localToday, () => "");
-  const start = weekDirection(current, today, weekStartsOn);
-  const todayArrow = start === "past" ? "forward" : start === "future" ? "back" : null;
+  const hint = todayHint(current, today, weekStartsOn);
   const keys = stripDates(current, layout, weekStartsOn);
   const source = new Map(days.map((d) => [d.key, d]));
   const visible = keys.map((key) => source.get(key) ?? { key, weekday: "", date: key, games: 0, word: "", label: key });
@@ -64,7 +63,7 @@ export function DayStrip({ days, current, aria, onPick, jump, layout = "fixed", 
   );
   const arrow = (dir: "back" | "forward", href: string | undefined) => {
     const label = say(dir === "back" ? "scores.weekBack" : "scores.weekForward");
-    const marked = todayArrow === dir;
+    const marked = hint === dir;
     const aria = marked ? `${label} (${say(dir === "forward" ? "scores.todayLater" : "scores.todayEarlier")})` : label;
     const className = "jump" + (marked ? " has-today" : "");
     const inside = <><Chevrons dir={dir} />{marked ? <span className="jump-today">{say("scores.todayMark")}</span> : null}</>;
@@ -92,8 +91,8 @@ export function DayStrip({ days, current, aria, onPick, jump, layout = "fixed", 
           isToday !== undefined ? say("scores.todayMark") : null].filter(Boolean).join("; ");
         const className = [d.games ? "has" : "", shadeWeekends && weekend ? "weekend" : "", shadeHolidays && holiday ? "holiday" : ""].filter(Boolean).join(" ") || undefined;
         return d.href && !onPick
-          ? <Link key={d.key} href={d.href} prefetch={false} className={className} aria-current={on} data-today={isToday} data-weekend={shadeWeekends && weekend ? "" : undefined} data-holiday={shadeHolidays && holiday ? "" : undefined} title={holiday && shadeHolidays ? holiday : undefined} aria-label={label}>{inside}{isToday !== undefined && start === "current" ? <span className="nowmark">{say("scores.nowMark")}</span> : null}</Link>
-          : <button key={d.key} type="button" className={className} aria-current={on} data-today={isToday} data-weekend={shadeWeekends && weekend ? "" : undefined} data-holiday={shadeHolidays && holiday ? "" : undefined} title={holiday && shadeHolidays ? holiday : undefined} aria-label={label} onClick={() => onPick?.(d.key)}>{inside}{isToday !== undefined && start === "current" ? <span className="nowmark">{say("scores.nowMark")}</span> : null}</button>;
+          ? <Link key={d.key} href={d.href} prefetch={false} className={className} aria-current={on} data-today={isToday} data-weekend={shadeWeekends && weekend ? "" : undefined} data-holiday={shadeHolidays && holiday ? "" : undefined} title={holiday && shadeHolidays ? holiday : undefined} aria-label={label}>{inside}{isToday !== undefined && hint === "now" ? <span className="nowmark">{say("scores.nowMark")}</span> : null}</Link>
+          : <button key={d.key} type="button" className={className} aria-current={on} data-today={isToday} data-weekend={shadeWeekends && weekend ? "" : undefined} data-holiday={shadeHolidays && holiday ? "" : undefined} title={holiday && shadeHolidays ? holiday : undefined} aria-label={label} onClick={() => onPick?.(d.key)}>{inside}{isToday !== undefined && hint === "now" ? <span className="nowmark">{say("scores.nowMark")}</span> : null}</button>;
       })}
       {jump || onWeekChange ? arrow("forward", jump?.forward) : null}
     </nav>

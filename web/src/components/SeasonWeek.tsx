@@ -6,7 +6,7 @@ import type { AbbrMap } from "@/lib/abbr";
 import { atUtc, localToday } from "@/lib/format";
 import type { GameTuple } from "@/lib/season";
 import { addDay, scoresPath } from "@/lib/scores";
-import { stripDates, stripWindow, weekOf, type WeekMode } from "@/lib/weekStrip";
+import { stripDates, weekOf, type WeekMode } from "@/lib/weekStrip";
 import { DayStrip } from "./DayStrip";
 import { GameRow } from "./GameCalendar";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -46,7 +46,7 @@ export function SeasonWeek({ lg, abbrs, year, complete }: { lg: string; abbrs: A
     const n = byDay.get(d)?.length ?? 0;
     return { key: d, weekday: dt.weekdays[atUtc(d).getUTCDay()], date: dt.monthDayShort(atUtc(d)), games: n, word: plural("scores.gamesWord", n), label: `${dt.full(atUtc(d))}: ${plural("count.games", n)}` };
   };
-  const days = stripWindow(anchor).map(makeDay);
+  const days = dates.map(makeDay);
   const changeWeek = (direction: "back" | "forward") => {
     const next = addDay(chosen, direction === "back" ? -7 : 7);
     setViewDate(next);
