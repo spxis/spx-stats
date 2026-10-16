@@ -10,6 +10,8 @@
 # Both pass: prints "live auth: ok" and exits 0. Either fails: says which, prints the exact rollback command for the previous production
 # deployment (found with one `vercel list`; --new names the deployment just made so it is not offered as its own rollback; --skip-list skips
 # that lookup) and exits 1. A caller must then NOT prune old deployments: the previous one is the way back.
+# A browser User-Agent is sent: Vercel bot protection answers 429 to bare curl, which is not a missing sign-in control. HTTP 429 is skipped,
+# never treated as a rollback.
 # Settings for tests: SPX_LIVE_URL (the default for --url), SPX_VERCEL_SCOPE.
 
 SCOPE="${SPX_VERCEL_SCOPE:-spxis-projects-0d6306b4}"
@@ -20,7 +22,7 @@ while [ $# -gt 0 ]; do
     --url) URL="${2:-}"; shift ;;
     --new) NEW="${2:-}"; shift ;;
     --skip-list) LIST=0 ;;
-    -h|--help) sed -n '2,15p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown option: $1"; exit 2 ;;
   esac
   shift
@@ -28,6 +30,9 @@ done
 URL="${URL%/}"
 
 say() { printf '%s live-auth: %s\n' "$(date '+%H:%M:%S')" "$*"; }
+
+# Browser-like UA so the edge does not treat this as a bot. Bare curl has been 429'd.
+UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 
 # The previous READY production deployment, as a URL on stdout (empty when it cannot be found).
 previous_url() {
@@ -39,19 +44,28 @@ previous_url() {
 }
 
 problems=()
-providers="$(curl -s -m 20 -w '\n%{http_code}' "$URL/api/auth/providers" 2>/dev/null)"
+skipped=0
+
+providers="$(curl -s -m 20 -A "$UA" -w '\n%{http_code}' "$URL/api/auth/providers" 2>/dev/null)"
 code="${providers##*$'\n'}"; body="${providers%$'\n'*}"
-if [ "$code" != 200 ]; then problems+=("$URL/api/auth/providers answered HTTP ${code:-none} (expected 200: the sign-in routes are off)")
+if [ "$code" = 429 ]; then say "skip $URL/api/auth/providers HTTP 429 (rate limit; not a sign-in failure)"; skipped=1
+elif [ "$code" != 200 ]; then problems+=("$URL/api/auth/providers answered HTTP ${code:-none} (expected 200: the sign-in routes are off)")
 elif ! printf '%s' "$body" | grep -q '"google"'; then problems+=("$URL/api/auth/providers answered 200 but does not list google")
 fi
 
-home="$(curl -s -m 30 -w '\n%{http_code}' "$URL/" 2>/dev/null)"
+home="$(curl -s -m 30 -A "$UA" -w '\n%{http_code}' "$URL/" 2>/dev/null)"
 code="${home##*$'\n'}"; body="${home%$'\n'*}"
-if [ "$code" != 200 ]; then problems+=("$URL/ answered HTTP ${code:-none}")
+if [ "$code" = 429 ]; then say "skip $URL/ HTTP 429 (rate limit; not a sign-in failure)"; skipped=1
+elif [ "$code" != 200 ]; then problems+=("$URL/ answered HTTP ${code:-none}")
 elif ! printf '%s' "$body" | grep -q 'class="signin-link"'; then problems+=("$URL/ has no sign-in control in its HTML (the pages were built signed-out)")
 fi
 
-if [ "${#problems[@]}" = 0 ]; then say "ok ($URL lists google and the home page carries the sign-in control)"; exit 0; fi
+if [ "${#problems[@]}" = 0 ]; then
+  if [ "$skipped" = 1 ]; then say "ok ($URL: some checks skipped after HTTP 429; none failed)"
+  else say "ok ($URL lists google and the home page carries the sign-in control)"
+  fi
+  exit 0
+fi
 
 say "FAILED: sign-in is not working on the live site:"
 for p in "${problems[@]}"; do say "  - $p"; done

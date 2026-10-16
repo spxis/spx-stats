@@ -1,16 +1,25 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
+import { ListHeading } from "@/components/ListHeading";
+import { NatLink } from "@/components/NatLink";
+import { Pager } from "@/components/Pager";
+import { PlayersFilterBar } from "@/components/PlayersFilterBar";
+import { SegChips } from "@/components/SegChips";
 import { SortTable } from "@/components/SortTable";
+import { queryHref } from "@/components/ViewTabs";
 import { requireAdmin } from "@/lib/auth/user";
+import { hasFlag } from "@/lib/flagCodes";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { parsePeopleSearch, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
+import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
+import { countryName } from "@/lib/people-format";
 import { playerPath } from "@/lib/playerPath";
-import type { SortColumn, SortRow } from "@/lib/sort";
+import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
+import { rangeFromQuery } from "@/lib/yearRange";
 import { PeopleTabs } from "./PeopleTabs";
 
 /**
- * Search every core.person, including athletes with no club season. Admin only, drawn per request,
- * one query per search. Anyone else gets a 404. Never cached. In the reader's language.
+ * Every core.person, including athletes with no club season. Admin only, drawn per request.
+ * The filter bar is the same module /players uses. Anyone else gets a 404. Never cached.
  */
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -19,16 +28,8 @@ export const metadata: Metadata = { title: "People", robots: { index: false, fol
 
 type Query = Record<string, string | string[] | undefined>;
 
-const COLUMNS: SortColumn[] = [
-  { key: "name", label: "Name" },
-  { key: "sports", label: "Sports" },
-  { key: "country", label: "Country" },
-  { key: "born", label: "Born", cls: "nowrap" },
-  { key: "leagues", label: "Leagues" },
-  { key: "seasons", label: "Club seasons", num: true },
-  { key: "qid", label: "QID" },
-  { key: "sources", label: "Sources" },
-];
+const DEF_SORT = "name.asc";
+const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) ?? "";
 
 const dash = <span className="note">–</span>;
 
@@ -37,106 +38,161 @@ function years(from: number | null, to: number | null): string | null {
   return to == null || to === from ? String(from) : `${from}–${to}`;
 }
 
-function hrefOf(next: Record<string, string | number | undefined | null>, base: Query): string {
-  const params = new URLSearchParams();
-  const merged: Record<string, string | string[] | undefined> = { ...base };
-  for (const [k, v] of Object.entries(next)) {
-    if (v == null || v === "") delete merged[k];
-    else merged[k] = String(v);
-  }
-  for (const [k, v] of Object.entries(merged)) {
-    const val = Array.isArray(v) ? v[0] : v;
-    if (val) params.set(k, val);
-  }
-  params.delete("page");
-  if (next.page && Number(next.page) > 1) params.set("page", String(next.page));
-  const qs = params.toString();
-  return qs ? `/admin/people?${qs}` : "/admin/people";
-}
-
-function rowOf(p: PersonAdminRow): SortRow {
-  const league = p.leagues?.find(Boolean) ?? null;
-  const player = league ? playerPath(league, p.person_id, p.name) : null;
-  const born = p.birth_date ?? (p.birth_year != null ? String(p.birth_year) : null);
-  const died = p.death_date ?? (p.death_year != null ? String(p.death_year) : null);
-  const life = born ? (died ? `${born} – ${died}` : born) : null;
-  return {
-    id: String(p.person_id),
-    sort: { name: p.name.toLowerCase(), sports: (p.sports[0] ?? ""), country: p.country ?? "", born: p.birth_date ?? "", leagues: p.leagues?.[0] ?? "", seasons: p.seasons_played, qid: p.qid ?? "", sources: p.sources[0] ?? "" },
-    cells: {
-      name: (
-        <div>
-          {player ? <Link href={player}>{p.name}</Link> : <strong>{p.name}</strong>}
-          <div className="note">#{p.person_id}{p.kind !== "player" ? `, ${p.kind}` : ""}</div>
-        </div>
-      ),
-      sports: p.sports.length ? p.sports.join(", ") : dash,
-      country: p.country ?? dash,
-      born: life ? <span className="note">{life}</span> : dash,
-      leagues: p.leagues?.length ? p.leagues.join(", ").toUpperCase() : dash,
-      seasons: p.has_seasons ? (years(p.first_season, p.last_season) ?? p.seasons_played) : dash,
-      qid: p.qid ? <a href={`https://www.wikidata.org/wiki/${p.qid}`} rel="noreferrer">{p.qid}</a> : dash,
-      sources: p.sources.length ? <span className="note">{p.sources.join(", ")}</span> : dash,
-    },
-  };
-}
-
 export default async function AdminPeopleSearchPage({ searchParams }: { searchParams: Promise<Query> }) {
   await requireAdmin();
   const query = await searchParams;
-  const { say } = await currentSpeaker();
+  const { say, plural, fmt, locale } = await currentSpeaker();
   const parsed = parsePeopleSearch(query);
-  const q = Array.isArray(query.q) ? query.q[0] ?? "" : query.q ?? "";
-  const result = await searchPeople(parsed, parsed.page);
-  const one = (k: string) => {
-    const v = query[k];
-    return Array.isArray(v) ? v[0] ?? "" : v ?? "";
+  const q = first(query.q).trim().slice(0, 60);
+  const league = parsed.league ?? "";
+  const nat = parsed.country ?? "";
+  const letter = parsed.letter ?? "";
+  const letterBy = parsed.letterBy ?? "last";
+  const sport = parsed.sport ?? "";
+  const seasons = parsed.seasons ?? "";
+  const source = parsed.source ?? "";
+  const sort = parseSort(query.sort, Object.keys(PEOPLE_SORTS), DEF_SORT).slice(0, 1);
+  const sortText = formatSort(sort);
+  const [result, span, countries, sports, sources, counts] = await Promise.all([
+    searchPeople(parsed, parsed.page, sort),
+    peopleSpan(),
+    peopleCountries(),
+    peopleSports(),
+    peopleSources(),
+    peopleLetterCounts(letterBy),
+  ]);
+  const range = span ? rangeFromQuery(first(query.from), first(query.to), span.min, span.max) : null;
+  const keep = {
+    league: league || null,
+    sport: sport || null,
+    nat: nat || null,
+    q: q || null,
+    letter: letter ? letter.toUpperCase() : null,
+    letter_by: letterBy === "first" ? "first" : null,
+    sort: sortText === DEF_SORT ? null : sortText,
+    from: range ? String(range.from) : null,
+    to: range ? String(range.to) : null,
+    seasons: seasons || null,
+    source: source || null,
+    after: null,
   };
+  const href = (changes: Record<string, string | null>) => queryHref("/admin/people", query, { ...keep, page: null, ...changes });
+  const to = (page: number) => href({ page: page > 1 ? String(page) : null });
+  const sportChips = sports?.length
+    ? [{ code: "", short: say("phase.all") }, ...sports.map((s) => ({ code: s.code, short: s.code }))]
+    : [];
+  const sourceChips = sources?.length
+    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: s.code }))]
+    : [];
+  const seasonChips = [
+    { code: "", short: say("phase.all") },
+    { code: "yes", short: say("peopleAdmin.seasons.yesChip") },
+    { code: "no", short: say("peopleAdmin.seasons.noChip") },
+  ];
+  const filters = [
+    league ? league.toUpperCase() : "",
+    sport,
+    nat ? countryName(nat, locale) : "",
+    seasons ? (seasons === "yes" ? say("peopleAdmin.seasons.yes") : say("peopleAdmin.seasons.no")) : "",
+    source,
+  ].filter(Boolean);
+  const table = result.kind === "ok" ? tableOf(result.rows, [
+    {
+      key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PersonAdminRow) => p.name,
+      cell: (p: PersonAdminRow) => {
+        const lg = p.leagues?.find(Boolean) ?? null;
+        const player = lg ? playerPath(lg, p.person_id, p.name) : null;
+        return (
+          <div>
+            {player ? <Link href={player} prefetch={false}>{p.name}</Link> : <strong>{p.name}</strong>}
+            <div className="note">#{p.person_id}{p.kind !== "player" ? `, ${p.kind}` : ""}</div>
+          </div>
+        );
+      },
+    },
+    { key: "sports", label: say("peopleAdmin.sport.aria"), rest: "sports", get: (p: PersonAdminRow) => p.sports[0] ?? "", cell: (p: PersonAdminRow) => (p.sports.length ? p.sports.join(", ") : dash) },
+    {
+      key: "country", label: say("players.colCountry"), title: say("players.countryTitle"), rest: "country",
+      get: (p: PersonAdminRow) => (p.country ? countryName(p.country, locale) : ""),
+      cell: (p: PersonAdminRow) => (p.country ? <NatLink href={href({ nat: p.country.toUpperCase() })} title={say("players.byCountry", { name: countryName(p.country, locale) })} code={hasFlag(p.country) ? p.country : null} /> : null),
+    },
+    {
+      key: "born", label: say("col.years"), cls: "nowrap", rest: "birth_year", get: (p: PersonAdminRow) => p.birth_year,
+      cell: (p: PersonAdminRow) => {
+        const born = p.birth_date ?? (p.birth_year != null ? String(p.birth_year) : null);
+        const died = p.death_date ?? (p.death_year != null ? String(p.death_year) : null);
+        const life = born ? (died ? `${born} – ${died}` : born) : null;
+        return life ? <span className="note">{life}</span> : dash;
+      },
+    },
+    { key: "leagues", label: say("col.league"), rest: "leagues", get: (p: PersonAdminRow) => p.leagues?.[0] ?? "", cell: (p: PersonAdminRow) => (p.leagues?.length ? p.leagues.join(", ").toUpperCase() : dash) },
+    {
+      key: "seasons", label: say("players.colSeasons"), num: true, rest: "seasons_played", get: (p: PersonAdminRow) => p.seasons_played,
+      cell: (p: PersonAdminRow) => (p.has_seasons ? (years(p.first_season, p.last_season) ?? p.seasons_played) : dash),
+    },
+    { key: "qid", label: "QID", rest: "qid", get: (p: PersonAdminRow) => p.qid ?? "", cell: (p: PersonAdminRow) => (p.qid ? <a href={`https://www.wikidata.org/wiki/${p.qid}`} rel="noreferrer">{p.qid}</a> : dash) },
+    { key: "sources", label: say("peopleAdmin.source.aria"), rest: "sources", get: (p: PersonAdminRow) => p.sources[0] ?? "", cell: (p: PersonAdminRow) => (p.sources.length ? <span className="note">{p.sources.join(", ")}</span> : dash) },
+  ] satisfies ColumnSpec<PersonAdminRow>[], (p) => p.person_id) : null;
 
   return (
     <>
-      <section className="head fade">
-        <h1>{say("peopleAdmin.title")}</h1>
+      <section className="head fade tight">
+        <ListHeading say={say} head={say("peopleAdmin.title")} filters={filters} />
         <p className="lede">{say("peopleAdmin.lede")}</p>
         <PeopleTabs current="search" />
-        <form className="tk-filters people-search" method="get" action="/admin/people">
-          <input type="search" name="q" defaultValue={q} placeholder={say("peopleAdmin.q.placeholder")} aria-label={say("peopleAdmin.q.aria")} />
-          <input type="text" name="sport" defaultValue={one("sport")} placeholder={say("peopleAdmin.sport.placeholder")} aria-label={say("peopleAdmin.sport.aria")} autoComplete="off" />
-          <input type="text" name="country" defaultValue={one("country")} placeholder={say("peopleAdmin.country.placeholder")} aria-label={say("peopleAdmin.country.aria")} maxLength={2} autoComplete="off" />
-          <input type="number" name="born_from" defaultValue={one("born_from")} placeholder={say("peopleAdmin.bornFrom.placeholder")} aria-label={say("peopleAdmin.bornFrom.aria")} min={1800} max={2100} />
-          <input type="number" name="born_to" defaultValue={one("born_to")} placeholder={say("peopleAdmin.bornTo.placeholder")} aria-label={say("peopleAdmin.bornTo.aria")} min={1800} max={2100} />
-          <select name="seasons" defaultValue={one("seasons")} aria-label={say("peopleAdmin.seasons.aria")}>
-            <option value="">{say("peopleAdmin.seasons.any")}</option>
-            <option value="yes">{say("peopleAdmin.seasons.yes")}</option>
-            <option value="no">{say("peopleAdmin.seasons.no")}</option>
-          </select>
-          <input type="text" name="source" defaultValue={one("source")} placeholder={say("peopleAdmin.source.placeholder")} aria-label={say("peopleAdmin.source.aria")} autoComplete="off" />
-          <button type="submit" className="signin-btn">{say("peopleAdmin.submit")}</button>
-          {parsed.words.length || parsed.sport || parsed.country || parsed.bornFrom || parsed.bornTo || parsed.seasons || parsed.source ? (
-            <Link prefetch={false} href="/admin/people">{say("peopleAdmin.clear")}</Link>
-          ) : null}
-        </form>
       </section>
-      <section className="section">
-        {result.kind === "idle" ? <p className="note">{say("peopleAdmin.idle")}</p> : null}
-        {result.kind === "error" ? <p className="note" role="alert">{say("peopleAdmin.error", { reason: result.message })}</p> : null}
-        {result.kind === "ok" ? (
-          <>
-            {result.fallback ? <p className="note">{say("peopleAdmin.fallback")}</p> : null}
-            <p className="note">{say("peopleAdmin.showing", { shown: result.rows.length, total: result.total, page: result.page, pages: result.pages })}</p>
-            {result.rows.length === 0 ? (
-              <p className="note">{say("peopleAdmin.none")}</p>
-            ) : (
-              <div className="scroll"><SortTable columns={COLUMNS} rows={result.rows.map(rowOf)} def="name.asc" label={say("peopleAdmin.table")} /></div>
-            )}
-            {result.pages > 1 ? (
-              <nav className="tk-chips" aria-label={say("peopleAdmin.pager")}>
-                {result.page > 1 ? <Link prefetch={false} href={hrefOf({ page: result.page - 1 }, query)}>{say("peopleAdmin.prev")}</Link> : null}
-                {result.page < result.pages ? <Link prefetch={false} href={hrefOf({ page: result.page + 1 }, query)}>{say("peopleAdmin.next")}</Link> : null}
-              </nav>
-            ) : null}
-          </>
-        ) : null}
+      <section className="section plist">
+        <PlayersFilterBar
+          path="/admin/people"
+          href={href}
+          league={league}
+          q={q}
+          nat={nat}
+          letter={letter}
+          letterBy={letterBy}
+          counts={counts}
+          countries={countries}
+          span={span}
+          range={range}
+          inAddress={/^\d{1,4}$/.test(first(query.from)) || /^\d{1,4}$/.test(first(query.to))}
+          searchHidden={{
+            ...(league ? { league } : {}),
+            ...(sport ? { sport } : {}),
+            ...(nat ? { nat } : {}),
+            ...(letter ? { letter: letter.toUpperCase() } : {}),
+            ...(letterBy === "first" ? { letter_by: "first" } : {}),
+            ...(sortText !== DEF_SORT ? { sort: sortText } : {}),
+            ...(range ? { from: String(range.from), to: String(range.to) } : {}),
+            ...(seasons ? { seasons } : {}),
+            ...(source ? { source } : {}),
+          }}
+          extra={
+            <>
+              {sportChips.length ? <SegChips aria={say("peopleAdmin.sportsAria")} current={sport} items={sportChips} href={(code) => href({ sport: code || null })} /> : null}
+              <SegChips aria={say("peopleAdmin.seasons.aria")} current={seasons} items={seasonChips} href={(code) => href({ seasons: code || null })} />
+              {sourceChips.length ? <SegChips aria={say("peopleAdmin.sourcesAria")} current={source} items={sourceChips} href={(code) => href({ source: code || null })} /> : null}
+            </>
+          }
+        />
+        <div className="yr-hold">
+          {result.kind === "error" ? <p className="note" role="alert">{say("peopleAdmin.error", { reason: result.message })}</p> : null}
+          {result.kind === "ok" && table ? (
+            <>
+              {result.fallback ? <p className="note">{say("peopleAdmin.fallback")}</p> : null}
+              {result.rows.length ? (
+                <>
+                  {result.total != null ? (
+                    <p className="note">{plural("count.players", result.total)}{result.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(result.page), pages: fmt(result.pages) })}` : ""}</p>
+                  ) : null}
+                  <div className="scroll"><SortTable {...table} def={DEF_SORT} initial={sort} remote /></div>
+                  {result.keyed
+                    ? (result.next ? <p className="note"><Link href={href({ after: result.next })} prefetch={false}>{say("peopleAdmin.next")}</Link></p> : null)
+                    : <Pager page={result.page} pages={result.pages} href={to} label={say("peopleAdmin.pager")} say={say} fmt={fmt} />}
+                </>
+              ) : <p className="note">{say("peopleAdmin.none")}</p>}
+            </>
+          ) : null}
+        </div>
       </section>
     </>
   );

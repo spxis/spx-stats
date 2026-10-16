@@ -19,7 +19,7 @@ function narrowing(raw: string, min: number, max: number) {
 
 interface Props {
   /** Which list this is; its range is remembered under its own key. */
-  page: "/players" | "/teams";
+  page: "/players" | "/teams" | "/admin/people";
   /** The first and last season in the data for the league on show: the ends of the slider. */
   min: number;
   max: number;

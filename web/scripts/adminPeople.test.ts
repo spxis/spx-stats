@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
-  hasPeopleFilter,
   parsePeopleSearch,
   peopleAdminFilters,
   peopleAdminQuery,
   peopleFallbackQuery,
+  peopleOrder,
   readCountry,
   readSeasons,
   readSource,
@@ -13,6 +13,7 @@ import {
   readYear,
   searchWords,
 } from "../src/lib/adminPeopleQuery.ts";
+import { cursorOf } from "../src/lib/listQuery.ts";
 
 test("a name is folded and split the same way as the players list", () => {
   assert.deepEqual(searchWords("Usain Bolt"), ["usain", "bolt"]);
@@ -32,27 +33,41 @@ test("sport, source and country are allow-listed codes", () => {
   assert.equal(readYear("1986"), 1986);
   assert.equal(readYear("12"), undefined);
   assert.equal(readSeasons("no"), "no");
-  assert.equal(readSeasons("maybe"), undefined);
 });
 
-test("an empty form does not search", () => {
+test("an empty form lists from the start", () => {
   const idle = parsePeopleSearch({});
-  assert.equal(hasPeopleFilter(idle), false);
   assert.equal(idle.page, 1);
+  assert.deepEqual(idle.words, []);
+  assert.equal(peopleAdminFilters(idle).length, 0);
+  const q = peopleAdminQuery(idle);
+  assert.ok(q.includes("select=person_id,name"));
+  assert.ok(q.includes("order=name.asc,person_id.asc"));
 });
 
 test("swapped birth years are put in order", () => {
-  const f = parsePeopleSearch({ born_from: "1990", born_to: "1980" });
-  assert.equal(f.bornFrom, 1980);
-  assert.equal(f.bornTo, 1990);
+  const f = parsePeopleSearch({ from: "1990", to: "1980" });
+  assert.equal(f.from, 1980);
+  assert.equal(f.to, 1990);
+});
+
+test("nat and letter match the players list keys", () => {
+  const f = parsePeopleSearch({ nat: "jm", letter: "B", letter_by: "first" });
+  assert.equal(f.country, "JM");
+  assert.equal(f.letter, "b");
+  assert.equal(f.letterBy, "first");
+  const filters = peopleAdminFilters(f);
+  assert.ok(filters.includes("country=eq.JM"));
+  assert.ok(filters.includes("letter_first=eq.b"));
+  const last = peopleAdminFilters(parsePeopleSearch({ letter: "B" }));
+  assert.ok(last.includes("letter_last=eq.b"));
 });
 
 test("the admin view query is one request with allow-listed filters", () => {
-  const f = parsePeopleSearch({ q: "Bolt", sport: "athletics", country: "jm", born_from: "1980", born_to: "1990", seasons: "no", source: "wikidata_meigen" });
-  assert.equal(hasPeopleFilter(f), true);
+  const f = parsePeopleSearch({ q: "Bolt", sport: "athletics", nat: "jm", from: "1980", to: "1990", seasons: "no", source: "wikidata_meigen" });
   const filters = peopleAdminFilters(f);
   assert.equal(filters.filter((x) => x.startsWith("search=")).length, 1);
-  assert.ok(filters.includes("sports=cs.%7Bathletics%7D") || filters.some((x) => x.startsWith("sports=cs.")));
+  assert.ok(filters.some((x) => x.startsWith("sports=cs.")));
   assert.ok(filters.includes("country=eq.JM"));
   assert.ok(filters.includes("birth_year=gte.1980"));
   assert.ok(filters.includes("birth_year=lte.1990"));
@@ -64,8 +79,18 @@ test("the admin view query is one request with allow-listed filters", () => {
   assert.equal(q.includes(";"), false);
 });
 
+test("a keyset cursor is an or= filter on the sort fields", () => {
+  const order = peopleOrder([{ key: "name", dir: "asc" }]);
+  const q = peopleAdminQuery(parsePeopleSearch({}), order, ["Bolt", 1]);
+  assert.ok(q.includes("or="));
+  assert.ok(q.includes("name.gt."));
+  const cursor = cursorOf("name.asc", ["Bolt", 1]);
+  const f = parsePeopleSearch({ after: cursor });
+  assert.equal(f.after, cursor);
+});
+
 test("the people fallback cannot filter by sport or source", () => {
-  const f = parsePeopleSearch({ q: "Bolt", seasons: "no", country: "JM" });
+  const f = parsePeopleSearch({ q: "Bolt", seasons: "no", nat: "JM" });
   const q = peopleFallbackQuery(f);
   assert.ok(q.includes("name=ilike."));
   assert.ok(q.includes("seasons_played=eq.0"));

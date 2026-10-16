@@ -2,8 +2,10 @@
 -- Match by Wikidata QID in core.external_id only, never by name. A QID we
 -- already hold updates empty facts and adds sports; it never makes a second
 -- record. New people get core.person + the wikidata QID. Exact-day dates
--- only (prec = 11). Birthplace is kept apart from citizenship (P27 is not
--- read). Nothing about ethnicity, religion, health, sex or gender, family
+-- only (prec = 11). Birthplace is kept apart from citizenship: empty
+-- nationality_code is filled from P27 → P297, empty birth_country_code from
+-- P19 → P17 → P297, never overwritten, never treating birthplace as
+-- citizenship. Nothing about ethnicity, religion, health, sex or gender, family
 -- or politics. Rerunnable: deletes only person_sport, data_issue and
 -- legacy_wikidata_meigen.athlete rows this step owns (source wikidata_meigen).
 -- Run after 185 and 214. No begin/commit: ds1-apply.sh wraps one transaction.
@@ -115,6 +117,81 @@ from sports s
 join pp using (qid)
 join core.person p on p.person_id = pp.person_id
 on conflict do nothing;
+
+-- Empty-only country fill from the harvest claims. Skips when the harvest
+-- schema is not installed. Birthplace (P19) is never used as citizenship (P27).
+do $$
+begin
+  if to_regclass('legacy_wikidata_harvest.claim') is null then
+    return;
+  end if;
+  update core.person p
+     set nationality_code = n.code,
+         updated_at = now()
+    from pp
+    join (
+      with p27 as (
+        select c.qid, min(c.value_qid) as country_qid
+          from legacy_wikidata_harvest.claim c
+         where c.prop = 'P27' and coalesce(c.rank, 'normal') <> 'deprecated'
+         group by c.qid
+        having count(*) = count(c.value_qid) and count(distinct c.value_qid) = 1
+      ),
+      alpha2 as (
+        select c.qid, min(c.value_text) as code
+          from legacy_wikidata_harvest.claim c
+         where c.prop = 'P297' and coalesce(c.rank, 'normal') <> 'deprecated'
+         group by c.qid
+        having count(*) = count(c.value_text)
+           and bool_and(c.value_text ~ '^[A-Z]{2}$')
+           and count(distinct c.value_text) = 1
+      )
+      select p27.qid, alpha2.code
+        from p27
+        join alpha2 on alpha2.qid = p27.country_qid
+        join ref.country rc on rc.country_code = alpha2.code
+    ) n using (qid)
+   where p.person_id = pp.person_id
+     and p.nationality_code is null;
+
+  update core.person p
+     set birth_country_code = b.code,
+         updated_at = now()
+    from pp
+    join (
+      with place as (
+        select c.qid, min(c.value_qid) as place_qid
+          from legacy_wikidata_harvest.claim c
+         where c.prop = 'P19' and coalesce(c.rank, 'normal') <> 'deprecated'
+         group by c.qid
+        having count(*) = count(c.value_qid) and count(distinct c.value_qid) = 1
+      ),
+      place_country as (
+        select c.qid, min(c.value_qid) as country_qid
+          from legacy_wikidata_harvest.claim c
+         where c.prop = 'P17' and coalesce(c.rank, 'normal') <> 'deprecated'
+         group by c.qid
+        having count(*) = count(c.value_qid) and count(distinct c.value_qid) = 1
+      ),
+      alpha2 as (
+        select c.qid, min(c.value_text) as code
+          from legacy_wikidata_harvest.claim c
+         where c.prop = 'P297' and coalesce(c.rank, 'normal') <> 'deprecated'
+         group by c.qid
+        having count(*) = count(c.value_text)
+           and bool_and(c.value_text ~ '^[A-Z]{2}$')
+           and count(distinct c.value_text) = 1
+      )
+      select place.qid, coalesce(direct.code, via.code) as code
+        from place
+        left join alpha2 direct on direct.qid = place.place_qid
+        left join place_country pc on pc.qid = place.place_qid
+        left join alpha2 via on via.qid = pc.country_qid
+        join ref.country rc on rc.country_code = coalesce(direct.code, via.code)
+    ) b using (qid)
+   where p.person_id = pp.person_id
+     and p.birth_country_code is null;
+end $$;
 
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from mg),

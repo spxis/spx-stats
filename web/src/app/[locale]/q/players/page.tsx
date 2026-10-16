@@ -1,15 +1,12 @@
 import type { Metadata } from "next";
 import Link from "@/components/Link";
-import { Flag } from "@/components/Flag";
 import { NatLink } from "@/components/NatLink";
 import { hasFlag } from "@/lib/flagCodes";
 import { Credits } from "@/components/Credits";
-import { LetterBar } from "@/components/LetterBar";
 import { Pager } from "@/components/Pager";
 import { CountryScope } from "@/components/CountryScope";
 import { moreChips, PlayerCountries } from "@/components/PlayerCountries";
-import { ListRange } from "@/components/ListRange";
-import { SearchBox } from "@/components/SearchBox";
+import { PlayersFilterBar } from "@/components/PlayersFilterBar";
 import { SortTable } from "@/components/SortTable";
 import { positionBook } from "@/components/PositionKey";
 import { queryHref } from "@/components/ViewTabs";
@@ -17,7 +14,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { ListHeading } from "@/components/ListHeading";
 import { listTitle, playersFilters } from "@/lib/listTitle";
-import { isLeague, LEAGUES, LG } from "@/lib/leagues";
+import { isLeague, LG } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
 import { countryName, positionsText } from "@/lib/people-format";
@@ -158,21 +155,22 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
   const reference = refKind && refTally ? { kind: refKind, tally: refTally } : null;
   const body = (
     <>
-      <div className="pfilters">
-        <div className="controls">
-          <nav className="seg views" aria-label={say("players.leagueAria")}>
-            {[{ code: "", short: say("phase.all") }, ...LEAGUES].map((l) => (
-              <Link key={l.code} href={href({ league: l.code || null, team: null })} prefetch={false} aria-current={l.code === league ? "page" : undefined}>{l.short}</Link>
-            ))}
-          </nav>
-          {teamsOn && league ? <TeamPicker action="/players" value={teamSlug} clubs={pickable} hidden={{ league, ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}), ...(q ? { q } : {}) }} /> : null}
-          <SearchBox kind="players" action="/players" defaultValue={q} league={league} hidden={{ ...(league ? { league } : {}), ...(teamSlug ? { team: teamSlug } : {}), ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
-        </div>
-        <LetterBar say={say} plural={plural} letter={letter} by={letterBy} counts={counts} href={href} />
-        {countries ? <PlayerCountries part="chips" t={countries} reference={reference} league={league} chosen={nat} href={href} /> : null}
-        {nat && !chipsShown ? <p className="note"><Flag code={nat} shape="round" /> {say("players.countryOnly", { name: countryName(nat, locale) })} · <Link href={href({ nat: null })} prefetch={false}>{say("players.countryClear")}</Link></p> : null}
-        {span ? <ListRange page="/players" min={span.min} max={span.max} from={range?.from ?? span.min} to={range?.to ?? span.max} inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))} /> : null}
-      </div>
+      <PlayersFilterBar
+        path="/players"
+        href={href}
+        league={league}
+        q={q}
+        nat={nat}
+        letter={letter}
+        letterBy={letterBy}
+        counts={counts}
+        countries={countries}
+        span={span}
+        range={range}
+        inAddress={/^\d{1,4}$/.test(first(sp.from)) || /^\d{1,4}$/.test(first(sp.to))}
+        searchHidden={{ ...(league ? { league } : {}), ...(teamSlug ? { team: teamSlug } : {}), ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }}
+        teamPicker={teamsOn && league ? <TeamPicker action="/players" value={teamSlug} clubs={pickable} hidden={{ league, ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}), ...(q ? { q } : {}) }} /> : null}
+      />
       <div className="yr-hold">
         {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
           <>

@@ -134,8 +134,6 @@
   .tk-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
   .tk-filters input[type="search"], .tk-filters input[type="text"], .tk-filters input[type="number"], .tk-filters select { font: inherit; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); border-radius: 0; }
   .tk-filters input[type="search"] { flex: 1 1 260px; max-width: 420px; }
-  .people-search input[type="text"], .people-search input[type="number"] { width: 10rem; }
-  .people-search input[name="country"] { width: 7rem; }
   .tk-main { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; min-width: 240px; max-width: 70ch; }
   .tk-detail { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; margin: 0; }
   .tk-id { all: unset; cursor: pointer; font: 400 12px/1.2 var(--mono); color: var(--muted); text-decoration: underline dotted; }

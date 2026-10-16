@@ -1,6 +1,6 @@
 #!/bin/bash
-# Migration 122: api.person_admin lists every core.person, including athletes with
-# no club season, and filters by folded name, sport, country, birth year, has_seasons.
+# Migrations 122+123: api.person_admin lists every core.person, including athletes with
+# no club season, as a materialized view with letter_first/last and chip aggregates.
 # Scratch Postgres, removed by name.
 #   bash db/tests/person-admin.sh
 set -eu
@@ -87,7 +87,9 @@ insert into core.external_id values ('person', 1, 1, 'Q5798'), ('person', 2, 3, 
 insert into core.person_sport values (1, 'athletics', 2, 'wikidata:Q5798:P641:athletics');
 SQL
 docker cp "$REPO/db/migrations/122_person_admin.sql" "$NAME:/tmp/122.sql"
+docker cp "$REPO/db/migrations/123_person_admin_matview.sql" "$NAME:/tmp/123.sql"
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/122.sql >/dev/null
+docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/123.sql >/dev/null
 OUT=$(docker exec -i "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -At <<'SQL'
 select person_id || ',' || name || ',' || search || ',' || coalesce(qid,'') || ',' || sports::text || ',' || has_seasons::text || ',' || sources::text
   from api.person_admin where person_id = 1;
@@ -95,6 +97,7 @@ set role anon;
 select case when count(*) = 1 and min(person_id) = 1 and min(qid) = 'Q5798'
             and min(sports::text) = '{athletics}' and bool_and(not has_seasons)
             and string_agg(sources::text, '') like '%wikidata_meigen%'
+            and min(letter_last) = 'b' and min(letter_first) = 'u'
        then 'ok bolt' else 'FAIL bolt' end
   from api.person_admin where search like '%usain bolt%';
 select case when (select has_seasons from api.person_admin where person_id = 2)
@@ -104,8 +107,15 @@ select case when (select search from api.person_admin where person_id = 2) = 'jo
        then 'ok fold' else 'FAIL fold' end;
 select case when (select count(*) from api.person_admin where sports @> '{athletics}' and has_seasons is false) = 1
        then 'ok sport-filter' else 'FAIL sport-filter' end;
+select case when (select count(*) from api.person_admin_sports where sport = 'athletics') = 1
+            and (select n from api.person_admin_letters where kind = 'last' and letter = 'b') >= 1
+            and (select min_year from api.person_admin_span) = 1904
+       then 'ok chips' else 'FAIL chips' end;
 reset role;
 select case when has_table_privilege('anon', 'api.person_admin', 'select')
+            and exists (select 1 from pg_matviews where schemaname = 'api' and matviewname = 'person_admin')
+            and exists (select 1 from pg_index i join pg_class c on c.oid = i.indrelid join pg_namespace n on n.oid = c.relnamespace
+                        where n.nspname = 'api' and c.relname = 'person_admin' and i.indisunique)
        then 'ok grant' else 'FAIL grant' end;
 SQL
 )

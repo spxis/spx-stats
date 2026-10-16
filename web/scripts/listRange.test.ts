@@ -77,8 +77,8 @@ function held(pathname: string, search: string, stored: Record<string, string>):
 }
 
 test("the head script holds each page on its own saved range", () => {
-  assert.deepEqual(Object.keys(RANGE_PAGES), ["/", "/players", "/teams"]);
-  assert.equal(new Set(Object.values(RANGE_PAGES).map((p) => p.key)).size, 3);
+  assert.deepEqual(Object.keys(RANGE_PAGES), ["/", "/players", "/teams", "/admin/people"]);
+  assert.equal(new Set(Object.values(RANGE_PAGES).map((p) => p.key)).size, 4);
   assert.equal(held("/players", "", { "spxn-range-players": "1990-2005" }), true);
   assert.equal(held("/teams", "", { "spxn-range-teams": "1990-2005" }), true);
   assert.equal(held("/", "", { "spxn-range": "1990-2005" }), true);

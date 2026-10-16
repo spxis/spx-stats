@@ -14,6 +14,7 @@ export const RANGE_PAGES: Record<string, { key: string; holdForAddress: boolean 
   "/": { key: KEY, holdForAddress: true },
   "/players": { key: "spxn-range-players", holdForAddress: false },
   "/teams": { key: "spxn-range-teams", holdForAddress: true },
+  "/admin/people": { key: "spxn-range-people", holdForAddress: false },
 };
 
 /** The league pages (/nhl, /nba ...) take a range from the address only, nothing is saved for them: they wait for an address range like the home chart. */

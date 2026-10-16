@@ -21,18 +21,18 @@ echo '{"deployments":[{"url":"spx-stats-new.vercel.app","state":"READY","target"
 EOF
 chmod +x "$TMP/bin/vercel"
 
-# serve <providers status> <providers body> <home html>: a fake site on $PORT
+# serve <providers status> <providers body> <home html> [home status]: a fake site on $PORT
 serve() {
   [ -z "$PID" ] || { kill "$PID" 2>/dev/null; wait "$PID" 2>/dev/null; }
-  python3 -I - "$PORT" "$1" "$2" "$3" >/dev/null 2>&1 <<'EOF' &
+  python3 -I - "$PORT" "$1" "$2" "$3" "${4:-200}" >/dev/null 2>&1 <<'EOF' &
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
-port, pstatus, pbody, home = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3], sys.argv[4]
+port, pstatus, pbody, home, hstatus = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3], sys.argv[4], int(sys.argv[5])
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
         if self.path == "/api/auth/providers": status, body = pstatus, pbody
-        elif self.path == "/": status, body = 200, home
+        elif self.path == "/": status, body = hstatus, home
         else: status, body = 404, ""
         self.send_response(status); self.send_header("content-type", "text/html"); self.end_headers(); self.wfile.write(body.encode())
 HTTPServer(("127.0.0.1", port), H).serve_forever()
@@ -62,6 +62,15 @@ echo "$out" | grep -q "vercel list spx-stats" && ok "--skip-list prints the manu
 serve 200 '{"google":{}}' '<header><button class="theme">Dark</button></header>'
 out="$(run --skip-list)"; rc=$?
 [ $rc = 1 ] && echo "$out" | grep -q "no sign-in control" && ok "kept page built signed-out fails" || bad "signed-out page ($rc): $out"
+
+serve 429 '{"google":{"id":"google"}}' "$GOOD_HOME"
+out="$(run --skip-list)"; rc=$?
+[ $rc = 0 ] && echo "$out" | grep -q "429" && echo "$out" | grep -q "ok" && ok "HTTP 429 is skipped, not a rollback" || bad "HTTP 429 skip ($rc): $out"
+echo "$out" | grep -q "roll back" && bad "429 must not print rollback: $out" || ok "429 does not print rollback"
+
+serve 200 '{"google":{"id":"google"}}' "$GOOD_HOME" 429
+out="$(run --skip-list)"; rc=$?
+[ $rc = 0 ] && echo "$out" | grep -q "ok" && ok "home HTTP 429 is skipped, not a rollback" || bad "home 429 skip ($rc): $out"
 
 # The build assertion of deploy-prebuilt.sh: the kept home page in the build output must carry the sign-in control.
 mkdir -p "$TMP/out/.vercel/output/functions/en"
