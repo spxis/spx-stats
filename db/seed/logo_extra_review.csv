@@ -84,3 +84,29 @@ other:hockey,Vancouver Millionaires,1917,fill,Vancouver_Millionaires_blue_logo.s
 other:hockey,Vancouver Millionaires,1920,fill,Vancouver_Millionaires_blue_logo.svg,undated,0,accept,Vancouver_Millionaires_maroon_with_cream_lettering_logo.svg,
 cfl,Ottawa Rough Riders,1960,fill,Ottawa_Rough_Riders_logo_1950s.jpg,dated,0,reject,,"a 1950s logo as a JPEG, outside the era"
 nba,Cleveland Rebels,1946,fill,Cleveland_Rebels_logo.png,undated,0,accept,,
+aafc,Los Angeles Dons,1946,fill,Dons-logo-1947.jpg,dated,0,accept,,
+mlb,Louisville Colonels,1882,fill,LouisvilleColonelsCapLogo.PNG,undated,0,reject,,"minor-league cap logo, not this club"
+mlb,Newark Peppers,1915,fill,NewarkPeppers.png,undated,0,accept,,
+mlb,St.Louis Terriers,1914,fill,St._Louis_Terriers_(logo).jpg,undated,0,accept,,
+nfl,Frankford Yellow Jackets,1924,fill,FrankfordYellowjackets27a.gif,undated,0,accept,,
+nfl,Kansas City Blues,1924,fill,KansasCityBlues_caplogo.svg,undated,0,reject,,baseball cap logo; the club without a mark is the NFL team
+nfl,Minneapolis Marines,1921,fill,Minneapolis_Marines_logo.png,undated,0,reject,,"a photograph of a jersey, not the mark"
+nfl,Minneapolis Marines,1921,fill,Minneapolis_Marines_logo_design.png,undated,0,accept,,
+nfl,Minneapolis Red Jackets,1929,fill,Minneapolis_Marines_logo_design.png,undated,0,accept,,
+nfl,Newark Tornadoes,1930,fill,Newark_Tornadoes_es.png,undated,1,reject,,"the drawing is the word NEWARK, not the tornado mark"
+nfl,Newark Tornadoes,1930,fill,Tornadoeslogo.gif,undated,0,accept,,
+nfl,Orange Tornadoes,1929,fill,Tornadoeslogo.gif,undated,0,accept,,
+nfl,Phil-Pitt Steagles,1943,fill,493255251943,dated,0,accept,,
+nfl,Providence Steam Roller,1925,fill,ProvidenceSteamRoller1922.gif,dated,0,accept,,
+nfl,Racine Legion,1922,fill,Racine_Legion.gif,undated,0,accept,,
+nfl,Racine Tornadoes,1926,fill,Racine_Legion.gif,undated,0,accept,,
+nfl,Rochester Jeffersons,1920,fill,Rochester_Jeffersons_Logo.webp,dated,0,accept,,
+nfl,Toledo Maroons,1922,fill,ToledoT.svg,undated,0,accept,,
+nha,Cobalt Silver Kings,1909,fill,Logo_Cobalt_Silver_Kings.gif,undated,0,accept,,
+nha,Haileybury Comets,1909,fill,Logo_Haileybury_Comets.gif,undated,0,accept,,
+nha,Renfrew Creamery Kings,1909,fill,RenfrewCreameryKings.png,undated,0,accept,,
+nha,Toronto Blueshirts,1912,fill,Toronto_Blueshirts.svg,undated,0,accept,,
+nha,Toronto Blueshirts,1912,fill,Toronto_Blueshirts_logo.svg,undated,0,reject,,unidentified larger drawing; the smaller crest is the mark
+pcha,New Westminster Royals,1911,fill,9dghvv7iuyeccws54g5ahpzyv,dated,0,accept,,
+pcha,Portland Rosebuds,1914,fill,w3dllgraqkp4szaj3m5p446um,dated,0,accept,,
+wchl,Saskatoon Sheiks,1925,fill,SaskatoonSheiks.png,undated,0,accept,,

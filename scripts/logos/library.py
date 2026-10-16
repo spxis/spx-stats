@@ -325,6 +325,51 @@ def apply_seed(marks, extra):
     return missing
 
 
+def _seed_klass(note):
+    text = (note or "").lower()
+    if "fair use" in text:
+        return "non-free", "Fair use, via SportsLogos.Net"
+    if "cc by" in text:
+        return "free", note
+    return "pd", note or "Public domain"
+
+
+def attach_local(dest, marks, missing):
+    """A seed file that is already in the library, before DS1 has its legacy row."""
+    dest = Path(dest)
+    n = 0
+    for row in missing:
+        key = row["file_key"]
+        source = row["source"]
+        if source == "wikimedia_commons":
+            path = dest / "files" / "commons" / safe_name(key)
+            folder = "commons"
+            mark_id = "commons:" + key
+        elif source == "sportslogos":
+            folder_path = dest / "files" / "sportslogos"
+            hits = sorted(folder_path.glob(safe_name(key) + ".*")) if folder_path.is_dir() else []
+            path = hits[0] if hits else None
+            folder = "sportslogos"
+            mark_id = "sportslogos:" + key
+        else:
+            continue
+        if path is None or not path.is_file() or path.stat().st_size == 0:
+            continue
+        rel = f"files/{folder}/{path.name}"
+        m = marks.get(mark_id)
+        if m is None:
+            klass, licence = _seed_klass(row.get("note"))
+            m = blank_mark(mark_id, "wikimedia_commons" if source == "wikimedia_commons" else "sportslogos")
+            m.update(licence=licence, klass=klass, format=fmt_of(path.name, ""), bytes=path.stat().st_size, file=rel)
+            marks[mark_id] = m
+            n += 1
+        elif not m["file"]:
+            m["file"] = rel
+            m["bytes"] = path.stat().st_size
+        add_use(m, row["league"], row["team"], row["from_year"], row["to_year"])
+    return n
+
+
 def copy_archived(dest, marks, sport_sha):
     copied = 0
     for kind, key, sha, b64 in ds1(BYTES):
@@ -768,6 +813,7 @@ def main(argv=None):
     label_from_names(marks, idents)
     seed_missing = apply_seed(marks, extra)
     copied = copy_archived(dest, marks, sport_sha)
+    attached = attach_local(dest, marks, seed_missing)
     names, by_club = capspace_names()
     groups = gap_franchises(idents, marks, extra)
     gaps = gap_rows(groups, by_club)
@@ -783,6 +829,7 @@ def main(argv=None):
     free = sum(1 for m in finished if m["klass"] == "free")
     print(f"dest {dest}")
     print(f"copied {copied}")
+    print(f"attached {attached}")
     print(f"downloaded {downloaded}")
     print(f"marks {len(finished)}")
     print(f"pd {pd}")

@@ -7,6 +7,7 @@ from pathlib import Path
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import archive_library_gap
+import archive_library_picks
 import library
 
 PAYLOAD = {
@@ -81,6 +82,8 @@ def test_source_has_no_home_folder():
     assert "/Users/" not in text
     gap = Path(archive_library_gap.__file__).read_text(encoding="utf-8")
     assert "/Users/" not in gap
+    picks = Path(archive_library_picks.__file__).read_text(encoding="utf-8")
+    assert "/Users/" not in picks
 
 
 def test_archive_gap_sql():
@@ -112,6 +115,58 @@ def test_archive_gap_sql():
             assert f"commons-logos/2026-10-15/files/{leaf}" in text
 
 
+def test_attach_local():
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp)
+        (dest / "files" / "commons").mkdir(parents=True)
+        (dest / "files" / "sportslogos").mkdir()
+        (dest / "files" / "commons" / "ToledoT.svg").write_bytes(b"<svg></svg>")
+        (dest / "files" / "sportslogos" / "493255251943.gif").write_bytes(b"GIF89a")
+        marks = {}
+        missing = [
+            {"league": "nfl", "team": "Toledo Maroons", "from_year": "", "to_year": "", "source": "wikimedia_commons",
+             "file_key": "ToledoT.svg", "note": "Commons Public domain; undated"},
+            {"league": "nfl", "team": "Phil-Pitt Steagles", "from_year": "", "to_year": "", "source": "sportslogos",
+             "file_key": "493255251943", "note": "SportsLogos.Net Primary logo 1943-1943, fair use"},
+        ]
+        assert library.attach_local(dest, marks, missing) == 2
+        assert marks["commons:ToledoT.svg"]["file"] == "files/commons/ToledoT.svg"
+        assert marks["commons:ToledoT.svg"]["klass"] == "pd"
+        assert "Toledo Maroons" in marks["commons:ToledoT.svg"]["clubs"]
+        assert marks["sportslogos:493255251943"]["klass"] == "non-free"
+        assert library.attach_local(dest, marks, missing) == 0
+
+
+def test_archive_picks_sql():
+    assert set(archive_library_picks.NEW_FILES).isdisjoint(archive_library_gap.FILES)
+    assert len(archive_library_picks.NEW_FILES) == 5
+    assert len(archive_library_picks.CATALOG) == 13
+    new = {row["file"] for row in archive_library_picks.CATALOG if row["new"]}
+    assert new == set(archive_library_picks.NEW_FILES)
+    try:
+        archive_library_picks.raw_statement(archive_library_gap.FILES[0], b"nope")
+    except SystemExit:
+        pass
+    else:
+        raise AssertionError("re-inserted one of the ten")
+    with tempfile.TemporaryDirectory() as tmp:
+        folder = Path(tmp)
+        for leaf in archive_library_picks.NEW_FILES:
+            (folder / leaf).write_bytes(leaf.encode())
+        dest = folder / "out.sql"
+        n_raw, n_logo = archive_library_picks.write_sql(folder, dest)
+        assert (n_raw, n_logo) == (5, 13)
+        text = dest.read_text()
+        assert text.count("insert into legacy_files.raw_archive") == 5
+        assert text.count("insert into legacy_team_brand.commons_logo") == 13
+        assert "on conflict (name) do nothing;" in text
+        assert "on conflict (file) do nothing;" in text
+        for leaf in archive_library_gap.FILES:
+            assert f"decode(" not in text or leaf not in text.split("insert into legacy_team_brand.commons_logo")[0]
+        for leaf in archive_library_gap.FILES:
+            assert f"commons-logos/2026-10-15/files/{leaf}', '{archive_library_picks.DAY}'" not in text
+
+
 if __name__ == "__main__":
     test_sql_guard()
     test_dest()
@@ -119,4 +174,6 @@ if __name__ == "__main__":
     test_index()
     test_source_has_no_home_folder()
     test_archive_gap_sql()
+    test_attach_local()
+    test_archive_picks_sql()
     print("ok")
