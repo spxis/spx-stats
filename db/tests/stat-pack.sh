@@ -127,6 +127,7 @@ SQL
 
 docker cp "$REPO/db/migrations/116_stat_pack.sql" "$NAME:/tmp/116.sql"
 docker cp "$REPO/db/migrations/117_stat_pack_rewrite.sql" "$NAME:/tmp/117.sql"
+docker cp "$REPO/db/migrations/120_stat_reference_fill.sql" "$NAME:/tmp/120.sql"
 docker cp "$REPO/db/build/213_player_stat_pack.sql" "$NAME:/tmp/213.sql"
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -1 -f /tmp/116.sql >/dev/null
 
@@ -171,6 +172,7 @@ if docker exec "$NAME" psql -U postgres -d spx -Atc "select core.stats_pack('ska
   echo "unknown key was packed"; exit 1
 fi
 
+docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -1 -f /tmp/120.sql >/dev/null
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -1 -f /tmp/213.sql >/dev/null
 scktot="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select top[1] from api.stat_reference where stat_group = 'defense' and metric = 'sck' and kind = 'total' and phase = 'regular' and bucket = 'all';")"
 echo "$scktot" | grep -q "3.5" || { echo "stat_reference sacks '$scktot'"; exit 1; }
