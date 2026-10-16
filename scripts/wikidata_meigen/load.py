@@ -7,7 +7,8 @@ One command from the repo root (after migration 121):
 
 Uses libpq env (PGHOST, PGPORT, PGUSER, PGDATABASE, PGPASSWORD). Never prints
 a password. Replaces only this table's rows (the step owns them). Then
-db/build/215_meigen_people.sql maps QIDs onto core.person.
+db/build/215_meigen_people.sql maps QIDs onto core.person and fills empty
+country codes from db/seed/wikidata_meigen_claim.csv (P27 / P19).
 """
 from __future__ import annotations
 

@@ -4,6 +4,7 @@
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
+cd "$ROOT"
 NAME=spx-meigen-people-scratch
 PORT=7743
 export PGHOST=127.0.0.1 PGPORT="$PORT" PGUSER=postgres PGDATABASE=spx_stats PGSSLMODE=disable
@@ -36,6 +37,11 @@ pg_isready -h 127.0.0.1 -p "$PORT" -U postgres
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/scratch_schema.sql"
 psql -v ON_ERROR_STOP=1 -q -f "$ROOT/db/migrations/121_legacy_wikidata_meigen.sql"
 python3 -I "$ROOT/scripts/wikidata_meigen/load.py"
+psql -v ON_ERROR_STOP=1 -q <<'SQL'
+insert into ref.country (country_code, name) values
+  ('JM', 'Jamaica'), ('CA', 'Canada'), ('US', 'United States'), ('JP', 'Japan')
+on conflict (country_code) do nothing;
+SQL
 
 psql -v ON_ERROR_STOP=1 -q <<'SQL'
 insert into legacy_wikidata_meigen.athlete
@@ -60,8 +66,22 @@ insert into core.person (full_name, kind, birth_date, source_id)
 select 'Jane Duplicate', 'player', '1990-05-05', source_id from meta.source where code = 'wikidata';
 SQL
 
-psql -1 -v ON_ERROR_STOP=1 -q -f "$ROOT/db/build/215_meigen_people.sql"
-psql -1 -v ON_ERROR_STOP=1 -q -f "$ROOT/db/build/215_meigen_people.sql"
+echo "215 first run:"
+FIRST=$(psql -1 -v ON_ERROR_STOP=1 -q -At -F $'\t' -f "$ROOT/db/build/215_meigen_people.sql")
+echo "$FIRST"
+echo "215 second run:"
+SECOND=$(psql -1 -v ON_ERROR_STOP=1 -q -At -F $'\t' -f "$ROOT/db/build/215_meigen_people.sql")
+echo "$SECOND"
+# wrote columns: athletes new_people matched_qid person_fact_updates nationality_fills birth_country_fills sports duplicates
+second_facts=$(printf '%s\n' "$SECOND" | tail -1 | cut -f4)
+second_nat=$(printf '%s\n' "$SECOND" | tail -1 | cut -f5)
+second_birth=$(printf '%s\n' "$SECOND" | tail -1 | cut -f6)
+if [ "$second_facts" = 0 ] && [ "$second_nat" = 0 ] && [ "$second_birth" = 0 ]; then
+  echo "ok second_run_noop"
+else
+  echo "FAIL second_run_noop facts=$second_facts nat=$second_nat birth=$second_birth"
+  exit 1
+fi
 
 psql -v ON_ERROR_STOP=1 -At <<'SQL'
 select
@@ -91,6 +111,12 @@ select
   case when (select count(*) from core.person_sport ps join core.external_id x on x.entity_id = ps.person_id
               where x.external_key = 'Q209518' and ps.sport_code = 'ice_hockey') = 1
        then 'ok sport_row' else 'FAIL sport_row' end;
+select
+  case when (select nationality_code from core.person p join core.external_id x on x.entity_id = p.person_id
+              where x.entity_kind = 'person' and x.external_key = 'Q1189') = 'JM'
+            and (select birth_country_code from core.person p join core.external_id x on x.entity_id = p.person_id
+              where x.entity_kind = 'person' and x.external_key = 'Q1189') = 'JM'
+       then 'ok bolt_jm' else 'FAIL bolt_jm' end;
 select 'athletes=' || count(*) from legacy_wikidata_meigen.athlete;
 select 'people=' || count(*) from core.person;
 select 'sports=' || count(*) from core.person_sport;
