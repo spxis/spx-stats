@@ -839,6 +839,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
     our own `/team-logos/sl/<key>.<ext>`: not in git (git-ignored), written from DS1 into `web/public` by `scripts/logos/export_hosted.py` at the start of
     `deploy-prebuilt.sh` and `ds1-preview.sh --install/--update` (sha256 checked; the run stops when a logo a brand row names is missing; `bash scripts/mac/test/hosted-logos-test.sh`).
     A new SportsLogos.Net file alone does not move the preview's commit: `ds1-preview.sh --update --force`. Their logo_fit key is `sl:<key>.<ext>`.
+  - **Local logo library** (`scripts/logos/library.py`; from `web/`, `pnpm logos:library`): copies every logo already collected into `~/Projects/backups/spx-stats/logo-library/` and writes one `index.html` to open in a browser. It only runs `select` or `with` through `scripts/daily/ds1.sh`. It does not write DS1 or production.
 - **The SPXIS marks** (the swoosh, the star, the shields, the lockups; John's own corporate logos, © SportsInteractive, not under the site's data licences)
   live in `web/public/brand/` as small minified SVGs in a light and a `-dark` file, cut from his Illustrator sheets by `web/scripts/brand/extractBrand.ts`
   (originals stay in his Dropbox; the script also writes `lib/brandMarks.ts`, `brandSwoosh.ts`, `brandShield.ts`); `scripts/brand/rasterize.ts` draws the favicon,

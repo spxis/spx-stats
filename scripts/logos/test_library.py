@@ -1,0 +1,89 @@
+"""python3 -I scripts/logos/test_library.py
+
+Builds index.html from a fake catalog. No DS1.
+"""
+import os, sys, tempfile
+from pathlib import Path
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import library
+
+PAYLOAD = {
+    "marks": [
+        {"id": "commons:Example_Logo.svg", "league": "nhl", "club": "Toronto Arenas", "era": "1917–1919",
+         "source": "wikimedia_commons", "licence": "Public domain", "klass": "pd", "format": "svg", "bytes": 120,
+         "width": 64, "height": 64, "site": True, "file": "files/commons/Example_Logo.svg",
+         "url": "https://upload.wikimedia.org/wikipedia/commons/Example_Logo.svg",
+         "page": "https://commons.wikimedia.org/wiki/File:Example_Logo.svg", "kind": ""},
+        {"id": "hot:only", "league": "mlb", "club": "Boston Americans", "era": "1901–1907", "source": "wikidata",
+         "licence": "Public domain", "klass": "pd", "format": "png", "bytes": 10, "width": 8, "height": 8,
+         "site": False, "file": "", "url": "https://example.test/only-url.png", "page": "", "kind": ""},
+    ],
+    "copied": 1, "pd": 2, "free": 0,
+    "gaps": [{"league": "nhl", "club": "Hamilton Tigers", "variants": ["ham.1920.svg"]}],
+    "capspace_names": ["mwn.1917.svg"],
+}
+
+
+def test_sql_guard():
+    assert library.require_select("select 1") == "select 1"
+    assert library.require_select("  SELECT 1").lower().startswith("select")
+    assert library.require_select("with a as (select 1) select * from a").startswith("with")
+    for bad in ("insert into t values (1)", "delete from t", "select 1; drop table t", "update t set a = 1"):
+        try:
+            library.require_select(bad)
+        except SystemExit:
+            continue
+        raise AssertionError(bad)
+
+
+def test_dest():
+    home = Path.home() / "Projects/backups/spx-stats/logo-library"
+    assert library.library_dest([], {}) == home
+    assert library.library_dest(["--dest", "~/logo-lib-test"], {"SPX_LOGO_LIBRARY": "/tmp/ignored"}) == Path.home() / "logo-lib-test"
+    assert library.library_dest([], {"SPX_LOGO_LIBRARY": "~/from-env"}) == Path.home() / "from-env"
+
+
+def test_commons_name():
+    thumb = "https://thumb.wikimedia.org/wikipedia/commons/thumb/0/00/Logo_of_Chicago_Bulls.svg/120px-Logo_of_Chicago_Bulls.svg.png?u=1"
+    assert library._commons_name(thumb) == "Logo_of_Chicago_Bulls.svg"
+    original = "https://upload.wikimedia.org/wikipedia/commons/1/16/Argonauts_Logo.svg"
+    assert library._commons_name(original) == "Argonauts_Logo.svg"
+    assert library._commons_name("/team-logos/sl/6099.gif") == ""
+
+
+def test_index():
+    with tempfile.TemporaryDirectory() as tmp:
+        dest = Path(tmp)
+        library.write_index(dest, PAYLOAD)
+        html = (dest / "index.html").read_text(encoding="utf-8")
+        assert not (dest / "catalog.json").exists()
+    assert "Toronto Arenas" in html
+    assert "files/commons/Example_Logo.svg" in html
+    assert "https://example.test/only-url.png" in html
+    assert "Hamilton Tigers" in html
+    assert "mwn.1917.svg" in html
+    assert "Site uses this file" in html
+    assert 'id="f-league"' in html and 'id="f-club"' in html and 'id="f-era"' in html
+    assert 'id="f-source"' in html and 'id="f-licence"' in html and 'id="f-format"' in html
+    assert "fetch(" not in html
+    assert "/Users/" not in html
+    assert "img.src = m.file" in html
+    assert 'src="https://example.test/only-url.png"' not in html
+    assert 'src="mwn.1917.svg"' not in html
+    # the catalog is inside the page, not a sibling the page would have to request
+    assert html.index("Example_Logo.svg") < html.index("</html>")
+
+
+def test_source_has_no_home_folder():
+    text = Path(library.__file__).read_text(encoding="utf-8")
+    assert "/Users/" not in text
+
+
+if __name__ == "__main__":
+    test_sql_guard()
+    test_dest()
+    test_commons_name()
+    test_index()
+    test_source_has_no_home_folder()
+    print("ok")
