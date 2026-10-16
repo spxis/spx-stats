@@ -59,27 +59,28 @@ def read_qids(path: Path) -> list[str]:
     return sorted(ids, key=lambda q: int(q[1:]))
 
 
-def _safe_entity(qid: str, entity: dict) -> dict:
+def _safe_entity(qid: str, entity: dict, requested_properties: set[str]) -> dict:
     """Copy allowed source fields without normalizing the Wikidata statement data."""
     out = {k: entity[k] for k in ("id", "type", "lastrevid", "modified", "missing") if k in entity}
     if entity.get("redirects"):
         out["redirects"] = entity["redirects"]
-    for key in ("labels", "aliases"):
-        vals = entity.get(key) or {}
-        kept = {lang: vals[lang] for lang in ("en", "mul") if lang in vals}
-        if kept:
-            out[key] = kept
-    enwiki = (entity.get("sitelinks") or {}).get("enwiki")
-    if enwiki:
-        out["sitelinks"] = {"enwiki": enwiki}
     claims = entity.get("claims") or {}
-    selected = {prop: claims[prop] for prop in sorted(KEEP) if prop in claims}
+    selected = {
+        prop: claims[prop]
+        for prop in sorted(requested_properties & KEEP)
+        if prop in claims
+    }
     if selected:
         out["claims"] = selected
     return out
 
 
-def filtered_payload(raw: bytes, requested: list[str], retrieved_at: str) -> tuple[bytes, dict]:
+def filtered_payload(
+    raw: bytes,
+    requested: list[str],
+    retrieved_at: str,
+    requested_properties: dict[str, list[str]],
+) -> tuple[bytes, dict]:
     """Return sanitized JSON bytes and provenance metadata for one API response."""
     body = json.loads(raw)
     if body.get("error"):
@@ -93,7 +94,8 @@ def filtered_payload(raw: bytes, requested: list[str], retrieved_at: str) -> tup
             continue
         # Keep redirect/returned identities as sent; matching decisions are a
         # separate review step and are never inferred from display names.
-        entities[qid] = _safe_entity(qid, entity)
+        props = set(requested_properties.get(qid, []))
+        entities[qid] = _safe_entity(qid, entity, props)
     result = {
         "schema": "spx.wikidata-person-evidence/v1",
         "requested_qids": requested,
@@ -104,11 +106,13 @@ def filtered_payload(raw: bytes, requested: list[str], retrieved_at: str) -> tup
         "source": "Wikidata",
         "license": "CC0 1.0",
         "api_url": API,
-        "request_properties": ["info", "labels", "aliases", "claims", "sitelinks"],
-        "languages": ["en", "mul"],
+        "request_properties": ["info", "claims"],
         "allowed_claim_properties": sorted(KEEP),
         "retrieved_at_utc": retrieved_at,
         "requested_qids": requested,
+        "requested_properties_by_qid": {
+            qid: sorted(set(requested_properties[qid])) for qid in requested
+        },
         "returned_entities": len(entities),
         "upstream_response_sha256": hashlib.sha256(raw).hexdigest(),
         "filtered_payload_sha256": hashlib.sha256(selected_bytes).hexdigest(),
@@ -121,9 +125,7 @@ def request_batch(qids: list[str], timeout: int = 45) -> bytes:
     params = urllib.parse.urlencode({
         "action": "wbgetentities",
         "ids": "|".join(qids),
-        "props": "info|labels|aliases|claims|sitelinks",
-        "languages": "en|mul",
-        "sitefilter": "enwiki",
+        "props": "info|claims",
         "format": "json",
     })
     req = urllib.request.Request(API + "?" + params, headers={"User-Agent": USER_AGENT, "Accept": "application/json"})
@@ -160,17 +162,41 @@ def _atomic_write(path: Path, payload: bytes) -> None:
             os.unlink(name)
 
 
-def collect(qids: list[str], output: Path, retrieved_at: str | None = None) -> list[dict]:
+def read_requests(path: Path) -> dict[str, list[str]]:
+    """Read QIDs and explicit missing-property lists from a planner TSV."""
+    with path.open(encoding="utf-8", newline="") as stream:
+        rows = csv.DictReader(stream, delimiter="\t")
+        if not {"qid", "properties"}.issubset(rows.fieldnames or []):
+            raise ValueError("request TSV needs qid and properties columns")
+        result = {}
+        for row in rows:
+            qid = (row.get("qid") or "").strip()
+            props = sorted(set(filter(None, (row.get("properties") or "").split(","))))
+            if not QID.fullmatch(qid):
+                raise ValueError("request TSV contains an invalid QID")
+            if qid in result:
+                raise ValueError("request TSV contains duplicate QIDs")
+            if not props or any(prop not in KEEP for prop in props):
+                raise ValueError("request TSV has empty or unsupported properties")
+            result[qid] = props
+    if not result:
+        raise ValueError("request TSV contains no rows")
+    return dict(sorted(result.items(), key=lambda item: int(item[0][1:])))
+
+
+def collect(requested_properties: dict[str, list[str]], output: Path, retrieved_at: str | None = None) -> list[dict]:
     output.mkdir(parents=True, exist_ok=True)
     retrieved_at = retrieved_at or dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat()
     existing = sorted(output.glob("entities-*.json"))
     if existing:
         raise FileExistsError("output already contains entity batches; resume by verifying its manifest, do not refetch")
+    qids = list(requested_properties)
     batches = [qids[i:i + BATCH_SIZE] for i in range(0, len(qids), BATCH_SIZE)]
     records = []
     for n, batch in enumerate(batches, 1):
         raw = request_batch(batch)
-        payload, meta = filtered_payload(raw, batch, retrieved_at)
+        per_qid = {qid: requested_properties[qid] for qid in batch}
+        payload, meta = filtered_payload(raw, batch, retrieved_at, per_qid)
         filename = f"entities-{n:03d}.json"
         _atomic_write(output / filename, payload)
         meta["file"] = filename
@@ -190,12 +216,12 @@ def collect(qids: list[str], output: Path, retrieved_at: str | None = None) -> l
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("qids", type=Path, help="one QID per line or TSV with a qid column")
+    parser.add_argument("requests", type=Path, help="TSV with qid and explicit missing properties columns")
     parser.add_argument("output", type=Path, help="private staging directory; must not already contain entity batches")
     args = parser.parse_args(argv)
     try:
-        qids = read_qids(args.qids)
-        records = collect(qids, args.output)
+        requested_properties = read_requests(args.requests)
+        records = collect(requested_properties, args.output)
     except (OSError, ValueError, RuntimeError, urllib.error.URLError, TimeoutError) as exc:
         print(f"enrichment batch failed: {exc}", file=sys.stderr)
         return 1
