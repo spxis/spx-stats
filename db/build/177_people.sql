@@ -3,6 +3,8 @@
 -- has rebuilt franchises and team_seasons (run it after 171): every key it uses is stable.
 --  * A person is a Wikidata item (core.external_id: entity_kind 'person', source wikidata, the Q-number). People
 --    are matched by that key, never by their core.person_id, so an id survives a rebuild of core.
+--    This step deletes only people it owns: the ones an award winner pointed at before this run. A Wikidata person another step
+--    added (179, 181, 184, 187) is never removed here; db/tests/run-people-177.sh checks it.
 --  * An award winner is linked to a person two ways. A Wikidata winner carries the item in its source_key
 --    ('wikidata:Q1382032:1958'). A Wikipedia winner is linked through the article the award's page links the name
 --    to (legacy_people.wikipedia_link). Only a human, born at least 14 years before the season, is linked; the
@@ -101,6 +103,13 @@ select pf.*, b.label as birth_place, b.lat as birth_lat, b.lon as birth_lon, b.c
 from pf left join place b on b.qid = pf.bp left join place d on d.qid = pf.dp;
 
 -- 3. People: found by their Wikidata number, made when new.
+-- The people this step owns are the ones an award winner points at now (it is the only step that sets award_winner.person_id),
+-- read before the links are cleared. A Wikidata key no award links to may belong to 179, 181, 184 or 187; this step never deletes those.
+create temp table mine on commit drop as
+select distinct w.person_id from core.award_winner w
+join core.external_id x on x.entity_kind = 'person' and x.entity_id = w.person_id and x.source_id = (select source_id from wd)
+where w.person_id is not null;
+
 update core.award_winner set person_id = null
  where person_id in (select entity_id from core.external_id where entity_kind = 'person' and source_id = (select source_id from wd));
 delete from core.roster_stint where source_id = (select source_id from wd);
@@ -110,16 +119,31 @@ select pf.qid, coalesce(x.entity_id, nextval(pg_get_serial_sequence('core.person
 from pf left join core.external_id x
   on x.entity_kind = 'person' and x.source_id = (select source_id from wd) and x.external_key = pf.qid;
 
--- People no longer wanted (no award of theirs links to them any more) go, with their key.
+-- A person this step linked to an award last run and no award links to now goes again, with the key. Only those: a Wikidata
+-- person another step made (179 rosters, 181 statistics, 184 staff, 187 birth countries) has no award link from here and stays.
+-- One that anything else uses (a stint or statistics line of any step, a career, another source's key from a merge, 185) stays too;
+-- the delete is tried per person and a foreign key that objects leaves them in place.
 create temp table gone on commit drop as
 select x.entity_id from core.external_id x
 where x.entity_kind = 'person' and x.source_id = (select source_id from wd) and x.external_key not in (select qid from want)
-  -- a player 179 placed on an NBA or CFL roster is a Wikidata person too (this step's own stints are gone by now; any left belong to another step)
-  and not exists (select 1 from core.roster_stint r where r.person_id = x.entity_id);
-delete from core.external_id where entity_kind = 'person' and entity_id in (select entity_id from gone) and source_id = (select source_id from wd);
--- a record another source also keys (a merge, 185) stays
-delete from core.person where person_id in (select entity_id from gone)
-  and not exists (select 1 from core.external_id x where x.entity_kind = 'person' and x.entity_id = person.person_id);
+  and x.entity_id in (select person_id from mine)
+  and not exists (select 1 from core.roster_stint r where r.person_id = x.entity_id)
+  and not exists (select 1 from core.player_season_stat s where s.person_id = x.entity_id)
+  and not exists (select 1 from core.person_career c where c.person_id = x.entity_id)
+  and not exists (select 1 from core.award_winner w where w.person_id = x.entity_id)
+  and not exists (select 1 from core.external_id y where y.entity_kind = 'person' and y.entity_id = x.entity_id and y.source_id <> x.source_id);
+do $$
+declare o record;
+begin
+  for o in select entity_id as person_id from gone loop
+    begin
+      delete from core.external_id where entity_kind = 'person' and entity_id = o.person_id and source_id = (select source_id from wd);
+      delete from core.person where person_id = o.person_id;
+    exception when foreign_key_violation then
+      null;
+    end;
+  end loop;
+end $$;
 
 insert into core.person (person_id, full_name, kind, birth_date, birth_place, birth_country_code, birth_lat, birth_lon, death_date, death_place,
                          death_country_code, nationality_code, height_cm, handedness, throws_or_shoots, hall_of_fame_year, source_id)
