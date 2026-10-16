@@ -13,7 +13,7 @@ import { eraChanges, ERA_CURRENT, PARKS, PARK_IDS, parkByWikidata, parkQuirksIn,
  */
 
 /** The sports kyogijo draws, by the league whose clubs played there. A league not listed has no drawing. */
-export const SURFACE_SPORT = { nhl: "nhl", nba: "nba", nfl: "nfl", cfl: "cfl", mlb: "mlb" } as const;
+export const SURFACE_SPORT = { nhl: "nhl", nba: "nba", wnba: "nba", nfl: "nfl", cfl: "cfl", mlb: "mlb" } as const;
 export type SurfaceSport = (typeof SURFACE_SPORT)[keyof typeof SURFACE_SPORT];
 
 /** Kyogijo's key of each current MLB park, with the names the park has gone by. */

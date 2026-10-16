@@ -11,6 +11,7 @@ export const TROPHY_SPEED = 14;
 export const TROPHY_EMBLEM_LOADERS = {
   nhl: () => import("@johnmorrisdotca/dougu-sports/trophy/hockey-cup").then((m) => m.TROPHY_HOCKEY_CUP),
   nba: () => import("@johnmorrisdotca/dougu-sports/trophy/basketball").then((m) => m.TROPHY_BASKETBALL),
+  wnba: () => import("@johnmorrisdotca/dougu-sports/trophy/basketball").then((m) => m.TROPHY_BASKETBALL),
   mlb: () => import("@johnmorrisdotca/dougu-sports/trophy/baseball").then((m) => m.TROPHY_BASEBALL),
   nfl: () => import("@johnmorrisdotca/dougu-sports/trophy/football").then((m) => m.TROPHY_FOOTBALL),
   cfl: () => import("@johnmorrisdotca/dougu-sports/trophy/canadian-bowl").then((m) => m.TROPHY_CANADIAN_BOWL),

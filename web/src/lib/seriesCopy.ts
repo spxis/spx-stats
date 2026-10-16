@@ -34,6 +34,7 @@ export const SERIES_COPY = {
   "round.cflFinal": "Division Final",
   "final.nhl": "Stanley Cup Final",
   "final.nba": "NBA Finals",
+  "final.wnba": "WNBA Finals",
   "final.mlb": "World Series",
   "final.nfl": "Super Bowl {numeral}",
   "final.nflOld": "NFL Championship",

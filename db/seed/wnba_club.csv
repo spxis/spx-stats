@@ -1,0 +1,28 @@
+club,league,first_year,last_year,franchise,country,display,note
+New York Liberty,wnba,1997,9999,new:NYLIBERTY,US,,charter club
+Los Angeles Sparks,wnba,1997,9999,new:LASPARKS,US,,charter club
+Phoenix Mercury,wnba,1997,9999,new:PHOENIX,US,,charter club
+Houston Comets,wnba,1997,2008,new:HOUSTON,US,,folded after 2008; four titles 1997-2000
+Charlotte Sting,wnba,1997,2006,new:CHARLOTTE,US,,folded after 2006
+Cleveland Rockers,wnba,1997,2003,new:CLEVELAND,US,,folded after 2003
+Sacramento Monarchs,wnba,1997,2009,new:SACRAMENTO,US,,folded after 2009
+Utah Starzz,wnba,1997,2002,new:LASVEGAS,US,,moved to San Antonio in 2003
+San Antonio Silver Stars,wnba,2003,2013,new:LASVEGAS,US,,the Utah Starzz moved to San Antonio
+San Antonio Stars,wnba,2014,2017,new:LASVEGAS,US,,dropped Silver; moved to Las Vegas in 2018
+Las Vegas Aces,wnba,2018,9999,new:LASVEGAS,US,,the San Antonio Stars moved to Las Vegas
+Washington Mystics,wnba,1998,9999,new:WASHINGTON,US,,
+Detroit Shock,wnba,1998,2009,new:DALLAS,US,,moved to Tulsa in 2010
+Tulsa Shock,wnba,2010,2015,new:DALLAS,US,,the Detroit Shock moved to Tulsa
+Dallas Wings,wnba,2016,9999,new:DALLAS,US,,the Tulsa Shock moved to Dallas
+Minnesota Lynx,wnba,1999,9999,new:MINNESOTA,US,,
+Orlando Miracle,wnba,1999,2002,new:CONNECTICUT,US,,moved to Uncasville as the Connecticut Sun
+Connecticut Sun,wnba,2003,9999,new:CONNECTICUT,US,,the Orlando Miracle moved to Connecticut
+Indiana Fever,wnba,2000,9999,new:INDIANA,US,,
+Seattle Storm,wnba,2000,9999,new:SEATTLE,US,,
+Miami Sol,wnba,2000,2002,new:MIAMI,US,,folded after 2002
+Portland Fire,wnba,2000,2002,new:PORTLANDFIRE,US,,original Portland club; folded after 2002; not the 2026 expansion Fire
+Chicago Sky,wnba,2006,9999,new:CHICAGO,US,,
+Atlanta Dream,wnba,2008,9999,new:ATLANTA,US,,
+Golden State Valkyries,wnba,2025,9999,new:GOLDENSTATE,US,,expansion 2025
+Toronto Tempo,wnba,2026,9999,new:TORONTO,CA,,expansion 2026
+Portland Fire,wnba,2026,9999,new:PORTLAND,US,,expansion 2026; not the 2000-2002 Fire

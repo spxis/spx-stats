@@ -164,6 +164,10 @@ test("rounds are named from the league's format, by year and number of rounds", 
   assert.deepEqual(roundKeys("nhl", 2025, 4, true, false), ["first", "second", "confFinal", "final"]);
   assert.deepEqual(roundKeys("nhl", 2005, 4, true, false), ["confQuarters", "confSemis", "confFinal", "final"]);
   assert.deepEqual(roundKeys("nba", 2025, 4, true, false), ["first", "confSemis", "confFinals", "final"]);
+  assert.deepEqual(roundKeys("wnba", 2024, 3, true, false), ["first", "semis", "final"]);
+  assert.deepEqual(roundKeys("wnba", 1997, 2, true, false), ["semis", "final"]);
+  assert.equal(bestOfIn("wnba", 2024, "final"), 5);
+  assert.equal(bestOfIn("wnba", 1997, "final"), 3);
   assert.deepEqual(roundKeys("nfl", 2025, 4, true, false), ["wildcard", "divisional", "confChamp", "final"]);
   assert.deepEqual(roundKeys("cfl", 2025, 3, true, false), ["cflSemi", "cflFinal", "final"]);
   assert.equal(roundKeys("nhl", 2025, 5, true, false), null, "a season that matches no row keeps the generic names");

@@ -269,6 +269,7 @@ export function finalName(lg: string, year: number, say: Say): string {
   switch (lg) {
     case "nhl": return say("final.nhl");
     case "nba": return say("final.nba");
+    case "wnba": return say("final.wnba");
     case "mlb": return say("final.mlb");
     case "nfl": return year >= SUPER_BOWL_SINCE ? say("final.nfl", { numeral: roman(year - 1965) }) : say("final.nflOld");
     case "afl": return say("final.afl");

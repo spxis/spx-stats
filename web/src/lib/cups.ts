@@ -19,6 +19,7 @@ import { TROPHY_TILT } from "./trophyTurn.ts";
 const CUPS: Record<string, readonly [Emblem, string]> = {
   nhl: [TROPHY_HOCKEY_CUP, "Stanley Cup"],
   nba: [TROPHY_BASKETBALL, "Larry O'Brien Trophy"],
+  wnba: [TROPHY_BASKETBALL, "WNBA Championship"],
   mlb: [TROPHY_BASEBALL, "Commissioner's Trophy"],
   nfl: [TROPHY_FOOTBALL, "Vince Lombardi Trophy"],
   cfl: [TROPHY_CANADIAN_BOWL, "Grey Cup"],

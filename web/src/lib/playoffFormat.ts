@@ -28,6 +28,12 @@ const ERAS: Record<string, readonly (readonly [number, number, readonly RoundKey
     [1974, 9999, ["first", "confSemis", "confFinals", "final"]],
     [1967, 1973, ["divSemis", "divFinals", "final"]],
   ],
+  wnba: [
+    [2022, 9999, ["first", "semis", "final"]],
+    [2016, 2021, ["confSemis", "confFinals", "final"]],
+    [2000, 2015, ["first", "confFinals", "final"]],
+    [1997, 1999, ["semis", "final"]],
+  ],
   mlb: [
     [2008, 2008, ["tiebreak", "ds", "lcs", "final"]],
     [2020, 2020, ["wcSeries", "ds", "lcs", "final"]],
@@ -79,6 +85,10 @@ export function bestOfIn(lg: string, year: number, key: RoundKey): number | null
       if (year < 1984) return null;
       if (year < 2003 && key === "first") return 5;
       return 7;
+    case "wnba":
+      if (key === "final") return year >= 2005 ? 5 : 3;
+      if (key === "first") return year >= 2022 ? 3 : (year >= 2000 ? 3 : 1);
+      return year >= 2016 ? 5 : 3;
     case "nfl":
     case "cfl":
       return 1;

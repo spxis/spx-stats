@@ -84,7 +84,7 @@ from core.team_season t join core.season s using (season_id)
 left join core.franchise_identity i using (franchise_identity_id)
 left join lateral (select x.full_name, x.nickname from core.franchise_identity x where x.franchise_id = t.franchise_id and i.franchise_identity_id is null
                    order by abs(extract(year from lower(x.valid_during)) - s.start_year) limit 1) n on true  -- a season with no identity of its own: the nearest era's name
-where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha');
+where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha', 'wnba');
 create index on ts (lg, y, franchise_id);
 
 -- ---------------------------------------------------------------------------------------------- evidence
@@ -185,7 +185,13 @@ where division ~ '^[0-9]{4} AAFC (Eastern|Western) standings$'
 union all  -- the WHA: Eastern and Western Divisions, and the Canadian Division of 1974-76 (the standings templates' captions); 1977-78 and 1978-79 had none
 select 'wha', season, division, 'division', division, null, team, pg_temp.flat(team)
 from legacy_wikipedia_hockey.standing
-where league = 'wha' and division ~ '^(Eastern|Western|Canadian) Division$';
+where league = 'wha' and division ~ '^(Eastern|Western|Canadian) Division$'
+union all  -- the WNBA: Eastern and Western Conference tables ("1997 WNBA Eastern Conference standings"); a season that
+           -- published one overall table ("2024 WNBA standings") has no conference on the template name
+select 'wnba', season, division, 'conference',
+       case when division ~* 'eastern' then 'Eastern' when division ~* 'western' then 'Western' end, null, team, pg_temp.flat(team)
+from legacy_wikipedia_wnba.standing
+where division ~* '(eastern|western)';
 create temp table wmatch as
 select w.*, coalesce(
     (select min(ts.franchise_id) from ts where ts.lg = w.lg and ts.y = w.y and pg_temp.flat(ts.full_name) = w.fl having count(*) = 1),

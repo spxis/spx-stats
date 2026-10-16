@@ -139,7 +139,7 @@ export function filterQuery(f: VenueFilter, b: YearBounds): Record<string, strin
 }
 
 /** Colours the site already gives its leagues (CSS variables, light and dark); the codes in this list are the ones globals.css defines. */
-const THEMED = new Set(["nhl", "nba", "mlb", "nfl", "cfl"]);
+const THEMED = new Set(["nhl", "nba", "wnba", "mlb", "nfl", "cfl"]);
 
 /**
  * A league's colour: the site's own for the five it styles, otherwise a hue stepped round the wheel by the league's place in the list,
