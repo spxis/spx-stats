@@ -495,6 +495,32 @@ class WikidataParse(unittest.TestCase):
         self.assertEqual(stored, [True])
         self.assertEqual(settled, [])
 
+    def test_worker_skips_content_for_unchanged_revision_with_current_parser(self):
+        w = worker.Worker(cfg=Config(), wp=object(), wd=object(), wdqs=object(), utcnow=lambda: NOW)
+        job = {"job_id": 10, "kind": "wp_league_season", "target": "1960 American Football League season",
+               "league": "afl", "season": 1960, "last_revision": 88, "last_sha256": "same"}
+        revision = {"missing": False, "page": {"revisions": [{"revid": 88}]}}
+        calls, stored, settled = [], [], []
+        w.wp_query = lambda titles, content: calls.append((titles, content)) or ({job["target"]: revision}, 10)
+        w.store_page = lambda *_: stored.append(True) or 1
+        w.settle = lambda _job, result, outcome: settled.append((result, outcome))
+        with patch.object(worker.db, "rows", return_value=[{"title": job["target"], "parser_version": planner.PARSER_VERSION}]), \
+             patch.object(w, "fetch_log"):
+            w.do_wp([job])
+        self.assertEqual(calls, [([job["target"]], False)])
+        self.assertEqual(stored, [])
+        self.assertEqual(len(settled), 1)
+        self.assertEqual(settled[0][1], "unchanged")
+        self.assertEqual(settled[0][0]["last_revision"], 88)
+
+    def test_historical_league_award_pages_are_gap_targets_without_core_seasons(self):
+        row = {"league": "afl", "season": 1960,
+               "title": planner.historic_league_title("afl", 1960), "no_awards": True}
+        targets = planner.build_targets(Config(), NOW, [], [], [], [], historic_seasons=[row])
+        award = next(t for t in targets if t["kind"] == "wp_league_season")
+        self.assertEqual((award["target"], award["league"], award["season"], award["gap"]),
+                         ("1960 American Football League season", "afl", 1960, True))
+
     def test_team_members(self):
         rows = WD.members(fixture("wdqs_team"), "Q131371")
         self.assertEqual(len(rows), 8)
