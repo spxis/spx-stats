@@ -1,5 +1,5 @@
 #!/bin/bash
-# Migrations 122+123: api.person_admin lists every core.person, including athletes with
+# Migrations 122+123+124: api.person_admin lists every core.person, including athletes with
 # no club season, as a materialized view with letter_first/last and chip aggregates.
 # Scratch Postgres, removed by name.
 #   bash db/tests/person-admin.sh
@@ -88,8 +88,13 @@ insert into core.person_sport values (1, 'athletics', 2, 'wikidata:Q5798:P641:at
 SQL
 docker cp "$REPO/db/migrations/122_person_admin.sql" "$NAME:/tmp/122.sql"
 docker cp "$REPO/db/migrations/123_person_admin_matview.sql" "$NAME:/tmp/123.sql"
+docker cp "$REPO/db/migrations/124_person_admin_slim.sql" "$NAME:/tmp/124.sql"
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/122.sql >/dev/null
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/123.sql >/dev/null
+SIZE_BEFORE=$(docker exec -i "$NAME" psql -U postgres -d spx -Atc "select pg_total_relation_size('api.person_admin')")
+docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/124.sql >/dev/null
+SIZE_AFTER=$(docker exec -i "$NAME" psql -U postgres -d spx -Atc "select pg_total_relation_size('api.person_admin')")
+echo "person_admin bytes before=$SIZE_BEFORE after=$SIZE_AFTER"
 OUT=$(docker exec -i "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -At <<'SQL'
 select person_id || ',' || name || ',' || search || ',' || coalesce(qid,'') || ',' || sports::text || ',' || has_seasons::text || ',' || sources::text
   from api.person_admin where person_id = 1;
@@ -117,8 +122,23 @@ select case when has_table_privilege('anon', 'api.person_admin', 'select')
             and exists (select 1 from pg_index i join pg_class c on c.oid = i.indrelid join pg_namespace n on n.oid = c.relnamespace
                         where n.nspname = 'api' and c.relname = 'person_admin' and i.indisunique)
        then 'ok grant' else 'FAIL grant' end;
+reset role;
+select case when not exists (
+         select 1 from pg_index i
+         join pg_class t on t.oid = i.indrelid
+         join pg_namespace n on n.oid = t.relnamespace
+         join pg_class ix on ix.oid = i.indexrelid
+         join pg_am am on am.oid = ix.relam
+        where n.nspname = 'api' and t.relname = 'person_admin' and am.amname = 'gin'
+          and ix.relname in ('person_admin_sports_gin', 'person_admin_leagues', 'person_admin_sources_gin',
+                             'person_admin_sports', 'person_admin_sources')
+       ) and exists (
+         select 1 from pg_class ix join pg_namespace n on n.oid = ix.relnamespace
+         where n.nspname = 'api' and ix.relname = 'person_admin_search_trgm')
+       then 'ok slim' else 'FAIL slim' end;
 SQL
 )
 printf '%s\n' "$OUT"
 printf '%s\n' "$OUT" | grep -q '^FAIL' && { echo "person-admin: FAIL"; exit 1; }
+docker exec -i "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -c "explain (analyze, buffers) select person_id from api.person_admin order by name, person_id limit 100;"
 echo "person-admin: ok (postgres $NAME on 127.0.0.1:$PORT, removed)"
