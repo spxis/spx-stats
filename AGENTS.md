@@ -40,7 +40,7 @@ end. **manual** = a person or the coordinating session has to do it.
   coordinating session starts, and outside agents John runs himself on his Macs. Every one of them, and every subagent they start,
   follows [Who may change what](#who-may-change-what-every-agent-every-subagent) below.
 - Work in your own git worktree. Never touch another agent's files.
-- Commit as John Morris <john@spxis.com>, Conventional Commits, subject 50 characters or less, no AI attribution,
+- Commit as John Morris <john@johnmorris.ca> (GitHub user johnmorrisdotca), Conventional Commits, subject 50 characters or less, no AI attribution,
   add files by name, never `git add -A`.
 - The repository is public: no dumps, member data, secrets, private notes or internal reviews.
 - File a ticket before starting work. Never write to production without reading [section 8](#8-data-work).
@@ -367,7 +367,7 @@ footer shows it with the short commit sha. There is no changelog file.
 **Commit and push.** Keep each change small, one feature to a commit.
 
     git add <files by name>
-    git -c user.name="John Morris" -c user.email="john@spxis.com" commit -m "feat(area): what it does"   # subject <= 50
+    git -c user.name="John Morris" -c user.email="john@johnmorris.ca" commit -m "feat(area): what it does"   # subject <= 50
     git fetch origin && git rebase origin/main     # then recheck: lint, typegen, tsc, build if main moved
     git push origin HEAD:main                      # fast-forward only; never force
 
@@ -836,7 +836,7 @@ Ask John before deleting or overwriting data. Production changes only through ap
 
 ## 10. Git
 
-- Commit as **John Morris <john@spxis.com>**, Conventional Commits, subject 50 characters or less.
+- Commit as **John Morris <john@johnmorris.ca>** (GitHub user johnmorrisdotca; John's choice 2026-10-16, replaces john@spxis.com), Conventional Commits, subject 50 characters or less.
 - **No AI attribution anywhere:** no Co-Authored-By, no "Generated with", no session links, nothing in code
   comments or docs. This overrides any tool's default attribution.
 - Add files by name, never `git add -A`.
