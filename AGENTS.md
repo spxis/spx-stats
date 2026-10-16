@@ -35,8 +35,10 @@ end. **manual** = a person or the coordinating session has to do it.
 
 ## 1. Rules in one breath
 
-- **Who does the work.** The coordinating session only starts Sonnet agents and relays between them and John; it does
-  no feature work. Sonnet agents do all the work John asks for, each in its own worktree.
+- **Who does the work.** The coordinating session (on machine1, actor "Mac Studio") relays between John and the agents and
+  owns every change to data; it does no feature work. Agents do the work John asks for, each in its own worktree: agents the
+  coordinating session starts, and outside agents John runs himself on his Macs. Every one of them, and every subagent they start,
+  follows [Who may change what](#who-may-change-what-every-agent-every-subagent) below.
 - Work in your own git worktree. Never touch another agent's files.
 - Commit as John Morris <john@spxis.com>, Conventional Commits, subject 50 characters or less, no AI attribution,
   add files by name, never `git add -A`.
@@ -59,6 +61,41 @@ end. **manual** = a person or the coordinating session has to do it.
 - **First step of every session:** read the hook's `[spx-check]` lines and check your connector tools
   ([section 4](#4-cold-start)); report anything MISSING.
 - Short answers. When you need something from John, start with `NEED FROM YOU:` and a copy-paste block.
+
+### Who may change what (every agent, every subagent)
+
+Several agents work at once, some started by other agents. Each rule here was broken on 2026-10-15 and cost a failed release or a
+data repair. If you start a subagent, copy this section into its instructions; if a subagent cannot follow it, it stops and reports.
+
+- **Only the coordinating session writes data.** That means: any write to DS1 or production (psql, `scripts/mac/ds1-apply.sh`, the
+  Supabase API or connector), any migration anywhere (add-only ones included), any `db/build` step or `build_core.sh` against DS1,
+  and any loader that archives or loads (`season.py`, `archive_raw.py`, `scripts/daily/run.py --apply`, `dropbox_put.py`). Also only it
+  prepares, withdraws or watches data releases, deploys, rebuilds the release runner, updates the preview on 7700 and uses ssh to nas1.
+  Everyone else reads DS1 through the preview PostgREST (`http://127.0.0.1:7750/`, read-only) and tests SQL on a scratch Postgres of
+  their own (Docker, a port in 7740-7749, removed by name afterwards). *Broken:* an outside agent applied a migration and ran the daily
+  job on DS1 itself; the prepared release then failed ("core.game changed since the preview").
+- **A release is a snapshot.** Nothing may change DS1 tables a pending release covers until it is applied or withdrawn; the coordinating
+  session prepares only after all DS1 work is done (and after the 10:00 ET daily job), and withdraws stale releases itself
+  (`release.py withdraw`). `prepare` rehearses the apply on production in a transaction that always rolls back; a failed rehearsal is a
+  blocker. Never tell John which release to approve unless you are the coordinating session.
+- **Hand-off, not action.** When your work needs a data step, write the files, test them on scratch and end your report with a block
+  headed `FOR THE MAC STUDIO SESSION:`: each command in order (from the repo root), the row counts you expect after it, the tables
+  the release must carry, and a loud line if you changed `db/checks`, `scripts/release` or `scripts/sync` (the release runner must
+  then be rebuilt at your commit before any prepare).
+- **Check a name is free before you create it.** Before `create table`/`view`/`function`, look for the name in `db/migrations` and on
+  DS1 (`\d core.<name>` through a read-only session) and production's schema. *Broken:* a migration created `core.game_official`,
+  which already is the referees table.
+- **A build step deletes only what it owns.** A step that removes rows must limit the delete to rows it wrote (a source, a marker, its
+  own candidate set), never "everything not in my list". *Broken:* step 177 deleted 11,073 Wikidata ids other steps had added.
+- **Merging or deleting a row that others point at** (people, franchises, identities) means every table with a foreign key to it goes in
+  the same release; `prepare`'s rehearsal finds the ones you forget.
+- **Changing what a club belongs to** (`core.franchise_league`, a new league, a new parent) reruns `175_team_brand`,
+  `175_team_logo_extra`, `175_team_logo_fit` and their orphan lines must stay empty. *Broken:* 13 logos lost their club when clubs got
+  AFL, NHA and PCHA memberships.
+- **Stop only your own processes, by PID.** Never `pkill`, `killall` or a pattern kill: other sessions' servers run on the same Mac.
+- **Next writes `web/AGENTS.md` and may edit `tsconfig.json` on `next dev`.** Delete that file and revert the edit; never commit them.
+- **One ticket at a time**, the ones John gave you, in a new worktree each from the latest `origin/main`. Do not deploy and do not
+  mark a ticket done: the coordinating session does both after the deploy.
 
 ## 2. Talking to John
 
@@ -485,7 +522,7 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
 
-**For agents:** never write production by hand. Write data to your own local copy and hand the coordinating session the DS1
+**For agents:** never write production or DS1 yourself ([who may change what](#who-may-change-what-every-agent-every-subagent)). Write data to your own local copy and hand the coordinating session the DS1
 steps (SQL files under `db/`). The coordinating session applies them with `bash scripts/mac/ds1-apply.sh <file> [--dry-run]`
 (only files under `db/`), then prepares a data release that John approves at `/admin/data`. A schema migration still needs
 applying to production (item 4) before the release that fills it. DS1 has the nologin roles `anon` and `authenticated`, so
