@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
-import { REVALIDATE } from "../src/lib/api/config.ts";
+import { REVALIDATE, REVALIDATE_DAY, REVALIDATE_HISTORICAL } from "../src/lib/api/config.ts";
 import { tagsFor } from "../src/lib/api/tags.ts";
 import { MAX_TAGS, bearer, parseTags, secretMatches } from "../src/lib/revalidate.ts";
 import { plainMarks } from "../src/lib/localTime.ts";
@@ -76,22 +76,28 @@ const sourceFiles = (readdirSync(SRC, { recursive: true }) as string[])
   .filter((f) => /\.tsx?$/.test(f))
   .map((f) => ({ f, text: readFileSync(new URL(f, SRC), "utf8") }));
 
-test("every kept page, route and read lives a day (86400); only the signed-in pages are drawn per request (0)", () => {
+test("kept pages live a day (live) or 30 days (historical); only the signed-in pages are drawn per request (0)", () => {
   const seen: string[] = [];
+  const allowed = new Set([String(REVALIDATE_DAY), String(REVALIDATE_HISTORICAL)]);
   for (const { f, text } of sourceFiles) {
     for (const m of text.matchAll(/export const revalidate = (\S+?);/g)) {
       seen.push(f);
       if (f.startsWith("app/(dyn)/")) assert.equal(m[1], "0", `${f}: a signed-in page is drawn per request`);
       // Static files that read no database (flags, drawings) may live longer than a day, never shorter.
-      else assert.ok(/^\d+$/.test(m[1] ?? "") && Number(m[1]) >= 86400, `${f}: segment config revalidate must be a literal of at least 86400, not ${m[1]}`);
+      else if (f.startsWith("app/flag/")) assert.ok(/^\d+$/.test(m[1] ?? "") && Number(m[1]) >= REVALIDATE_DAY, `${f}: flag route must live at least a day`);
+      else assert.ok(allowed.has(m[1] ?? ""), `${f}: segment config revalidate must be ${REVALIDATE_DAY} or ${REVALIDATE_HISTORICAL}, not ${m[1]}`);
     }
     assert.doesNotMatch(text, /revalidate:\s*3600\b/, `${f}: a one-hour read time`);
     assert.doesNotMatch(text, /revalidate\s*=\s*3600\b/, `${f}: a one-hour page time`);
   }
   assert.ok(seen.length > 20, "found the kept pages");
   assert.ok(seen.includes("app/[locale]/layout.tsx"));
-  assert.match(readFileSync(new URL("app/[locale]/layout.tsx", SRC), "utf8"), /export const revalidate = 86400;/);
-  assert.equal(REVALIDATE, 86400);
+  assert.match(readFileSync(new URL("app/[locale]/layout.tsx", SRC), "utf8"), /export const revalidate = 2592000;/);
+  assert.match(readFileSync(new URL("app/[locale]/s/page.tsx", SRC), "utf8"), /export const revalidate = 86400;/);
+  assert.match(readFileSync(new URL("app/[locale]/s/[league]/[year]/game/[game]/page.tsx", SRC), "utf8"), /export const revalidate = 2592000;/);
+  assert.equal(REVALIDATE, REVALIDATE_HISTORICAL);
+  assert.equal(REVALIDATE_DAY, 86400);
+  assert.equal(REVALIDATE_HISTORICAL, 2592000);
 });
 
 test("every server fetch of the archive carries cache tags the release runner can revalidate", () => {

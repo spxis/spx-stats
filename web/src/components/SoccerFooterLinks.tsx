@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { MLS_PATH } from "@/lib/mlsPath";
 import { SOCCER_PATH, WORLDCUP_PATH } from "@/lib/soccerPath";

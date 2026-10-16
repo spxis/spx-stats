@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Fragment, Suspense } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CompareControl } from "@/components/CompareControl";

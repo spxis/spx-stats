@@ -8,7 +8,7 @@ import { parseSeasonSeg } from "@/lib/slug";
 // What a season's path-to-the-title diagram draws, as JSON (/mlb/2025/rows/path): the season page's diagram fetches it when the reader gets near
 // (components/PlayoffPathLazy.tsx), so the page itself carries none of it. Kept like the page (drawn on its first request, then a day); the words are in the
 // route's language. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

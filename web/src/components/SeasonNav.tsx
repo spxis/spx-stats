@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { ReactNode } from "react";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { leadersPath } from "@/lib/leaderStats";

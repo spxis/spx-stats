@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useSyncExternalStore } from "react";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { atUtc, isoDay, localToday } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";

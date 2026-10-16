@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { MlsClubName } from "@/components/MlsClubName";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { mlsMatchPath } from "@/lib/mlsPath";

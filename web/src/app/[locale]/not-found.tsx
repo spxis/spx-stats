@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 
 export async function generateMetadata() {

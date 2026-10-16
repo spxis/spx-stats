@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { atUtc } from "@/lib/format";
 import { getPlayerPaths } from "@/lib/playerLinks";

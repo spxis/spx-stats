@@ -6,7 +6,7 @@ import { leagueChampLines } from "@/lib/leagueTables";
 // The older champions of a league as JSON (/nhl/rows/champions): what "Show all" under the champions table on the league page loads
 // (components/ChampionsTable.tsx), so the page itself carries only the newest seasons. `logos` is the whole list the lines point into. Kept like the page
 // (drawn on its first request, then a day). Nothing in it depends on the language. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

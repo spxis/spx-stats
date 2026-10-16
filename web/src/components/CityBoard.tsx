@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { clipStay, titlesByDecade, totalsOf, type Stay } from "@/lib/cityModel";
 import { fmt3 } from "@/lib/format";

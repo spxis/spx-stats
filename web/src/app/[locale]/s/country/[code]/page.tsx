@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { Credits } from "@/components/Credits";
 import { Flag } from "@/components/Flag";
@@ -19,6 +19,7 @@ import { tableOf } from "@/lib/sort";
 import "@/components/country.css";
 
 // Nothing is drawn at build time: each country is drawn on its first visit, then kept and revalidated like the rest.
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 const CODE = /^[A-Za-z]{2}$/;

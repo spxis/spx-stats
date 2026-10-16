@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { viewLabel, type Placed, type ViewId } from "@/lib/alignment";
 import "./alignment.css";

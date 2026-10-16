@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useId, useMemo, useRef, useState, type ChangeEvent } from "react";
 import { cardSvg, cardText, cardWords } from "@/lib/venueCard";
 import type { VenueRow, VenueVisited } from "@/lib/venueModel";

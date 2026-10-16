@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { isSpx, srcName } from "@/lib/leagues";
 import { usePaths } from "./SlugProvider";
 import { useSpeaker } from "./i18n/LocaleProvider";

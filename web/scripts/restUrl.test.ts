@@ -39,10 +39,12 @@ test("SPX_REVALIDATE shortens the cache time only in preview mode, and only with
     if (value === undefined) delete process.env.SPX_REVALIDATE; else process.env.SPX_REVALIDATE = value;
     return (await import(`../src/lib/api/config.ts?v=${Math.random()}`)).REVALIDATE as number;
   }
-  assert.equal(await seconds(undefined, "300"), 86400);
-  assert.equal(await seconds("1", undefined), 86400);
+  const hist = 2592000;
+  assert.equal(await seconds(undefined, "300"), hist);
+  assert.equal(await seconds("1", undefined), hist);
   assert.equal(await seconds("1", "300"), 300);
-  for (const v of ["5", "0", "-1", "86400", "999999", "abc", "1.5", ""]) assert.equal(await seconds("1", v), 86400, v);
+  assert.equal(await seconds("1", "86400"), 86400);
+  for (const v of ["5", "0", "-1", "2592000", "9999999", "abc", "1.5", ""]) assert.equal(await seconds("1", v), hist, v);
   delete process.env.SPX_PREVIEW;
   delete process.env.SPX_REVALIDATE;
 });

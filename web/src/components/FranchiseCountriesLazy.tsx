@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { countriesRestPath, type FranchiseCountryView } from "@/lib/countryView";
 import { FranchiseCountriesView } from "./FranchiseCountriesView";
 import { useSpeaker } from "./i18n/LocaleProvider";

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useRouter } from "next/navigation";
 import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
@@ -21,6 +21,7 @@ export function SignInLink() {
     <Link
       className="signin-link"
       href="/login"
+      prefetch
       onClick={(e) => {
         const path = location.pathname;
         if (path === "/login" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { LeaderSpark } from "@/components/LeaderSpark";
 import { LeaderTrend, type TrendPoint } from "@/components/LeaderTrend";
 import { SortTable } from "@/components/SortTable";

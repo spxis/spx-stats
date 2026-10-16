@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache, Suspense } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
@@ -69,7 +69,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   if (!at) return {};
   const f = at.f;
   const d = await load(league, y, f, "asc");
-  if (!d.raw.length) return { robots: { index: false } };
+  if (!d.raw.length) return { robots: { index: false, follow: false } };
   const { say, locale } = await currentSpeaker();
   const season = seasonLabel(league, y);
   const rec = seasonRecord(deriveTeamGames(d.raw, f, d.st), d.st);

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo } from "react";
 import { RANKER, type RankKind } from "@/lib/countryModel";
 import { fillHref } from "@/lib/countryRamp";

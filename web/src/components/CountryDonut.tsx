@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { arc, pie, type PieArcDatum } from "d3";
 import { useRef } from "react";
 import { focused, holds, sliceStates } from "@/lib/countryFocus";

@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useSyncExternalStore } from "react";
 import { localToday } from "@/lib/format";
 import { stripDates, usHolidayDates, weekDirection, type HolidayKey, type StripLayout } from "@/lib/weekStrip";

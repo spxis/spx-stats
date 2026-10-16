@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { cache } from "react";
 import { AccentStyle } from "@/components/AccentStyle";
@@ -61,6 +61,7 @@ function roundOf(lg: string, y: number, all: Series[], s: Series, say: Say, robi
 }
 
 // Nothing is drawn at build time: each address is drawn on its first visit, then kept and revalidated like the rest.
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/s/[league]/[year]/series/[pair]">): Promise<Metadata> => {

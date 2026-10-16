@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { SoccerSquadTable } from "@/components/SoccerSquadTable";
 import { squadPath, squadRowsPath, type SquadLabels, type SquadLine } from "@/lib/soccerSquad";

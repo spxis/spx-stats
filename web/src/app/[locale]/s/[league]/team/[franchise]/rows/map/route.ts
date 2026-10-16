@@ -9,7 +9,7 @@ import { teamOf } from "@/lib/teamSlugs";
 // season plays and every venue of every club. The corner map fetches it when it is opened and the venue section when the reader gets near
 // (components/TeamMap.tsx, components/VenueMapLazy.tsx), so the page itself carries none of it. Kept like the page (drawn on its first request, then a
 // day); the language is the route's, since the venue facts and addresses are worded in it. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

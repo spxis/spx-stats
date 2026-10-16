@@ -36,22 +36,28 @@ const nextConfig: NextConfig = {
     return { beforeFiles: [], afterFiles: pageRewrites(), fallback: [] };
   },
   async headers() {
-    return [
+    const security = [
+      { key: "Content-Security-Policy", value: csp },
+      { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
-        source: "/(.*)",
-        headers: [
-          { key: "Content-Security-Policy", value: csp },
-          { key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains; preload" },
-          { key: "X-Content-Type-Options", value: "nosniff" },
-          { key: "X-Frame-Options", value: "DENY" },
-          { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
-          },
-          { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
-        ],
+        key: "Permissions-Policy",
+        value: "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
       },
+      { key: "Cross-Origin-Opener-Policy", value: "same-origin" },
+    ];
+    const noindex = { key: "X-Robots-Tag", value: "noindex, nofollow" };
+    return [
+      { source: "/(.*)", headers: security },
+      { source: "/:league/:year/game/:game", headers: [noindex] },
+      { source: "/worldcup/:year/match/:match", headers: [noindex] },
+      { source: "/mls/:year/match/:match", headers: [noindex] },
+      { source: "/:league/rows/:name", headers: [noindex] },
+      { source: "/:league/team/:franchise/rows/:name", headers: [noindex] },
+      { source: "/:league/:year/rows/:name", headers: [noindex] },
+      { source: "/worldcup/:year/squad/:team/rows/:name", headers: [noindex] },
     ];
   },
 };

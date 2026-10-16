@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { ChipsMore } from "@/components/ChipsMore";
 import { CountryDonut } from "@/components/CountryDonut";
 import { CountryMapDialog } from "@/components/CountryMapDialog";

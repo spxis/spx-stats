@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { LeagueSeasonNav } from "@/components/SeasonNav";
@@ -28,7 +28,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const ys = isLeague(league) ? parseSeasonSeg(league, year) : null;
   if (!isLeague(league) || !ys) return {};
   const { seasons } = await getSummary();
-  if (!seasons.some((s) => s.league === league && s.year === ys.y && !leagueSat(s))) return { robots: { index: false } };
+  if (!seasons.some((s) => s.league === league && s.year === ys.y && !leagueSat(s))) return { robots: { index: false, follow: false } };
   const { say, locale } = await currentSpeaker();
   const label = seasonLabel(league, ys.y);
   return pageMeta({

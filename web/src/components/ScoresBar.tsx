@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useRouter } from "next/navigation";
 import { useMemo, useSyncExternalStore } from "react";
 import { localToday } from "@/lib/format";

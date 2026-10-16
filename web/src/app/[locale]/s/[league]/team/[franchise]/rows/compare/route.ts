@@ -6,7 +6,7 @@ import { teamOf } from "@/lib/teamSlugs";
 // What a franchise's Compare menu lists, as JSON (/nhl/team/montreal-canadiens/rows/compare): every other club of the league, grouped as the franchise's
 // division and conference were in its latest season. The menu fetches it the first time it is opened (components/CompareMenu.tsx), so the page carries no
 // list of clubs. Kept like the page (drawn on its first request, then a day). Nothing in it depends on the language. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

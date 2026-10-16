@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { AccentStyle } from "@/components/AccentStyle";
 import { SortTable } from "@/components/SortTable";
 import { TeamLabel } from "@/components/TeamLabel";

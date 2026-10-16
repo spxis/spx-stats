@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { positionBook } from "@/components/PositionKey";
 import { SoccerCredit } from "@/components/SoccerCredit";
@@ -27,7 +27,7 @@ import { tableOf } from "@/lib/sort";
 import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 /** The long tables (teams, matches, scorers) show this many rows until the reader asks for all of them. */
 const LONG_TABLE = 20;

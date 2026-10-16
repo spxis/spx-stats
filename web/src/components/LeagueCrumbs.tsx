@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { LG } from "@/lib/leagues";
 import { leagueTrail } from "@/lib/otherLeagues";

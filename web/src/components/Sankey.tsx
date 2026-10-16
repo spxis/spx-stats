@@ -1,7 +1,7 @@
 "use client";
 
 import { sankey, type SankeyLink, type SankeyNode } from "d3-sankey";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";

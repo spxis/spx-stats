@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Flag } from "@/components/Flag";
 import { NatLink } from "@/components/NatLink";
 import { hasFlag } from "@/lib/flagCodes";
@@ -62,7 +62,7 @@ export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/[
   const speaker = await currentSpeaker();
   const { say, locale } = speaker;
   const plain = !searchWords(first(sp.q)).length && pageOf(first(sp.page)) === 1 && !first(sp.league) && !first(sp.team) && !first(sp.nat) && !first(sp.letter) && !first(sp.sort) && !first(sp.from) && !first(sp.to);
-  return { ...pageMeta({ title: listTitle(say("players.title"), await filtersOf(sp, speaker)), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false } }) };
+  return { ...pageMeta({ title: listTitle(say("players.title"), await filtersOf(sp, speaker)), description: say("players.metaDesc"), path: "/players", locale }), ...(plain ? {} : { robots: { index: false, follow: false } }) };
 });
 
 export default guard(async function PlayersPage({ searchParams }: PageProps<"/[locale]/q/players">) {

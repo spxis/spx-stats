@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { MouseEvent, ReactNode } from "react";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { pageWindow } from "@/lib/pager";

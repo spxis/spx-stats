@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { ChipTuple } from "@/lib/teamChips";

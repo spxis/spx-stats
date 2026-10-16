@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { H2hChart, type H2hPoint } from "@/components/H2hChart";
@@ -68,7 +68,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const games = h2hGames(league, d.history, at.a, at.b);
   const na = d.names[0] ?? say("team.fallback", { id: at.a }), nb = d.names[1] ?? say("team.fallback", { id: at.b });
   const title = say("h2h.metaTitle", { a: na, b: nb, league: LG[league] });
-  if (!games.length) return { ...pageMeta({ title, description: say("h2h.metaNever", { a: na, b: nb }), path: at.path, locale }), robots: { index: false } };
+  if (!games.length) return { ...pageMeta({ title, description: say("h2h.metaNever", { a: na, b: nb }), path: at.path, locale }), robots: { index: false, follow: false } };
   const t = tally(games, league);
   return pageMeta({
     title,

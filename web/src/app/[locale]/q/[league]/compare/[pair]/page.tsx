@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CompareChart, type ComparePoint } from "@/components/CompareChart";
@@ -57,7 +57,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   if (!at) return {};
   const [{ say, locale }, ta, tb] = await Promise.all([currentSpeaker(), getTeam(league, at.a), getTeam(league, at.b)]);
   const na = ta?.names.at(-1)?.name ?? say("team.fallback", { id: at.a }), nb = tb?.names.at(-1)?.name ?? say("team.fallback", { id: at.b });
-  return { ...pageMeta({ title: say("compare.metaTitle", { a: na, b: nb, league: LG[league] }), description: say("compare.metaDesc", { a: na, b: nb, league: LG[league] }), path: at.path, locale }), robots: { index: false } };
+  return { ...pageMeta({ title: say("compare.metaTitle", { a: na, b: nb, league: LG[league] }), description: say("compare.metaDesc", { a: na, b: nb, league: LG[league] }), path: at.path, locale }), robots: { index: false, follow: false } };
 });
 
 export default guard(async function ComparePage({ params, searchParams }: PageProps<"/[locale]/q/[league]/compare/[pair]">) {

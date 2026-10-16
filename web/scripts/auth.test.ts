@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
+import { readFileSync } from "node:fs";
 import { adminEmails, isAdmin } from "../src/lib/auth/admin.ts";
 import { authConfigured } from "../src/lib/auth/enabled.ts";
 import { sameOrigin } from "../src/lib/auth/origin.ts";
@@ -47,4 +48,11 @@ test("sign-in is on when the three variables are set, or when a prebuilt build s
   // `vercel pull` brings secrets down empty, so the prebuilt build cannot see them: the script's flag stands in for them
   assert.equal(authConfigured({ AUTH_GOOGLE_ID: "", AUTH_GOOGLE_SECRET: "", AUTH_SECRET: "", SPX_AUTH_CONFIGURED: "1" }), true);
   assert.equal(authConfigured({ SPX_AUTH_CONFIGURED: "0" }), false);
+});
+
+test("a signed-out visit without the hint cookie never fetches /api/me", () => {
+  const src = readFileSync(new URL("../src/components/auth/Account.tsx", import.meta.url), "utf8");
+  assert.match(src, /if \(!hasHint\(\)\) return;/);
+  assert.doesNotMatch(src, /wasProbed/);
+  assert.match(src, /fetch\("\/api\/me"/);
 });

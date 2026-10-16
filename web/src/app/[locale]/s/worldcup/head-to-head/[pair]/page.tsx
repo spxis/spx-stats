@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
@@ -16,7 +16,7 @@ import { groupLabel, scoreLines, stageName } from "@/lib/soccerView";
 import { tableOf } from "@/lib/sort";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 // Nothing is drawn at build time: each pairing is drawn on its first visit, then kept and revalidated like the rest (the sitemap lists the pairs that have met).
 export const generateStaticParams = () => [];

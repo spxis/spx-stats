@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { positionBook } from "@/components/PositionKey";
 import { SoccerCredit } from "@/components/SoccerCredit";
@@ -15,7 +15,7 @@ import { isTeamSlug, isYearSeg, tournamentPath } from "@/lib/soccerPath";
 import { squadLine, squadPath } from "@/lib/soccerSquad";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 // Nothing is drawn at build time: each squad is drawn on its first visit, then kept and revalidated like the tournament page.
 export const generateStaticParams = () => [];

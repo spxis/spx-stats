@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import type { MouseEvent } from "react";
 import { isLeague, LEAGUES, topLeague } from "@/lib/leagues";
@@ -26,15 +26,15 @@ export function LeagueNav() {
   return (
     <nav className="leagues" id="league-nav" aria-label={say("nav.leagues")}>
       {LEAGUES.map((l) => (
-        <Link key={l.code} href={`/${l.code}`} onClick={(e) => go(e, l.code)} aria-current={topLeague(current ?? "") === l.code ? "page" : undefined}>
+        <Link key={l.code} href={`/${l.code}`} prefetch onClick={(e) => go(e, l.code)} aria-current={topLeague(current ?? "") === l.code ? "page" : undefined}>
           {l.short}
         </Link>
       ))}
-      <Link href="/soccer" aria-current={current === "soccer" || current === "worldcup" || current === "mls" ? "page" : undefined}>{say("nav.soccer")}</Link>
+      <Link href="/soccer" prefetch aria-current={current === "soccer" || current === "worldcup" || current === "mls" ? "page" : undefined}>{say("nav.soccer")}</Link>
       {current && isLeague(current) ? (
         <>
-          <Link className="sub" href={`/${current}/scores`} aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>
-          <Link className="sub" href={`/${current}/all-time`} aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
+          <Link className="sub" href={`/${current}/scores`} prefetch aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>
+          <Link className="sub" href={`/${current}/all-time`} prefetch aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
         </>
       ) : null}
     </nav>

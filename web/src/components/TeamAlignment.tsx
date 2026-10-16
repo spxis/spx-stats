@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
 import { runsOf } from "@/lib/alignment";

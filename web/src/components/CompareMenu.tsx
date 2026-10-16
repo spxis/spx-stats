@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Fragment, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TeamLogo } from "./TeamLogo";

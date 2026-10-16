@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useDeferredValue, useMemo, useState } from "react";
 import { UNKNOWN } from "@/lib/countryModel";
 import { seasonLabel } from "@/lib/leagues";

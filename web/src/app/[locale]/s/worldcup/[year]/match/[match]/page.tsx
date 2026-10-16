@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { BadgeCup } from "@/components/TrophyMark";
 import { SeriesStyle } from "@/components/SeriesStyle";
@@ -23,7 +23,7 @@ import { isYearSeg, soccerMatchIdOf, soccerMatchPath, soccerPlayerPath, soccerTe
 import { groupLabel, scoreLines, stageName } from "@/lib/soccerView";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 // Nothing is drawn at build time: each match is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];
@@ -44,12 +44,15 @@ export const generateMetadata = guardMeta(async ({ params }: Params): Promise<Me
   const home = teamName({ name: m.home, slug: m.home_slug, flag: m.home_flag }, locale);
   const away = teamName({ name: m.away, slug: m.away_slug, flag: m.away_flag }, locale);
   const title = `${home} ${m.home_goals}–${m.away_goals} ${away}`;
-  return pageMeta({
-    title,
-    description: say("wc.m.metaDesc", { title, stage: groupLabel(say, m), year: m.year }),
-    path: soccerMatchPath(m.year, m.match_id, m.home, m.away),
-    locale,
-  });
+  return {
+    ...pageMeta({
+      title,
+      description: say("wc.m.metaDesc", { title, stage: groupLabel(say, m), year: m.year }),
+      path: soccerMatchPath(m.year, m.match_id, m.home, m.away),
+      locale,
+    }),
+    robots: { index: false, follow: false },
+  };
 });
 
 export default guard(async function MatchPage({ params }: Params) {

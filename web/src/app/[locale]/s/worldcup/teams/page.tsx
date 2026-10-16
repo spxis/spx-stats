@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { SortTable } from "@/components/SortTable";
@@ -12,7 +12,7 @@ import { WORLDCUP_PATH } from "@/lib/soccerPath";
 import { tableOf } from "@/lib/sort";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();

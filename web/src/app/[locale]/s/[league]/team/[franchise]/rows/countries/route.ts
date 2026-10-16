@@ -9,7 +9,7 @@ import { teamOf } from "@/lib/teamSlugs";
 // What a franchise's "Where the players come from" section draws, as JSON (/nhl/team/montreal-canadiens/rows/countries): the section on the franchise page
 // fetches it when the reader gets near (components/FranchiseCountriesLazy.tsx), so the page itself carries none of it. Kept like the page (drawn on its first
 // request, then a day). Only the club's fallback name depends on the language. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

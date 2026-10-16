@@ -6,7 +6,7 @@ import { pageMeta } from "@/lib/meta";
 
 // Kept and revalidated every day. The league, decade and "changed name" choices are read from the address in the browser, so the page
 // reads no query (and ?lg= ?dec= ?chg= are not in QUERY_KEYS, lib/routing.ts).
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 export async function generateMetadata() {
   const { say, locale } = await currentSpeaker();

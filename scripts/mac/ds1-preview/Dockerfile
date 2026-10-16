@@ -21,9 +21,9 @@ RUN pnpm install --frozen-lockfile
 COPY --chown=node:node web/ ./
 
 # Pages repeat the revalidate time as a literal number (Next reads segment config statically), so the preview rewrites it to SPX_REVALIDATE
-# here, on this image's copy of the source only; the repository and production keep 86400. Fails the build if one was missed.
-RUN grep -rlE "^export const revalidate = 86400;" src | xargs sed -i -E "s/^export const revalidate = 86400;/export const revalidate = ${SPX_REVALIDATE};/" \
- && ! grep -rE "^export const revalidate = 86400" src
+# here, on this image's copy of the source only; the repository and production keep 86400 (live) or 2592000 (historical). Fails the build if one was missed.
+RUN grep -rlE "^export const revalidate = (86400|2592000);" src | xargs sed -i -E "s/^export const revalidate = (86400|2592000);/export const revalidate = ${SPX_REVALIDATE};/" \
+ && ! grep -rE "^export const revalidate = (86400|2592000)" src
 
 COPY --chown=node:node scripts/mac/ds1-preview/site-entry.sh /app/site-entry.sh
 EXPOSE 3000

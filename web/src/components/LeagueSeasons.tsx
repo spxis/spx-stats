@@ -2,7 +2,7 @@
 
 import { max, min, range } from "d3";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useCallback, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
 import { FULL_SHARE, rowLabel } from "@/lib/leagueSeasonRows";
 import { seasonPath } from "@/lib/slug";

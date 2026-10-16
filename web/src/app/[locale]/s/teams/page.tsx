@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { PageFlagSprite } from "@/components/PageFlagSprite";
 import { TeamsBoard } from "@/components/TeamsBoard";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -12,6 +12,7 @@ import "@/components/alignment.css";
 // A kept page: the league, search, status, years, conference and division, least titles, sort and page are all chosen and applied in the browser from the one
 // list this page is drawn with (lib/teamBoard.ts), so the address never carries a query this page reads on the server (lib/routing.ts: ALWAYS_STATIC).
 
+export const revalidate = 86400;
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();
   return pageMeta({ title: say("teams.title"), description: say("teams.metaDesc"), path: "/teams", locale });

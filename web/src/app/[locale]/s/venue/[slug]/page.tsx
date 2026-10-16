@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AddressLink } from "@/components/AddressLink";
 import { Credits, LibCredit } from "@/components/Credits";
@@ -33,6 +33,7 @@ import "@/components/city.css";
 import "@/components/venue.css";
 
 // Nothing is drawn at build time: each venue is drawn on its first visit, then kept and revalidated like the rest.
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 const link = (href: string, text: string) => <a className="ext" href={href} target="_blank" rel="noopener noreferrer">{text}</a>;

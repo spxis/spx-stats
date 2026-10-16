@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Flag } from "@/components/Flag";
 import { positionBook } from "@/components/PositionKey";
 import { SortTable } from "@/components/SortTable";

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Flag } from "@/components/Flag";
 import { CountryDonut, type Slice } from "@/components/CountryDonut";
 import { CountryScope } from "@/components/CountryScope";

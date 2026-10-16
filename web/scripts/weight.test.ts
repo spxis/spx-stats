@@ -131,7 +131,7 @@ test("the league page keeps its long lists out of the page and its drawings in t
   // The full lists have pages of their own (the "Show all" links), kept like every other page, each with its twin for an address that has a query.
   for (const name of ["champions", "awards"]) {
     const s = read(`app/[locale]/s/[league]/${name}/page.tsx`);
-    assert.ok(s.includes("export const revalidate = 86400;"), `${name} is kept a day`);
+    assert.ok(s.includes("export const revalidate = 2592000;"), `${name} is kept 30 days`);
     assert.ok(!/searchParams|cookies\(|headers\(/.test(s), `${name} reads nothing per request`);
     assert.ok(read(`app/[locale]/q/[league]/${name}/page.tsx`).includes(`s/[league]/${name}/page`), `${name} has its twin in q/`);
   }

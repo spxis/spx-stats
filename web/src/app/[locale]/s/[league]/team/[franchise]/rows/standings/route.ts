@@ -10,7 +10,7 @@ import { teamOf } from "@/lib/teamSlugs";
 // The older seasons of a franchise's standings table as JSON (/nhl/team/montreal-canadiens/rows/standings): what "Show all" under the table on the
 // franchise page loads (components/StandingsTable.tsx), so the page itself carries only the newest seasons. Kept like the page (drawn on its first
 // request, then a day); the language is the route's, and only the labels of the seasons that are not in the standings depend on it. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

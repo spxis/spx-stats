@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { pairPath, pairSeasonPath } from "@/lib/h2h";
 import { seasonLabel } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";

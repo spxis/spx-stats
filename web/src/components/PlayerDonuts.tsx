@@ -1,7 +1,7 @@
 "use client";
 
 import { arc, pie, type PieArcDatum } from "d3";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo, useState } from "react";
 import { clubKey, shares, sumStats, type GroupView, type Metric, type StatRow } from "@/lib/playerBoard";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";

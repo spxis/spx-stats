@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { MiniCup } from "@/components/TrophyIcon";
 import { TeamLabel } from "@/components/TeamLabel";
 import { logoFor, type BrandMap } from "@/lib/brand";

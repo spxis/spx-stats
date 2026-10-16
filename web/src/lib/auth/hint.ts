@@ -3,9 +3,9 @@
  *
  * The session itself is an httpOnly cookie the browser's script cannot read, and a kept page cannot read it either. So a
  * signed-in browser also carries a plain cookie, `spxn-in`, that says only "ask": the page then fetches /api/me once and draws the
- * account menu. Without it a browser is asked about once, ever (`spxn-probed` in localStorage), which finds a session that
- * pre-dates the cookie or one made in another tab; signing in clears that mark so the next visit asks again. Nothing here is
- * trusted for anything: /api/me answers from the real session.
+ * account menu. Without the cookie the browser never asks: a signed-out visit must not call /api/me. Signing in sets the cookie;
+ * a signed-in page that already knows the reader (`initial`) sets it too. Nothing here is trusted for anything: /api/me answers
+ * from the real session.
  */
 export const HINT_COOKIE = "spxn-in";
 export const PROBED_KEY = "spxn-probed";

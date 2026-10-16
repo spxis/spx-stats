@@ -1,5 +1,5 @@
 import { rollups } from "d3";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { SPORTSLOGOS_URL } from "@/components/Credits";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";

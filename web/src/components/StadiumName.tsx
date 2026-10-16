@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 
 /**
  * Whether /venue/Q<wikidata id> answers for a World Cup or MLS ground. It does since the venue index (lib/venuePage.ts) holds every stadium that has a soccer

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { CountryCards } from "@/components/CountryCards";
 import { CountryTrend } from "@/components/CountryTrend";
 import { KDot } from "@/components/CountryDonut";
@@ -20,6 +20,7 @@ import "@/components/country.css";
 
 // A kept page: the table sorts and the trend picks its country in the browser, so the address never carries a query this page reads.
 
+export const revalidate = 86400;
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();
   return pageMeta({ title: say("country.pageTitle"), description: say("country.pageMetaDesc"), path: "/countries", locale });

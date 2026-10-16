@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { createContext, useContext, useEffect, useState, type ReactNode } from "react";
-import { hasHint, setHint, setProbed, wasProbed } from "@/lib/auth/hint";
+import { hasHint, setHint } from "@/lib/auth/hint";
 import { LanguagePicker } from "../i18n/LanguagePicker";
 import { ThemeToggle } from "../ThemeToggle";
 import { SignInLink, UserMenu, type MenuUser } from "./UserMenu";
@@ -37,13 +37,12 @@ export function AccountProvider({ enabled, initial, children }: { enabled: boole
       setHint(initial.user !== null);
       return;
     }
-    if (!hasHint() && wasProbed()) return;
+    if (!hasHint()) return;
     let live = true;
     fetch("/api/me", { cache: "no-store", credentials: "same-origin" })
       .then((res) => (res.ok ? (res.json() as Promise<Account>) : NOBODY))
       .then((found) => {
         if (!live) return;
-        setProbed(true);
         setHint(found.user !== null);
         setAccount(found.user ? found : NOBODY);
       })

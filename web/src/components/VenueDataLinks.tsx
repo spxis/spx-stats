@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { ReactNode } from "react";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { Rich } from "./i18n/Rich";

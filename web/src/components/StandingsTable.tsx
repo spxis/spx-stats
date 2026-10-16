@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo } from "react";
 import { recShare, tableOf } from "@/lib/sort";
 import { fmt3 } from "@/lib/format";

@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CountryArea } from "@/components/CountryArea";
@@ -25,6 +25,7 @@ import { CountryCards } from "@/components/CountryCards";
 import "@/components/country.css";
 
 // A kept page: the range of seasons is chosen in the browser, so the address never carries a query this page reads.
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale]/s/[league]/world">): Promise<Metadata> => {

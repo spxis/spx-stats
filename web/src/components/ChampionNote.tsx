@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { TeamLabel } from "@/components/TeamLabel";
 import { logoFor } from "@/lib/brand";
 import { getBrands } from "@/lib/data";

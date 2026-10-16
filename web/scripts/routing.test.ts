@@ -4,6 +4,7 @@ import { join, relative } from "node:path";
 import { test } from "node:test";
 import { createRequire } from "node:module";
 import { TEAMS_CLIENT_KEYS } from "../src/lib/teamBoard.ts";
+import { isQueryVariant, QUERY_ROBOTS, queryFollowRel } from "../src/lib/queryLink.ts";
 import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
@@ -284,4 +285,56 @@ test("the venue downloads are route handlers in app/, which Next serves before a
 
 test("the signed-in pages stay out of the language tree", () => {
   for (const dir of ["admin", "me", "login", "tickets"]) assert.ok(statSync(join(SRC, "app", "(dyn)", dir)).isDirectory(), dir);
+});
+
+test("robots.txt blocks AI crawlers site-wide and every crawler from games, matches, rows and query strings", () => {
+  const text = readFileSync(join(import.meta.dirname, "..", "public", "robots.txt"), "utf8");
+  for (const bot of ["GPTBot", "ClaudeBot", "CCBot", "Google-Extended", "PerplexityBot", "Bytespider"]) {
+    assert.match(text, new RegExp(`User-agent: ${bot}`));
+  }
+  const ai = text.split("User-agent: *")[0] ?? "";
+  assert.match(ai, /Disallow: \//);
+  const all = text.split("User-agent: *")[1] ?? "";
+  for (const rule of ["Disallow: /*/game/", "Disallow: /*/match/", "Disallow: /*/rows/", "Disallow: /*?*", "Disallow: /en/q/", "Disallow: /fr/q/", "Disallow: /ja/q/"]) {
+    assert.ok(all.includes(rule), rule);
+  }
+});
+
+test("a query the server reads is a q/ variant (nofollow); live filters on always-static and player/city client keys are not", () => {
+  assert.equal(isQueryVariant("/nhl/2012-13?view=wildcard"), true);
+  assert.equal(queryFollowRel("/players?q=gretzky"), "nofollow");
+  assert.equal(isQueryVariant("/nhl/2012-13"), false);
+  assert.equal(isQueryVariant("/nhl?sort=x"), false);
+  assert.equal(isQueryVariant("/teams?q=bruins"), false);
+  assert.equal(isQueryVariant("/nhl/player/mark-messier-2359?from=1985&to=1990"), false);
+  assert.equal(isQueryVariant("/nhl/player/mark-messier-2359?sort_awards=season.asc"), true);
+  assert.equal(isQueryVariant("/city/vancouver?from=1990&to=2000"), false);
+  assert.equal(isQueryVariant("/city/vancouver?sort=years.asc"), true);
+  assert.equal(QUERY_ROBOTS.index, false);
+  assert.equal(QUERY_ROBOTS.follow, false);
+});
+
+test("q/ copies are noindex,nofollow; public Link goes through the wrapper that adds rel=nofollow", () => {
+  const qLayout = readFileSync(join(SRC, "app", "[locale]", "q", "layout.tsx"), "utf8");
+  assert.match(qLayout, /robots: QUERY_ROBOTS/);
+  const offenders: string[] = [];
+  for (const dir of [join(SRC, "app", "[locale]"), join(SRC, "components")]) {
+    for (const file of sources(dir)) {
+      if (file.endsWith(`${join("components", "Link.tsx")}`)) continue;
+      const text = readFileSync(file, "utf8");
+      if (/from ["']next\/link["']/.test(text)) offenders.push(relative(SRC, file));
+    }
+  }
+  assert.deepEqual(offenders, [], "public pages import Link from @/components/Link so query variants get rel=nofollow");
+});
+
+test("Link prefetch is off by default so a long table stays under the firewall; the header menu turns it on", () => {
+  const link = readFileSync(join(SRC, "components", "Link.tsx"), "utf8");
+  assert.match(link, /prefetch=\{prefetch \?\? false\}/);
+  const header = readFileSync(join(SRC, "components", "SiteChrome.tsx"), "utf8");
+  assert.match(header, /<header[\s\S]*prefetch/);
+  assert.match(header, /href="\/teams" prefetch/);
+  const nav = readFileSync(join(SRC, "components", "LeagueNav.tsx"), "utf8");
+  assert.match(nav, /prefetch onClick/);
+  assert.match(nav, /href="\/soccer" prefetch/);
 });

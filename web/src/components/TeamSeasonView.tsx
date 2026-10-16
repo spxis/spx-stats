@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { abbrFor, officialAbbr, type AbbrMap } from "@/lib/abbr";
 import { atUtc, localToday } from "@/lib/format";

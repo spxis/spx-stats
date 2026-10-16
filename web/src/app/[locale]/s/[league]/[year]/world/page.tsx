@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CountryDonut, type Slice } from "@/components/CountryDonut";
@@ -25,6 +25,7 @@ import { tableOf } from "@/lib/sort";
 import "@/components/country.css";
 
 // A kept page, drawn on its first visit and revalidated like the rest.
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 const MATRIX = 6;

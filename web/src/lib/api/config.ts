@@ -25,15 +25,17 @@ export const API_KEY =
   env("NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") || "sb_publishable_FmeiL6oX9_Mrb8psQZFSQg_YO_O4afC";
 
 /**
- * Seconds a response is kept before the next request refreshes it in the background: one day. Data changes only through releases, and
+ * Seconds a response is kept before the next request refreshes it in the background. Data changes only through releases, and
  * the release runner revalidates the changed tables' cache tags (POST /api/revalidate, lib/api/tags.ts) right after each one, so the
- * time is only a safety net. Segment config (`export const revalidate = 86400`) must be a literal number, so pages repeat it;
- * scripts/revalidate.test.ts checks that every literal equals this value.
- * Only the always-on DS1 preview (SPX_PREVIEW=1, local and free) may shorten it with SPX_REVALIDATE (30 to 86399 seconds), so new DS1 data shows
- * within minutes; its image build rewrites the segment literals to the same number (scripts/mac/ds1-preview/Dockerfile). Anywhere else it is 86400.
+ * time is only a safety net. Live pages (home, league, scores) keep one day; historical pages keep 30 days (`REVALIDATE_HISTORICAL`).
+ * Segment config (`export const revalidate = …`) must be a literal number, so pages repeat it; scripts/revalidate.test.ts checks the literals.
+ * Only the always-on DS1 preview (SPX_PREVIEW=1, local and free) may shorten it with SPX_REVALIDATE (30 to 2591999 seconds), so new DS1 data shows
+ * within minutes; its image build rewrites the segment literals to the same number (scripts/mac/ds1-preview/Dockerfile).
  */
+export const REVALIDATE_DAY = 86400;
+export const REVALIDATE_HISTORICAL = 2592000;
 const previewSeconds = Number(env("SPX_REVALIDATE"));
-export const REVALIDATE = preview && Number.isInteger(previewSeconds) && previewSeconds >= 30 && previewSeconds < 86400 ? previewSeconds : 86400;
+export const REVALIDATE = preview && Number.isInteger(previewSeconds) && previewSeconds >= 30 && previewSeconds < REVALIDATE_HISTORICAL ? previewSeconds : REVALIDATE_HISTORICAL;
 /** Seconds a retried read is kept (and so, because a page lives no longer than its shortest read, how long a page drawn after a failed first try is kept). */
 export const RETRY_REVALIDATE = 15;
 /** Rows PostgREST returns per request. */

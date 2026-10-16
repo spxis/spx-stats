@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { CityBoard, type BoardStay } from "@/components/CityBoard";
 import { CupsProvider } from "@/components/TrophyIcon";
@@ -25,6 +25,7 @@ import "@/components/alltime.css";
 import "@/components/city.css";
 
 // Nothing is drawn at build time: each city is drawn on its first visit, then kept and revalidated like the rest.
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 const RANKS: RankKey[] = ["titles", "rate", "share"];

@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { BrandHistory } from "@/components/BrandHistory";
 import { Rich } from "@/components/i18n/Rich";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";

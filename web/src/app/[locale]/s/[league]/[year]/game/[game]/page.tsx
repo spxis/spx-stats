@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Suspense } from "react";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
@@ -40,7 +40,8 @@ import { getPaths } from "@/lib/teamSlugs";
 import "@/components/series.css";
 import "@/components/game.css";
 
-// Kept and revalidated like the rest (lib/routing.ts; the layout's day is the longest a page may live). Nothing is drawn at build time: each game is drawn on its first visit.
+// Historical: a finished game changes only through a release (tag revalidate). Crawlers are blocked (robots.txt).
+export const revalidate = 2592000;
 export const generateStaticParams = () => [];
 
 type Params = PageProps<"/[locale]/s/[league]/[year]/game/[game]">;
@@ -70,7 +71,7 @@ export const generateMetadata = guardMeta(async ({ params }: Params): Promise<Me
   const title = final ? say("gm.metaTitleFinal", { away, awayScore: g.away_score!, home, homeScore: g.home_score!, date: dt.ymd(atUtc(g.game_date)) }) : say("gm.metaTitle", { away, home, date: dt.ymd(atUtc(g.game_date)) });
   return {
     ...pageMeta({ title, description: say(final ? "gm.metaDesc" : "gm.metaDescPending", { away, home, league: LG[lg], season: seasonLabel(lg, g.year), date }), path, locale }),
-    ...(final ? {} : { robots: { index: false } }),
+    robots: { index: false, follow: false },
   };
 });
 

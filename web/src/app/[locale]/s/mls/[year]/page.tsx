@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
@@ -18,7 +18,7 @@ import { tableOf } from "@/lib/sort";
 import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 // Nothing is drawn at build time: each season is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];

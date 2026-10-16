@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { TeamLogo } from "@/components/TeamLogo";
 import type { StandingRow } from "@/lib/api/types";
 import { logoFor, type BrandMap } from "@/lib/brand";

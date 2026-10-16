@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo } from "react";
 import { champNoteText, champPagePath, champRestPath, type ChampLine } from "@/lib/champLines";
 import { seasonLabel, srcName } from "@/lib/leagues";

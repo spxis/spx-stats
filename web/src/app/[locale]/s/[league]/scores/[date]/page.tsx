@@ -6,6 +6,7 @@ import { parseDay } from "@/lib/scores";
 import { scoresMeta } from "@/lib/scoresData";
 
 // Nothing is drawn at build time: each address is drawn on its first visit, then kept and revalidated like the rest.
+export const revalidate = 86400;
 export const generateStaticParams = () => [];
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/s/[league]/scores/[date]">): Promise<Metadata> {

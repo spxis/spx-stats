@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { Rich } from "@/components/i18n/Rich";
 import { venueDataParts } from "@/components/VenueDataLinks";
 import { FlowProvenance } from "@/components/FlowProvenance";

@@ -15,6 +15,7 @@ import "@/components/city.css";
 
 // A kept page: the rows go to the browser once, packed (venueWire.ts); the filters, the year range and the sort are all done in the browser (the address carries them, read once the page is on screen), so no query is read here.
 
+export const revalidate = 86400;
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();
   return pageMeta({ title: say("venuesPage.title"), description: say("venuesPage.metaDesc"), path: "/venues", locale });

@@ -10,6 +10,7 @@ import "@/components/city.css";
 
 // A kept page: the search, the year range and the sort are all done in the browser, so the address never carries a query this page reads.
 
+export const revalidate = 86400;
 export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
   const { say, locale } = await currentSpeaker();
   return pageMeta({ title: say("cities.title"), description: say("cities.metaDesc"), path: "/cities", locale });

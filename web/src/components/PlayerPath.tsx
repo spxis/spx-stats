@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo } from "react";
 import { awardBadge, type SeasonInfo } from "@/lib/playerBoard";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";

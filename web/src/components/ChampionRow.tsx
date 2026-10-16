@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { getBrands } from "@/lib/data";
 import { logoFor } from "@/lib/brand";
 import type { ChampionBox } from "@/lib/champions";

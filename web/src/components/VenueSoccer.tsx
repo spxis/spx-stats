@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { mlsClubPath, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
 import { mlsStageName } from "@/lib/mlsView";

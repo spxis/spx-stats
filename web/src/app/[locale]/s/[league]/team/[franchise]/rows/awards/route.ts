@@ -6,7 +6,7 @@ import { teamOf } from "@/lib/teamSlugs";
 
 // The older awards of a franchise as JSON (/nhl/team/montreal-canadiens/rows/awards): what "Show all" under the awards table on the franchise page
 // loads (components/AwardsTable.tsx). Kept like the page (drawn on its first request, then a day). Nothing in it depends on the language. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

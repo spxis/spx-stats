@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { PositionList } from "@/components/PositionCode";
 import { soccerPlayerPath } from "@/lib/soccerPath";
 import type { SquadLabels, SquadLine } from "@/lib/soccerSquad";

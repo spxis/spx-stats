@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import { FooterLanguage, HeaderAccount } from "./auth/Account";
 import { BrandImg } from "./BrandImg";
 import { BrandSwoosh } from "./BrandSwoosh";
@@ -15,16 +15,16 @@ export async function SiteHeader() {
   const { say } = await currentSpeaker();
   return (
     <header className="top">
-      <Link className="brand" href="/">
+      <Link className="brand" href="/" prefetch>
         <BrandSwoosh height={26} />
         <span className="brand-mark">SPXN</span>
         <span className="brand-name">SPX Network</span>
       </Link>
       <LeagueNav />
       <nav className="aux" aria-label={say("nav.about")}>
-        <Link href="/teams">{say("nav.teams")}</Link>
-        <Link href="/players">{say("nav.players")}</Link>
-        <Link href="/about">{say("nav.aboutPage")}</Link>
+        <Link href="/teams" prefetch>{say("nav.teams")}</Link>
+        <Link href="/players" prefetch>{say("nav.players")}</Link>
+        <Link href="/about" prefetch>{say("nav.aboutPage")}</Link>
         <HeaderAccount version={pkg.version} signIn={authEnabled()} />
       </nav>
     </header>

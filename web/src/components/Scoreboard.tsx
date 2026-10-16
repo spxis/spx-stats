@@ -1,4 +1,4 @@
-import Link from "next/link";
+import Link from "@/components/Link";
 import type { GameRow } from "@/lib/api/types";
 import { officialAbbr, type AbbrMap } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";

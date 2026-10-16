@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { SoccerFlag } from "@/components/SoccerFlag";
 import { useSpeaker } from "@/components/i18n/LocaleProvider";
 import { soccerTeamPath } from "@/lib/soccerPath";

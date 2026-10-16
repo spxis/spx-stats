@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useDeferredValue, useId, useMemo, useState } from "react";
 import { fmt3 } from "@/lib/format";
 import { fold } from "@/lib/fold";

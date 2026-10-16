@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { MlsCredit } from "@/components/MlsCredit";
 import { SeriesStyle } from "@/components/SeriesStyle";
@@ -19,7 +19,7 @@ import { clubAbbr, neutralLooks } from "@/lib/soccerLook";
 import { soccerMatchIdOf } from "@/lib/soccerPath";
 import "@/components/soccer.css";
 
-export const revalidate = 86400;
+export const revalidate = 2592000;
 
 // Nothing is drawn at build time: each match is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];
@@ -38,12 +38,15 @@ export const generateMetadata = guardMeta(async ({ params }: Params): Promise<Me
   if (!m) return {};
   const { say, locale } = await currentSpeaker();
   const title = `${m.home} ${m.home_goals}–${m.away_goals} ${m.away}`;
-  return pageMeta({
-    title,
-    description: say("mls.m.metaDesc", { title, stage: mlsStageName(say, m.stage_key), year: m.year }),
-    path: mlsMatchPath(m.year, m.match_id, m.home, m.away),
-    locale,
-  });
+  return {
+    ...pageMeta({
+      title,
+      description: say("mls.m.metaDesc", { title, stage: mlsStageName(say, m.stage_key), year: m.year }),
+      path: mlsMatchPath(m.year, m.match_id, m.home, m.away),
+      locale,
+    }),
+    robots: { index: false, follow: false },
+  };
 });
 
 export default guard(async function MlsMatchPage({ params }: Params) {

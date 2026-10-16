@@ -6,7 +6,7 @@ import { parseSeasonSeg } from "@/lib/slug";
 // A season's games and clubs as JSON (/mlb/2025/rows/games): what the week strip and the calendar of games on the season page fetch when it opens
 // (components/SeasonGamesData.tsx), so the page itself carries none of them. Kept like the page (drawn on its first request, then a day); nothing in it
 // depends on the language. No query is read.
-export const revalidate = 86400;
+export const revalidate = 2592000;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 

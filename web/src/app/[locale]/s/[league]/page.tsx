@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { LeagueSeasons } from "@/components/LeagueSeasons";
 import { LeagueSeasonRows } from "@/components/LeagueSeasonRows";

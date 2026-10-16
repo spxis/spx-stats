@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { useMemo } from "react";
 import { awardGridPagePath, awardGridRestPath, type AwardColumn, type AwardSeason, type AwardWinner } from "@/lib/awardGrid";
 import { seasonLabel } from "@/lib/leagues";

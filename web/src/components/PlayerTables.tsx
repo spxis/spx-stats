@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import Link from "@/components/Link";
 import { sumStats, type StatRow } from "@/lib/playerBoard";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";

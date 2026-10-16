@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import Link from "@/components/Link";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { Figures } from "@/components/ui";
