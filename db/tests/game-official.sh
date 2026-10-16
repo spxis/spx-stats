@@ -1,6 +1,7 @@
 #!/bin/bash
-# Migration 115 adds core.game_official and nhl_id on api.games. Build 212 copies a 10-digit
-# nhl_api external key and ignores anything else. Scratch Postgres, removed by name.
+# Migration 115 adds core.game_league_id and nhl_id on api.games. core.game_official is already
+# the referees table (migration 020) and must still be that table afterwards. Build 212 copies a
+# 10-digit nhl_api external key and ignores anything else. Scratch Postgres, removed by name.
 #   bash db/tests/game-official.sh
 set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,7 +27,7 @@ create schema api;
 create function api.team_name(integer) returns text language sql as $$ select 'Club' $$;
 create table core.season (season_id int primary key, league_code text, start_year int);
 create table core.team_season (team_season_id int primary key, season_id int, franchise_id int);
-create table meta.source (source_id int primary key, code text);
+create table meta.source (source_id smallint primary key, code text);
 create table meta.verification (entity_kind text, entity_id bigint, status text);
 create table core.game (
   game_id bigint primary key, season_id int, phase text, game_date date, starts_at timestamptz,
@@ -49,6 +50,17 @@ insert into core.external_id values
   ('game', 9, 1, 'nhlapi:2026020002'),
   ('game', 9, 2, '2026020099'),
   ('franchise', 100, 1, 'team:BOS');
+create table core.person (person_id bigint primary key);
+insert into core.person values (42);
+create table core.game_official (
+  game_id bigint not null references core.game on delete cascade,
+  person_id bigint not null references core.person,
+  assignment text not null,
+  jersey_number smallint,
+  source_id smallint not null references meta.source,
+  primary key (game_id, person_id, assignment)
+);
+insert into core.game_official values (7, 42, 'referee', 12, 1);
 create view api.games as
 select s.league_code as league, s.start_year as year, g.game_id, g.game_date, g.phase::text as phase, g.status::text as status,
        g.away_team_season_id as away_id, api.team_name(g.away_team_season_id) as away, g.away_score,
@@ -68,5 +80,9 @@ docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/115.sql >
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/212.sql >/dev/null
 got="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select game_id || '|' || coalesce(nhl_id::text, '') from api.games order by game_id;")"
 want=$'7|2026020001\n8|2026030416\n9|'
-if [ "$got" != "$want" ]; then echo "FAIL got: $got"; exit 1; fi
-echo "ok   nhl_id is on the view; a playoff id is kept; a non-numeric key and another source are not"
+if [ "$got" != "$want" ]; then echo "FAIL view got: $got"; exit 1; fi
+refs="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select game_id || '|' || person_id || '|' || assignment || '|' || jersey_number from core.game_official order by game_id;")"
+if [ "$refs" != "7|42|referee|12" ]; then echo "FAIL referees got: $refs"; exit 1; fi
+cols="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select string_agg(column_name, ',' order by ordinal_position) from information_schema.columns where table_schema = 'core' and table_name = 'game_official';")"
+if [ "$cols" != "game_id,person_id,assignment,jersey_number,source_id" ]; then echo "FAIL referee columns: $cols"; exit 1; fi
+echo "ok   nhl_id is on the view; the referees table is unchanged"
