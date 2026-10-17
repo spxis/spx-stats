@@ -84,7 +84,7 @@ from core.team_season t join core.season s using (season_id)
 left join core.franchise_identity i using (franchise_identity_id)
 left join lateral (select x.full_name, x.nickname from core.franchise_identity x where x.franchise_id = t.franchise_id and i.franchise_identity_id is null
                    order by abs(extract(year from lower(x.valid_during)) - s.start_year) limit 1) n on true  -- a season with no identity of its own: the nearest era's name
-where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha', 'wnba');
+where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha', 'wnba', 'pwhl');
 create index on ts (lg, y, franchise_id);
 
 -- ---------------------------------------------------------------------------------------------- evidence
