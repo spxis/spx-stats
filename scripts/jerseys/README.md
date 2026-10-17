@@ -22,6 +22,7 @@ nflverse roster numbers already land on `core.roster_stint`; build step 220 also
 ```
 python3 -I scripts/jerseys/fetch.py --cache raw/wikipedia_jersey/cache
 python3 -I scripts/jerseys/extract.py --cache raw/wikipedia_jersey/cache --out raw/wikipedia_jersey/parsed
+python3 -I scripts/jerseys/extract_test.py
 python3 -I scripts/jerseys/wikidata_numbers.py --out raw/wikidata_jersey/sport_number.json
 # load against the session's Postgres (PGHOST / PGPORT / PGDATABASE):
 python3 -I scripts/jerseys/load.py raw/wikipedia_jersey/parsed/*.json raw/wikidata_jersey/sport_number.json

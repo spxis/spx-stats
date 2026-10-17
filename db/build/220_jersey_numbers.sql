@@ -3,8 +3,6 @@
 -- Deletes only the rows this step wrote (source_key prefixes below). Safe to rerun.
 -- A name that fits two people or two clubs is left unmatched and logged; nothing is guessed.
 
-begin;
-
 insert into meta.source (code, name, kind, licence, attribution, url, notes)
 values ('wikipedia', 'Wikipedia', 'website', 'CC BY-SA 4.0',
         'English Wikipedia, CC BY-SA 4.0.', 'https://en.wikipedia.org',
@@ -100,13 +98,6 @@ join core.season s on s.season_id = ts.season_id;
 create temp table person_in_league as
 select distinct league_code, person_id from person_on_club;
 
-create temp table unique_name as
-select k, min(person_id) as person_id
-from person_names
-where k <> ''
-group by k
-having count(distinct person_id) = 1;
-
 create temp table club_hit as
 select r.article_code, r.row_number, min(pn.person_id) as person_id
 from raw r
@@ -128,13 +119,34 @@ where r.player_key is not null
 group by r.article_code, r.row_number
 having count(distinct pn.person_id) = 1;
 
+-- Wikipedia article title we already hold (never a bare display name).
+create temp table wiki_title as
+select x.entity_id as person_id,
+       x.external_key as title,
+       legacy_wikipedia_jersey.name_key(replace(x.external_key, '_', ' ')) as k
+from core.external_id x
+join meta.source s on s.source_id = x.source_id
+where x.entity_kind = 'person'
+  and s.code = 'wikipedia'
+  and x.external_key !~ '^Q[0-9]+$';
+
+create temp table title_hit as
+select r.article_code, r.row_number, min(w.person_id) as person_id
+from raw r
+join wiki_title w
+  on w.title = r.player_title
+  or w.k = legacy_wikipedia_jersey.name_key(r.player_title)
+where r.player_title is not null and r.player_title <> ''
+group by r.article_code, r.row_number
+having count(distinct w.person_id) = 1;
+
 create temp table chosen as
 select r.*,
-       coalesce(ch.person_id, lh.person_id, un.person_id) as person_id
+       coalesce(th.person_id, ch.person_id, lh.person_id) as person_id
 from raw r
+left join title_hit th using (article_code, row_number)
 left join club_hit ch using (article_code, row_number)
-left join league_hit lh using (article_code, row_number)
-left join unique_name un on un.k = r.player_key;
+left join league_hit lh using (article_code, row_number);
 
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from wp), 'retired_number',
@@ -229,5 +241,3 @@ select 'retired_nhl', count(*) from core.retired_number where league_code = 'nhl
 union all
 select 'issues', count(*) from meta.data_issue
  where entity_kind in ('retired_number', 'person_jersey') and entity_key like 'jersey-%';
-
-commit;

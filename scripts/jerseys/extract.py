@@ -32,6 +32,7 @@ NOT_PLAYER = re.compile(
 )
 NUM_RE = re.compile(r"\b(\d{1,2})\b")
 DATE_RE = re.compile(r"(\d{4}-\d{2}-\d{2})|(\d{1,2}\s+[A-Za-z]{3,9}\s+\d{4})|([A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4})|(\d{4})")
+SORT = re.compile(r"\{\{\s*sortname\s*\|([^{}]+)\}\}", re.I)
 
 
 def name_key(s):
@@ -45,7 +46,7 @@ def name_key(s):
 
 
 def titles_in(text):
-    """name_key -> English Wikipedia title, from [[Title|Label]] in the section."""
+    """name_key -> English Wikipedia title, from [[Title|Label]] or {{sortname}} in the section."""
     out = {}
     for m in re.finditer(r"\[\[([^\]|#]+)(?:\|([^\]]*))?\]\]", text or ""):
         title = m.group(1).strip()
@@ -54,7 +55,40 @@ def titles_in(text):
             continue
         out[name_key(clean(label))] = title
         out[name_key(title.split("(")[0])] = title
+    for m in SORT.finditer(text or ""):
+        title = sortname_title(m.group(0))
+        if not title:
+            continue
+        out[name_key(title)] = title
+        out[name_key(title.split("(")[0])] = title
     return out
+
+
+def sortname_title(raw):
+    """English Wikipedia title a {{sortname}} cell names. None when the cell has no such template."""
+    m = SORT.search(raw or "")
+    if not m:
+        return None
+    pos, dab = [], None
+    for part in m.group(1).split("|"):
+        part = part.strip()
+        if not part:
+            continue
+        if "=" in part:
+            k, _, v = part.partition("=")
+            if k.strip().lower() in ("dab", "disambiguation"):
+                dab = v.strip()
+            continue
+        pos.append(part)
+    if not pos:
+        return None
+    if len(pos) == 1:
+        return pos[0]
+    first, last = pos[0], pos[1]
+    title = pos[2] if len(pos) >= 3 and pos[2] else f"{first} {last}".strip()
+    if dab:
+        return f"{title} ({dab})" if "(" not in title else title
+    return title
 
 
 def player_name(raw):
@@ -184,7 +218,11 @@ def extract_article(code, league, text, meta):
                     continue
                 raw_player = got.get("player") or ""
                 name = player_name(raw_player)
-                title = linked.get(name_key(name or "")) or linked.get(name_key(raw_player))
+                title = (
+                    linked.get(name_key(name or ""))
+                    or linked.get(name_key(raw_player))
+                    or sortname_title(raw_player)
+                )
                 team_name = player_name(got.get("team", "")) or heading_team
                 if team_name and LEAGUE_WIDE.search(team_name):
                     team_name = None
