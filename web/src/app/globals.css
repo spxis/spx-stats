@@ -375,6 +375,12 @@
   .seasonlabel { font: 700 clamp(24px, 3.4vw, 40px)/1 var(--display); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; color: var(--accent-text); text-decoration: none; }
   .seasonlabel:hover { text-decoration: underline; }
   .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
+  .retired-banners { list-style: none; margin: 0; padding: 0; display: flex; gap: 14px; overflow-x: auto; scrollbar-width: thin; padding-block: 4px; }
+  .retired-banners li { flex: none; width: 92px; }
+  .retired-banners a, .retired-banners > li > span { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: inherit; }
+  .retired-banners a:hover .retired-cap { text-decoration: underline; }
+  .retired-banner { display: block; width: 92px; height: auto; }
+  .retired-cap { font: 600 12px/1.2 var(--display); text-align: center; color: var(--muted); max-width: 92px; }
   .prose { max-width: 70ch; }
   .prose h2 { margin-top: 10px; }
   .prose ul { padding-left: 1.2em; list-style: disc; display: flex; flex-direction: column; gap: 6px; }

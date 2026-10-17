@@ -8,6 +8,7 @@ import { SortTable } from "@/components/SortTable";
 import { StandingsTable } from "@/components/StandingsTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
+import { RetiredBanners } from "@/components/RetiredBanners";
 import { FranchiseCountries } from "@/components/FranchiseCountries";
 import { TeamChartsLazy } from "@/components/TeamChartsLazy";
 import { OpponentHeatLazy } from "@/components/OpponentHeatLazy";
@@ -260,6 +261,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </div>
         </div>
       ) : null}
+      <RetiredBanners lg={lg} f={f} name={now} />
       {rows.length ? (
         <TeamChartsLazy lg={lg} f={f} rows={rows.map(({ year, gp, w, l, t, otl, pf, pa, home, road }) => ({ year, gp, w, l, t, otl, pf, pa, home, road }))} titles={t.titles} seasons={t.seasons} idle={[...idle]} />
       ) : bare.size ? null : (

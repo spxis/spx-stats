@@ -20,6 +20,8 @@ so a string added in English alone still shows.
 - **PWHL / Walter Cup.** FR keeps the English code "PWHL" in the site description (same as NHL/NBA there) and "Coupe Walter" for the trophy and final. JA keeps "PWHL" and "ウォルター・カップ" (Walter Cup). First-pass; not reviewed.
 - **NWSL / NWSL Championship.** FR keeps the English code "NWSL" and "Championnat de la NWSL" for the trophy and final. JA keeps "NWSL" and "NWSLチャンピオンシップ" (NWSL Championship). First-pass; not reviewed.
 
+- **Retired numbers.** FR "Numéros retirés" / "À l’échelle de la ligue"; JA "永久欠番" (retired number) / "リーグ全体" (league-wide). First-pass; not reviewed.
+
 - **Player statistics.** Column abbreviations (FR PJ/B/A/V/D/N/DP/MBC/%A/BL for hockey; AB/CS/CC/PP/BV/MAB/MPB/MP/MJ/MPM for baseball; JA 試合/勝/敗/打率/防御率 and so on)
   are my best guess at what each league's own French and Japanese tables use. Slugging is "PUIS" (moyenne de puissance) so it does not clash with "MP" (minutes de pénalité). "Parcours sportif" for the sports résumé, "Repêchage" for the draft.
 

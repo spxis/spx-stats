@@ -23,6 +23,9 @@ importers:
       '@johnmorrisdotca/kyogijo-stadiums':
         specifier: 0.10.2
         version: 0.10.2(@johnmorrisdotca/hata@1.5.0)
+      '@johnmorrisdotca/senshu-jerseys':
+        specifier: 0.4.0
+        version: 0.4.0
       '@johnmorrisdotca/taisen-brackets':
         specifier: 0.6.0
         version: 0.6.0(@johnmorrisdotca/dougu-sports@0.8.0)(@johnmorrisdotca/hata@1.5.0)
@@ -414,6 +417,10 @@ packages:
         optional: true
       '@resvg/resvg-js':
         optional: true
+
+  '@johnmorrisdotca/senshu-jerseys@0.4.0':
+    resolution: {integrity: sha512-perDxfv1H80j+UWhSHmxT3bGZY3DRW12oGe3U+kD5qIF1wXF/SXHt5VnPgnhEiEUfnClhFeevQzo15yPvMIoKg==}
+    engines: {node: '>=22'}
 
   '@johnmorrisdotca/taisen-brackets@0.6.0':
     resolution: {integrity: sha512-aIuX6rNu9vSNdF19nywFH5hJ28sXCrdZdRAezTPCCP1eJNnb33FJxO/1iG/Z+MF2aQMAnJAnomxtbI6y3zA5Dw==}
@@ -2724,6 +2731,8 @@ snapshots:
   '@johnmorrisdotca/kyogijo-stadiums@0.10.2(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:
       '@johnmorrisdotca/hata': 1.5.0
+
+  '@johnmorrisdotca/senshu-jerseys@0.4.0': {}
 
   '@johnmorrisdotca/taisen-brackets@0.6.0(@johnmorrisdotca/dougu-sports@0.8.0)(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:

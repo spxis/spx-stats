@@ -109,6 +109,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "credit.surfaces": "Playing surfaces: {kyogijo}.",
   "credit.emblems": "Trophies and medals: {dougu}.",
   "credit.brackets": "Layout of the tournament chart: {taisen}.",
+  "credit.jerseys": "Retired-number banners: {senshu}.",
   "credit.logos": "Some historic logos: {sportslogos}; they are shown small to identify the team ({link}).",
   "credit.logosLink": "about the logos",
   "terms.fullList":

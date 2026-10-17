@@ -17,7 +17,7 @@ reviewed legal copy.
 Not translated on purpose: team, player and venue names, league codes (NHL, NBA, MLB, NFL, CFL), and the names
 SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia Commons, Vercel, Supabase and GitHub.
 
-## 1. About, Terms, Privacy and the footer (115)
+## 1. About, Terms, Privacy and the footer (116)
 
 | Where a reader meets it | English on the site | French | Japanese | What the Japanese says back | Correction |
 | --- | --- | --- | --- | --- | --- |
@@ -111,6 +111,7 @@ SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia 
 | Terms page, /terms (credits) | Playing surfaces: {kyogijo}. | Surfaces de jeu : {kyogijo}. | **競技面：{kyogijo}。** | Playing surfaces: {kyogijo}. |  |
 | Terms page, /terms (credits) | Trophies and medals: {dougu}. | Trophées et médailles : {dougu}. | **トロフィーとメダル：{dougu}。** | Trophies and medals: {dougu}. |  |
 | Terms page, /terms (credits) | Bracket layout: {taisen}. | Disposition du tableau : {taisen}. | **トーナメント表のレイアウト：{taisen}。** | Layout of the tournament chart: {taisen}. |  |
+| Terms page, /terms (credits) | Retired-number banners: {senshu}. | Bannières de numéros retirés : {senshu}. | **永久欠番バナー：{senshu}。** | Retired-number banners: {senshu}. |  |
 | Terms page, /terms (credits) | Some historic logos: {sportslogos}, shown small to identify the team ({link}). | Certains logos historiques : {sportslogos}, montrés en petit pour identifier l’équipe ({link}). | **一部の歴史的なロゴ：{sportslogos}。チームを識別するため小さく表示しています（{link}）。** | Some historic logos: {sportslogos}; they are shown small to identify the team ({link}). |  |
 | Terms page, /terms (credits) | about the logos | à propos des logos | **ロゴについて** | about the logos |  |
 | Privacy page, /privacy | SPX Network | SPX Network | **SPX Network** | SPX Network (a name; not translated). |  |
