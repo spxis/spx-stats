@@ -23,6 +23,11 @@ const FIGURES: Record<string, { key: string; phrase: PhraseKey; higher: boolean;
     { key: "yds", phrase: "tstat.yds", higher: true, perGame: true },
     { key: "yds_against", phrase: "tstat.yds_against", higher: false, perGame: true },
   ],
+  nba: [
+    { key: "p_fg", phrase: "tstat.fg_pct", higher: true, perGame: false },
+    { key: "p_3p", phrase: "tstat.three_pct", higher: true, perGame: false },
+    { key: "a_reb", phrase: "tstat.rpg", higher: true, perGame: false },
+  ],
 };
 
 export interface FigureRank {

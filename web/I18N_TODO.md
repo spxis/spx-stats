@@ -22,6 +22,8 @@ so a string added in English alone still shows.
 
 - **Retired numbers.** FR "Numéros retirés" / "À l’échelle de la ligue"; JA "永久欠番" (retired number) / "リーグ全体" (league-wide). First-pass; not reviewed.
 
+- **NBA team figures.** FR "pourcentage de tirs" / "pourcentage à trois points" / "rebonds par match"; JA "フィールドゴール成功率" (field-goal percentage) / "3ポイント成功率" (three-point percentage) / "平均リバウンド" (rebounds per game). First-pass; not reviewed.
+
 - **Player statistics.** Column abbreviations (FR PJ/B/A/V/D/N/DP/MBC/%A/BL for hockey; AB/CS/CC/PP/BV/MAB/MPB/MP/MJ/MPM for baseball; JA 試合/勝/敗/打率/防御率 and so on)
   are my best guess at what each league's own French and Japanese tables use. Slugging is "PUIS" (moyenne de puissance) so it does not clash with "MP" (minutes de pénalité). "Parcours sportif" for the sports résumé, "Repêchage" for the draft.
 
