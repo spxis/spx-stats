@@ -20,7 +20,9 @@ import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LEAGUE_CODES, leagueInfo } from "@/lib/leagues";
 import { leagueSeasonRows } from "@/lib/leagueSeasonRows";
-import { otherLeagues } from "@/lib/otherLeagues";
+import { FamilyNav } from "@/components/FamilyNav";
+import { familyOf } from "@/lib/leagueFamilies";
+import { familyOtherLeagues } from "@/lib/otherLeagues";
 import { pageMeta } from "@/lib/meta";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
@@ -63,8 +65,12 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
     { key: "league", label: say("col.league"), get: (c) => c.league ?? "" },
     { key: "wins", label: say("cup.wins"), num: true, get: (c) => c.wins },
   ], (c) => `${c.year}-${c.club}`);
-  // The league's rival and predecessor leagues (the NFL's AFL and AAFC): their years, seasons and champions, each kept apart from this league's own.
-  const others = otherLeagues(lg, s.seasons);
+  // Family siblings (PWHL on the NHL page) plus rival and predecessor leagues, each kept apart from this league's own.
+  const others = familyOtherLeagues(lg, s.seasons);
+  const fam = familyOf(lg);
+  const familySeasons = fam
+    ? withCoverage(s.seasons).filter((x) => fam.members.includes(x.league)).sort((a, b) => a.year - b.year)
+    : list;
   const boxes = championRow(list, lg);
   const latest = boxes.find((b) => b.kind === "recent");
   const most = boxes.find((b) => b.kind === "most");
@@ -79,35 +85,8 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
         <p className="note"><Link href={`/${lg}/all-time`}>{say("allTime.link")}</Link></p>
         <p className="note"><Link href={`/${lg}/alignment`}>{say("league.alignmentLink")}</Link></p>
         {info.closed ? null : <p className="note"><Link href={`/${lg}/world`}>{say("country.leagueNavLink")}</Link></p>}
+        <FamilyNav code={lg} />
       </section>
-      {latest ? (
-        <TrophyBanner lg={lg}>
-          <span className="cup">{say("trophy.latest")}</span>
-          <span className="who"><TeamLabel lg={lg} f={latest.f} name={latest.name} year={withGames.some((x) => x.year === latest.year) ? latest.year : undefined} logo={logoFor(brands, latest.f, latest.year)} size={40} shape="circle" /></span>
-          <span className="how">
-            <Link href={seasonPath(lg, latest.year)} prefetch={false}>{say("season.title", { label: latest.label })}</Link>
-            {most ? ` · ${say("trophy.mostTitles", { team: most.name, count: plural("count.championships", most.n) })}` : ""}
-          </span>
-        </TrophyBanner>
-      ) : null}
-      <SeasonSync>
-        <LeagueSeasonRows league={lg} rows={leagueSeasonRows(list)}>
-          <section className="section">
-            <h2>{say("league.seasons")}</h2>
-            <LeagueSeasons />
-          </section>
-          {withGames.length ? (
-            <section className="section">
-              <h2>{say("league.barsTitle")}</h2>
-              <div className="legend">
-                <span><i style={{ background: "var(--accent)" }} />{say("league.withResult")}</span>
-                <span><i style={{ background: "var(--accent)", opacity: 0.22 }} />{say("league.heldNoResult")}</span>
-              </div>
-              <SeasonBarsLazy lg={lg} />
-            </section>
-          ) : null}
-        </LeagueSeasonRows>
-      </SeasonSync>
       {others.length ? (
         <section className="section">
           <h2>{say("league.otherLeagues")}</h2>
@@ -124,6 +103,36 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           </ul>
         </section>
       ) : null}
+      {latest ? (
+        <TrophyBanner lg={lg}>
+          <span className="cup">{say("trophy.latest")}</span>
+          <span className="who"><TeamLabel lg={lg} f={latest.f} name={latest.name} year={withGames.some((x) => x.year === latest.year) ? latest.year : undefined} logo={logoFor(brands, latest.f, latest.year)} size={40} shape="circle" /></span>
+          <span className="how">
+            <Link href={seasonPath(lg, latest.year)} prefetch={false}>{say("season.title", { label: latest.label })}</Link>
+            {most ? ` · ${say("trophy.mostTitles", { team: most.name, count: plural("count.championships", most.n) })}` : ""}
+          </span>
+        </TrophyBanner>
+      ) : null}
+      <SeasonSync>
+        <LeagueSeasonRows league={lg} rows={leagueSeasonRows(list)}>
+          <section className="section">
+            <h2>{say("league.seasons")}</h2>
+            <LeagueSeasons family={fam} familySeasons={familySeasons.map((x) => ({
+              league: x.league, year: x.year, label: x.label, games: x.games, finals: x.finals, share: x.share, champion: x.champion,
+            }))} />
+          </section>
+          {withGames.length ? (
+            <section className="section">
+              <h2>{say("league.barsTitle")}</h2>
+              <div className="legend">
+                <span><i style={{ background: "var(--accent)" }} />{say("league.withResult")}</span>
+                <span><i style={{ background: "var(--accent)", opacity: 0.22 }} />{say("league.heldNoResult")}</span>
+              </div>
+              <SeasonBarsLazy lg={lg} />
+            </section>
+          ) : null}
+        </LeagueSeasonRows>
+      </SeasonSync>
       <section className="section">
         <h2>{say("league.champions")}</h2>
         <LeagueChampions lg={lg} />

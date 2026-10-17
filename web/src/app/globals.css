@@ -110,6 +110,17 @@
   .leagues a.sub { color: var(--muted); font-size: 15px; padding-left: 18px; border-left: 1px solid var(--rule); }
   .leagues a.sub[aria-current="page"] { color: var(--ink); }
   .otherleagues { margin: 8px 0 0; padding-left: 18px; line-height: 1.7; }
+  .familynav { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
+  .familynav-kicker { color: var(--muted); font-size: 14px; }
+  .familynav-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
+  .familynav-row a, .familynav-row [aria-current="page"] { font: 600 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: .05em; }
+  .familynav-row [aria-current="page"] { color: var(--ink); }
+  .card.familycard { text-decoration: none; }
+  .card.familycard > a { color: inherit; text-decoration: none; display: flex; flex-direction: column; gap: 6px; }
+  .card.familycard details { margin-top: 8px; border-top: 1px solid var(--rule); padding-top: 8px; }
+  .card.familycard summary { cursor: pointer; font: 600 13px/1.2 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+  .card.familycard .card.kid { margin-top: 8px; border-top-width: 3px; padding: 10px 12px; }
+  .card.familycard .card.kid h3 { font-size: 22px; }
   .crumbs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-block: 6px 10px; font: 600 14px/1.2 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
   .crumbs a { color: var(--muted); }
   .crumbs [aria-current="page"] { color: var(--ink); }

@@ -1,3 +1,4 @@
+import { familySiblings } from "./leagueFamilies.ts";
 import { CHILDREN, isLeague, leagueInfo, LG, PARENT, type LeagueCode } from "./leagues.ts";
 
 /** What a parent league's page says about each rival or predecessor league: its years, seasons and champions (kept apart from the parent's own). */
@@ -5,6 +6,18 @@ export interface OtherLeague { code: LeagueCode; name: string; short: string; fi
 
 export function otherLeagues(lg: string, seasons: { league: string; year: number; label: string; champion: string | null }[]): OtherLeague[] {
   return (CHILDREN[lg as LeagueCode] ?? []).flatMap((code) => {
+    const rows = seasons.filter((x) => x.league === code).sort((a, b) => a.year - b.year);
+    const info = leagueInfo(code);
+    return rows.length && info
+      ? [{ code, name: info.name, short: info.short, first: rows[0].label, last: rows[rows.length - 1].label, seasons: rows.length, champions: rows.filter((x) => x.champion).length }]
+      : [];
+  });
+}
+
+/** Family siblings with seasons (PWHL on the NHL page; WNBA on the NBA page). Virtual soccer codes are left to FamilyNav. */
+export function familyOtherLeagues(lg: string, seasons: { league: string; year: number; label: string; champion: string | null }[]): OtherLeague[] {
+  return familySiblings(lg).flatMap((code) => {
+    if (!isLeague(code)) return [];
     const rows = seasons.filter((x) => x.league === code).sort((a, b) => a.year - b.year);
     const info = leagueInfo(code);
     return rows.length && info

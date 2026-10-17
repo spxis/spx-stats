@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.138.0",
+  "version": "0.139.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -17,6 +17,7 @@
     "logos:library": "python3 ../scripts/logos/library.py",
     "test:football": "node --test scripts/earlyFootball.test.ts",
     "test:rivals": "node --test scripts/rivalLeagues.test.ts",
+    "test:families": "node --test scripts/leagueFamilies.test.ts",
     "test:weight": "node --test scripts/weight.test.ts",
     "test:trophies": "node --conditions=react-server --test scripts/trophies.test.ts",
     "i18n:review": "node scripts/i18n-review.ts",
