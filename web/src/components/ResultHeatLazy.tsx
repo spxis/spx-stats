@@ -10,8 +10,8 @@ import { useFetchedJson } from "./useFetchedJson";
 import { useSeen } from "./useSeen";
 
 /**
- * The body of a team page's results calendar, fetched when the reader gets near it. The page carries the heading
- * and one sentence; the squares and the packed games are one kept JSON answer per franchise.
+ * The body of a team page's results graph, fetched when the reader gets near it. The page carries the heading
+ * and one sentence; the packed games are one kept JSON answer per franchise. The slider and squares are drawn here.
  */
 export function ResultHeatLazy({ teamPath, lg }: { teamPath: string; lg: string }) {
   const { say } = useSpeaker();

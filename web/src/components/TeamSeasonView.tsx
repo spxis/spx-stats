@@ -167,7 +167,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
       {heatGames.length ? (
         <section className="section">
           <h2>{say("rheat.title")}</h2>
-          <p className="note">{say("rheat.lede")}</p>
+          <p className="note">{say("rheat.ledeSeason")}</p>
           <ResultHeat lg={lg} games={heatGames} />
         </section>
       ) : null}

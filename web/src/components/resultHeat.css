@@ -1,26 +1,29 @@
-/* GitHub-style result calendar: one square per day, weeks as columns, Sunday on top. */
+/* GitHub-sized result graph: one square per game. A season is 7 rows; all-time shrinks to stay one item. */
 .rheat { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
 .rheat-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; }
 .rheat-rec { font: 700 22px/1 var(--display); letter-spacing: .02em; }
 .rheat-span { color: var(--muted); font-size: 14px; }
 .rheat-legend { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; font: 600 12px/1 var(--display); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
 .rheat-legend i { display: inline-block; width: 11px; height: 11px; margin-right: 5px; border-radius: 2px; vertical-align: -1px; border: 1px solid color-mix(in srgb, var(--ink) 12%, var(--rule)); }
-.rheat-year { display: flex; gap: 10px; align-items: flex-start; min-width: 0; }
-.rheat-yl { flex: none; width: 3.2em; font: 700 14px/1 var(--display); color: var(--muted); padding-top: 16px; }
 .rheat-scroll { overflow-x: auto; min-width: 0; scrollbar-width: thin; }
-.rheat svg { display: block; }
+.rheat svg { display: block; max-width: 100%; height: auto; }
 .rheat .lab { fill: var(--muted); font: 600 10px/1 var(--display); }
 .rheat .sq { rx: 2; ry: 2; stroke: color-mix(in srgb, var(--ink) 10%, var(--rule)); stroke-width: 1; }
 .rheat .sq.W, .rheat-legend i.W { fill: color-mix(in srgb, var(--ok) 72%, var(--panel)); background: color-mix(in srgb, var(--ok) 72%, var(--panel)); stroke: color-mix(in srgb, var(--ok) 55%, var(--rule)); }
 .rheat .sq.L, .rheat-legend i.L { fill: color-mix(in srgb, var(--bad) 68%, var(--panel)); background: color-mix(in srgb, var(--bad) 68%, var(--panel)); stroke: color-mix(in srgb, var(--bad) 50%, var(--rule)); }
 .rheat .sq.T, .rheat-legend i.T { fill: color-mix(in srgb, var(--ink) 22%, var(--panel)); background: color-mix(in srgb, var(--ink) 22%, var(--panel)); }
 .rheat .sq.OTL, .rheat-legend i.OTL { fill: color-mix(in srgb, var(--bad) 38%, var(--panel)); background: color-mix(in srgb, var(--bad) 38%, var(--panel)); stroke: color-mix(in srgb, var(--bad) 40%, var(--rule)); }
-.rheat-legend i.split { background: linear-gradient(135deg, color-mix(in srgb, var(--ok) 72%, var(--panel)) 50%, color-mix(in srgb, var(--bad) 68%, var(--panel)) 50%); }
 .rheat .sq.pending, .rheat-legend i.pending { fill: var(--panel); background: var(--panel); stroke-dasharray: 2 2; }
-.rheat .sq.empty, .rheat-legend i.empty { fill: var(--soft); background: var(--soft); }
 .rheat .sq.link { cursor: pointer; }
 .rheat .sq.link:hover, .rheat .sq.link:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
 .rheat.compact .rheat-rec { font-size: 18px; }
-.rheat.compact .rheat-yl { width: 2.6em; font-size: 12px; padding-top: 14px; }
 .rheat-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-width: 0; }
 @media (max-width: 800px) { .rheat-pair { grid-template-columns: 1fr; } }
+
+.rheat-slider { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }
+.rheat-all { box-sizing: border-box; display: inline-flex; align-items: center; height: var(--control-h); border: 0; background: none; padding: 0 8px; color: var(--ink); font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }
+.rheat-all[aria-pressed="true"] { background: var(--ink); color: var(--paper); text-decoration: none; }
+.rheat-all:focus-visible { outline: 2px solid var(--ink); outline-offset: 1px; }
+.rheat-range { flex: 1 1 160px; min-width: 120px; max-width: 420px; display: flex; align-items: center; }
+.rheat-range input[type="range"] { width: 100%; margin: 0; accent-color: var(--ink); height: var(--control-h); }
+.rheat-pick { flex: none; min-width: 5ch; font: 600 15px/1 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }

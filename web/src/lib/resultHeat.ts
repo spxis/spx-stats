@@ -1,7 +1,7 @@
 /**
- * A GitHub-style calendar of one club's results: every day from the first game through the last is a cell
- * (a day with no game is empty). Colour is the club's result that day (W / L / T / OTL). Pure, so the pages
- * and scripts/resultHeat.test.ts build the same grid.
+ * A GitHub-sized graph of one club's results: one square per game, packed in play order (7 rows, then the next
+ * column). No empty calendar days. Colour is the club's result (W / L / T / OTL). Pure, so the pages and
+ * scripts/resultHeat.test.ts build the same grid.
  */
 import type { GameRow } from "./api/types.ts";
 import { countsOtl, isFinal, resultFor, type Result } from "./gameView.ts";
@@ -23,59 +23,78 @@ export interface HeatGame {
   homeName: string | null;
 }
 
-/** What a day paints as: a result, two different results, a game with no result yet, or empty (no game). */
-export type DayTone = HeatResult | "split" | "pending" | null;
+/** What a game paints as: a result, or pending when there is no result yet. */
+export type GameTone = HeatResult | "pending";
 
 export interface HeatCell {
-  date: string;
-  games: HeatGame[];
-  tone: DayTone;
+  game: HeatGame;
+  tone: GameTone;
 }
 
-export interface HeatYear {
+export interface HeatMark {
+  col: number;
   year: number;
-  /** Sunday-start weeks; each week is Sun..Sat. null is only pad outside this year's slice of the span. */
-  weeks: (HeatCell | null)[][];
+}
+
+export const HEAT_ROWS = 7;
+/** GitHub-graph width: ~53 weeks of 11px cells. A season of ~82 games fits in 7 rows; all-time grows rows and shrinks cells to stay in this box. */
+export const HEAT_TARGET_COLS = 53;
+
+export interface HeatPack {
+  rows: number;
+  cols: number;
+  cell: number;
+  gap: number;
 }
 
 export interface HeatGrid {
   first: string;
   last: string;
-  days: number;
+  games: number;
   tally: { w: number; l: number; t: number; otl: number };
-  years: HeatYear[];
+  rows: number;
+  cols: number;
+  /** columns[col][row], row 0 at the top. null only pads the last incomplete column. */
+  columns: (HeatCell | null)[][];
+  /** First column of each season, for the labels along the top. */
+  marks: HeatMark[];
+}
+
+/**
+ * How to draw `n` game squares as one GitHub-sized item. A season (or any list that fits 7×53 at 11px) keeps that
+ * layout. All-time shrinks the cells and uses more rows so the graph stays about one screen, not a year stack.
+ */
+export function heatPack(n: number, compact = false): HeatPack {
+  const cell0 = compact ? 8 : 11;
+  const gap0 = compact ? 2 : 3;
+  const step0 = cell0 + gap0;
+  const maxW = compact ? 340 : HEAT_TARGET_COLS * step0;
+  const maxH = compact ? HEAT_ROWS * step0 : HEAT_ROWS * step0 + step0; // ~7–8 rows at the large cell
+  if (n <= 0) return { rows: HEAT_ROWS, cols: 0, cell: cell0, gap: gap0 };
+  const cols7 = Math.ceil(n / HEAT_ROWS);
+  if (cols7 * step0 <= maxW) return { rows: HEAT_ROWS, cols: cols7, cell: cell0, gap: gap0 };
+  for (let step = step0; step >= 3; step--) {
+    const cols = Math.max(1, Math.floor(maxW / step));
+    const rows = Math.ceil(n / cols);
+    if (rows * step <= maxH) {
+      const gap = step >= 10 ? gap0 : 1;
+      return { rows, cols: Math.ceil(n / rows), cell: Math.max(2, step - gap), gap };
+    }
+  }
+  const step = 3;
+  const cols = Math.max(1, Math.floor(maxW / step));
+  const rows = Math.ceil(n / cols);
+  return { rows, cols: Math.ceil(n / rows), cell: 2, gap: 1 };
 }
 
 const DAY_MS = 86_400_000;
 
-/** `ymd` plus `n` calendar days (UTC). */
-export function addDays(ymd: string, n: number): string {
-  return new Date(Date.parse(`${ymd}T00:00:00Z`) + n * DAY_MS).toISOString().slice(0, 10);
+/** The game's colour: a result, or pending. */
+export function gameTone(g: HeatGame): GameTone {
+  return g.res ?? "pending";
 }
 
-/** Sunday = 0 … Saturday = 6, from a YYYY-MM-DD kept as UTC midnight. */
-export function weekdayUtc(ymd: string): number {
-  return new Date(`${ymd}T00:00:00Z`).getUTCDay();
-}
-
-/** Every calendar day from `first` through `last` (both included). Empty when the ends are missing or reversed. */
-export function eachDay(first: string, last: string): string[] {
-  if (!first || !last || first > last) return [];
-  const out: string[] = [];
-  for (let d = first; d <= last; d = addDays(d, 1)) out.push(d);
-  return out;
-}
-
-/** The day's colour: empty, pending, one result, or split when two finished games disagree. */
-export function toneOf(games: readonly HeatGame[]): DayTone {
-  const decided = games.map((g) => g.res).filter((r): r is HeatResult => r != null);
-  if (!games.length) return null;
-  if (!decided.length) return "pending";
-  const uniq = new Set(decided);
-  return uniq.size === 1 ? decided[0]! : "split";
-}
-
-/** Wins, losses, ties and overtime losses of the finished games (a day with two games counts both). */
+/** Wins, losses, ties and overtime losses of the finished games. */
 export function tallyHeat(games: readonly HeatGame[]): { w: number; l: number; t: number; otl: number } {
   const t = { w: 0, l: 0, t: 0, otl: 0 };
   for (const g of games) {
@@ -123,44 +142,52 @@ export function clipHeatGames(games: readonly HeatGame[], from: number, to: numb
   return games.filter((g) => g.year >= from && g.year <= to);
 }
 
-function cellOf(date: string, byDay: Map<string, HeatGame[]>): HeatCell {
-  const games = byDay.get(date) ?? [];
-  return { date, games, tone: toneOf(games) };
+/** Distinct season years in play order. */
+export function heatSeasons(games: readonly HeatGame[]): number[] {
+  const ys = new Set<number>();
+  for (const g of games) ys.add(g.year);
+  return [...ys].sort((a, b) => a - b);
 }
 
 /**
- * One GitHub-style year stack from the first game through the last. Every day in between is a cell.
- * Years are newest first. A year that only holds part of the span starts or ends on those days, not 1 January.
+ * One GitHub-sized graph: games in chronological order, `rows` down then the next column. Square count equals game
+ * count. Season labels sit on the first column that holds a game of that season. `rows` defaults to heatPack's count
+ * so a long all-time list stays one item, not a 7-row ribbon thousands of cells wide.
  */
-export function buildHeat(games: readonly HeatGame[]): HeatGrid | null {
+export function buildHeat(games: readonly HeatGame[], rows?: number): HeatGrid | null {
   if (!games.length) return null;
-  let first = games[0]!.date, last = games[0]!.date;
-  const byDay = new Map<string, HeatGame[]>();
-  for (const g of games) {
-    if (g.date < first) first = g.date;
-    if (g.date > last) last = g.date;
-    const list = byDay.get(g.date);
-    if (list) list.push(g);
-    else byDay.set(g.date, [g]);
-  }
-  const y0 = Number(first.slice(0, 4)), y1 = Number(last.slice(0, 4));
-  const years: HeatYear[] = [];
-  for (let year = y1; year >= y0; year--) {
-    const yFirst = year === y0 ? first : `${year}-01-01`;
-    const yLast = year === y1 ? last : `${year}-12-31`;
-    const start = addDays(yFirst, -weekdayUtc(yFirst));
-    const weeks: (HeatCell | null)[][] = [];
-    for (let d = start; d <= yLast; d = addDays(d, 7)) {
-      const week: (HeatCell | null)[] = [];
-      for (let i = 0; i < 7; i++) {
-        const day = addDays(d, i);
-        week.push(day < yFirst || day > yLast ? null : cellOf(day, byDay));
-      }
-      weeks.push(week);
+  const ordered = [...games].sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+  const R = rows ?? heatPack(ordered.length).rows;
+  const cols = Math.ceil(ordered.length / R);
+  const columns: (HeatCell | null)[][] = [];
+  const marks: HeatMark[] = [];
+  let prevYear: number | null = null;
+  for (let i = 0; i < ordered.length; i++) {
+    const g = ordered[i]!;
+    if (g.year !== prevYear) {
+      const col = Math.floor(i / R);
+      if (!marks.length || marks[marks.length - 1]!.col !== col) marks.push({ col, year: g.year });
+      prevYear = g.year;
     }
-    years.push({ year, weeks });
   }
-  return { first, last, days: eachDay(first, last).length, tally: tallyHeat(games), years };
+  for (let c = 0; c < cols; c++) {
+    const col: (HeatCell | null)[] = [];
+    for (let r = 0; r < R; r++) {
+      const g = ordered[c * R + r];
+      col.push(g ? { game: g, tone: gameTone(g) } : null);
+    }
+    columns.push(col);
+  }
+  return {
+    first: ordered[0]!.date,
+    last: ordered[ordered.length - 1]!.date,
+    games: ordered.length,
+    tally: tallyHeat(ordered),
+    rows: R,
+    cols,
+    columns,
+    marks,
+  };
 }
 
 const RES_CHAR: Record<HeatResult, string> = { W: "W", L: "L", T: "T", OTL: "O" };

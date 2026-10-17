@@ -2,39 +2,25 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { GameRow } from "../src/lib/api/types.ts";
 import {
-  addDays, buildHeat, clipHeatGames, eachDay, heatGamesFromRows, heatGamesFromTeam, heatRecord,
-  packHeat, tallyHeat, toneOf, unpackHeat, weekdayUtc, type HeatGame,
+  HEAT_ROWS, HEAT_TARGET_COLS, buildHeat, clipHeatGames, gameTone, heatGamesFromRows, heatGamesFromTeam,
+  heatPack, heatRecord, heatSeasons, packHeat, tallyHeat, unpackHeat, type HeatCell, type HeatGame,
 } from "../src/lib/resultHeat.ts";
 import type { TeamGame } from "../src/lib/teamSeason.ts";
 
-/** Run in web/: pnpm test:rheat. The GitHub-style win-loss calendar: no gaps, W / L / T / OTL, pack round-trip. */
+/** Run in web/: pnpm test:rheat. One square per game, 7-row pack, W / L / T / OTL, pack round-trip. */
 
 const g = (over: Partial<HeatGame> & Pick<HeatGame, "date" | "id">): HeatGame => ({
   year: Number(over.date.slice(0, 4)), res: "W", ot: false, mine: 3, theirs: 2, home: true,
   awayName: "Bruins", homeName: "Hurricanes", ...over,
 });
 
-test("each day from first through last is present; a reversed or empty span is empty", () => {
-  assert.deepEqual(eachDay("2024-01-30", "2024-02-02"), ["2024-01-30", "2024-01-31", "2024-02-01", "2024-02-02"]);
-  assert.deepEqual(eachDay("2020-02-28", "2020-03-01"), ["2020-02-28", "2020-02-29", "2020-03-01"]);
-  assert.deepEqual(eachDay("2024-10-11", "2024-10-11"), ["2024-10-11"]);
-  assert.deepEqual(eachDay("2024-10-12", "2024-10-11"), []);
-});
+const cellsOf = (grid: NonNullable<ReturnType<typeof buildHeat>>): HeatCell[] =>
+  grid.columns.flat().filter((c): c is HeatCell => c != null);
 
-test("addDays and weekday stay on UTC calendar days (2024-01-07 is a Sunday)", () => {
-  assert.equal(addDays("2024-01-07", 1), "2024-01-08");
-  assert.equal(addDays("2024-01-31", 1), "2024-02-01");
-  assert.equal(weekdayUtc("2024-01-07"), 0);
-  assert.equal(weekdayUtc("2024-01-13"), 6);
-});
-
-test("tone: empty, pending, one result, or split when two finished games disagree", () => {
-  assert.equal(toneOf([]), null);
-  assert.equal(toneOf([g({ date: "2024-01-01", id: 1, res: null })]), "pending");
-  assert.equal(toneOf([g({ date: "2024-01-01", id: 1, res: "W" })]), "W");
-  assert.equal(toneOf([g({ date: "2024-01-01", id: 1, res: "OTL" })]), "OTL");
-  assert.equal(toneOf([g({ date: "2024-01-01", id: 1, res: "W" }), g({ date: "2024-01-01", id: 2, res: "L" })]), "split");
-  assert.equal(toneOf([g({ date: "2024-01-01", id: 1, res: "W" }), g({ date: "2024-01-01", id: 2, res: null })]), "W");
+test("gameTone is the result, or pending when there is none", () => {
+  assert.equal(gameTone(g({ date: "2024-01-01", id: 1, res: "W" })), "W");
+  assert.equal(gameTone(g({ date: "2024-01-01", id: 1, res: "OTL" })), "OTL");
+  assert.equal(gameTone(g({ date: "2024-01-01", id: 1, res: null })), "pending");
 });
 
 test("the tally counts every finished game and writes the same record string as the rest of the site", () => {
@@ -50,44 +36,60 @@ test("the tally counts every finished game and writes the same record string as 
   assert.equal(heatRecord({ w: 4, l: 3, t: 0, otl: 0 }), "4–3");
 });
 
-test("the grid has a cell for every day from first game through last, including days with no game", () => {
-  const grid = buildHeat([
+test("the grid has one square per game and no empty day cells", () => {
+  const games = [
     g({ date: "2024-10-11", id: 1, res: "W" }),
     g({ date: "2024-10-14", id: 2, res: "L" }),
-  ]);
+  ];
+  const grid = buildHeat(games);
   assert.ok(grid);
-  assert.equal(grid!.first, "2024-10-11");
-  assert.equal(grid!.last, "2024-10-14");
-  assert.equal(grid!.days, 4);
-  const cells = grid!.years[0]!.weeks.flat().filter((c): c is NonNullable<typeof c> => c != null);
-  assert.deepEqual(cells.map((c) => c.date), ["2024-10-11", "2024-10-12", "2024-10-13", "2024-10-14"]);
-  assert.deepEqual(cells.map((c) => c.tone), ["W", null, null, "L"]);
+  assert.equal(grid!.games, 2);
+  assert.equal(grid!.rows, HEAT_ROWS);
+  const cells = cellsOf(grid!);
+  assert.equal(cells.length, 2);
+  assert.deepEqual(cells.map((c) => c.game.id), [1, 2]);
+  assert.deepEqual(cells.map((c) => c.tone), ["W", "L"]);
+  assert.equal(cells.some((c) => c.game.date === "2024-10-12"), false);
 });
 
-test("a span that crosses 1 January stacks two years, newest first, and does not skip New Year's Day", () => {
-  const grid = buildHeat([
+test("82 games fill 82 squares in 7-row columns (12 full columns and 5 in the last)", () => {
+  const games = Array.from({ length: 82 }, (_, i) => g({ date: `2024-10-${String((i % 28) + 1).padStart(2, "0")}`, id: i + 1, year: 2024 }));
+  const grid = buildHeat(games);
+  assert.ok(grid);
+  assert.equal(grid!.games, 82);
+  assert.equal(cellsOf(grid!).length, 82);
+  assert.equal(grid!.cols, 12);
+  assert.equal(grid!.columns[11]!.filter(Boolean).length, 5);
+  assert.equal(grid!.columns[0]!.filter(Boolean).length, 7);
+});
+
+test("all-time packing is one graph, not a year stack, and labels each season's first column", () => {
+  const games = [
     g({ date: "2023-12-30", id: 1, year: 2023, res: "W" }),
     g({ date: "2024-01-02", id: 2, year: 2023, res: "L" }),
-  ]);
+    g({ date: "2024-10-10", id: 3, year: 2024, res: "W" }),
+  ];
+  const grid = buildHeat(games);
   assert.ok(grid);
-  assert.deepEqual(grid!.years.map((y) => y.year), [2024, 2023]);
-  const days = grid!.years.flatMap((y) => y.weeks.flat().filter((c): c is NonNullable<typeof c> => c != null).map((c) => c.date));
-  assert.deepEqual(days, ["2024-01-01", "2024-01-02", "2023-12-30", "2023-12-31"]);
+  assert.equal(grid!.cols, 1);
+  assert.deepEqual(grid!.marks, [{ col: 0, year: 2023 }]);
+  assert.deepEqual(cellsOf(grid!).map((c) => c.game.year), [2023, 2023, 2024]);
+  assert.equal(grid!.marks.filter((m) => m.col === 0).length, 1);
 });
 
-test("weeks start on Sunday so a Wednesday game sits in column 3", () => {
-  // 2024-10-09 is a Wednesday.
-  const grid = buildHeat([g({ date: "2024-10-09", id: 1 })]);
-  const week = grid!.years[0]!.weeks[0]!;
-  assert.equal(week.filter(Boolean).length, 1);
-  assert.equal(week[3]!.date, "2024-10-09");
-  assert.equal(week[0], null);
-  assert.equal(week[2], null);
+test("a new season that starts in a later column gets its own mark", () => {
+  const games = [
+    ...Array.from({ length: 8 }, (_, i) => g({ date: `2023-10-${String(i + 1).padStart(2, "0")}`, id: i + 1, year: 2023 })),
+    g({ date: "2024-10-10", id: 9, year: 2024 }),
+  ];
+  const grid = buildHeat(games);
+  assert.deepEqual(grid!.marks, [{ col: 0, year: 2023 }, { col: 1, year: 2024 }]);
 });
 
-test("clipHeatGames keeps season years in from..to", () => {
+test("clipHeatGames and heatSeasons keep season years", () => {
   const games = [g({ date: "2023-01-01", id: 1, year: 2022 }), g({ date: "2024-01-01", id: 2, year: 2023 })];
   assert.deepEqual(clipHeatGames(games, 2023, 2023).map((x) => x.id), [2]);
+  assert.deepEqual(heatSeasons(games), [2022, 2023]);
 });
 
 test("heatGamesFromRows uses resultFor / countsOtl and leaves preseason out", () => {
@@ -129,4 +131,33 @@ test("packHeat / unpackHeat is a round trip", () => {
   ];
   assert.deepEqual(unpackHeat(packHeat("nhl", 10, games)), games);
   assert.deepEqual(unpackHeat({ lg: "nhl", f: 10, names: [], rows: "" }), []);
+});
+
+test("heatPack keeps a season in 7 rows and shrinks all-time to one GitHub-sized box", () => {
+  const season = heatPack(82);
+  assert.equal(season.rows, HEAT_ROWS);
+  assert.equal(season.cols, 12);
+  assert.equal(season.cell, 11);
+  const all = heatPack(2400);
+  assert.ok(all.cols * all.rows >= 2400);
+  assert.ok(all.cols * (all.cell + all.gap) <= HEAT_TARGET_COLS * 14);
+  assert.ok(all.rows * (all.cell + all.gap) <= HEAT_ROWS * 14 + 14);
+  const compact = heatPack(2400, true);
+  assert.ok(compact.cols * (compact.cell + compact.gap) <= 340);
+});
+
+test("an all-time list of thousands of games still packs to one grid whose square count matches", () => {
+  const games = Array.from({ length: 2400 }, (_, i) => {
+    const year = 2000 + Math.floor(i / 80);
+    return g({ date: `${year}-10-10`, id: i + 1, year, res: i % 3 === 0 ? "L" : "W" });
+  });
+  const pack = heatPack(2400);
+  const grid = buildHeat(games);
+  assert.ok(grid);
+  assert.equal(grid!.games, 2400);
+  assert.equal(cellsOf(grid!).length, 2400);
+  assert.equal(grid!.rows, pack.rows);
+  assert.equal(grid!.cols, pack.cols);
+  assert.ok(grid!.cols * (pack.cell + pack.gap) <= HEAT_TARGET_COLS * 14);
+  assert.ok(grid!.marks.length > 1);
 });

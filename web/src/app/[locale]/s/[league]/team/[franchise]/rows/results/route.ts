@@ -3,7 +3,7 @@ import { isLeague } from "@/lib/leagues";
 import { resultHeatPacked } from "@/lib/resultHeatData";
 import { teamOf } from "@/lib/teamSlugs";
 
-// What a franchise's GitHub-style results calendar draws, as JSON (/nhl/team/carolina-hurricanes/rows/results): the
+// What a franchise's GitHub-style results graph draws, as JSON (/nhl/team/carolina-hurricanes/rows/results): the
 // section on the franchise page fetches it when the reader gets near (components/ResultHeatLazy.tsx), so the page
 // itself carries none of it. Kept like the page (drawn on its first request, then a day). Nothing in it depends on
 // the language. No query is read.

@@ -296,7 +296,7 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
 
       <section className="section">
         <h2>{say("rheat.title")}</h2>
-        <p className="note">{say("rheat.lede")}</p>
+        <p className="note">{say(year != null ? "rheat.ledeSeason" : "rheat.lede")}</p>
         <div className="cmp">
           <div className="cmphead"><b style={{ color: "var(--ca)" }}>{na}</b><span /><b style={{ color: "var(--cb)" }}>{nb}</b></div>
           <div className="rheat-pair">
