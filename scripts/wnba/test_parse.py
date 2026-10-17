@@ -130,6 +130,22 @@ STAND_2024 = r"""
 <noinclude>{{Documentation}}</noinclude>
 """
 
+STAND_2002_WEST = r"""
+{{Table alignment}}
+{| class="wikitable defaultcenter col1left"
+! width=200| [[Western Conference (WNBA)|Western Conference]]
+! width=50| W
+! width=50| L
+! width=50| PCT
+! width=50| GB
+|- style="{{#ifeq:{{{team}}}|LAS|background-color:#CCFFCC}}"
+| [[Los Angeles Sparks]] <sup>z</sup> || 25 || 7 || .781 || –
+|- style="{{#ifeq:{{{team}}}|UTA|background-color:#CCFFCC}}"
+| [[Utah Starzz]] <sup>x</sup> || 20 || 12 || .625 || 5.0
+|}
+<noinclude>{{2002 WNBA Western Conference standings|team=PHO}}</noinclude>
+"""
+
 STAND_1997 = r"""
 {{Table alignment}}
 {| class="wikitable defaultcenter col1left"
@@ -215,6 +231,26 @@ class T(unittest.TestCase):
         self.assertEqual(P.resolve("Phoenix", "2024 Phoenix Mercury season", TEAMS_2024), ["Phoenix Mercury"])
         self.assertEqual(P.resolve("Cleveland", "1997 Cleveland Rockers season", TEAMS_1997), ["Cleveland Rockers"])
         self.assertEqual(P.resolve("Utah", None, TEAMS_1997), ["Utah Starzz"])
+
+    def test_seed_titles_cover_relocation_years(self):
+        s2002 = F.seed_team_titles(2002)
+        self.assertIn("2002 Utah Starzz season", s2002)
+        self.assertIn("2002 Orlando Miracle season", s2002)
+        self.assertNotIn("2002 Connecticut Sun season", s2002)
+        self.assertNotIn("2002 San Antonio Silver Stars season", s2002)
+        s2003 = F.seed_team_titles(2003)
+        self.assertIn("2003 Connecticut Sun season", s2003)
+        self.assertIn("2003 San Antonio Silver Stars season", s2003)
+        self.assertNotIn("2003 Utah Starzz season", s2003)
+        self.assertNotIn("2003 Orlando Miracle season", s2003)
+
+    def test_standings_2002_utah_starzz(self):
+        rows = P.parse_standings(STAND_2002_WEST, 2002)
+        names = {r["team"] for r in rows}
+        self.assertIn("Utah Starzz", names)
+        self.assertIn("Los Angeles Sparks", names)
+        uta = next(r for r in rows if r["team"] == "Utah Starzz")
+        self.assertEqual((uta["w"], uta["l"]), (20, 12))
 
 
 if __name__ == "__main__":

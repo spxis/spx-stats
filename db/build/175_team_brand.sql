@@ -20,8 +20,8 @@ drop table if exists pg_temp.seed_home;
 create temp table seed_home (league text, franchise text, qid text, from_d date, until_d date, source text, source_url text, note text);
 \copy seed_home from 'db/seed/home_venue.csv' with (format csv, header true)
 
-delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikidata');
-delete from core.franchise_brand where source_id = (select source_id from meta.source where code = 'wikipedia');
+-- Insert missing brand rows only (on conflict do nothing below). Do not delete all wikidata/wikipedia
+-- brands: a WNBA load must not rewrite other leagues' franchise_brand ids.
 
 create or replace function pg_temp.norm(t text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;

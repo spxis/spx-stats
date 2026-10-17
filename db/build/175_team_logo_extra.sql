@@ -15,13 +15,11 @@
 --                (a PD SVG for a raster of the same kind). The rows it replaces lose their logo and keep their colours and venue.
 --   note         why this file, for whoever reads the CSV
 -- Runs after 175_team_brand.sql (the Wikidata rows exist) and before 175_team_logo_fit.sql (which checks its files against the logos), from
--- the repo root, as scripts/build_core.sh does. Rerunnable: it first removes the rows of the two sources it writes. A file the seed names
--- that the legacy tables lack is reported, not guessed.
+-- the repo root, as scripts/build_core.sh does. Rerunnable: inserts missing rows of the two sources it writes (does not delete all of
+-- them, so a WNBA load does not rewrite other leagues). A file the seed names that the legacy tables lack is reported, not guessed.
 drop table if exists pg_temp.seed_logo_extra;
 create temp table seed_logo_extra (league text, team text, from_year integer, to_year integer, source text, file_key text, replaces text, note text);
 \copy seed_logo_extra from 'db/seed/logo_extra.csv' with (format csv, header true)
-
-delete from core.franchise_brand where source_id in (select source_id from meta.source where code in ('wikimedia_commons', 'sportslogos'));
 
 create or replace function pg_temp.norm(t text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;

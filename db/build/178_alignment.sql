@@ -1,6 +1,7 @@
 -- League alignment: conferences, divisions and each team's place in them, season by season.
--- Safe to re-run: it rebuilds core.conference, core.division and team_season.conference_id / division_id
--- and the alignment rows it wrote to meta.verification / meta.data_issue, and nothing else.
+-- Safe to re-run: it upserts core.conference, core.division and team_season.conference_id / division_id
+-- and the alignment rows it wrote to meta.verification / meta.data_issue. Unchanged rows of other
+-- leagues keep their ids (a WNBA load must not rewrite NHL/NBA/MLB/NFL/CFL alignment or flood verification).
 -- Run on its own (psql -v ON_ERROR_STOP=1 -f); it is not part of build_core.sh, which recreates team_seasons.
 --
 -- Level names: the "conference" level is the league in MLB (American / National League, and the 19th-century
@@ -199,7 +200,13 @@ select w.*, coalesce(
         and w.fl like '%' || pg_temp.flat(ts.nickname) || '%' having count(*) = 1),
     (select min(ts.franchise_id) from ts where ts.lg = w.lg and ts.y = w.y and ts.nickname is not null
         and length(pg_temp.flat(regexp_replace(ts.nickname, '^.* ', ''))) > 4
-        and w.fl like '%' || pg_temp.flat(regexp_replace(ts.nickname, '^.* ', '')) having count(*) = 1)) franchise_id
+        and w.fl like '%' || pg_temp.flat(regexp_replace(ts.nickname, '^.* ', '')) having count(*) = 1),
+    -- Relocation year with no identity of its own (2002 Utah Starzz, 2003 Connecticut Sun): the
+    -- nearest era's name is the other city's, so match any name that franchise has borne.
+    (select min(ts.franchise_id) from ts
+     join core.franchise_identity i on i.franchise_id = ts.franchise_id
+     where ts.lg = w.lg and ts.y = w.y and pg_temp.flat(i.full_name) = w.fl
+     having count(distinct ts.franchise_id) = 1)) franchise_id
 from wt w;
 insert into ev0
 select lg, y, franchise_id, 'wikipedia', 3, case when kind = 'conference' then grp end, case when kind = 'division' then grp end, parent_grp
@@ -234,18 +241,19 @@ from (select lg, y, dname, (array_agg(cname order by n desc))[1] cname, (array_a
 where p.cname is null and p.dname is not null and p.lg = q.lg and p.y = q.y and p.dname = q.dname and p.lg <> 'nhl';
 
 -- ---------------------------------------------------------------------------------------------- the check
-delete from meta.verification where entity_kind = 'team_season' and field in ('conference', 'division')
-  and source_id in (select source_id from src);
-delete from meta.data_issue where entity_kind = 'team_season' and entity_key like 'alignment:%';
--- (the unmatched-template issues above were just deleted with them: write them again)
-insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
-select (select source_id from src where code = 'wikipedia'), 'team_season', 'alignment:' || lg || ':' || y || ':' || team_name,
-       'Standings template ' || template || ' lists a club that matches none of that season''s clubs', 'Left out of the alignment'
+-- Upsert only: do not delete-all then insert (that rewrote every league's verification ids).
+create temp table new_iss as
+select (select source_id from src where code = 'wikipedia') as source_id, 'team_season'::text as entity_kind,
+       'alignment:' || lg || ':' || y || ':' || team_name as entity_key,
+       'Standings template ' || template || ' lists a club that matches none of that season''s clubs' as issue,
+       'Left out of the alignment'::text as resolution
 from (select distinct lg, y, template, team_name from wmatch where franchise_id is null) w
-where exists (select 1 from ts where ts.lg = w.lg and ts.y = w.y);
-insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
-select (select source_id from src where code = 'spx_database'), 'team_season', 'alignment:nba:' || f.y || ':' || t.team_season_id || ':division',
-       'SPX filed the Southwest Division as "Central" in the Western Conference', 'Read as Southwest, which the Wikipedia standings template of the season confirms'
+where exists (select 1 from ts where ts.lg = w.lg and ts.y = w.y)
+union all
+select (select source_id from src where code = 'spx_database'), 'team_season',
+       'alignment:nba:' || f.y || ':' || t.team_season_id || ':division',
+       'SPX filed the Southwest Division as "Central" in the Western Conference',
+       'Read as Southwest, which the Wikipedia standings template of the season confirms'
 from spxfix f join ts t on t.lg = f.lg and t.y = f.y and t.franchise_id = f.franchise_id;
 
 create temp table cmp as
@@ -259,11 +267,7 @@ where p.dname is not null;
 -- one row per (team season, field, source): when a source gave several (the NBA's division and conference templates), the disputed one first
 create temp table cmp1 as
 select distinct on (team_season_id, field, src) *, (their is not distinct from chosen) agrees from cmp order by team_season_id, field, src, (their is not distinct from chosen);
-insert into meta.verification (entity_kind, entity_id, field, status, source_id, evidence_url, their_value)
-select 'team_season', c.team_season_id, c.field, case when c.agrees then 'confirmed' else 'disputed' end::meta.verification_status,
-       (select source_id from src where code = c.src), null, coalesce(c.their_raw, c.their)
-from cmp1 c;
-insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+insert into new_iss
 select (select source_id from src where code = c.src), 'team_season', 'alignment:' || c.lg || ':' || c.y || ':' || c.team_season_id || ':' || c.field,
        format('%s says %s %s; %s has %s', c.src, c.field, c.their, c.chosen_src, c.chosen), format('Kept %s from %s', c.chosen, c.chosen_src)
 from cmp1 c where not c.agrees;
@@ -283,20 +287,50 @@ from pick p
 join nflpair n on n.y = p.y and p.franchise_id in (n.f1, n.f2)
 join pick o on o.lg = 'nfl' and o.y = p.y and o.franchise_id = (case when p.franchise_id = n.f1 then n.f2 else n.f1 end)
 where p.lg = 'nfl' group by 1, 2, 3;
-insert into meta.verification (entity_kind, entity_id, field, status, source_id, their_value)
-select 'team_season', team_season_id, 'division', case when diff = 0 then 'confirmed' else 'disputed' end::meta.verification_status,
-       (select source_id from src where code = 'nflverse'), case when diff = 0 then 'plays its division games only against ' || dname else 'division games against ' || others end
-from nflchk;
-insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+insert into new_iss
 select (select source_id from src where code = 'nflverse'), 'team_season', 'alignment:nfl:' || y || ':' || team_season_id || ':division',
        format('nflverse div_game: %s met %s in division games', dname, others), 'Kept the chosen division'
 from nflchk where diff > 0;
 
--- ---------------------------------------------------------------------------------------------- conferences, divisions
-update core.team_season set conference_id = null, division_id = null where conference_id is not null or division_id is not null;
-delete from core.division;
-delete from core.conference;
+create temp table new_ver as
+select 'team_season'::text as entity_kind, c.team_season_id as entity_id, c.field,
+       case when c.agrees then 'confirmed' else 'disputed' end::meta.verification_status as status,
+       (select source_id from src where code = c.src) as source_id, null::text as evidence_url, coalesce(c.their_raw, c.their) as their_value
+from cmp1 c
+union all
+select 'team_season', team_season_id, 'division', case when diff = 0 then 'confirmed' else 'disputed' end::meta.verification_status,
+       (select source_id from src where code = 'nflverse'), null,
+       case when diff = 0 then 'plays its division games only against ' || dname else 'division games against ' || others end
+from nflchk;
 
+update meta.verification v set status = n.status, evidence_url = n.evidence_url, their_value = n.their_value, checked_at = now()
+from new_ver n
+where v.entity_kind = n.entity_kind and v.entity_id = n.entity_id and v.field = n.field and v.source_id = n.source_id
+  and (v.status, v.evidence_url, v.their_value) is distinct from (n.status, n.evidence_url, n.their_value);
+insert into meta.verification (entity_kind, entity_id, field, status, source_id, evidence_url, their_value)
+select n.entity_kind, n.entity_id, n.field, n.status, n.source_id, n.evidence_url, n.their_value
+from new_ver n
+where not exists (select 1 from meta.verification v
+                  where v.entity_kind = n.entity_kind and v.entity_id = n.entity_id and v.field = n.field and v.source_id = n.source_id);
+delete from meta.verification v
+where v.entity_kind = 'team_season' and v.field in ('conference', 'division')
+  and v.source_id in (select source_id from src)
+  and not exists (select 1 from new_ver n where n.entity_id = v.entity_id and n.field = v.field and n.source_id = v.source_id);
+
+update meta.data_issue d set issue = n.issue, resolution = n.resolution
+from new_iss n
+where d.entity_kind = n.entity_kind and d.entity_key = n.entity_key and d.source_id = n.source_id
+  and (d.issue, d.resolution) is distinct from (n.issue, n.resolution);
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select n.source_id, n.entity_kind, n.entity_key, n.issue, n.resolution
+from new_iss n
+where not exists (select 1 from meta.data_issue d
+                  where d.entity_kind = n.entity_kind and d.entity_key = n.entity_key and d.source_id is not distinct from n.source_id);
+delete from meta.data_issue d
+where d.entity_kind = 'team_season' and d.entity_key like 'alignment:%'
+  and not exists (select 1 from new_iss n where n.entity_key = d.entity_key and n.source_id is not distinct from d.source_id);
+
+-- ---------------------------------------------------------------------------------------------- conferences, divisions
 create temp table sord as select league_code lg, start_year::int y, row_number() over (partition by league_code order by start_year) ord from core.season;
 -- (a league that no longer plays, the AFL, has no open-ended group: its last season is its last)
 create temp table lastyear as select p.lg, case when l.dissolved_on is null then max(p.y) end as ly
@@ -310,9 +344,10 @@ select lg, cname, cshort, min(y) first_y, max(y) last_y, island from (
     select z.*, lag(ord) over (partition by lg, cname order by y) prev
     from (select distinct p.lg, p.cname, p.cshort, p.y, s.ord from pick p join sord s on s.lg = p.lg and s.y = p.y where p.cname is not null) z) w) q
 group by lg, cname, cshort, island;
-insert into core.conference (league_code, name, short_name, first_season, last_season)
-select c.lg, c.cname, c.cshort, c.first_y, case when c.last_y = l.ly then null else c.last_y end
-from cruns c join lastyear l using (lg) order by c.lg, c.first_y, c.cname;
+create temp table newc as
+select c.lg as league_code, c.cname as name, c.cshort as short_name, c.first_y as first_season,
+       case when c.last_y = l.ly then null else c.last_y end as last_season
+from cruns c join lastyear l using (lg);
 
 create temp table druns as
 select lg, cname, dname, dshort, min(y) first_y, max(y) last_y, island from (
@@ -320,21 +355,71 @@ select lg, cname, dname, dshort, min(y) first_y, max(y) last_y, island from (
     select z.*, lag(ord) over (partition by lg, dname, cname order by y) prev
     from (select distinct p.lg, p.cname, p.dname, p.dshort, p.y, s.ord from pick p join sord s on s.lg = p.lg and s.y = p.y where p.dname is not null) z) w) q
 group by lg, cname, dname, dshort, island;
+create temp table newd as
+select d.lg as league_code, d.cname as conference_name, d.dname as name, d.dshort as short_name, d.first_y as first_season,
+       case when d.last_y = l.ly then null else d.last_y end as last_season
+from druns d join lastyear l using (lg);
+
+update core.conference c set short_name = n.short_name, last_season = n.last_season
+from newc n
+where c.league_code = n.league_code and c.name = n.name and c.first_season = n.first_season
+  and (c.short_name, c.last_season) is distinct from (n.short_name, n.last_season);
+insert into core.conference (league_code, name, short_name, first_season, last_season)
+select n.league_code, n.name, n.short_name, n.first_season, n.last_season
+from newc n
+where not exists (select 1 from core.conference c
+                  where c.league_code = n.league_code and c.name = n.name and c.first_season = n.first_season);
+
+update core.division d set short_name = n.short_name, last_season = n.last_season, conference_id = c.conference_id
+from newd n
+left join core.conference c on c.league_code = n.league_code and c.name = n.conference_name
+  and n.first_season >= c.first_season and n.first_season <= coalesce(c.last_season, 32767)
+where d.league_code = n.league_code and d.name = n.name and d.first_season = n.first_season
+  and (d.short_name, d.last_season, d.conference_id) is distinct from (n.short_name, n.last_season, c.conference_id);
 insert into core.division (league_code, conference_id, name, short_name, first_season, last_season)
-select d.lg, c.conference_id, d.dname, d.dshort, d.first_y, case when d.last_y = l.ly then null else d.last_y end
-from druns d join lastyear l using (lg)
-left join core.conference c on c.league_code = d.lg and c.name = d.cname and d.first_y >= c.first_season and d.first_y <= coalesce(c.last_season, 32767)
-order by d.lg, d.first_y, d.dname;
+select n.league_code, c.conference_id, n.name, n.short_name, n.first_season, n.last_season
+from newd n
+left join core.conference c on c.league_code = n.league_code and c.name = n.conference_name
+  and n.first_season >= c.first_season and n.first_season <= coalesce(c.last_season, 32767)
+where not exists (select 1 from core.division d
+                  where d.league_code = n.league_code and d.name = n.name and d.first_season = n.first_season);
 
 update core.team_season t set conference_id = c.conference_id
-from pick p, core.conference c
+from pick p
+join newc n on n.league_code = p.lg and n.name = p.cname
+  and p.y between n.first_season and coalesce(n.last_season, 32767)
+join core.conference c on c.league_code = n.league_code and c.name = n.name and c.first_season = n.first_season
 where t.team_season_id = p.team_season_id and p.cname is not null
-  and c.league_code = p.lg and c.name = p.cname and p.y between c.first_season and coalesce(c.last_season, 32767);
+  and t.conference_id is distinct from c.conference_id;
 update core.team_season t set division_id = d.division_id
 from pick p
-join core.division d on d.league_code = p.lg and d.name = p.dname and p.y between d.first_season and coalesce(d.last_season, 32767)
-left join core.conference c on c.conference_id = d.conference_id
-where t.team_season_id = p.team_season_id and p.dname is not null and c.name is not distinct from p.cname;
+join newd n on n.league_code = p.lg and n.name = p.dname
+  and p.y between n.first_season and coalesce(n.last_season, 32767)
+  and n.conference_name is not distinct from p.cname
+join core.division d on d.league_code = n.league_code and d.name = n.name and d.first_season = n.first_season
+where t.team_season_id = p.team_season_id and p.dname is not null
+  and t.division_id is distinct from d.division_id;
+update core.team_season t set conference_id = null
+where t.conference_id is not null
+  and not exists (select 1 from pick p where p.team_season_id = t.team_season_id and p.cname is not null);
+update core.team_season t set division_id = null
+where t.division_id is not null
+  and not exists (select 1 from pick p where p.team_season_id = t.team_season_id and p.dname is not null);
+
+update core.team_season t set division_id = null
+where t.division_id in (select d.division_id from core.division d
+                        where not exists (select 1 from newd n
+                                          where n.league_code = d.league_code and n.name = d.name and n.first_season = d.first_season));
+delete from core.division d
+where not exists (select 1 from newd n
+                  where n.league_code = d.league_code and n.name = d.name and n.first_season = d.first_season);
+update core.team_season t set conference_id = null
+where t.conference_id in (select c.conference_id from core.conference c
+                          where not exists (select 1 from newc n
+                                            where n.league_code = c.league_code and n.name = c.name and n.first_season = c.first_season));
+delete from core.conference c
+where not exists (select 1 from newc n
+                  where n.league_code = c.league_code and n.name = c.name and n.first_season = c.first_season);
 
 -- ---------------------------------------------------------------------------------------------- report
 select lg, count(*) filter (where cname is not null) with_conference, count(*) filter (where dname is not null) with_division, count(*) team_seasons

@@ -10,12 +10,13 @@ The cache defaults to ~/Projects/backups/spx-stats/raw/wikipedia_wnba/<run date>
 Never used: Sports Reference sites, ESPN, the WNBA's own site or feeds (their terms bar automated collection). Recap
 links some club logs transclude are not followed.
 """
-import os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request
+import csv, os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 
 UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 GAP = 2.5
 RUN_DATE = os.environ.get("WNBA_RUN_DATE", "2026-10-16")
 CACHE = os.environ.get("WNBA_CACHE", os.path.expanduser(f"~/Projects/backups/spx-stats/raw/wikipedia_wnba/{RUN_DATE}"))
+SEED = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "db", "seed", "wnba_club.csv")
 _last = [0.0]
 CTX = ssl.create_default_context()
 
@@ -92,19 +93,42 @@ def team_titles(y, text):
     return out
 
 
+def seed_team_titles(y):
+    """Club-season titles from db/seed/wnba_club.csv for clubs that played this year.
+
+    Early WNBA standings templates name clubs as [[Utah Starzz]], not [[2002 Utah Starzz season]],
+    so team_titles() alone misses relocation and fold years (2002 Starzz, 2003 Connecticut Sun).
+    """
+    out = set()
+    with open(SEED, encoding="utf-8", newline="") as f:
+        for row in csv.DictReader(f):
+            if int(row["first_year"]) <= y <= int(row["last_year"]):
+                out.add(f"{y} {row['club']} season")
+    return out
+
+
 def fetch_season(y):
     """Fetch the season article, its standings templates and every club-season article they (or the season article) name.
     Returns (files relative to CACHE, template titles, club-season titles)."""
+    import parse as P
     files = []
     stext = page("season", season_title(y), files)
     if stext is None: return [], [], []
     if y == FIRST: page("league", "Women's National Basketball Association", files)
     tpl = template_titles(y, stext)
     ttext = ""
+    from_standings = set()
     for t in tpl:
         x = page("template", "Template:" + t, files)
-        if x: ttext += x
-    teams = team_titles(y, (ttext + "\n" + stext))
+        if x:
+            ttext += x
+            for r in P.parse_standings(x, y):
+                if r.get("team"):
+                    from_standings.add(f"{y} {r['team']} season")
+    nav = page("template", f"Template:{y} WNBA season by team", files)
+    if nav:
+        ttext += "\n" + nav
+    teams = team_titles(y, ttext + "\n" + stext) | from_standings | seed_team_titles(y)
     for t in sorted(teams):
         page("team", t, files)
     return sorted(set(files)), tpl, sorted(teams)

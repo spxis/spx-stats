@@ -125,10 +125,24 @@ from (select yr, coalesce((select max(coalesce(w, 0) + coalesce(l, 0)) from nst 
       from (select distinct yr from ng) y) x
 where s.league_code = 'wnba' and s.start_year = x.yr and s.games_per_team is null and x.gp > 0;
 
+-- Names from fetched club-season pages, else the seed: a relocation year whose article was not
+-- fetched (2002 Utah Starzz, 2003 Connecticut Sun) still gets an identity covering that season.
 create temp table nm as
-select distinct on (yr, franchise_id) yr, franchise_id, team_name as full_name,
-       case when team_name ~ ' Silver Stars$' then 'Silver Stars' else regexp_replace(team_name, '^.* ', '') end as nickname
-from nts order by yr, franchise_id, team_name;
+select distinct on (yr, franchise_id) yr, franchise_id, full_name, nickname
+from (
+  select t.yr, t.franchise_id, t.team_name as full_name,
+         case when t.team_name ~ ' Silver Stars$' then 'Silver Stars' else regexp_replace(t.team_name, '^.* ', '') end as nickname,
+         1 as prio
+  from nts t
+  union all
+  select gs.yr, a.franchise_id, a.club,
+         case when a.club ~ ' Silver Stars$' then 'Silver Stars' else regexp_replace(a.club, '^.* ', '') end,
+         2
+  from am a
+  cross join lateral generate_series(a.y0, least(a.y1, (select coalesce(max(yr), a.y0) from seasons))) gs(yr)
+  where gs.yr in (select yr from seasons)
+) x
+order by yr, franchise_id, prio, full_name;
 create temp table fr as select distinct franchise_id from nm;
 create temp table wnbafr as
 select franchise_id from core.franchise_league where league_code = 'wnba'

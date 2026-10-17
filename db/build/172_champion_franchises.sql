@@ -33,15 +33,12 @@ update core.award_winner w set team_season_id = t.team_season_id
 from pick k join core.team_season t on t.franchise_id = k.franchise_id and t.season_id = k.season_id
 where w.award_winner_id = k.award_winner_id;
 
-delete from meta.data_issue where entity_kind = 'award_winner' and entity_key like 'final:%:outside'
-  and source_id = (select source_id from meta.source where code = 'spx_stats_derived');
-
 -- A champion whose franchise never had a regular-season standing in the league (it met league clubs in the final but was not a member).
-insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
-select w.source_id, 'award_winner', 'final:' || s.league_code || ':' || s.start_year || ':outside',
+create temp table new_outside as
+select w.source_id, 'award_winner'::text as entity_kind, 'final:' || s.league_code || ':' || s.start_year || ':outside' as entity_key,
        format('%s %s: %s won the final but never played a regular season in the %s, so the all-time page (league clubs only) has one title fewer than the champions list',
-              upper(s.league_code), s.start_year, w.winner_name, upper(s.league_code)),
-       'Kept as champion; not counted among the league clubs'
+              upper(s.league_code), s.start_year, w.winner_name, upper(s.league_code)) as issue,
+       'Kept as champion; not counted among the league clubs'::text as resolution
 from core.award_winner w join core.award a using (award_id) join core.season s using (season_id)
 join core.team_season ts on ts.team_season_id = w.team_season_id
 where a.kind = 'championship' and w.source_id = (select source_id from meta.source where code = 'spx_stats_derived')
@@ -51,6 +48,14 @@ where a.kind = 'championship' and w.source_id = (select source_id from meta.sour
                   where t.franchise_id = ts.franchise_id)
   and not exists (select 1 from core.team_season t join core.season ls on ls.season_id = t.season_id and ls.league_code = s.league_code
                   join core.standing x on x.team_season_id = t.team_season_id where t.franchise_id = ts.franchise_id);
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select source_id, entity_kind, entity_key, issue, resolution from new_outside n
+where not exists (select 1 from meta.data_issue d
+                  where d.entity_kind = n.entity_kind and d.entity_key = n.entity_key and d.source_id is not distinct from n.source_id);
+delete from meta.data_issue d
+where d.entity_kind = 'award_winner' and d.entity_key like 'final:%:outside'
+  and d.source_id = (select source_id from meta.source where code = 'spx_stats_derived')
+  and not exists (select 1 from new_outside n where n.entity_key = d.entity_key);
 
 select 'champions linked' as k, count(*) from pick
 union all select 'outside the league', count(*) from meta.data_issue where entity_kind = 'award_winner' and entity_key like 'final:%:outside';

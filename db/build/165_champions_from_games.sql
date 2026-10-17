@@ -2,9 +2,8 @@
 -- season's last playoff game played the final (in the NFL and CFL that game is the final); whoever won more of their
 -- playoff games against each other won it. Kept only where every game of that
 -- final has a result. Source: spx_stats_derived (the games keep their own).
+-- Rerun upserts: a WNBA load must not rewrite other leagues' derived champion rows.
 begin;
-
-delete from core.award_winner where source_id = (select source_id from meta.source where code = 'spx_stats_derived');
 
 create temp table po as
 select g.game_id, g.season_id, s.league_code, s.start_year, g.game_date, g.status, g.home_team_season_id h, g.away_team_season_id a,
@@ -24,11 +23,11 @@ from last_game l join po p on p.season_id = l.season_id and ((p.h = l.h and p.a 
 where l.league_code not in ('nfl', 'cfl', 'afl', 'aafc') or p.game_id = (select game_id from po q where q.season_id = l.season_id order by q.game_date desc, q.game_id desc limit 1)
 group by 1, 2, 3, 4, 5;
 
-insert into core.award_winner (award_id, season_id, team_season_id, winner_name, note, source_id, source_key)
-select a.award_id, f.season_id, w.team_season_id, coalesce(wi.full_name, 'franchise ' || w.franchise_id),
+create temp table new_champs as
+select a.award_id, f.season_id, w.team_season_id, coalesce(wi.full_name, 'franchise ' || w.franchise_id) as winner_name,
        case when f.games = 1 then format('Won the final %s-%s against %s', greatest(sc.ws, sc.ls), least(sc.ws, sc.ls), coalesce(li.full_name, 'their opponent'))
-            else format('Won the final %s games to %s against %s', greatest(f.t1_wins, f.t2_wins), least(f.t1_wins, f.t2_wins), coalesce(li.full_name, 'their opponent')) end,
-       (select source_id from meta.source where code = 'spx_stats_derived'), 'final:' || f.league_code || ':' || f.start_year
+            else format('Won the final %s games to %s against %s', greatest(f.t1_wins, f.t2_wins), least(f.t1_wins, f.t2_wins), coalesce(li.full_name, 'their opponent')) end as note,
+       (select source_id from meta.source where code = 'spx_stats_derived') as source_id, 'final:' || f.league_code || ':' || f.start_year as source_key
 from final_series f
 join core.award a on a.league_code = f.league_code and a.kind = 'championship'
 join core.team_season w on w.team_season_id = case when f.t1_wins > f.t2_wins then f.t1 else f.t2 end
@@ -40,6 +39,17 @@ left join lateral (select greatest(home_score, away_score) ws, least(home_score,
                    order by game_date desc, game_id desc limit 1) sc on true
 -- (The NHA, PCHA, WCHL and WHA name their champions from the articles, db/build/154: their playoffs were often two-game total-goals series.)
 where f.finals = f.games and f.t1_wins <> f.t2_wins and f.league_code not in ('nha', 'pcha', 'wchl', 'wha');
+
+delete from core.award_winner w
+where w.source_id = (select source_id from meta.source where code = 'spx_stats_derived')
+  and not exists (select 1 from new_champs n
+                  where n.award_id = w.award_id and n.season_id = w.season_id and n.winner_name = w.winner_name);
+insert into core.award_winner (award_id, season_id, team_season_id, winner_name, note, source_id, source_key)
+select award_id, season_id, team_season_id, winner_name, note, source_id, source_key from new_champs
+on conflict (award_id, season_id, winner_name, source_id) do update
+set note = excluded.note, team_season_id = excluded.team_season_id, source_key = excluded.source_key
+where (core.award_winner.note, core.award_winner.team_season_id, core.award_winner.source_key)
+  is distinct from (excluded.note, excluded.team_season_id, excluded.source_key);
 
 select a.league_code, count(*), min(s.start_year), max(s.start_year) from core.award_winner w join core.award a using (award_id) join core.season s using (season_id)
 where w.source_id = (select source_id from meta.source where code = 'spx_stats_derived') group by 1 order by 1;
