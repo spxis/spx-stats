@@ -15,7 +15,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
 import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
-import { playerPath } from "@/lib/playerPath";
+import { getPlayerPaths } from "@/lib/playerLinks";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
 import { PeopleTabs } from "./PeopleTabs";
@@ -56,13 +56,14 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const source = parsed.source ?? "";
   const sort = parseSort(query.sort, Object.keys(PEOPLE_SORTS), DEF_SORT).slice(0, 1);
   const sortText = formatSort(sort);
-  const [result, span, countries, sports, sources, counts] = await Promise.all([
+  const [result, span, countries, sports, sources, counts, player] = await Promise.all([
     searchPeople(parsed, parsed.page, sort),
     peopleSpan(),
     peopleCountries(),
     peopleSports(),
     peopleSources(),
     peopleLetterCounts(letterBy),
+    getPlayerPaths(),
   ]);
   const range = span ? rangeFromQuery(first(query.from), first(query.to), span.min, span.max) : null;
   const keep = {
@@ -105,16 +106,12 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const table = result.kind === "ok" ? tableOf(result.rows, [
     {
       key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PersonAdminRow) => p.name,
-      cell: (p: PersonAdminRow) => {
-        const lg = p.leagues?.find(Boolean) ?? null;
-        const player = lg ? playerPath(lg, p.person_id, p.name) : null;
-        return (
-          <div>
-            {player ? <Link href={player} prefetch={false}>{p.name}</Link> : <strong>{p.name}</strong>}
-            <div className="note">#{p.person_id}{p.kind !== "player" ? `, ${p.kind}` : ""}</div>
-          </div>
-        );
-      },
+      cell: (p: PersonAdminRow) => (
+        <div>
+          {p.leagues?.[0] ? <Link href={player(p.person_id, p.name, p.leagues[0])} prefetch={false}>{p.name}</Link> : <strong>{p.name}</strong>}
+          <div className="note">#{p.person_id}{p.kind !== "player" ? `, ${p.kind}` : ""}</div>
+        </div>
+      ),
     },
     { key: "sports", label: say("peopleAdmin.sport.aria"), rest: "sports", get: (p: PersonAdminRow) => p.sports[0] ?? "", cell: (p: PersonAdminRow) => (p.sports.length ? p.sports.join(", ") : dash) },
     {
