@@ -20,7 +20,7 @@ select l.season_id, l.league_code, l.start_year, l.h as t1, l.a as t2,
        count(*) filter (where (p.h = l.a and p.home_score > p.away_score) or (p.a = l.a and p.away_score > p.home_score)) as t2_wins
 from last_game l join po p on p.season_id = l.season_id and ((p.h = l.h and p.a = l.a) or (p.h = l.a and p.a = l.h))
 -- The NFL and CFL decide it in one game: the last one, not an earlier meeting filed under the playoffs.
-where l.league_code not in ('nfl', 'cfl', 'afl', 'aafc') or p.game_id = (select game_id from po q where q.season_id = l.season_id order by q.game_date desc, q.game_id desc limit 1)
+where l.league_code not in ('nfl', 'cfl', 'afl', 'aafc', 'nwsl') or p.game_id = (select game_id from po q where q.season_id = l.season_id order by q.game_date desc, q.game_id desc limit 1)
 group by 1, 2, 3, 4, 5;
 
 create temp table new_champs as
