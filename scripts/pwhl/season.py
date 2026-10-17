@@ -163,7 +163,7 @@ def run(y, dry=False):
         k = (r["team"], r["division"])
         if k in seen: continue
         seen.add(k)
-        out.append("insert into %s.standing values (%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);" % (
+        out.append("insert into %s.standing values (%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);" % (
             S, y, q(r["team"]), q(r["division"]), n(r.get("gp")), n(r.get("w")), n(r.get("l")), n(r.get("otl")),
             n(r.get("pts")), n(r.get("gf")), n(r.get("ga")), q(r.get("pct")), q(r.get("gb")),
             q(r.get("home")), q(r.get("road")), q(r["src"])))
