@@ -84,30 +84,38 @@ def page(sub, title, files=None):
 
 
 def template_titles(y, text):
-    """Standings templates a season article transcludes: {{2023–24 PWHL standings}}."""
-    sp = re.escape(span(y))
-    hy = re.escape(f"{y}-{str(y + 1)[2:]}")
+    """Standings templates a season article transcludes. The first season's article is
+    '2024 PWHL season' (a redirect from 2023–24) and its template is '{{2024 PWHL season standings}}'."""
     return sorted(set(m.strip() for m in re.findall(
-        r"\{\{\s*((?:%s|%s) PWHL[^{}|]*?[Ss]tandings)\s*(?:\|[^{}]*)?\}\}" % (sp, hy), text)))
+        r"\{\{\s*((?:\d{4}[–-]\d{2}|\d{4}) PWHL[^{}|]*?[Ss]tandings)\s*(?:\|[^{}]*)?\}\}", text)))
 
 
 def team_titles(y, text):
-    """Club-season articles named in a season page or its standings templates: [[2023–24 PWHL Minnesota season|...]]."""
-    sp = re.escape(span(y))
-    hy = re.escape(f"{y}-{str(y + 1)[2:]}")
+    """Club-season articles: [[2023–24 PWHL Minnesota season]], [[2024–25 Boston Fleet season]]."""
     out = set()
-    for m in re.findall(r"\[\[((?:%s|%s) [^\]|#]+? season)" % (sp, hy), text):
-        if re.fullmatch(r"(?:%s|%s) PWHL season" % (sp, hy), m): continue
+    for m in re.findall(r"\[\[(\d{4}(?:[–-]\d{2})? [^\]|#]+? season)", text):
+        if re.search(r"\bPWHL season$", m): continue
         if re.search(r"(draft|Playoffs|Finals|All-Star|Championship|Takeover)$", m, re.I): continue
+        if "PWHL" not in m and not re.search(
+                r"(Boston|Minnesota|Montreal|New York|Ottawa|Toronto|Seattle|Vancouver)", m):
+            continue
         out.add(m.strip())
     return out
 
 
+def playoff_titles(y):
+    """Playoffs of the season that starts in y: '2025 PWHL playoffs' for 2024-25. The first
+    season's series are on the season article (the 2024 playoffs page redirects there)."""
+    return [f"{y + 1} PWHL playoffs", f"{y + 1} Walter Cup playoffs"]
+
+
 def fetch_season(y):
-    """Fetch the season article, its standings templates and every club-season article they (or the season article) name.
+    """Fetch the season article, its standings templates, playoff page and every club-season article they name.
     Returns (files relative to CACHE, template titles, club-season titles)."""
     files = []
     stext = page("season", season_title(y), files)
+    if stext is None and y == FIRST:
+        stext = page("season", "2024 PWHL season", files)
     if stext is None: return [], [], []
     if y == FIRST: page("league", "Professional Women's Hockey League", files)
     tpl = template_titles(y, stext)
@@ -115,6 +123,9 @@ def fetch_season(y):
     for t in tpl:
         x = page("template", "Template:" + t, files)
         if x: ttext += x
+    for t in playoff_titles(y):
+        ptext = page("playoffs", t, files)
+        if ptext: ttext += "\n" + ptext
     teams = team_titles(y, (ttext + "\n" + stext))
     for t in sorted(teams):
         page("team", t, files)
