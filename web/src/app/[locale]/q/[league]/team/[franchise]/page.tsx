@@ -12,6 +12,7 @@ import { RetiredBanners } from "@/components/RetiredBanners";
 import { FranchiseCountries } from "@/components/FranchiseCountries";
 import { TeamChartsLazy } from "@/components/TeamChartsLazy";
 import { OpponentHeatLazy } from "@/components/OpponentHeatLazy";
+import { ResultHeatLazy } from "@/components/ResultHeatLazy";
 import { Credits } from "@/components/Credits";
 import { AddressLink } from "@/components/AddressLink";
 import { venueMapsUrl } from "@/lib/venueAddress";
@@ -249,6 +250,13 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
         {rows.length ? <CompareControl lg={lg} f={f} name={now} teamPath={at.path} /> : null}
       </section>
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
+      {rows.length ? (
+        <section className="section">
+          <h2>{say("rheat.title")}</h2>
+          <p className="note">{say("rheat.lede")}</p>
+          <ResultHeatLazy teamPath={at.path} lg={lg} />
+        </section>
+      ) : null}
       {nTitles ? (
         <div className="trophyrow fade">
           <div className="trophies"><b>{nTitles}</b>{nTitles > 1 && nTitles <= 5 ? <span className="cups">{[...cup.map((c) => c.year), ...t.titles].map((y) => <Trophy key={y} league={lg} className="cup" />)}</span> : <Trophy league={lg} className="cup" />}</div>

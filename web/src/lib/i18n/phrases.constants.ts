@@ -2368,6 +2368,17 @@ export const PHRASES = {
   "opheat.count": "Showing {shown} of {total} opponents",
   "opheat.empty": "No games match these choices.",
   "opheat.keys": "Arrow keys move between squares; Enter opens the games.",
+  "rheat.title": "Results calendar",
+  "rheat.lede": "Every day from the first game through the last. A day with no game is empty.",
+  "rheat.span": "{from} – {to}",
+  "rheat.empty": "No games in this span.",
+  "rheat.yearAria": "Results in {year}",
+  "rheat.legend.none": "No game",
+  "rheat.legend.pending": "No result yet",
+  "rheat.legend.split": "More than one result",
+  "rheat.card.none": "No game",
+  "rheat.card.home": "{res} {score} vs {opp}",
+  "rheat.card.away": "{res} {score} at {opp}",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;

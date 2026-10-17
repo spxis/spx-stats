@@ -12,9 +12,11 @@ import { recordParts, type RecordPart } from "@/lib/record";
 import { matchesResult, resultOptions, type ResultFilter } from "@/lib/resultFilter";
 import { openMonth, resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
 import { tableOf, type ColumnSpec, type SortKey } from "@/lib/sort";
+import { heatGamesFromTeam } from "@/lib/resultHeat";
 import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeason";
 import { replaceQuery } from "@/lib/urlQuery";
 import { Donut } from "./Donut";
+import { ResultHeat } from "./ResultHeat";
 import { GameCalendar } from "./GameCalendar";
 import { H2hLink } from "./H2hLink";
 import { verdictOf } from "./HomeRoadBars";
@@ -159,8 +161,16 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
   const side = (l: "Home" | "Away") => { const r = counted(phaseRows.filter((g) => g.loc === l)); const n = r.w + r.l + r.t + r.otl; return n ? (r.w + r.t / 2) / n : null; };
   const verdict = verdictOf(side("Home"), side("Away"), say);
   const recordKey = loc === "home" ? "glance.recordHome" : loc === "road" ? "glance.recordRoad" : "glance.record";
+  const heatGames = useMemo(() => heatGamesFromTeam(games, year, teams.get(meId)?.name ?? null), [games, year, teams, meId]);
   return (
     <>
+      {heatGames.length ? (
+        <section className="section">
+          <h2>{say("rheat.title")}</h2>
+          <p className="note">{say("rheat.lede")}</p>
+          <ResultHeat lg={lg} games={heatGames} />
+        </section>
+      ) : null}
       <section className="section">
         <h2>{say("glance.title")}</h2>
         <div className="controls"><LocSwitch value={loc} onChange={setLoc} /></div>

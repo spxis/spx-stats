@@ -3,6 +3,8 @@ import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { CompareChart, type ComparePoint } from "@/components/CompareChart";
+import { ResultHeat } from "@/components/ResultHeat";
+import { ResultHeatLazy } from "@/components/ResultHeatLazy";
 import { CompareTextRow, H2hCompareRow, type H2hMetric } from "@/components/H2hCompare";
 import { H2hPicker } from "@/components/H2hPicker";
 import { H2hSeasonSelect } from "@/components/H2hSeasonSelect";
@@ -29,6 +31,7 @@ import { recordText } from "@/lib/record";
 import { nickname } from "@/lib/series";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { withQuery } from "@/lib/slug";
+import { heatGamesFromTeam } from "@/lib/resultHeat";
 import { deriveTeamGames, seasonRecord } from "@/lib/teamSeason";
 import { getLeagueClubs, getPaths, compareOf } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -288,6 +291,22 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
           <div className="cmphead"><b style={{ color: "var(--ca)" }}>{na}</b><span /><b style={{ color: "var(--cb)" }}>{nb}</b></div>
           {bars.map((m) => <H2hCompareRow key={m.label} m={m} />)}
           {plain.map((p) => <CompareTextRow key={p.label} label={p.label} a={p.a} b={p.b} best={p.best} />)}
+        </div>
+      </section>
+
+      <section className="section">
+        <h2>{say("rheat.title")}</h2>
+        <p className="note">{say("rheat.lede")}</p>
+        <div className="cmp">
+          <div className="cmphead"><b style={{ color: "var(--ca)" }}>{na}</b><span /><b style={{ color: "var(--cb)" }}>{nb}</b></div>
+          <div className="rheat-pair">
+            {year != null
+              ? <ResultHeat lg={lg} games={heatGamesFromTeam(games[0], year, A.name)} compact />
+              : <ResultHeatLazy teamPath={paths.team(lg, a)} lg={lg} />}
+            {year != null
+              ? <ResultHeat lg={lg} games={heatGamesFromTeam(games[1], year, B.name)} compact />
+              : <ResultHeatLazy teamPath={paths.team(lg, b)} lg={lg} />}
+          </div>
         </div>
       </section>
 
