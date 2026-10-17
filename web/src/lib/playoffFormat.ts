@@ -24,6 +24,9 @@ const ERAS: Record<string, readonly (readonly [number, number, readonly RoundKey
     [1982, 1993, ["divSemis", "divFinals", "confFinal", "final"]],
     [1974, 1981, ["prelim", "quarters", "semis", "final"]],
   ],
+  pwhl: [
+    [2023, 9999, ["semis", "final"]],
+  ],
   nba: [
     [1974, 9999, ["first", "confSemis", "confFinals", "final"]],
     [1967, 1973, ["divSemis", "divFinals", "final"]],
@@ -76,6 +79,8 @@ export function bestOfIn(lg: string, year: number, key: RoundKey): number | null
       if (key === "ds") return 5;
       if (key === "lcs") return year >= 1985 ? 7 : 5;
       return key === "final" && year >= 1922 ? 7 : null;
+    case "pwhl":
+      return 5;
     case "nhl":
       if (year < 1980) return null;
       if (key === "qual") return 5;

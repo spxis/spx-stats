@@ -37,7 +37,7 @@ test("the AAFC is a league the site knows, a closed one, with single-year season
 });
 
 test("a rival league is no league of the menu: it hangs off its parent, in one place", () => {
-  assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "nba", "wnba", "mlb", "nfl", "cfl"]);
+  assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl"]);
   assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl" });
   assert.deepEqual(CHILDREN, { nhl: ["nha", "pcha", "wchl", "wha"], nfl: ["afl", "aafc"] });
   assert.equal(topLeague("afl"), "nfl");
@@ -151,6 +151,20 @@ test("a hockey league's champions: the PCHA's Millionaires and Maroons, the WHA'
   const jets = championRow(wha, "wha");
   assert.deepEqual([jets.find((b) => b.kind === "most")?.f, jets.find((b) => b.kind === "most")?.n], [1002, 3]);
   assert.equal(titleHolders(wha, "wha").before(1972), null);
+});
+
+test("the PWHL is a menu league of its own, not a child of the NHL, with two-year seasons", () => {
+  assert.ok(isLeague("pwhl"));
+  assert.ok(LEAGUE_CODES.includes("pwhl"));
+  assert.deepEqual(ALL_LEAGUES.find((l) => l.code === "pwhl"), { code: "pwhl", name: "Professional Women's Hockey League", short: "PWHL" });
+  assert.equal(LG.pwhl, "PWHL");
+  assert.equal(seasonLabel("pwhl", 2023), "2023-24");
+  assert.equal(seasonLabel("pwhl", 2024), "2024-25");
+  assert.equal(PARENT.pwhl, undefined);
+  assert.equal(topLeague("pwhl"), "pwhl");
+  assert.ok(LEAGUES.some((l) => l.code === "pwhl"));
+  assert.equal(finalName("pwhl", 2024, say), "Walter Cup Final");
+  assert.equal(trophyPhrase("pwhl", 2024), "trophy.name.pwhl");
 });
 
 test("the WNBA is a menu league of its own, not a child of the NBA, with calendar-year seasons", () => {

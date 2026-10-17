@@ -44,7 +44,7 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/head-to-head/[pair] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
-const UNIT = { nhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals" } as const satisfies Record<string, PhraseKey>;
+const UNIT = { nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals" } as const satisfies Record<string, PhraseKey>;
 /** A long history is listed from the newest game; the rest is one click away (?list=all). */
 const LIST_LIMIT = 200;
 

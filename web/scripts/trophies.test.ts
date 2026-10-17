@@ -7,7 +7,7 @@ import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 
 /** Run in web/: pnpm test:trophies (it needs the react-server condition, as lib/cups.ts is server-only). */
 test("every league has a titled cup drawn by the package, in line style, and an unknown league gets the NHL's", () => {
-  for (const [lg, name] of [["nhl", "Stanley Cup"], ["nba", "Larry O'Brien Trophy"], ["wnba", "WNBA Championship"], ["cfl", "Grey Cup"], ["worldcup", "World Cup"], ["mls", "MLS Cup"]]) {
+  for (const [lg, name] of [["nhl", "Stanley Cup"], ["pwhl", "Walter Cup"], ["nba", "Larry O'Brien Trophy"], ["wnba", "WNBA Championship"], ["cfl", "Grey Cup"], ["worldcup", "World Cup"], ["mls", "MLS Cup"]]) {
     assert.match(cupSvg(lg), new RegExp(`<title>${name}</title>`));
   }
   assert.equal(cupSvg("unknown"), cupSvg("nhl"));

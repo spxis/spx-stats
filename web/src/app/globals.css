@@ -12,6 +12,7 @@
      measures it and fails if an edit brings two together. Keep lib/seriesLooks.ts LEAGUE_HEX in step (the test checks it too). */
   --nhl: #0a86ee; --nba: #cf6d12; --mlb: #c169ad; --nfl: #0a7038; --cfl: #5a52ac; --soccer: #00858a;
   --wnba: #7a5c12; /* bronze, apart from NBA orange and the SPX red; WNBA is its own menu league */
+  --pwhl: #5b2d8e; /* purple, the PWHL's own menu colour, apart from NHL blue */
   --afl: var(--nfl);   /* the AFL is American football: its clubs are the NFL's (pages of the AFL take the NFL's colour) */
   --aafc: var(--nfl);  /* so is the AAFC: three of its clubs joined the NFL in 1950 */
   --nha: var(--nhl); --pcha: var(--nhl); --wchl: var(--nhl); --wha: var(--nhl);   /* the hockey leagues beside the NHL take its colour */
@@ -34,13 +35,13 @@
   :root:not([data-theme="light"]) {
     --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
     --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
-    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
+    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --pwhl: #c49bff; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
   --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
-    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
+    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --pwhl: #c49bff; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
 }
 
 /* Declared on the root and on the soccer pages (which set their own --accent), so each reads the --accent of its own element. */
@@ -489,6 +490,7 @@ a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; tex
 /* A sport's page: the swoosh's centre takes the sport's colour (components/SportMark.tsx marks the page; the league tokens follow the theme).
    Home and the pages of no one sport keep the red. These come after the dark-theme --mk-r above, so they win in both themes. */
 :root:has([data-sport="nhl"]) { --mk-r: var(--nhl); }
+:root:has([data-sport="pwhl"]) { --mk-r: var(--pwhl); }
 :root:has([data-sport="nba"]) { --mk-r: var(--nba); }
 :root:has([data-sport="wnba"]) { --mk-r: var(--wnba); }
 :root:has([data-sport="mlb"]) { --mk-r: var(--mlb); }

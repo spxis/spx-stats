@@ -7,12 +7,13 @@ import { SOCCER_FR } from "../soccer.constants.ts";
 /** French (Canada). Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
 export const FR: Dictionary = {
   // site, metadata, small shared words
-  "site.description": "Pointages, classements, champions et récompenses de la NHL, de la NBA, de la WNBA, de la MLB, de la NFL et de la CFL, tirés des archives de SPX et de sources ouvertes.",
+  "site.description": "Pointages, classements, champions et récompenses de la NHL, de la PWHL, de la NBA, de la WNBA, de la MLB, de la NFL et de la CFL, tirés des archives de SPX et de sources ouvertes.",
   "sentence.sep": ". ",
   "sentence.end": ".",
   "tip.champion": "Champion : {team}",
   "trophy.champion": "Champion",
   "trophy.name.nhl": "Coupe Stanley",
+  "trophy.name.pwhl": "Coupe Walter",
   "trophy.name.nba": "Trophée Larry O'Brien",
   "trophy.name.wnba": "Championnat de la WNBA",
   "trophy.name.mlb": "Trophée du commissaire",
@@ -1085,6 +1086,7 @@ export const FR: Dictionary = {
   "rnd.semis": "Demi-finales",
   "rnd.quarters": "Quarts de finale",
   "rnd.nhl": "Finale de la Coupe Stanley",
+  "rnd.pwhl": "Finale de la Coupe Walter",
   "rnd.nba": "Finales de la NBA",
   "rnd.wnba": "Finales de la WNBA",
   "rnd.mlb": "Série mondiale",

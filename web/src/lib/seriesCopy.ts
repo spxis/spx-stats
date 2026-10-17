@@ -33,6 +33,7 @@ export const SERIES_COPY = {
   "round.cflSemi": "Division Semi-Final",
   "round.cflFinal": "Division Final",
   "final.nhl": "Stanley Cup Final",
+  "final.pwhl": "Walter Cup Final",
   "final.nba": "NBA Finals",
   "final.wnba": "WNBA Finals",
   "final.mlb": "World Series",

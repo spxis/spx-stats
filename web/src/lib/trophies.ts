@@ -5,7 +5,7 @@ import { SUPER_BOWL_SINCE } from "./leagues.ts";
 
 /** The phrase that names a league's trophy (shown beside it and as its label); the five leagues only. */
 export const TROPHY_NAME = {
-  nhl: "trophy.name.nhl", nba: "trophy.name.nba", wnba: "trophy.name.wnba", mlb: "trophy.name.mlb", nfl: "trophy.name.nfl", cfl: "trophy.name.cfl",
+  nhl: "trophy.name.nhl", pwhl: "trophy.name.pwhl", nba: "trophy.name.nba", wnba: "trophy.name.wnba", mlb: "trophy.name.mlb", nfl: "trophy.name.nfl", cfl: "trophy.name.cfl",
 } as const satisfies Record<string, PhraseKey>;
 
 /**

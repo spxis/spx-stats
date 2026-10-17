@@ -10,6 +10,7 @@ export const TROPHY_SPEED = 14;
 /** The trophy's emblem module per league, loaded only by a page that shows its banner, and only once the banner is in view. */
 export const TROPHY_EMBLEM_LOADERS = {
   nhl: () => import("@johnmorrisdotca/dougu-sports/trophy/hockey-cup").then((m) => m.TROPHY_HOCKEY_CUP),
+  pwhl: () => import("@johnmorrisdotca/dougu-sports/trophy/hockey-cup").then((m) => m.TROPHY_HOCKEY_CUP),
   nba: () => import("@johnmorrisdotca/dougu-sports/trophy/basketball").then((m) => m.TROPHY_BASKETBALL),
   wnba: () => import("@johnmorrisdotca/dougu-sports/trophy/basketball").then((m) => m.TROPHY_BASKETBALL),
   mlb: () => import("@johnmorrisdotca/dougu-sports/trophy/baseball").then((m) => m.TROPHY_BASEBALL),

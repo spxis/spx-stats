@@ -164,6 +164,10 @@ test("rounds are named from the league's format, by year and number of rounds", 
   assert.deepEqual(roundKeys("nhl", 2025, 4, true, false), ["first", "second", "confFinal", "final"]);
   assert.deepEqual(roundKeys("nhl", 2005, 4, true, false), ["confQuarters", "confSemis", "confFinal", "final"]);
   assert.deepEqual(roundKeys("nba", 2025, 4, true, false), ["first", "confSemis", "confFinals", "final"]);
+  assert.deepEqual(roundKeys("pwhl", 2023, 2, true, false), ["semis", "final"]);
+  assert.deepEqual(roundKeys("pwhl", 2024, 2, true, false), ["semis", "final"]);
+  assert.equal(bestOfIn("pwhl", 2023, "final"), 5);
+  assert.equal(bestOfIn("pwhl", 2024, "semis"), 5);
   assert.deepEqual(roundKeys("wnba", 2024, 3, true, false), ["first", "semis", "final"]);
   assert.deepEqual(roundKeys("wnba", 1997, 2, true, false), ["semis", "final"]);
   assert.equal(bestOfIn("wnba", 2024, "final"), 5);

@@ -1,4 +1,4 @@
-export const LEAGUE_CODES = ["nhl", "nba", "wnba", "mlb", "nfl", "cfl", "afl", "aafc", "nha", "pcha", "wchl", "wha"] as const;
+export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "afl", "aafc", "nha", "pcha", "wchl", "wha"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
 /**
@@ -8,6 +8,7 @@ export type LeagueCode = (typeof LEAGUE_CODES)[number];
  */
 export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; closed?: true }[] = [
   { code: "nhl", name: "National Hockey League", short: "NHL" },
+  { code: "pwhl", name: "Professional Women's Hockey League", short: "PWHL" },
   { code: "nba", name: "National Basketball Association", short: "NBA" },
   { code: "wnba", name: "Women's National Basketball Association", short: "WNBA" },
   { code: "mlb", name: "Major League Baseball", short: "MLB" },
@@ -40,7 +41,7 @@ export const topLeague = (code: string): string => PARENT[code as LeagueCode] ??
 
 export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA" };
 
 /**
  * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the
@@ -62,7 +63,7 @@ export function isLeague(code: string): code is LeagueCode {
 }
 
 /** The leagues whose seasons span two calendar years: 1993-94 (the NHL, the NBA and the hockey leagues beside the NHL). The others are one: 2025. */
-const TWO_YEAR_SEASONS: ReadonlySet<string> = new Set(["nhl", "nba", "nha", "pcha", "wchl", "wha"]);
+const TWO_YEAR_SEASONS: ReadonlySet<string> = new Set(["nhl", "pwhl", "nba", "nha", "pcha", "wchl", "wha"]);
 
 /** NHL and NBA seasons span two calendar years: 1993-94. The others are one: 2025. */
 export function seasonLabel(lg: string, y: number): string {

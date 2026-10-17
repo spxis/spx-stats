@@ -18,6 +18,7 @@ import { TROPHY_TILT } from "./trophyTurn.ts";
 /** Each league's (or tournament's) cup, keyed by the league the page passes in, with the name of the trophy a team won as the drawing's title. */
 const CUPS: Record<string, readonly [Emblem, string]> = {
   nhl: [TROPHY_HOCKEY_CUP, "Stanley Cup"],
+  pwhl: [TROPHY_HOCKEY_CUP, "Walter Cup"],
   nba: [TROPHY_BASKETBALL, "Larry O'Brien Trophy"],
   wnba: [TROPHY_BASKETBALL, "WNBA Championship"],
   mlb: [TROPHY_BASEBALL, "Commissioner's Trophy"],

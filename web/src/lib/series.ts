@@ -268,6 +268,7 @@ export const roman = (n: number): string => { let out = ""; for (const [v, r] of
 export function finalName(lg: string, year: number, say: Say): string {
   switch (lg) {
     case "nhl": return say("final.nhl");
+    case "pwhl": return say("final.pwhl");
     case "nba": return say("final.nba");
     case "wnba": return say("final.wnba");
     case "mlb": return say("final.mlb");
