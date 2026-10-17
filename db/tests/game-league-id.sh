@@ -2,11 +2,11 @@
 # Migration 115 adds core.game_league_id and nhl_id on api.games. core.game_official is already
 # the referees table (migration 020) and must still be that table afterwards. Build 212 copies a
 # 10-digit nhl_api external key and ignores anything else. Scratch Postgres, removed by name.
-#   bash db/tests/game-official.sh
+#   bash db/tests/game-league-id.sh
 set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
-NAME="spx-game-official-$$"
+NAME="spx-game-league-id-$$"
 PORT=""
 for p in 7740 7741 7742 7743 7744 7745 7746 7747 7748 7749; do
   if ! lsof -nP -iTCP:"$p" -sTCP:LISTEN >/dev/null 2>&1; then PORT=$p; break; fi
@@ -24,6 +24,7 @@ create role authenticated;
 create schema core;
 create schema meta;
 create schema api;
+grant usage on schema api to anon, authenticated;
 create function api.team_name(integer) returns text language sql as $$ select 'Club' $$;
 create table core.season (season_id int primary key, league_code text, start_year int);
 create table core.team_season (team_season_id int primary key, season_id int, franchise_id int);
@@ -74,8 +75,8 @@ select s.league_code as league, s.start_year as year, g.game_id, g.game_date, g.
 from core.game g join core.season s using (season_id) join meta.source src on src.source_id = g.source_id
 where g.status <> 'cancelled';
 SQL
-docker cp "$REPO/db/migrations/115_game_official.sql" "$NAME:/tmp/115.sql"
-docker cp "$REPO/db/build/212_game_official.sql" "$NAME:/tmp/212.sql"
+docker cp "$REPO/db/migrations/115_game_league_id.sql" "$NAME:/tmp/115.sql"
+docker cp "$REPO/db/build/212_game_league_id.sql" "$NAME:/tmp/212.sql"
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/115.sql >/dev/null
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/212.sql >/dev/null
 got="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select game_id || '|' || coalesce(nhl_id::text, '') from api.games order by game_id;")"
@@ -85,4 +86,14 @@ refs="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select game_id || '|' 
 if [ "$refs" != "7|42|referee|12" ]; then echo "FAIL referees got: $refs"; exit 1; fi
 cols="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select string_agg(column_name, ',' order by ordinal_position) from information_schema.columns where table_schema = 'core' and table_name = 'game_official';")"
 if [ "$cols" != "game_id,person_id,assignment,jersey_number,source_id" ]; then echo "FAIL referee columns: $cols"; exit 1; fi
-echo "ok   nhl_id is on the view; the referees table is unchanged"
+ids="$(docker exec "$NAME" psql -U postgres -d spx -Atc "select string_agg(column_name, ',' order by ordinal_position) from information_schema.columns where table_schema = 'core' and table_name = 'game_league_id';")"
+if [ "$ids" != "game_id,nhl_id" ]; then echo "FAIL league_id columns: $ids"; exit 1; fi
+anon="$(docker exec "$NAME" psql -U postgres -d spx -q -Atc "set role anon; select game_id || '|' || coalesce(nhl_id::text, '') from api.games order by game_id;")"
+if [ "$anon" != "$want" ]; then echo "FAIL anon view got: $anon"; exit 1; fi
+if docker exec "$NAME" psql -U postgres -d spx -q -Atc "set role anon; select 1 from core.game_official limit 1;" >/dev/null 2>&1; then
+  echo "FAIL anon can read core.game_official"; exit 1
+fi
+if docker exec "$NAME" psql -U postgres -d spx -q -Atc "set role anon; select 1 from core.game_league_id limit 1;" >/dev/null 2>&1; then
+  echo "FAIL anon can read core.game_league_id"; exit 1
+fi
+echo "ok   nhl_id is on the view; the referees table is unchanged; anon can read the view"

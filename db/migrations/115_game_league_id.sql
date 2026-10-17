@@ -10,7 +10,8 @@
 -- and an NHL game we never matched). The site then links to that day's scores instead.
 --
 -- On DS1, then on production, before the release that copies core.game_league_id.
--- Filling the rows is db/build/212_game_official.sql, not this file.
+-- Filling the rows is db/build/212_game_league_id.sql, not this file.
+-- This file was first added as 115_game_official.sql; that name stole the referees table.
 
 create table core.game_league_id (
   game_id  bigint primary key references core.game (game_id) on delete cascade,
