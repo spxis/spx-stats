@@ -2,6 +2,7 @@
 """Fetch season-level team statistics into a raw folder (outside the repository), with a sha256 manifest.
 
 --source nhl REFUSES TO RUN: no new requests to any NHL endpoint (AGENTS.md section 3). nflverse still works.
+CFL has no allowed feed: Wikipedia club-season articles do not publish team yards (cfl_wp_parse.py).
 
   fetch.py --source nhl      api.nhle.com/stats/rest/en/team/summary and /penalties, regular season, one answer per season and endpoint
                              (power play and penalty kill percentages, penalty minutes, shots). Source: the NHL, credited "NHL".

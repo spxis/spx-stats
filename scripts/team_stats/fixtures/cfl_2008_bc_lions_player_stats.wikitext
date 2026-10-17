@@ -1,0 +1,35 @@
+<!-- Excerpt of "2008 BC Lions season", English Wikipedia, CC BY-SA 4.0. -->
+==Player stats==
+
+=== Passing===
+{| class="wikitable sortable"
+|-
+! style="background:black;color:#FF8800;" width="16%" | Player
+! style="background:black;color:#FF8800;" width="9%" | Att.
+! style="background:black;color:#FF8800;" width="9%" | Comp
+! style="background:black;color:#FF8800;" width="9%" | %
+! style="background:black;color:#FF8800;" width="9%" | Yards
+! style="background:black;color:#FF8800;" width="9%" | TD
+! style="background:black;color:#FF8800;" width="9%" | INT
+! style="background:black;color:#FF8800;" width="9%" | Rating
+|- align="center"
+| [[Buck Pierce]] || 362 || 232 || 64.1 || 3018 || 19 ||9  ||97.4
+|- align="center"
+| [[Jarious Jackson]] || 288 || 158 || 54.9 || 2164 || 17 ||10  ||84.3
+|- align="center"
+| [[Paul McCallum (Canadian football)|Paul McCallum]] || 2 || 2 || 100.0 || 53 || 0 ||0  ||158.3
+|}
+
+===Rushing===
+{| class="wikitable sortable"
+|-
+! style="background:black;color:#FF8800;" width="16%" | Player
+! style="background:black;color:#FF8800;" width="9%" | Att.
+! style="background:black;color:#FF8800;" width="9%" | Yards
+! style="background:black;color:#FF8800;" width="9%" | Avg.
+! style="background:black;color:#FF8800;" width="9%" | TD
+|- align="center"
+| [[Stefan Logan]] || 122 || 889 || 7.3 || 0
+|- align="center"
+| [[Jarious Jackson]] || 63 || 362 || 5.7 || 2
+|}
