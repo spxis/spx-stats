@@ -29,7 +29,7 @@ export async function RetiredBanners({
             // eslint-disable-next-line @next/next/no-img-element -- kept SVG from this app, not a remote bitmap
             <img
               className="retired-banner"
-              src={`/jersey-banner/${f}/${r.retired_number_id}${kind === "hanging" ? "?kind=hanging" : ""}`}
+              src={`/jersey-banner/${f}/${r.retired_number_id}${kind === "hanging" ? "/hanging" : ""}`}
               alt={label}
               width={160}
               height={224}

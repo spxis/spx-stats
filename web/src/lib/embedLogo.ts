@@ -1,3 +1,23 @@
+const UA = "spx-stats/jersey-banner (https://spxn.com; john@johnmorris.ca)";
+
+/** Fetch a public logo so an SVG used as `<img>` can show it (SVG-as-image cannot load external hrefs). */
+export async function fetchLogo(url: string | null, origin: string): Promise<string | undefined> {
+  if (!url) return undefined;
+  const abs = url.startsWith("/") ? new URL(url, origin).href : url;
+  if (!/^https?:\/\//i.test(abs)) return undefined;
+  try {
+    const res = await fetch(abs, {
+      signal: AbortSignal.timeout(4000),
+      headers: { "User-Agent": UA },
+      next: { revalidate: 86400 },
+    });
+    if (!res.ok) return undefined;
+    return logoPayload(Buffer.from(await res.arrayBuffer()), res.headers.get("content-type") || "");
+  } catch {
+    return undefined;
+  }
+}
+
 /** Encode fetched logo bytes for a hanging banner: SVG markup, or a raster data URI.
  *  Wikimedia thumbs are often `File.svg/250px-File.svg.png`; sniff the bytes, never the path. */
 export function logoPayload(buf: Uint8Array, contentType: string): string | undefined {
