@@ -18,6 +18,7 @@ so a string added in English alone still shows.
 - **Scoreboard start time.** FR "Début prévu" and JA "予定開始" for the scheduled-start tooltip. The clock itself is the reader's local time.
 
 - **PWHL / Walter Cup.** FR keeps the English code "PWHL" in the site description (same as NHL/NBA there) and "Coupe Walter" for the trophy and final. JA keeps "PWHL" and "ウォルター・カップ" (Walter Cup). First-pass; not reviewed.
+- **NWSL / NWSL Championship.** FR keeps the English code "NWSL" and "Championnat de la NWSL" for the trophy and final. JA keeps "NWSL" and "NWSLチャンピオンシップ" (NWSL Championship). First-pass; not reviewed.
 
 - **Player statistics.** Column abbreviations (FR PJ/B/A/V/D/N/DP/MBC/%A/BL for hockey; AB/CS/CC/PP/BV/MAB/MPB/MP/MJ/MPM for baseball; JA 試合/勝/敗/打率/防御率 and so on)
   are my best guess at what each league's own French and Japanese tables use. Slugging is "PUIS" (moyenne de puissance) so it does not clash with "MP" (minutes de pénalité). "Parcours sportif" for the sports résumé, "Repêchage" for the draft.
@@ -36,7 +37,7 @@ so a string added in English alone still shows.
 
 ## Left as the data gives it (not translated on purpose)
 
-- Team, player, venue and league names; league codes (NHL, PWHL, NBA, MLB, NFL, CFL); official award names (Stanley Cup, Walter Cup, Grey Cup, Hart Trophy ...).
+- Team, player, venue and league names; league codes (NHL, PWHL, NBA, WNBA, MLB, NFL, CFL, NWSL); official award names (Stanley Cup, Walter Cup, Grey Cup, Hart Trophy ...).
 - Text that comes from the database rather than the site: a champion's "final" note, an award's note, a source's licence/attribution/notes
   (Sources page), and the issue and resolution text on the Data quality page. These are English until the data itself is translated.
 - The SPX row of the Sources page (licence and notes) *is* the site's own text and is translated; its credit line "SPX (SportsInteractive.com), 1997–2013" is a name and stays.

@@ -31,9 +31,10 @@ test("a drawing has no stylesheet, no title and no description: it is aria-hidde
 });
 
 test("every sport of a league draws, a football field without its hash marks, with the score on the surface and a round mark for each club", () => {
-  for (const lg of ["nhl", "pwhl", "nba", "wnba", "nfl", "cfl", "mlb"]) assert.ok(sportOf(lg), lg);
+  for (const lg of ["nhl", "pwhl", "nba", "wnba", "nfl", "cfl", "mlb", "nwsl"]) assert.ok(sportOf(lg), lg);
   assert.equal(sportOf("pwhl"), "nhl");
   assert.equal(sportOf("wnba"), "nba");
+  assert.equal(sportOf("nwsl"), "soccer");
   assert.equal(sportOf("wwc"), null);
   for (const sport of ["nhl", "nba", "nfl", "cfl", "mlb"] as const) {
     const d = drawGame(game({ sport }))!;

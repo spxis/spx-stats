@@ -21,6 +21,7 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   pwhl: [TROPHY_HOCKEY_CUP, "Walter Cup"],
   nba: [TROPHY_BASKETBALL, "Larry O'Brien Trophy"],
   wnba: [TROPHY_BASKETBALL, "WNBA Championship"],
+  nwsl: [TROPHY_SOCCER_BALL, "NWSL Championship"],
   mlb: [TROPHY_BASEBALL, "Commissioner's Trophy"],
   nfl: [TROPHY_FOOTBALL, "Vince Lombardi Trophy"],
   cfl: [TROPHY_CANADIAN_BOWL, "Grey Cup"],

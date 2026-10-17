@@ -82,7 +82,7 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs, 
   const { say, dt } = sp;
   const { venue, neutral, park } = await placeOf(lg, year, game, brands);
   // The drawing's left and right sides (lib/sides.ts); kyogijo is told the left team as its `away` and the right team as its `home`.
-  const { left, right } = leftRight(game.away, game.home, { leftOf: leftF != null ? (t) => t.f === leftF : undefined });
+  const { left, right } = leftRight(game.away, game.home, { leftOf: leftF != null ? (t) => t.f === leftF : undefined, sport });
   const [la, lb] = seriesLooks(lg, brandFor(brands, left.f, year), brandFor(brands, right.f, year));
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
   const status = game.overtime ? say("scores.finalExtra", { extra }) : say("scores.final");

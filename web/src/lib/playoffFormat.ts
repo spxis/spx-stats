@@ -54,6 +54,11 @@ const ERAS: Record<string, readonly (readonly [number, number, readonly RoundKey
   cfl: [
     [1973, 9999, ["cflSemi", "cflFinal", "final"]],
   ],
+  nwsl: [
+    [2024, 9999, ["quarters", "semis", "final"]],
+    [2021, 2023, ["first", "semis", "final"]],
+    [2013, 2019, ["semis", "final"]],
+  ],
 };
 
 /**
@@ -96,6 +101,7 @@ export function bestOfIn(lg: string, year: number, key: RoundKey): number | null
       return year >= 2016 ? 5 : 3;
     case "nfl":
     case "cfl":
+    case "nwsl":
       return 1;
     default:
       return null;

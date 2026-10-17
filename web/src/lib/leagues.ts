@@ -1,4 +1,4 @@
-export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "afl", "aafc", "nha", "pcha", "wchl", "wha"] as const;
+export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
 /**
@@ -14,6 +14,7 @@ export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; close
   { code: "mlb", name: "Major League Baseball", short: "MLB" },
   { code: "nfl", name: "National Football League", short: "NFL" },
   { code: "cfl", name: "Canadian Football League", short: "CFL" },
+  { code: "nwsl", name: "National Women's Soccer League", short: "NWSL" },
   { code: "afl", name: "American Football League", short: "AFL", closed: true },
   { code: "aafc", name: "All-America Football Conference", short: "AAFC", closed: true },
   { code: "nha", name: "National Hockey Association", short: "NHA", closed: true },
@@ -41,7 +42,7 @@ export const topLeague = (code: string): string => PARENT[code as LeagueCode] ??
 
 export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA" };
 
 /**
  * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the

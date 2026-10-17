@@ -36,6 +36,7 @@ export const SERIES_COPY = {
   "final.pwhl": "Walter Cup Final",
   "final.nba": "NBA Finals",
   "final.wnba": "WNBA Finals",
+  "final.nwsl": "NWSL Championship",
   "final.mlb": "World Series",
   "final.nfl": "Super Bowl {numeral}",
   "final.nflOld": "NFL Championship",

@@ -12,7 +12,10 @@ import { parkIdFor, SURFACE_SPORT, type SurfaceSport } from "./venuePark.ts";
 export type GameSport = SurfaceSport | "soccer";
 
 /** The sport kyogijo draws for a league's games, or null when it draws none (the league has no surface of its own to show). */
-export const sportOf = (lg: string): SurfaceSport | null => (SURFACE_SPORT as Record<string, SurfaceSport | undefined>)[lg] ?? null;
+export const sportOf = (lg: string): GameSport | null => {
+  if (lg === "nwsl") return "soccer";
+  return (SURFACE_SPORT as Record<string, SurfaceSport | undefined>)[lg] ?? null;
+};
 
 export interface GameSide {
   name: string;

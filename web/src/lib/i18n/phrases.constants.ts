@@ -12,7 +12,7 @@ import { SOCCER_EN } from "./soccer.constants.ts";
  */
 export const PHRASES = {
   // site, metadata, small shared words
-  "site.description": "Scores, standings, champions and awards of the NHL, PWHL, NBA, WNBA, MLB, NFL and CFL, from the SPX archive and open sources.",
+  "site.description": "Scores, standings, champions and awards of the NHL, PWHL, NBA, WNBA, MLB, NFL, CFL and NWSL, from the SPX archive and open sources.",
   "sentence.sep": ". ",
   "sentence.end": ".",
   "tip.champion": "Champion: {team}",
@@ -21,6 +21,7 @@ export const PHRASES = {
   "trophy.name.pwhl": "Walter Cup",
   "trophy.name.nba": "Larry O'Brien Trophy",
   "trophy.name.wnba": "WNBA Championship",
+  "trophy.name.nwsl": "NWSL Championship",
   "trophy.name.mlb": "Commissioner's Trophy",
   "trophy.name.nfl": "Vince Lombardi Trophy",
   "trophy.name.cfl": "Grey Cup",
@@ -1254,6 +1255,7 @@ export const PHRASES = {
   "rnd.pwhl": "Walter Cup Final",
   "rnd.nba": "NBA Finals",
   "rnd.wnba": "WNBA Finals",
+  "rnd.nwsl": "NWSL Championship",
   "rnd.mlb": "World Series",
   "rnd.nfl": "Super Bowl {numeral}",
   "rnd.nflOld": "NFL Championship",

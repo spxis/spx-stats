@@ -141,7 +141,7 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.equal(route({ path: "/wp-login.php" }), "/en/q/wp-login.php");
   assert.equal(route({ path: "/xx/yy/zz", cookie: "spxn-locale=fr" }), "/fr/q/xx/yy/zz");
   assert.equal(route({ path: "/about/more" }), "/en/q/about/more");
-  assert.deepEqual([...PAGE_ROOTS], ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "players", "teams", "city", "venue", "worldcup", "mls", "country"]);
+  assert.deepEqual([...PAGE_ROOTS], ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "players", "teams", "city", "venue", "worldcup", "mls", "country"]);
 });
 
 test("the drawings of playing surfaces (app/surface/[file]) are no page: the 404 rule leaves them to their route handler", () => {

@@ -7,7 +7,7 @@ import { SOCCER_FR } from "../soccer.constants.ts";
 /** French (Canada). Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
 export const FR: Dictionary = {
   // site, metadata, small shared words
-  "site.description": "Pointages, classements, champions et récompenses de la NHL, de la PWHL, de la NBA, de la WNBA, de la MLB, de la NFL et de la CFL, tirés des archives de SPX et de sources ouvertes.",
+  "site.description": "Pointages, classements, champions et récompenses de la NHL, de la PWHL, de la NBA, de la WNBA, de la MLB, de la NFL, de la CFL et de la NWSL, tirés des archives de SPX et de sources ouvertes.",
   "sentence.sep": ". ",
   "sentence.end": ".",
   "tip.champion": "Champion : {team}",
@@ -16,6 +16,7 @@ export const FR: Dictionary = {
   "trophy.name.pwhl": "Coupe Walter",
   "trophy.name.nba": "Trophée Larry O'Brien",
   "trophy.name.wnba": "Championnat de la WNBA",
+  "trophy.name.nwsl": "Championnat de la NWSL",
   "trophy.name.mlb": "Trophée du commissaire",
   "trophy.name.nfl": "Trophée Vince Lombardi",
   "trophy.name.cfl": "Coupe Grey",
@@ -1089,6 +1090,7 @@ export const FR: Dictionary = {
   "rnd.pwhl": "Finale de la Coupe Walter",
   "rnd.nba": "Finales de la NBA",
   "rnd.wnba": "Finales de la WNBA",
+  "rnd.nwsl": "Championnat de la NWSL",
   "rnd.mlb": "Série mondiale",
   "rnd.nfl": "Super Bowl {numeral}",
   "rnd.nflOld": "Championnat de la NFL",

@@ -7,7 +7,7 @@ import { SOCCER_JA } from "../soccer.constants.ts";
 /** Japanese. Machine-drafted; see web/I18N_TODO.md. Team, player and venue names, league codes and award names stay as the data gives them. */
 export const JA: Dictionary = {
   // site, metadata, small shared words
-  "site.description": "NHL・PWHL・NBA・WNBA・MLB・NFL・CFLの試合結果、順位表、優勝チーム、各賞の受賞者。SPXのアーカイブとオープンなデータソースをもとにしています。",
+  "site.description": "NHL・PWHL・NBA・WNBA・MLB・NFL・CFL・NWSLの試合結果、順位表、優勝チーム、各賞の受賞者。SPXのアーカイブとオープンなデータソースをもとにしています。",
   "sentence.sep": "。",
   "sentence.end": "。",
   "tip.champion": "優勝：{team}",
@@ -16,6 +16,7 @@ export const JA: Dictionary = {
   "trophy.name.pwhl": "ウォルター・カップ",
   "trophy.name.nba": "ラリー・オブライエン・トロフィー",
   "trophy.name.wnba": "WNBAチャンピオンシップ",
+  "trophy.name.nwsl": "NWSLチャンピオンシップ",
   "trophy.name.mlb": "コミッショナーズ・トロフィー",
   "trophy.name.nfl": "ヴィンス・ロンバルディ・トロフィー",
   "trophy.name.cfl": "グレイカップ",
@@ -1089,6 +1090,7 @@ export const JA: Dictionary = {
   "rnd.pwhl": "ウォルター・カップ決勝",
   "rnd.nba": "NBAファイナル",
   "rnd.wnba": "WNBAファイナル",
+  "rnd.nwsl": "NWSLチャンピオンシップ",
   "rnd.mlb": "ワールドシリーズ",
   "rnd.nfl": "スーパーボウル{numeral}",
   "rnd.nflOld": "NFLチャンピオンシップ",
