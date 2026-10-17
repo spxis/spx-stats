@@ -15,7 +15,7 @@
  * checks the source for keys that are not listed).
  */
 import { LEAGUE_CODES } from "./leagues.ts";
-import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, type Locale } from "./locale.ts";
+import { LOCALES, DEFAULT_LOCALE, LOCALE_COOKIE_NAME, effectiveLocale, type Locale } from "./locale.ts";
 
 /** Every query parameter some public page reads on the server (sort_* are the tables' own sort parameters). */
 export const QUERY_KEYS = [
@@ -74,6 +74,68 @@ export const isInternalPath = (path: string) => internal.test(path);
     so rule 4 below must leave these alone, or it wraps them in the language tree and answers the 404 page (sign-in broke that way). scripts/routing.test.ts
     reads app/ and fails when a first segment found there is missing from this list. */
 export const RESERVED_ROOTS = ["api", "_next", "surface", "admin", "me", "login", "tickets", "sitemap.xml", "robots.txt", "venues.csv", "venues.geojson", "soccer-flags.svg", "soccer-flags-round.svg", "soccer-flag", "flag", "soccer-road", "bracket-svg", "jersey-banner", "brand", "favicon.ico", "manifest.webmanifest"] as const;
+
+const RESERVED_FIRST = new Set<string>(RESERVED_ROOTS);
+
+/** Query keys from QUERY_KEYS that this request actually carries (presence, including an empty value). */
+export function presentQueryKeys(query: URLSearchParams | Record<string, string | undefined>): string[] {
+  const has = (key: string) => (query instanceof URLSearchParams ? query.has(key) : Object.prototype.hasOwnProperty.call(query, key) && query[key] !== undefined);
+  return QUERY_KEYS.filter(has);
+}
+
+function localeCookieValue(cookie: string | null | undefined): string | null {
+  if (!cookie) return null;
+  const m = cookie.match(/(?:^|;\s*)spxn-locale=([^;]*)/i);
+  if (!m) return null;
+  try {
+    return decodeURIComponent(m[1].trim());
+  } catch {
+    return m[1].trim();
+  }
+}
+
+/**
+ * Whether this address with these query keys is drawn from q/ (per request) rather than s/ (kept).
+ * Player pages keep PLAYER_CLIENT_KEYS in the browser; city pages keep from/to. /teams never reaches
+ * here: it is ALWAYS_STATIC. /players with from/to does: the list is filtered on the server.
+ */
+function drawsPerRequest(segs: string[], present: readonly string[]): boolean {
+  if (!present.length) return false;
+  const first = segs[0] ?? "";
+  const onlyPlayerClient = present.every((k) => (PLAYER_CLIENT_KEYS as readonly string[]).includes(k));
+  const onlyCityClient = present.every((k) => (CITY_CLIENT_KEYS as readonly string[]).includes(k));
+  if ((LEAGUE_CODES as readonly string[]).includes(first) && segs[1] === "player" && onlyPlayerClient) return false;
+  if (first === "city" && segs.length >= 2 && onlyCityClient) return false;
+  return true;
+}
+
+/**
+ * Where a public address is served from under app/[locale]/{s,q}. Null means leave the request
+ * alone (an internal language path, or a first segment in RESERVED_ROOTS). Same destinations as
+ * pageRewrites(); src/proxy.ts applies this on every request (including client RSC navigations),
+ * because next.config afterFiles rewrites are skipped in Vercel's minimal mode and Next 16's
+ * client router assumes a pathname's rewrite does not change with the query string.
+ */
+export function resolvePageDestination(
+  path: string,
+  query: URLSearchParams | Record<string, string | undefined> = {},
+  cookie?: string | null,
+  acceptLanguage?: string | null,
+): string | null {
+  const pathname = (path.split("?")[0] || "/").replace(/\/+$/, "") || "/";
+  if (isInternalPath(pathname)) return null;
+  const segs = pathname === "/" ? [] : pathname.split("/").filter(Boolean);
+  const first = segs[0] ?? "";
+  if (first && RESERVED_FIRST.has(first)) return null;
+  const locale = effectiveLocale(localeCookieValue(cookie), acceptLanguage);
+  const present = presentQueryKeys(query);
+  const tail = segs.length > 1 ? `/${segs.slice(1).join("/")}` : "";
+  if (segs.length === 0) return `/${locale}/s`;
+  if (segs.length === 1 && (ALWAYS_STATIC as readonly string[]).includes(first)) return `/${locale}/s/${first}`;
+  if (drawsPerRequest(segs, present)) return `/${locale}/q/${first}${tail}`;
+  if ((PAGE_ROOTS as readonly string[]).includes(first)) return `/${locale}/s/${first}${tail}`;
+  return `/${locale}/q/${first}${tail}`;
+}
 
 /** The first path segment of an address that is not a language (a lookahead, so a rewrite's own result is never rewritten again) or one of RESERVED_ROOTS. */
 const NOT_A_LOCALE = `(?!(?:${[...LOCALES, ...RESERVED_ROOTS.map((r) => r.replace(/\./g, "\\."))].join("|")})(?:/|$))[^/]+`;

@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { createRequire } from "node:module";
 import { TEAMS_CLIENT_KEYS } from "../src/lib/teamBoard.ts";
 import { isQueryVariant, QUERY_ROBOTS, queryFollowRel } from "../src/lib/queryLink.ts";
-import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS } from "../src/lib/routing.ts";
+import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS, resolvePageDestination } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
 
@@ -326,6 +326,37 @@ test("q/ copies are noindex,nofollow; public Link goes through the wrapper that 
     }
   }
   assert.deepEqual(offenders, [], "public pages import Link from @/components/Link so query variants get rel=nofollow");
+});
+
+test("resolvePageDestination matches the rewrite table (src/proxy.ts uses it for client navigations)", () => {
+  const dest = (c: Req) => resolvePageDestination(c.path, c.query ?? {}, c.cookie, c.acceptLanguage) ?? `(none) ${c.path}`;
+  const cases: Req[] = [
+    { path: "/" }, { path: "/about" }, { path: "/nhl" }, { path: "/players" }, { path: "/teams" },
+    { path: "/players", query: { from: "1996", to: "2026" } },
+    { path: "/teams", query: { from: "1996", to: "2026" } },
+    { path: "/players", query: { q: "gretzky" } },
+    { path: "/nhl/player/mark-messier-2359", query: { from: "1985", to: "1990" } },
+    { path: "/nhl/player/mark-messier-2359", query: { sort_awards: "season.asc" } },
+    { path: "/city/vancouver", query: { from: "1990", to: "2000" } },
+    { path: "/city/vancouver", query: { sort: "years.asc" } },
+    { path: "/nhl/2012-13", query: { view: "wildcard" } },
+    { path: "/about", cookie: "spxn-locale=fr" },
+    { path: "/players", cookie: "spxn-locale=ja", query: { from: "1990" } },
+    { path: "/about", acceptLanguage: "fr-CA,fr;q=0.9" },
+    { path: "/wp-login.php" }, { path: "/api/me" }, { path: "/en/s/players" },
+    { path: "/teams/lineage", query: { league: "nhl" } },
+  ];
+  for (const c of cases) assert.equal(dest(c), route(c), JSON.stringify(c));
+});
+
+test("the proxy rewrites public pages and leaves reserved first segments alone", () => {
+  const text = readFileSync(join(SRC, "proxy.ts"), "utf8");
+  assert.match(text, /resolvePageDestination/);
+  assert.match(text, /export function proxy/);
+  assert.match(text, /matcher:\s*\[/);
+  for (const root of ["api/", "_next/", "surface/", "admin", "login", "tickets", "brand/", "favicon"]) {
+    assert.match(text, new RegExp(root.replace(/[.*]/g, "\\$&")), root);
+  }
 });
 
 test("Link prefetch is off by default so a long table stays under the firewall; the header menu turns it on", () => {

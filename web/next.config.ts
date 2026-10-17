@@ -28,7 +28,8 @@ const nextConfig: NextConfig = {
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
   // The public pages sit under app/[locale]/{s,q}; the address a reader sees has neither (lib/routing.ts). Rewrites run after files, so
-  // /api, /sitemap.xml, /robots.txt, /_next and the signed-in pages (app/(dyn)) are never touched.
+  // /api, /sitemap.xml, /robots.txt, /_next and the signed-in pages (app/(dyn)) are never touched. src/proxy.ts applies the same
+  // destinations for client navigations (Vercel minimal mode skips afterFiles inside the Next server).
   async redirects() {
     return [hideInternalPaths];
   },
