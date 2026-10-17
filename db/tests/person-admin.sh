@@ -1,6 +1,7 @@
 #!/bin/bash
-# Migrations 122+123+124: api.person_admin lists every core.person, including athletes with
-# no club season, as a materialized view with letter_first/last and chip aggregates.
+# Migrations 122+123+124+127: api.person_admin lists every core.person, including athletes
+# with no club season. 127 fills sport/league/span from player_season_stat and awards
+# (the same team-season facts api.player_index uses), not only roster_stint.
 # Scratch Postgres, removed by name.
 #   bash db/tests/person-admin.sh
 set -eu
@@ -27,6 +28,46 @@ create schema meta;
 create schema ref;
 create schema api;
 grant usage on schema api to anon, authenticated;
+create function api.swap_matview(p_name text, p_new text) returns void language plpgsql set search_path = pg_catalog as $$
+declare
+  old_oid oid := to_regclass(format('api.%I', p_name));
+  new_oid oid := to_regclass(format('api.%I', p_new));
+  cmt text;
+  ix record;
+  dependents text;
+begin
+  if old_oid is null or new_oid is null then
+    raise exception 'api.swap_matview: api.% or api.% does not exist', p_name, p_new;
+  end if;
+  if (select relkind from pg_class where oid = old_oid) <> 'm' or (select relkind from pg_class where oid = new_oid) <> 'm' then
+    raise exception 'api.swap_matview: both must be materialized views';
+  end if;
+  if not (select relispopulated from pg_class where oid = new_oid) then
+    raise exception 'api.swap_matview: api.% is not populated', p_new;
+  end if;
+  if not exists (select 1 from pg_index i where i.indrelid = new_oid and i.indisunique and i.indisvalid and i.indpred is null and i.indexprs is null) then
+    raise exception 'api.swap_matview: api.% needs a unique index on plain columns (refresh concurrently requires it)', p_new;
+  end if;
+  select string_agg(distinct c.relnamespace::regnamespace || '.' || c.relname, ', ') into dependents
+  from pg_depend d join pg_rewrite r on r.oid = d.objid join pg_class c on c.oid = r.ev_class
+  where d.classid = 'pg_rewrite'::regclass and d.refobjid = old_oid and r.ev_class <> old_oid;
+  if dependents is not null then
+    raise exception 'api.swap_matview: % is built from api.%; drop it and recreate it in the same file after the swap', dependents, p_name;
+  end if;
+  set local lock_timeout = '5s';
+  cmt := obj_description(old_oid, 'pg_class');
+  execute format('alter materialized view api.%I rename to %I', p_name, p_name || '_old');
+  execute format('drop materialized view api.%I', p_name || '_old');
+  execute format('alter materialized view api.%I rename to %I', p_new, p_name);
+  for ix in select c.relname from pg_index i join pg_class c on c.oid = i.indexrelid
+            where i.indrelid = new_oid and c.relname like p_new || '\_%' loop
+    execute format('alter index api.%I rename to %I', ix.relname, p_name || substr(ix.relname, length(p_new) + 1));
+  end loop;
+  if cmt is not null then
+    execute format('comment on materialized view api.%I is %L', p_name, cmt);
+  end if;
+  execute format('grant select on api.%I to anon, authenticated', p_name);
+end $$;
 create extension if not exists pg_trgm with schema extensions;
 create function core.fold_text(t text) returns text language sql immutable parallel safe as $$
   select btrim(regexp_replace(replace(replace(replace(translate(
@@ -74,27 +115,41 @@ create table core.person_sport (
   source_key text not null,
   primary key (person_id, sport_code, source_id)
 );
+create table core.award_winner (
+  award_winner_id bigint primary key generated always as identity,
+  season_id int,
+  person_id bigint
+);
 insert into meta.source values (1, 'wikidata'), (2, 'wikidata_meigen'), (3, 'spx');
 insert into ref.league values ('nhl', 'hockey'), ('mlb', 'baseball');
 insert into core.person values
   (1, 'Usain Bolt', 'player', '1986-08-21', null, null, null, 2),
   (2, 'José Gretzky', 'player', '1961-01-26', null, 'CA', null, 3),
-  (3, 'Cecil Bolton', 'player', '1904-02-13', '1993-08-25', 'US', null, 3);
-insert into core.season values (10, 'nhl', 1984), (11, 'mlb', 1928);
-insert into core.team_season values (100, 10), (101, 11);
+  (3, 'Cecil Bolton', 'player', '1904-02-13', '1993-08-25', 'US', null, 3),
+  (41424, 'Terry Fox', 'player', '1936-07-05', null, 'US', null, 3),
+  (151189, 'Terry Fox', 'player', '1958-07-28', '1981-06-28', 'CA', null, 2);
+insert into core.season values (10, 'nhl', 1984), (11, 'mlb', 1928), (12, 'mlb', 1960), (13, 'mlb', 1961);
+insert into core.team_season values (100, 10), (101, 11), (102, 12), (103, 13);
 insert into core.roster_stint values (1000, 2, 100, 'player'), (1001, 3, 101, 'player');
+insert into core.player_season_stat values (41424, 102), (41424, 103);
 insert into core.external_id values ('person', 1, 1, 'Q5798'), ('person', 2, 3, 'spx:2');
-insert into core.person_sport values (1, 'athletics', 2, 'wikidata:Q5798:P641:athletics');
+insert into core.person_sport values
+  (1, 'athletics', 2, 'wikidata:Q5798:P641:athletics'),
+  (151189, 'athletics', 2, 'wikidata:Q295053:P641:athletics');
 SQL
 docker cp "$REPO/db/migrations/122_person_admin.sql" "$NAME:/tmp/122.sql"
 docker cp "$REPO/db/migrations/123_person_admin_matview.sql" "$NAME:/tmp/123.sql"
 docker cp "$REPO/db/migrations/124_person_admin_slim.sql" "$NAME:/tmp/124.sql"
+docker cp "$REPO/db/migrations/127_person_admin_player_seasons.sql" "$NAME:/tmp/127.sql"
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/122.sql >/dev/null
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/123.sql >/dev/null
 SIZE_BEFORE=$(docker exec -i "$NAME" psql -U postgres -d spx -Atc "select pg_total_relation_size('api.person_admin')")
 docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/124.sql >/dev/null
 SIZE_AFTER=$(docker exec -i "$NAME" psql -U postgres -d spx -Atc "select pg_total_relation_size('api.person_admin')")
 echo "person_admin bytes before=$SIZE_BEFORE after=$SIZE_AFTER"
+BEFORE127=$(docker exec -i "$NAME" psql -U postgres -d spx -Atc "select sports::text || ',' || coalesce(leagues::text,'') || ',' || has_seasons::text || ',' || seasons_played from api.person_admin where person_id = 41424")
+echo "41424 before 127: $BEFORE127"
+docker exec "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -f /tmp/127.sql >/dev/null
 OUT=$(docker exec -i "$NAME" psql -U postgres -d spx -v ON_ERROR_STOP=1 -At <<'SQL'
 select person_id || ',' || name || ',' || search || ',' || coalesce(qid,'') || ',' || sports::text || ',' || has_seasons::text || ',' || sources::text
   from api.person_admin where person_id = 1;
@@ -110,9 +165,23 @@ select case when (select has_seasons from api.person_admin where person_id = 2)
        then 'ok seasons' else 'FAIL seasons' end;
 select case when (select search from api.person_admin where person_id = 2) = 'jose gretzky'
        then 'ok fold' else 'FAIL fold' end;
-select case when (select count(*) from api.person_admin where sports @> '{athletics}' and has_seasons is false) = 1
+select case when (select count(*) from api.person_admin where sports @> '{athletics}' and has_seasons is false) = 2
        then 'ok sport-filter' else 'FAIL sport-filter' end;
+select case when (select sports::text from api.person_admin where person_id = 41424) = '{baseball}'
+            and (select leagues::text from api.person_admin where person_id = 41424) = '{mlb}'
+            and (select has_seasons from api.person_admin where person_id = 41424)
+            and (select seasons_played from api.person_admin where person_id = 41424) = 2
+            and (select first_season from api.person_admin where person_id = 41424) = 1960
+            and (select last_season from api.person_admin where person_id = 41424) = 1961
+       then 'ok fox-mlb' else 'FAIL fox-mlb' end;
+select case when (select sports::text from api.person_admin where person_id = 151189) = '{athletics}'
+            and (select leagues from api.person_admin where person_id = 151189) is null
+            and (select has_seasons from api.person_admin where person_id = 151189) is false
+            and (select seasons_played from api.person_admin where person_id = 151189) = 0
+            and not (select sports @> '{baseball}' from api.person_admin where person_id = 151189)
+       then 'ok fox-runner' else 'FAIL fox-runner' end;
 select case when (select count(*) from api.person_admin_sports where sport = 'athletics') = 1
+            and (select n from api.person_admin_sports where sport = 'athletics') = 2
             and (select n from api.person_admin_letters where kind = 'last' and letter = 'b') >= 1
             and (select min_year from api.person_admin_span) = 1904
        then 'ok chips' else 'FAIL chips' end;
