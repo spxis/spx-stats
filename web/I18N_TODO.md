@@ -21,6 +21,7 @@ so a string added in English alone still shows.
 - **NWSL / NWSL Championship.** FR keeps the English code "NWSL" and "Championnat de la NWSL" for the trophy and final. JA keeps "NWSL" and "NWSLチャンピオンシップ" (NWSL Championship). First-pass; not reviewed.
 
 - **Retired numbers.** FR "Numéros retirés" / "À l’échelle de la ligue"; JA "永久欠番" (retired number) / "リーグ全体" (league-wide). First-pass; not reviewed.
+- **Title banners.** FR "Fanion" / "Drapeau de jardin"; JA "ペナント" (pennant) / "縦型フラッグ" (vertical flag). First-pass; not reviewed. Honour lines on the banners stay English, as on the real cloth.
 
 - **NBA team figures.** FR "pourcentage de tirs" / "pourcentage à trois points" / "rebonds par match"; JA "フィールドゴール成功率" (field-goal percentage) / "3ポイント成功率" (three-point percentage) / "平均リバウンド" (rebounds per game). First-pass; not reviewed.
 

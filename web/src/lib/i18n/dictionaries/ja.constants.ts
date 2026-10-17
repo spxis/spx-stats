@@ -162,6 +162,8 @@ export const JA: Dictionary = {
   "team.marginTitle": "シーズン別の1試合あたり得失点差",
   "team.marginNote": "得点から失点を引き、試合数で割った値です。シーズンをクリックすると全試合が開きます。",
   "team.championships": "優勝",
+  "team.titlePennant": "ペナント",
+  "team.titleGarden": "縦型フラッグ",
   "team.winTitle": "シーズン別の勝率",
   "team.winNote": "塗りつぶしの点は優勝したシーズンです。シーズンをクリックすると開きます。",
   "team.standings": "シーズン別の順位表",

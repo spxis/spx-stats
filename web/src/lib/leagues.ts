@@ -71,6 +71,11 @@ export function seasonLabel(lg: string, y: number): string {
   return TWO_YEAR_SEASONS.has(lg) ? `${y}-${String(y + 1).slice(2)}` : String(y);
 }
 
+/** The calendar year printed on a championship banner: the year the title was won (spring of a split-year season). */
+export function championshipYear(lg: string, y: number): number {
+  return TWO_YEAR_SEASONS.has(lg) ? y + 1 : y;
+}
+
 /** Display names of the sources the archive draws on (proper names; `srcName` adds the two that are words). */
 export const SRC: Record<string, string> = {
   spx: "SPX", spx_database: "SPX", spxn_database: "SPX", spx_files: "SPX", retrosheet: "Retrosheet", nflverse: "nflverse",

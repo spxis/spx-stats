@@ -392,6 +392,9 @@
   .retired-banners a:hover .retired-cap { text-decoration: underline; }
   .retired-banner { display: block; width: 92px; height: auto; }
   .retired-cap { font: 600 12px/1.2 var(--display); text-align: center; color: var(--muted); max-width: 92px; }
+  .title-banners { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 14px; overflow-x: visible; }
+  .title-banners li { flex: none; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .title-banner { display: block; width: 110px; height: auto; }
   .prose { max-width: 70ch; }
   .prose h2 { margin-top: 10px; }
   .prose ul { padding-left: 1.2em; list-style: disc; display: flex; flex-direction: column; gap: 6px; }

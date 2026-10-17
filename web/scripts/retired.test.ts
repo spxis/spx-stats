@@ -4,6 +4,8 @@ import { jerseyCut } from "../src/lib/jerseyCut.ts";
 import { retiredBannerSvg } from "../src/lib/jerseyBanner.ts";
 import { logoPayload } from "../src/lib/embedLogo.ts";
 import { lastNameOf } from "../src/lib/lastName.ts";
+import { championshipYear } from "../src/lib/leagues.ts";
+import { clubWord, honourOf, titleBannerSvg } from "../src/lib/titleBanner.ts";
 
 /** Run in web/: pnpm test:retired (needs the react-server condition; jerseyBanner.ts is server-only). */
 
@@ -66,4 +68,29 @@ test("a Wikimedia svg.png thumb is a PNG data URI, not parsed as SVG", () => {
   assert.ok(out?.startsWith("data:image/png;base64,"));
   const svg = logoPayload(Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 8 8"></svg>`), "image/svg+xml");
   assert.match(svg ?? "", /^<svg /);
+});
+
+test("a split-year season prints the year the title was won", () => {
+  assert.equal(championshipYear("nhl", 1983), 1984);
+  assert.equal(championshipYear("nba", 1995), 1996);
+  assert.equal(championshipYear("nfl", 1963), 1963);
+  assert.equal(championshipYear("mlb", 1993), 1993);
+});
+
+test("clubWord strips the city from the team name", () => {
+  assert.deepEqual(clubWord("Edmonton Oilers", "Edmonton"), { city: "Edmonton", club: "Oilers" });
+  assert.deepEqual(clubWord("Toronto Maple Leafs", "Toronto"), { city: "Toronto", club: "Maple Leafs" });
+  assert.deepEqual(clubWord("Chicago Blackhawks", null), { city: undefined, club: "Blackhawks" });
+});
+
+test("a title pennant and garden flag draw honour and years, no jersey number", () => {
+  const pennant = titleBannerSvg({ league: "nhl", years: [1984, 1985, 1987, 1988, 1990], team: "Edmonton Oilers", city: "Edmonton", kind: "pennant", primaryHex: "041E42", secondaryHex: "FF4C00" });
+  const garden = titleBannerSvg({ league: "nhl", years: [1984, 1985, 1987, 1988, 1990], team: "Edmonton Oilers", city: "Edmonton", kind: "garden", primaryHex: "041E42", secondaryHex: "FF4C00" });
+  assert.match(pennant, /^<svg /);
+  assert.match(garden, /^<svg /);
+  assert.match(pennant, /STANLEY CUP/);
+  assert.match(garden, /EDMONTON, OILERS/);
+  assert.doesNotMatch(pennant, /\bNHL\b/);
+  assert.deepEqual(honourOf("nhl", [1984]), ["STANLEY CUP", "CHAMPIONS"]);
+  assert.deepEqual(honourOf("nfl", [1963]), ["NFL", "CHAMPIONS"]);
 });

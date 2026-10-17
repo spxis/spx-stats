@@ -162,6 +162,8 @@ export const FR: Dictionary = {
   "team.marginTitle": "Écart de points par match, par saison",
   "team.marginNote": "Points pour moins points contre, divisés par les matchs joués. Cliquez sur une saison pour ouvrir tous ses matchs.",
   "team.championships": "Titres",
+  "team.titlePennant": "Fanion",
+  "team.titleGarden": "Drapeau de jardin",
   "team.winTitle": "Pourcentage de victoires par saison",
   "team.winNote": "Les points pleins sont des saisons de championnat. Cliquez sur une saison pour l’ouvrir.",
   "team.standings": "Classement par saison",

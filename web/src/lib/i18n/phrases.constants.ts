@@ -265,6 +265,8 @@ export const PHRASES = {
   "team.marginTitle": "Scoring margin per game, by season",
   "team.marginNote": "Points for minus points against, divided by games played. Click a season to open every game of it.",
   "team.championships": "Championships",
+  "team.titlePennant": "Pennant",
+  "team.titleGarden": "Garden flag",
   "team.winTitle": "Winning share by season",
   "team.winNote": "Filled dots are championship seasons. Click a season to open it.",
   "team.standings": "Standings by season",

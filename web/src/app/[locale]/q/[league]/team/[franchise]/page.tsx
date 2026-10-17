@@ -9,6 +9,7 @@ import { StandingsTable } from "@/components/StandingsTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
 import { RetiredBanners } from "@/components/RetiredBanners";
+import { TitleBanners } from "@/components/TitleBanners";
 import { FranchiseCountries } from "@/components/FranchiseCountries";
 import { TeamChartsLazy } from "@/components/TeamChartsLazy";
 import { OpponentHeatLazy } from "@/components/OpponentHeatLazy";
@@ -266,6 +267,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
               {cup.map((c) => <span key={`cup${c.year}`} className="full" title={`${say("cup.name")} (${say("cup.before")}) · ${c.team}${c.league ? ` (${c.league})` : ""}`}>{c.year} {say("cup.name")}{c.league ? ` · ${c.league}` : ""}</span>)}
               {t.titles.map((y) => <Link key={y} className="full" href={seasonPath(lg, y)}><TeamLogo url={logoFor(brands, f, y)} size={16} />{seasonLabel(lg, y)}</Link>)}
             </div>
+            <TitleBanners lg={lg} f={f} name={now} />
           </div>
         </div>
       ) : null}
