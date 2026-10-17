@@ -2,12 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { GameRow } from "../src/lib/api/types.ts";
 import {
-  HEAT_ROWS, HEAT_TARGET_COLS, buildHeat, clipHeatGames, gameTone, heatGamesFromRows, heatGamesFromTeam,
-  heatPack, heatRecord, heatSeasons, packHeat, tallyHeat, unpackHeat, type HeatCell, type HeatGame,
+  HEAT_ROWS, HEAT_SPAN_ROWS, HEAT_TARGET_COLS, buildHeat, clipHeatGames, gameTone, heatGamesFromRows, heatGamesFromTeam,
+  heatHover, heatPack, heatRecord, heatSeasons, packHeat, tallyHeat, unpackHeat, type HeatCell, type HeatGame,
 } from "../src/lib/resultHeat.ts";
 import type { TeamGame } from "../src/lib/teamSeason.ts";
 
-/** Run in web/: pnpm test:rheat. One square per game, 7-row pack, W / L / T / OTL, pack round-trip. */
+/** Run in web/: pnpm test:rheat. One square per game, 8-row pack, W / L / T / OTL, pack round-trip. */
 
 const g = (over: Partial<HeatGame> & Pick<HeatGame, "date" | "id">): HeatGame => ({
   year: Number(over.date.slice(0, 4)), res: "W", ot: false, mine: 3, theirs: 2, home: true,
@@ -52,15 +52,16 @@ test("the grid has one square per game and no empty day cells", () => {
   assert.equal(cells.some((c) => c.game.date === "2024-10-12"), false);
 });
 
-test("82 games fill 82 squares in 7-row columns (12 full columns and 5 in the last)", () => {
+test("82 games fill 82 squares in 8-row columns (10 full columns and 2 in the last)", () => {
   const games = Array.from({ length: 82 }, (_, i) => g({ date: `2024-10-${String((i % 28) + 1).padStart(2, "0")}`, id: i + 1, year: 2024 }));
   const grid = buildHeat(games);
   assert.ok(grid);
   assert.equal(grid!.games, 82);
   assert.equal(cellsOf(grid!).length, 82);
-  assert.equal(grid!.cols, 12);
-  assert.equal(grid!.columns[11]!.filter(Boolean).length, 5);
-  assert.equal(grid!.columns[0]!.filter(Boolean).length, 7);
+  assert.equal(grid!.rows, HEAT_ROWS);
+  assert.equal(grid!.cols, 11);
+  assert.equal(grid!.columns[10]!.filter(Boolean).length, 2);
+  assert.equal(grid!.columns[0]!.filter(Boolean).length, 8);
 });
 
 test("all-time packing is one graph, not a year stack, and labels each season's first column", () => {
@@ -133,17 +134,42 @@ test("packHeat / unpackHeat is a round trip", () => {
   assert.deepEqual(unpackHeat({ lg: "nhl", f: 10, names: [], rows: "" }), []);
 });
 
-test("heatPack keeps a season in 7 rows and shrinks all-time to one GitHub-sized box", () => {
+test("heatPack keeps a season in 8 rows and shrinks all-time to one GitHub-sized box", () => {
   const season = heatPack(82);
   assert.equal(season.rows, HEAT_ROWS);
-  assert.equal(season.cols, 12);
+  assert.equal(season.cols, 11);
   assert.equal(season.cell, 11);
   const all = heatPack(2400);
   assert.ok(all.cols * all.rows >= 2400);
   assert.ok(all.cols * (all.cell + all.gap) <= HEAT_TARGET_COLS * 14);
-  assert.ok(all.rows * (all.cell + all.gap) <= HEAT_ROWS * 14 + 14);
+  assert.ok(all.rows * (all.cell + all.gap) <= HEAT_SPAN_ROWS * 14);
   const compact = heatPack(2400, true);
   assert.ok(compact.cols * (compact.cell + compact.gap) <= 340);
+});
+
+test("a season pack without fill stays at the GitHub cell, not a giant tile", () => {
+  const natural = heatPack(96, { rows: HEAT_ROWS });
+  const filled = heatPack(96, { width: 384, rows: HEAT_ROWS, fill: true });
+  assert.equal(natural.rows, HEAT_ROWS);
+  assert.equal(natural.cell, 11);
+  assert.equal(filled.rows, HEAT_ROWS);
+  assert.ok(filled.cell <= 14);
+});
+
+test("all-time packing uses the measured width with squares larger than a 3px strip", () => {
+  const old = heatPack(5100, { width: 768 });
+  assert.ok(old.cols * (old.cell + old.gap) <= 768);
+  assert.ok(old.cell + old.gap >= 5);
+  assert.ok(old.rows * (old.cell + old.gap) <= HEAT_SPAN_ROWS * 14);
+});
+
+test("heatHover names date, opponent, score and result", () => {
+  assert.deepEqual(heatHover(g({ date: "1983-10-05", id: 1, res: "W", mine: 3, theirs: 2, home: true, awayName: "Kings" })), {
+    date: "1983-10-05", opp: "Kings", home: true, score: "3–2", res: "W", ot: false,
+  });
+  assert.deepEqual(heatHover(g({ date: "1983-10-07", id: 2, res: "L", mine: 1, theirs: 4, home: false, homeName: "Canucks", ot: true })), {
+    date: "1983-10-07", opp: "Canucks", home: false, score: "1–4", res: "L", ot: true,
+  });
 });
 
 test("an all-time list of thousands of games still packs to one grid whose square count matches", () => {

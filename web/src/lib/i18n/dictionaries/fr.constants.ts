@@ -2195,6 +2195,7 @@ export const FR: Dictionary = {
   "rheat.title": "Résultats",
   "rheat.lede": "Chaque case est un match. Choisissez une saison, ou tous les matchs du club.",
   "rheat.ledeSeason": "Chaque case est un match de cette saison.",
+  "rheat.ledeSeasonPair": "Les matchs de cette saison, et tous les matchs du club.",
   "rheat.span": "{from} – {to}",
   "rheat.empty": "Aucun match dans cette période.",
   "rheat.aria": "Résultats, {n} matchs, {label}",
@@ -2207,4 +2208,6 @@ export const FR: Dictionary = {
   "rheat.card.none": "Aucun match",
   "rheat.card.home": "{res} {score} c. {opp}",
   "rheat.card.away": "{res} {score} à {opp}",
+  "rheat.card.vs": "c. {opp}",
+  "rheat.card.at": "à {opp}",
 };

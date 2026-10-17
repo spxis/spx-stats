@@ -1,5 +1,5 @@
-/* GitHub-sized result graph: one square per game. A season is 7 rows; all-time shrinks to stay one item. */
-.rheat { display: flex; flex-direction: column; gap: 10px; min-width: 0; }
+/* GitHub-sized result graph: one square per game. A season is 8 rows; all-time shrinks to stay one item. */
+.rheat { display: flex; flex-direction: column; gap: 10px; min-width: 0; width: 100%; }
 .rheat-head { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px 16px; }
 .rheat-rec { font: 700 22px/1 var(--display); letter-spacing: .02em; }
 .rheat-span { color: var(--muted); font-size: 14px; }
@@ -18,7 +18,13 @@
 .rheat .sq.link:hover, .rheat .sq.link:focus { outline: 2px solid var(--ink); outline-offset: 1px; }
 .rheat.compact .rheat-rec { font-size: 18px; }
 .rheat-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; min-width: 0; }
-@media (max-width: 800px) { .rheat-pair { grid-template-columns: 1fr; } }
+.rheat-pair > * { min-width: 0; width: 100%; }
+.rheat-duo { display: grid; grid-template-columns: minmax(180px, 0.5fr) minmax(0, 1fr); gap: 20px 28px; align-items: start; min-width: 0; }
+.rheat-duo > * { min-width: 0; width: 100%; }
+.rheat-lazy { min-width: 0; width: 100%; }
+@media (max-width: 800px) {
+  .rheat-pair, .rheat-duo { grid-template-columns: 1fr; }
+}
 
 .rheat-slider { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px; min-width: 0; }
 .rheat-all { box-sizing: border-box; display: inline-flex; align-items: center; height: var(--control-h); border: 0; background: none; padding: 0 8px; color: var(--ink); font: 600 13px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; text-decoration: underline; text-underline-offset: 3px; white-space: nowrap; }

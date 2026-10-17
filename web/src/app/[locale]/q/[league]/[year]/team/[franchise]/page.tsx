@@ -223,8 +223,8 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       {st ? <Suspense fallback={null}><TeamCountries lg={lg} year={y} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       <Suspense fallback={null}><TeamFlow lg={lg} year={y} f={f} name={name} /></Suspense>
-      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)}meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
-        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} />
+      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
+        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} teamPath={paths.team(lg, f)} />
       {st ? <Suspense fallback={null}><TeamPositionsKey lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}
       <p className="note"><Credits say={say} use={["flags"]} /></p>
     </>

@@ -302,10 +302,10 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
           <div className="rheat-pair">
             {year != null
               ? <ResultHeat lg={lg} games={heatGamesFromTeam(games[0], year, A.name)} compact />
-              : <ResultHeatLazy teamPath={paths.team(lg, a)} lg={lg} />}
+              : <ResultHeatLazy teamPath={paths.team(lg, a)} lg={lg} compact />}
             {year != null
               ? <ResultHeat lg={lg} games={heatGamesFromTeam(games[1], year, B.name)} compact />
-              : <ResultHeatLazy teamPath={paths.team(lg, b)} lg={lg} />}
+              : <ResultHeatLazy teamPath={paths.team(lg, b)} lg={lg} compact />}
           </div>
         </div>
       </section>

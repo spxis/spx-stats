@@ -2195,6 +2195,7 @@ export const JA: Dictionary = {
   "rheat.title": "勝敗",
   "rheat.lede": "1マスが1試合です。スライダーでシーズンを選ぶか、通算の全試合を表示します。",
   "rheat.ledeSeason": "このシーズンの1マスが1試合です。",
+  "rheat.ledeSeasonPair": "今シーズンの試合と、このクラブの全試合です。",
   "rheat.span": "{from}～{to}",
   "rheat.empty": "この期間の試合はありません。",
   "rheat.aria": "結果、{n}試合、{label}",
@@ -2207,4 +2208,6 @@ export const JA: Dictionary = {
   "rheat.card.none": "試合なし",
   "rheat.card.home": "{res} {score} 対 {opp}",
   "rheat.card.away": "{res} {score} @ {opp}",
+  "rheat.card.vs": "対 {opp}",
+  "rheat.card.at": "@ {opp}",
 };

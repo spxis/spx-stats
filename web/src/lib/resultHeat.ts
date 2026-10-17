@@ -1,5 +1,5 @@
 /**
- * A GitHub-sized graph of one club's results: one square per game, packed in play order (7 rows, then the next
+ * A GitHub-sized graph of one club's results: one square per game, packed in play order (8 rows, then the next
  * column). No empty calendar days. Colour is the club's result (W / L / T / OTL). Pure, so the pages and
  * scripts/resultHeat.test.ts build the same grid.
  */
@@ -36,9 +36,17 @@ export interface HeatMark {
   year: number;
 }
 
-export const HEAT_ROWS = 7;
-/** GitHub-graph width: ~53 weeks of 11px cells. A season of ~82 games fits in 7 rows; all-time grows rows and shrinks cells to stay in this box. */
+export const HEAT_ROWS = 8;
+/** GitHub-graph width: ~53 weeks of 11px cells. A season of ~82 games fits in 8 rows; all-time grows rows and shrinks cells to stay in this box. */
 export const HEAT_TARGET_COLS = 53;
+/** All-time height budget in row-steps: taller than a season grid so squares stay a bit larger than a micro-strip. */
+export const HEAT_SPAN_ROWS = 18;
+const CELL0 = 11;
+const GAP0 = 3;
+const COMPACT_CELL = 8;
+const COMPACT_GAP = 2;
+/** Compare/fill: grow a season grid a little, never to the 22px tiles that dominated the pair. */
+const CELL_FILL_MAX = 14;
 
 export interface HeatPack {
   rows: number;
@@ -60,19 +68,34 @@ export interface HeatGrid {
   marks: HeatMark[];
 }
 
-/**
- * How to draw `n` game squares as one GitHub-sized item. A season (or any list that fits 7×53 at 11px) keeps that
- * layout. All-time shrinks the cells and uses more rows so the graph stays about one screen, not a year stack.
- */
-export function heatPack(n: number, compact = false): HeatPack {
-  const cell0 = compact ? 8 : 11;
-  const gap0 = compact ? 2 : 3;
-  const step0 = cell0 + gap0;
-  const maxW = compact ? 340 : HEAT_TARGET_COLS * step0;
-  const maxH = compact ? HEAT_ROWS * step0 : HEAT_ROWS * step0 + step0; // ~7–8 rows at the large cell
-  if (n <= 0) return { rows: HEAT_ROWS, cols: 0, cell: cell0, gap: gap0 };
-  const cols7 = Math.ceil(n / HEAT_ROWS);
-  if (cols7 * step0 <= maxW) return { rows: HEAT_ROWS, cols: cols7, cell: cell0, gap: gap0 };
+export interface HeatPackOpts {
+  /** Inner width of the graph box in px. When omitted, a GitHub-sized (or compact) default is used. */
+  width?: number;
+  /** Force this many rows (the season grid is always 8). */
+  rows?: number;
+  /** Smaller default box, for a first paint before the container is measured. */
+  compact?: boolean;
+  /** Grow season squares toward `width`, capped so they stay smaller than a filled half-column. */
+  fill?: boolean;
+}
+
+const packOpts = (opts?: HeatPackOpts | boolean): HeatPackOpts =>
+  opts === true ? { compact: true } : opts === false || opts == null ? {} : opts;
+
+function seasonPack(n: number, rows: number, cell: number, gap: number): HeatPack {
+  return { rows, cols: Math.max(1, Math.ceil(n / rows)), cell, gap };
+}
+
+function seasonFill(n: number, rows: number, maxW: number, gap0: number, maxCell: number): HeatPack {
+  const cols = Math.max(1, Math.ceil(n / rows));
+  const stepFit = Math.floor(maxW / cols);
+  const gapGuess = stepFit >= 10 ? gap0 : 1;
+  const step = Math.max(3, Math.min(stepFit, maxCell + gapGuess));
+  const gap = step >= 10 ? gap0 : 1;
+  return { rows, cols, cell: Math.max(2, step - gap), gap };
+}
+
+function spanPack(n: number, maxW: number, maxH: number, step0: number, gap0: number): HeatPack {
   for (let step = step0; step >= 3; step--) {
     const cols = Math.max(1, Math.floor(maxW / step));
     const rows = Math.ceil(n / cols);
@@ -85,6 +108,43 @@ export function heatPack(n: number, compact = false): HeatPack {
   const cols = Math.max(1, Math.floor(maxW / step));
   const rows = Math.ceil(n / cols);
   return { rows, cols: Math.ceil(n / rows), cell: 2, gap: 1 };
+}
+
+/**
+ * How to draw `n` game squares as one item. A season keeps 8 rows at the GitHub cell (11px) unless `fill` grows them
+ * a little toward `width`. All-time uses the measured width and a taller budget so squares are larger than a
+ * micro-strip, still one graph. `compact` as a boolean is the old second argument.
+ */
+export function heatPack(n: number, opts?: HeatPackOpts | boolean): HeatPack {
+  const o = packOpts(opts);
+  const cell0 = o.compact ? COMPACT_CELL : CELL0;
+  const gap0 = o.compact ? COMPACT_GAP : GAP0;
+  const step0 = cell0 + gap0;
+  const maxW = Math.max(32, o.width ?? (o.compact ? 340 : HEAT_TARGET_COLS * step0));
+  const maxH = o.compact ? HEAT_ROWS * step0 : HEAT_SPAN_ROWS * step0;
+  if (n <= 0) return { rows: o.rows ?? HEAT_ROWS, cols: 0, cell: cell0, gap: gap0 };
+  if (o.rows != null) {
+    return o.fill ? seasonFill(n, o.rows, maxW, gap0, CELL_FILL_MAX) : seasonPack(n, o.rows, cell0, gap0);
+  }
+  const cols8 = Math.ceil(n / HEAT_ROWS);
+  if (cols8 * step0 <= maxW) {
+    return o.fill ? seasonFill(n, HEAT_ROWS, maxW, gap0, CELL_FILL_MAX) : seasonPack(n, HEAT_ROWS, cell0, gap0);
+  }
+  return spanPack(n, maxW, maxH, step0, gap0);
+}
+
+/** Facts a hover card shows: date, opponent, score, result. Click still opens the game. */
+export function heatHover(g: HeatGame): {
+  date: string; opp: string; home: boolean; score: string | null; res: HeatResult | null; ot: boolean;
+} {
+  return {
+    date: g.date,
+    opp: (g.home ? g.awayName : g.homeName) ?? "",
+    home: g.home,
+    score: g.mine != null && g.theirs != null ? `${g.mine}–${g.theirs}` : null,
+    res: g.res,
+    ot: g.ot,
+  };
 }
 
 const DAY_MS = 86_400_000;
@@ -152,7 +212,7 @@ export function heatSeasons(games: readonly HeatGame[]): number[] {
 /**
  * One GitHub-sized graph: games in chronological order, `rows` down then the next column. Square count equals game
  * count. Season labels sit on the first column that holds a game of that season. `rows` defaults to heatPack's count
- * so a long all-time list stays one item, not a 7-row ribbon thousands of cells wide.
+ * so a long all-time list stays one item, not an 8-row ribbon thousands of cells wide.
  */
 export function buildHeat(games: readonly HeatGame[], rows?: number): HeatGrid | null {
   if (!games.length) return null;

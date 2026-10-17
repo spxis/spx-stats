@@ -17,6 +17,7 @@ import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeaso
 import { replaceQuery } from "@/lib/urlQuery";
 import { Donut } from "./Donut";
 import { ResultHeat } from "./ResultHeat";
+import { ResultHeatLazy } from "./ResultHeatLazy";
 import { GameCalendar } from "./GameCalendar";
 import { H2hLink } from "./H2hLink";
 import { verdictOf } from "./HomeRoadBars";
@@ -60,6 +61,8 @@ interface Props {
   seasonNav?: ReactNode;
   /** The server's date (YYYY-MM-DD): what the calendar's first month is worked out from until the reader's own clock is read. */
   today: string;
+  /** Franchise page address (`/nhl/team/…`), for the all-time heat map JSON. */
+  teamPath: string;
 }
 
 const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allStar" } as const;
@@ -68,7 +71,7 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
-export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav, today }: Props) {
+export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav, today, teamPath }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
   const logos = useMemo(() => new Map(teamList.map((t) => [t.f, t.logo])), [teamList]);
@@ -165,10 +168,13 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
   return (
     <>
       {heatGames.length ? (
-        <section className="section">
+        <section className="section" id="results-calendar">
           <h2>{say("rheat.title")}</h2>
-          <p className="note">{say("rheat.ledeSeason")}</p>
-          <ResultHeat lg={lg} games={heatGames} />
+          <p className="note">{say("rheat.ledeSeasonPair")}</p>
+          <div className="rheat-duo">
+            <ResultHeat lg={lg} games={heatGames} fill={false} />
+            <ResultHeatLazy teamPath={teamPath} lg={lg} lock="all" eager />
+          </div>
         </section>
       ) : null}
       <section className="section">

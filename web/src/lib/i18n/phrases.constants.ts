@@ -2374,6 +2374,7 @@ export const PHRASES = {
   "rheat.title": "Results",
   "rheat.lede": "Each square is a game. Choose a season, or every game the club has played.",
   "rheat.ledeSeason": "Each square is a game of this season.",
+  "rheat.ledeSeasonPair": "This season’s games, and every game the club has played.",
   "rheat.span": "{from} – {to}",
   "rheat.empty": "No games in this span.",
   "rheat.aria": "Results, {n} games, {label}",
@@ -2386,6 +2387,8 @@ export const PHRASES = {
   "rheat.card.none": "No game",
   "rheat.card.home": "{res} {score} vs {opp}",
   "rheat.card.away": "{res} {score} at {opp}",
+  "rheat.card.vs": "vs {opp}",
+  "rheat.card.at": "at {opp}",
 } as const satisfies Record<string, string>;
 
 export type PhraseKey = keyof typeof PHRASES;
