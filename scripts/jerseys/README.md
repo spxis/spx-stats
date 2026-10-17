@@ -15,7 +15,7 @@ A player can have more than one number (Wayne Gretzky 99, Mario Lemieux 66, Pave
 | `cfl_retired` | [List of Canadian Football League retired numbers](https://en.wikipedia.org/wiki/List_of_Canadian_Football_League_retired_numbers) | CC BY-SA 4.0 (404 is left empty) |
 | Wikidata P1618 | sport number, team qualifier P54 when present | CC0 |
 
-nflverse roster numbers already land on `core.roster_stint`; build step 219 also copies those into `core.person_jersey` (same source, `source_key` prefix `jersey-roster:`).
+nflverse roster numbers already land on `core.roster_stint`; build step 220 also copies those into `core.person_jersey` (same source, `source_key` prefix `jersey-roster:`).
 
 ## Commands (from the repo root)
 
@@ -25,7 +25,7 @@ python3 -I scripts/jerseys/extract.py --cache raw/wikipedia_jersey/cache --out r
 python3 -I scripts/jerseys/wikidata_numbers.py --out raw/wikidata_jersey/sport_number.json
 # load against the session's Postgres (PGHOST / PGPORT / PGDATABASE):
 python3 -I scripts/jerseys/load.py raw/wikipedia_jersey/parsed/*.json raw/wikidata_jersey/sport_number.json
-psql … -v ON_ERROR_STOP=1 -f db/build/219_jersey_numbers.sql
+psql … -v ON_ERROR_STOP=1 -f db/build/220_jersey_numbers.sql
 ```
 
 One request every 2.5 s, identified User-Agent. Existing cache files are never refetched.

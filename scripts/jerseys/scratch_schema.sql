@@ -1,5 +1,5 @@
 -- Minimal core for scratch-testing jersey matching. Not for DS1 or production.
--- No gist excludes. Enough for db/migrations/130 and db/build/219.
+-- No gist excludes. Enough for db/migrations/130 and db/build/220.
 
 create extension if not exists btree_gist;
 
