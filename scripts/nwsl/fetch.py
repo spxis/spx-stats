@@ -84,9 +84,20 @@ def page(sub, title, files=None):
 
 
 def template_titles(y, text):
-    """Standings templates a season article transcludes."""
-    return sorted(set(m.strip() for m in re.findall(
-        r"\{\{\s*(%d (?:National Women's Soccer League|NWSL)[^{}|]*?[Ss]tandings)\s*(?:\|[^{}]*)?\}\}" % y, text)))
+    """Templates a season article transcludes that hold standings or club-season links.
+
+    Standings live in '{{2013 National Women's Soccer League season}}' (a sports table),
+    not always a name that ends in 'standings'. Club-season titles live in
+    '{{2013 NWSL season by team}}'.
+    """
+    found = set()
+    found.update(m.strip() for m in re.findall(
+        r"\{\{\s*(%d (?:National Women's Soccer League|NWSL)[^{}|]*?[Ss]tandings)\s*(?:\|[^{}]*)?\}\}" % y, text))
+    found.update(m.strip() for m in re.findall(
+        r"\{\{\s*(%d (?:National Women's Soccer League|NWSL) season)\s*(?:\|[^{}]*)?\}\}" % y, text))
+    found.update(m.strip() for m in re.findall(
+        r"\{\{\s*(%d NWSL season by team)\s*(?:\|[^{}]*)?\}\}" % y, text))
+    return sorted(found)
 
 
 def team_titles(y, text):

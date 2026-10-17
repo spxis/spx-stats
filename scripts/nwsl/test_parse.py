@@ -75,6 +75,8 @@ class T(unittest.TestCase):
         self.assertEqual(F.years()[0], 2013)
         self.assertEqual(F.template_titles(2013, "{{2013 National Women's Soccer League standings}} {{2013 NWSL standings}}"),
                          ["2013 NWSL standings", "2013 National Women's Soccer League standings"])
+        self.assertEqual(F.template_titles(2013, "{{2013 National Women's Soccer League season}} {{2013 NWSL season by team}}"),
+                         ["2013 NWSL season by team", "2013 National Women's Soccer League season"])
         self.assertEqual(F.team_titles(2013, "[[2013 Portland Thorns FC season|Thorns]] [[2013 National Women's Soccer League season]] [[2013 NWSL College Draft]]"),
                          {"2013 Portland Thorns FC season"})
 
@@ -115,3 +117,80 @@ class T(unittest.TestCase):
     def test_champion_of(self):
         self.assertEqual(P.champion_of("|champions = [[Portland Thorns FC]]\n"), "Portland Thorns FC")
         self.assertEqual(P.champion_of("|champion = [[Gotham FC]]\n"), "Gotham FC")
+        self.assertEqual(P.champion_of("|winners = [[Portland Thorns FC]]\n"), "Portland Thorns FC")
+        self.assertEqual(P.champion_of("|winners = [[Gotham FC]] (2nd title)\n"), "Gotham FC")
+
+    def test_skip_concacaf_and_challenge_cup(self):
+        text = """
+== Competitions ==
+=== 2025–26 CONCACAF W Champions Cup ===
+==== Semifinals ====
+{{football box
+|date = May 24, 2025
+|team1 = [[Gotham FC]]
+|score = 3–1
+|team2 = [[Club América (women)|América]]
+}}
+=== NWSL Challenge Cup ===
+{{football box
+|date = March 7, 2025
+|team1 = [[Orlando Pride]]
+|score = 1–0
+|team2 = [[Washington Spirit]]
+}}
+=== Friendlies ===
+{{football box
+|date = July 20, 2025
+|team1 = [[Gotham FC]]
+|score = 2–1
+|team2 = [[Urawa Red Diamonds]]
+}}
+=== Regular season ===
+{{football box
+|date = March 15, 2025
+|team1 = [[Gotham FC]]
+|score = 2–0
+|team2 = [[Portland Thorns FC]]
+}}
+"""
+        gs, bad = P.games_from_boxes(P.B.boxes(text, 2025), "2025 Gotham FC season")
+        self.assertEqual(bad, [])
+        self.assertEqual([(g["phase"], g["home"], g["away"]) for g in gs],
+                         [("regular", "Gotham FC", "Portland Thorns FC")])
+
+    def test_club_from_prefers_piped_display(self):
+        self.assertEqual(P.club_from("Gotham FC", "Sky Blue FC"), "Sky Blue FC")
+        self.assertEqual(P.club_from("2013 Portland Thorns FC season", "Thorns"), "Portland Thorns FC")
+
+    def test_championship_page_box_is_playoffs(self):
+        gs, bad = P.games_from_boxes(P.B.boxes(
+            "== Match ==\n=== Details ===\n{{football box\n|date = August 31, 2013\n"
+            "|team1 = [[Western New York Flash]]\n|score = 0–2\n|team2 = [[Portland Thorns FC]]\n}}\n",
+            2013), "2013 NWSL Championship")
+        self.assertEqual(bad, [])
+        self.assertEqual(len(gs), 1)
+        self.assertEqual(gs[0]["phase"], "playoffs")
+
+    def test_merge_keeps_home_score_when_logs_disagree(self):
+        rows = [
+            dict(phase="regular", date="2013-07-31", home="Portland Thorns FC", away="Sky Blue FC",
+                 home_pts=3, away_pts=1, ot=False, so=False, src="2013 Portland Thorns FC season 3–1"),
+            dict(phase="regular", date="2013-07-31", home="Portland Thorns FC", away="Sky Blue FC",
+                 home_pts=1, away_pts=3, ot=False, so=False, src="2013 Sky Blue FC season 1-3"),
+        ]
+        out = P.merge_games(rows)
+        self.assertEqual(len(out), 1)
+        self.assertEqual((out[0]["home_pts"], out[0]["away_pts"], out[0]["views"]), (3, 1, 2))
+        self.assertIn("disagree", out[0]["conflict"])
+
+    def test_merge_close_dates_same_match(self):
+        rows = [
+            dict(phase="regular", date="2025-03-14", home="Orlando Pride", away="Chicago Stars FC",
+                 home_pts=6, away_pts=0, ot=False, so=False, src="2025 Orlando Pride season 6–0"),
+            dict(phase="regular", date="2025-03-15", home="Orlando Pride", away="Chicago Stars FC",
+                 home_pts=6, away_pts=0, ot=False, so=False, src="2025 Chicago Stars FC season 6–0"),
+        ]
+        out = P.merge_games(rows)
+        self.assertEqual(len(out), 1)
+        self.assertEqual(out[0]["date"], "2025-03-14")
+        self.assertEqual(out[0]["views"], 2)

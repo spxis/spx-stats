@@ -7,33 +7,40 @@ boxes on the season article or playoff page are kept too. Challenge Cup, pre-sea
 exhibition sections are skipped. Rows nothing here can read come back as unparsed.
 Recap URLs are not followed.
 """
-import os, re, sys
+import datetime, os, re, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "mls"))
 import wikibox as B  # noqa: E402
 
 SKIP_HEAD = re.compile(
-    r"pre-?season|exhibition|friendly|challenge cup|summer cup|liga mx|college draft|allocation",
+    r"pre-?season|exhibition|friendli|challenge cup|summer cup|liga mx|"
+    r"concacaf|champions cup|w champions|invitational|college draft|allocation",
     re.I)
 PLAYOFF_HEAD = re.compile(r"playoff|championship|semi-?final|quarter-?final|\bfinals?\b", re.I)
 SEASON_TEAM = re.compile(r"^(\d{4}) (.+) season$")
 
 
 def club_from(link, text):
-    """Canonical club name: the '<year> <club> season' title, else the cell's plain text."""
+    """Canonical club name: the '<year> <club> season' title, else the cell's display text.
+
+    A piped link such as [[Gotham FC|Sky Blue FC]] keeps Sky Blue FC (the name that season),
+    not the current article title.
+    """
     if link:
         m = SEASON_TEAM.match(link.strip())
         if m: return " ".join(m.group(2).replace("\xa0", " ").split())
+    t = re.sub(r"\s+", " ", (text or "").replace("\xa0", " ").strip().strip("."))
+    t = re.sub(r"\s*\([^)]*\)\s*$", "", t)
+    if t: return t
+    if link:
         t = re.sub(r"\s*\([^)]*\)\s*$", "", link.strip())
         if t and "season" not in t.lower() and "NWSL" not in t and "National Women's" not in t:
             return " ".join(t.replace("\xa0", " ").split())
-    t = re.sub(r"\s+", " ", (text or "").replace("\xa0", " ").strip().strip("."))
-    t = re.sub(r"\s*\([^)]*\)\s*$", "", t)
-    return t or None
+    return None
 
 
-def phase_of(path, round_name):
-    blob = " ".join(path) + " " + (round_name or "")
+def phase_of(path, round_name, src_name=""):
+    blob = " ".join(path) + " " + (round_name or "") + " " + (src_name or "")
     if SKIP_HEAD.search(blob): return None
     if PLAYOFF_HEAD.search(blob): return "playoffs"
     return "regular"
@@ -44,7 +51,7 @@ def games_from_boxes(boxes, src_name=""):
     games, bad = [], []
     for b in boxes:
         path = b.get("path") or []
-        phase = phase_of(path, b.get("round"))
+        phase = phase_of(path, b.get("round"), src_name)
         if phase is None: continue
         if b.get("series"): continue
         d = b.get("date")
@@ -83,20 +90,72 @@ def games_from_boxes(boxes, src_name=""):
 
 
 def merge_games(rows):
-    """The same match listed on two club pages (or the season page) is one game."""
+    """The same match listed on two club pages (or the season page) is one game.
+
+    Two logs that share the date and the two clubs are one game even when they
+    disagree on the score: the home club's own article wins, and the other line
+    is kept in conflict.
+    """
     groups, order = {}, []
     for g in rows:
-        k = (g["phase"], g["date"], g["home"], g["away"], g["home_pts"], g["away_pts"])
+        k = (g["phase"], g["date"], g["home"], g["away"])
         if k not in groups:
             groups[k] = dict(g)
+            groups[k]["views"] = g.get("views") or 1
             order.append(k)
-        else:
-            groups[k]["views"] += 1
-            if g.get("conflict") and not groups[k].get("conflict"):
-                groups[k]["conflict"] = g["conflict"]
-            if g.get("round") and not groups[k].get("round"):
-                groups[k]["round"] = g["round"]
-    return [groups[k] for k in order]
+            continue
+        cur = groups[k]
+        cur["views"] = cur.get("views") or 1
+        cur["views"] += 1
+        if g.get("round") and not cur.get("round"):
+            cur["round"] = g["round"]
+        same = (g["home_pts"], g["away_pts"], bool(g.get("ot")), bool(g.get("so"))) == (
+            cur["home_pts"], cur["away_pts"], bool(cur.get("ot")), bool(cur.get("so")))
+        if same:
+            if g.get("conflict") and not cur.get("conflict"):
+                cur["conflict"] = g["conflict"]
+            continue
+        # Prefer the home club's season article when the two scores disagree.
+        take_g = g["home"] in (g.get("src") or "") and g["home"] not in (cur.get("src") or "")
+        kept, dropped = (g, cur) if take_g else (cur, g)
+        note = (f"Wikipedia logs disagree: {dropped['home_pts']}–{dropped['away_pts']} "
+                f"vs {kept['home_pts']}–{kept['away_pts']}")
+        if take_g:
+            for field in ("home_pts", "away_pts", "ot", "so", "src"):
+                cur[field] = g[field]
+            if g.get("conflict"):
+                cur["conflict"] = g["conflict"]
+        cur["conflict"] = (cur["conflict"] + "; " if cur.get("conflict") else "") + note
+    return _merge_close_dates([groups[k] for k in order])
+
+
+def _merge_close_dates(games, days=3):
+    """Two club pages often disagree by a day (late kickoff / time zone). Same clubs + close dates are one game."""
+    used, out = set(), []
+    for i, a in enumerate(games):
+        if i in used: continue
+        for j, b in enumerate(games):
+            if j <= i or j in used: continue
+            if (a["phase"], a["home"], a["away"]) != (b["phase"], b["home"], b["away"]): continue
+            try:
+                da, db = datetime.date.fromisoformat(a["date"]), datetime.date.fromisoformat(b["date"])
+            except ValueError:
+                continue
+            if abs((da - db).days) > days: continue
+            take_b = b["home"] in (b.get("src") or "") and b["home"] not in (a.get("src") or "")
+            score_diff = (b["home_pts"], b["away_pts"]) != (a["home_pts"], a["away_pts"])
+            note_scores = (b["home_pts"], b["away_pts"], a["home_pts"], a["away_pts"], b["date"], a["date"])
+            if take_b:
+                for field in ("date", "home_pts", "away_pts", "ot", "so", "src", "round"):
+                    if b.get(field) not in (None, ""): a[field] = b[field]
+            a["views"] = (a.get("views") or 1) + (b.get("views") or 1)
+            if score_diff:
+                note = (f"Wikipedia dates {note_scores[4]} / {note_scores[5]} "
+                        f"scores {note_scores[0]}–{note_scores[1]} vs {note_scores[2]}–{note_scores[3]}")
+                a["conflict"] = (a["conflict"] + "; " if a.get("conflict") else "") + note
+            used.add(j)
+        out.append(a)
+    return out
 
 
 def parse_standings_module(text, src_name=""):
@@ -137,11 +196,14 @@ def _int(s):
 def champion_of(text):
     m = re.search(r"^\s*\|\s*champions?\s*=\s*(.+)$", text, re.I | re.M)
     if not m:
+        m = re.search(r"^\s*\|\s*winners?\s*=\s*(.+)$", text, re.I | re.M)
+    if not m:
         m = re.search(r"^\s*\|\s*finals_champ\s*=\s*(.+)$", text, re.I | re.M)
     if not m: return None
     t = m.group(1).strip()
     t = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", t)
     t = re.sub(r"\{\{[^}]*\}\}|<[^>]*>|'''|''", "", t)
+    t = re.sub(r"\s*\([^)]*\)\s*$", "", t)
     t = re.sub(r"\s+", " ", t).strip(" |")
     return t or None
 
