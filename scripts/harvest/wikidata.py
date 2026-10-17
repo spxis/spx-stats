@@ -7,7 +7,7 @@ import json
 import re
 from datetime import date
 
-PERSON_PROPS = {"P569", "P570", "P19", "P27", "P413", "P2048", "P2067"}   # birth, death, birth place, citizenship, position, height, mass
+PERSON_PROPS = {"P569", "P570", "P19", "P27", "P413", "P2048", "P2067", "P641", "P106"}   # birth, death, birth place, citizenship, position, height, mass, sport, occupation
 LABEL_PROPS = {"P297", "P298", "P17", "P31"}                              # ISO 3166 alpha-2 and alpha-3, country, instance of
 GREGORIAN = "http://www.wikidata.org/entity/Q1985727"
 HUMAN = "Q5"

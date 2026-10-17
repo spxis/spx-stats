@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Read P27, P19, P17 and P297 for meigen athlete QIDs from Wikidata (CC0).
+"""Read P27, P19, P17, P297, P641 and P106 for meigen athlete QIDs from Wikidata (CC0).
 
 Writes db/seed/wikidata_meigen_claim.csv (qid, prop, n, rank, value_qid, value_text).
 215 maps unique P27 → nationality_code and P19 → P17/P297 → birth_country_code.
+217 maps P641 / known P106 occupations onto core.person_sport.
 One request every 2 s, 50 ids at a time. Never prints an entity JSON dump.
 
   python3 -I scripts/wikidata_meigen/fetch_claims.py
@@ -22,7 +23,7 @@ REPO = Path(__file__).resolve().parents[2]
 ATHLETES = REPO / "db/seed/wikidata_meigen_athlete.csv"
 OUT = REPO / "db/seed/wikidata_meigen_claim.csv"
 UA = {"User-Agent": "spx-stats/meigen-claims (https://github.com/spxis/spx-stats)"}
-KEEP_PERSON = {"P27", "P19"}
+KEEP_PERSON = {"P27", "P19", "P641", "P106"}
 KEEP_PLACE = {"P17", "P297"}
 
 

@@ -535,8 +535,11 @@ class WikidataParse(unittest.TestCase):
         for q in ("Q71127", "Q41421"):
             props = set(out[q].get("claims", {}))
             self.assertTrue(props <= WD.PERSON_PROPS, props)
-            for banned in ("P21", "P172", "P140", "P106", "P54"):         # sex or gender, ethnic group, religion, occupation, teams
+            for banned in ("P21", "P172", "P140", "P54"):         # sex or gender, ethnic group, religion, teams
                 self.assertNotIn(banned, props)
+            self.assertIn("P106", WD.PERSON_PROPS)
+            self.assertIn("P641", WD.PERSON_PROPS)
+        self.assertIn("P106", out["Q71127"].get("claims", {}))
         self.assertEqual(out["Q71127"]["label"], "John Havlicek")
         self.assertEqual(out["Q71127"]["enwiki"], "John Havlicek")
         self.assertEqual(out["Q71127"]["lastrevid"], 2000001)
@@ -553,6 +556,21 @@ class WikidataParse(unittest.TestCase):
         self.assertTrue(by["P19"][0]["value_qid"].startswith("Q"))
         self.assertIn(by["P2048"][0]["unit_qid"], ("Q174728", "Q11573", "Q3710"))
         self.assertGreater(by["P2048"][0]["value_num"], 1)
+
+    def test_old_payload_without_p641_still_loads(self):
+        """Archived people pruned before P641/P106 were in KEEP still load; extra claims stay empty."""
+        old_keep = {"P569", "P570", "P19", "P27", "P413", "P2048", "P2067"}
+        raw = json.dumps(json.load(open(os.path.join(FIX, "wd_entities.json")))).encode()
+        e = WD.prune_response(raw, {"Q41421": old_keep}, default_keep=old_keep)["entities"]["Q41421"]
+        props = set(e.get("claims", {}))
+        self.assertTrue(props <= old_keep, props)
+        self.assertNotIn("P641", props)
+        self.assertNotIn("P106", props)
+        rows = WD.claim_rows("Q41421", e["claims"])
+        self.assertTrue(rows)
+        self.assertNotIn("P641", [r["prop"] for r in rows])
+        self.assertNotIn("P106", [r["prop"] for r in rows])
+        self.assertTrue(any(r["prop"] == "P569" for r in rows))
 
     def test_times(self):
         self.assertEqual(WD.parse_time("+1956-12-07T00:00:00Z"), "1956-12-07")
@@ -845,7 +863,7 @@ class Ds1(unittest.TestCase):
         # Wikidata
         self.assertEqual(one("select count(*) from legacy_wikidata_harvest.team_member where team_qid = 'Q131371'"), 8)
         self.assertEqual(one("select value_on::text from legacy_wikidata_harvest.claim where qid = 'Q71127' and prop = 'P569'") is not None, True)
-        self.assertEqual(one("select count(*) from legacy_wikidata_harvest.claim where prop in ('P21', 'P172', 'P140', 'P106', 'P54')"), 0)
+        self.assertEqual(one("select count(*) from legacy_wikidata_harvest.claim where prop in ('P21', 'P172', 'P140', 'P54')"), 0)
         self.assertEqual(one("select count(*) from legacy_wikidata_harvest.item where qid in ('Q71127', 'Q41421') and enwiki_title is not null"), 2)
         # what was found is queued: members DS1 does not hold become bios, places and countries named become labels
         self.assertGreater(one("select count(*) from ingest.harvest_job where kind = 'wd_person' and target not in ('Q71127', 'Q41421', 'Q99999999999')"), 2)

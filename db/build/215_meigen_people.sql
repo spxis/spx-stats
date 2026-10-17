@@ -9,7 +9,7 @@
 -- or politics. Rerunnable: writes a row only when the stored value is
 -- distinct from the incoming one (a second run is a no-op). Deletes only
 -- person_sport and data_issue rows this step owns and that are no longer
--- wanted. Run after 185 and 214. No begin/commit: ds1-apply.sh wraps one
+-- wanted (wikidata:<qid>:P641:<code> only; 217 owns p641-map: rows). Run after 185 and 214. No begin/commit: ds1-apply.sh wraps one
 -- transaction. Seed is loaded first by python3 -I scripts/wikidata_meigen/load.py.
 -- Country claims: db/seed/wikidata_meigen_claim.csv (\copy from the repo root),
 -- plus harvest / legacy_people claims when those tables exist.
@@ -131,8 +131,12 @@ join pp using (qid)
 join core.person p on p.person_id = pp.person_id
 on conflict do nothing;
 
+-- Only the meigen athlete CSV rows this step wrote (wikidata:<qid>:P641:<code>).
+-- 217 owns p641-map:<qid>:<code> for harvest / legacy_people P641; leave those.
 delete from core.person_sport ps
  where ps.source_id = (select source_id from mg)
+   and exists (select 1 from pp where pp.person_id = ps.person_id)
+   and ps.source_key like 'wikidata:%:P641:%'
    and not exists (
      select 1 from sports s
      join pp using (qid)
