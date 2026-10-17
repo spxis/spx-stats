@@ -1,7 +1,7 @@
 -- The PWHL (2023-24 on) from English Wikipedia (CC BY-SA 4.0): every game the season article's
 -- game log and {{NHLPlayoffs}} blocks list (regular season and playoffs), each season's published
 -- standings, and every franchise's names by season, parsed by scripts/pwhl/ into
--- legacy_wikipedia_pwhl (migration 127). The PWHL is a league of its own ('pwhl'): its records are
+-- legacy_wikipedia_pwhl (migration 128). The PWHL is a league of its own ('pwhl'): its records are
 -- never added to the NHL's. A season is named by the year it starts (2023 = 2023-24).
 -- Why Wikipedia: the PWHL's own site and feeds, Hockey-Reference and ESPN are excluded by their terms
 -- (no automated collection). NHL endpoints are never used. Recap links are not followed.

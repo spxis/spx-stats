@@ -1,5 +1,5 @@
 -- The Professional Women's Hockey League (2023-24 on) from English Wikipedia (CC BY-SA 4.0), parsed by
--- scripts/pwhl/season.py into legacy_wikipedia_pwhl. The PWHL is its own league in core ('pwhl', db/build/217),
+-- scripts/pwhl/season.py into legacy_wikipedia_pwhl. The PWHL is its own league in core ('pwhl', db/build/218),
 -- never counted as the NHL: core.season is one row per league and year, and a PWHL season is named by the
 -- year it starts (2023 = the 2023-24 season).
 --   * game: paired from the two clubs' season-article game logs (regular season and playoffs).

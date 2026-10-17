@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One PWHL season at a time: fetch -> archive the raw wikitext -> parse -> load legacy_wikipedia_pwhl (migration 127).
+"""One PWHL season at a time: fetch -> archive the raw wikitext -> parse -> load legacy_wikipedia_pwhl (migration 128).
 
   season.py [--dry] [--no-archive] YEAR [YEAR ...]       (2023 = the 2023–24 PWHL season)
   season.py [--dry] [--no-archive] --range 2023 2025
@@ -12,7 +12,7 @@ the parsed rows replace that season's rows in legacy_wikipedia_pwhl.
 Source: English Wikipedia (CC BY-SA 4.0), action=raw, one request per 2.5 s.
 DS1 is reached with scripts/daily/ds1.sh; PWHL_PSQL (a command that reads SQL on stdin) points the
 loader at a scratch database instead. PWHL_RUN_DATE and PWHL_CACHE name the day and the folder of the raw files.
-The core tables are built from these rows by db/build/217_pwhl_from_wikipedia.sql, a separate, reviewed step.
+The core tables are built from these rows by db/build/218_pwhl_from_wikipedia.sql, a separate, reviewed step.
 Never used: Sports Reference, ESPN, the PWHL's own feeds, or any NHL endpoint.
 """
 import collections, hashlib, os, re, subprocess, sys
