@@ -36,7 +36,7 @@ where p.full_name in ('Wayne Gretzky', 'Mario Lemieux', 'Pavel Bure')
 on conflict do nothing;
 "
 python3 -I scripts/jerseys/load.py raw/wikipedia_jersey/parsed/*.json raw/wikidata_jersey/sport_number.json
-psql -v ON_ERROR_STOP=1 -f db/build/219_jersey_numbers.sql
+psql -v ON_ERROR_STOP=1 -f db/build/220_jersey_numbers.sql
 psql -v ON_ERROR_STOP=1 -c "
 select p.full_name, r.league_code, r.jersey_number, r.franchise_id is null as league_wide
 from core.retired_number r
