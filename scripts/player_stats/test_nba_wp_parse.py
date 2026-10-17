@@ -42,5 +42,18 @@ class T(unittest.TestCase):
         ts = P.tables(html)
         self.assertEqual(ts[0]["rows"][0]["cells"], {"Player": "A", "GP": "5", "REB": "7"})
 
+    def test_team_totals_row(self):
+        html = '<h2>Player statistics</h2><h3>Season</h3>' + TABLE
+        tt = P.team_totals(html)
+        self.assertEqual(len(tt), 1)
+        self.assertEqual((tt[0]["phase"], tt[0]["name"]), ("regular", "Team totals"))
+        self.assertEqual(tt[0]["cells"]["GP"], "82")
+        self.assertEqual(tt[0]["cells"]["PPG"], "99.0")
+
+    def test_team_totals_skips_opponents_and_preseason(self):
+        opp = TABLE.replace("Team totals", "Opponents")
+        html = '<h2>Player statistics</h2><h3>Preseason</h3>' + TABLE + '<h3>Season</h3>' + opp
+        self.assertEqual(P.team_totals(html), [])
+
 if __name__ == "__main__":
     unittest.main()

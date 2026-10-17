@@ -5,7 +5,8 @@
 --    db/build/181_players_lahman.sql: Lahman's retrosheet team code and year, then the franchise's names.
 --  * NFL: nflverse weekly team stats (legacy_team_stats.nflverse_team_week), regular season: pass_yds, rush_yds, yds (pass + rush) and
 --    yds_against (what the opponents of the club's games gained). A game is found through its nflverse game id.
--- NBA and CFL have no source here that allows automated use. CFL club-season articles on English Wikipedia
+-- NBA: Wikipedia player-statistics tables, in 185_team_season_stat_nba.sql (not this file).
+-- CFL has no source here that allows automated use. CFL club-season articles on English Wikipedia
 -- (checked 2026-10-16: every 2008 club, every 2022 club, plus several league-season pages) print player
 -- passing/rushing/receiving tables, never a team yards total; Wikidata club-season items have no yards
 -- claims. CFL.ca is forbidden; CFLdb robots Disallow:/ ; CFLapedia has no open licence. The parser

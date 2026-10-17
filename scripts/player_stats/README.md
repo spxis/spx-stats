@@ -38,6 +38,9 @@ then `db/checks` (091 is new), then a data release of `core.player_season_stat, 
 runs `api.refresh()`; `api.stat_reference` (the league line, ranks and radar) is rebuilt by migrations 102 (build `stat_reference_new`) and 103 (swap), applied to
 DS1 and production as two separate files before the release, never while a refresh runs.
 
+NBA **team** season totals (rebounds, points, and shooting when the table publishes attempts) are built from the same `legacy_wikipedia_stats` lines by
+`db/build/185_team_season_stat_nba.sql`. See `scripts/team_stats/README.md`. No extra fetch.
+
 ## How a line is placed
 
 * NBA: the name must link to an article, the article must be a Wikidata item whose person step 179 made, the club season a team season (the franchise identity's

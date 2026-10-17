@@ -123,3 +123,31 @@ def tables(html):
             data.append({"name": name, "title": (r[0]["link"] or None), "cells": cells})
         if data: out.append({"phase": phase, "tbl": count[phase], "header": header, "rows": data})
     return out
+
+TEAM_ROW = re.compile(r"^(team )?(totals?|total|team)$", re.I)
+
+def team_totals(html):
+    """Published Team / Total rows of the same player-statistics tables (rare; most articles have none).
+
+    Same phase rules as tables(). Opponents rows are not used. cells keeps every cell as shown, like tables()."""
+    p = _P()
+    p.feed(html)
+    out, count = [], {}
+    for t in p.tables:
+        rows = t["rows"]
+        hi = next((i for i, r in enumerate(rows) if len(r) >= 3 and _txt(r[0]["text"]).lower() in ("player", "name", "players")), None)
+        if hi is None: continue
+        phase = phase_of(t["path"])
+        if phase is None: continue
+        header = [_txt(c["text"]) for c in rows[hi]]
+        keys, seen = [], {}
+        for x in header:
+            seen[x] = seen.get(x, 0) + 1
+            keys.append(x if seen[x] == 1 else f"{x}#{seen[x]}")
+        for r in rows[hi + 1:]:
+            name = _txt(r[0]["text"])
+            if not name or not TEAM_ROW.fullmatch(name): continue
+            count[phase] = count.get(phase, 0) + 1
+            cells = {keys[i]: _txt(c["text"]) for i, c in enumerate(r) if i < len(keys)}
+            out.append({"phase": phase, "tbl": count[phase], "name": name, "header": header, "cells": cells})
+    return out
