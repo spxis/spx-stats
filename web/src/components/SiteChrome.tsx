@@ -1,5 +1,5 @@
 import Link from "@/components/Link";
-import { FooterLanguage, HeaderAccount } from "./auth/Account";
+import { FooterLanguage, FooterVersion, HeaderAccount } from "./auth/Account";
 import { BrandImg } from "./BrandImg";
 import { BrandSwoosh } from "./BrandSwoosh";
 import { Rich } from "./i18n/Rich";
@@ -88,7 +88,7 @@ export async function SiteFooter() {
       <div className="foot-base">
         <FooterLanguage />
         <p className="ver">
-          {say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })}
+          <FooterVersion text={say("footer.version", { version: sha ? `${pkg.version} (${sha})` : pkg.version })} />
           {dataVersion ? ` · Data ${dataVersion}` : null}
         </p>
       </div>
