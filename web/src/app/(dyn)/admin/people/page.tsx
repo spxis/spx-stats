@@ -17,7 +17,7 @@ import type { Speaker } from "@/lib/i18n/i18n";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { listTitle } from "@/lib/listTitle";
 import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
-import type { Locale } from "@/lib/locale";
+import { LOCALE_TAG, type Locale } from "@/lib/locale";
 import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
@@ -111,7 +111,8 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const sportChips = sportSplit
     ? [{ code: "", short: say("phase.all") }, ...sportSplit.shown.map((s) => ({ code: s.code, short: sportName(s.code, locale) }))]
     : [];
-  const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportName(s.code, locale) })) ?? [];
+  const byName = new Intl.Collator(LOCALE_TAG[locale], { sensitivity: "base" });
+  const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportName(s.code, locale) })).sort((a, b) => byName.compare(a.short, b.short)) ?? [];
   const sourceChips = sources?.length
     ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: s.code.replaceAll("_", " ") }))]
     : [];

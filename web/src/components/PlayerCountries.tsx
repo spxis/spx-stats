@@ -6,6 +6,7 @@ import { Credits } from "@/components/Credits";
 import { Flag } from "@/components/Flag";
 import { flagCodes } from "@/lib/flagCodes";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { LOCALE_TAG } from "@/lib/locale";
 import { countryName, pctText } from "@/lib/people-format";
 import { against, chipSplit, coverage, slicesOf, type Tally } from "@/lib/playerCountryModel";
 import "@/components/country.css";
@@ -41,6 +42,8 @@ export async function PlayerCountries({ part, t, reference, league, chosen, href
 
   if (part === "chips") {
     const { shown, more } = chipSplit(t.list, chosen, CHIPS_SHOWN);
+    const byName = new Intl.Collator(LOCALE_TAG[locale], { sensitivity: "base" });
+    const moreByName = [...more].sort((a, b) => byName.compare(countryName(a.code, locale), countryName(b.code, locale)));
     const chip = (c: { code: string; n: number }) => {
       const on = c.code === chosen;
       const name = countryName(c.code, locale);
@@ -55,7 +58,7 @@ export async function PlayerCountries({ part, t, reference, league, chosen, href
       <nav className="pchips" aria-label={say("players.whereChips")}>
         <Link className="pall" href={href({ nat: null })} prefetch={false} aria-current={chosen ? undefined : "true"}>{say("players.countryClear")}</Link>
         {shown.map(chip)}
-        {more.length ? <ChipsMore label={say("players.whereMore", { n: fmt(more.length) })}>{more.map(chip)}</ChipsMore> : null}
+        {more.length ? <ChipsMore label={say("players.whereMore", { n: fmt(more.length) })}>{moreByName.map(chip)}</ChipsMore> : null}
       </nav>
     );
   }
