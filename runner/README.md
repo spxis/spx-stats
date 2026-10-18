@@ -17,6 +17,8 @@ of the release prepared for an admin's **Request scores update** (below).
    on first start if it is missing.
 3. Open `release-runner.env` in a text editor and fill in (names only here; the values are in the private file):
    - `SUPABASE_ACCESS_TOKEN`: the production access token.
+   - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN`: the Turso database the admin and bulky tables are published to (no release of them and no
+     drift comparison of them without both). After a code change in `scripts/release` the runner must be rebuilt (Build) before the next prepare.
    - `PGPASSWORD`: the DS1 password. `PGHOST=127.0.0.1` (DS1 is on the same NAS and the container uses host networking, because
      bridge containers had no DNS on that NAS). `PGPORT`, `PGUSER`, `PGDATABASE` are already right.
 4. In the NAS's container UI (its Docker or Compose project screen) open Project, then Create. Name `spx-release-runner`, path the folder from step 1, source

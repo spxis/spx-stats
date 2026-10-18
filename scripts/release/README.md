@@ -100,6 +100,50 @@ cannot be withdrawn; a reason is required.
 held, still pending, and only when the new release has no blocker (a blocked release cannot replace a good one). The reason names the new
 number. Another actor's releases and approved ones are never touched.
 
+## Turso as a second target
+
+Production is on the 500 MB plan (457 MB on 2026-10-18, and `prepare` refuses above 450 MB), so the admin and bulky tables live in Turso
+(free plan, 5 GB). `scripts/release/turso.py` holds the list (`TABLES`) and the code; `release.py` dispatches on it. **A table in that
+list is published to Turso and never to production; one release goes to one target** (a mix is refused at `prepare`, naming both
+sides). The flow is the same as for production: preview, `db/checks`, snapshot, apply, read-back that must equal DS1, rollback, drift.
+
+| DS1 object | Turso table | Notes |
+|---|---|---|
+| `meta.verification`, `meta.data_issue`, `core.betting_line`, `core.batted_ball_player` | `meta_verification`, `meta_data_issue`, `core_betting_line`, `core_batted_ball_player` | as DS1 |
+| `core.external_id` | `core_external_id` | still without the `game` rows (`PUBLISH_FILTER`) |
+| `api.person_admin` (matview) | `api_person_admin` | the matview on DS1 is the source: refresh it (`api.refresh()`) before you prepare |
+| derived, computed live on DS1 | `api_totals`, `api_quality`, `api_provenance` | the counts that used to come from the three production matviews (migrations 015, 056); `''` stands for null in a key |
+
+Rules and behaviour:
+
+- **Values.** Every DS1 column is read as text and turned into one canonical value (integer, boolean 0/1, real, or text; arrays are JSON
+  text, bytea is hex, timestamps are UTC text), the same way from DS1 and from Turso, so "equal" is exact. SQLite types: INTEGER, REAL,
+  TEXT. Table names are `schema_table` (SQLite has no schemas).
+- **Compare.** In Python over the whole table (all are under 100,000 rows), in the shape `compare.py` returns, so the preview, the
+  fingerprint test ("changed since the preview"), `meta.sync_status` and the drift check work unchanged. The "production rows" column of
+  the preview, of `meta.sync_status` and of `/admin/data` holds **Turso's** row count for these tables; the preview says `target: turso`.
+- **No size guard, no rehearsal.** Turso has no 500 MB cap, so the size estimate is skipped (a Turso release can be prepared while
+  production is over 450 MB). There is no rehearsal: the batches are idempotent and the read-back plus the snapshot are the safety net.
+  The 5 percent shrink rule still applies.
+- **Apply.** Deletes first, then `insert or replace` by primary key, in transactions of at most 300 rows (and 600 KB) each, over the HTTP
+  pipeline API. A release is therefore not one transaction. If a batch fails, or the read-back differs from DS1, the snapshot is
+  restored (rows saved before the apply in `release-snapshots/<number>/*.tsv.gz` and in DS1 schema `backup_release_<id>`) and the release
+  is marked failed; if the restore itself fails the error says so (`AfterCommit`) and the drift check shows the table as differing.
+- **Rollback** (`release.py rollback --release <n>`) restores the same snapshot the same way.
+- **Drift.** The nightly check compares these tables with Turso, and proposes a separate "Drift fix ... (Turso)" release. If the runner has
+  no `TURSO_DATABASE_URL` the tables show as "differs: Turso is not configured" and nothing is proposed.
+- **Daily scores.** `prepare --kind daily_scores` now defaults to `core.game` only, and the daily hook leaves Turso tables (`meta.verification`,
+  `meta.data_issue`) out of its releases; their changes reach Turso through the drift fix, which John approves. Only `kind publish` goes to Turso.
+- **Site cache.** After a Turso release the runner revalidates the tags `turso` and `turso:<table>` (`web/src/lib/turso/client.ts`).
+- **Schema.** `python3 -I scripts/release/release.py turso-schema [--tables a,b]` prints the `create table/index if not exists` statements
+  built from DS1's catalog; `--apply` runs them on Turso (idempotent; a column added on DS1 later needs `alter table ... add column` by hand,
+  and `prepare` says so as a blocker). Indexes the site needs are listed in `turso.py`.
+- **Environment (names only).** `TURSO_DATABASE_URL` (`libsql://...` or `https://...`) and `TURSO_AUTH_TOKEN`, in the runner's `release-runner.env`
+  and on Vercel. Tests use `--turso-url http://127.0.0.1:<port>` against a local libSQL server. `RELEASE_TURSO_TABLES=none` (test hook) makes the
+  Turso names plain production tables again, which is how the older tests still use them.
+- **Dropping them from production.** `db/migrations/131_drop_turso_tables_production.sql` (production only, not applied) after the checklist in its
+  header. `api.games` / `api.soccer_matches` keep their columns and answer `null` for `checked`; the site fills it from Turso.
+
 ## Tables published in part (`PUBLISH_FILTER`)
 
 Production is on the 500 MB plan, so some DS1 rows are not published. `PUBLISH_FILTER` in `scripts/sync/compare.py` maps a table to a
@@ -123,7 +167,7 @@ compare production with unfiltered DS1 and fail (and restore the snapshot).
 
 ## Automatic approval (daily scores)
 
-`prepare --kind daily_scores` (default tables `core.game,meta.verification,meta.data_issue`; no `--replace`) writes an ordinary release
+`prepare --kind daily_scores` (default tables `core.game` and, while they are production tables, `meta.verification,meta.data_issue`; no `--replace`) writes an ordinary release
 with a policy verdict in `preview.auto` (`eligible`, `reasons`). Exit 1 with "nothing to release" means DS1 and production already match.
 
 Policy, checked at prepare, again by the runner right before it approves, and again right before it applies (on the same
@@ -286,6 +330,8 @@ with `select api.refresh_one('api.<view>')`.
     TEST_ORDER_PORT=<free port> python3 -I scripts/release/test/test_guard.py   # the size estimate with the two real releases of 2026-10-15, and the per-view refresh (own throwaway Postgres; stops it after)
     python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 7740; stops it after; includes the position-release shape, exclusion constraints, the rehearsal, withdraw and superseding, and the foreign key loop refusal)
     python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 104/105 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
+    TEST_PG_PORT=<scratch Postgres> python3 -I scripts/release/test/test_turso.py   # releases to Turso against a local libSQL server (docker run ghcr.io/tursodatabase/libsql-server on 127.0.0.1:7742, --turso to change): schema, prepare, run, rollback, drift, a failing batch restored, a changed DS1
+    TEST_PG_PORT=<scratch Postgres> python3 -I scripts/release/test/test_drop_migration.py   # migration 131 on a stand-in for production
     python3 -I scripts/release/test/test_request.py  # score update and drift requests, the shared lock, sync status, site cache refresh (053)
 
 Uses the local Docker Postgres (`spx-stats-local`): builds a small template database from `spx_stats` (only read), makes scratch copies

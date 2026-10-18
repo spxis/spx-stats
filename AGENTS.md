@@ -197,12 +197,13 @@ John reads on his phone with little attention to spare, and the phone cannot cha
    "GitHub Integration" connector gives Claude Code no `mcp__*GitHub*` tools: GitHub is fine when the hook prints
    `gh login: ok`, so do not report GitHub MISSING in that case. For a missing one the
    fix is "claude.ai > Settings > Connectors > <name> > Connect". Without Supabase: no production migrations or loads.
-   Without Vercel: deploy with the CLI block in [section 7](#7-deploying). Turso is not needed today.
+   Without Vercel: deploy with the CLI block in [section 7](#7-deploying).
 3. Report everything MISSING to John as `NEED FROM YOU:` with the one fix, then carry on with what works.
 
-Turso: planned second database (Supabase is production now). Today database `spx-stats` holds one supplementary
-`health` table, not used by the code or the site; its URL is private. Connect the Turso connector (or `turso auth login`)
-when Turso work starts; not required today. `spx-check.sh` reports the optional `turso` CLI as info.
+Turso: the second database, on its free plan (database `spx-stats`; its URL is private). It holds the admin and bulky tables that no longer fit
+on production ([section 8](#8-data-work), "Turso"); the site and the release runner read the environment variables `TURSO_DATABASE_URL` and
+`TURSO_AUTH_TOKEN`. Agents never need the token: they test against a local libSQL server in Docker (`ghcr.io/tursodatabase/libsql-server`,
+a port in 7740-7749). The Turso connector (or `turso auth login`) is for John's own checks; `spx-check.sh` reports the optional `turso` CLI as info.
 Neon: not used by this project; don't ask John to connect it.
 
 **New machine or instance: connect everything first.** Do this once per Mac or cloud environment, before any
@@ -211,7 +212,7 @@ ticket work. Each row says what breaks without it. Exact commands with private v
 | Connect | How | Without it |
 |---|---|---|
 | claude.ai connectors: Dropbox, Vercel, Supabase, GitHub | claude.ai, Settings, Connectors: connect each one (a browser click each). They then appear in every Claude session on that account, cloud or Mac. | no private file over MCP, no MCP deploys, no production reads |
-| Turso CLI (Mac, optional, later) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks today |
+| Turso CLI (Mac, optional) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks; the runner and the site use the HTTP API with `TURSO_*` |
 | Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
 | GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
 | Private host mapping (Mac) | `zsh scripts/mac/spx-credentials.sh hosts [--from <private START-HERE file>]` writes `~/.config/spx-stats/hosts.env` (mode 600, outside the repository): the addresses, host names and NAS login behind machine1, machine2 and nas1. Every script reads it through `scripts/mac/lib/hosts.sh`; `setup` runs it first. `hosts --check` lists which names are set, never a value | every DS1, ssh and keychain-parity line says `MISSING` |
@@ -559,6 +560,18 @@ steps (SQL files under `db/`). The coordinating session applies them with `bash 
 (only files under `db/`), then prepares a data release that John approves at `/admin/data`. A schema migration still needs
 applying to production (item 4) before the release that fills it. DS1 has the nologin roles `anon` and `authenticated`, so
 migrations with grants apply unchanged.
+
+**Turso (second release target).** Production is on the 500 MB plan, so six admin and bulky objects live in Turso instead: `api.person_admin`,
+`meta.verification`, `meta.data_issue`, `core.external_id`, `core.batted_ball_player`, `core.betting_line`, plus three small derived tables
+(`api_totals`, `api_quality`, `api_provenance`) that replace what production's matviews computed from them. The list is `TABLES` in
+`scripts/release/turso.py`; `release.py` publishes those tables to Turso (preview, checks, snapshot, batches, exact read-back, rollback,
+drift: [`scripts/release/README.md`](scripts/release/README.md), "Turso as a second target") and never to production. One release goes to
+one place, so `prepare` refuses a mix; the runner (NAS) needs `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` and a rebuild at the commit that
+has `turso.py`. Create the Turso tables with `release.py turso-schema --apply` (from DS1's catalog; idempotent). The site reads them through
+`web/src/lib/turso` (server side, cached like the api views, tags `turso:<table>`; "Couldn't load" when Turso is down; without
+`TURSO_DATABASE_URL` it falls back to the api views, which is how a local preview of DS1 runs). `api.games.checked` and
+`api.soccer_matches.checked` are filled in from `meta_verification` by `lib/turso/checked.ts`. Removing the old copies from production is
+`db/migrations/131_drop_turso_tables_production.sql` (production only, after its checklist).
 
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
@@ -910,6 +923,10 @@ Template for the note (replace each `<value>`):
 
     ## (2) Vercel only (project "Sumilabu", not the cloud environment). Agents never see it.
     BOARD_TOKENS_JSON=<value>                         # write-only: saving REPLACES the whole map; rebuild, then redeploy
+
+    ## (2b) Vercel project "spx-stats" (the site) and the runner's release-runner.env on the NAS; not the cloud environment.
+    TURSO_DATABASE_URL=<value>                        # the Turso database (section 8, "Turso")
+    TURSO_AUTH_TOKEN=<value>                          # a read-only token is enough for the site; the runner needs one that can write
 
     ## (3) Tell the agent in chat (not secret)
     Repo https://github.com/spxis/spx-stats . "Read AGENTS.md, then Dropbox /Backups/spx-stats/START-HERE.md."
