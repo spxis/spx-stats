@@ -16,6 +16,8 @@ interface Props {
   presets?: RangePreset[];
   /** Extra control beside Reset (the archive chart's Grow / Collapse). */
   extra?: ReactNode;
+  /** The small Reset beside the years; false where the page has its own Reset for every filter (the people lists). */
+  reset?: boolean;
 }
 
 const PAD = 16; // half of a handle's hit area, in px: keeps the handles inside the track at both ends
@@ -24,7 +26,7 @@ const clamp = (n: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, n
 
 /** Two handles on one line that narrow a chart to the years from..to. A handle never crosses the other; one season is the least.
     The bar between the handles moves the whole range, its width unchanged, and stops at the first and last season. */
-export function YearRange({ min, max, from, to, onChange, presets, extra }: Props) {
+export function YearRange({ min, max, from, to, onChange, presets, extra, reset = true }: Props) {
   const { say } = useSpeaker();
   const track = useRef<HTMLDivElement | null>(null);
   const thumbs = useRef<{ start: HTMLDivElement | null; end: HTMLDivElement | null; pan: HTMLDivElement | null }>({ start: null, end: null, pan: null });
@@ -185,7 +187,7 @@ export function YearRange({ min, max, from, to, onChange, presets, extra }: Prop
     </div>
     <div className="yr-end">
       {extra}
-      <button type="button" className="yr-reset" disabled={full} onClick={() => onChange(min, max, true)}>{say("range.reset")}</button>
+      {reset ? <button type="button" className="yr-reset" disabled={full} onClick={() => onChange(min, max, true)}>{say("range.reset")}</button> : null}
     </div>
     </div>
   );

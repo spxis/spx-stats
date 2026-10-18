@@ -607,6 +607,7 @@ export const JA: Dictionary = {
   "teams.statusActive": "現存",
   "teams.statusDefunct": "消滅",
   "players.countryClear": "すべての国",
+  "players.resetFilters": "フィルターをリセット · {count}",
   "players.teamsCol": "所属チーム",
   "players.teamsTitle": "選手が所属したすべてのチーム（古い順）。ロゴにカーソルを合わせると、チーム名と在籍年が表示されます。",
   "players.teamsMore": "ほか{n}チーム。すべて：{list}",

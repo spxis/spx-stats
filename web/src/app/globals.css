@@ -89,13 +89,15 @@
 @layer components {
   /* The one control size (--control-h): height and a centred single line; the sideways padding stays with each control. */
   select, input[type="search"], .theme, .signin-link, .usermenu-btn, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a, .seasonnav select,
-  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visiteditor input, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .tk-filters input[type="search"], .tk-filters select {
+  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visiteditor input, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .tk-filters input[type="search"], .tk-filters select, .filter-reset {
     box-sizing: border-box; height: var(--control-h); padding-block: 0; line-height: 1;
   }
   .theme, .signin-link, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a,
-  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a {
+  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .filter-reset {
     display: inline-flex; align-items: center; justify-content: center;
   }
+  .filter-reset { padding-inline: 12px; border: 1px solid var(--rule); border-radius: 6px; color: var(--ink); background: none; text-decoration: none; white-space: nowrap; font: 600 14px/1 var(--body); }
+  .filter-reset:hover { background: var(--soft); }
   /* A segmented toggle is the same height: its frame plus buttons that fill it (a wrapped one keeps a full-height row each). */
   .seg { box-sizing: border-box; min-height: var(--control-h); }
   .seg > button, .seg > a { box-sizing: border-box; align-self: stretch; display: inline-flex; align-items: center; justify-content: center; min-height: calc(var(--control-h) - 2px); padding-block: 0; line-height: 1; }

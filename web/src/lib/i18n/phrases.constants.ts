@@ -77,6 +77,7 @@ export const PHRASES = {
   "players.azFirst": "First name",
   "players.azNone": "{letter}: no player under these choices",
   "players.countryClear": "All countries",
+  "players.resetFilters": "Reset filters · {count}",
   "players.teamsCol": "Teams",
   "players.teamsTitle": "Every team the player played for, the earliest first. Hover a logo for the team and its years.",
   "players.teamsMore": "and {n} more teams. All of them: {list}",

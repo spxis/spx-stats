@@ -607,6 +607,7 @@ export const FR: Dictionary = {
   "teams.statusActive": "Actives",
   "teams.statusDefunct": "Disparues",
   "players.countryClear": "Tous les pays",
+  "players.resetFilters": "Réinitialiser les filtres · {count}",
   "players.teamsCol": "Équipes",
   "players.teamsTitle": "Toutes les équipes pour lesquelles le joueur a joué, la plus ancienne d’abord. Survolez un logo pour voir l’équipe et les années.",
   "players.teamsMore": "et {n} autres équipes. Toutes : {list}",

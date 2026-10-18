@@ -28,6 +28,8 @@ interface Props {
   to: number;
   /** Whether the address names a range. When it does not, a range this viewer saved is applied. */
   inAddress: boolean;
+  /** Whether the slider keeps its own Reset (see YearRange). */
+  reset?: boolean;
 }
 
 /**
@@ -36,7 +38,7 @@ interface Props {
  * in the address (?from=&to=) and, for the next visit, in this browser under a key per page; a saved range is applied before the list is
  * painted (the list sits under `.yr-hold`, which RANGE_HOLD_SCRIPT keeps hidden until then).
  */
-export function ListRange({ page, min, max, from, to, inAddress }: Props) {
+export function ListRange({ page, min, max, from, to, inAddress, reset }: Props) {
   const router = useRouter();
   const key = RANGE_PAGES[page].key;
   const [pending, startTransition] = useTransition();
@@ -89,7 +91,7 @@ export function ListRange({ page, min, max, from, to, inAddress }: Props) {
 
   return (
     <div className="listrange" aria-busy={pending || undefined}>
-      <YearRange min={min} max={max} from={shown.from} to={shown.to} onChange={change} />
+      <YearRange min={min} max={max} from={shown.from} to={shown.to} onChange={change} reset={reset} />
     </div>
   );
 }
