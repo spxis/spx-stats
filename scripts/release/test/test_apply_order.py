@@ -31,6 +31,7 @@ import tempfile
 import time
 import types
 
+os.environ.setdefault("RELEASE_TURSO_TABLES", "none")   # these tests use the Turso table names as plain production tables
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, ".."))
 sys.path.insert(0, os.path.join(HERE, "..", "..", "sync"))

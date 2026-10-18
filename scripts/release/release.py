@@ -8,6 +8,10 @@
   drift     compare every table, write meta.sync_status, and propose one pending fix release when anything differs
   checks    run db/checks/*.sql on DS1 and print the result
   status    list the releases
+  turso-schema  print or apply the Turso table definitions
+
+Targets: production (Supabase) for core, meta and ref tables; Turso for the tables in scripts/release/turso.py (admin and bulky tables the
+site reads from Turso). One release goes to one target; the flow is the same (preview, checks, snapshot, apply, exact read-back, rollback).
 
 Kinds: publish (make production match DS1 for the listed tables: insert, update and delete), ds1_step (run one
 db/migrations or db/build file on DS1 in one transaction, at a pinned git sha), rollback.
@@ -37,6 +41,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compare as C  # noqa: E402
 import daily_lock  # noqa: E402
+import turso as T  # noqa: E402
 
 REPO = os.environ.get("RELEASE_REPO") or os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SNAP_DIR = os.environ.get("RELEASE_SNAPSHOT_DIR") or os.path.join(os.getcwd(), "release-snapshots")
@@ -87,7 +92,7 @@ def log(msg):
 
 def scrub(text):
     text = str(text)
-    for name in ("SUPABASE_ACCESS_TOKEN", "PGPASSWORD", "REVALIDATE_SECRET"):
+    for name in ("SUPABASE_ACCESS_TOKEN", "PGPASSWORD", "REVALIDATE_SECRET", "TURSO_AUTH_TOKEN"):
         v = os.environ.get(name)
         if v:
             text = text.replace(v, "***")
@@ -175,6 +180,8 @@ class Ctx:
         if not token:
             raise SystemExit("SUPABASE_ACCESS_TOKEN is not set")
         self.prod = C.ApiSide(args.project_ref, token, url=args.api_url)
+        self.turso = None   # opened on first use: TURSO_DATABASE_URL and TURSO_AUTH_TOKEN (scripts/release/turso.py)
+        self.turso_url = getattr(args, "turso_url", None)
         self.ds1_dsn = args.ds1_dsn
         self.daily_script = getattr(args, "daily_script", None) or os.path.join(REPO, "scripts", "daily", "run.py")
         self.by = getattr(args, "by", None) or "release.py"
@@ -299,14 +306,14 @@ def size_problem(db_bytes, per_table, limit=None):
     return None
 
 
-def guardrails(per_table, replace, db_bytes):
+def guardrails(per_table, replace, db_bytes, size_limit=True):
     problems = []
     for n, p in per_table.items():
         after = p["prod_rows"] + p["add"] - p["remove"]
         if p["prod_rows"] > 0 and after < p["prod_rows"] * (1 - SHRINK_LIMIT) and not replace:
             problems.append("%s would shrink from %d to %d rows (more than %d%%); a release must say replace to allow it"
                             % (n, p["prod_rows"], after, round(SHRINK_LIMIT * 100)))
-    big = size_problem(db_bytes, per_table)
+    big = size_problem(db_bytes, per_table) if size_limit else None
     if big:
         problems.append(big)
     return problems
@@ -314,6 +321,8 @@ def guardrails(per_table, replace, db_bytes):
 
 def diff_tables(ctx, names):
     """Compare each table. Returns ({name: (Table, diff)}, {name: blockers}, {name: warnings}); a table with a blocker has no diff."""
+    if target_of(names) == "turso":
+        return T.diff_tables(ctx, names)
     tabs = load_tables(ctx, names)
     diffs, blockers, warnings = {}, {}, {}
     for n in names:
@@ -325,8 +334,9 @@ def diff_tables(ctx, names):
 
 
 def build_preview(ctx, names, replace, diffs, blockers, warnings):
-    sd, sp = table_sizes(ctx.ds1), table_sizes(ctx.prod)
-    db_bytes = ctx.prod.run("select pg_database_size(current_database()) as b")[0]["b"]
+    turso = target_of(names) == "turso"   # Turso has no 500 MB cap: no size estimate, and production's size does not matter
+    sd, sp = ({}, {}) if turso else (table_sizes(ctx.ds1), table_sizes(ctx.prod))
+    db_bytes = 0 if turso else ctx.prod.run("select pg_database_size(current_database()) as b")[0]["b"]
     per = {}
     for n in names:
         p = {"ds1_rows": None, "prod_rows": None, "add": 0, "change": 0, "remove": 0, "bytes_delta": 0, "bytes_delta_end": 0, "bytes_delta_staged": 0,
@@ -337,9 +347,10 @@ def build_preview(ctx, names, replace, diffs, blockers, warnings):
                      ds1_fp=fp(d["b1"]), prod_fp=fp(d["b2"]))
             # a table with rows on production is measured there; a table with none by its DS1 copy
             sizes, rows = (sp.get(n), d["prod"]) if d["prod"] else (sd.get(n), d["ds1"])
-            p["bytes_delta"], p["bytes_delta_end"], p["bytes_delta_staged"] = estimate_bytes(p["add"], p["change"], p["remove"], rows, sizes)
+            if not turso:
+                p["bytes_delta"], p["bytes_delta_end"], p["bytes_delta_staged"] = estimate_bytes(p["add"], p["change"], p["remove"], rows, sizes)
         per[n] = p
-    problems = guardrails({n: p for n, p in per.items() if n in diffs}, replace, db_bytes)
+    problems = guardrails({n: p for n, p in per.items() if n in diffs}, replace, db_bytes, size_limit=not turso)
     all_blockers = ["%s: %s" % (n, b) for n, p in per.items() for b in p["blockers"]] + problems
     preview = {
         "tables": per, "blockers": all_blockers,
@@ -348,6 +359,8 @@ def build_preview(ctx, names, replace, diffs, blockers, warnings):
         "db_bytes": db_bytes,
     }
     preview["end_bytes"], preview["peak_bytes"] = size_estimate(db_bytes, {n: p for n, p in per.items() if n in diffs})
+    if turso:
+        preview["target"] = "turso"
     return preview
 
 
@@ -409,16 +422,31 @@ def create_release(ctx, row):
 def valid_tables(raw):
     names = sorted({x.strip() for x in raw.split(",") if x.strip()})
     for n in names:
+        if T.is_turso(n):
+            continue
         if not TABLE_RE.match(n) or n in RESERVED or re.match(r"^meta\.r[sd]_[0-9]", n):
             raise SystemExit("not a table that can be released: %s (core, meta and ref tables only)" % n)
     if not names:
         raise SystemExit("--tables is required")
+    target_of(names)
     return names
+
+
+def target_of(names):
+    """'turso' when every table is one of turso.TABLES, 'production' when none is. A release goes to one target: a mix is refused."""
+    mine, other = T.split_names(names)
+    if mine and other:
+        raise Refused("one release goes to one place: %s go to Turso, %s to production. Make two releases." % (", ".join(mine), ", ".join(other)))
+    return "turso" if mine else "production"
 
 
 def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, created_by=None, diff_cache=None, quiet=False,
                     kind="publish"):
-    ordered(ctx, names)  # a foreign key loop among the tables is refused now, not at the apply
+    turso = target_of(names) == "turso"
+    if turso and kind != "publish":
+        raise Refused("only a publish release goes to Turso")
+    if not turso:
+        ordered(ctx, names)  # a foreign key loop among the tables is refused now, not at the apply
     checks = run_checks(ctx.ds1)
     if diff_cache is None:
         diffs, blockers, warnings = diff_tables(ctx, names)
@@ -432,7 +460,7 @@ def prepare_publish(ctx, title, names, notes=None, ticket=None, replace=False, c
     if preview["totals"]["add"] + preview["totals"]["change"] + preview["totals"]["remove"] == 0 and not preview["blockers"]:
         raise Refused("DS1 and production already match for these tables: nothing to release")
     options = {"replace": True} if replace else {}
-    if not preview["blockers"] and REHEARSE:
+    if not preview["blockers"] and REHEARSE and not turso:
         order = ordered(ctx, names)
         rehearsal_blockers(preview, rehearse(ctx, publish_plan(ctx, [(n, diffs[n][0], diffs[n][1]) for n in order])))
     if kind == "daily_scores":
@@ -496,7 +524,7 @@ def print_preview(row):
     pv = row["preview"]
     print("release %s (%s): %s" % (row["number"], row["kind"], row["title"]))
     for n, p in (pv.get("tables") or {}).items():
-        print("  %-28s +%d ~%d -%d  (DS1 %s, production %s)" % (n, p["add"], p["change"], p["remove"], p["ds1_rows"], p["prod_rows"]))
+        print("  %-28s +%d ~%d -%d  (DS1 %s, %s %s)" % (n, p["add"], p["change"], p["remove"], p["ds1_rows"], "Turso" if pv.get("target") == "turso" else "production", p["prod_rows"]))
     if pv.get("file"):
         print("  file %s at %s" % (pv["file"], (row.get("git_sha") or "")[:10]))
         for k, v in (pv.get("after") or {}).items():
@@ -1239,8 +1267,69 @@ def publish_plan(ctx, items):
     return plan
 
 
+def run_publish_turso(ctx, rel):
+    """A publish to Turso: same checks, the same "nothing moved since the preview" test, a snapshot, the apply in batches, a full
+    read-back that must equal DS1, and a restore from the snapshot when it does not (or when the apply stopped half way)."""
+    started = time.time()
+    names = list(rel["tables"])
+    replace = bool((rel["options"] or {}).get("replace"))
+    pv = rel["preview"]
+    checks = run_checks(ctx.ds1)
+    problems = check_blockers(checks)
+    if problems:
+        raise Refused("checks fail now: " + "; ".join(problems))
+    diffs, blockers, warnings = diff_tables(ctx, names)
+    for n in names:
+        if blockers[n]:
+            raise Refused("%s: %s" % (n, "; ".join(blockers[n])))
+    now = build_preview(ctx, names, replace, diffs, blockers, warnings)
+    for n in names:
+        a, b = pv["tables"][n], now["tables"][n]
+        if (a["ds1_fp"], a["prod_fp"]) != (b["ds1_fp"], b["prod_fp"]):
+            raise Refused("%s changed since the preview (DS1 or Turso moved): prepare the release again" % n)
+    if now["blockers"]:
+        raise Refused("; ".join(now["blockers"]))
+    items = [(n, diffs[n][0], diffs[n][1]) for n in sorted(names)]
+    schema = T.snapshot(ctx, rel["id"], rel["number"], items, SNAP_DIR)
+    before_fp = {n: now["tables"][n]["prod_fp"] for n in names}
+    side = T.get_side(ctx)
+
+    def put_back(why):
+        try:
+            T.restore(ctx, rel["id"], names, before_fp=before_fp, fp=fp)
+        except Exception as e2:  # noqa: BLE001
+            raise AfterCommit("Turso does not match DS1 after the release (%s) and the automatic restore failed: %s" % (why, scrub(e2)),
+                              {"verified": False, "backup_schema": schema, "target": "turso"})
+        raise RuntimeError("%s; the snapshot was restored" % why)
+
+    try:
+        for n, t, d in items:
+            T.apply_diff(side, t, d)
+    except Exception as e:  # noqa: BLE001 - batches are idempotent: if the answer was lost, look before calling it a failure
+        try:
+            same = all(T.verify_equal(ctx, t, d["b1"]) for n, t, d in items)
+        except Exception:  # noqa: BLE001
+            same = False
+        if same:
+            log("the answer was lost but Turso matches DS1: counting the release as applied (%s)" % scrub(e))
+        else:
+            put_back("the apply stopped: " + scrub(e))
+    for n, t, d in items:
+        if not T.verify_equal(ctx, t, d["b1"]):
+            log("verification failed for %s: restoring the snapshot" % n)
+            put_back("Turso did not match DS1 after the release for %s" % n)
+    result = {"tables": {n: {"add": now["tables"][n]["add"], "change": now["tables"][n]["change"], "remove": now["tables"][n]["remove"],
+                             "rows_before": now["tables"][n]["prod_rows"], "rows_after": now["tables"][n]["ds1_rows"]} for n in names},
+              "totals": {k: now["totals"][k] for k in ("add", "change", "remove")},
+              "backup_schema": schema, "before_fp": before_fp, "verified": True, "target": "turso",
+              "seconds": round(time.time() - started)}
+    return result
+
+
 def run_publish(ctx, rel, pre=None):
     """pre: (diffs, now) from auto_gate, which has just done the checks and the comparison below on the same data."""
+    if target_of(list(rel["tables"])) == "turso":
+        return run_publish_turso(ctx, rel)
     started = time.time()
     names = list(rel["tables"])
     options = rel["options"] or {}
@@ -1359,7 +1448,7 @@ def prepare_rollback(ctx, number, title=None, notes=None, ticket=None):
                   "bytes_delta": 0, "ds1_fp": None, "prod_fp": (res.get("before_fp") or {}).get(n), "blockers": [], "warnings": []}
     preview = {"tables": per, "blockers": blockers, "warnings": [], "rollback_of": number,
                "totals": {k: sum(p[k] for p in per.values()) for k in ("add", "change", "remove", "bytes_delta")}}
-    if not blockers and REHEARSE:
+    if not blockers and REHEARSE and target_of(list(orig["tables"])) == "production":
         try:
             plan = restore_plan(ctx, orig["id"], list(orig["tables"]), {n: v["rows_before"] for n, v in (res.get("tables") or {}).items()})
             rehearsal_blockers(preview, rehearse(ctx, plan))
@@ -1419,6 +1508,10 @@ def run_rollback(ctx, rel):
         raise Refused("later releases changed the same tables: " + ", ".join(x["number"] for x in later))
     res = orig["result"]
     names = list(orig["tables"])
+    if target_of(names) == "turso":
+        T.restore(ctx, orig["id"], names, before_fp=res["before_fp"], fp=fp)
+        set_release(ctx, orig["id"], {"status": "rolled_back"}, from_status="done")
+        return {"rolled_back": number, "verified": True, "target": "turso", "seconds": round(time.time() - started)}
     try:
         restore(ctx, orig["id"], names, before_fp=res["before_fp"],
                 orig_rows={n: v["rows_before"] for n, v in res["tables"].items()})
@@ -1609,12 +1702,15 @@ TAG_RE = re.compile(r"^[a-z0-9_:.-]{1,100}$")
 
 def revalidate_tags(ctx, tables, leagues):
     """The cache tags of the site's fetches (web/src/lib/api/client.ts): api:<view>, and api:<view>:<league> or api:<view>:all."""
+    mine, tables = T.split_names(tables)
+    tags = ["data-version"] + ["turso:" + T.tname(n) for n in mine]
+    if mine and not tables:
+        return tags
     try:
         views = dependent_views(ctx, tables)
     except Exception as e:  # noqa: BLE001
         log("could not list the views that read %s (%s): refreshing every api tag" % (",".join(tables), scrub(e)[:120]))
         views = []
-    tags = ["data-version"]
     if not views:
         return tags + ["api"]
     for v in views:
@@ -1624,7 +1720,7 @@ def revalidate_tags(ctx, tables, leagues):
             tags.append("api:" + v)
     tags = [t for t in dict.fromkeys(tags) if TAG_RE.match(t)]
     if len(tags) > REVALIDATE_MAX_TAGS:
-        tags = ["data-version"] + ["api:" + v for v in views]
+        tags = ["data-version"] + ["turso:" + T.tname(n) for n in mine] + ["api:" + v for v in views]
     return tags
 
 
@@ -1794,15 +1890,34 @@ def sync_sql(status, only=None):
     return "delete from meta.sync_status%s;\n%s" % (where, ins)
 
 
+def compare_turso(ctx, n):
+    """One Turso table, DS1 against Turso -> same shape as compare_table (the 'production' column holds Turso's row count)."""
+    try:
+        t, bl, wa = T.load_tables(ctx, [n])[n]
+        if t is None or bl:
+            return (n, None, None, "differs", "Turso: " + ("; ".join(bl) or "cannot be read")), None, bl
+        d = T.diff_table(ctx, t)
+    except (T.TursoError, RuntimeError) as e:
+        return (n, None, None, "differs", "Turso: " + scrub(e)[:200]), None, []
+    if d["only1"] or d["only2"] or d["differ"]:
+        return (n, d["ds1"], d["prod"], "differs", "Turso: only in DS1 %d, only in Turso %d, different %d"
+                % (len(d["only1"]), len(d["only2"]), len(d["differ"]))), (t, d), []
+    return (n, d["ds1"], d["prod"], "same", "Turso"), (t, d), []
+
+
+def compare_any(ctx, c1, c2, n):
+    return compare_turso(ctx, n) if T.is_turso(n) else compare_table(ctx, c1, c2, n)
+
+
 def refresh_sync(ctx, names):
     """After a release changed production (or DS1): compare just its tables again and write their rows in meta.sync_status on both
     sides, so /admin/data does not go on showing the result of an older comparison. Returns "ok" or "failed: <why>"."""
     try:
         c1, c2 = C.catalog(ctx.ds1), C.catalog(ctx.prod)
-        names = sorted(n for n in set(names) if n in c1 or n in c2)
+        names = sorted(n for n in set(names) if n in c1 or n in c2 or T.is_turso(n))
         if not names:
             return "ok"
-        sql = sync_sql([compare_table(ctx, c1, c2, n)[0] for n in names], only=names)
+        sql = sync_sql([compare_any(ctx, c1, c2, n)[0] for n in names], only=names)
         ctx.w.exec(sql)
         prod_exec(ctx.prod, sql)
         return "ok"
@@ -1815,11 +1930,11 @@ def run_drift(ctx):
     """The drift check: compare every table, write meta.sync_status, pause automatic approvals if rows an automatic release wrote have
     changed, and propose one fix release. Returns (exit code, summary text, fix release number or None)."""
     c1, c2 = C.catalog(ctx.ds1), C.catalog(ctx.prod)
-    names = sorted(set(c1) | set(c2))
+    names = sorted(set(c1) | set(c2) | set(T.TABLES))
     status, fixable = [], []
     diffs, blockers, warnings = {}, {}, {}
     for n in names:
-        row, td, bl = compare_table(ctx, c1, c2, n)
+        row, td, bl = compare_any(ctx, c1, c2, n)
         status.append(row)
         if td is None:
             if bl:
@@ -1830,7 +1945,7 @@ def run_drift(ctx):
             fixable.append(n)
         log("%-30s %s" % (n, row[3]))
     try:
-        bad = auto_drift_mismatch(ctx, diffs)
+        bad = auto_drift_mismatch(ctx, {n: v for n, v in diffs.items() if not T.is_turso(n)})
         if bad:
             pause_auto(ctx, "Drift check: %d rows written by automatic releases differ in production (release %s, %s %s)"
                        % (len(bad), bad[0][0], bad[0][1], "/".join(bad[0][2])))
@@ -1848,12 +1963,18 @@ def run_drift(ctx):
     for o in old:
         set_release(ctx, o["id"], {"status": "rejected", "approved_by": "drift", "approved_at": "NOW", "error": "Replaced by a newer drift proposal."})
     day = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-    try:
-        row = prepare_publish(ctx, "Drift fix %s" % day, fixable, notes="Proposed by the nightly drift check: %s." % ", ".join(fixable),
-                              created_by="drift", diff_cache=(diffs, blockers, warnings))
-        return 1, summary + " Fix release %s is waiting under Pending." % row["number"], row["number"]
-    except Refused as e:
-        log("drift: %s" % e)
+    numbers = []
+    for group, label in ((T.split_names(fixable)[1], ""), (T.split_names(fixable)[0], " (Turso)")):
+        if not group:
+            continue
+        try:
+            row = prepare_publish(ctx, "Drift fix %s%s" % (day, label), group, notes="Proposed by the nightly drift check: %s." % ", ".join(group),
+                                  created_by="drift", diff_cache=(diffs, blockers, warnings))
+            numbers.append(row["number"])
+        except (Refused, RuntimeError) as e:
+            log("drift: %s" % scrub(e))
+    if numbers:
+        return 1, summary + " Fix release%s %s %s waiting under Pending." % ("s" if len(numbers) > 1 else "", ", ".join(numbers), "are" if len(numbers) > 1 else "is"), numbers[0]
     return 1, summary, None
 
 
@@ -1872,7 +1993,8 @@ def cmd_prepare(ctx, args):
         if args.replace:
             raise SystemExit("--replace is not allowed for a daily_scores release")
         title = args.title or "Daily scores %s" % datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d")
-        prepare_publish(ctx, title, valid_tables(args.tables or ",".join(AUTO_TABLES)), args.notes, args.ticket, kind="daily_scores")
+        prepare_publish(ctx, title, valid_tables(args.tables or ",".join(n for n in AUTO_TABLES if not T.is_turso(n))), args.notes, args.ticket,
+                        kind="daily_scores")
     else:
         if not args.title:
             raise SystemExit("--title is required")
@@ -1899,6 +2021,22 @@ def cmd_checks(ctx, args):
     return 1 if bad else 0
 
 
+def cmd_turso_schema(ctx, args):
+    """Print (or with --apply, run on Turso) the CREATE TABLE and CREATE INDEX IF NOT EXISTS statements for the Turso tables, from DS1's
+    catalog. Safe to repeat: existing tables are left alone (a column added on DS1 later needs an ALTER TABLE ... ADD COLUMN by hand)."""
+    names = [x.strip() for x in args.tables.split(",") if x.strip()] if args.tables else None
+    for n in names or []:
+        if not T.is_turso(n):
+            raise SystemExit("not a Turso table: %s" % n)
+    stm = T.schema_statements(ctx.ds1, names)
+    if not args.apply:
+        print(";\n\n".join(stm) + ";")
+        return 0
+    T.get_side(ctx).exec_script(stm)
+    print("Turso schema ready: %s" % ", ".join(sorted(T.tname(n) for n in (names or T.TABLES))))
+    return 0
+
+
 def cmd_status(ctx, args):
     for r in ctx.ds1.run("select number, kind, status, title, created_by, approved_by from meta.data_release order by id desc limit 30"):
         print("%-14s %-9s %-10s %s  (by %s, approved by %s)" % (r["number"], r["kind"], r["status"], r["title"], r["created_by"], r["approved_by"]))
@@ -1910,6 +2048,7 @@ def main():
     ap.add_argument("--project-ref", default=C.PROJECT_REF)
     ap.add_argument("--ds1-dsn", help="test only: psql connection string for DS1 instead of PG* env")
     ap.add_argument("--api-url", help="test only: a stand-in for the Management API query endpoint")
+    ap.add_argument("--turso-url", help="test only: a local libSQL server for the Turso calls (otherwise TURSO_DATABASE_URL)")
     ap.add_argument("--daily-script", help="test only: a stand-in for scripts/daily/run.py")
     ap.add_argument("--by", help="who prepared it (default release.py)")
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -1941,13 +2080,17 @@ def main():
     p.set_defaults(fn=cmd_checks)
     p = sub.add_parser("status")
     p.set_defaults(fn=cmd_status)
+    p = sub.add_parser("turso-schema", help="print or apply the Turso table definitions (from DS1's catalog)")
+    p.add_argument("--apply", action="store_true", help="run them on Turso (TURSO_DATABASE_URL, TURSO_AUTH_TOKEN)")
+    p.add_argument("--tables", help="only these Turso tables (default: all)")
+    p.set_defaults(fn=cmd_turso_schema)
     a = ap.parse_args()
     try:
         return a.fn(Ctx(a), a)
     except Refused as e:
         print("REFUSED: %s" % e, file=sys.stderr)
         return 1
-    except RuntimeError as e:
+    except (RuntimeError, T.TursoError) as e:
         print("ERROR: %s" % scrub(e), file=sys.stderr)
         return 2
 

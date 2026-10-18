@@ -20,6 +20,8 @@ import tempfile
 import time
 import urllib.request
 
+os.environ.setdefault("RELEASE_TURSO_TABLES", "none")   # these tests use the Turso table names as plain production tables; test_turso.py covers Turso
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", "..", ".."))
 RELEASE = os.path.join(HERE, "..", "release.py")

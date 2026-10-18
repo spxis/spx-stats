@@ -4,8 +4,9 @@
 DS1 is the only place data is written; production changes only through data releases that are approved (scripts/release/README.md).
 `prepare_release()` runs `python3 -I scripts/release/release.py --by daily-job prepare ...` for the tables the run changed. It never approves.
 
-Two routes, chosen from the tables the run wrote to:
-  auto    every table is core.game, meta.verification or meta.data_issue, and DAILY_RELEASE_KIND is set:
+Tables that go to Turso (scripts/release/turso.py: meta.verification, meta.data_issue, ...) are never part of these releases, because one release
+goes to one place; the nightly drift check proposes a separate Turso release for them. Two routes, chosen from the other tables the run wrote to:
+  auto    every table is core.game (or a Turso table, set aside), and DAILY_RELEASE_KIND is set:
           `prepare --kind <DAILY_RELEASE_KIND> --title "Daily scores <date>" --notes ...`, NO --tables (the kind's own default applies).
           The runner approves it by policy after a hold (status, score, overtime, shootout and the scheduled start only; scripts/release/README.md).
   review  anything else (a new season, team seasons, external ids, sources ... or no DAILY_RELEASE_KIND): a normal publish release,
@@ -23,6 +24,8 @@ release.py exits 1 for a refusal; "nothing to release" in its output means DS1 a
 import os, subprocess, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+sys.path.insert(0, os.path.join(HERE, "..", "release"))
+import turso  # noqa: E402  (which tables go to Turso: release.py publishes those separately)
 RELEASE = os.path.abspath(os.path.join(HERE, "..", "release", "release.py"))
 BY = "daily-job"
 AUTO_TABLES = {"core.game", "meta.verification", "meta.data_issue"}
@@ -40,7 +43,9 @@ def prepare_release(tables, day, summary=None, env=None, release=None):
     `release` is the path of release.py (tests pass a stub)."""
     env = os.environ if env is None else env
     release = release or RELEASE
-    names = release_tables(tables)
+    both = release_tables(tables)
+    names = [n for n in both if not turso.is_turso(n)]
+    kept = [n for n in both if turso.is_turso(n)]
     kind = env.get("DAILY_RELEASE_KIND") or ""
     route = "auto" if kind and names and set(names) <= AUTO_TABLES else "review"
     title = "Daily scores %s" % day if route == "auto" else "Daily scores %s (needs review)" % day
@@ -48,7 +53,9 @@ def prepare_release(tables, day, summary=None, env=None, release=None):
     if env.get("DAILY_PREPARE_RELEASE") != "1":
         out["detail"] = "release hook is off (DAILY_PREPARE_RELEASE is not 1): %s" % LEFT
     elif not names:
-        out.update(status="nothing", detail="the run changed no release table: no release to prepare")
+        out.update(status="nothing" if not kept else "skipped",
+                   detail="the run changed no release table: no release to prepare" if not kept
+                   else "the run changed only Turso tables (%s): a release goes to one place, so %s" % (", ".join(kept), LEFT))
     elif not env.get("SUPABASE_ACCESS_TOKEN") or not (env.get("PGHOST") or env.get("SPX_DS1_HOST")) or not env.get("PGPASSWORD"):
         out.update(status="skipped", detail="release.py needs SUPABASE_ACCESS_TOKEN, PGHOST (or SPX_DS1_HOST) and PGPASSWORD in the environment: %s" % LEFT)
     elif not os.path.exists(release):
@@ -56,6 +63,7 @@ def prepare_release(tables, day, summary=None, env=None, release=None):
     else:
         n = (summary or {}).get("games_changed", 0) or 0
         notes = "Prepared by the daily scores job (scripts/daily): %d game(s) changed. Tables: %s." % (n, ", ".join(names))
+        if kept: notes += " Turso tables changed too (%s): left to the nightly drift check." % ", ".join(kept)
         cmd = [sys.executable, "-I", release, "--by", BY, "prepare"]
         if route == "auto": cmd += ["--kind", kind, "--title", title, "--notes", notes]
         else: cmd += ["--title", title, "--tables", ",".join(names), "--notes", notes]
