@@ -46,6 +46,42 @@ export function familyTitle(family: LeagueFamily, soccerWord = "Soccer"): string
   return family.plus ? `${base}+` : base;
 }
 
+/**
+ * The site's top menu, header and footer: one entry per family, in FAMILIES order, so the menu cannot drift from the
+ * archive chart and the home cards. Women's, rival and predecessor leagues (PWHL, WNBA, NWSL, NHA, AFL, MLS, ...) are not
+ * entries: they are members of a family and are reached from its page (FamilyNav, "Other leagues") and from the chart.
+ */
+export interface MenuEntry {
+  id: FamilyId;
+  /** The family's main page (`/nhl`, `/soccer`). */
+  href: string;
+  /** NHL+, NBA+, MLB+, NFL+, CFL, Soccer: "+" when the family has siblings, but never on Soccer in the menu. */
+  label: string;
+  /** The league whose all-time page the footer links (none for soccer: it has no single table). */
+  allTime: string | null;
+}
+
+/** Soccer is plain in the menu (John, 2026-10-18): the page itself is "Soccer+". */
+export function menuLabel(family: LeagueFamily, soccerWord = "Soccer"): string {
+  return family.id === "soccer" ? soccerWord : familyTitle(family, soccerWord);
+}
+
+export function menuEntries(soccerWord = "Soccer"): MenuEntry[] {
+  return FAMILIES.map((f) => ({
+    id: f.id,
+    href: familyHref(f),
+    label: menuLabel(f, soccerWord),
+    allTime: f.id === "soccer" ? null : f.primary,
+  }));
+}
+
+/** The family a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer): the menu entry to light. */
+export function menuFamilyOf(segment: string | undefined): FamilyId | undefined {
+  if (!segment) return undefined;
+  if (segment === "worldcup") return "soccer";
+  return familyOf(segment)?.id;
+}
+
 export function familyHref(family: LeagueFamily): string {
   return family.primary === "soccer" ? SOCCER_PATH : `/${family.primary}`;
 }

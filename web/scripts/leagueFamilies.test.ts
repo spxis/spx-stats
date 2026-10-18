@@ -16,9 +16,12 @@ import {
   heatCellColor,
   indexSeasons,
   memberHref,
+  menuEntries,
+  menuFamilyOf,
   seasonHref,
   type HeatSeasonLike,
 } from "../src/lib/leagueFamilies.ts";
+import { SOCCER_PATH } from "../src/lib/soccerPath.ts";
 import { PARENT } from "../src/lib/leagues.ts";
 import { familyOtherLeagues } from "../src/lib/otherLeagues.ts";
 
@@ -154,4 +157,30 @@ test("Grow is a per-session choice: a stored localStorage Grow never expands a n
   assert.ok(!/localStorage\.(getItem|setItem)/.test(src), "localStorage must not be read or written for Grow");
   assert.match(src, /sessionStorage\.setItem\(GROW_KEY/);
   assert.match(src, /useState\(false\)/);
+});
+
+test("the top menu is the families: NHL+, NBA+, MLB+, NFL+, CFL, Soccer", () => {
+  const menu = menuEntries("Soccer");
+  assert.deepEqual(menu.map((m) => m.label), ["NHL+", "NBA+", "MLB+", "NFL+", "CFL", "Soccer"]);
+  assert.deepEqual(menu.map((m) => m.href), ["/nhl", "/nba", "/mlb", "/nfl", "/cfl", SOCCER_PATH]);
+  assert.equal(menuEntries("サッカー").at(-1)!.label, "サッカー");
+  // no woman's, rival or predecessor league is an entry of its own
+  const hrefs = new Set(menu.map((m) => m.href));
+  for (const lg of ["pwhl", "wnba", "nwsl", "nha", "pcha", "wchl", "wha", "afl", "aafc"]) assert.ok(!hrefs.has(`/${lg}`), `${lg} is not a menu entry`);
+  assert.deepEqual(menu.map((m) => m.allTime), ["nhl", "nba", "mlb", "nfl", "cfl", null]);
+});
+
+test("every league and virtual member lights its family's menu entry and is linked from the family page", () => {
+  for (const f of FAMILIES) {
+    for (const m of f.members) {
+      assert.equal(menuFamilyOf(m), f.id, `${m} lights ${f.id}`);
+      if (m !== f.primary) assert.ok(familySiblings(f.primary).includes(m), `${m} is linked from the ${f.id} page (FamilyNav)`);
+    }
+  }
+  assert.equal(menuFamilyOf("wnba"), "nba");
+  assert.equal(menuFamilyOf("pwhl"), "nhl");
+  assert.equal(menuFamilyOf("nwsl"), "soccer");
+  assert.equal(menuFamilyOf("worldcup"), "soccer");
+  assert.equal(menuFamilyOf("afl"), "nfl");
+  assert.equal(menuFamilyOf("teams"), undefined);
 });

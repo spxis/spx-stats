@@ -5,7 +5,7 @@ import { Figures } from "@/components/ui";
 import { SOCIAL_IMAGES } from "@/lib/brandAssets";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
-import { FAMILIES, familyHref, memberHref, memberName } from "@/lib/leagueFamilies";
+import { FAMILIES, familyHref, memberHref, memberName, menuEntries } from "@/lib/leagueFamilies";
 import { playerTotal } from "@/lib/playerIndex";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES, leagueInfo } from "@/lib/leagues";
@@ -105,7 +105,7 @@ export default guard(async function Home() {
   return (
     <>
       <section className="head fade">
-        <span className="eyebrow">NHL · NBA · MLB · NFL · CFL · {say("nav.soccer")}</span>
+        <span className="eyebrow">{menuEntries(say("nav.soccer")).map((m) => m.label).join(" · ")}</span>
         <h1>{say("home.title")}</h1>
         <p className="lede">{say("home.lede")}</p>
       </section>

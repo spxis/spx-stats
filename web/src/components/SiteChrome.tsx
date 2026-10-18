@@ -8,7 +8,7 @@ import { SoccerFooterLinks } from "./SoccerFooterLinks";
 import { authEnabled } from "@/lib/auth/config";
 import { latestDataVersion } from "@/lib/releases/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { LEAGUES } from "@/lib/leagues";
+import { menuEntries } from "@/lib/leagueFamilies";
 import pkg from "../../package.json";
 
 export async function SiteHeader() {
@@ -34,20 +34,21 @@ export async function SiteHeader() {
 export async function SiteFooter() {
   const [{ say }, dataVersion] = await Promise.all([currentSpeaker(), latestDataVersion()]);
   const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
+  const menu = menuEntries(say("nav.soccer"));
   return (
     <footer className="foot">
       <div className="foot-cols">
         <nav className="foot-col" aria-label={say("footer.colLeagues")}>
           <b>{say("footer.colLeagues")}</b>
           <div className="foot-links">
-            {LEAGUES.map((l) => <Link key={l.code} href={`/${l.code}`}>{l.short}</Link>)}
+            {menu.filter((m) => m.id !== "soccer").map((m) => <Link key={m.id} href={m.href}>{m.label}</Link>)}
             <SoccerFooterLinks />
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("nav.allTime")}>
           <b>{say("nav.allTime")}</b>
           <div className="foot-links">
-            {LEAGUES.map((l) => <Link key={l.code} href={`/${l.code}/all-time`}>{l.short}</Link>)}
+            {menu.flatMap((m) => (m.allTime ? [<Link key={m.id} href={`/${m.allTime}/all-time`}>{m.label}</Link>] : []))}
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("footer.colData")}>

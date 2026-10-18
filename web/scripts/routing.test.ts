@@ -367,5 +367,5 @@ test("Link prefetch is off by default so a long table stays under the firewall; 
   assert.match(header, /href="\/teams" prefetch/);
   const nav = readFileSync(join(SRC, "components", "LeagueNav.tsx"), "utf8");
   assert.match(nav, /prefetch onClick/);
-  assert.match(nav, /href="\/soccer" prefetch/);
+  assert.match(nav, /menuEntries\(say\("nav\.soccer"\)\)\.map\(\(m\) => \(\s*<Link key=\{m\.id\} href=\{m\.href\} prefetch/);  // every family entry, Soccer too
 });

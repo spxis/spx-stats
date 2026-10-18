@@ -3,7 +3,8 @@
 import Link from "@/components/Link";
 import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import type { MouseEvent } from "react";
-import { isLeague, LEAGUES, topLeague } from "@/lib/leagues";
+import { menuEntries, menuFamilyOf } from "@/lib/leagueFamilies";
+import { isLeague } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
 /** Pages that mean the same in every league, so switching league keeps their date or view. */
@@ -17,6 +18,7 @@ export function LeagueNav() {
   const segments = useSelectedLayoutSegments();
   const parts = ["", ...(segments[0] === "s" || segments[0] === "q" ? segments.slice(1) : segments)];
   const current = parts[1];
+  const family = menuFamilyOf(current);
   const keep = SHARED.has(parts[2] ?? "");
   const go = (e: MouseEvent, code: string) => {
     if (!keep || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -25,12 +27,11 @@ export function LeagueNav() {
   };
   return (
     <nav className="leagues" id="league-nav" aria-label={say("nav.leagues")}>
-      {LEAGUES.map((l) => (
-        <Link key={l.code} href={`/${l.code}`} prefetch onClick={(e) => go(e, l.code)} aria-current={topLeague(current ?? "") === l.code ? "page" : undefined}>
-          {l.short}
+      {menuEntries(say("nav.soccer")).map((m) => (
+        <Link key={m.id} href={m.href} prefetch onClick={(e) => { if (m.id !== "soccer") go(e, m.href.slice(1)); }} aria-current={family === m.id ? "page" : undefined}>
+          {m.label}
         </Link>
       ))}
-      <Link href="/soccer" prefetch aria-current={current === "soccer" || current === "worldcup" || current === "mls" ? "page" : undefined}>{say("nav.soccer")}</Link>
       {current && isLeague(current) ? (
         <>
           <Link className="sub" href={`/${current}/scores`} prefetch aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>
