@@ -16,6 +16,7 @@ import hashlib, os, re, subprocess, sys
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import fetch as F, parse as P   # noqa: E402  (this folder's own modules; scripts/nfl's are loaded under other names)
+import club_fetch as CF, club_parse as CP   # noqa: E402
 
 DS1 = os.path.join(HERE, "..", "daily", "ds1.sh")
 S = "legacy_wikipedia_hockey"
@@ -38,10 +39,13 @@ def n(v):
     return "null" if v is None else str(v)
 
 
-def archive(name_prefix, files):
+CLUB_LOGS = ("wha",)   # leagues whose regular season and playoff games come from the club-season articles' game logs (club_parse.py); the season articles hold standings only
+
+
+def archive(name_prefix, files, base=None):
     """Copy each raw file, byte for byte, into legacy_files.raw_archive and check the stored hash."""
     for f in files:
-        data = open(os.path.join(F.CACHE, f), "rb").read()
+        data = open(os.path.join(base or F.CACHE, f), "rb").read()
         sha = hashlib.sha256(data).hexdigest()
         name = f"{name_prefix}/{f}"
         psql(f"insert into legacy_files.raw_archive (name, saved_on, sha256, data) values ({q(name)}, {q(F.RUN_DATE)}, {q(sha)}, decode('{data.hex()}', 'hex')) "
@@ -68,6 +72,16 @@ def run(league, y, dry=False, league_text=""):
     templates = [(t, F.F.page("template", "Template:" + t)) for t in tpl]
     r = P.parse_season(text, templates, y, league, league_text)
     games, std, outside = r["games"], r["standings"], r["outside"]
+    club_holes, club_rep = [], None
+    if league in CLUB_LOGS and not any(g["phase"] == "regular" for g in games):
+        arts = CF.ensure(league, y, r["teams"])   # fetches only what is not saved; one request per 2.1 s
+        files = [f"{a['league']}_{a['season']}_{CF.slug(a['club'])}.json" for a in arts]
+        if not dry and not NO_ARCHIVE: archive(f"wikipedia-hockey/{league}/{y}/club_season", files, CF.DIR)
+        c = CP.club_games(arts, y, r["teams"], std, r["series"])
+        for g in c["games"]:
+            g["src"] = (g["cite"] + ": " + g["raw"])[:300]
+            g.setdefault("note", None)
+        games = games + c["games"]; outside = list(outside) + c["outside"]; club_holes, club_rep = c["holes"], c["report"]
     diffs = {d[0]: d for d in P.check_standings(std, games, outside)}
     reg = sum(1 for g in games if g["phase"] == "regular")
     nocount = sum(1 for g in games if g.get("counts") is False)
@@ -75,6 +89,8 @@ def run(league, y, dry=False, league_text=""):
     seeded = seed_series(league, y)
     print(f"{league} {y}: teams={len(r['teams'])} standings={len(std)} games={len(games)} (regular {reg}, playoffs {len(games) - reg}, not counted {nocount}) "
           f"interleague/outside={len(outside)} series={len(series) + len(seeded)} unparsed={len(r['unparsed'])} standing-vs-games differences={len(diffs)} champion={r['champion']}")
+    if club_rep: print("   club logs:", club_rep)
+    for h in club_holes: print("   hole:", h)
     for d in list(diffs.values())[:6]: print("   differs:", d)
     for b in r["unparsed"][:6]: print("   unparsed:", b)
     if dry: return
@@ -91,7 +107,7 @@ def run(league, y, dry=False, league_text=""):
         out.append("insert into %s.game values (%s,%d,%s,%s,%s,%s,%s,%d,%d,%s,%s,%s,%s,%s,%d);" % (
             S, q(league), y, q(g["phase"]), q(g["date"]), q(g.get("round")), q(g["home"]), q(g["away"]), g["home_pts"], g["away_pts"],
             "true" if g["overtime"] else "false", "true" if g["neutral"] else "false", "false" if g.get("counts") is False else "true",
-            q(g.get("note") or None), q(g["raw"][:300]), seq[k]))
+            q(g.get("note") or None), q(g.get("src") or g["raw"][:300]), seq[k]))
     has_games = {nm for g in games if g["phase"] == "regular" for nm in (g["home"], g["away"])}
     for rank, st in enumerate(std, 1):
         d = diffs.get(st["team"])
@@ -112,6 +128,8 @@ def run(league, y, dry=False, league_text=""):
                    f"{n(int(s['winner_goals']))}, {n(int(s['loser_goals']))}, {q(s['format'])}, {q(s['source'])}) on conflict do nothing;")
     for page, txt in r["unparsed"]:
         out.append(f"insert into {S}.unparsed values ({q(league)}, {y}, {q(page)}, {q(txt)});")
+    for h in club_holes:
+        out.append(f"insert into {S}.unparsed values ({q(league)}, {y}, '(club-season logs: left out)', {q(h)});")
     for sk in r["skipped"]:
         out.append(f"insert into {S}.unparsed values ({q(league)}, {y}, '(skipped: not a game of this league)', {q(sk)});")
     out.append("commit;")

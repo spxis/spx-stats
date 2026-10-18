@@ -5,7 +5,9 @@
 -- Runs after 145 (the NHL), before 165. Run from the repo root (it reads db/seed/hockey_club.csv). Rerunnable: it rebuilds only what Wikipedia supplied here.
 --
 -- What each league holds: the final standings of every season, the champion (166), every game the NHA and PCHA articles tabulate (their regular
--- seasons and the playoffs between two clubs of the league), the WCHL's playoff games where the article tabulates them, and the playoff series a season
+-- seasons and the playoffs between two clubs of the league), the WCHL's playoff games where the article tabulates them, the WHA's games (its season
+-- articles hold standings only, so the loader reads each club's game log in the club-season article, merges the two clubs' copies of a game and keeps
+-- a regular season only when the games add up exactly to every club's published line, a playoff series only when they give the bracket's result), and the playoff series a season
 -- tells as a result only (the WHA's brackets, a prose "won the two-game total-goals series 5-3"): core.series, the two clubs of a series in the
 -- higher and lower seed columns in no order of merit (the archive holds no seeds), the winner in winner_team_season_id. What is not here, and why:
 --   * the Stanley Cup challenges and finals: core.cup_series (210) holds the series, and the games of a final against an NHL club are in the NHL's own
@@ -14,7 +16,9 @@
 --     do count the interlocking games, so a PCHA club's published record has more games than its games here (the loader checked each club's line against
 --     the games including those; `agrees` in the legacy table says the result);
 --   * a protested game the league voided (the NHA's) is a game with status 'cancelled' and its result kept, so the records skip it and the game stays;
---   * exhibition games (the NHA's New York series) and the WCHL's and WHA's regular seasons' games (the articles hold standings only).
+--   * exhibition games (the NHA's New York series); the WHA's games against touring national teams (the Soviet, Czechoslovak and Finnish sides, which its
+--     1977-78 and 1978-79 standings count: they are not in the league's games, so a club's games here are fewer than its published gp by those); the WCHL's
+--     regular season (the articles hold standings only and no club article tabulates a game); a WHA playoff series whose logs contradict the bracket.
 -- A club's standing is kept only where it agrees with the games (or where the article has no games to check against); a line that does not is
 -- logged in meta.data_issue and the site shows the games' sum, as for the NFL (151).
 --
