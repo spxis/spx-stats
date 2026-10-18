@@ -3,7 +3,7 @@
 import Link from "@/components/Link";
 import { useSelectedLayoutSegments } from "next/navigation";
 import { LG } from "@/lib/leagues";
-import { leagueTrail } from "@/lib/otherLeagues";
+import { leagueTrail, trailHidden } from "@/lib/otherLeagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
 /**
@@ -13,7 +13,8 @@ import { useSpeaker } from "./i18n/LocaleProvider";
 export function LeagueCrumbs() {
   const { say } = useSpeaker();
   const segments = useSelectedLayoutSegments();
-  const trail = leagueTrail(segments[0] === "s" || segments[0] === "q" ? segments.slice(1) : segments);
+  const parts = segments[0] === "s" || segments[0] === "q" ? segments.slice(1) : segments;
+  const trail = trailHidden(parts) ? null : leagueTrail(parts);
   if (!trail) return null;
   const { parent, lg, year, deeper } = trail;
   return (

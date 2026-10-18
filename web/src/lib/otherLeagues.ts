@@ -35,4 +35,7 @@ export function leagueTrail(parts: readonly string[]): { parent: LeagueCode; lg:
   return { parent, lg, year: /^\d{4}$/.test(parts[1] ?? "") ? parts[1]! : null, deeper: parts.length > 1 };
 }
 
+/** A club's own page (/wha/team/<club>) names the parent league in its heading, so no trail is drawn above it. */
+export const trailHidden = (parts: readonly string[]): boolean => parts[1] === "team" && parts.length === 3;
+
 export const trailLabels = (t: NonNullable<ReturnType<typeof leagueTrail>>): string[] => [LG[t.parent], LG[t.lg], ...(t.year ? [t.year] : [])];

@@ -6,7 +6,7 @@ import { neutralSite } from "../src/lib/gameSurface.ts";
 import { ALL_LEAGUES, CHILDREN, isLeague, LEAGUE_CODES, LEAGUES, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague } from "../src/lib/leagues.ts";
 import { finalName, roundName } from "../src/lib/series.ts";
 import { championshipName, trophyPhrase } from "../src/lib/trophies.ts";
-import { leagueTrail, otherLeagues, trailLabels } from "../src/lib/otherLeagues.ts";
+import { leagueTrail, otherLeagues, trailHidden, trailLabels } from "../src/lib/otherLeagues.ts";
 import type { Say } from "../src/lib/seriesCopy.ts";
 import { readFileSync } from "node:fs";
 
@@ -105,6 +105,8 @@ test("the trail of a rival league's pages reads NFL > AFL > 1964, and no other p
   assert.equal(leagueTrail(["aafc", "team", "cleveland-browns"])!.year, null);
   assert.equal(leagueTrail(["aafc", "team", "cleveland-browns"])!.deeper, true);
   for (const p of [["nfl", "1964"], ["nhl"], ["players"], ["teams"], []]) assert.equal(leagueTrail(p), null, p.join("/"));
+  assert.equal(trailHidden(["wha", "team", "edmonton-oilers"]), true, "a club page has the parent in its heading");
+  for (const p of [["wha"], ["wha", "1975"], ["wha", "team", "edmonton-oilers", "seasons"], ["wha", "1975", "team", "1408"]]) assert.equal(trailHidden(p), false, p.join("/"));
 });
 
 /** What api.season_summary holds once the hockey leagues are loaded: NHA 1909-1916, PCHA 1911-1923, WCHL 1921-1925, WHA 1972-1978 (a season is named by the year it starts). */

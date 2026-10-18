@@ -37,7 +37,7 @@ import { getOutageYears } from "@/lib/outageData";
 import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG, RELATED_LEAGUES, seasonLabel, type LeagueCode } from "@/lib/leagues";
+import { isLeague, LG, PARENT, RELATED_LEAGUES, seasonLabel, type LeagueCode } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
 import { seasonPath } from "@/lib/slug";
@@ -236,7 +236,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           {map}
           <TeamSwitch current={paths.team(lg, f)} options={switchClubs.map((c) => ({ name: c.name, href: paths.team(lg, c.f) }))} />
         </div>
-        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{city ? <> · <Link className="citylink" href={`/city/${city.slug}`} prefetch={false} title={say("city.teamLink", { name: locale === "fr" && city.nameFr ? city.nameFr : city.name })}>{locale === "fr" && city.nameFr ? city.nameFr : city.name}</Link></> : null}</span>
+        <span className="eyebrow">{PARENT[lg] ? <><Link href={`/${PARENT[lg]}`}>{LG[PARENT[lg]!]}</Link> › </> : null}<Link href={`/${lg}`}>{LG[lg]}</Link>{city ? <> · <Link className="citylink" href={`/city/${city.slug}`} prefetch={false} title={say("city.teamLink", { name: locale === "fr" && city.nameFr ? city.nameFr : city.name })}>{locale === "fr" && city.nameFr ? city.nameFr : city.name}</Link></> : null}</span>
         <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<Flag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={seasonPath(lg, reigning.year)}>
