@@ -9,3 +9,5 @@ purpose). It is a board on **Sumilabu** (project key `spx-stats`). See it in one
 
 Full rules, the claim/lease model and a read-only `curl` fallback are in
 [AGENTS.md §5](AGENTS.md#5-tickets). Do not report "no board" because GitHub issues are empty.
+
+Hand-offs to the coordinator: docs/agent-quickstart.md (Hand-offs and replies)

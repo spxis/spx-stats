@@ -114,3 +114,15 @@ From the repo root:
 - **Check the live state** before you say something is pending, broken or waiting on John.
   [§2](../AGENTS.md#2-talking-to-john)
 - **Never ask John to paste a secret into chat.** [§2](../AGENTS.md#2-talking-to-john)
+
+## Hand-offs and replies
+
+When your work needs the coordinating session (a deploy, a data step or a decision), write one hand-off file. Nobody relays text.
+[§1](../AGENTS.md#who-may-change-what-every-agent-every-subagent)
+
+- **Push first.** Push your commits to `main`; `deploy.sh` refuses commits that are not on `origin/main`.
+- **Write the file.** `python3 -I scripts/handoff/handoff.py check <file>`, then `python3 -I scripts/handoff/handoff.py write <file>`. It lands in Dropbox `/Projects/Handoff/spx-stats/<ticket-id>.json`, never in the repo. Samples are in [scripts/handoff/examples/](../scripts/handoff/examples/); format in [the README](../scripts/handoff/README.md).
+- **Report it.** End your report with `HAND-OFF WRITTEN: <path>`, your name and the ticket.
+- **Check replies** at the start of a session and before you finish: `python3 -I scripts/handoff/handoff.py replies`.
+- **Act on** `failed`, `needs-change` and `blocked`: fix, push, write the hand-off again as `ready`, then run `python3 -I scripts/handoff/handoff.py read <ticket-id>`.
+- **Deploys are the coordinating session's.** It runs `bash scripts/deploy.sh --dry-run` first, then `bash scripts/deploy.sh`. Do not run it yourself. [§7](../AGENTS.md#7-deploying)
