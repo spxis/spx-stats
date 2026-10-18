@@ -78,15 +78,19 @@ export function UserMenu({ user, version, waiting = 0 }: { user: MenuUser; versi
           <div className="usermenu-lang"><LanguagePicker /></div>
           <div className="usermenu-lang"><ThemeToggle /></div>
           {user.admin ? (
+            <>
             <div className="usermenu-sec">
               <b>Admin</b>
+              <Link role="menuitem" href="/admin/people">{say("menu.people")}</Link>
+            </div>
+            <div className="usermenu-sec">
               <Link role="menuitem" href="/admin/tickets">Tickets</Link>
               <Link role="menuitem" href="/admin/tickets/new">File a ticket</Link>
               <Link role="menuitem" href="/admin/data">{waiting > 0 ? say("menu.dataReleasesWaiting", { count: waiting }) : say("menu.dataReleases")}</Link>
               <Link role="menuitem" href="/admin/ops">Ops (DS1 and backups)</Link>
-              <Link role="menuitem" href="/admin/people">{say("menu.people")}</Link>
               <Link role="menuitem" href="/admin/logos">Logos to review</Link>
             </div>
+            </>
           ) : null}
           <div className="usermenu-sec">
             <span className="note">Version {version}</span>
