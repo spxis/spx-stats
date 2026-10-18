@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound } from "next/navigation";
@@ -67,7 +68,7 @@ export default async function AllTimePage({ params, searchParams }: PageProps<"/
   try {
     [data, brands, paths] = await Promise.all([getAllTime(lg), getBrands(), getPaths()]);
   } catch {
-    return <><AccentStyle league={lg} />{head}<p className="note">{say("load.failed")}</p></>;
+    return <><AccentStyle league={lg} />{head}<LoadNote /></>;
   }
 
   const unit = say(UNIT[lg]);

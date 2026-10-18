@@ -1,14 +1,13 @@
 import "server-only";
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import LoadNote from "../components/LoadNote";
 import { ApiError } from "./api/client";
 import { shouldThrow } from "./api/failure";
-import { currentSpeaker } from "./i18n/currentLocale";
 
 /** The inline note a page or section shows when the archive could not be read. */
-export async function LoadFailed() {
-  const { say } = await currentSpeaker();
-  return <p className="note">{say("load.failed")}</p>;
+export function LoadFailed() {
+  return <LoadNote />;
 }
 
 /**

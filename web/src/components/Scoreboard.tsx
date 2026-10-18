@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import Link from "@/components/Link";
 import type { GameRow } from "@/lib/api/types";
 import { officialAbbr, type AbbrMap } from "@/lib/abbr";
@@ -69,7 +70,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
   try {
     [data, brands, abbrs, { seasons }] = await Promise.all([loadScores(lg, day), getBrands(), getAbbrs(lg), getSummary()]);
   } catch {
-    return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("scores.title")}</h1></section><p className="note">{say("load.failed")}</p></>;
+    return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("scores.title")}</h1></section><LoadNote /></>;
   }
   const { games, around, bounds, before, after, year, days } = data;
   const at = atUtc(day);

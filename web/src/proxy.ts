@@ -27,6 +27,6 @@ export const config = {
   // Public pages only. Same first segments as RESERVED_ROOTS in lib/routing.ts (must be a
   // literal so Next can analyse it at build). Files with a suffix stay on disk.
   matcher: [
-    "/((?!api/|_next/|surface/|admin(?:/|$)|me(?:/|$)|login(?:/|$)|tickets(?:/|$)|brand/|flag/|soccer-flag|soccer-road/|bracket-svg/|jersey-banner/|title-banner/|favicon\\.ico$|manifest\\.webmanifest$|sitemap\\.xml$|robots\\.txt$|venues\\.csv$|venues\\.geojson$|soccer-flags).*)",
+    "/((?!api/|_next/|surface/|admin(?:/|$)|me(?:/|$)|login(?:/|$)|tickets(?:/|$)|brand/|mascot/|flag/|soccer-flag|soccer-road/|bracket-svg/|jersey-banner/|title-banner/|favicon\\.ico$|manifest\\.webmanifest$|sitemap\\.xml$|robots\\.txt$|venues\\.csv$|venues\\.geojson$|soccer-flags).*)",
   ],
 };

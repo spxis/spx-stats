@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import { Fragment } from "react";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
@@ -219,7 +220,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
           }
         />
         <div className="yr-hold">
-          {result.kind === "error" ? <p className="note" role="alert">{say("peopleAdmin.error", { reason: result.message })}</p> : null}
+          {result.kind === "error" ? <LoadNote text={say("peopleAdmin.error", { reason: result.message })} /> : null}
           {result.kind === "ok" && table ? (
             <>
               {result.fallback ? <p className="note">{say("peopleAdmin.fallback")}</p> : null}

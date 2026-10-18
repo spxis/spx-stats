@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -77,7 +78,7 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
   const path = at.path;
   const { say, plural, fmt } = await currentSpeaker();
   const eyebrow = <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link>{" · "}{say("compare.eyebrow")}</span>;
-  const failed = <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("compare.eyebrow")}</h1></section><p className="note">{say("load.failed")}</p></>;
+  const failed = <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("compare.eyebrow")}</h1></section><LoadNote /></>;
 
   let paths: Awaited<ReturnType<typeof getPaths>>, clubs: Awaited<ReturnType<typeof getLeagueClubs>>, brands: Awaited<ReturnType<typeof getBrands>>, abbrs: Awaited<ReturnType<typeof getAbbrs>>, ta: TeamData | null, tb: TeamData | null;
   try {
@@ -118,7 +119,7 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
   );
 
   const names0 = [baseName(ta, a), baseName(tb, b)] as const;
-  if (!ta || !tb) return <>{<AccentStyle league={lg} />}{head(names0)}<p className="note">{say("load.failed")}</p></>;
+  if (!ta || !tb) return <>{<AccentStyle league={lg} />}{head(names0)}<LoadNote /></>;
 
   // ---- what each side brings: a season's standings row and games, or every season added up ----
   let sides: [Side, Side];
@@ -151,7 +152,7 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
       ];
     }
   } catch {
-    return <><AccentStyle league={lg} />{head(names0)}{controls}<p className="note">{say("load.failed")}</p></>;
+    return <><AccentStyle league={lg} />{head(names0)}{controls}<LoadNote /></>;
   }
   const [A, B] = sides;
   const name = [A.name, B.name] as const;

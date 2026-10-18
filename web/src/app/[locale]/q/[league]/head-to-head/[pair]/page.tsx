@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -106,7 +107,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   try {
     [d, paths, clubs] = await Promise.all([load(lg, a, b), getPaths(), getLeagueClubs(lg)]);
   } catch {
-    return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("h2h.eyebrow")}</h1></section><p className="note">{say("load.failed")}</p></>;
+    return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("h2h.eyebrow")}</h1></section><LoadNote /></>;
   }
 
   const all = h2hGames(lg, d.history, a, b);

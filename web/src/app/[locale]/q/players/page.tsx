@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { NatLink } from "@/components/NatLink";
@@ -172,7 +173,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
         teamPicker={teamsOn && league ? <TeamPicker action="/players" value={teamSlug} clubs={pickable} hidden={{ league, ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}), ...(q ? { q } : {}) }} /> : null}
       />
       <div className="yr-hold">
-        {data == null || table == null ? <p className="note">{say("load.failed")}</p> : data.list.length ? (
+        {data == null || table == null ? <LoadNote /> : data.list.length ? (
           <>
             <p className="note">{plural("count.players", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
             <div className="scroll"><TeamLogoList logos={logoList}><SortTable {...table} def={DEF_SORT} initial={sort} remote /></TeamLogoList></div>

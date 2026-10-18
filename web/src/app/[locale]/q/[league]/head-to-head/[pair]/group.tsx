@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { AccentStyle } from "@/components/AccentStyle";
@@ -49,7 +50,7 @@ export async function GroupPage({ lg, f, group, path, sp }: { lg: LeagueCode; f:
   try {
     d = await load(lg, f);
   } catch {
-    return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("h2h.eyebrow")}</h1></section><p className="note">{say("load.failed")}</p></>;
+    return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("h2h.eyebrow")}</h1></section><LoadNote /></>;
   }
   const { paths, clubs } = d;
   const nameOf = (c: number) => clubs.find((x) => x.f === c)?.name ?? say("team.fallback", { id: c });

@@ -1,3 +1,4 @@
+import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { PageFlagSprite } from "@/components/PageFlagSprite";
@@ -27,7 +28,7 @@ export default guard(async function TeamsPage() {
       <p className="note"><Link href="/teams/lineage" prefetch={false}>{say("lineage.link")}</Link> · <Link href="/teams/coaches" prefetch={false}>{say("coaches.link")}</Link></p>
     </>
   );
-  if (!data) return <><section className="head fade"><h1>{say("teams.title")}</h1>{head}</section><section className="section"><p className="note">{say("load.failed")}</p></section></>;
+  if (!data) return <><section className="head fade"><h1>{say("teams.title")}</h1>{head}</section><section className="section"><LoadNote /></section></>;
   const codes = [...new Set(data.teams.flatMap((t) => (t.cc ? [t.cc] : [])))];
   const countries = Object.fromEntries(codes.map((c) => [c, countryName(c, locale)]));
   return (
