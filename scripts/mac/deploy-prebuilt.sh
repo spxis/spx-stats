@@ -30,6 +30,8 @@ REPO="$(cd "$HERE/../.." && pwd)"
 . "$HERE/lib/build-auth.sh"
 . "$HERE/lib/hosted-logos.sh"
 . "$HERE/lib/same-data-gate.sh"
+# shellcheck source=../runlog/log.sh
+. "$REPO/scripts/runlog/log.sh"
 set -u
 
 SCOPE="spxis-projects-0d6306b4"
@@ -39,6 +41,7 @@ PORT="${SPX_BUILD_PGRST_PORT:-7790}"   # John's port block for spx-stats is 7700
 NAME="spx-build-pgrst-$$"
 
 SHA="" CHECK_ONLY=0 NO_DEPLOY=0 NO_PRUNE=0 FORCE=0 KEEP=0 TMP=""
+STAGE="" URL="" PRUNED=0 GUARD="not run" STARTED="" VERSION=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --sha) SHA="${2:-}"; shift ;;
@@ -56,11 +59,24 @@ done
 say() { printf '%s deploy-prebuilt: %s\n' "$(date '+%H:%M:%S')" "$*"; }
 die() { say "STOP: $*"; exit 1; }
 stop_pgrst() { ds1_pgrst_stop "$NAME"; }
+# The run log (scripts/runlog): one entry for a run that built or deployed, whatever way it ended. A failed write never changes the exit code.
+log_run() {
+  local rc="$1" outcome=ok detail
+  [ "$CHECK_ONLY" = 0 ] && [ -n "$STAGE" ] || return 0
+  [ "$rc" = 0 ] || outcome=failed
+  [ -z "$VERSION" ] && [ -n "$TMP" ] && [ -f "$TMP/web/package.json" ] && VERSION="$(jq -r .version "$TMP/web/package.json" 2>/dev/null)"
+  detail="$(jq -nc --arg sha "$SHA" --arg version "$VERSION" --arg url "$URL" --arg stage "$STAGE" --arg guard "$GUARD" --argjson pruned "$PRUNED" --argjson force "$FORCE" --argjson deployed "$([ -n "$URL" ] && echo true || echo false)" \
+    '{sha:$sha, version:$version, deployment_url:$url, last_stage:$stage, deployed:$deployed, sign_in_guard:$guard, pruned:$pruned, forced:($force==1)}' 2>/dev/null || true)"
+  runlog_event deploy-prebuilt deploy "$outcome" "$([ "$outcome" = ok ] && echo deployed || echo "stopped at $STAGE"): $(printf '%s' "$SHA" | cut -c1-10) ${VERSION:+v$VERSION}" "$detail" \
+    --actor "$(runlog_actor)" --ref "$(printf '%s' "$SHA" | cut -c1-10)" ${URL:+--scope "$URL"} --alert-key deploy
+}
 cleanup() {
+  local rc=$?
   stop_pgrst
   if [ -n "$TMP" ] && [ -d "$TMP" ]; then
     if [ "$KEEP" = 1 ] || [ "$NO_DEPLOY" = 1 ]; then say "kept $TMP"; else rm -rf "$TMP"; fi
   fi
+  log_run "$rc"
 }
 trap cleanup EXIT
 trap 'exit 130' INT TERM
@@ -78,10 +94,12 @@ if [ "$CHECK_ONLY" = 0 ]; then
   git -C "$REPO" merge-base --is-ancestor "$SHA" origin/main || die "$SHA is not on origin/main (deploy only what is pushed and checked)"
   say "commit $(git -C "$REPO" rev-parse --short "$SHA")"
 fi
+STAGE="start"
 lsof -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 && die "port $PORT is in use (SPX_BUILD_PGRST_PORT picks another in 7700-7799)"
 
 # ---- 1. PostgREST on DS1 -----------------------------------------------------------------------------------------------------------
 # (shared with ds1-preview.sh: scripts/mac/lib/ds1-pgrst.sh; sets LOCAL, calls die on failure)
+STAGE="same-data check"
 ds1_pgrst_start "$NAME" "$PORT"
 
 # ---- 2. same data as production? ---------------------------------------------------------------------------------------------------
@@ -104,6 +122,7 @@ esac
 [ "$CHECK_ONLY" = 1 ] && { say "check only: done"; exit 0; }
 
 # ---- 3. a clean copy of the commit, linked -----------------------------------------------------------------------------------------
+STAGE="link and pull"
 TMP="$(mktemp -d "${TMPDIR:-/tmp}/spx-prebuilt.XXXXXX")"
 git -C "$REPO" archive "$SHA" | tar -x -C "$TMP" || die "git archive failed"
 cd "$TMP" || die "no temp dir"
@@ -138,6 +157,7 @@ say "linked and pulled project settings into $TMP"
 hosted_logos_export "$TMP/web"
 
 # ---- 4. build against DS1 ----------------------------------------------------------------------------------------------------------
+STAGE="build"
 say "vercel build --prod (reads only $LOCAL)"
 SPX_REST_URL="$LOCAL" VERCEL_GIT_COMMIT_SHA="$SHA" vercel build --prod --yes --scope "$SCOPE" || die "the build failed"
 [ -d .vercel/output ] || die "no .vercel/output after the build"
@@ -149,17 +169,20 @@ n="$(grep -rIl "127\.0\.0\.1:$PORT" .vercel/output/functions 2>/dev/null | wc -l
 [ "$n" = 0 ] || say "note: $n server-side files mention the local address (cached fetch records); they are not served to visitors"
 stop_pgrst
 say "built; PostgREST stopped"
-[ "$NO_DEPLOY" = 1 ] && { say "--no-deploy: stopping here"; exit 0; }
+[ "$NO_DEPLOY" = 1 ] && { STAGE=""; say "--no-deploy: stopping here"; exit 0; }
 
 # ---- 5. deploy prebuilt ------------------------------------------------------------------------------------------------------------
+STAGE="deploy"
 say "vercel deploy --prebuilt --prod --archive=tgz (one upload, not thousands of files)"
 URL="$(vercel deploy --prebuilt --prod --archive=tgz --yes --scope "$SCOPE")" || die "the deploy failed"
 say "deployed: $URL"
+STAGE="sign-in guard (the deployment exists)"; GUARD="failed"
 say "spxn.com answers HTTP $(curl -s -o /dev/null -m 20 -w '%{http_code}' https://spxn.com/) (one request)"
 # The deploy guard (AGENTS.md section 7): sign-in must work on the live site. On failure this prints the rollback command and stops BEFORE the prune,
 # because the previous deployment is the way back.
 bash "$HERE/check-live-auth.sh" --new "$URL" || die "sign-in is broken on the live site (see above); the deployment was made, nothing was pruned. Roll back with the command above, fix the cause and deploy again"
 
+GUARD="passed"; STAGE="prune"
 # ---- 6. keep the live deployment and one previous ----------------------------------------------------------------------------------
 prune() {
   # AGENTS/CLAUDE rules: keep the newest two READY deployments (live + one previous), remove older READY ones and failed ones, one URL per call
@@ -174,9 +197,10 @@ prune() {
     [ "$list" != "$prev" ] || { say "prune: the rest could not be removed (aliased); leaving them"; return 0; }
     prev="$list"
     for u in $list; do
-      perl -e 'alarm 90; exec @ARGV' vercel remove "$u" --safe --yes --scope "$SCOPE" >/dev/null 2>&1 && say "prune: removed $u" || say "prune: kept $u"
+      perl -e 'alarm 90; exec @ARGV' vercel remove "$u" --safe --yes --scope "$SCOPE" >/dev/null 2>&1 && { PRUNED=$((PRUNED + 1)); say "prune: removed $u"; } || say "prune: kept $u"
     done
   done
 }
 if [ "$NO_PRUNE" = 1 ]; then say "prune skipped"; else prune; fi
+STAGE="done"
 say "done: $URL"

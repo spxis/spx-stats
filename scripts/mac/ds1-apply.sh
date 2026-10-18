@@ -69,5 +69,18 @@ echo "file:   $file"
 echo "target: $PGDATABASE on DS1 ($PGHOST:$PGPORT), one transaction$([ "$dry" = 1 ] && echo ', DRY RUN')"
 [ "$stripped" -gt 0 ] && echo "note:   removed $stripped begin/commit line(s) so the file runs inside one transaction"
 cd "$REPO"
-psql -X -q -v ON_ERROR_STOP=1 -f "$work/run.sql"
+# the run log (scripts/runlog): the file, dry run or real, the counts before and after; a failed write never fails this script
+# shellcheck source=../runlog/log.sh
+. "$REPO/scripts/runlog/log.sh"
+set +e
+psql -X -q -v ON_ERROR_STOP=1 -f "$work/run.sql" 2>&1 | tee "$work/out.txt"
+rc=${PIPESTATUS[0]}
+set -e
+rel="${file#"$REPO"/}"
+detail="$(python3 -c 'import json,sys; print(json.dumps({"file": sys.argv[1], "dry_run": sys.argv[2] == "1", "output": open(sys.argv[3], errors="replace").read()[-3000:]}))' "$rel" "$dry" "$work/out.txt" 2>/dev/null || true)"
+if [ "$rc" != 0 ]; then
+  runlog_event ds1-apply data failed "$rel failed on DS1$([ "$dry" = 1 ] && echo ' (dry run)')" "$detail" --actor "$(runlog_actor)"
+  exit "$rc"
+fi
+runlog_event ds1-apply data ok "$rel $([ "$dry" = 1 ] && echo 'dry run (rolled back)' || echo 'committed') on DS1" "$detail" --actor "$(runlog_actor)"
 if [ "$dry" = 1 ]; then echo "DRY RUN: rolled back, nothing changed"; else echo "COMMITTED"; fi

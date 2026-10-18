@@ -596,7 +596,41 @@ def test_isolation():
     check("\\set league 'nhl'" in text and "insert into _skip values ('It''s');" in text and "\\set clubcheck " in text, "main script: the league, the skipped clubs (quoted) and the club check file")
 
 
+def test_runlog_hook():
+    import runlog_hook as H
+    calls = []
+
+    class Run:
+        def item(self, *a): calls.append(("item",) + a[:2])
+        def finish(self, outcome, summary, counts=None, detail=None, links=None): calls.append(("finish", outcome, summary))
+
+    class Log:
+        @staticmethod
+        def alert_raise(key, job, scope, msg, severity="error", run_uid=None): calls.append(("raise", key, severity))
+        @staticmethod
+        def alert_resolve(key): calls.append(("resolve", key))
+
+    saved = H.runlog
+    H.runlog = Log
+    try:
+        res = dict(league_results={"nhl": dict(outcome="ok", committed=True, games_changed=2), "mlb": dict(outcome="failed", reason="a check failed"),
+                                   "nba": dict(outcome="warning", reason="left out: 1 club(s)", clubs_skipped=["X"], games_skipped=3, committed=True)})
+        H.report(Run(), res, 1)
+        check(("finish", "failed", "failed: MLB; saved: NHL, NBA") in calls, "run log: one failed league makes the run failed and names who was saved")
+        check(("raise", "daily:mlb", "error") in calls and ("resolve", "daily:nhl") in calls and ("raise", "daily-left-out:nba", "warning") in calls, "run log: alerts per league (failed raises, ok resolves, left out warns)")
+        calls.clear()
+        H.report(Run(), dict(league_results={"nhl": dict(outcome="ok", committed=True, games_changed=0)}), 0)
+        check(("finish", "ok", "1 league(s) saved, 0 game(s) changed") in calls and ("resolve", "daily:run") in calls, "run log: all ok resolves the run alert")
+        calls.clear()
+        H.report(Run(), {}, 1, "RuntimeError: DS1 is down")
+        check(("raise", "daily:run", "error") in calls, "run log: a crash raises the run alert")
+        H.report(None, {}, 0)
+    finally:
+        H.runlog = saved
+
+
 def run():
+    test_runlog_hook()
     test_observation()
     test_starts()
     test_balldontlie()

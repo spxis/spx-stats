@@ -186,15 +186,18 @@ def main():
         import selftest; return selftest.run()
     if not a.apply: return run(a, {})
     # --apply leaves a heartbeat row on DS1 (ingest.daily_run): 'running' now, 'ok' or 'failed' at the end
-    import heartbeat
+    import heartbeat, runlog_hook
     hb = heartbeat.start()
+    rl = runlog_hook.start()
     result = {}
     try:
         rc = run(a, result)
     except BaseException as e:
         heartbeat.finish(hb, "failed", dict(result, error=("%s: %s" % (type(e).__name__, e))[:500]))
+        runlog_hook.report(rl, result, 1, ("%s: %s" % (type(e).__name__, e))[:500])
         raise
     heartbeat.finish(hb, "ok" if rc == 0 else "failed", dict(result, exit_code=rc))
+    runlog_hook.report(rl, result, rc)
     return rc
 
 

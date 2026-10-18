@@ -269,6 +269,7 @@ def run_once(cfg, state, now, probe_fn=probe, reload_fn=send_reload, restart_fn=
                                 "last_error": why, "reload_at": None, "restart_at": None, "recovered_at": None, "rev": 1}
             state["synced"] = {}
             log("the API has been down for %d probes (since %s)" % (state["streak"], ts(state["failing_since"])))
+            feed("failed", "The public API has been failing for %d probes (since %s): %s" % (state["streak"], ts(state["failing_since"]), (why or "")[:150]), alert="raise")
         elif action in ("reload", "restart"):
             if not cfg.token:
                 log("SUPABASE_ACCESS_TOKEN is not set: cannot %s" % action)
@@ -283,9 +284,13 @@ def run_once(cfg, state, now, probe_fn=probe, reload_fn=send_reload, restart_fn=
                     state = done(state, action, now, cfg)
                     if sent:
                         touch(state, **{action + "_at": now})
+                        feed("warning", "The watchdog sent a %s of the project." % ("schema reload" if action == "reload" else "restart"))
         elif action == "recovered":
             touch(state, recovered_at=now)
             log("the API answers again")
+            feed("ok", "The public API answers again.", alert="resolve")
+    if ok and not actions:
+        feed_beat(state, now)
     ep = state.get("episode")
     if ep and not ok:
         # kept in memory only: written with the next event, not once a minute for the length of an outage
@@ -294,6 +299,30 @@ def run_once(cfg, state, now, probe_fn=probe, reload_fn=send_reload, restart_fn=
     if writers:
         sync_record(state, cfg, writers)
     return state
+
+
+def _feed_module():
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    import runlog_feed
+    return runlog_feed
+
+
+def feed(outcome, summary, alert=None):
+    """An incident, a reload, a restart or a recovery in the run log (scripts/runlog); never raises."""
+    try:
+        runlog_feed = _feed_module()
+        runlog_feed.note("watchdog", "job", outcome, summary, alert=("watchdog:api", alert) if alert else None)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def feed_beat(state, now):
+    """One good-probe entry an hour, so the run log can show that the watchdog ran."""
+    try:
+        runlog_feed = _feed_module()
+        runlog_feed.beat(state, "probe", "watchdog", "probes are answering", 3600, now)
+    except Exception:  # noqa: BLE001
+        pass
 
 
 def load_state(path):

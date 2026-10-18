@@ -42,6 +42,20 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import compare as C  # noqa: E402
 import daily_lock  # noqa: E402
 import turso as T  # noqa: E402
+try:
+    import runlog_feed as RF  # noqa: E402  (the run log, scripts/runlog: a failed write never changes what a release does)
+except Exception:  # noqa: BLE001
+    RF = None
+
+
+def rl(stage, rel, outcome, summary, **kw):
+    """One entry about a release in the run log. Never raises."""
+    if RF is None:
+        return
+    try:
+        RF.release_event(stage, rel, outcome, summary, **kw)
+    except Exception:  # noqa: BLE001
+        pass
 
 REPO = os.environ.get("RELEASE_REPO") or os.path.abspath(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."))
 SNAP_DIR = os.environ.get("RELEASE_SNAPSHOT_DIR") or os.path.join(os.getcwd(), "release-snapshots")
@@ -414,6 +428,7 @@ def create_release(ctx, row):
     except Exception:
         ctx.w.exec("delete from meta.data_release where id = %d" % row["id"])
         raise
+    rl("prepare", row, "ok", "release %s prepared by %s: %s" % (row["number"], row["created_by"], row.get("title") or row.get("kind")), actor=row["created_by"])
     return row
 
 
@@ -500,6 +515,7 @@ def withdraw_release(ctx, number, reason, by=None):
     if not prod_exec(ctx.prod, update_sql(r["id"], fields, "pending")):
         raise Refused("release %s is no longer pending on production (approved or decided meanwhile): nothing was changed" % number)
     ctx.w.exec(update_sql(r["id"], fields, "pending"))
+    rl("withdraw", release_by_id(ctx.ds1, r["id"]) or {"number": number}, "ok", "release %s withdrawn by %s: %s" % (number, by, reason), actor=by, detail={"reason": reason})
     return r["id"]
 
 
@@ -1218,6 +1234,8 @@ def auto_pass(ctx):
         guard = "held_at is null and digest = %s and (select paused is false from meta.auto_approval)" % C.ql(mine["digest"])
         if prod_exec(ctx.prod, update_sql(mine["id"], {"status": "approved", "approved_by": AUTO_ACTOR, "approved_at": "NOW"}, "pending", guard)):
             log("release %s approved automatically (%s)" % (mine["number"], AUTO_ACTOR))
+            rl("auto-approve", dict(mine, approved_by=AUTO_ACTOR), "ok", "release %s approved automatically by the daily-scores policy" % mine["number"], actor=AUTO_ACTOR,
+               detail={"policy_reasons": []})
             return
 
 
@@ -1792,8 +1810,11 @@ def cmd_run(ctx, args):
             continue
         if p["status"] == "rejected":
             ctx.w.exec(update_sql(mine["id"], {"status": "rejected", "approved_by": p["approved_by"], "approved_at": p["approved_at"]}, "pending"))
+            rl("reject", dict(mine, approved_by=p["approved_by"], approved_at=p["approved_at"]), "ok", "release %s rejected by %s" % (p["number"], p["approved_by"]), actor=p["approved_by"])
             continue
         auto = is_gated(p["approved_by"])
+        if not auto:
+            rl("approve", dict(mine, approved_by=p["approved_by"], approved_at=p["approved_at"]), "ok", "release %s approved by %s" % (p["number"], p["approved_by"]), actor=p["approved_by"])
         if not same_release(p, mine) or digest_check(mine) is False:
             log("release %s: production's copy does not match DS1's copy: refusing it" % p["number"])
             set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW",
@@ -1837,9 +1858,13 @@ def cmd_run(ctx, args):
             result["sync_status"] = refresh_sync(ctx, mine["tables"])
             set_release(ctx, mine["id"], {"status": "done", "finished_at": "NOW", "result": result, "error": None})
             log("release %s done" % mine["number"])
+            rl("apply", mine, "ok", "release %s applied (%s)" % (mine["number"], mine["kind"]), actor="release-runner", detail={"result": {k: result.get(k) for k in ("totals", "revalidate", "sync_status", "refresh") if result.get(k) is not None}},
+               alert=("release:" + mine["number"], "resolve"))
         except Refused as e:
             set_release(ctx, mine["id"], {"status": "failed", "finished_at": "NOW", "error": "Refused: " + scrub(e)})
             log("release %s refused: %s" % (mine["number"], scrub(e)))
+            rl("apply", mine, "failed", "release %s refused: %s" % (mine["number"], scrub(e)[:200]), actor="release-runner", detail={"error": scrub(e)[:500]},
+               alert=("release:" + mine["number"], "raise"))
             if auto:
                 pause_auto(ctx, "Automatic release %s was refused: %s" % (mine["number"], scrub(e)))
         except Exception as e:  # noqa: BLE001 - every failure is recorded
@@ -1848,6 +1873,8 @@ def cmd_run(ctx, args):
                 failed["result"] = dict(e.result, revalidate=revalidate_site(ctx, mine["tables"], None), sync_status=refresh_sync(ctx, mine["tables"]))
             set_release(ctx, mine["id"], failed)
             log("release %s failed: %s" % (mine["number"], scrub(e)))
+            rl("apply", mine, "failed", "release %s failed: %s" % (mine["number"], scrub(e)[:200]), actor="release-runner", detail={"error": scrub(e)[:500]},
+               alert=("release:" + mine["number"], "raise"))
             if auto:
                 pause_auto(ctx, "Automatic release %s failed: %s" % (mine["number"], scrub(e)))
         did += 1
@@ -1979,7 +2006,17 @@ def run_drift(ctx):
 
 
 def cmd_drift(ctx, args):
-    return run_drift(ctx)[0]
+    started = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    try:
+        rc, summary, fix = run_drift(ctx)
+    except Exception as e:  # noqa: BLE001
+        if RF is not None:
+            RF.note("drift-check", "job", "failed", "the drift check stopped: %s" % scrub(e)[:200], alert=("drift", "raise"), started=started)
+        raise
+    if RF is not None:
+        RF.note("drift-check", "job", "warning" if rc else "ok", summary, links={"release": fix} if fix else None,
+                alert=("drift", "raise" if rc else "resolve"), started=started)
+    return rc
 
 
 # ---------------------------------------------------------------------------------------------------- commands

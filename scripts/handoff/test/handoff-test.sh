@@ -16,6 +16,7 @@ bad() { fail=$((fail + 1)); printf '  FAIL %s\n' "$1"; }
 expect() { if eval "$2"; then ok "$1"; else bad "$1"; fi; }
 
 # ---- the scratch world ----
+export RUNLOG=0   # these runs must never write to the real run log
 export SPX_HANDOFF_DIR="$TMP/handoff"; mkdir -p "$SPX_HANDOFF_DIR"
 R="$TMP/repo"; mkdir -p "$R/web" "$R/db/build" "$R/db/migrations"
 echo "select 1;" > "$R/db/build/220_x.sql"; echo "select 2;" > "$R/db/build/221_y.sql"

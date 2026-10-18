@@ -522,6 +522,21 @@ def tick(cfg, state, now, ds1, force=False, collect_fn=None, write_fn=None, queu
                 state["last_try"] = now - cfg.every + 300      # try again in 5 minutes, not every minute
                 out["snapshot"] = "failed"
                 log("could not write the snapshot (retry in 5 minutes): %s" % clean(e, 160))
+    try:       # the run log (scripts/runlog): a failed write never touches the tick
+        import runlog_feed as RF
+        if out["snapshot"] == "written":
+            RF.beat(state, "snap", "ops-snapshot", "snapshot %s written" % state.get("last_id"), 3600, now, kind="ops")
+            if state.get("rl_snap_failed"):
+                state["rl_snap_failed"] = False
+                RF.note("ops-snapshot", "ops", "ok", "snapshots are written again", alert=("ops-snapshot", "resolve"))
+        elif out["snapshot"] == "failed" and not state.get("rl_snap_failed"):
+            state["rl_snap_failed"] = True
+            RF.note("ops-snapshot", "ops", "failed", "the status snapshot could not be written to production", alert=("ops-snapshot", "raise"))
+        if now - (state.get("rl_export_at") or 0) >= 300:
+            state["rl_export_at"] = now
+            RF.feed_raw_export(ds1.json, state)
+    except Exception:  # noqa: BLE001
+        pass
     for rid, status, summary in done:
         if status == "done" and out["snapshot"] == "failed":
             status, summary = "failed", "The snapshot could not be written: production did not answer."

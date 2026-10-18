@@ -21,6 +21,37 @@ import worker  # noqa: E402
 from config import Config  # noqa: E402
 
 
+def logged_cycle(worker_, go):
+    """One worker cycle in the run log (scripts/runlog): its counts when it ends, an alert when it crashes or DS1 stops answering, resolved by the
+    next good cycle. The log never changes the cycle's exit code."""
+    try:
+        sys.path.insert(0, os.path.join(HERE, "..", "runlog"))
+        import runlog
+        rl = runlog.Run("harvest", "job")
+    except Exception:
+        return go()
+    err = None
+    try:
+        code = go()
+    except BaseException as e:
+        err, code = "%s: %s" % (type(e).__name__, e), 1
+        raise
+    finally:
+        try:
+            stats = dict(getattr(worker_, "stats", {}) or {})
+            counts = {"requests": sum(getattr(getattr(worker_, n, None), "requests", 0) or 0 for n in ("wp", "wd", "wdqs"))}
+            if code == 0 and not err:
+                rl.finish("ok", "cycle finished, %d requests" % counts["requests"], counts, {"kinds": stats})
+                runlog.alert_resolve("harvest:cycle")
+            else:
+                msg = err or "the cycle ended with exit code %s (DS1 did not answer for too long)" % code
+                rl.finish("failed", msg[:300], counts, {"kinds": stats})
+                runlog.alert_raise("harvest:cycle", "harvest", None, "The harvester cycle failed: " + msg[:300])
+        except Exception:
+            pass
+    return code
+
+
 def main(argv):
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -43,7 +74,7 @@ def main(argv):
         return 0
     if a.cmd == "run":
         w = worker.Worker(cfg)
-        return w.run(max_seconds=a.max_seconds if a.max_seconds is not None else cfg.cycle_secs, max_jobs=a.max_batches, once=a.once, plan=not a.no_plan)
+        return logged_cycle(w, lambda: w.run(max_seconds=a.max_seconds if a.max_seconds is not None else cfg.cycle_secs, max_jobs=a.max_batches, once=a.once, plan=not a.no_plan))
     if a.cmd == "reparse":
         worker.reparse(cfg, kind=a.kind, league=a.league, only_old=not a.all, limit=a.limit)
         return 0

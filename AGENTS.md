@@ -594,6 +594,12 @@ has `turso.py`. Create the Turso tables with `release.py turso-schema --apply` (
 `api.soccer_matches.checked` are filled in from `meta_verification` by `lib/turso/checked.ts`. Removing the old copies from production is
 `db/migrations/131_drop_turso_tables_production.sql` (production only, after its checklist).
 
+**The run log and the admin alerts** live in Turso too (tables `run_log`, `run_log_item`, `alert`; [`scripts/runlog/README.md`](scripts/runlog/README.md)). Every
+automated job and every deploy, release step, approval and `ds1-apply` writes one entry through `scripts/runlog/runlog.py` (a write that fails never fails the job;
+`RUNLOG=0` in a test), `/admin/runs` shows the timeline and a "did it run today" view (an expected job that did not run is MISSED), and the banner on every admin
+page lists the open alerts until an admin dismisses them. A job that fails calls `alert_raise`, its next success `alert_resolve`; stale scores are found by the site
+itself. Names only: `TURSO_RUNLOG_TOKEN` (a token that can write) on the NAS jobs, the runner and, to dismiss alerts, the site.
+
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
 materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
@@ -955,6 +961,7 @@ Template for the note (replace each `<value>`):
     ## (2b) Vercel project "spx-stats" (the site) and the runner's release-runner.env on the NAS; not the cloud environment.
     TURSO_DATABASE_URL=<value>                        # the Turso database (section 8, "Turso")
     TURSO_AUTH_TOKEN=<value>                          # a read-only token is enough for the site; the runner needs one that can write
+    TURSO_RUNLOG_TOKEN=<value>                        # a token that can write: the run log (NAS jobs, runner) and, on Vercel, dismissing alerts
 
     ## (3) Tell the agent in chat (not secret)
     Repo https://github.com/spxis/spx-stats . "Read AGENTS.md, then Dropbox /Backups/spx-stats/START-HERE.md."

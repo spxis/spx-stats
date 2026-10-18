@@ -55,6 +55,14 @@ done
 for c in jq python3 git curl; do command -v "$c" >/dev/null 2>&1 || { echo "needs $c" >&2; exit 2; }; done
 
 H() { python3 -I "$HERE/handoff/handoff.py" "$@"; }
+# shellcheck disable=SC1091
+. "$HERE/runlog/log.sh"   # the run log: one entry for each site deploy; a failed write never changes what this script does
+log_deploy() { # outcome summary tickets-json checks-json problems-json dpl url
+  [ "$DRY" = 1 ] && return 0
+  runlog_event deploy.sh deploy "$1" "$2" "$(jq -nc --arg sha "$SHA" --arg short "$SHORT" --arg dpl "${6:-}" --arg url "${7:-}" --argjson tickets "$3" --argjson checks "${4:-[]}" --argjson problems "${5:-[]}" \
+    '{sha:$sha, version_commit:$short, deployment_id:$dpl, deployment_url:$url, tickets:$tickets, checks:$checks, problems:$problems}' 2>/dev/null || true)" \
+    --actor "$ACTOR" --ref "$SHORT" --alert-key deploy
+}
 say() { printf '%s\n' "$*"; }
 yes_no() { local a; printf '%s [y/N] ' "$1"; read -r a || a=n; [ "$a" = y ] || [ "$a" = Y ]; }
 kc() { command -v security >/dev/null 2>&1 && security find-generic-password -s "$1" -w 2>/dev/null; return 0; }
@@ -316,6 +324,7 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
     dpl="$($VERCEL inspect "$url" --scope "$SCOPE" 2>&1 | grep -oE 'dpl_[A-Za-z0-9]+' | head -1)"
     dep="${dpl:-$url}"
     if [ -z "$url" ]; then
+      log_deploy failed "deploy of $SHORT failed or printed no URL" "$(printf '%s\n' "${SITE_T[@]}" | jq -R . | jq -sc .)"
       for t in "${SITE_T[@]}"; do reply "$t" failed "the Vercel deploy of $SHORT failed or printed no URL; nothing was marked done"; done
       bad "site: deploy FAILED (no URL); see AGENTS.md section 7"
     else
@@ -337,6 +346,10 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
         done
       fi
       CARGS=(); for c in "${checked[@]}"; do CARGS+=(--checked "$c"); done
+      TJ="$(printf '%s\n' "${SITE_T[@]}" | jq -R . | jq -sc .)"; CJ="$(printf '%s\n' "${checked[@]}" | jq -R . | jq -sc .)"
+      PJ="$( [ "${#problems[@]}" -gt 0 ] && printf '%s\n' "${problems[@]}" | jq -R . | jq -sc . || echo '[]')"
+      if [ "${#problems[@]}" -gt 0 ]; then log_deploy failed "deployed $SHORT but the checks failed" "$TJ" "$CJ" "$PJ" "$dep" "$url"
+      else log_deploy ok "deployed $SHORT (${#SITE_T[@]} hand-off(s))" "$TJ" "$CJ" "$PJ" "$dep" "$url"; fi
       if [ "${#problems[@]}" -gt 0 ]; then
         for t in "${SITE_T[@]}"; do reply "$t" failed "deployed $SHORT but checks failed: ${problems[*]}" --version "$SHORT" --deployment "$dep" "${CARGS[@]}"; done
         bad "site: $SHORT deployed but CHECKS FAILED: ${problems[*]} (roll back: AGENTS.md section 7; tickets not closed)"
