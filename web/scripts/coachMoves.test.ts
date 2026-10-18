@@ -66,3 +66,8 @@ test("coaches who make the same move share the blocks and keep their own bands",
   assert.equal(a.held.length, 2);
   assert.equal(g.links.filter((l) => l.source === "c0-1" && l.target === "c1-2").length, 2);
 });
+
+test("with minClubs 1 a coach who stayed with one franchise has a career too", () => {
+  const c = buildCareers(rows, results, () => 0, (id) => `/p/${id}`, 1);
+  assert.deepEqual(c.map((x) => x.id).sort(), [1, 2, 3]);
+});

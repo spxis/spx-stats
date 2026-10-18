@@ -50,7 +50,7 @@ const add = (x: Rec, y: Rec): Rec => ({ w: x.w + y.w, l: x.l + y.l, t: x.t + y.t
  * entry of the league's table of club names a franchise had in a season. A season two coaches shared adds no record (the table's
  * record is the club's, not one coach's).
  */
-export function buildCareers(rows: readonly StaffRow[], results: Results, nameIndex: (f: number, year: number) => number, hrefOf: (id: number, name: string) => string | null): Career[] {
+export function buildCareers(rows: readonly StaffRow[], results: Results, nameIndex: (f: number, year: number) => number, hrefOf: (id: number, name: string) => string | null, minClubs = 2): Career[] {
   const perSeason = new Map<string, Set<number>>();
   for (const r of rows) {
     const k = `${r.franchise_id}:${r.year}`;
@@ -64,7 +64,7 @@ export function buildCareers(rows: readonly StaffRow[], results: Results, nameIn
   }
   const careers: Career[] = [];
   for (const [id, list] of by) {
-    if (new Set(list.map((r) => r.franchise_id)).size < 2) continue;
+    if (new Set(list.map((r) => r.franchise_id)).size < minClubs) continue;
     list.sort((x, y) => x.year - y.year || (x.first_on ?? "9999").localeCompare(y.first_on ?? "9999"));
     const stints: Stint[] = [];
     const seen = new Set<string>();

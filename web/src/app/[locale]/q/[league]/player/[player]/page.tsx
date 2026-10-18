@@ -27,6 +27,8 @@ import { cupsFor } from "@/lib/cups";
 import { getPersonRetired } from "@/lib/retiredNumbers";
 import { PlayerRetired } from "@/components/PlayerRetired";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
+import { COACH_AWARDS, getPersonCoaching } from "@/lib/personCoaching";
+import { recordText } from "@/lib/record";
 import { buildBoard } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
 import { positionCodes, positionNames } from "@/lib/positions";
@@ -58,10 +60,11 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
   const { d } = at;
   const { say, plural, locale } = await currentSpeaker();
   const p = d.person;
+  const coached = (await getPersonCoaching(p.person_id)).length > 0;
   const bits = [positionNames(positionCodes(p.positions, p.position), at.home, await getPositions(), locale) || null, (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") || null,
     p.award_count ? plural("count.awards", p.award_count) : null, p.championship_count ? plural("count.championships", p.championship_count) : null].filter(Boolean);
   const details = bits.length ? say("player.metaDetails", { list: bits.join(", ") }) : "";
-  return pageMeta({ title: p.name, description: say("player.metaDesc", { name: p.name, details }), path: at.path, locale });
+  return pageMeta({ title: p.name, description: say(coached ? "player.metaDescRoles" : "player.metaDesc", { name: p.name, details }), path: at.path, locale });
 });
 
 function Fact({ label, children }: { label: string; children: ReactNode }) {
@@ -111,8 +114,13 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
   const { d, home } = at;
   const { say, locale, dt, fmt } = await currentSpeaker();
-  const [brands, summary, record, retired] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id)]);
-  const { person: p, awards, teams } = d;
+  const [brands, summary, record, retired, coaching] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id), getPersonCoaching(d.person.person_id)]);
+  const { person: p, teams } = d;
+  const coachCodes = coaching.length ? COACH_AWARDS : new Set<string>();
+  const awards = d.awards.filter((a) => !coachCodes.has(a.award_code));
+  const coachAwards = d.awards.filter((a) => coachCodes.has(a.award_code));
+  const played = Boolean(p.seasons_played || teams.length || record.seasonTeams.length || record.stats.length);
+  const multi = played && coaching.length > 0;
   const lgs = (p.leagues ?? []).filter(isLeague);
   const paths = await getPaths();
   const homePin: Pin | null = p.birth_lat != null && p.birth_lon != null
@@ -172,18 +180,34 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (p.championship_count) facts.push(<Fact key="ch" label={say("player.factTitles")}>{p.championship_count}</Fact>);
   if (p.award_count) facts.push(<Fact key="aw" label={say("player.factAwards")}>{p.award_count}</Fact>);
 
-  const awardTable = tableOf(awards, [
+  const awardCols = (items: typeof d.awards) => tableOf(items, [
     { key: "season", label: say("col.season"), num: true, get: (r) => r.year, cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{`${leagueName(r.league)} ${seasonLabel(r.league, r.year)}`}</Link> },
     { key: "award", label: say("col.award"), cls: "team", get: (r) => r.award },
     { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => (r.team ? <TeamLabel lg={r.league} f={r.franchise_id} name={r.team} logo={logoFor(brands, r.franchise_id, r.year)} /> : "") },
     { key: "note", label: say("col.note"), cls: "note", get: (r) => r.note, cell: (r) => r.note || "" },
   ], (r, i) => `${r.award_code}|${r.year}|${i}`);
+  const awardTable = awardCols(awards);
+  const coachAwardTable = awardCols(coachAwards);
   const teamTable = tableOf(teams, [
     { key: "from", label: say("col.from"), num: true, get: (t) => t.from_year, cell: (t) => <Link href={seasonPath(t.league, t.from_year)} prefetch={false}>{seasonLabel(t.league, t.from_year)}</Link> },
     { key: "to", label: say("col.to"), num: true, get: (t) => t.to_year, cell: (t) => (t.to_year === t.from_year ? "" : <Link href={seasonPath(t.league, t.to_year)} prefetch={false}>{seasonLabel(t.league, t.to_year)}</Link>) },
     { key: "team", label: say("col.team"), cls: "team", get: (t) => t.team, cell: (t) => <TeamLabel lg={t.league} f={t.franchise_id} name={t.team || say("team.fallback", { id: t.franchise_id })} logo={logoFor(brands, t.franchise_id, t.to_year)} /> },
     { key: "league", label: say("col.league"), get: (t) => leagueName(t.league) },
   ], (t) => `${t.league}|${t.franchise_id}|${t.from_year}`);
+
+  const coachTable = tableOf(coaching, [
+    { key: "from", label: say("col.from"), num: true, get: (c) => c.from, cell: (c) => <Link href={seasonPath(c.league, c.from)} prefetch={false}>{seasonLabel(c.league, c.from)}</Link> },
+    { key: "to", label: say("col.to"), num: true, get: (c) => c.to, cell: (c) => (c.to === c.from ? "" : <Link href={seasonPath(c.league, c.to)} prefetch={false}>{seasonLabel(c.league, c.to)}</Link>) },
+    { key: "team", label: say("col.team"), cls: "team", get: (c) => c.team, cell: (c) => <TeamLabel lg={c.league} f={c.franchise} name={c.team || say("team.fallback", { id: c.franchise })} logo={logoFor(brands, c.franchise, c.to)} /> },
+    { key: "league", label: say("col.league"), get: (c) => leagueName(c.league) },
+    { key: "seasons", label: say("col.seasons"), num: true, get: (c) => c.seasons },
+    { key: "record", label: say("col.record"), num: true, get: (c) => (c.sole ? c.rec.w / Math.max(1, c.rec.w + c.rec.l + c.rec.t + c.rec.otl) : null), cell: (c) => (c.sole ? `${recordText(c.rec)}${c.sole < c.seasons ? "*" : ""}` : "") },
+    { key: "titles", label: say("col.titles"), num: true, get: (c) => c.titles.length, cell: (c) => c.titles.map((y) => seasonLabel(c.league, y)).join(", ") },
+  ], (c) => `${c.league}|${c.franchise}|${c.from}`);
+  const coachTitles = coaching.reduce((n, c) => n + c.titles.length, 0);
+  const coachSeasons = coaching.reduce((n, c) => n + c.seasons, 0);
+  const coachClubs = new Set(coaching.map((c) => `${c.league}|${c.franchise}`)).size;
+  const partial = coaching.some((c) => c.sole < c.seasons);
 
   return (
     <>
@@ -195,11 +219,18 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           team={(r) => teams.filter((t) => t.league === r.league && t.franchise_id === r.franchise_id).sort((a, b) => b.to_year - a.to_year)[0]?.team || say("team.fallback", { id: r.franchise_id ?? 0 })}
           href={(r) => `${paths.team(r.league, r.franchise_id ?? 0)}#retired`}
         />
-        <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say("player.eyebrow")}</span>
+        <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say(played ? "player.eyebrow" : "player.roleCoach")}</span>
         <h1>{p.name}</h1>
         {p.birth_date ? <p className="lede">{p.death_date ? say("player.lifespan", { from: yr(p.birth_date), to: yr(p.death_date) }) : say("player.bornYear", { year: yr(p.birth_date) })}</p> : null}
       </section>
       {facts.length ? <dl className="pfacts">{facts}</dl> : <p className="note">{say("player.noBio")}</p>}
+      {multi ? (
+        <nav className="rolechips" aria-label={say("player.roles")}>
+          <a href="#playing">{say("player.rolePlayer")}</a>
+          <a href="#coaching">{say("player.roleCoach")}</a>
+        </nav>
+      ) : null}
+      {multi ? <h2 id="playing" className="rolehead">{say("player.playingCareer")}</h2> : null}
       {titles.length ? (
         <section className="section">
           <h2>{say("player.titles", { count: fmt(titles.length) })}</h2>
@@ -227,6 +258,25 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
         <section className="section">
           <h2>{say("player.teams")}</h2>
           <div className="tablebox"><SortTable {...teamTable} param="sort_teams" def="from.asc" /></div>
+        </section>
+      ) : null}
+      {coaching.length ? (
+        <section className="section" id="coaching">
+          <h2 className={multi ? "rolehead" : undefined}>{say("player.coachingCareer")}</h2>
+          <dl className="pfacts">
+            <Fact label={say("coach.factSeasons")}>{fmt(coachSeasons)}</Fact>
+            <Fact label={say("coach.factClubs")}>{fmt(coachClubs)}</Fact>
+            {coachTitles ? <Fact label={say("coach.factTitles")}>{fmt(coachTitles)}</Fact> : null}
+            {coachAwards.length ? <Fact label={say("coach.factAwards")}>{fmt(coachAwards.length)}</Fact> : null}
+          </dl>
+          <div className="tablebox"><SortTable {...coachTable} param="sort_coach" def="from.asc" /></div>
+          <p className="note">{say("coach.note")}{partial ? ` ${say("coach.noteShared")}` : ""}</p>
+          {coachAwards.length ? (
+            <>
+              <h3>{say("coach.awards")}</h3>
+              <div className="tablebox"><SortTable {...coachAwardTable} param="sort_coachawards" def="season.desc" /></div>
+            </>
+          ) : null}
         </section>
       ) : null}
       {book.key()}
