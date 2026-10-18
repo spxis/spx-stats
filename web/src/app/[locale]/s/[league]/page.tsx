@@ -80,12 +80,14 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
       <section className="head fade">
         <span className="eyebrow">{info.short}</span>
         <h1>{info.name}</h1>
-        <p className="lede">{say("league.lede", { seasons: plural("count.seasons", list.filter((x) => !leagueSat(x)).length), withGames: withGames.length, champions: plural("count.champions", champs.length) })}</p>
-        <p className="note"><Link href={`/${lg}/scores`}>{say("scores.link")}</Link></p>
-        <p className="note"><Link href={`/${lg}/all-time`}>{say("allTime.link")}</Link></p>
-        <p className="note"><Link href={`/${lg}/alignment`}>{say("league.alignmentLink")}</Link></p>
-        {info.closed ? null : <p className="note"><Link href={`/${lg}/world`}>{say("country.leagueNavLink")}</Link></p>}
         <FamilyNav code={lg} />
+        <p className="lede">{say("league.lede", { seasons: plural("count.seasons", list.filter((x) => !leagueSat(x)).length), withGames: withGames.length, champions: plural("count.champions", champs.length) })}</p>
+        <nav className="quicklinks">
+          <Link href={`/${lg}/scores`}>{say("nav.scores")}</Link>
+          <Link href={`/${lg}/all-time`}>{say("allTime.title")}</Link>
+          <Link href={`/${lg}/alignment`}>{say("align.title")}</Link>
+          {info.closed ? null : <Link href={`/${lg}/world`}>{say("country.mapList")}</Link>}
+        </nav>
       </section>
       {others.length ? (
         <section className="section">
