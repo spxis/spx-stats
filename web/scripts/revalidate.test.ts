@@ -110,7 +110,8 @@ test("every server fetch of the archive carries cache tags the release runner ca
   assert.equal([...releases.matchAll(/\bfetch\(/g)].length, 2);
   // No other module in the site reaches the archive.
   for (const { f, text } of sourceFiles) {
-    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts") continue;
+    // adminPeople.ts is the admin's own list, read per request with no-store.
+    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts" || f === "lib/adminPeople.ts") continue;
     assert.doesNotMatch(text, /\bREST_URL\b/, `${f}: reads the archive without cache tags`);
   }
 });
