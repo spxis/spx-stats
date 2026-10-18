@@ -149,8 +149,10 @@ group by franchise_id, team_name, covered, grp;
 update core.team_season set franchise_identity_id = null
 where franchise_id in (select franchise_id from nm) and franchise_identity_id in
   (select franchise_identity_id from core.franchise_identity where source_id = (select source_id from src));
+-- Only CFL clubs: the same source row also made the NBA's and other leagues' franchises and identities (2026-10-17), which stay.
 delete from core.franchise_identity where source_id = (select source_id from src) and franchise_id in
-  (select franchise_id from core.franchise where source_id = (select source_id from src) or franchise_id in (select franchise_id from nm));
+  (select franchise_id from core.franchise where source_id = (select source_id from src) or franchise_id in (select franchise_id from nm))
+  and franchise_id in (select franchise_id from core.franchise_league where league_code = 'cfl');
 
 insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
 select r.franchise_id,
