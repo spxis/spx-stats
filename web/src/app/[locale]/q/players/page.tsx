@@ -36,6 +36,7 @@ import { TeamPicker } from "@/components/TeamPicker";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
 import "@/components/alignment.css";
+import "@/components/spinner.css";
 import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn for the request when the address has a query (lib/routing.ts); without one, s/players keeps this page and revalidates it every day. Each page of players the database sends is kept for a day.
@@ -172,6 +173,9 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
         searchHidden={{ ...(league ? { league } : {}), ...(teamSlug ? { team: teamSlug } : {}), ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}) }}
         teamPicker={teamsOn && league ? <TeamPicker action="/players" value={teamSlug} clubs={pickable} hidden={{ league, ...(nat ? { nat } : {}), ...(keep.letter ? { letter: keep.letter } : {}), ...(keep.letter_by ? { letter_by: keep.letter_by } : {}), ...(keep.sort ? { sort: keep.sort } : {}), ...(keep.from ? { from: keep.from, to: keep.to ?? "" } : {}), ...(q ? { q } : {}) }} /> : null}
       />
+      <div className="listhold">
+      {/* Shown (by CSS) only while a saved year range is being applied and the list is held out of sight; it never leaves the table area empty. */}
+      <div className="pagespin listwait" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><span>{say("load.loading")}</span></div>
       <div className="yr-hold">
         {data == null || table == null ? <LoadNote /> : data.list.length ? (
           <>
@@ -183,6 +187,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
             <p className="note small"><Credits say={say} use={["flags"]} /></p>
           </>
         ) : <p className="note">{say("players.none")}</p>}
+      </div>
       </div>
     </>
   );

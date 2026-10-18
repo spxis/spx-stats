@@ -34,3 +34,12 @@ html[data-yr-pending] .yr-hold { visibility: hidden; animation: yr-unhold 0s 3s 
 /* The same slider above the players and teams lists. */
 .listrange { margin: 4px 0 10px; }
 .yr-end:has(.yr-reset:disabled) { border-left-color: transparent; }
+
+/* While a saved range is applied the list is hidden (above); a spinner stands in its place, and goes with the same 3 s failsafe so it never overlaps the list. */
+.listhold { position: relative; }
+.listwait { display: none; position: absolute; inset: 0 0 auto 0; padding: 48px 16px; z-index: 1; }
+html[data-yr-pending] .listwait { display: flex; animation: yr-wait-off 0s 3s forwards; }
+@keyframes yr-wait-off { to { visibility: hidden; } }
+/* A request for another range or league is out: the list below is the old one until it lands. */
+.listrange-busy { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; color: var(--muted); font: 600 13px/1 var(--body); }
+.listrange-busy .spinner { width: 14px; height: 14px; border-width: 2px; }

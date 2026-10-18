@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore, useTransition } from "react";
 import { hrefWith, replaceQuery } from "@/lib/urlQuery";
 import { holdRange, parseRange, RANGE_PAGES, releaseRangeHold, saveRange, savedRange } from "@/lib/yearRange";
+import { useSpeaker } from "@/components/i18n/LocaleProvider";
 import { YearRange } from "./YearRange";
+import "./spinner.css";
 
 /** Milliseconds a settled change waits before the list is asked for, so a few quick presses or taps make one request. */
 const WAIT = 200;
@@ -40,6 +42,7 @@ interface Props {
  */
 export function ListRange({ page, min, max, from, to, inAddress, reset }: Props) {
   const router = useRouter();
+  const { say } = useSpeaker();
   const key = RANGE_PAGES[page].key;
   const [pending, startTransition] = useTransition();
   const [live, setLive] = useState({ from, to });
@@ -64,6 +67,13 @@ export function ListRange({ page, min, max, from, to, inAddress, reset }: Props)
 
   // The list is drawn at the address's range now: let it show.
   useEffect(() => { if (inAddress) releaseRangeHold(); }, [inAddress]);
+
+  // The request for the saved range is over (the list came, or the request failed): never leave the list hidden.
+  const wasPending = useRef(false);
+  useEffect(() => {
+    if (wasPending.current && !pending) releaseRangeHold();
+    wasPending.current = pending;
+  }, [pending]);
 
   // Follow the server's range (another league, back and forward) unless the reader is in the middle of changing it.
   useEffect(() => {
@@ -92,6 +102,7 @@ export function ListRange({ page, min, max, from, to, inAddress, reset }: Props)
   return (
     <div className="listrange" aria-busy={pending || undefined}>
       <YearRange min={min} max={max} from={shown.from} to={shown.to} onChange={change} reset={reset} />
+      {pending ? <span className="listrange-busy" role="status"><span className="spinner" aria-hidden="true" />{say("load.loading")}</span> : null}
     </div>
   );
 }
