@@ -121,6 +121,11 @@ if [ -f "$ENVFILE" ]; then
   if grep -qE '^(AUTH_GOOGLE_ID|GOOGLE_CLIENT_ID)=' "$ENVFILE" && grep -qE '^(AUTH_GOOGLE_SECRET|GOOGLE_CLIENT_SECRET)=' "$ENVFILE" && grep -qE '^(AUTH_SECRET|NEXTAUTH_SECRET)=' "$ENVFILE"; then AUTH_FLAG=1; fi
   grep -v '^VERCEL_GIT_COMMIT_SHA=' "$ENVFILE" | grep -vE '^[A-Za-z_][A-Za-z0-9_]*=("")?$' > "$ENVFILE.new"; printf 'VERCEL_GIT_COMMIT_SHA="%s"\n' "$SHA" >> "$ENVFILE.new"
   [ -n "$AUTH_FLAG" ] && printf 'SPX_AUTH_CONFIGURED="1"\n' >> "$ENVFILE.new"
+  # Turso's two variables are sensitive on Vercel, so the pull leaves them empty and the build would read nothing (pages read Turso at build, lib/turso).
+  # Add them for the build only, from the keychain, never printed; the functions still read the project's own values at run time.
+  _TU="${TURSO_DATABASE_URL:-$(kc_get 'spx-stats TURSO_DATABASE_URL')}"; _TT="${TURSO_READ_TOKEN:-$(kc_get 'spx-stats TURSO_READ_TOKEN')}"
+  [ -n "$_TU" ] && [ -n "$_TT" ] || die "the keychain items spx-stats TURSO_DATABASE_URL and spx-stats TURSO_READ_TOKEN are missing: the build would read no Turso data. Nothing was built or deployed"
+  printf 'TURSO_DATABASE_URL="%s"\nTURSO_AUTH_TOKEN="%s"\n' "$_TU" "$_TT" >> "$ENVFILE.new"; unset _TU _TT
   mv "$ENVFILE.new" "$ENVFILE"
 fi
 # The deploy guard (AGENTS.md section 7): this build must have sign-in on, or every kept page is built signed-out (2026-10-15).
