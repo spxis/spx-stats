@@ -78,6 +78,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const letterBy = parsed.letterBy ?? "last";
   const sport = parsed.sport ?? "";
   const seasons = parsed.seasons ?? "";
+  const dated = parsed.dated ? "yes" : "";
   const source = parsed.source ?? "";
   const sort = parseSort(query.sort, Object.keys(PEOPLE_SORTS), DEF_SORT).slice(0, 1);
   const sortText = formatSort(sort);
@@ -102,6 +103,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     from: range ? String(range.from) : null,
     to: range ? String(range.to) : null,
     seasons: seasons || null,
+    dated: dated || null,
     source: source || null,
     after: null,
   };
@@ -120,6 +122,10 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     { code: "", short: say("phase.all") },
     { code: "yes", short: say("peopleAdmin.seasons.yesChip") },
     { code: "no", short: say("peopleAdmin.seasons.noChip") },
+  ];
+  const datedChips = [
+    { code: "", short: say("peopleAdmin.dated.all") },
+    { code: "yes", short: say("peopleAdmin.dated.only") },
   ];
   const filters = filtersOf(parsed, say, locale);
   const table = result.kind === "ok" ? tableOf(result.rows, [
@@ -189,6 +195,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
             ...(sortText !== DEF_SORT ? { sort: sortText } : {}),
             ...(range ? { from: String(range.from), to: String(range.to) } : {}),
             ...(seasons ? { seasons } : {}),
+            ...(dated ? { dated } : {}),
             ...(source ? { source } : {}),
           }}
           extra={
@@ -206,6 +213,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
                 </div>
               ) : null}
               <SegChips aria={say("peopleAdmin.seasons.aria")} current={seasons} items={seasonChips} href={(code) => href({ seasons: code || null })} />
+              <SegChips aria={say("peopleAdmin.dated.aria")} current={dated} items={datedChips} href={(code) => href({ dated: code || null })} />
               {sourceChips.length ? <SegChips aria={say("peopleAdmin.sourcesAria")} current={source} items={sourceChips} href={(code) => href({ source: code || null })} /> : null}
             </>
           }

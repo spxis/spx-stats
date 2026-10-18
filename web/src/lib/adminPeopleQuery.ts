@@ -46,6 +46,8 @@ export interface PeopleSearch {
   from?: number;
   to?: number;
   seasons?: SeasonsFilter;
+  /** Only people with a known year (a club season or a birth year) when a range is set. */
+  dated?: boolean;
   source?: string;
   letter?: string;
   letterBy?: LetterBy;
@@ -116,12 +118,29 @@ export function parsePeopleSearch(q: Record<string, string | string[] | undefine
     from,
     to,
     seasons: readSeasons(one(q, "seasons")),
+    dated: one(q, "dated") === "yes" ? true : undefined,
     source: readSource(one(q, "source")),
     letter: letter ?? undefined,
     letterBy: one(q, "letter_by") === "first" ? "first" : "last",
     after: after || undefined,
     page: readPage(one(q, "page")),
   };
+}
+
+/**
+ * The year range, over the years we know for each person: their club seasons when they have any, else their birth year. A person with no
+ * years at all stays in the list, unless the reader asks for `dated` only. One `and=(or(...))` so it never clashes with the cursor's `or=`.
+ */
+export function yearFilter(f: Pick<PeopleSearch, "from" | "to" | "dated">): string {
+  if (f.from == null && f.to == null) return f.dated ? "and=(or(first_season.not.is.null,birth_year.not.is.null))" : "";
+  const lo = f.from ?? -9999;
+  const hi = f.to ?? 9999;
+  const clauses = [
+    `and(first_season.lte.${hi},last_season.gte.${lo})`,
+    `and(first_season.is.null,birth_year.gte.${lo},birth_year.lte.${hi})`,
+    ...(f.dated ? [] : ["and(first_season.is.null,birth_year.is.null)"]),
+  ];
+  return `and=(or(${clauses.join(",")}))`;
 }
 
 /** PostgREST filters for api.person_admin. Each value is already allow-listed. A-Z uses the indexed letter columns (migration 123). Birth years use from/to (the same slider as /players). */
@@ -133,8 +152,7 @@ export function peopleAdminFilters(f: PeopleSearch): string[] {
     f.sport ? `sports=cs.${encodeURIComponent(`{${f.sport}}`)}` : "",
     f.country ? `country=eq.${encodeURIComponent(f.country)}` : "",
     f.league ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
-    f.from != null ? `birth_year=gte.${f.from}` : "",
-    f.to != null ? `birth_year=lte.${f.to}` : "",
+    yearFilter(f),
     f.seasons === "yes" ? "has_seasons=eq.true" : f.seasons === "no" ? "has_seasons=eq.false" : "",
     f.source ? `sources=cs.${encodeURIComponent(`{${f.source}}`)}` : "",
     letter ? `${letterCol}=eq.${letter}` : "",

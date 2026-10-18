@@ -219,18 +219,18 @@ export async function searchPeople(f: PeopleSearch, page: number, sort: readonly
 const yearSchema = z.object({ birth_year: z.number() });
 const spanSchema = z.object({ min_year: int, max_year: int });
 
-/** Birth-year ends of api.person_admin: the year slider's min..max. Null when the view or the years are missing. */
+/** The year slider's min..max: the earliest birth year in api.person_admin to the current year (club seasons run to now). Null when the view or the years are missing. */
 export async function peopleSpan(): Promise<Span | null> {
   const grouped = await sliceOf("person_admin_span", "select=min_year,max_year", spanSchema, 1);
   if (grouped?.[0] && grouped[0].min_year != null && grouped[0].max_year != null) {
-    return { min: grouped[0].min_year, max: Math.max(grouped[0].max_year, grouped[0].min_year) };
+    return { min: grouped[0].min_year, max: Math.max(grouped[0].max_year, grouped[0].min_year, new Date().getFullYear()) };
   }
   const [lo, hi] = await Promise.all([
     sliceOf(PERSON_ADMIN_VIEW, "select=birth_year&birth_year=not.is.null&order=birth_year.asc", yearSchema, 1),
     sliceOf(PERSON_ADMIN_VIEW, "select=birth_year&birth_year=not.is.null&order=birth_year.desc", yearSchema, 1),
   ]);
   if (!lo?.length || !hi?.length) return null;
-  return { min: lo[0].birth_year, max: Math.max(hi[0].birth_year, lo[0].birth_year) };
+  return { min: lo[0].birth_year, max: Math.max(hi[0].birth_year, lo[0].birth_year, new Date().getFullYear()) };
 }
 
 const countryCountSchema = z.object({ country: strN, n: int });

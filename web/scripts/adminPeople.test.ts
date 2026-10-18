@@ -12,6 +12,7 @@ import {
   readSport,
   readYear,
   searchWords,
+  yearFilter,
 } from "../src/lib/adminPeopleQuery.ts";
 import { cursorOf } from "../src/lib/listQuery.ts";
 
@@ -63,6 +64,17 @@ test("nat and letter match the players list keys", () => {
   assert.ok(last.includes("letter_last=eq.b"));
 });
 
+test("a year range uses club seasons, else birth year, and keeps people with no year unless only dated ones are asked for", () => {
+  const all = yearFilter(parsePeopleSearch({ from: "1953", to: "2007" }));
+  assert.equal(all, "and=(or(and(first_season.lte.2007,last_season.gte.1953),and(first_season.is.null,birth_year.gte.1953,birth_year.lte.2007),and(first_season.is.null,birth_year.is.null)))");
+  const dated = yearFilter(parsePeopleSearch({ from: "1953", to: "2007", dated: "yes" }));
+  assert.ok(!dated.includes("birth_year.is.null"));
+  assert.equal(yearFilter(parsePeopleSearch({})), "");
+  assert.equal(yearFilter(parsePeopleSearch({ dated: "yes" })), "and=(or(first_season.not.is.null,birth_year.not.is.null))");
+  const q = peopleAdminQuery(parsePeopleSearch({ from: "1953", to: "2007" }), peopleOrder([{ key: "name", dir: "asc" }]), ["Al", 5]);
+  assert.equal(q.split("&").filter((x) => x.startsWith("or=")).length, 1, "the cursor keeps its own or=");
+});
+
 test("a first-name letter page filters on letter_first and orders by name with the person id as the tie-break", () => {
   const f = parsePeopleSearch({ letter: "T", letter_by: "first", page: "8" });
   assert.equal(f.page, 8);
@@ -78,8 +90,7 @@ test("the admin view query is one request with allow-listed filters", () => {
   assert.equal(filters.filter((x) => x.startsWith("search=")).length, 1);
   assert.ok(filters.some((x) => x.startsWith("sports=cs.")));
   assert.ok(filters.includes("country=eq.JM"));
-  assert.ok(filters.includes("birth_year=gte.1980"));
-  assert.ok(filters.includes("birth_year=lte.1990"));
+  assert.ok(filters.some((x) => x.startsWith("and=(or(and(first_season.lte.1990,last_season.gte.1980)")));
   assert.ok(filters.includes("has_seasons=eq.false"));
   assert.ok(filters.some((x) => x.startsWith("sources=cs.")));
   const q = peopleAdminQuery(f);
