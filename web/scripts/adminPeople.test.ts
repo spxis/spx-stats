@@ -63,6 +63,15 @@ test("nat and letter match the players list keys", () => {
   assert.ok(last.includes("letter_last=eq.b"));
 });
 
+test("a first-name letter page filters on letter_first and orders by name with the person id as the tie-break", () => {
+  const f = parsePeopleSearch({ letter: "T", letter_by: "first", page: "8" });
+  assert.equal(f.page, 8);
+  const q = peopleAdminQuery(f);
+  assert.ok(q.startsWith("letter_first=eq.t&select="));
+  assert.ok(q.endsWith("order=name.asc,person_id.asc"));
+  assert.ok(!q.includes("letter_last"));
+});
+
 test("the admin view query is one request with allow-listed filters", () => {
   const f = parsePeopleSearch({ q: "Bolt", sport: "athletics", nat: "jm", from: "1980", to: "1990", seasons: "no", source: "wikidata_meigen" });
   const filters = peopleAdminFilters(f);
