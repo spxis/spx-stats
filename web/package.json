@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.142.6",
+  "version": "0.143.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
