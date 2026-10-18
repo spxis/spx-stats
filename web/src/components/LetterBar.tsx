@@ -32,7 +32,7 @@ export function LetterBar({ say, plural, letter, by, counts, href }: {
         })}
       </nav>
       <div className="seg views" role="group" aria-label={say("players.azByAria")}>
-        {(["last", "first"] as const).map((b) => (
+        {(["first", "last"] as const).map((b) => (
           <Link key={b} href={href({ letter_by: b === "last" ? null : b })} prefetch={false} aria-current={b === by ? "page" : undefined}>{say(b === "last" ? "players.azLast" : "players.azFirst")}</Link>
         ))}
       </div>
