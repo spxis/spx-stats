@@ -67,5 +67,12 @@ class Parse(unittest.TestCase):
     def test_no_sections(self):
         self.assertEqual(w.entries("nba", w.sections("nothing here")), [])
 
+    def test_hockey_lines(self):
+        t = ("===Regular season===\n{| class=\"wikitable\"\n! Player !! GP !! G !! A !! Pts !! PIM\n|-\n"
+             "| [[Bobby Hull]] || 78 || 51 || 52 || 103 || 37\n|-\n| Plain Name || 40 || 2 || 3 || 5 || 10\n|}\n")
+        ln, _ = w.hockey_lines(w.hockey_tables(t), "X")
+        self.assertEqual([(x["name"], x["title"], x["group"], x["stats"]["pts"]) for x in ln],
+                         [("Bobby Hull", "Bobby Hull", "skater", "103"), ("Plain Name", None, "skater", "5")])
+
 if __name__ == "__main__":
     unittest.main()

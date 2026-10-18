@@ -71,7 +71,10 @@ insert into signal values
   -- Wikidata team lists (legacy_rosters.league_player is empty for them), so a name counts only through this signal or an item that states neither.
   ('nfl', 'P106', 'Q19204627'), ('nfl', 'P106', 'Q14128148'), ('nfl', 'P641', 'Q41323'),
   ('afl', 'P106', 'Q19204627'), ('afl', 'P106', 'Q14128148'), ('afl', 'P641', 'Q41323'),
-  ('aafc', 'P106', 'Q19204627'), ('aafc', 'P106', 'Q14128148'), ('aafc', 'P641', 'Q41323');
+  ('aafc', 'P106', 'Q19204627'), ('aafc', 'P106', 'Q14128148'), ('aafc', 'P641', 'Q41323'),
+  -- the NHL's predecessor and rival leagues (NHA, PCHA, WCHL, WHA): ice hockey player; the sport ice hockey. Their seasons run autumn to spring like the NBA's.
+  ('nha', 'P106', 'Q11774891'), ('nha', 'P641', 'Q41466'), ('pcha', 'P106', 'Q11774891'), ('pcha', 'P641', 'Q41466'),
+  ('wchl', 'P106', 'Q11774891'), ('wchl', 'P641', 'Q41466'), ('wha', 'P106', 'Q11774891'), ('wha', 'P641', 'Q41466');
 
 -- ---- 1. The club names, and the seasons each source puts a player in them --------------------------------------------------------
 create function pg_temp.key(t text) returns text language sql immutable as $$ select legacy_wikipedia_awards.name_key(t) $$;
@@ -96,10 +99,10 @@ select p.league_code, p.qid, p.team_qid, p.label, tk.k, y, 'wikidata'::text as o
 from st p
 join team_key tk on tk.league_code = p.league_code and tk.team_qid = p.team_qid
 cross join lateral (select extract(year from p.start_on)::int
-                           - case when p.league_code = 'nba' and p.start_prec >= 10 and extract(month from p.start_on) < 6 then 1 else 0 end as a) f
+                           - case when p.league_code in ('nba', 'nha', 'pcha', 'wchl', 'wha') and p.start_prec >= 10 and extract(month from p.start_on) < 6 then 1 else 0 end as a) f
 cross join lateral (select greatest(f.a, least(f.a + 30, case
          when p.end_on is null then f.a
-         when p.league_code = 'nba' then extract(year from p.end_on)::int - case when p.end_prec >= 10 and extract(month from p.end_on) >= 8 then 0 else 1 end
+         when p.league_code in ('nba', 'nha', 'pcha', 'wchl', 'wha') then extract(year from p.end_on)::int - case when p.end_prec >= 10 and extract(month from p.end_on) >= 8 then 0 else 1 end
          else extract(year from p.end_on)::int - case when p.end_prec >= 10 and extract(month from p.end_on) <= 3 then 1 else 0 end end)) as z) e
 cross join lateral generate_series(f.a, e.z) y
 where p.start_on is not null;

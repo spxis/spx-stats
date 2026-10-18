@@ -14,7 +14,7 @@ identity the same way), else the club's name in the standings.
 Holes are not filled: an article that does not exist (WCHL: none of 24 club seasons has one), has no statistics table, or lists a name with no link stays so.
 The raw articles are archived by season.py (archive-first rule); `export` and `lines` read them from the cache.
 """
-import csv, json, os, sys
+import csv, gzip, hashlib, json, os, sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
@@ -91,7 +91,16 @@ def lines_sql(out, leagues):
            "copy legacy_wikipedia_hockey.player_article (league, season, club, page_title, revid, revised_at, missing, tables) from stdin;"]
     sql += ["\t".join(tsv(v) for v in a) for a in arts] + ["\\.",
            "copy legacy_wikipedia_hockey.player_line (league, season, club, phase, grp, tbl, ord, name, link_title, pos, stats) from stdin;"]
-    sql += ["\t".join(tsv(v) for v in l) for l in lines] + ["\\.",
+    sql += ["\t".join(tsv(v) for v in l) for l in lines] + ["\\."]
+    # archive first: the club-season articles read here (club_fetch.py's cache) go into legacy_files.raw_archive as gzip, the way scripts/rosters/load.py does
+    for lg in leagues:
+        for f in sorted(os.listdir(CF.DIR)):
+            if not f.startswith(lg + "_"): continue
+            b = gzip.compress(open(os.path.join(CF.DIR, f), "rb").read(), mtime=0)
+            sql.append("insert into legacy_files.raw_archive (name, saved_on, sha256, data) values "
+                       f"('wikipedia_hockey_old/{CF.RUN_DATE}/{lg}/club_season/{f}.gz', '{CF.RUN_DATE}', '{hashlib.sha256(b).hexdigest()}', decode('{b.hex()}', 'hex')) "
+                       "on conflict (name) do update set saved_on = excluded.saved_on, sha256 = excluded.sha256, data = excluded.data;")
+    sql += [
            "select league, count(*) as articles, count(*) filter (where missing) as missing, count(*) filter (where tables > 0) as with_tables, "
            "(select count(*) from legacy_wikipedia_hockey.player_line l where l.league = a.league) as lines, "
            "(select count(*) from legacy_wikipedia_hockey.player_line l where l.league = a.league and link_title is not null) as linked "
