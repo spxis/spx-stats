@@ -36,9 +36,10 @@ export function SignInLink() {
 
 /**
  * Top-right account menu: who you are, Profile, Settings, the admin section for admins, version, Sign out. `waiting` is how many things
- * wait for the admin (pending releases, a drift fix, failed releases), from the admin summary the banner reads: "Data releases (2)".
+ * wait for the admin (pending releases, a drift fix, failed releases), from the admin summary the banner reads: "Data releases (2)". `alerts` is the
+ * number of open job alerts, beside it: "Run log and alerts (1)".
  */
-export function UserMenu({ user, version, waiting = 0 }: { user: MenuUser; version: string; waiting?: number }) {
+export function UserMenu({ user, version, waiting = 0, alerts = 0 }: { user: MenuUser; version: string; waiting?: number; alerts?: number }) {
   const { say } = useSpeaker();
   const [open, setOpen] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -87,6 +88,7 @@ export function UserMenu({ user, version, waiting = 0 }: { user: MenuUser; versi
               <Link role="menuitem" href="/admin/tickets">Tickets</Link>
               <Link role="menuitem" href="/admin/tickets/new">File a ticket</Link>
               <Link role="menuitem" href="/admin/data">{waiting > 0 ? say("menu.dataReleasesWaiting", { count: waiting }) : say("menu.dataReleases")}</Link>
+              <Link role="menuitem" href="/admin/runs">{alerts > 0 ? say("menu.runsAlerts", { count: alerts }) : say("menu.runs")}</Link>
               <Link role="menuitem" href="/admin/ops">Ops (DS1 and backups)</Link>
               <Link role="menuitem" href="/admin/logos">Logos to review</Link>
             </div>

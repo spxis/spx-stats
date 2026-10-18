@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.147.4",
+  "version": "0.148.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -31,6 +31,7 @@
     "test:times": "node --test scripts/startTime.test.ts",
     "test:links": "node --test scripts/officialLinks.test.ts",
     "test:ops": "node --test scripts/ops.test.ts",
+    "test:runlog": "node --test scripts/runlog.test.ts",
     "test:resturl": "node --test scripts/restUrl.test.ts",
     "test:idle": "node --test scripts/idleTeams.test.ts",
     "test:outage": "node --test scripts/outage.test.ts",

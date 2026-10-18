@@ -8,7 +8,7 @@ import { ThemeToggle } from "../ThemeToggle";
 import { SignInLink, UserMenu, type MenuUser } from "./UserMenu";
 
 /** What /api/me answers: the signed-in reader and, for an admin, the line the admin bar shows and how many things wait for them. */
-export interface Account { user: MenuUser | null; bar: string | null; waiting?: number }
+export interface Account { user: MenuUser | null; bar: string | null; waiting?: number; alerts?: number }
 
 const NOBODY: Account = { user: null, bar: null };
 const AccountContext = createContext<Account>(NOBODY);
@@ -57,8 +57,8 @@ export const useAccount = (): Account => useContext(AccountContext);
 
 /** Top right of the header: the account menu for a signed-in reader, else the theme switch and the way in. */
 export function HeaderAccount({ version, signIn }: { version: string; signIn: boolean }) {
-  const { user, waiting } = useAccount();
-  if (user) return <UserMenu user={user} version={version} waiting={waiting ?? 0} />;
+  const { user, waiting, alerts } = useAccount();
+  if (user) return <UserMenu user={user} version={version} waiting={waiting ?? 0} alerts={alerts ?? 0} />;
   return (
     <>
       <span className="anon"><ThemeToggle /></span>

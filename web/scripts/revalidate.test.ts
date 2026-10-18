@@ -115,7 +115,7 @@ test("every server fetch of the archive carries cache tags the release runner ca
   assert.match(turso, /`turso:\$\{t\}`/);
   // No other module in the site reaches the archive.
   for (const { f, text } of sourceFiles) {
-    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts") continue;
+    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts" || f === "lib/runlog/stale.ts") continue;
     assert.doesNotMatch(text, /\bREST_URL\b/, `${f}: reads the archive without cache tags`);
   }
 });

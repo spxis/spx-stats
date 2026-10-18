@@ -14,6 +14,7 @@ const ADMIN_PAGES = [
   ["/admin/tickets", "Tickets"],
   ["/admin/data", "Data releases (read only here)"],
   ["/admin/ops", "Ops (read only here)"],
+  ["/admin/runs", "Run log and alerts (read only here)"],
   ["/admin/logos", "Logos to review"],
 ] as const;
 
