@@ -1,26 +1,33 @@
-/* The logo contact sheet (/admin/logos). Each logo is one grid row: who it is, then its boxes on a light page and a dark page,
-   without and with the proposed fit. The two pages carry the site's own tokens (globals.css) so both show at once whatever the theme. */
-.ls { display: flex; flex-direction: column; gap: 0; min-width: 0; overflow-x: auto; }
-.ls-head, .ls-item { display: grid; grid-template-columns: 230px repeat(4, minmax(210px, 1fr)); gap: 8px; align-items: stretch; min-width: 1140px; }
-.ls-head { position: sticky; top: 0; z-index: 2; background: var(--paper); padding: 8px 0; font: 600 13px var(--body); color: var(--muted); border-bottom: 1px solid var(--rule); }
-.ls-item { padding: 10px 0; border-bottom: 1px solid var(--rule); }
-.ls-who { display: flex; flex-direction: column; gap: 2px; font-size: 14px; min-width: 0; }
-.ls-file { overflow-wrap: anywhere; }
-.ls-raw { margin-top: 6px; }
-.ls-raw img { max-width: 100%; height: 64px; width: auto; object-fit: contain; background: repeating-conic-gradient(#d9d9d9 0 25%, #fff 0 50%) 0 0 / 12px 12px; }
-.ls-fit { margin-top: 4px; font-size: 13px; }
-.ls-status { display: inline-block; padding: 0 6px; border-radius: 8px; font-size: 12px; font-weight: 600; background: var(--soft); }
+/* The logo review page (/admin/logos): one card per logo, large, with the plain and the fitted picture on a light and a dark page.
+   The two pages carry the site's own tokens (globals.css) so both show at once whatever the theme. */
+.lc-banner { border: 2px solid var(--rule); border-radius: 10px; padding: 14px 16px; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; justify-content: space-between; }
+.lc-banner.lc-banner-wait { border-color: var(--warn); }
+.lc-banner.lc-banner-ok { border-color: var(--ok); }
+.lc-banner b { font-size: 20px; }
+.lc-banner p { margin: 2px 0 0; font-size: 15px; }
+.lc-jump { font-size: 16px; padding: 10px 16px; }
+.lc-help { font-size: 15px; line-height: 1.5; }
+.lc-help summary { cursor: pointer; font-weight: 600; padding: 8px 0; }
+.lc-tabs a { font-size: 16px; padding: 8px 14px; }
+.lc-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 360px), 1fr)); gap: 16px; }
+.lc-card { border: 1px solid var(--rule); border-radius: 10px; padding: 14px; display: flex; flex-direction: column; gap: 10px; min-width: 0; background: var(--panel); }
+.lc-card.lc-wait { border: 2px solid var(--warn); }
+.lc-top { display: flex; justify-content: space-between; gap: 8px; align-items: flex-start; }
+.lc-top h3 { margin: 0; font-size: 18px; line-height: 1.25; }
+.lc-meta { font-size: 15px; color: var(--muted); margin-top: 2px; }
+.lc-caption { font-size: 14px; font-weight: 600; color: var(--muted); margin-bottom: 4px; }
+.lc-panels { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.lc-note { margin: 0; font-size: 15px; line-height: 1.45; }
+.lc-ask { margin: 0; font-size: 15px; line-height: 1.45; background: var(--soft); border-radius: 8px; padding: 8px 10px; }
+.lc-facts { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 0; font-size: 14px; }
+.lc-facts dt { color: var(--muted); }
+.lc-facts dd { margin: 0; min-width: 0; overflow-wrap: anywhere; }
+.lc-pager { display: flex; gap: 12px; align-items: center; justify-content: center; margin: 18px 0; font-size: 16px; }
+.ls-status { display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 14px; font-weight: 600; background: var(--soft); white-space: nowrap; }
 .ls-status.ls-proposed { background: var(--warn); color: #fff; }
 .ls-status.ls-approved { background: var(--ok); color: #fff; }
 .ls-status.ls-rejected { background: var(--bad); color: #fff; }
-.ls-same { align-self: center; grid-column: span 2; }
-.ls-panel { border: 1px solid var(--rule); border-radius: 6px; padding: 10px; display: flex; align-items: center; min-width: 0; overflow: hidden; }
+.ls-panel { border: 1px solid var(--rule); border-radius: 6px; padding: 10px; display: flex; align-items: center; justify-content: center; gap: 10px; min-width: 0; min-height: 116px; overflow: hidden; }
+.ls-panel .logo { margin-right: 0; }
 .ls-light { background: #f5f6f2; color: #17202a; --paper: #f5f6f2; --panel: #fff; --ink: #17202a; --muted: #5d6874; --rule: #dde1dc; --soft: #eceee9; --logo-tile: #ffffff; color-scheme: light; }
 .ls-dark { background: #12161b; color: #e8ebe6; --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931; --logo-tile: #e9ecef; color-scheme: dark; }
-.ls-boxes { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 8px; }
-.ls-boxes .logo { margin-right: 0; vertical-align: middle; }
-.ls-row { border-collapse: collapse; font-size: 14px; }
-.ls-row td { padding: 3px 8px; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); white-space: nowrap; }
-.ls-row td .logo { margin-right: 8px; }
-.ls-row td.num { text-align: right; font-variant-numeric: tabular-nums; }
-.ls-proposals td, .ls-proposals th { vertical-align: top; }

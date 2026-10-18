@@ -3,76 +3,65 @@ import { fitOf, type Fit } from "@/lib/logoFit";
 import { wornYears, type SheetLogo } from "@/lib/logoSheet";
 import "./logosheet.css";
 
-/**
- * How one picture looks in each box the site has, on a light and a dark page: a circle at 48 and 24 px, a square, and a table row.
- * `fit` is the fit to apply (null: the logo exactly as the site draws it with no fit).
- */
-function Boxes({ url, fit, name }: { url: string; fit: Fit | null; name: string }) {
+const STATUS_LABEL: Record<string, string> = { proposed: "Needs your OK", approved: "Approved", rejected: "Rejected" };
+
+function sourceOf(l: SheetLogo): string {
+  if (l.file.startsWith("sl:")) return "SportsLogos.Net";
+  if (l.file.startsWith("commons:")) return "Wikimedia Commons";
+  if (l.file.startsWith("en:")) return "English Wikipedia";
+  return "Other";
+}
+
+/** The logo large on a light and a dark page, with the same logo as a circle and a table-size mark. */
+function Panels({ url, fit, label }: { url: string; fit: Fit | null; label: string }) {
   return (
-    <div className="ls-boxes">
-      <TeamLogo url={url} size={48} shape="circle" fit={fit} />
-      <TeamLogo url={url} size={24} shape="circle" fit={fit} />
-      <TeamLogo url={url} size={32} shape="square" fit={fit} />
-      <table className="ls-row" aria-hidden="true">
-        <tbody>
-          <tr>
-            <td><TeamLogo url={url} fit={fit} />{name}</td>
-            <td className="num">48</td>
-          </tr>
-        </tbody>
-      </table>
+    <div className="lc-pair">
+      <div className="lc-caption">{label}</div>
+      <div className="lc-panels">
+        <div className="ls-panel ls-light"><TeamLogo url={url} size={96} shape="square" fit={fit} /><TeamLogo url={url} size={48} shape="circle" fit={fit} /><TeamLogo url={url} fit={fit} /></div>
+        <div className="ls-panel ls-dark"><TeamLogo url={url} size={96} shape="square" fit={fit} /><TeamLogo url={url} size={48} shape="circle" fit={fit} /><TeamLogo url={url} fit={fit} /></div>
+      </div>
     </div>
   );
 }
 
-/** The two pages a logo must read on. Their colours are the site's own tokens, written out so the sheet shows both at once. */
-function Panels({ url, fit, name }: { url: string; fit: Fit | null; name: string }) {
-  return (
-    <>
-      <div className="ls-panel ls-light"><Boxes url={url} fit={fit} name={name} /></div>
-      <div className="ls-panel ls-dark"><Boxes url={url} fit={fit} name={name} /></div>
-    </>
-  );
-}
-
-const STATUS_NOTE: Record<string, string> = { proposed: "proposed", approved: "approved", rejected: "rejected" };
-
 export function LogoSheet({ logos }: { logos: SheetLogo[] }) {
   return (
-    <div className="ls">
-      <div className="ls-head">
-        <span>Team and logo file</span>
-        <span>Plain logo, light page</span>
-        <span>Plain logo, dark page</span>
-        <span>With the fit, light page</span>
-        <span>With the fit, dark page</span>
-      </div>
+    <div className="lc-grid">
       {logos.map((l) => {
         const name = l.teams[0].name;
         const fit = l.fit ? fitOf(l.fit) : null;
+        const status = l.fit?.status;
         return (
-          <div className="ls-item" key={l.file} id={l.file.replace(/[^A-Za-z0-9_.-]+/g, "-")}>
-            <div className="ls-who">
-              <b>{name}</b>{l.teams.length > 1 ? <span className="note"> and {l.teams.length - 1} more</span> : null}
-              <div className="note">{l.league.toUpperCase()}, {wornYears(l.from, l.to)}</div>
-              <div className="note ls-file"><a href={l.page ?? l.url} target="_blank" rel="noreferrer">{l.file}</a></div>
-              <div className="note">{l.licence ?? "licence not recorded"}</div>
-              {l.fit ? (
-                <div className="ls-fit">
-                  <span className={`ls-status ls-${l.fit.status}`}>{STATUS_NOTE[l.fit.status]}</span>{" "}
-                  {l.fit.wordmark ? "wordmark; " : ""}{l.fit.mark_url ? "own mark; " : ""}scale {l.fit.scale}, move {l.fit.dx}/{l.fit.dy}, tile {l.fit.bg}
-                  {l.fit.note ? <div className="note">{l.fit.note}</div> : null}
-                  {l.fit.mark_url ? <div className="note"><a href={l.fit.mark_page ?? l.fit.mark_url} target="_blank" rel="noreferrer">mark file</a>, {l.fit.mark_licence}</div> : null}
-                </div>
-              ) : null}
-              <div className="ls-raw">
-                {/* eslint-disable-next-line @next/next/no-img-element -- the raw file, shown as it is */}
-                <img src={l.url} alt="" height={64} referrerPolicy="no-referrer" loading="lazy" />
+          <article className={`lc-card${status === "proposed" ? " lc-wait" : ""}`} key={l.file} id={l.file.replace(/[^A-Za-z0-9_.-]+/g, "-")}>
+            <header className="lc-top">
+              <div>
+                <h3>{name}{l.teams.length > 1 ? <span className="note"> + {l.teams.length - 1} more</span> : null}</h3>
+                <div className="lc-meta">{l.league.toUpperCase()} &middot; {wornYears(l.from, l.to)}</div>
               </div>
-            </div>
-            <Panels url={l.url} fit={null} name={name} />
-            {fit ? <Panels url={l.url} fit={fit} name={name} /> : <div className="ls-same note">no fit: drawn as the plain logo</div>}
-          </div>
+              <span className={`ls-status ls-${status ?? "none"}`}>{status ? STATUS_LABEL[status] : "No fit yet"}</span>
+            </header>
+            <Panels url={l.url} fit={null} label={fit ? "Now (as the site shows it)" : "As the site shows it"} />
+            {fit ? <Panels url={l.url} fit={fit} label={status === "approved" ? "With the approved fit" : "With the proposed fit"} /> : null}
+            {l.fit?.note ? <p className="lc-note">{l.fit.note}</p> : null}
+            {status === "proposed" ? (
+              <p className="lc-ask">
+                <b>Your call:</b> if the second row looks better, tell an agent <i>&ldquo;approve the {name} logo&rdquo;</i>. If not, say <i>&ldquo;reject {name}&rdquo;</i>.
+              </p>
+            ) : null}
+            <dl className="lc-facts">
+              <dt>Source</dt><dd><a href={l.page ?? l.url} target="_blank" rel="noreferrer" title={l.file}>{sourceOf(l)}</a></dd>
+              <dt>Licence</dt><dd>{l.licence ?? "not recorded"}</dd>
+              {l.fit ? (
+                <>
+                  <dt>Fit</dt>
+                  <dd title={`scale ${l.fit.scale}, move ${l.fit.dx}/${l.fit.dy}, tile ${l.fit.bg}`}>
+                    {l.fit.mark_url ? <>own mark (<a href={l.fit.mark_page ?? l.fit.mark_url} target="_blank" rel="noreferrer">file</a>)</> : l.fit.wordmark ? "wordmark" : "resized"}
+                  </dd>
+                </>
+              ) : null}
+            </dl>
+          </article>
         );
       })}
     </div>
