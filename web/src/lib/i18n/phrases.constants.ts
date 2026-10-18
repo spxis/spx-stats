@@ -50,6 +50,8 @@ export const PHRASES = {
   "players.lede": "Every player we hold a record for. Pick a league or search by name, then open a player for the seasons, stats and awards.",
   "players.leagueAria": "League",
   "players.search": "Search by name",
+  "players.filters": "Filters",
+  "players.countsTotals": "Country counts are totals for everyone, not narrowed by the other filters.",
   "players.searchGo": "Search",
   "players.none": "No player matches that search.",
   "players.pageOf": "Page {page} of {pages}",

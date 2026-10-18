@@ -608,6 +608,8 @@ export const JA: Dictionary = {
   "players.countryTitle": "出生国（出生国が不明な場合は国籍の国）",
   "players.byCountry": "国で絞り込む：{name}",
   "players.countryOnly": "国：{name}",
+  "players.filters": "絞り込み",
+  "players.countsTotals": "国ごとの人数は全体の合計で、ほかの絞り込みは反映されません。",
   "players.title": "選手",
   "players.fromCountry": "{country}出身",
   "list.filtered": "{title}、絞り込み：{filters}",

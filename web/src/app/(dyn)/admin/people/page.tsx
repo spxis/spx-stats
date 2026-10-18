@@ -171,11 +171,11 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
       <section className="head fade tight">
         <ListHeading say={say} head={say("peopleAdmin.title")} filters={filters} />
         <p className="lede">{say("peopleAdmin.lede")}</p>
-        <PeopleTabs current="search" />
       </section>
       <section className="section plist">
         <PlayersFilterBar
           path="/admin/people"
+          tabs={<PeopleTabs current="search" />}
           href={href}
           league={league}
           q={q}

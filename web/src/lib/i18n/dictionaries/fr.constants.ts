@@ -608,6 +608,8 @@ export const FR: Dictionary = {
   "players.countryTitle": "Pays de naissance; à défaut, pays de la nationalité",
   "players.byCountry": "Filtrer par pays : {name}",
   "players.countryOnly": "Pays : {name}",
+  "players.filters": "Filtres",
+  "players.countsTotals": "Les nombres par pays sont des totaux pour tout le monde, non réduits par les autres filtres.",
   "players.title": "Joueurs",
   "players.fromCountry": "Pays : {country}",
   "list.filtered": "{title}, filtré : {filters}",
