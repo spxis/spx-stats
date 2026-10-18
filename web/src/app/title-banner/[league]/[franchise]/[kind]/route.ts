@@ -7,7 +7,7 @@ import { getCupTitles } from "@/lib/cupData";
 import { getClubCity } from "@/lib/cityData";
 import { getTeam } from "@/lib/data";
 import { fetchLogo } from "@/lib/embedLogo";
-import { championshipYear, isLeague } from "@/lib/leagues";
+import { championshipYear, isLeague, SITE_URL } from "@/lib/leagues";
 import { TITLE_BANNER_KINDS, type TitleBannerKind } from "@johnmorrisdotca/senshu-jerseys";
 import { titleBannerSvg } from "@/lib/titleBanner";
 
@@ -20,7 +20,7 @@ function kindOf(raw: string): TitleBannerKind | null {
 }
 
 /** A championship pennant or garden flag in the franchise's colours. Kept a day. */
-export async function GET(req: Request, { params }: { params: Promise<{ league: string; franchise: string; kind: string }> }) {
+export async function GET(_req: Request, { params }: { params: Promise<{ league: string; franchise: string; kind: string }> }) {
   const { league, franchise, kind: raw } = await params;
   const f = Number(franchise);
   const kind = kindOf(raw);
@@ -38,7 +38,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ league: 
   if (!years.length) return new NextResponse("not found", { status: 404 });
   const grouped = groupBrands(brands);
   const b = brandFor(grouped, f);
-  const logo = await fetchLogo(logoFor(grouped, f), new URL(req.url).origin);
+  const logo = await fetchLogo(logoFor(grouped, f), SITE_URL);
   const svg = titleBannerSvg({
     league,
     years,
