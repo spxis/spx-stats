@@ -45,7 +45,7 @@ insert into amap values
   ('WSH',1974,9999,28,null),('EDM',1979,9999,11,null),
   ('HFD',1979,1996,6,null),('CAR',1997,9999,6,null),
   ('QUE',1979,1994,8,null),('COL',1995,9999,8,null),
-  ('WIN',1979,1995,21,null),('PHX',1996,2013,21,null),('ARI',2014,2023,21,null),('UTA',2024,9999,21,null),
+  ('WIN',1979,1995,21,null),('PHX',1996,2013,21,null),('ARI',2014,2023,21,null),('UTA',2024,9999,null,'UTA'),
   ('WPG',2011,9999,2,null),('ATL',1999,2010,2,null),
   ('ANA',1993,9999,1,null),('MDA',1993,9999,1,null),('FLA',1993,9999,12,null),('TBL',1992,9999,25,null),('OTT',1992,9999,19,null),
   ('SJS',1991,9999,23,null),('NSH',1998,9999,15,null),('CBJ',2000,9999,88,null),('MIN',2000,9999,89,null),
@@ -163,7 +163,19 @@ update core.franchise f set founded_on = coalesce(f.founded_on, d.first_game), f
 from (select fid, min(game_date) first_game, max(game_date) last_game, max(yr) last_yr
       from (select home_f fid, game_date, yr from ng union all select away_f, game_date, yr from ng) z group by fid) d
 where f.franchise_id = d.fid and (f.source_id = (select source_id from src) or f.founded_on is null);
+-- The Coyotes' history stays with their own franchise: Utah (2024) is a new NHL franchise, so the Jets-Coyotes one ended with its last home game.
+update core.franchise f set folded_on = d.last_game
+from (select fid, max(game_date) last_game from (select home_f fid, game_date from ng union all select away_f, game_date from ng) z group by fid) d
+where f.franchise_id = d.fid and f.franchise_id = (select franchise_id from am where abbrev = 'ARI') and f.folded_on is distinct from d.last_game;
 
+-- Seasons an earlier build gave the Jets-Coyotes franchise under a Utah name move, with everything that points at them, to Utah's own franchise.
+update core.team_season ts set franchise_id = u.franchise_id, franchise_identity_id = null
+from am u, am c, core.season s
+where u.abbrev = 'UTA' and c.abbrev = 'ARI' and ts.franchise_id = c.franchise_id and s.season_id = ts.season_id and s.league_code = 'nhl' and s.start_year >= u.y0
+  and not exists (select 1 from core.team_season x where x.franchise_id = u.franchise_id and x.season_id = ts.season_id);
+-- Brand rows (logo, colours, home venue) the Jets-Coyotes franchise got for Utah's years; 175_team_brand.sql adds them again to Utah's franchise.
+delete from core.franchise_brand b using am u, am c
+where u.abbrev = 'UTA' and c.abbrev = 'ARI' and b.franchise_id = c.franchise_id and lower(b.valid_during) >= make_date(u.y0, 7, 1);
 insert into core.team_season (franchise_id, season_id, source_id)
 select distinct x.f, s.season_id, (select source_id from src)
 from (select yr, home_f f from ng union select yr, away_f from ng union select yr, franchise_id from nst) x
