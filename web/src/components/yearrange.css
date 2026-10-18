@@ -35,10 +35,11 @@ html[data-yr-pending] .yr-hold { visibility: hidden; animation: yr-unhold 0s 3s 
 .listrange { margin: 4px 0 10px; }
 .yr-end:has(.yr-reset:disabled) { border-left-color: transparent; }
 
-/* While a saved range is applied the list is hidden (above); a spinner stands in its place, and goes with the same 3 s failsafe so it never overlaps the list. */
+/* While a saved range is applied the list is hidden (above); a spinner stands in its place. Both follow the same attribute on <html>, so they cannot disagree:
+   the spinner is display:none unless data-yr-pending is set, and the selectors carry .listhold so no other stylesheet (spinner.css) can switch it on. It goes with the same 3 s failsafe. */
 .listhold { position: relative; }
-.listwait { display: none; position: absolute; inset: 0 0 auto 0; padding: 48px 16px; z-index: 1; }
-html[data-yr-pending] .listwait { display: flex; animation: yr-wait-off 0s 3s forwards; }
+.listhold .listwait { display: none; position: absolute; inset: 0 0 auto 0; z-index: 1; align-items: center; justify-content: center; gap: 12px; padding: 48px 16px; color: var(--muted); font: 600 15px/1 var(--body); }
+html[data-yr-pending] .listhold .listwait { display: flex; animation: yr-wait-off 0s 3s forwards; }
 @keyframes yr-wait-off { to { visibility: hidden; } }
 /* A request for another range or league is out: the list below is the old one until it lands. */
 .listrange-busy { display: inline-flex; align-items: center; gap: 8px; margin-left: 12px; color: var(--muted); font: 600 13px/1 var(--body); }

@@ -175,7 +175,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
       />
       <div className="listhold">
       {/* Shown (by CSS) only while a saved year range is being applied and the list is held out of sight; it never leaves the table area empty. */}
-      <div className="pagespin listwait" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><span>{say("load.loading")}</span></div>
+      <div className="listwait" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><span>{say("load.loading")}</span></div>
       <div className="yr-hold">
         {data == null || table == null ? <LoadNote /> : data.list.length ? (
           <>
