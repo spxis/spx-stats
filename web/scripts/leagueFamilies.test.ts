@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
   codeLabel,
@@ -146,4 +147,11 @@ test("the NHL page lists PWHL with the older hockey leagues; NWSL is not there",
   assert.deepEqual(list.map((o) => o.code), ["pwhl", "nha"]);
   assert.equal(list[0]!.name, "Professional Women's Hockey League");
   assert.deepEqual(familyOtherLeagues("nba", [{ league: "wnba", year: 2024, label: "2024", champion: "New York Liberty" }]).map((o) => o.code), ["wnba"]);
+});
+
+test("Grow is a per-session choice: a stored localStorage Grow never expands a new visit", () => {
+  const src = readFileSync(new URL("../src/components/archiveGrow.tsx", import.meta.url), "utf8");
+  assert.ok(!/localStorage\.(getItem|setItem)/.test(src), "localStorage must not be read or written for Grow");
+  assert.match(src, /sessionStorage\.setItem\(GROW_KEY/);
+  assert.match(src, /useState\(false\)/);
 });

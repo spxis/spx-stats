@@ -8,14 +8,17 @@ const EVENT = "spxn-archive-grow";
 
 /**
  * Shared Grow/Collapse for the archive-holds chart (home and every family page).
- * localStorage only: a kept page must not read cookies or searchParams on the server.
- * The first paint is always condensed; a saved Grow applies after mount.
+ * Browser storage only: a kept page must not read cookies or searchParams on the server.
+ * The condensed family rows ("NHL+") are the default for every visit. Grow is remembered for this tab's
+ * session only (sessionStorage), so the next visit opens condensed again; an older saved Grow in
+ * localStorage (the first version kept it for good) is dropped and never read.
  */
 export function useArchiveGrow() {
   const [grown, setState] = useState(false);
   useEffect(() => {
+    try { localStorage.removeItem(GROW_KEY); } catch { /* storage may be blocked */ }
     const read = () => {
-      try { setState(localStorage.getItem(GROW_KEY) === "1"); } catch { /* storage may be blocked */ }
+      try { setState(sessionStorage.getItem(GROW_KEY) === "1"); } catch { /* storage may be blocked */ }
     };
     read();
     window.addEventListener(EVENT, read);
@@ -23,7 +26,7 @@ export function useArchiveGrow() {
   }, []);
   const setGrown = (next: boolean) => {
     setState(next);
-    try { localStorage.setItem(GROW_KEY, next ? "1" : "0"); } catch { /* storage may be blocked */ }
+    try { sessionStorage.setItem(GROW_KEY, next ? "1" : "0"); } catch { /* storage may be blocked */ }
     window.dispatchEvent(new Event(EVENT));
   };
   return { grown, setGrown };
