@@ -7,21 +7,21 @@ begin;
 
 create temp table po as
 select g.game_id, g.season_id, s.league_code, s.start_year, g.game_date, g.status, g.home_team_season_id h, g.away_team_season_id a,
-       g.home_score, g.away_score, g.source_id
+       g.home_score, g.away_score, g.source_id, g.round_label
 from core.game g join core.season s using (season_id) where g.phase = 'playoffs' and g.status <> 'cancelled';
 
 create temp table last_game as
-select distinct on (season_id) season_id, league_code, start_year, h, a from po order by season_id, game_date desc, game_id desc;
+select distinct on (season_id) season_id, league_code, start_year, h, a, round_label from po order by season_id, game_date desc, game_id desc;
 
 create temp table final_series as
-select l.season_id, l.league_code, l.start_year, l.h as t1, l.a as t2,
+select l.season_id, l.league_code, l.start_year, l.h as t1, l.a as t2, l.round_label,
        count(*) as games, count(*) filter (where p.status = 'final') as finals,
        count(*) filter (where (p.h = l.h and p.home_score > p.away_score) or (p.a = l.h and p.away_score > p.home_score)) as t1_wins,
        count(*) filter (where (p.h = l.a and p.home_score > p.away_score) or (p.a = l.a and p.away_score > p.home_score)) as t2_wins
 from last_game l join po p on p.season_id = l.season_id and ((p.h = l.h and p.a = l.a) or (p.h = l.a and p.a = l.h))
 -- The NFL and CFL decide it in one game: the last one, not an earlier meeting filed under the playoffs.
 where l.league_code not in ('nfl', 'cfl', 'afl', 'aafc', 'nwsl') or p.game_id = (select game_id from po q where q.season_id = l.season_id order by q.game_date desc, q.game_id desc limit 1)
-group by 1, 2, 3, 4, 5;
+group by 1, 2, 3, 4, 5, 6;
 
 create temp table new_champs as
 select a.award_id, f.season_id, w.team_season_id, coalesce(wi.full_name, 'franchise ' || w.franchise_id) as winner_name,
@@ -38,7 +38,8 @@ left join lateral (select greatest(home_score, away_score) ws, least(home_score,
                    from po where season_id = f.season_id and ((h = f.t1 and a = f.t2) or (h = f.t2 and a = f.t1))
                    order by game_date desc, game_id desc limit 1) sc on true
 -- (The NHA, PCHA, WCHL and WHA name their champions from the articles, db/build/154: their playoffs were often two-game total-goals series.)
-where f.finals = f.games and f.t1_wins <> f.t2_wins and f.league_code not in ('nha', 'pcha', 'wchl', 'wha');
+-- A season still being played (the last game logged is a semifinal) has no final yet: its last two clubs are not finalists.
+where f.finals = f.games and f.t1_wins <> f.t2_wins and coalesce(f.round_label, '') !~* 'semi' and f.league_code not in ('nha', 'pcha', 'wchl', 'wha');
 
 delete from core.award_winner w
 where w.source_id = (select source_id from meta.source where code = 'spx_stats_derived')

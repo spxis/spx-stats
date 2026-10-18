@@ -252,6 +252,11 @@ class T(unittest.TestCase):
         uta = next(r for r in rows if r["team"] == "Utah Starzz")
         self.assertEqual((uta["w"], uta["l"]), (20, 12))
 
+    def test_cell_attribute_prefix_is_not_content(self):
+        # 2025 Lynx June rows: "|bgcolor=#FED8B1| 7" is game number 7, not a cell of text "bgcolor=..."
+        self.assertEqual(P.row_cells(["|bgcolor=#FED8B1| 7", "| June 1"])[:2], ["7", "June 1"])
+        self.assertEqual(P.row_cells(["| [[A|B]]", "| x"])[:1], ["[[A|B]]"])
+
 
 if __name__ == "__main__":
     unittest.main()

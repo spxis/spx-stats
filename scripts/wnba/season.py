@@ -54,7 +54,7 @@ def archive(year, files):
 
 def champion_of(text):
     """The champion the season article's infobox names (finals_champ), as plain text, or None."""
-    m = re.search(r"^\s*\|\s*finals_champ\s*=\s*(.+)$", text, re.I | re.M)
+    m = re.search(r"^[ \t]*\|[ \t]*finals_champ[ \t]*=[ \t]*(.+)$", text, re.I | re.M)
     if not m: return None
     t = m.group(1).strip()
     t = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", t)
@@ -83,6 +83,22 @@ def check(games, std):
     return out
 
 
+def drop_double_booked(games):
+    """A club cannot play twice on one day. When a club has two games on one date and only one of them is in both clubs'
+    articles (views = 2), the other is a line one article copied wrongly (2021: Indiana's article lists the 4 September
+    Mystics game that Minnesota hosted). Drop only the one-article game, and report it in unparsed; nothing is guessed."""
+    day = collections.defaultdict(list)
+    for g in games:
+        for t in (g["home"], g["away"]): day[(g["phase"], g["date"], t)].append(g)
+    drop = set()
+    for k, gs in day.items():
+        if len(gs) < 2: continue
+        good = [g for g in gs if g["views"] >= 2]
+        if len(good) == 1:
+            drop.update(id(g) for g in gs if g["views"] < 2)
+    return [g for g in games if id(g) not in drop], [g for g in games if id(g) in drop]
+
+
 def run(y, dry=False):
     files, tpl, teams = F.fetch_season(y)
     if not files: print(y, "no season article"); return
@@ -101,6 +117,9 @@ def run(y, dry=False):
         unp += [(t, b) for b in bad]
     games, unres = P.pair(views, teams_set)
     unp += [("(unresolved opponent)", u) for u in unres]
+    games, dropped = drop_double_booked(games)
+    unp += [("(dropped: a club played twice that day; only one game is in both clubs' articles)",
+             "%s %s at %s %s-%s" % (g["date"], g["away"], g["home"], g["away_pts"], g["home_pts"])) for g in dropped]
     st = []
     for t in tpl:
         for r in P.parse_standings(F.page("template", "Template:" + t) or "", y):

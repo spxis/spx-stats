@@ -21,6 +21,7 @@ def clean(s):
     s = re.sub(r"<ref[^>]*?/>|<ref[^>]*>.*?</ref>", "", s, flags=re.S)
     s = re.sub(r"<br\s*/?>", " ", s)
     s = re.sub(r"<!--.*?-->", "", s, flags=re.S)
+    s = s.replace("&nbsp;", " ").replace("\xa0", " ")
     return s.replace("'''", "").replace("''", "").lstrip("| ").strip()
 
 def link_of(cell):
@@ -36,7 +37,9 @@ def row_cells(lines):
         if cells and ln.startswith("|") and (cells[-1].count("{{") > cells[-1].count("}}") or cells[-1].count("[[") > cells[-1].count("]]")):
             cells[-1] += " " + ln.strip()
         elif ln.startswith("|"):
-            for c in ln[1:].split("||"): cells.append(c.strip())
+            for c in ln[1:].split("||"):
+                c = re.sub(r"^\s*(?:(?:bgcolor|style|align|rowspan|colspan|width|class|scope)\s*=[^|\[\]{}]*)\|(?!\|)", "", c, flags=re.I)
+                cells.append(c.strip())
         elif cells: cells[-1] += " " + ln.strip()
     return cells
 
@@ -47,7 +50,7 @@ def year_for(season, month, phase):
 def parse_score_cell(cell, flag):
     """-> (pf, pa, ot, date or None) from the cell holding a game's score, oriented to the page's team, or None."""
     c = clean(cell)
-    m = re.search(r"\{\{\s*NBA game(?:[ _]br)?\s*\|([^}]*)\}\}", c, re.I)
+    m = re.search(r"\{\{\s*(?:WNBA|NBA) game(?:[ _]br)?\s*\|([^}]*)\}\}", c, re.I)
     if m:
         kv = dict((a.strip().lower(), b.strip()) for a, b in (p.split("=", 1) for p in m.group(1).split("|") if "=" in p))
         try:
@@ -83,15 +86,17 @@ def parse_team_page(text, season, team):
     """-> (views, unparsed). A view: one team's record of one game."""
     views, bad = [], []
     phase, rnd, skip = "regular", None, False
-    lines = text.split("\n")
+    lines = [re.sub(r"^[ \t]+(?=[|!{])", "", l) for l in text.split("\n")]   # indented cells
     i, n = 0, len(lines)
     h2 = h3 = ""
     in_log = False
+    month_ctx = None
     while i < n:
         ln = lines[i]
         mh = re.match(r"^(={2,4})\s*(.*?)\s*\1\s*$", ln)
         if mh:
             lvl, title = len(mh.group(1)), mh.group(2)
+            month_ctx = None
             if lvl == 2: h2, h3 = title, ""
             else: h3 = title
             t = (h2 + " " + h3).lower()
@@ -107,6 +112,8 @@ def parse_team_page(text, season, team):
             skip = bool(re.search(r"pre-season\s*=\s*(yes|y|1)", args))
             phase = "playoffs" if re.search(r"playoffs\s*=\s*(yes|y|1)", args) else "regular"
             rnd = None; i += 1; continue
+        mm = re.search(r"title\s*=\s*\W*(" + MON_RE + r")\w*\s*(?::|\(|\||&ndash;|–|-|\d)", ln, re.I)
+        if mm: month_ctx = mm.group(1)
         ms = re.match(r"\{\{\s*(?:WNBA|NBA) game log section\s*\|(.*)", ln)
         if ms:
             args = ms.group(1)
@@ -124,7 +131,7 @@ def parse_team_page(text, season, team):
                   and not re.match(r"^={2,4}", lines[j]):
                 blk.append(lines[j]); j += 1
             cells = row_cells(blk)
-            r = None if skip else parse_row(cells, attr, season, phase, rnd)
+            r = None if skip else parse_row(cells, attr, season, phase, rnd, month_ctx)
             if r == "bad" and not skip and in_log: bad.append(" | ".join(cells)[:300])
             elif r and r != "bad": views.append(r)
             i = j; continue
@@ -161,12 +168,27 @@ def parse_team_page(text, season, team):
     for v in views: v["team"] = team
     return views, bad
 
-def parse_row(cells, attr, season, phase, rnd):
+DAY_ONLY = re.compile(r"^\W*(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\.?,?\s+)?(\d{1,2})\W*$", re.I)
+
+def parse_row(cells, attr, season, phase, rnd, month=None):
+    if month and not any(DATE_RE.match(clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", c))) for c in cells[:4]):
+        # a log whose month is in the section title ("May: 2-2 ...") and whose date cell is "Sat 19"
+        for k in range(min(3, len(cells))):
+            dm0 = DAY_ONLY.match(clean(cells[k]))
+            if dm0 and (k >= 1 or re.search(r"[A-Za-z]", clean(cells[k]))):
+                cells = list(cells); cells[k] = f"{month} {int(dm0.group(1))}"; break
     flag = flag_of(attr)
     di = next((k for k, c in enumerate(cells[:4]) if DATE_RE.match(clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", c)))), None)
     if di is None or di + 2 >= len(cells):
         return None
-    dm = DATE_RE.match(clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", cells[di])))
+    dtxt = clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", cells[di]))
+    dm = DATE_RE.match(dtxt)
+    tail = dtxt[dm.end():].strip(" ,;-") if dm else ""
+    if tail and re.search(r"final|semi|conference|playoff|first round|\bG(?:ame)?\s?\d", tail, re.I):
+        # a playoff row inside the regular-season table: "September 14<br> WNBA Finals, G1"
+        phase = "playoffs"
+        rnd = re.sub(r"[,;]?\s*\bG(?:ame)?\s?\d+\b.*$", "", tail, flags=re.I).strip(" ,;-()") or rnd
+        rnd = rnd.strip("() ")
     key = dm.group(1).lower()
     mon = next(v for k, v in MONTHS.items() if k.startswith(key[:3]))
     day = int(dm.group(2))
@@ -174,6 +196,8 @@ def parse_row(cells, attr, season, phase, rnd):
     if di >= 1 and re.search(r"[A-Za-z]{3}", clean(cells[0])) and not re.fullmatch(r"\W*(G\d+|\d+[A-Za-z]?)\W*", clean(cells[0])):
         return None   # a series-summary or award table, not a game log row ("Game 1 | June 7 | Orlando | 118-120 | Houston")
     oi = di + 1
+    if oi + 3 < len(cells) and re.fullmatch(r"\W*\d{1,2}(:\d{2})?\s*(?:[ap]\.?m\.?)?(?:\s*(?:ET|EDT|EST|CT|PT))?\W*|\W*TBD\W*", clean(cells[oi]), re.I) and clean(cells[oi]):
+        oi += 1   # a Time column between the date and the opponent
     opp = clean(cells[oi])
     loc = "H"
     if opp in ("H", "A", "N", "h", "a", "n", "Home", "Away", "Neutral", "home", "away") and oi + 2 < len(cells):
@@ -318,6 +342,13 @@ def pair(views_by_team, teams):
             if k not in used: pairs.append((None, b))
         for a, b in pairs:
             games.append(merge(phase, a, b))
+    # a club article that lists its playoff series inside its regular-season table (record running on, "3-0") gives
+    # a regular-season copy of a game the opponent's article files as a playoff game: the playoff reading wins
+    po = [g for g in games if g["phase"] == "playoffs"]
+    def _dup(g):
+        return any(p["home"] == g["home"] and p["away"] == g["away"] and abs((p["date"] - g["date"]).days) <= 1
+                   and (p["home_pts"], p["away_pts"]) == (g["home_pts"], g["away_pts"]) for p in po)
+    games = [g for g in games if g["phase"] != "regular" or not _dup(g)]
     games.sort(key=lambda g: (g["date"], g["phase"], g["home"], g["away"]))
     seen = {}
     for g in games:
@@ -428,6 +459,7 @@ def parse_standings(text, season):
         def take(names):
             for n in names:
                 if n in by:
+                    if "[[" in by[n]: continue   # a misaligned header put the club cell here
                     v = intr(re.sub(r"\{\{[^}]*\}\}|<[^>]*>", "", by[n]))
                     if v is not None: return v
             return None
