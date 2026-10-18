@@ -65,6 +65,30 @@ on conflict (code) do nothing;
 create temp table vm as
 select (select franchise_id from core.franchise where source_id = (select source_id from meta.source where code = 'nhl_api') and source_key = 'VMI') as vmi,
        (select franchise_id from core.franchise where source_id = (select source_id from meta.source where code = 'nhl_api') and source_key = 'VMA') as vma;
+-- A rerun of 145 after an earlier merge leaves both clubs with a team season in the same year (the NHL's 1922 and 1923): fold VMA's into VMI's first,
+-- pointing everything that references it (games, standings, series, rosters, ...) at VMI's; a child row that would then collide with VMI's own is dropped.
+do $fold$
+declare d record; fk record; vmi int; vma int;
+begin
+  select franchise_id into vmi from core.franchise where source_id = (select source_id from meta.source where code = 'nhl_api') and source_key = 'VMI';
+  select franchise_id into vma from core.franchise where source_id = (select source_id from meta.source where code = 'nhl_api') and source_key = 'VMA';
+  if vmi is null or vma is null then return; end if;
+  for d in select a.team_season_id as old_id, b.team_season_id as keep_id
+           from core.team_season a join core.team_season b on b.season_id = a.season_id and b.franchise_id = vmi
+           where a.franchise_id = vma loop
+    for fk in select c.conrelid::regclass as tbl, a2.attname as col
+              from pg_constraint c join pg_attribute a2 on a2.attrelid = c.conrelid and a2.attnum = c.conkey[1]
+              where c.contype = 'f' and c.confrelid = 'core.team_season'::regclass and array_length(c.conkey, 1) = 1 loop
+      begin
+        execute format('update %s set %I = $1 where %I = $2', fk.tbl, fk.col, fk.col) using d.keep_id, d.old_id;
+      exception when unique_violation then
+        execute format('delete from %s where %I = $1', fk.tbl, fk.col) using d.old_id;
+      end;
+    end loop;
+    delete from core.team_season where team_season_id = d.old_id;
+  end loop;
+end
+$fold$;
 update core.team_season set franchise_id = vm.vmi from vm where vm.vma is not null and vm.vmi is not null and franchise_id = vm.vma;
 update core.franchise_identity set franchise_id = vm.vmi from vm where vm.vma is not null and vm.vmi is not null and franchise_id = vm.vma;
 delete from core.external_id e using vm where vm.vma is not null and e.entity_kind = 'franchise' and e.entity_id = vm.vma;

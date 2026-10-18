@@ -153,7 +153,10 @@ from (select franchise_id, full_name, location, nickname, abbrev as abbreviation
       group by franchise_id, full_name, location, nickname, abbrev, island) y;
 insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
 select franchise_id, 'nhl', daterange(min(lower(valid_during)), case when bool_or(upper_inf(valid_during)) then null else max(upper(valid_during)) end), (select source_id from src)
-from core.franchise_identity where franchise_id in (select franchise_id from fr) group by franchise_id;
+from core.franchise_identity where franchise_id in (select franchise_id from fr)
+  -- never NHL members (see the delete below); a rerun after 154 must not insert them, their WCHL/PCHA membership overlaps in time
+  and franchise_id not in (select franchise_id from core.franchise where source_id = (select source_id from src) and source_key in ('CAT', 'EDE', 'SMT', 'VIC', 'VMA', 'VMI'))
+group by franchise_id;
 -- Clubs of the Pacific Coast and Western leagues the NHL's clubs met in Stanley Cup play were never NHL members.
 delete from core.franchise_league where league_code = 'nhl' and franchise_id in
   (select franchise_id from core.franchise where source_id = (select source_id from src) and source_key in ('CAT', 'EDE', 'SMT', 'VIC', 'VMA', 'VMI'));

@@ -14,6 +14,10 @@
 drop table if exists pg_temp.seed_venue_fix;
 create temp table seed_venue_fix (team_qid text, place_qid text, reason text);
 \copy seed_venue_fix from 'db/seed/venue_fix.csv' with (format csv, header true)
+-- A statement the seed leaves out is also taken off rows an earlier run already wrote (a city that stood in for the venue): the row keeps its colours and logo.
+update core.franchise_brand b set home_venue = null, latitude = null, longitude = null
+from seed_venue_fix x join legacy_franchise_info.place pl on pl.qid = x.place_qid
+where b.source_key = x.team_qid and b.home_venue = pl.label;
 -- A club item Wikidata gives no home venue (only its headquarters city: the Houston Oilers, Los Angeles Raiders, San Diego Chargers and Florida Marlins items)
 -- takes the venues of db/seed/home_venue.csv (English Wikipedia or dated Wikidata, checked by hand) for the club of that name; a city is not a venue.
 drop table if exists pg_temp.seed_home;

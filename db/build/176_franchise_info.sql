@@ -30,7 +30,10 @@ delete from core.venue v where v.source_id = (select source_id from meta.source 
   and not exists (select 1 from core.game g where g.venue_id = v.venue_id)
   and not exists (select 1 from core.team_season t where t.home_venue_id = v.venue_id)
   and not exists (select 1 from core.franchise_home_venue h where h.venue_id = v.venue_id)   -- steps 198 and 199 (rerun them after this one)
-  and not exists (select 1 from core.game_venue gv where gv.venue_id = v.venue_id);
+  and not exists (select 1 from core.game_venue gv where gv.venue_id = v.venue_id)
+  and not exists (select 1 from core.soccer_match m where m.venue_id = v.venue_id)
+  and not exists (select 1 from core.venue_final_game f where f.venue_id = v.venue_id)
+  and not exists (select 1 from core.venue_game_season q where q.venue_id = v.venue_id);
 
 -- ---------------------------------------------------------------- match franchises to team items
 create temp table ident as
