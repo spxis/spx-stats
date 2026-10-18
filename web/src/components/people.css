@@ -32,3 +32,4 @@
 .rolechips a { font: 600 13px/1 var(--font-display, var(--display)); text-transform: uppercase; letter-spacing: .05em; padding: 8px 12px; background: var(--panel); border: 1px solid var(--rule); border-radius: 999px; text-decoration: none; color: var(--ink); }
 .rolechips a:hover { border-color: var(--accent); }
 .rolehead { scroll-margin-top: 72px; padding-top: 14px; border-top: 2px solid var(--accent); }
+.seasonlist .minicup { width: 14px; margin: 0 6px 0 0; vertical-align: -2px; }

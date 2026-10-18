@@ -20,6 +20,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
+import { PlayerTitles } from "@/components/PlayerTitles";
 import { positionBook } from "@/components/PositionKey";
 import { PlayerBoard } from "@/components/PlayerBoard";
 import { CupsProvider } from "@/components/TrophyIcon";
@@ -231,19 +232,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
         </nav>
       ) : null}
       {multi ? <h2 id="playing" className="rolehead">{say("player.playingCareer")}</h2> : null}
-      {titles.length ? (
-        <section className="section">
-          <h2>{say("player.titles", { count: fmt(titles.length) })}</h2>
-          <div className="seasonlist">
-            {titles.map((t) => (
-              <Link key={`${t.league}${t.year}`} className="full" href={seasonPath(t.league, t.year)} prefetch={false} title={say("player.titleTip", { team: t.team ?? "", league: leagueName(t.league) })}>
-                {`${leagueName(t.league)} ${seasonLabel(t.league, t.year)}`}
-              </Link>
-            ))}
-          </div>
-          <p className="note">{say("player.titlesNote")}</p>
-        </section>
-      ) : null}
+      <PlayerTitles titles={titles} />
       <CupsProvider markup={cupsFor(titles.map((t) => t.league))}>
         {board ? <PlayerBoard data={board} /> : null}
         <PlayerResume resume={record.resume} seasons={record.seasonTeams} brands={brands} />
