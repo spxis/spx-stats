@@ -388,11 +388,21 @@
   .seasonlabel:hover { text-decoration: underline; }
   .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
   .retired-banners { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 14px; overflow-x: visible; padding-block: 4px; }
-  .retired-banners li { flex: none; width: 92px; }
-  .retired-banners a, .retired-banners > li > span { display: flex; flex-direction: column; align-items: center; gap: 6px; text-decoration: none; color: inherit; }
-  .retired-banners a:hover .retired-cap { text-decoration: underline; }
-  .retired-banner { display: block; width: 92px; height: auto; }
-  .retired-cap { font: 600 12px/1.2 var(--display); text-align: center; color: var(--muted); max-width: 92px; }
+  .retired-banners li { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+  .retired-pic { display: block; position: relative; width: 92px; aspect-ratio: 160 / 224; text-decoration: none; color: inherit; perspective: 700px; }
+  .retired-cap { font: 600 12px/1.2 var(--display); text-align: center; color: var(--muted); max-width: 92px; text-decoration: none; }
+  a.retired-cap:hover { text-decoration: underline; }
+  .retired-banner { --z: 1.9; display: block; position: absolute; left: 50%; top: 50%; width: calc(92px * var(--z)); max-width: none; height: auto; transform: translate(-50%, -50%) scale(calc(1 / var(--z))); transition: transform .18s ease; }
+  .retired-item[data-zoom] { z-index: 5; }
+  .retired-item[data-zoom] .retired-banner { transform: translate(calc(-50% + var(--dx, 0px)), -50%) scale(1); filter: drop-shadow(0 6px 10px rgb(0 0 0 / .3)); }
+  @media (prefers-reduced-motion: no-preference) {
+    .retired-item[data-zoom] .retired-banner { animation: retired-sway 3.2s ease-in-out .2s infinite; }
+  }
+  @keyframes retired-sway {
+    0%, 100% { transform: translate(calc(-50% + var(--dx, 0px)), -50%) rotateY(0deg); }
+    25% { transform: translate(calc(-50% + var(--dx, 0px)), -50%) rotateY(32deg); }
+    75% { transform: translate(calc(-50% + var(--dx, 0px)), -50%) rotateY(-32deg); }
+  }
   .title-banners { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 14px; overflow-x: visible; }
   .title-banners li { flex: none; width: 110px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
   .title-banner { display: block; width: 110px; height: auto; }

@@ -1,4 +1,4 @@
-import Link from "@/components/Link";
+import { RetiredBannerItem } from "@/components/RetiredBannerItem";
 import { Credits } from "@/components/Credits";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { lastNameOf } from "@/lib/lastName";
@@ -25,31 +25,17 @@ export async function RetiredBanners({
           const href = r.person_id != null ? playerPath(lg, r.person_id, shown) : null;
           const label = r.league_wide ? `${shown} · ${say("team.retiredLeague")}` : shown;
           const cap = r.league_wide ? say("team.retiredLeague") : last;
-          const img = (
-            // eslint-disable-next-line @next/next/no-img-element -- kept SVG from this app, not a remote bitmap
-            <img
-              className="retired-banner"
+          return (
+            <RetiredBannerItem
+              key={r.retired_number_id}
               src={`/jersey-banner/${f}/${r.retired_number_id}${kind === "hanging" ? "/hanging" : ""}`}
               alt={label}
+              label={label}
+              cap={cap}
+              href={href}
               width={160}
               height={224}
-              loading="lazy"
             />
-          );
-          return (
-            <li key={r.retired_number_id}>
-              {href ? (
-                <Link href={href} prefetch={false} title={label}>
-                  {img}
-                  <span className="retired-cap">{cap}</span>
-                </Link>
-              ) : (
-                <span title={label}>
-                  {img}
-                  <span className="retired-cap">{cap}</span>
-                </span>
-              )}
-            </li>
           );
         })}
       </ul>
