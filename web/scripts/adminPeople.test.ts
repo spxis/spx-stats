@@ -75,6 +75,12 @@ test("a year range uses club seasons, else birth year, and keeps people with no 
   assert.equal(q.split("&").filter((x) => x.startsWith("or=")).length, 1, "the cursor keeps its own or=");
 });
 
+test("a name search reads the folded name of api.person_admin, one filter per word, accents ignored", () => {
+  const f = peopleAdminFilters(parsePeopleSearch({ q: "Terry Fox" }));
+  assert.deepEqual(f, ["search=like.*terry*", "search=like.*fox*"]);
+  assert.deepEqual(peopleAdminFilters(parsePeopleSearch({ q: "Steve Fonyó" })), ["search=like.*steve*", "search=like.*fonyo*"]);
+});
+
 test("a first-name letter page filters on letter_first and orders by name with the person id as the tie-break", () => {
   const f = parsePeopleSearch({ letter: "T", letter_by: "first", page: "8" });
   assert.equal(f.page, 8);

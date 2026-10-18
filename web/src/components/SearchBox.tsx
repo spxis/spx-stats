@@ -32,7 +32,7 @@ const WAIT = 150;
  * put while the next one loads, so it does not flicker.
  */
 export function SearchBox({ kind, action, name = "q", defaultValue = "", league = "", hidden = {}, placeholder, buttonLabel }: {
-  kind: "players" | "teams";
+  kind: "players" | "teams" | "people";
   action: string;
   name?: string;
   defaultValue?: string;
@@ -67,7 +67,7 @@ export function SearchBox({ kind, action, name = "q", defaultValue = "", league 
     const timer = setTimeout(async () => {
       setBusy(true);
       try {
-        const res = await fetch(`/api/${kind}/suggest?q=${encodeURIComponent(text.trim())}${league ? `&league=${league}` : ""}`, { signal: ctl.signal });
+        const res = await fetch(`/api/${kind === "people" ? "admin/people" : kind}/suggest?q=${encodeURIComponent(text.trim())}${league ? `&league=${league}` : ""}`, { signal: ctl.signal });
         if (!res.ok) throw new Error(String(res.status));
         const body = (await res.json()) as { data: Suggestion[] };
         kept.current.set(`${league}|${key}`, body.data);

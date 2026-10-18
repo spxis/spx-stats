@@ -9,12 +9,14 @@ import {
   peopleAdminQuery,
   peopleFallbackQuery,
   peopleOrder,
+  searchWords,
   type PeopleSearch,
 } from "./adminPeopleQuery";
 import { tally, UNKNOWN, type Count } from "./countryModel";
 import { cursorOf, readCursor, valuesOf } from "./listQuery";
 import type { Span } from "./listSpan";
 import type { Tally } from "./playerCountryModel";
+import { getPlayerPaths } from "./playerLinks";
 import { formatSort, type SortKey } from "./sort";
 
 export {
@@ -274,4 +276,31 @@ export async function peopleLetterCounts(by: "last" | "first"): Promise<Map<stri
     if (/^[a-z]$/.test(letter)) out.set(letter, r.n);
   }
   return out.size ? out : null;
+}
+
+const suggestSchema = z.object({ person_id: int, name: str, sports: z.array(str), leagues: strs, birth_year: intN, first_season: intN, last_season: intN });
+export interface PersonSuggestion { id: number; name: string; league: string; first_season: number | null; last_season: number | null; url: string }
+
+/**
+ * Up to 10 people for the admin search box, from api.person_admin (so athletes with no club season are found): names that start with the text,
+ * then words that start with it, then names that contain it. Players link to their page, everyone else to the filtered list.
+ */
+export async function suggestPeople(raw: string): Promise<PersonSuggestion[]> {
+  const q = searchWords(raw).join(" ");
+  if (!q) return [];
+  const tiers = [`${q}*`, `* ${q}*`, ...(q.length >= 3 ? [`*${q}*`] : [])];
+  const select = "select=person_id,name,sports,leagues,birth_year,first_season,last_season&order=name.asc,person_id.asc";
+  const found = await Promise.all(tiers.map((t) => sliceOf(PERSON_ADMIN_VIEW, `search=like.${encodeURIComponent(t)}&${select}`, suggestSchema, 10)));
+  if (found.every((f) => f === null)) throw new ApiError(`${PERSON_ADMIN_VIEW}: couldn't read`, 502, true);
+  const seen = new Set<number>();
+  const picked = found.flatMap((f) => f ?? []).filter((p) => !seen.has(p.person_id) && !!seen.add(p.person_id)).slice(0, 10);
+  const player = await getPlayerPaths();
+  return picked.map((p) => ({
+    id: p.person_id,
+    name: p.name,
+    league: [p.leagues?.[0]?.toUpperCase() ?? p.sports[0]?.replaceAll("_", " "), p.first_season == null && p.birth_year != null ? `b. ${p.birth_year}` : ""].filter(Boolean).join(" · "),
+    first_season: p.first_season,
+    last_season: p.last_season,
+    url: p.leagues?.[0] ? player(p.person_id, p.name, p.leagues[0]) : `/admin/people?q=${encodeURIComponent(p.name)}`,
+  }));
 }

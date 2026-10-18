@@ -66,7 +66,7 @@ export async function PlayersFilterBar({
         <SegChips aria={say("players.leagueAria")} current={league} items={leagues} href={(code) => href({ league: code || null, team: null })} />
         {teamPicker}
         {extra ? <div className="pfilters-extra">{extra}</div> : null}
-        <SearchBox kind="players" action={path} defaultValue={q} league={league} hidden={searchHidden} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
+        <SearchBox kind={path === "/admin/people" ? "people" : "players"} action={path} defaultValue={q} league={league} hidden={searchHidden} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
         {active ? <FilterReset href={path} label={say("players.resetFilters", { count: active })} storeKey={RANGE_PAGES[path].key} span={span} /> : null}
       </div>
       <LetterBar say={say} plural={plural} letter={letter} by={letterBy} counts={counts} href={href} />
