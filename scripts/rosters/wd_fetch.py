@@ -2,7 +2,7 @@
 """Fetch the players of one league's teams from Wikidata (CC0), raw first: who played for the league's clubs (P54), when, and the
 facts the site shows about them (birth, birthplace, citizenship, height, position, hand).
 
-  wd_fetch.py <nba|cfl> <raw dir>
+  wd_fetch.py <nba|cfl|nha|pcha|wchl|wha> <raw dir>
 
 Stages (a file that exists is never fetched again, so a stopped run resumes):
   1. players.json     SPARQL on query.wikidata.org: every item with a "member of sports team" (P54) statement for a club of the league
@@ -21,12 +21,24 @@ pf = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(pf)
 
 # league item on Wikidata (the same ones scripts/wikidata/team_brand.py uses)
-LEAGUES = {"nba": "Q155223", "cfl": "Q1032175"}
+LEAGUES = {"nba": "Q155223", "cfl": "Q1032175",
+           "nha": "Q641900", "pcha": "Q1381725", "wchl": "Q1028768", "wha": "Q527513"}   # the last four: the NHL's predecessor and rival leagues (scripts/hockey/)
 
 QUERY = """SELECT DISTINCT ?p ?t ?tLabel WHERE {
   { ?t wdt:P118 wd:%(lg)s } UNION { ?t p:P118/ps:P118 wd:%(lg)s } UNION
   { ?cur wdt:P118 wd:%(lg)s . ?t (wdt:P1365|wdt:P1366)+ ?cur . ?t wdt:P31/wdt:P279* wd:Q12973014 }
   ?p wdt:P54 ?t .
+  ?p wdt:P31 wd:Q5 .
+  SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
+}"""
+
+# A club item that is also an NHL club (the Canadiens, the Oilers) carries the P54 statements of every player it ever had: for the old leagues only the
+# statements that start up to the year after the league's last season are asked for (an undated statement places nobody, 179 needs a start).
+LAST_YEAR = {"nha": 1918, "pcha": 1925, "wchl": 1926, "wha": 1979}
+QUERY_UNTIL = """SELECT DISTINCT ?p ?t ?tLabel WHERE {
+  { ?t wdt:P118 wd:%(lg)s } UNION { ?t p:P118/ps:P118 wd:%(lg)s } UNION
+  { ?cur wdt:P118 wd:%(lg)s . ?t (wdt:P1365|wdt:P1366)+ ?cur . ?t wdt:P31/wdt:P279* wd:Q12973014 }
+  ?p p:P54 ?st . ?st ps:P54 ?t . ?st pq:P580 ?s . FILTER(YEAR(?s) <= %(until)d)
   ?p wdt:P31 wd:Q5 .
   SERVICE wikibase:label { bd:serviceParam wikibase:language "en". }
 }"""
@@ -88,7 +100,7 @@ def main(league, raw):
     os.makedirs(raw, exist_ok=True)
     pj = f"{raw}/players.json"
     if not os.path.exists(pj):
-        rows = sparql(QUERY % {"lg": LEAGUES[league]})
+        rows = sparql(QUERY_UNTIL % {"lg": LEAGUES[league], "until": LAST_YEAR[league]} if league in LAST_YEAR else QUERY % {"lg": LEAGUES[league]})
         doc = {"league": league, "league_qid": LEAGUES[league], "queried_on": time.strftime("%Y-%m-%d"),
                "rows": [{"player": qid(r["p"]), "team": qid(r["t"]), "team_label": r.get("tLabel")} for r in rows]}
         pf.save(pj, doc)

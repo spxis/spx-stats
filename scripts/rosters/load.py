@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Raw answers (wd_fetch.py, wp_fetch.py) -> one SQL file that loads legacy_rosters (migration 092) and archives the raw files.
 
-  load.py <nba|cfl> <raw dir> <out.sql>
+  load.py <nba|cfl|nha|pcha|wchl|wha> <raw dir> <out.sql>
 
 The SQL is inline (no server-side file reads), so the coordinator applies it to DS1 with scripts/mac/ds1-apply.sh <out.sql>.
 It replaces this league's club, player and Wikipedia roster rows and the rows of every Wikidata item it carries; other leagues' rows are left alone.
@@ -17,6 +17,7 @@ def load(name, path):
 pl = load("people_load", "../people/load.py")
 wp = load("wp_parse", "wp_parse.py")
 CLAIM_COLS = pl.CLAIM_COLS
+HOCKEY = ("nha", "pcha", "wchl", "wha")
 ENTITY_FILES = re.compile(r"^(persons|personswp|items|countries)-\d+\.json$")
 
 def to_int(v):
@@ -52,8 +53,11 @@ def main(league, raw, out):
         if f.startswith("articles-"):
             for a in d["articles"]:
                 sects = a.get("sections") or {}
-                arts.append((league, a["season"], a["club"], a["title"], a.get("revid"), a.get("timestamp"), bool(a.get("missing")), "roster" in sects, "stats" in sects))
-                for e in wp.entries(league, sects):
+                es = wp.entries(league, sects, a["club"])
+                # hockey (NHA, PCHA, WCHL, WHA): no Roster section; the players of the statistics tables are the roster
+                arts.append((league, a["season"], a["club"], a["title"], a.get("revid"), a.get("timestamp"), bool(a.get("missing")),
+                             "roster" in sects or (league in HOCKEY and bool(es)), "stats" in sects or (league in HOCKEY and bool(sects.get("tables")))))
+                for e in es:
                     rows.append((league, a["season"], a["club"], e["src"], e["ord"], e["name"], e["title"], e["num"], e["pos"], e["dob"],
                                  to_int(e["ft"]) * 12 + (to_int(e["inch"]) or 0) if to_int(e["ft"]) else None, to_int(e["lbs"]), e["college"], e["note"]))
         elif f.startswith("titles-"):
@@ -107,5 +111,5 @@ def main(league, raw, out):
           len(titles), "titles,", len(files), "files archived ->", out)
 
 if __name__ == "__main__":
-    if len(sys.argv) != 4 or sys.argv[1] not in ("nba", "cfl"): sys.exit(__doc__)
+    if len(sys.argv) != 4 or sys.argv[1] not in ("nba", "cfl") + HOCKEY: sys.exit(__doc__)
     main(*sys.argv[1:])

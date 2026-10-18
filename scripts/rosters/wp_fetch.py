@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Fetch the rosters of club-season articles from English Wikipedia (CC BY-SA 4.0) through the MediaWiki API, raw first.
 
-  wp_fetch.py <nba|cfl> <titles.tsv> <raw dir> [articles|titles|persons|all]
+  wp_fetch.py <nba|cfl|nha|pcha|wchl|wha> <titles.tsv> <raw dir> [articles|titles|persons|all]
+  (nha|pcha|wchl|wha: only `titles` and `persons`; the articles are written by scripts/hockey/roster_articles.py export; titles.tsv is unused, pass -)
 
 titles.tsv: one club season per line, tab separated: the season's first year, the club's name that season, and (optional) the article title.
   Without a title it is "<season>-<yy> <club> season" for the NBA ("2009–10 Houston Rockets season"; 1999 is "1999–2000") and "<season> <club> season" for the CFL.
@@ -102,7 +103,7 @@ def read_articles(raw):
 def link_titles(league, raw):
     ts = set()
     for a in read_articles(raw):
-        for e in wp.entries(league, a.get("sections") or {}):
+        for e in wp.entries(league, a.get("sections") or {}, a["club"]):
             if e["title"]: ts.add(e["title"])
     return sorted(ts)
 
@@ -138,9 +139,11 @@ def stage_persons(raw):
 
 if __name__ == "__main__":
     a = sys.argv[1:]
-    if len(a) < 3 or a[0] not in ("nba", "cfl"): sys.exit(__doc__)
+    if len(a) < 3 or a[0] not in ("nba", "cfl", "nha", "pcha", "wchl", "wha"): sys.exit(__doc__)
     league, tsv, raw = a[0], a[1], a[2]
     stage = a[3] if len(a) > 3 else "all"
+    if league in ("nha", "pcha", "wchl", "wha") and stage in ("articles", "all"):
+        sys.exit("hockey: the articles come from scripts/hockey/roster_articles.py export (no request); run the titles and persons stages here")
     os.makedirs(raw, exist_ok=True)
     if stage in ("articles", "all"): stage_articles(league, tsv, raw)
     if stage in ("titles", "all"): stage_titles(league, raw)
