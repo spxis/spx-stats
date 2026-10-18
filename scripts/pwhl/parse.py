@@ -27,6 +27,7 @@ def link_of(cell):
     m = re.search(r"\[\[([^\]|]+)(?:\|([^\]]*))?\]\]", cell)
     plain = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", cell)
     plain = re.sub(r"\{\{[^}]*\}\}|'''|''", "", plain)
+    plain = re.sub(r"^[\s|]+", "", plain)   # "{{Game-won}} | '''Ottawa'''": the winner's marker leaves its pipe behind
     return (m.group(1).strip() if m else None), plain.strip()
 
 
@@ -203,7 +204,7 @@ def parse_nhl_playoffs(text, season):
     for start, end, raw in _templates(text, r"NHLPlayoffs"):
         body = raw[2:]
         kv = {}
-        for k, v in re.findall(r"\|\s*([A-Za-z0-9_-]+)\s*=\s*(.*)", body):
+        for k, v in re.findall(r"\|[ \t]*([A-Za-z0-9_-]+)[ \t]*=[ \t]*(.*)", body):
             kv[k.strip().lower()] = v.strip()
         t1 = club_from_link(*link_of(kv.get("team1", ""))) or clean(kv.get("team1", ""))
         t2 = club_from_link(*link_of(kv.get("team2", ""))) or clean(kv.get("team2", ""))
@@ -238,6 +239,11 @@ def parse_nhl_playoffs(text, season):
                 bad.append(f"game {n} date {dt}"); continue
             home_side = kv.get(f"home{n}", "1").strip()
             vis, hm = (int(sm.group(1)), int(sm.group(2)))
+            won = kv.get(f"won{n}", "").strip()
+            if f"home{n}" not in kv and won in ("1", "2") and vis != hm:
+                # the score is always visitor-home and the winner has the larger number, so wonN says who was at home
+                # (a 2-2-1 series is at team 1's rink for games 1, 2 and 5 and at team 2's for 3 and 4)
+                home_side = won if hm > vis else ("2" if won == "1" else "1")
             if home_side == "2":
                 home, away, hp, ap = t2, t1, hm, vis
             else:

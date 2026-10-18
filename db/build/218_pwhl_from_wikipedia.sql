@@ -108,8 +108,11 @@ from wts t
 where t.season in (select yr from seasons) and not exists (select 1 from am m where m.nm = lower(t.team_name) and t.season between m.y0 and m.y1);
 
 insert into core.season (league_code, start_year, end_year, label, source_id)
-select 'pwhl', yr, yr + 1, yr::text || '-' || to_char(yr + 1, 'FM00'), (select source_id from src)
+select 'pwhl', yr, yr + 1, yr::text || '-' || lpad(((yr + 1) % 100)::text, 2, '0'), (select source_id from src)
 from (select yr from ng union select yr from nst union select yr from nts) x on conflict (league_code, start_year) do nothing;
+-- the label was once written with to_char(year, 'FM00'), which gives '##' for a four-digit year: repair those rows
+update core.season set label = start_year::text || '-' || lpad(((start_year + 1) % 100)::text, 2, '0')
+where league_code = 'pwhl' and label like '%-##';
 update core.season s set
   regular_starts_on = coalesce(s.regular_starts_on, d.rs), regular_ends_on = coalesce(s.regular_ends_on, d.re),
   playoffs_end_on = coalesce(s.playoffs_end_on, d.pe)

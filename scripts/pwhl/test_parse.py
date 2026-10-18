@@ -118,6 +118,17 @@ class T(unittest.TestCase):
         self.assertEqual(fin["home"], "PWHL Boston")
         self.assertEqual((fin["away_pts"], fin["home_pts"]), (4, 3))
 
+    def test_playoffs_home_from_winner_when_no_home_key(self):
+        # score is visitor-home and the winner has the larger number: wonN says who was at home (2-2-1 series)
+        txt = ("{{NHLPlayoffs\n| homeright = yes\n| team1 = [[PWHL Boston]]\n| team2 = [[PWHL Ottawa]]\n"
+               "| date1 = April 30\n| score1 = 1–2\n| won1 = 1\n| date3 = May 8\n| score3 = 1–2\n| won3 = 2\n}}")
+        games, bad = P.parse_nhl_playoffs(txt, 2025)
+        self.assertEqual(bad, [])
+        a = next(g for g in games if g["date"].day == 30)
+        b = next(g for g in games if g["date"].day == 8)
+        self.assertEqual((a["home"], a["away"]), ("PWHL Boston", "PWHL Ottawa"))
+        self.assertEqual((b["home"], b["away"]), ("PWHL Ottawa", "PWHL Boston"))
+
     def test_year_for(self):
         self.assertEqual(P.year_for(2023, 1), 2024)
         self.assertEqual(P.year_for(2024, 11), 2024)
