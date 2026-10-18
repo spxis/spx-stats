@@ -29,7 +29,7 @@ import { groupPath, GROUP_IDS } from "@/lib/h2hGroup";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
-import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { isLeague, LG, seasonLabel, seasonSeg } from "@/lib/leagues";
 import { share } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
@@ -95,7 +95,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const q = parseH2hQuery(sp, lg);
   // One address per pair (alphabetical) and one spelling of a season.
   if (at.path !== `/${lg}/head-to-head/${pair}` || !q.canonicalSeason) {
-    permanentRedirect(withQuery(at.path, q.year != null && !q.canonicalSeason ? { ...sp, season: seasonLabel(lg, q.year) } : sp));
+    permanentRedirect(withQuery(at.path, q.year != null && !q.canonicalSeason ? { ...sp, season: seasonSeg(lg, q.year) } : sp));
   }
   const { a, b } = at;
   const { say, plural, fmt, dt } = await currentSpeaker();
@@ -233,7 +233,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const shareA = share(t.a), shareB = share(t.b);
   const recA = recordText(t.a), recB = recordText(t.b);
 
-  const seasonHref = (y: number) => `${hrefTo({ season: seasonLabel(lg, y), list: null })}#games`;
+  const seasonHref = (y: number) => `${hrefTo({ season: seasonSeg(lg, y), list: null })}#games`;
   const side = (i: 0 | 1) => {
     const f = i === 0 ? a : b, r = i === 0 ? t.a : t.b, sh = i === 0 ? shareA : shareB, scored = i === 0 ? t.af : t.bf;
     const logo = logoFor(d.brands, f, logoYear);

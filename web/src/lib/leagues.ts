@@ -66,9 +66,14 @@ export function isLeague(code: string): code is LeagueCode {
 /** The leagues whose seasons span two calendar years: 1993-94 (the NHL, the NBA and the hockey leagues beside the NHL). The others are one: 2025. */
 const TWO_YEAR_SEASONS: ReadonlySet<string> = new Set(["nhl", "pwhl", "nba", "nha", "pcha", "wchl", "wha"]);
 
-/** NHL and NBA seasons span two calendar years: 1993-94. The others are one: 2025. */
-export function seasonLabel(lg: string, y: number): string {
+/** A season as an address segment: 1999-00 for the two-year leagues (the short form, always), 2019 for the others. Addresses never change. */
+export function seasonSeg(lg: string, y: number): string {
   return TWO_YEAR_SEASONS.has(lg) ? `${y}-${String(y + 1).slice(2)}` : String(y);
+}
+
+/** A season as the reader sees it: 1999-2000 when the second year starts a century (1899-1900, 2099-2100), else the address form (2001-02, 2019). */
+export function seasonLabel(lg: string, y: number): string {
+  return TWO_YEAR_SEASONS.has(lg) && (y + 1) % 100 === 0 ? `${y}-${y + 1}` : seasonSeg(lg, y);
 }
 
 /** The calendar year printed on a championship banner: the year the title was won (spring of a split-year season). */

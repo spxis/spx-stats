@@ -2,7 +2,7 @@
 
 import Link from "@/components/Link";
 import { pairPath, pairSeasonPath } from "@/lib/h2h";
-import { seasonLabel } from "@/lib/leagues";
+import { seasonSeg } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { usePaths } from "./SlugProvider";
 import "./h2h.css";
@@ -12,7 +12,7 @@ export function H2hLink({ lg, year, a, b }: { lg: string; year: number; a: numbe
   const paths = usePaths();
   const { say } = useSpeaker();
   if (a == null || b == null || a === b) return null;
-  const href = pairSeasonPath(pairPath(paths, lg, a, b).path, seasonLabel(lg, year));
+  const href = pairSeasonPath(pairPath(paths, lg, a, b).path, seasonSeg(lg, year));
   return (
     <Link className="h2hlink" href={href} prefetch={false} title={say("h2h.linkTitle")}>
       <span className="tn-long">{say("h2h.link")}</span>

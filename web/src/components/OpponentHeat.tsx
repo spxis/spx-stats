@@ -4,7 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import Link from "@/components/Link";
 import { fmt3 } from "@/lib/format";
-import { LG, seasonLabel, type LeagueCode } from "@/lib/leagues";
+import { LG, seasonLabel, seasonSeg, type LeagueCode } from "@/lib/leagues";
 import {
   MIN_GAMES, buildGrid, choiceQuery, defaultDir, readChoice, sortRows, winShare,
   type HeatChoice, type HeatDir, type HeatOpp, type HeatPhase, type HeatRow, type HeatSort, type OpponentHeatView, type Rec,
@@ -66,7 +66,7 @@ export function OpponentHeat({ view }: { view: OpponentHeatView }) {
 
   const phaseQuery = c.phase === "all" ? "" : `phase=${c.phase}`;
   const gamesHref = (o: HeatOpp, y: number) =>
-    y ? `${o.pair}?season=${seasonLabel(o.lg, y)}${phaseQuery ? `&${phaseQuery}` : ""}` : `${o.pair}${phaseQuery ? `?${phaseQuery}` : ""}`;
+    y ? `${o.pair}?season=${seasonSeg(o.lg, y)}${phaseQuery ? `&${phaseQuery}` : ""}` : `${o.pair}${phaseQuery ? `?${phaseQuery}` : ""}`;
   const nameOf = (o: HeatOpp) => o.name ?? fallback(o);
 
   const cardOf = useCallback((row: HeatRow, y: number) => {

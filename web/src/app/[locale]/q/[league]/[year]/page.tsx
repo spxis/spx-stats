@@ -32,7 +32,7 @@ import { getOutage, getOutageYears, getTitleNotAwarded } from "@/lib/outageData"
 import { NotAwarded } from "@/components/NotAwarded";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, isSpx, leagueInfo, LG, seasonLabel, srcName } from "@/lib/leagues";
+import { isLeague, isSpx, leagueInfo, LG, seasonLabel, seasonSeg, srcName } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { isGapYear, withGaps } from "@/lib/coverage";
 import { leadersPath } from "@/lib/leaderStats";
@@ -216,7 +216,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
           <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
           <Link href={`${seasonPath(lg, y)}/world`} prefetch={false}>{say("country.seasonNavLink")}</Link>
-          {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
+          {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonSeg(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
         </>} />
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
         <h1>{say("season.title", { label: d.label })}</h1>
@@ -289,7 +289,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={selection}>
             {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
           </SeasonGames>
-          <noscript><p className="note"><Link href={`${scoresPath(lg)}?season=${seasonLabel(lg, y)}`}>{say("nav.scores")}</Link></p></noscript>
+          <noscript><p className="note"><Link href={`${scoresPath(lg)}?season=${seasonSeg(lg, y)}`}>{say("nav.scores")}</Link></p></noscript>
         </section>
       ) : null}
     </SeasonGamesProvider>

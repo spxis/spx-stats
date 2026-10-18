@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useSyncExternalStore } from "react";
 import { localToday } from "@/lib/format";
 import { scoresPath } from "@/lib/scores";
-import { seasonLabel } from "@/lib/leagues";
+import { seasonLabel, seasonSeg } from "@/lib/leagues";
 import { DatePicker } from "./DatePicker";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import "./datepicker.css";
@@ -40,7 +40,7 @@ export function ScoresBar({ lg, day, year, seasons, days, min, max, prev, next, 
   return (
     <div className="controls seasonbar scoresbar">
       <label className="seasonpick">
-        <select aria-label={say("col.season")} value={year ?? ""} onChange={(e) => router.push(`${scoresPath(lg)}?season=${seasonLabel(lg, Number(e.target.value))}`)}>
+        <select aria-label={say("col.season")} value={year ?? ""} onChange={(e) => router.push(`${scoresPath(lg)}?season=${seasonSeg(lg, Number(e.target.value))}`)}>
           {year == null ? <option value="" /> : null}
           {seasons.map((y) => <option key={y} value={y}>{seasonLabel(lg, y)}</option>)}
         </select>

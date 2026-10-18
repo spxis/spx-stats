@@ -24,7 +24,7 @@ import { getPairHistory } from "@/lib/h2hData";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
-import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { isLeague, LG, seasonLabel, seasonSeg } from "@/lib/leagues";
 import { addRec, recordAt, share, type Rec } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
@@ -71,7 +71,7 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
   const sp = await searchParams;
   const q = parseCompareQuery(sp, lg);
   if (at.path !== `/${lg}/compare/${pair}` || !q.canonicalSeason) {
-    permanentRedirect(withQuery(at.path, q.year != null && !q.canonicalSeason ? { ...sp, season: seasonLabel(lg, q.year) } : sp));
+    permanentRedirect(withQuery(at.path, q.year != null && !q.canonicalSeason ? { ...sp, season: seasonSeg(lg, q.year) } : sp));
   }
   const { a, b } = at;
   const path = at.path;
@@ -111,7 +111,7 @@ export default guard(async function ComparePage({ params, searchParams }: PagePr
     <div className="h2hcontrols">
       <label>{say("col.season")}<H2hSeasonSelect seasons={seasonOptions} value={label ?? "all"} all="all" allLabel={say("compare.allTime")} /></label>
       <nav className="seg views" aria-label={say("compare.range.aria")}>
-        {common.length ? <Link href={compareHref(path, seasonLabel(lg, common[0]))} prefetch={false} scroll={false} aria-current={!all ? "page" : undefined}>{say("compare.range.season")}</Link> : null}
+        {common.length ? <Link href={compareHref(path, seasonSeg(lg, common[0]))} prefetch={false} scroll={false} aria-current={!all ? "page" : undefined}>{say("compare.range.season")}</Link> : null}
         <Link href={compareHref(path, "all")} prefetch={false} scroll={false} aria-current={all ? "page" : undefined}>{say("compare.allTime")}</Link>
       </nav>
     </div>

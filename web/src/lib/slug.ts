@@ -1,4 +1,4 @@
-import { seasonLabel } from "./leagues.ts";
+import { seasonSeg } from "./leagues.ts";
 
 /** "Montréal Canadiens" -> "montreal-canadiens", "Brooklyn Dodgers & Co." -> "brooklyn-dodgers-and-co". */
 export function slugify(name: string): string {
@@ -26,8 +26,6 @@ export function seasonSlug(e: SlugEntry, y: number): string {
   return out;
 }
 
-/** The season segment of an address: 2001-02 for NHL and NBA, 2019 for the rest. */
-export const seasonSeg = (lg: string, y: number): string => seasonLabel(lg, y);
 export const seasonPath = (lg: string, y: number): string => `/${lg}/${seasonSeg(lg, y)}`;
 
 /** The season in an address segment, and whether it is the form the site uses (2001-02), not the old one (2001). */
