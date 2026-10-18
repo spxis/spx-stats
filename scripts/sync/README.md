@@ -26,7 +26,7 @@ looked at again, key by key. Large tables are read in several small queries (pro
 rows scanned per Management API call), with timeouts and retries. Only columns present on both sides are compared;
 timestamps are compared in UTC; ordering uses the `C` collation, so DS1 and production agree.
 
-A table listed in `PUBLISH_FILTER` (top of `compare.py`; today only `core.external_id` with `entity_kind <> 'game'`) is compared
+A table listed in `PUBLISH_FILTER` (top of `compare.py`; today `core.external_id` with `entity_kind <> 'game'` and `core.person_jersey` without its `jersey-roster:` rows) is compared
 as DS1's filtered rows against all of production's rows: the DS1 side of every count, bucket, drill and copy reads
 `(select * from <table> where <condition>)`, the production side never does. Production rows the condition excludes show as
 "only in production". Only the side labelled DS1 (`PsqlSide.source`) is filtered.

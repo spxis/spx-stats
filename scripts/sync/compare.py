@@ -36,8 +36,11 @@ BUCKETS = 256
 # and nothing references; the full table stays on DS1 (the source of truth).
 #   core.external_id: the 437k 'game' ids (about 80 MB with indexes, 2026-10) are not read by any api view or page and Supabase Free
 #   caps the database at 500 MB. entity_kind is NOT NULL, so <> is complete.
+#   core.person_jersey: the 57k 'jersey-roster:' rows (about 20 MB) copy core.roster_stint, which holds the same numbers; no api view
+#   or page reads api.person_jersey (the roster reads api.team_season_roster). source_key is NOT NULL, so not like is complete.
 PUBLISH_FILTER = {
     "core.external_id": "entity_kind <> 'game'",
+    "core.person_jersey": "source_key not like 'jersey-roster:%'",
 }
 
 

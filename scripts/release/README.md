@@ -103,8 +103,9 @@ number. Another actor's releases and approved ones are never touched.
 ## Tables published in part (`PUBLISH_FILTER`)
 
 Production is on the 500 MB plan, so some DS1 rows are not published. `PUBLISH_FILTER` in `scripts/sync/compare.py` maps a table to a
-SQL condition; today the only entry is `core.external_id`: `entity_kind <> 'game'` (437k game ids, about 80 MB with indexes, read by
-no api view, page or function and referenced by no foreign key; DS1 keeps them). The condition is applied to the DS1 side only
+SQL condition; today two entries: `core.external_id`: `entity_kind <> 'game'` (437k game ids, about 80 MB with indexes, read by
+no api view, page or function and referenced by no foreign key; DS1 keeps them) and `core.person_jersey`: `source_key not like 'jersey-roster:%'`
+(57k rows, about 20 MB, copies of `core.roster_stint`; no page reads `api.person_jersey`; DS1 keeps them). The condition is applied to the DS1 side only
 (`Table.src(side)`, true for the side labelled `DS1`), everywhere the release reads that table:
 
 - the preview and the runner's re-comparison (`build_preview`, `diff_tables`): row counts, bucket fingerprints, row hashes and the

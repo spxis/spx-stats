@@ -471,7 +471,7 @@ def scenario_publish_filter(snap):
     c1, c2 = C.catalog(ds1), C.catalog(ctx.prod)
     t = C.Table("core.external_id", c1["core.external_id"], c2["core.external_id"])
     plain = C.Table("core.plain", c1["core.plain"], c2["core.plain"])
-    ok("PUBLISH_FILTER has exactly the one entry", C.PUBLISH_FILTER == {"core.external_id": "entity_kind <> 'game'"}, C.PUBLISH_FILTER)
+    ok("PUBLISH_FILTER has exactly its two entries", C.PUBLISH_FILTER == {"core.external_id": "entity_kind <> 'game'", "core.person_jersey": "source_key not like 'jersey-roster:%'"}, C.PUBLISH_FILTER)
     ok("the DS1 side reads the filtered rows, production and unfiltered tables read the table",
        "entity_kind <> 'game'" in t.src(ds1) and t.src(ctx.prod) == t.fq and plain.src(ds1) == plain.fq)
     ok("DS1 counts only the published rows", C.count_rows(ds1, t) == 5 and C.count_rows(ctx.prod, t) == 46, (C.count_rows(ds1, t), C.count_rows(ctx.prod, t)))
