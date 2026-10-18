@@ -322,7 +322,7 @@ anywhere. A `200` with a `tickets` array means the board is healthy.
     pnpm task history <id>                                      # every title/detail edit (needs the Sumilabu edit-history release)
 
 - `<id>` is the whole cuid or, once Sumilabu has short ids, `SPX-142`. An older Sumilabu says so plainly and edit/history report "not supported yet".
-- Order: file it, claim it, build it, deploy it, then `done`. File **before** starting work.
+- Order: file it, claim it, build it, then the coordinating session deploys it and runs `done` (an agent does either only if its brief directs it; section 7). File **before** starting work.
 - A title is 8 to 120 characters, detail up to 4000, and every write names an actor (`--by`, or the name after `claim`).
 - A hold lasts six hours and a live hold is not taken over; a lapsed one shows as "stale hold" and `claim` takes it.
 - `done` is the only way to finish a ticket. If you stop, `release` it.
@@ -420,7 +420,7 @@ A push to `main` deploys nothing.
 
 ## 7. Deploying
 
-The agent that finished and pushed a feature deploys it. The coordinating session deploys only when asked. Deploy only
+The coordinating session deploys a finished feature and runs `done`. An agent deploys, or marks a ticket done, only when the coordinating session's brief directs it to; then it uses the commands below. Deploy only
 a commit that is on `origin/main` and passed the checks above; a deployment carries everything on `main`, not just
 your commit.
 
@@ -477,7 +477,7 @@ working checkout (worktrees and other agents' files would be uploaded). It waits
 Tested 2026-10-11 (about a minute; it prints nothing until the build is done). `vercel link` writes a short-lived
 token to `.env.local` in that temporary copy; Vercel does not upload it and the last step deletes the copy.
 
-The agent that pushed the feature deploys it itself: the connector if present, otherwise the CLI block above, run from
+An agent deploys only when its brief directs it to (default: the coordinating session deploys): the connector if present, otherwise the CLI block above, run from
 the temporary copy as shown (or with `--cwd` pointing at it), never from the working checkout. The allow rules are in
 `.claude/settings.json`. If a deploy is still refused, report the exact block to the coordinating session (John runs
 it). Never edit permission settings yourself.
@@ -510,7 +510,7 @@ because the build could not see the sign-in variables, and nothing noticed. Two 
     curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/<the page you changed>
 
 Look at the page itself for anything fetched from the database (a "Couldn't load" message means the fetch failed).
-Then `pnpm task done <id> --by "<who>" --version "<short sha>"`.
+Then, only if the brief directs it, `pnpm task done <id> --by "<who>" --version "<short sha>"`.
 
 **Roll back.** Find the last good deployment (`list_deployments` with `rollbackCandidate: true`, state READY), then
 `request_rollback` with `projectId: prj_MfgGl5vzVccEhmtSyvgze6hhgXJg`, `deploymentId: <that dpl_ id>`,
