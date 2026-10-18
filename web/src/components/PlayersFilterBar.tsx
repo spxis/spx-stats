@@ -38,6 +38,8 @@ export async function PlayersFilterBar({
   inAddress,
   searchHidden,
   extra,
+  leagueExtra,
+  topExtra,
   teamPicker,
   tabs,
 }: {
@@ -55,6 +57,10 @@ export async function PlayersFilterBar({
   inAddress: boolean;
   searchHidden: Record<string, string>;
   extra?: ReactNode;
+  /** Drawn on the league chips' row. */
+  leagueExtra?: ReactNode;
+  /** Drawn in the top row, after the tabs. */
+  topExtra?: ReactNode;
   teamPicker?: ReactNode;
   tabs?: ReactNode;
 }) {
@@ -62,12 +68,13 @@ export async function PlayersFilterBar({
   const leagues: { code: string; short: string }[] = [{ code: "", short: say("phase.all") }, ...LEAGUES.map((l) => ({ code: l.code, short: l.short }))];
   const chipsShown = !!countries && coverage(countries) !== "none";
   // every address filter (the range is one "from" key, and "to" comes with it) plus the search text
-  const active = Object.keys(searchHidden).filter((k) => k !== "to" && k !== "sort" && k !== "letter_by").length + (q ? 1 : 0);
-  const others = Object.keys(searchHidden).filter((k) => !["to", "sort", "letter_by", "letter", "nat", "from", "league", "q"].includes(k)).length + (league ? 1 : 0);
+  const active = Object.keys(searchHidden).filter((k) => k !== "to" && k !== "sort" && k !== "letter_by" && k !== "sources").length + (q ? 1 : 0);
+  const others = Object.keys(searchHidden).filter((k) => !["to", "sort", "letter_by", "letter", "nat", "from", "league", "q", "sources"].includes(k)).length + (league ? 1 : 0);
   return (
     <div className="pfilters">
       <div className="pf-top">
         {tabs ?? <SegChips aria={say("players.leagueAria")} current={league} items={leagues} href={(code) => href({ league: code || null, team: null })} />}
+        {topExtra}
         <div className="pf-search">
           <SearchBox kind={path === "/admin/people" ? "people" : "players"} action={path} defaultValue={q} league={league} hidden={searchHidden} placeholder={say("players.search")} buttonLabel={say("players.searchGo")} />
         </div>
@@ -76,6 +83,7 @@ export async function PlayersFilterBar({
       <FilterFold label={say("players.filters")} count={others + (nat ? 1 : 0) + (letter ? 1 : 0)}>
         <div className="controls">
           {tabs ? <SegChips aria={say("players.leagueAria")} current={league} items={leagues} href={(code) => href({ league: code || null, team: null })} /> : null}
+          {leagueExtra}
           {teamPicker}
           {extra ? <div className="pfilters-extra">{extra}</div> : null}
         </div>

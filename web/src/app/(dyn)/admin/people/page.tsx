@@ -83,6 +83,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const seasons = parsed.seasons ?? "";
   const dated = parsed.dated ? "yes" : "";
   const source = parsed.source ?? "";
+  const sourcesOn = first(query.sources) === "1" || !!source;
   const sort = parseSort(query.sort, Object.keys(PEOPLE_SORTS), DEF_SORT).slice(0, 1);
   const sortText = formatSort(sort);
   const [result, span, countries, sports, sources, counts, player] = await Promise.all([
@@ -131,7 +132,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     { code: "yes", short: say("peopleAdmin.dated.only") },
   ];
   const filters = filtersOf(parsed, say, locale);
-  const keyCodes = [...new Set([...(result.kind === "ok" ? result.rows.flatMap((p) => p.sources) : []), ...(source ? [source] : [])])].sort();
+  const keyCodes = [...new Set([...(result.kind === "ok" ? result.rows.flatMap((p) => p.sources) : []), ...(sourcesOn && source ? [source] : [])])].sort();
   const table = result.kind === "ok" ? tableOf(result.rows, [
     {
       key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PersonAdminRow) => p.name,
@@ -204,14 +205,17 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
             ...(seasons ? { seasons } : {}),
             ...(dated ? { dated } : {}),
             ...(source ? { source } : {}),
+            ...(first(query.sources) === "1" ? { sources: "1" } : {}),
           }}
+          topExtra={<SegChips aria={say("peopleAdmin.sourceToggle")} current={sourcesOn ? "1" : ""} items={[{ code: "1", short: say("peopleAdmin.sourceToggle") }]} href={() => (sourcesOn ? href({ sources: null, source: null }) : href({ sources: "1" }))} />}
+          leagueExtra={<SegChips aria={say("peopleAdmin.seasons.aria")} current={seasons} items={seasonChips} href={(code) => href({ seasons: code || null })} />}
           extra={
             <>
               {sportChips.length ? (
                 <div className="pfilters-sportrow">
                   <SegChips aria={say("peopleAdmin.sportsAria")} current={sport} items={sportChips} href={(code) => href({ sport: code || null })} />
                   {sportMore.length ? (
-                    <ChipsMore label={say("peopleAdmin.sportsMore", { n: fmt(sportMore.length) })}>
+                    <ChipsMore closeOnRow label={say("peopleAdmin.sportsMore", { n: fmt(sportMore.length) })}>
                       {sportMore.map((item) => (
                         <Link key={item.code} href={href({ sport: item.code })} prefetch={false} aria-current={item.code === sport ? "page" : undefined}>{item.short}</Link>
                       ))}
@@ -219,9 +223,8 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
                   ) : null}
                 </div>
               ) : null}
-              <SegChips aria={say("peopleAdmin.seasons.aria")} current={seasons} items={seasonChips} href={(code) => href({ seasons: code || null })} />
               <SegChips aria={say("peopleAdmin.dated.aria")} current={dated} items={datedChips} href={(code) => href({ dated: code || null })} />
-              {sourceChips.length ? <SegChips aria={say("peopleAdmin.sourcesAria")} current={source} items={sourceChips} href={(code) => href({ source: code || null })} /> : null}
+              {sourcesOn && sourceChips.length ? <SegChips aria={say("peopleAdmin.sourcesAria")} current={source} items={sourceChips} href={(code) => href({ source: code || null })} /> : null}
             </>
           }
         />

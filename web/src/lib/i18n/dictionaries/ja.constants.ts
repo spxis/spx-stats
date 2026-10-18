@@ -2011,6 +2011,7 @@ export const JA: Dictionary = {
   "peopleAdmin.source.placeholder": "出典（wikidata…）",
   "peopleAdmin.source.aria": "出典コード",
   "peopleAdmin.source.col": "出典",
+  "peopleAdmin.sourceToggle": "出典で絞り込む",
   "peopleAdmin.sourceKey.title": "このページの出典",
   "peopleAdmin.sourceKey.note": "「出典」列の短い表記と、各出典の正式名称・ライセンス・リンクです。",
   "peopleAdmin.submit": "検索",

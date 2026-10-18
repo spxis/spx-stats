@@ -2293,6 +2293,7 @@ export const PHRASES = {
   "peopleAdmin.source.placeholder": "Source (wikidata…)",
   "peopleAdmin.source.aria": "Source code",
   "peopleAdmin.source.col": "Source",
+  "peopleAdmin.sourceToggle": "Filter by source",
   "peopleAdmin.sourceKey.title": "Sources on this page",
   "peopleAdmin.sourceKey.note": "The short labels in the Source column, with each source's full name, licence and link.",
   "peopleAdmin.submit": "Search",

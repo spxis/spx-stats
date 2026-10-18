@@ -2011,6 +2011,7 @@ export const FR: Dictionary = {
   "peopleAdmin.source.placeholder": "Source (wikidata…)",
   "peopleAdmin.source.aria": "Code de source",
   "peopleAdmin.source.col": "Source",
+  "peopleAdmin.sourceToggle": "Filtrer par source",
   "peopleAdmin.sourceKey.title": "Sources de cette page",
   "peopleAdmin.sourceKey.note": "Les étiquettes courtes de la colonne Source, avec le nom complet, la licence et le lien de chaque source.",
   "peopleAdmin.submit": "Chercher",
