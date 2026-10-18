@@ -1976,7 +1976,7 @@ export const FR: Dictionary = {
   "peopleAdmin.q.placeholder": "Nom",
   "peopleAdmin.q.aria": "Recherche par nom",
   "peopleAdmin.sport.placeholder": "Sport (athletics, hockey…)",
-  "peopleAdmin.sport.aria": "Code de sport",
+  "peopleAdmin.sport.aria": "Sport",
   "peopleAdmin.country.placeholder": "Pays (JM)",
   "peopleAdmin.country.aria": "Code de pays",
   "peopleAdmin.bornFrom.placeholder": "Né de",

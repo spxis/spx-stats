@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { ChipsMore } from "@/components/ChipsMore";
@@ -8,6 +9,7 @@ import { CHIPS_SHOWN } from "@/components/PlayerCountries";
 import { PlayersFilterBar } from "@/components/PlayersFilterBar";
 import { SegChips } from "@/components/SegChips";
 import { SortTable } from "@/components/SortTable";
+import { SportChip } from "@/components/SportChip";
 import { queryHref } from "@/components/ViewTabs";
 import { requireAdmin } from "@/lib/auth/user";
 import { hasFlag } from "@/lib/flagCodes";
@@ -16,6 +18,7 @@ import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, p
 import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
+import { sportName } from "@/lib/sportNames";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
 import { PeopleTabs } from "./PeopleTabs";
@@ -82,12 +85,11 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   };
   const href = (changes: Record<string, string | null>) => queryHref("/admin/people", query, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
-  const sportLabel = (code: string) => code.replaceAll("_", " ");
   const sportSplit = sports?.length ? chipSplit(sports, sport, CHIPS_SHOWN) : null;
   const sportChips = sportSplit
-    ? [{ code: "", short: say("phase.all") }, ...sportSplit.shown.map((s) => ({ code: s.code, short: sportLabel(s.code) }))]
+    ? [{ code: "", short: say("phase.all") }, ...sportSplit.shown.map((s) => ({ code: s.code, short: sportName(s.code, locale) }))]
     : [];
-  const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportLabel(s.code) })) ?? [];
+  const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportName(s.code, locale) })) ?? [];
   const sourceChips = sources?.length
     ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: s.code.replaceAll("_", " ") }))]
     : [];
@@ -113,7 +115,10 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
         </div>
       ),
     },
-    { key: "sports", label: say("peopleAdmin.sport.aria"), rest: "sports", get: (p: PersonAdminRow) => p.sports[0] ?? "", cell: (p: PersonAdminRow) => (p.sports.length ? p.sports.join(", ") : dash) },
+    {
+      key: "sports", label: say("peopleAdmin.sport.aria"), rest: "sports", get: (p: PersonAdminRow) => p.sports[0] ?? "",
+      cell: (p: PersonAdminRow) => (p.sports.length ? p.sports.map((s, i) => <Fragment key={s}>{i ? " " : null}<SportChip name={sportName(s, locale)} /></Fragment>) : dash),
+    },
     {
       key: "country", label: say("players.colCountry"), title: say("players.countryTitle"), rest: "country",
       get: (p: PersonAdminRow) => (p.country ? countryName(p.country, locale) : ""),

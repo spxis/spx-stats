@@ -2155,7 +2155,7 @@ export const PHRASES = {
   "peopleAdmin.q.placeholder": "Name",
   "peopleAdmin.q.aria": "Search by name",
   "peopleAdmin.sport.placeholder": "Sport (athletics, hockey…)",
-  "peopleAdmin.sport.aria": "Sport code",
+  "peopleAdmin.sport.aria": "Sport",
   "peopleAdmin.country.placeholder": "Country (JM)",
   "peopleAdmin.country.aria": "Country code",
   "peopleAdmin.bornFrom.placeholder": "Born from",

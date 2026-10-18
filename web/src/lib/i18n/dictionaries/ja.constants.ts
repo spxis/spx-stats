@@ -1976,7 +1976,7 @@ export const JA: Dictionary = {
   "peopleAdmin.q.placeholder": "名前",
   "peopleAdmin.q.aria": "名前で検索",
   "peopleAdmin.sport.placeholder": "競技（athletics、hockey…）",
-  "peopleAdmin.sport.aria": "競技コード",
+  "peopleAdmin.sport.aria": "競技",
   "peopleAdmin.country.placeholder": "国（JM）",
   "peopleAdmin.country.aria": "国コード",
   "peopleAdmin.bornFrom.placeholder": "生年（から）",
