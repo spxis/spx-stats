@@ -137,6 +137,7 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   block for Terminal, not a list of steps. At most 3 bullets if a block does not fit. One self-contained block per ask.
   It does the work, prints a short result he can paste back, and waits and checks by itself (for example
   `gh run watch …; curl …`) so he does not have to come back.
+- **Languages (Japanese, German, Spanish, French) are batch-only:** `scripts/i18n/batch.py`, never an interactive reviewer ([section 9](#9-the-website), "Languages").
 - **Say first when you are waiting on him**, plainly, with the one thing he needs to do. If you are blocked (a
   permission refusal, a missing key), that is the first line.
 - **Work out the command before asking for a step.** Before telling John to click through a website or log in to a
@@ -803,9 +804,16 @@ Ask John before deleting or overwriting data. Production changes only through ap
 - **`site/`** is the retired plain-JS site; don't add to it.
 - **Languages:** EN, FR and JA through `web/src/lib/i18n` (`say('key')`, `currentSpeaker()` / `useSpeaker()`, cookie
   `spxn-locale`).
-  - All new UI text goes into `web/src/lib/i18n/phrases.constants.ts` with a best-guess French
-    (`dictionaries/fr.constants.ts`) and Japanese (`dictionaries/ja.constants.ts`) entry. No native review is needed
-    first; note doubts in `web/I18N_TODO.md`.
+  - **Language work is batch-only (John, 2026-10-18).** Translating, drafting and reviewing text in Japanese, German, Spanish and
+    French for this project is done ONLY through the Anthropic Message Batches API with `scripts/i18n/batch.py`
+    ([`scripts/i18n/README.md`](scripts/i18n/README.md)), never by an interactive agent or reviewer; the interactive
+    french-reviewer and japanese-reviewer agents are not used for spx-stats text. Tradeoff: results arrive within hours (a batch ends
+    within 24 h, usually under one), so UI strings ship a batch later. A batch costs half the normal price and `submit` stops above a
+    USD 10 cap on the worst-case estimate. The API key comes from `ANTHROPIC_API_KEY` or the keychain item `spx-stats ANTHROPIC_API_KEY`,
+    never printed, logged or committed. The site ships EN, FR and JA; DE and ES are supported by the tool, not yet site languages.
+  - New UI text goes into `web/src/lib/i18n/phrases.constants.ts` in English only; a key a dictionary lacks shows the English. Its FR and
+    JA entries are added from a batch result (`scripts/i18n/README.md`), not written by hand or by an agent. Note doubts in
+    `web/I18N_TODO.md`. Translated text is never a source of facts.
   - Proper names (teams, players, venues, award names, league codes) are not translated.
 - **John's packages,** pinned at exact versions:
   - `@johnmorrisdotca/chizu`: maps; pass `style: true`.
