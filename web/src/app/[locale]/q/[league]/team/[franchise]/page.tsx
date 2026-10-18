@@ -22,7 +22,7 @@ import { TeamLogo } from "@/components/TeamLogo";
 import { TeamMapCorner } from "@/components/TeamMap";
 import { FranchiseVenueNotes } from "@/components/FranchiseVenueNotes";
 import { VenueMapLazy } from "@/components/VenueMapLazy";
-import { BadgeCup, Trophy } from "@/components/TrophyMark";
+import { BadgeCup, BigTrophy } from "@/components/TrophyMark";
 import { CupsProvider } from "@/components/TrophyIcon";
 import { cupsFor } from "@/lib/cups";
 import { Figures } from "@/components/ui";
@@ -260,7 +260,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
       ) : null}
       {nTitles ? (
         <div className="trophyrow fade">
-          <div className="trophies"><b>{nTitles}</b>{nTitles > 1 && nTitles <= 5 ? <span className="cups">{[...cup.map((c) => c.year), ...t.titles].map((y) => <Trophy key={y} league={lg} className="cup" />)}</span> : <Trophy league={lg} className="cup" />}</div>
+          <div className="trophies"><b>{nTitles}</b>{nTitles > 1 && nTitles <= 5 ? <span className="cups">{[...cup.map((c) => c.year), ...t.titles].map((y) => <BigTrophy key={y} league={lg} className="cup" />)}</span> : <BigTrophy league={lg} className="cup" />}</div>
           <div className="champs">
             <h2>{say("team.championships")}</h2>
             <div className="seasonlist">

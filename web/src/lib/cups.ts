@@ -63,6 +63,16 @@ export function bannerCupSvg(league: string): string {
   return unsized(emblem.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: false }));
 }
 
+/** The leagues whose trophy has its own drawing in the package, so a large cup is drawn in metal for them; the others keep the line cup. */
+const FULL_DRAWING = new Set(["nhl", "nba", "mlb", "nfl", "cfl"]);
+
+/** A cup for a large place beside a count: the full metal drawing (titled with the trophy's name) for a league that has one, else the line cup. */
+export function bigCupSvg(league: string): string {
+  const entry = CUPS[league];
+  if (!entry || !FULL_DRAWING.has(league)) return cupSvg(league);
+  return unsized(entry[0].frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: entry[1] }));
+}
+
 /** The gold, silver or bronze medal of a first, second or third place, in metal so that each keeps its colour, or "" for any other place. */
 export function medalSvg(place: number): string {
   const found = MEDALS[place];

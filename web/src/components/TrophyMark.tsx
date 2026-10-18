@@ -1,10 +1,15 @@
-import { cupSvg } from "@/lib/cups";
+import { bigCupSvg, cupSvg } from "@/lib/cups";
 
 /* No "use client": these are drawn on the server and ship no script. The markup is drawn by the dougu-sports package (lib/cups.ts), never from user input. */
 
 /** A league's trophy as inline SVG. */
 export function Trophy({ league, className }: { league: string; className: string }) {
   return <span className={className} dangerouslySetInnerHTML={{ __html: cupSvg(league) }} />;
+}
+
+/** A league's trophy in the full drawing where the package has one (else the line cup), for the title count of a team page. */
+export function BigTrophy({ league, className }: { league: string; className: string }) {
+  return <span className={className} dangerouslySetInnerHTML={{ __html: bigCupSvg(league) }} />;
 }
 
 /** The small decorative cup in the "Reigning champions" badge. */

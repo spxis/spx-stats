@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
 import { bindTurn, type TurnContainer, type TurnEvent } from "@johnmorrisdotca/dougu-sports/turn";
-import { bannerCupSvg, cupSvg, cupsFor, medalSvg } from "../src/lib/cups.ts";
+import { bannerCupSvg, bigCupSvg, cupSvg, cupsFor, medalSvg } from "../src/lib/cups.ts";
 import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 
 /** Run in web/: pnpm test:trophies (it needs the react-server condition, as lib/cups.ts is server-only). */
@@ -13,6 +13,15 @@ test("every league has a titled cup drawn by the package, in line style, and an 
   assert.equal(cupSvg("unknown"), cupSvg("nhl"));
   assert.match(cupSvg("nhl"), /currentColor/);
   assert.doesNotMatch(cupSvg("nhl"), / width="64"/, "the page's CSS sizes it");
+});
+
+test("a big cup is the full metal drawing for the leagues that have one, and the line cup for the rest", () => {
+  for (const [lg, name] of [["nhl", "Stanley Cup"], ["nba", "Larry O'Brien Trophy"], ["mlb", "Commissioner's Trophy"], ["nfl", "Vince Lombardi Trophy"], ["cfl", "Grey Cup"]]) {
+    assert.match(bigCupSvg(lg), new RegExp(`<title>${name}</title>`));
+    assert.doesNotMatch(bigCupSvg(lg), /currentColor/);
+    assert.doesNotMatch(bigCupSvg(lg), / width="64"/);
+  }
+  for (const lg of ["wnba", "pwhl", "nwsl", "wha", "unknown"]) assert.equal(bigCupSvg(lg), cupSvg(lg), lg);
 });
 
 test("places 1 to 3 have a titled medal in metal, and no other place has one", () => {
