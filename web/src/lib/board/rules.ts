@@ -16,6 +16,8 @@ export type BoardEffort = (typeof BOARD_EFFORTS)[number];
 /** A ticket as the board returns it. */
 export type Ticket = {
   id: string;
+  /** Present once Sumilabu has short ids (SPX-142); absent on an older Sumilabu. */
+  shortId?: string | null;
   projectKey: string;
   title: string;
   detail: string | null;
@@ -61,6 +63,29 @@ export function draftProblems(draft: { title: string; detail: string; askedBy: s
   return problems;
 }
 
+/** Text like SPX-142: what the board calls a short id. A cuid has no hyphen, so the two never look alike. */
+export function looksLikeShortId(text: string): boolean {
+  return /^[A-Za-z][A-Za-z0-9]*-[1-9][0-9]*$/.test(text.trim());
+}
+
+/** The words an edit would leave, refused in words before the board refuses them (the same caps as a draft). Null means leave as is. */
+export function editProblems(edit: { title?: string | null; detail?: string | null }): string[] {
+  const problems: string[] = [];
+  if (edit.title != null) {
+    const title = edit.title.trim();
+    if (title.length < CAPS.titleMin) problems.push(`Say what is wanted in at least ${CAPS.titleMin} characters.`);
+    if (title.length > CAPS.titleMax) problems.push(`A title is at most ${CAPS.titleMax} characters; the rest belongs in the detail.`);
+  }
+  if (edit.detail != null && edit.detail.length > CAPS.detail) problems.push(`The detail is at most ${CAPS.detail.toLocaleString("en-US")} characters.`);
+  return problems;
+}
+
+/** --append: the new text goes after the old detail, a blank line between; nothing to separate when there was no detail. */
+export function appendedDetail(current: string | null, addition: string): string {
+  const text = addition.trim();
+  return current && current.trim() ? `${current.trimEnd()}\n\n${text}` : text;
+}
+
 /** Invariant 7: priority descending, effort ascending, newest move first; ungraded last on both. */
 function rank<T extends string>(order: readonly T[], value: T | null): number {
   return value === null ? order.length : order.indexOf(value);
@@ -81,5 +106,5 @@ export function holdLabel(t: Ticket, nowMs = Date.now()): string {
 
 export function ticketLine(t: Ticket, nowMs = Date.now()): string {
   const grade = [t.priority && `P:${t.priority}`, t.effort && `E:${t.effort}`].filter(Boolean).join(" ");
-  return `${t.id}  ${t.kind === "fix" ? "FIX " : "    "} ${holdLabel(t, nowMs).padEnd(30)} ${grade.padEnd(16)} ${t.title}`;
+  return `${t.shortId ? `${t.shortId.padEnd(8)} ` : ""}${t.id}  ${t.kind === "fix" ? "FIX " : "    "} ${holdLabel(t, nowMs).padEnd(30)} ${grade.padEnd(16)} ${t.title}`;
 }

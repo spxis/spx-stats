@@ -40,7 +40,7 @@ export default async function TicketsPage() {
                       {[t.kind, t.priority && `P:${t.priority}`, t.effort && `E:${t.effort}`, t.claimedBy && holdLabel(t), t.releasedIn].filter(Boolean).join(" · ")}
                     </span>
                     {t.detail ? <p className="note">{t.detail}</p> : null}
-                    <code className="note">{t.id}</code>
+                    <code className="note">{t.shortId ? `${t.shortId} · ${t.id}` : t.id}</code>
                   </li>
                 ))}
               </ul>

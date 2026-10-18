@@ -1,11 +1,13 @@
 import { execFileSync } from "node:child_process";
-import { boardCreate, boardGet, boardGrade, boardHost, boardList, boardMove, boardShip, type MoveOutcome } from "../src/lib/board/client.ts";
+import { boardCreate, boardEdit, boardGet, boardGrade, boardHistory, boardHost, boardList, boardMove, boardResolveId, boardShip, type MoveOutcome } from "../src/lib/board/client.ts";
 import {
   BOARD_EFFORTS,
   BOARD_PRIORITIES,
   CAPS,
+  appendedDetail,
   byQuickWin,
   draftProblems,
+  editProblems,
   isHeldNow,
   leaseExpired,
   ticketLine,
@@ -25,8 +27,11 @@ import {
  *   pnpm task drop <id> --by "<who>"              answered no, kept on the record
  *   pnpm task reopen <id> --by "<who>"            a no reconsidered
  *   pnpm task grade <id> [--priority high|normal|low|none] [--effort small|medium|large|none]
+ *   pnpm task edit <id> [--title "…"] [--detail "…" | --append "…"] --by "<who>"
+ *   pnpm task history <id>                        every edit of a ticket's title or detail
  *
- * <id> is the whole cuid the board prints, never a prefix. The board is on
+ * <id> is the whole cuid the board prints, never a prefix, or the short id
+ * (SPX-142) once Sumilabu has them. The board is on
  * Sumilabu; SUMILABU_BOARD_URL and SUMILABU_BOARD_TOKEN come from the
  * environment (never a file in this repository), or on a Mac from the
  * keychain item "sumilabu board spx-stats".
@@ -43,6 +48,8 @@ if (process.platform === "darwin" && !process.env.SUMILABU_BOARD_TOKEN) {
     delete process.env.SUMILABU_BOARD_TOKEN;
   }
 }
+
+const ID_COMMANDS = ["claim", "release", "done", "drop", "reopen", "grade", "edit", "history"];
 
 function flag(name: string, rest: string[]): string | undefined {
   const at = rest.indexOf(`--${name}`);
@@ -61,8 +68,10 @@ function usage(): never {
       '  pnpm task drop <id> --by "<who>"',
       '  pnpm task reopen <id> --by "<who>"',
       "  pnpm task grade <id> [--priority high|normal|low|none] [--effort small|medium|large|none]",
+      '  pnpm task edit <id> [--title "…"] [--detail "…" | --append "…"] --by "<who>"',
+      "  pnpm task history <id>",
       "",
-      "Use the whole id the board prints, not a prefix.",
+      "Use the whole cuid the board prints, not a prefix, or the short id (SPX-142).",
     ].join("\n"),
   );
   process.exit(2);
@@ -100,6 +109,7 @@ function grade<T extends string>(name: string, rest: string[], allowed: readonly
 
 async function main(): Promise<void> {
   const [command = "list", ...rest] = process.argv.slice(2);
+  if (rest[0] && ID_COMMANDS.includes(command)) rest[0] = await boardResolveId(rest[0]);
   switch (command) {
     case "list": {
       const tasks = await boardList({ unfinished: true });
@@ -125,7 +135,7 @@ async function main(): Promise<void> {
       if (problems.length > 0) fail(problems.join("\n"));
       const created = await boardCreate({ title: title.trim(), detail, kind, askedBy }, askedBy);
       if (!created.ok) fail(created.problems.join("\n"));
-      console.log(`added ${created.ticket.id} on ${boardHost()}`);
+      console.log(`added ${created.ticket.shortId ? `${created.ticket.shortId} (${created.ticket.id})` : created.ticket.id} on ${boardHost()}`);
       break;
     }
     case "claim": {
@@ -197,6 +207,45 @@ async function main(): Promise<void> {
       const graded = await boardGrade(id, { ...(priority !== undefined ? { priority } : {}), ...(effort !== undefined ? { effort } : {}) });
       if (!graded) fail(`No task ${id}.`);
       console.log(`${id} graded on ${boardHost()}`);
+      break;
+    }
+    case "edit": {
+      const [id] = rest;
+      if (!id) usage();
+      const who = actorFrom(rest);
+      const title = flag("title", rest);
+      const detail = flag("detail", rest);
+      const append = flag("append", rest);
+      if (title === undefined && detail === undefined && append === undefined) usage();
+      if (detail !== undefined && append !== undefined) fail("Use --detail to replace the detail or --append to add to it, not both.");
+      let newDetail = detail;
+      if (append !== undefined) {
+        const task = await boardGet(id);
+        if (!task) fail(`No task ${id}.`);
+        newDetail = appendedDetail(task.detail, append);
+      }
+      const problems = editProblems({ title, detail: newDetail });
+      if (problems.length > 0) fail(problems.join("\n"));
+      const edited = await boardEdit(id, { ...(title !== undefined ? { title } : {}), ...(newDetail !== undefined ? { detail: newDetail } : {}) }, who);
+      if (!edited.ok) fail(edited.reason === "invalid" ? edited.problems.join("\n") : edited.message);
+      const fields = [title !== undefined && "title", newDetail !== undefined && "detail"].filter(Boolean).join(" and ");
+      console.log(`${id} ${fields} edited by ${who} on ${boardHost()}`);
+      const kept = await boardHistory(id);
+      if (kept === null) console.log("note: this Sumilabu does not keep an edit history yet, so the old text was not saved.");
+      break;
+    }
+    case "history": {
+      const [id] = rest;
+      if (!id) usage();
+      const edits = await boardHistory(id);
+      if (edits === "missing") fail(`No task ${id}.`);
+      if (edits === null) fail("This Sumilabu does not keep an edit history yet.");
+      if (edits.length === 0) console.log(`${id} has not been edited.`);
+      for (const e of edits) {
+        console.log(`${e.editedAt}  ${e.editedBy ?? "?"}  ${e.field}`);
+        console.log(`    was: ${(e.oldValue ?? "(empty)").replace(/\n/g, "\n         ")}`);
+        console.log(`    now: ${(e.newValue ?? "(empty)").replace(/\n/g, "\n         ")}`);
+      }
       break;
     }
     default:

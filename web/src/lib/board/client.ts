@@ -1,4 +1,4 @@
-import type { BoardEffort, BoardKind, BoardPriority, BoardStatus, Ticket } from "./rules.ts";
+import { looksLikeShortId, type BoardEffort, type BoardKind, type BoardPriority, type BoardStatus, type Ticket } from "./rules.ts";
 
 /**
  * spx-stats' thin client for the shared ticket board on Sumilabu, the same
@@ -119,4 +119,66 @@ export async function boardShip(id: string, ship: { version: string; entryId: st
 export async function boardGrade(id: string, grade: { priority?: BoardPriority | null; effort?: BoardEffort | null }): Promise<Ticket | null> {
   const { status, body } = await call(`/tickets/${encodeURIComponent(id)}`, { method: "PATCH", body: grade });
   return status === 200 ? asTicket(body) : null;
+}
+
+/**
+ * A short id (SPX-142) or a cuid, as the whole cuid. The board takes both on
+ * a newer Sumilabu, but this resolves a short id here from the list, so it
+ * works against any Sumilabu that returns `shortId` on its tickets and says
+ * plainly when it does not yet. A cuid is returned as typed.
+ */
+export async function boardResolveId(id: string): Promise<string> {
+  if (!looksLikeShortId(id)) return id;
+  const tickets = await boardList();
+  const wanted = id.trim().toUpperCase();
+  const found = tickets.find((t) => t.shortId?.toUpperCase() === wanted);
+  if (found) return found.id;
+  if (tickets.length > 0 && tickets.every((t) => !t.shortId)) {
+    throw new Error(`${id}: this Sumilabu has no short ids yet; use the whole id the board prints.`);
+  }
+  return id;
+}
+
+export type EditOutcome =
+  | { ok: true; ticket: Ticket }
+  | { ok: false; reason: "missing" | "done" | "refused" | "unsupported" | "actor"; message: string }
+  | { ok: false; reason: "invalid"; problems: string[] };
+
+/**
+ * A change to the title and/or detail, nothing else. The board keeps the old
+ * and new text in the ticket's history. An older Sumilabu answers this in
+ * ways that look like success or like a bad request, so the ticket it hands
+ * back is checked against what was sent: anything short of the edit having
+ * landed is reported as unsupported, never as done.
+ */
+export async function boardEdit(id: string, edit: { title?: string; detail?: string }, actor: string): Promise<EditOutcome> {
+  const { status, body } = await call(`/tickets/${encodeURIComponent(id)}`, { method: "PATCH", actor, body: edit });
+  const unsupported: EditOutcome = {
+    ok: false,
+    reason: "unsupported",
+    message: "This Sumilabu does not support editing yet (it has not been deployed with the edit change). Nothing was changed.",
+  };
+  if (status === 200) {
+    const ticket = asTicket(body);
+    const landed = (edit.title === undefined || ticket.title === edit.title.trim()) && (edit.detail === undefined || (ticket.detail ?? "") === edit.detail.trim());
+    return landed ? { ok: true, ticket } : unsupported;
+  }
+  if (status === 404) return { ok: false, reason: "missing", message: `No task ${id}.` };
+  if (status === 409) {
+    return body.error === "done"
+      ? { ok: false, reason: "done", message: `${id} is done: its words are part of the release record. File a new ticket that cites it.` }
+      : { ok: false, reason: "refused", message: `${id} cannot be edited right now (${String(body.error)}).` };
+  }
+  if (status === 422) return { ok: false, reason: "invalid", problems: (body.problems as string[]) ?? [String(body.error ?? "refused")] };
+  if (body.error === "actor_required") return { ok: false, reason: "actor", message: "The board needs your name: pass --by \"<who>\"." };
+  return unsupported;
+}
+
+export type HistoryEntry = { field: string; oldValue: string | null; newValue: string | null; editedBy: string | null; editedAt: string };
+
+/** Null when this Sumilabu does not keep a history yet; an empty list for a ticket never edited. */
+export async function boardHistory(id: string): Promise<HistoryEntry[] | null | "missing"> {
+  const { status, body } = await call(`/tickets/${encodeURIComponent(id)}/history`);
+  if (status === 200) return (body.edits as HistoryEntry[]) ?? [];
+  return status === 404 && body.error === "missing" ? "missing" : null;
 }

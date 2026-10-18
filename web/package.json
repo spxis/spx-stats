@@ -15,6 +15,7 @@
     "typecheck": "tsc --noEmit",
     "task": "node scripts/task.ts",
     "logos:library": "python3 ../scripts/logos/library.py",
+    "test:board": "node --test scripts/board.test.ts",
     "test:football": "node --test scripts/earlyFootball.test.ts",
     "test:rivals": "node --test scripts/rivalLeagues.test.ts",
     "test:families": "node --test scripts/leagueFamilies.test.ts",

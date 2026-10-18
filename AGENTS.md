@@ -308,7 +308,10 @@ anywhere. A `200` with a `tickets` array means the board is healthy.
     pnpm task done <id> --by "<who>" --version "<short commit sha>" [--entry "<deployment id or note>"]
     pnpm task drop <id> --by "<who>"     /     pnpm task reopen <id> --by "<who>"
     pnpm task grade <id> --priority high|normal|low|none --effort small|medium|large|none
+    pnpm task edit <id> [--title ".."] [--detail ".." | --append ".."] --by "<who>"   # words only; not on a done ticket
+    pnpm task history <id>                                      # every title/detail edit (needs the Sumilabu edit-history release)
 
+- `<id>` is the whole cuid or, once Sumilabu has short ids, `SPX-142`. An older Sumilabu says so plainly and edit/history report "not supported yet".
 - Order: file it, claim it, build it, deploy it, then `done`. File **before** starting work.
 - A title is 8 to 120 characters, detail up to 4000, and every write names an actor (`--by`, or the name after `claim`).
 - A hold lasts six hours and a live hold is not taken over; a lapsed one shows as "stale hold" and `claim` takes it.
