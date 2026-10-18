@@ -7,6 +7,7 @@ import {
   peopleCountQuery,
   peopleOrder,
   peopleQuery,
+  peopleWhere,
   searchWords,
   type PeopleSearch,
 } from "./adminPeopleQuery";
@@ -78,9 +79,9 @@ const toRow = (r: z.infer<typeof personAdminRow>): PersonAdminRow => ({ ...r, sp
 const OPTS = { tables: [PERSON_ADMIN_TABLE], live: true } as const;
 
 /** Rows of a count/group query on the people table; null when Turso cannot answer, so a chip row simply does not draw. */
-async function sliceOf<S extends z.ZodType>(sql: string, schema: S): Promise<z.infer<S>[] | null> {
+async function sliceOf<S extends z.ZodType>(sql: string, schema: S, args: readonly (string | number | null)[] = []): Promise<z.infer<S>[] | null> {
   try {
-    return await tursoRows(sql, [], schema, OPTS);
+    return await tursoRows(sql, args, schema, OPTS);
   } catch {
     return null;
   }
@@ -156,8 +157,10 @@ export async function peopleSports(): Promise<Count[] | null> {
   return rows.map((r) => ({ code: r.sport, n: r.n }));
 }
 
-export async function peopleSources(): Promise<Count[] | null> {
-  const rows = await sliceOf(`select j.value as source, count(*) as n from ${PERSON_ADMIN_TABLE} p, json_each(p.sources) j group by j.value order by n desc limit 80`, sourceCountSchema);
+/** The source chips' counts: the people the other filters leave, by source; the source filter itself is not applied, so the chips stay choosable. */
+export async function peopleSources(f: PeopleSearch): Promise<Count[] | null> {
+  const w = peopleWhere({ ...f, source: undefined });
+  const rows = await sliceOf(`select j.value as source, count(*) as n from (select sources from ${PERSON_ADMIN_TABLE}${w.sql}) p, json_each(p.sources) j group by j.value order by n desc limit 80`, sourceCountSchema, w.args);
   if (!rows?.length) return null;
   return rows.map((r) => ({ code: r.source, n: r.n }));
 }

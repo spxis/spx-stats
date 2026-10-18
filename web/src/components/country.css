@@ -155,3 +155,5 @@
 .cdonut.compact .clegend li { min-height: 20px; }
 .cdonut.compact .chart { width: 170px; max-width: 100%; }
 @media (max-width: 520px) { .cdonut.compact { grid-template-columns: 1fr; justify-items: start; } .pstrip { gap: 16px; } }
+.seg .chipn { margin-left: 6px; font-weight: 400; color: var(--muted); letter-spacing: 0; }
+.seg [aria-current="page"] .chipn { color: inherit; }

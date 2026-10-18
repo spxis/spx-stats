@@ -6,6 +6,8 @@ export interface SegChip {
   code: string;
   short: string;
   title?: string;
+  /** A count shown after the label, already formatted. */
+  n?: string;
 }
 
 /**
@@ -22,7 +24,7 @@ export function SegChips({ aria, current, items, href }: {
   return (
     <nav className="seg views wrap" aria-label={aria}>
       {items.map((item) => (
-        <Link key={item.code || "all"} href={href(item.code)} prefetch={false} title={item.title} aria-current={item.code === current ? "page" : undefined}>{item.short}</Link>
+        <Link key={item.code || "all"} href={href(item.code)} prefetch={false} title={item.title} aria-current={item.code === current ? "page" : undefined}>{item.short}{item.n ? <span className="chipn">{item.n}</span> : null}</Link>
       ))}
     </nav>
   );

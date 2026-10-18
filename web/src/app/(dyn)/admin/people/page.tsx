@@ -90,7 +90,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     peopleSpan(),
     peopleCountries(),
     peopleSports(),
-    peopleSources(),
+    peopleSources(parsed),
     peopleLetterCounts(letterBy),
     getPlayerPaths(),
   ]);
@@ -119,7 +119,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const byName = new Intl.Collator(LOCALE_TAG[locale], { sensitivity: "base" });
   const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportName(s.code, locale) })).sort((a, b) => byName.compare(a.short, b.short)) ?? [];
   const sourceChips = sources?.length
-    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: sourceLabel(s.code).short, title: sourceLabel(s.code).name }))]
+    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: sourceLabel(s.code).short, title: sourceLabel(s.code).name, n: fmt(s.n) }))]
     : [];
   const seasonChips = [
     { code: "", short: say("phase.all") },
