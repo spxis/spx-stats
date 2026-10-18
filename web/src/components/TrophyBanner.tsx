@@ -20,7 +20,6 @@ export async function TrophyBanner({ lg, year, children }: { lg: string; year?: 
       <figure className="bigcup" title={say(name)}>
         <span className="bigart" role="img" aria-label={say(name)} dangerouslySetInnerHTML={{ __html: bannerCupSvg(lg) }} />
         <TurnTrophy league={lg as TurnLeague} hint={say("trophy.turnHint")} />
-        <figcaption>{say(name)}</figcaption>
       </figure>
       <div className="bbody">{children}</div>
     </section>
