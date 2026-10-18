@@ -85,8 +85,8 @@ const listSchema = z.object({
   jersey_number: z.number().nullable(), status: z.string().nullable(),
 });
 
-/** The leagues whose rosters are archived as lists, without player statistics (NBA, CFL: Wikidata and Wikipedia; NFL: nflverse). */
-const LISTED = new Set(["nba", "nfl", "cfl"]);
+/** The leagues whose rosters are archived as lists, without player statistics (NBA, CFL: Wikidata and Wikipedia; NFL: nflverse from 1973, Wikipedia before; AFL, AAFC: Wikipedia). */
+const LISTED = new Set(["nba", "nfl", "cfl", "afl", "aafc"]);
 
 /** A player on a club's season roster for a league with no player statistics. */
 export interface ListedPlayer {

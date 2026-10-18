@@ -1,4 +1,4 @@
--- Players of the NBA and CFL clubs, with their team seasons: core.person and core.roster_stint from legacy_rosters (migration 092;
+-- Players of the NBA and CFL clubs, and of the NFL (1920-72), AFL and AAFC clubs (Wikipedia rosters only: scripts/rosters/nflwp_*.py), with their team seasons: core.person and core.roster_stint from legacy_rosters (migration 092;
 -- scripts/rosters/). Rerunnable, and safe after scripts/build_core.sh has rebuilt franchises and team seasons (run it after 177): every key
 -- it uses is stable. Two sources, both open:
 --   * Wikidata (CC0): the "member of sports team" (P54) statements of the league's players, for the club items of the league
@@ -66,7 +66,12 @@ create index on lp (qid);
 create temp table signal (league_code text, prop text, value_qid text) on commit drop;
 insert into signal values
   ('nba', 'P106', 'Q3665646'), ('nba', 'P641', 'Q5372'),
-  ('cfl', 'P106', 'Q19841381'), ('cfl', 'P106', 'Q14128148'), ('cfl', 'P106', 'Q19204627'), ('cfl', 'P641', 'Q248534'), ('cfl', 'P641', 'Q41323');
+  ('cfl', 'P106', 'Q19841381'), ('cfl', 'P106', 'Q14128148'), ('cfl', 'P106', 'Q19204627'), ('cfl', 'P641', 'Q248534'), ('cfl', 'P641', 'Q41323'),
+  -- the NFL (1920-72), the AFL and the AAFC: American football player, gridiron football player; the sport American football. These leagues have no
+  -- Wikidata team lists (legacy_rosters.league_player is empty for them), so a name counts only through this signal or an item that states neither.
+  ('nfl', 'P106', 'Q19204627'), ('nfl', 'P106', 'Q14128148'), ('nfl', 'P641', 'Q41323'),
+  ('afl', 'P106', 'Q19204627'), ('afl', 'P106', 'Q14128148'), ('afl', 'P641', 'Q41323'),
+  ('aafc', 'P106', 'Q19204627'), ('aafc', 'P106', 'Q14128148'), ('aafc', 'P641', 'Q41323');
 
 -- ---- 1. The club names, and the seasons each source puts a player in them --------------------------------------------------------
 create function pg_temp.key(t text) returns text language sql immutable as $$ select legacy_wikipedia_awards.name_key(t) $$;

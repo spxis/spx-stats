@@ -1,4 +1,4 @@
-# Club rosters: NBA, NFL, CFL
+# Club rosters: NBA, NFL, CFL, and the NFL's early years, AFL and AAFC
 
 Players with the club seasons they were on, from open sources only. DS1 first, then a data release (AGENTS.md section 8).
 
@@ -7,6 +7,7 @@ Players with the club seasons they were on, from open sources only. DS1 first, t
 | NBA | Wikidata P54 (CC0) + the Roster and Player statistics tables of each "<season> <club> season" article on English Wikipedia (CC BY-SA 4.0) | `wd_fetch.py nba`, `wp_fetch.py nba` | `load.py nba` -> `legacy_rosters.*` (migration 092) | `db/build/179_players_wikidata.sql` |
 | CFL | the same two | `wd_fetch.py cfl`, `wp_fetch.py cfl` | `load.py cfl` | `179_players_wikidata.sql` (same step, both leagues) |
 | NFL | nflverse `roster_<season>.csv` (CC BY 4.0), without other sites' id columns | `nflverse_fetch.py` | `nflverse_load.py` -> `legacy_nflverse.roster` (migration 094) | `db/build/181_players_nflverse.sql` |
+| NFL 1920-72, AFL 1960-69, AAFC 1946-49 | English Wikipedia club-season articles (CC BY-SA 4.0), read from the wikitext `scripts/nfl/season.py` already archived (no new request); each linked player's Wikidata item (CC0) | `nflwp_fetch.py extract`, `titles`, `persons` | `nflwp_load.py` -> `legacy_rosters.*` (league codes `nfl`, `afl`, `aafc`) | `db/build/179_players_wikidata.sql` (same step) |
 
 Never used: Basketball Reference, Pro Football Reference, ESPN, NBA.com, NFL.com, CFL.ca. The ESPN, Pro Football Reference, PFF, Yahoo and other
 sites' player ids in the nflverse files are dropped at download (`nflverse_fetch.py` DROP) and never stored.
@@ -58,3 +59,25 @@ then `db/checks`, then a data release of `core.person, core.roster_stint, core.e
   to the one with that name and a statement for that very club.
 - A club season whose article lists five or more players is read from the article alone; Wikidata fills the others from its dated P54 statements.
 - Everything unplaced is in `meta.data_issue` (`roster_team`, `roster_article`, `roster_player`) with counts, not guessed.
+
+## NFL 1920-72, AFL and AAFC (club-season articles, no new migration)
+
+These leagues have no Wikidata team lists, so a player is placed only through the article his name links to: the article's Wikidata item must be a
+human with an American-football (or gridiron) occupation or sport, or state neither. No name is matched without a link. Needs no migration (092 is enough).
+
+    R=~/Projects/backups/spx-stats/raw
+    D=2026-10-18
+    # 1. the club-season roster sections, read from the cached wikitext (no request); newest cache last
+    python3 -I scripts/rosters/nflwp_fetch.py extract $R/wikipedia_nfl/2026-10-12 $R/wikipedia_nfl/2026-10-15 $R/wikipedia_nfl_rosters/$D
+    # 2. the Wikidata item of each linked player article (about 6,700 titles, 50 a call), then those items (2 s a call, resumable, about 20 minutes)
+    python3 -I scripts/rosters/nflwp_fetch.py titles  $R/wikipedia_nfl_rosters/$D
+    python3 -I scripts/rosters/nflwp_fetch.py persons $R/wikipedia_nfl_rosters/$D
+    # 3. SQL for DS1 (legacy_rosters rows and the archive of these raw files), then the build step 179
+    python3 -I scripts/rosters/nflwp_load.py $R/wikipedia_nfl_rosters/$D ~/Projects/backups/spx-stats/rosters-$D-nflwp.sql
+    bash scripts/mac/ds1-apply.sh ~/Projects/backups/spx-stats/rosters-$D-nflwp.sql --force
+    bash scripts/mac/ds1-apply.sh db/build/179_players_wikidata.sql
+
+`nflwp_parse.py` reads the formats the articles use (`{{NFLplayer}}`, `* {{player|n}} [[Name]]`, `*88 ''[[Name]]''`, `<span>` numbers, `14 [[Name]]<br>`,
+`n - [[Name]]`, wikitables with one row or one cell a line, a roster under `==Players==` or after a Staff sub-heading). Tests: `python3 -I scripts/rosters/test_nflwp_parse.py`.
+A club season whose article has no Roster section (153 of 825, mostly 1920-38) is a hole, logged in `meta.data_issue` (`roster_article`), never filled from another source.
+Rerunning 179 also reruns the NBA and CFL parts; it is rerunnable and writes the same rows for them.
