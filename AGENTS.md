@@ -110,6 +110,9 @@ data repair. If you start a subagent, copy this section into its instructions; i
   page is the only exception; one page per language, linked); each project uses only its own port block (John's port table); nothing
   that bills (GitHub Actions only on public repositories, no paid plan, service or add-on without John's yes); whenever you write
   Japanese that John will see or send, give him the English beside it, because he does not read Japanese.
+- **John's reference images and resources** (photos, examples, design references) live in Dropbox under
+  `/Projects/Resources/<project>/<topic>/` with descriptive file names, never in a machine-only folder. Tickets and briefs point to
+  that path. Agents read from it and add files only when John supplies them. Never commit them (photo licences are unknown).
 - **Nothing on GitHub but pushes to `main`.** No issues, pull requests, discussions, releases or comments on any of John's
   repositories: the `gh` login is John's own account, so they appear publicly under his name. The queue is the Sumilabu board.
   *Broken:* four issues appeared on a package repository on 2026-10-15.
@@ -492,6 +495,7 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
 - **DS1** (Postgres in Docker on nas1, reached on the home LAN or over the VPN; the addresses are in the private host mapping, `scripts/mac/lib/hosts.sh`) is the
   permanent **source of truth**: all `legacy_*` schemas, `legacy_files.raw_archive`, `core`, `meta`, `ref`, `api`.
 - **Dropbox** `/Backups/spx-stats/raw/<source>/<year or date>/` holds a hard copy of every raw download.
+  John's reference images go in `/Projects/Resources/<project>/<topic>/` (Mac: `~/Library/CloudStorage/Dropbox/Projects/Resources/`), not in the repo.
 - **Production** is Supabase project `njpvfrceahkvnrduerkk`: a published subset (schemas meta, ref, core and api only;
   no `legacy_*`), changed only by approved data releases (item 5). It is on a 500 MB plan and held 347 MB on 2026-10-11. Read it any time
   with the Supabase MCP `execute_sql` (tested).
