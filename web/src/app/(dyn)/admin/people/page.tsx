@@ -18,7 +18,7 @@ import { hasFlag } from "@/lib/flagCodes";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { listTitle } from "@/lib/listTitle";
-import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, NO_SPORT, type PersonAdminRow } from "@/lib/adminPeople";
+import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleRoles, peopleSources, peopleSpan, peopleSports, searchPeople, NO_SPORT, type PersonAdminRow } from "@/lib/adminPeople";
 import { LOCALE_TAG, type Locale } from "@/lib/locale";
 import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
@@ -43,6 +43,11 @@ const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v
 
 const dash = <span className="note">–</span>;
 
+const ROLES = ["player", "coach", "referee", "executive"] as const;
+/** A person's kind in the reader's language; a kind not listed yet is shown as written, capitalised. */
+const roleName = (kind: string, say: Speaker["say"]): string =>
+  (ROLES as readonly string[]).includes(kind) ? say(`peopleAdmin.role.${kind}` as "peopleAdmin.role.coach") : kind.charAt(0).toUpperCase() + kind.slice(1).replaceAll("_", " ");
+
 function years(from: number | null, to: number | null): string | null {
   if (from == null) return null;
   return to == null || to === from ? String(from) : `${from}–${to}`;
@@ -55,11 +60,13 @@ function filtersOf(parsed: ReturnType<typeof parsePeopleSearch>, say: Speaker["s
   const sport = parsed.sport ?? "";
   const seasons = parsed.seasons ?? "";
   const source = parsed.source ?? "";
+  const role = parsed.role ?? "";
   return [
     league ? league.toUpperCase() : "",
     sport ? (sport === NO_SPORT ? say("peopleAdmin.sport.other") : sportName(sport, locale)) : "",
     nat ? countryName(nat, locale) : "",
     seasons ? (seasons === "yes" ? say("peopleAdmin.seasons.yes") : say("peopleAdmin.seasons.no")) : "",
+    role ? roleName(role, say) : "",
     source ? sourceLabel(source).name : "",
   ].filter(Boolean);
 }
@@ -83,15 +90,17 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const seasons = parsed.seasons ?? "";
   const dated = parsed.dated ? "yes" : "";
   const source = parsed.source ?? "";
+  const role = parsed.role ?? "";
   const sourcesOn = first(query.sources) === "1" || !!source;
   const sort = parseSort(query.sort, Object.keys(PEOPLE_SORTS), DEF_SORT).slice(0, 1);
   const sortText = formatSort(sort);
-  const [result, span, countries, sports, sources, counts, player] = await Promise.all([
+  const [result, span, countries, sports, sources, roles, counts, player] = await Promise.all([
     searchPeople(parsed, parsed.page, sort),
     peopleSpan(),
     peopleCountries(),
     peopleSports(),
     peopleSources(parsed),
+    peopleRoles(parsed),
     peopleLetterCounts(letterBy),
     getPlayerPaths(),
   ]);
@@ -109,6 +118,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     seasons: seasons || null,
     dated: dated || null,
     source: source || null,
+    role: role || null,
     after: null,
   };
   const href = (changes: Record<string, string | null>) => queryHref("/admin/people", query, { ...keep, page: null, ...changes });
@@ -134,6 +144,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const sourceChips = sources?.length
     ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: sourceLabel(s.code).short, title: sourceLabel(s.code).name, n: fmt(s.n) }))]
     : [];
+  const roleChips = roles && roles.length > 1 ? [{ code: "", short: say("phase.all") }, ...roles.map((r) => ({ code: r.code, short: roleName(r.code, say), n: fmt(r.n) }))] : [];
   const seasonChips = [
     { code: "", short: say("phase.all") },
     { code: "yes", short: say("peopleAdmin.seasons.yesChip") },
@@ -151,7 +162,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
       cell: (p: PersonAdminRow) => (
         <div>
           {p.leagues?.[0] ? <Link href={player(p.person_id, p.name, p.leagues[0])} prefetch={false}>{p.name}</Link> : <strong>{p.name}</strong>}
-          <div className="note">#{p.person_id}{p.kind !== "player" ? `, ${p.kind}` : ""}</div>
+          <div className="note">#{p.person_id}{p.kind !== "player" ? <> <SportChip name={roleName(p.kind, say)} /></> : null}</div>
         </div>
       ),
     },
@@ -165,7 +176,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
       cell: (p: PersonAdminRow) => (p.country ? <NatLink href={href({ nat: p.country.toUpperCase() })} title={say("players.byCountry", { name: countryName(p.country, locale) })} code={hasFlag(p.country) ? p.country : null} /> : null),
     },
     {
-      key: "born", label: say("col.years"), cls: "nowrap", rest: "birth_year", get: (p: PersonAdminRow) => p.birth_year,
+      key: "born", label: say("peopleAdmin.born.col"), cls: "nowrap", rest: "birth_year", get: (p: PersonAdminRow) => p.birth_year,
       cell: (p: PersonAdminRow) => {
         const born = p.birth_date ?? (p.birth_year != null ? String(p.birth_year) : null);
         const died = p.death_date ?? (p.death_year != null ? String(p.death_year) : null);
@@ -217,6 +228,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
             ...(seasons ? { seasons } : {}),
             ...(dated ? { dated } : {}),
             ...(source ? { source } : {}),
+            ...(role ? { role } : {}),
             ...(first(query.sources) === "1" ? { sources: "1" } : {}),
           }}
           topExtra={<SegChips aria={say("peopleAdmin.sourceToggle")} current={sourcesOn ? "1" : ""} items={[{ code: "1", short: say("peopleAdmin.sourceToggle") }]} href={() => (sourcesOn ? href({ sources: null, source: null }) : href({ sources: "1" }))} />}
@@ -238,6 +250,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
                   ) : null}
                 </div>
               ) : null}
+              {roleChips.length ? <SegChips aria={say("peopleAdmin.roleAria")} current={role} items={roleChips} href={(code) => href({ role: code || null })} /> : null}
               <SegChips aria={say("peopleAdmin.dated.aria")} current={dated} items={datedChips} href={(code) => href({ dated: code || null })} />
               {sourcesOn && sourceChips.length ? <SegChips aria={say("peopleAdmin.sourcesAria")} current={source} items={sourceChips} href={(code) => href({ source: code || null })} /> : null}
             </>

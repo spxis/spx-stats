@@ -115,6 +115,13 @@ test("a keyset cursor continues after the last row, with empty values last", () 
   assert.equal(parsePeopleSearch({ after: cursor }).after, cursor);
 });
 
+test("a role is an allow-listed kind matched exactly", () => {
+  const w = peopleWhere(parsePeopleSearch({ role: "Coach" }));
+  assert.equal(w.sql, " where kind = ?");
+  assert.deepEqual(w.args, ["coach"]);
+  assert.equal(parsePeopleSearch({ role: "coach;drop" }).role, undefined);
+});
+
 test("hockey and ice hockey are one sport, and none selects people with no sport or activity", () => {
   assert.deepEqual(peopleWhere({ words: [], sport: "ice_hockey" }).args, ["hockey", "ice_hockey"]);
   assert.deepEqual(peopleWhere({ words: [], sport: "hockey" }).args, ["hockey", "ice_hockey"]);

@@ -1,7 +1,7 @@
 /**
  * The SQL behind the admin people list (Turso table api_person_admin). Pure: nothing a caller types reaches the
  * query unchecked. Same filter keys as /players (`q`, `nat`, `letter`, `letter_by`, `from`, `to`,
- * `league`, `sort`, `page`, `after`) plus `sport`, `seasons` and `source`. Used by the admin page
+ * `league`, `sort`, `page`, `after`) plus `sport`, `seasons`, `source` and `role`. Used by the admin page
  * and by scripts/adminPeople.test.ts.
  */
 import { isLeague } from "./leagues.ts";
@@ -34,6 +34,7 @@ export const PERSON_ADMIN_SELECT = [
 
 const SPORT = /^[a-z][a-z0-9_]{0,39}$/;
 const SOURCE = /^[a-z][a-z0-9_]{0,39}$/;
+const ROLE = /^[a-z][a-z0-9_]{0,39}$/;
 const COUNTRY = /^[A-Za-z]{2}$/;
 
 /** The sport filter's code for people with no sport or activity at all (derived, never stored). */
@@ -56,6 +57,8 @@ export interface PeopleSearch {
   /** Only people with a known year (a club season or a birth year) when a range is set. */
   dated?: boolean;
   source?: string;
+  /** core.person.kind: player, coach, referee, executive... */
+  role?: string;
   letter?: string;
   letterBy?: LetterBy;
   /** Opaque keyset cursor (`?after=`), the same encoding as the list APIs. */
@@ -84,6 +87,11 @@ export function readSport(raw: string | null | undefined): string | undefined {
 export function readSource(raw: string | null | undefined): string | undefined {
   const s = (raw ?? "").trim().toLowerCase();
   return SOURCE.test(s) ? s : undefined;
+}
+
+export function readRole(raw: string | null | undefined): string | undefined {
+  const s = (raw ?? "").trim().toLowerCase();
+  return ROLE.test(s) ? s : undefined;
 }
 
 export function readCountry(raw: string | null | undefined): string | undefined {
@@ -127,6 +135,7 @@ export function parsePeopleSearch(q: Record<string, string | string[] | undefine
     seasons: readSeasons(one(q, "seasons")),
     dated: one(q, "dated") === "yes" ? true : undefined,
     source: readSource(one(q, "source")),
+    role: readRole(one(q, "role")),
     letter: letter ?? undefined,
     letterBy: one(q, "letter_by") === "first" ? "first" : "last",
     after: after || undefined,
@@ -169,6 +178,7 @@ export function peopleWhere(f: PeopleSearch): Sql {
     ...(yearWhere(f) ? [yearWhere(f) as Sql] : []),
     ...(f.seasons ? [{ sql: `has_seasons = ${f.seasons === "yes" ? 1 : 0}`, args: [] }] : []),
     ...(f.source ? [{ sql: inList("sources"), args: [f.source] }] : []),
+    ...(f.role ? [{ sql: "kind = ?", args: [f.role] }] : []),
     ...(letter ? [{ sql: `${letterCol} = ?`, args: [letter] }] : []),
   ];
   return { sql: parts.length ? ` where ${parts.map((p) => p.sql).join(" and ")}` : "", args: parts.flatMap((p) => p.args) };

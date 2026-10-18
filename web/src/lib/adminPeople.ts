@@ -171,6 +171,14 @@ export async function peopleSources(f: PeopleSearch): Promise<Count[] | null> {
   return rows.map((r) => ({ code: r.source, n: r.n }));
 }
 
+/** The role chips' counts (core.person.kind): the people the other filters leave, by kind; the role filter itself is not applied. */
+export async function peopleRoles(f: PeopleSearch): Promise<Count[] | null> {
+  const w = peopleWhere({ ...f, role: undefined });
+  const rows = await sliceOf(`select kind, count(*) as n from ${PERSON_ADMIN_TABLE}${w.sql} group by kind order by n desc limit 20`, z.object({ kind: str, n: int }), w.args);
+  if (!rows?.length) return null;
+  return rows.map((r) => ({ code: r.kind, n: r.n }));
+}
+
 /** A–Z counts of the people table. Null greys nothing, as /players does without player_letters. */
 export async function peopleLetterCounts(by: "last" | "first"): Promise<Map<string, number> | null> {
   const col = by === "first" ? "letter_first" : "letter_last";
