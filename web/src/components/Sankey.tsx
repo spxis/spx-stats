@@ -3,6 +3,7 @@
 import { sankey, type SankeyLink, type SankeyNode } from "d3-sankey";
 import Link from "@/components/Link";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from "react";
+import { headingLines } from "@/lib/sankeyHeadings";
 import { TipLines, useTooltip } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
 import "./sankey.css";
@@ -141,6 +142,7 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
   const cols = Math.max(columnTitles.length, 1);
   const innerW = Math.max(W - 2, cols * minPitch);
   const room = Math.round(innerW / cols) - 12;
+  const gap = cols > 1 ? (innerW - room - NODE_W - 4) / (cols - 1) : room + NODE_W;
 
   const layout = useMemo(() => {
     const colTotals = new Map<number, { sum: number; n: number }>();
@@ -257,9 +259,9 @@ export default function Sankey({ nodes, links, columnTitles, labels, unitPx, hei
         <svg width={innerW} height={layout.H} viewBox={`0 0 ${innerW} ${layout.H}`} role="group" aria-label={labels.aria}
           onPointerDown={(e) => { pointer.current = e.pointerType || "mouse"; }}
           onClick={(e) => { if (e.target === e.currentTarget) { setActive(null); setKept(null); } }}>
-          {columnTitles.map((t, c) => (
-            <text key={c} className="sk-col" x={colX(c)} y={14}>{fit(t, room + NODE_W)}</text>
-          ))}
+          {columnTitles.map((t, c) => headingLines(t, gap - 8).map((line, i, all) => (
+            <text key={`${c}-${i}`} className="sk-col" x={colX(c)} y={all.length > 1 ? 9 + i * 13 : 14}>{i === 0 ? <title>{t}</title> : null}{line}</text>
+          )))}
           <g className="sk-links">
             {layout.links.map((l) => {
               const s = l.source as SankeyNode<N, L>, t = l.target as SankeyNode<N, L>;
