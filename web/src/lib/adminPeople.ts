@@ -8,6 +8,7 @@ import {
   peopleOrder,
   peopleQuery,
   peopleWhere,
+  NO_SPORT,
   searchWords,
   type PeopleSearch,
 } from "./adminPeopleQuery";
@@ -21,6 +22,7 @@ import { jsonStrings, tursoRows } from "./turso/client";
 
 export {
   PEOPLE_PER_PAGE,
+  NO_SPORT,
   PEOPLE_SORTS,
   parsePeopleSearch,
   peopleOrder,
@@ -151,10 +153,14 @@ export async function peopleCountries(): Promise<Tally | null> {
   return pairs.length ? tally(pairs) : null;
 }
 
+/** The sport / activity chips' counts, people counted once (hockey and ice hockey together), then a last row `none` for people with no sport or activity. */
 export async function peopleSports(): Promise<Count[] | null> {
-  const rows = await sliceOf(`select j.value as sport, count(*) as n from ${PERSON_ADMIN_TABLE} p, json_each(p.sports) j group by j.value order by n desc limit 80`, sportCountSchema);
+  const [rows, none] = await Promise.all([
+    sliceOf(`select case j.value when 'hockey' then 'ice_hockey' else j.value end as sport, count(distinct p.person_id) as n from ${PERSON_ADMIN_TABLE} p, json_each(p.sports) j group by 1 order by n desc limit 300`, sportCountSchema),
+    sliceOf(`select count(*) as n from ${PERSON_ADMIN_TABLE} where json_array_length(sports) = 0`, z.object({ n: int })),
+  ]);
   if (!rows?.length) return null;
-  return rows.map((r) => ({ code: r.sport, n: r.n }));
+  return [...rows.map((r) => ({ code: r.sport, n: r.n })), ...(none?.[0]?.n ? [{ code: NO_SPORT, n: none[0].n }] : [])];
 }
 
 /** The source chips' counts: the people the other filters leave, by source; the source filter itself is not applied, so the chips stay choosable. */

@@ -94,7 +94,7 @@ test("the query is one statement with allow-listed filters and every value bound
   assert.equal(q.sql.includes("drop"), false);
   assert.equal(q.sql.includes("'"), false);
   assert.equal(q.sql.includes(";"), false);
-  assert.ok(q.sql.includes("exists (select 1 from json_each(sports) where value = ?)"));
+  assert.ok(q.sql.includes("exists (select 1 from json_each(sports) where value in (?))"));
   assert.ok(q.sql.includes("exists (select 1 from json_each(sources) where value = ?)"));
   assert.ok(q.sql.includes("has_seasons = 0"));
   assert.ok(q.args.includes("athletics") && q.args.includes("wikidata_meigen") && q.args.includes("JM"));
@@ -113,4 +113,12 @@ test("a keyset cursor continues after the last row, with empty values last", () 
   assert.ok(q.sql.includes("where search like ? and ((name > ?)"));
   const cursor = cursorOf("name.asc", ["Bolt", 1]);
   assert.equal(parsePeopleSearch({ after: cursor }).after, cursor);
+});
+
+test("hockey and ice hockey are one sport, and none selects people with no sport or activity", () => {
+  assert.deepEqual(peopleWhere({ words: [], sport: "ice_hockey" }).args, ["hockey", "ice_hockey"]);
+  assert.deepEqual(peopleWhere({ words: [], sport: "hockey" }).args, ["hockey", "ice_hockey"]);
+  const none = peopleWhere({ words: [], sport: "none" });
+  assert.equal(none.sql, " where json_array_length(sports) = 0");
+  assert.deepEqual(none.args, []);
 });

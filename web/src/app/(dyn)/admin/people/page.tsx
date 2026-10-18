@@ -18,12 +18,12 @@ import { hasFlag } from "@/lib/flagCodes";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { listTitle } from "@/lib/listTitle";
-import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
+import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, NO_SPORT, type PersonAdminRow } from "@/lib/adminPeople";
 import { LOCALE_TAG, type Locale } from "@/lib/locale";
 import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
-import { sportName } from "@/lib/sportNames";
+import { sportCategory, sportName } from "@/lib/sportNames";
 import { sourceLabel } from "@/lib/sourceLabels";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
@@ -57,7 +57,7 @@ function filtersOf(parsed: ReturnType<typeof parsePeopleSearch>, say: Speaker["s
   const source = parsed.source ?? "";
   return [
     league ? league.toUpperCase() : "",
-    sport ? sportName(sport, locale) : "",
+    sport ? (sport === NO_SPORT ? say("peopleAdmin.sport.other") : sportName(sport, locale)) : "",
     nat ? countryName(nat, locale) : "",
     seasons ? (seasons === "yes" ? say("peopleAdmin.seasons.yes") : say("peopleAdmin.seasons.no")) : "",
     source ? sourceLabel(source).name : "",
@@ -113,12 +113,24 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   };
   const href = (changes: Record<string, string | null>) => queryHref("/admin/people", query, { ...keep, page: null, ...changes });
   const to = (page: number) => href({ page: page > 1 ? String(page) : null });
-  const sportSplit = sports?.length ? chipSplit(sports, sport, CHIPS_SHOWN) : null;
+  const sportList = sports?.filter((s) => s.code !== NO_SPORT) ?? [];
+  const noSport = sports?.find((s) => s.code === NO_SPORT);
+  const sportSplit = sportList.length ? chipSplit(sportList, sport, CHIPS_SHOWN) : null;
   const sportChips = sportSplit
-    ? [{ code: "", short: say("phase.all") }, ...sportSplit.shown.map((s) => ({ code: s.code, short: sportName(s.code, locale) }))]
+    ? [
+        { code: "", short: say("phase.all") },
+        ...sportSplit.shown.map((s) => ({ code: s.code, short: sportName(s.code, locale), n: fmt(s.n) })),
+        ...(noSport ? [{ code: NO_SPORT, short: say("peopleAdmin.sport.other"), n: fmt(noSport.n) }] : []),
+      ]
     : [];
   const byName = new Intl.Collator(LOCALE_TAG[locale], { sensitivity: "base" });
-  const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportName(s.code, locale) })).sort((a, b) => byName.compare(a.short, b.short)) ?? [];
+  const moreOf = (category: "sport" | "activity") =>
+    (sportSplit?.more ?? []).filter((s) => sportCategory(s.code) === category).map((s) => ({ code: s.code, short: sportName(s.code, locale), n: fmt(s.n) })).sort((a, b) => byName.compare(a.short, b.short));
+  const moreGroups = [
+    { key: "sport", title: say("peopleAdmin.sports.group"), items: moreOf("sport") },
+    { key: "activity", title: say("peopleAdmin.activities.group"), items: moreOf("activity") },
+  ].filter((g) => g.items.length);
+  const sportMoreCount = moreGroups.reduce((n, g) => n + g.items.length, 0);
   const sourceChips = sources?.length
     ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: sourceLabel(s.code).short, title: sourceLabel(s.code).name, n: fmt(s.n) }))]
     : [];
@@ -145,7 +157,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     },
     {
       key: "sports", label: say("peopleAdmin.sport.aria"), rest: "sports", get: (p: PersonAdminRow) => p.sports[0] ?? "",
-      cell: (p: PersonAdminRow) => (p.sports.length ? p.sports.map((s, i) => <Fragment key={s}>{i ? " " : null}<SportChip name={sportName(s, locale)} /></Fragment>) : dash),
+      cell: (p: PersonAdminRow) => (p.sports.length ? [...new Set(p.sports.map((s) => sportName(s, locale)))].map((n, i) => <Fragment key={n}>{i ? " " : null}<SportChip name={n} /></Fragment>) : dash),
     },
     {
       key: "country", label: say("players.colCountry"), title: say("players.countryTitle"), rest: "country",
@@ -214,10 +226,13 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
               {sportChips.length ? (
                 <div className="pfilters-sportrow">
                   <SegChips aria={say("peopleAdmin.sportsAria")} current={sport} items={sportChips} href={(code) => href({ sport: code || null })} />
-                  {sportMore.length ? (
-                    <ChipsMore closeOnRow label={say("peopleAdmin.sportsMore", { n: fmt(sportMore.length) })}>
-                      {sportMore.map((item) => (
-                        <Link key={item.code} href={href({ sport: item.code })} prefetch={false} aria-current={item.code === sport ? "page" : undefined}>{item.short}</Link>
+                  {sportMoreCount ? (
+                    <ChipsMore closeOnRow label={say("peopleAdmin.sportsMore", { n: fmt(sportMoreCount) })}>
+                      {moreGroups.map((g) => (
+                        <div className="pmore-group" key={g.key}>
+                          <p className="note">{g.title}</p>
+                          <SegChips aria={g.title} current={sport} items={g.items} href={(code) => href({ sport: code })} />
+                        </div>
                       ))}
                     </ChipsMore>
                   ) : null}

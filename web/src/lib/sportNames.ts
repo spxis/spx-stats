@@ -2,9 +2,10 @@ import { LOCALES, type Locale } from "@/lib/locale";
 
 /**
  * The name of each sport or activity code a person carries (core.person_sport, from Wikidata P641), in English, French and Japanese, in
- * LOCALES order. A code not listed yet is shown as written, with its underscores spaced. `hockey` and `ice_hockey` are both the ice game.
+ * LOCALES order. A fourth entry, "activity", marks what is not a competitive sport (stunts, high wire, mountaineering...); the rest are sports. A code
+ * not listed yet is shown as written, with its underscores spaced, and counts as a sport. `hockey` and `ice_hockey` are both the ice game.
  */
-const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
+const SPORT_NAMES: Record<string, readonly [string, string, string, "activity"?]> = {
   acrobatic_gymnastics: ["Acrobatic gymnastics", "Gymnastique acrobatique", "アクロバティック体操"],
   alpine_skiing: ["Alpine skiing", "Ski alpin", "アルペンスキー"],
   american_football: ["American football", "Football américain", "アメリカンフットボール"],
@@ -43,17 +44,17 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   drag_racing: ["Drag racing", "Course de dragsters", "ドラッグレース"],
   endurance_motor_racing: ["Endurance motor racing", "Course d’endurance automobile", "耐久レース"],
   english_billiards: ["English billiards", "Billard anglais", "イングリッシュビリヤード"],
-  entertainment: ["Entertainment", "Divertissement", "エンターテインメント"],
+  entertainment: ["Entertainment", "Divertissement", "エンターテインメント", "activity"],
   equestrian: ["Equestrian", "Équitation", "馬術"],
   fencing: ["Fencing", "Escrime", "フェンシング"],
   field_hockey: ["Field hockey", "Hockey sur gazon", "フィールドホッケー"],
   figure_skating: ["Figure skating", "Patinage artistique", "フィギュアスケート"],
-  film_stunts: ["Film stunts", "Cascades au cinéma", "映画スタント"],
-  fishing: ["Fishing", "Pêche", "釣り"],
+  film_stunts: ["Film stunts", "Cascades au cinéma", "映画スタント", "activity"],
+  fishing: ["Fishing", "Pêche", "釣り", "activity"],
   floorball: ["Floorball", "Floorball", "フロアボール"],
   formula_one: ["Formula One", "Formule 1", "F1"],
   freediving: ["Freediving", "Apnée", "フリーダイビング"],
-  freerunning: ["Freerunning", "Freerunning", "フリーランニング"],
+  freerunning: ["Freerunning", "Freerunning", "フリーランニング", "activity"],
   freestyle_motocross: ["Freestyle motocross", "Motocross freestyle", "フリースタイルモトクロス"],
   freestyle_skiing: ["Freestyle skiing", "Ski acrobatique", "フリースタイルスキー"],
   freestyle_wrestling: ["Freestyle wrestling", "Lutte libre", "フリースタイルレスリング"],
@@ -65,13 +66,13 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   greco_roman_wrestling: ["Greco-Roman wrestling", "Lutte gréco-romaine", "グレコローマン・レスリング"],
   gymnastics: ["Gymnastics", "Gymnastique", "体操"],
   handball: ["Handball", "Handball", "ハンドボール"],
-  high_wire: ["High wire", "Funambulisme", "ハイワイヤー"],
+  high_wire: ["High wire", "Funambulisme", "ハイワイヤー", "activity"],
   hockey: ["Ice hockey", "Hockey sur glace", "アイスホッケー"],
   horse_racing: ["Horse racing", "Courses hippiques", "競馬"],
   hurling: ["Hurling", "Hurling", "ハーリング"],
   ice_hockey: ["Ice hockey", "Hockey sur glace", "アイスホッケー"],
   indycar: ["IndyCar", "IndyCar", "インディカー"],
-  jet_wing: ["Jet wing", "Jet wing", "ジェットウイング"],
+  jet_wing: ["Jet wing", "Jet wing", "ジェットウイング", "activity"],
   judo: ["Judo", "Judo", "柔道"],
   kabaddi: ["Kabaddi", "Kabaddi", "カバディ"],
   karate: ["Karate", "Karaté", "空手"],
@@ -80,7 +81,7 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   kickboxing: ["Kickboxing", "Kickboxing", "キックボクシング"],
   kiteboarding: ["Kiteboarding", "Kitesurf", "カイトボーディング"],
   lacrosse: ["Lacrosse", "Crosse", "ラクロス"],
-  lifesaving: ["Lifesaving", "Sauvetage", "ライフセービング"],
+  lifesaving: ["Lifesaving", "Sauvetage", "ライフセービング", "activity"],
   luge: ["Luge", "Luge", "リュージュ"],
   marathon_swimming: ["Marathon swimming", "Nage en eau libre longue distance", "マラソンスイミング"],
   mma: ["Mixed martial arts", "Arts martiaux mixtes", "総合格闘技"],
@@ -89,7 +90,7 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   motorcycle_racing: ["Motorcycle racing", "Course de motos", "オートバイレース"],
   motorcycle_trials: ["Motorcycle trials", "Trial moto", "モーターサイクルトライアル"],
   mountain_biking: ["Mountain biking", "VTT", "マウンテンバイク"],
-  mountaineering: ["Mountaineering", "Alpinisme", "登山"],
+  mountaineering: ["Mountaineering", "Alpinisme", "登山", "activity"],
   muay_thai: ["Muay Thai", "Muay Thaï", "ムエタイ"],
   netball: ["Netball", "Netball", "ネットボール"],
   nordic_combined: ["Nordic combined", "Combiné nordique", "ノルディック複合"],
@@ -107,13 +108,13 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   para_nordic_skiing: ["Para Nordic skiing", "Ski nordique paralympique", "パラノルディックスキー"],
   para_swimming: ["Para swimming", "Natation paralympique", "パラ水泳"],
   para_taekwondo: ["Para taekwondo", "Taekwondo paralympique", "パラテコンドー"],
-  parkour: ["Parkour", "Parkour", "パルクール"],
+  parkour: ["Parkour", "Parkour", "パルクール", "activity"],
   petanque: ["Pétanque", "Pétanque", "ペタンク"],
   pickleball: ["Pickleball", "Pickleball", "ピックルボール"],
   polo: ["Polo", "Polo", "ポロ"],
   pool: ["Pool", "Billard américain", "ポケットビリヤード"],
   powerlifting: ["Powerlifting", "Force athlétique", "パワーリフティング"],
-  professional_wrestling: ["Professional wrestling", "Catch professionnel", "プロレス"],
+  professional_wrestling: ["Professional wrestling", "Catch professionnel", "プロレス", "activity"],
   race_walking: ["Race walking", "Marche athlétique", "競歩"],
   racquetball: ["Racquetball", "Racquetball", "ラケットボール"],
   rallycross: ["Rallycross", "Rallycross", "ラリークロス"],
@@ -121,7 +122,7 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   real_tennis: ["Real tennis", "Jeu de paume", "リアルテニス"],
   rhythmic_gymnastics: ["Rhythmic gymnastics", "Gymnastique rythmique", "新体操"],
   rink_hockey: ["Rink hockey", "Roller hockey", "リンクホッケー"],
-  rodeo: ["Rodeo", "Rodéo", "ロデオ"],
+  rodeo: ["Rodeo", "Rodéo", "ロデオ", "activity"],
   roller_speed_skating: ["Roller speed skating", "Patinage de vitesse sur roulettes", "ローラースピードスケート"],
   rowing: ["Rowing", "Aviron", "ボート"],
   rugby_league: ["Rugby league", "Rugby à XIII", "ラグビーリーグ"],
@@ -138,7 +139,7 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   skeleton: ["Skeleton", "Skeleton", "スケルトン"],
   ski_jumping: ["Ski jumping", "Saut à ski", "スキージャンプ"],
   ski_mountaineering: ["Ski mountaineering", "Ski-alpinisme", "スキー登山"],
-  skydiving: ["Skydiving", "Parachutisme", "スカイダイビング"],
+  skydiving: ["Skydiving", "Parachutisme", "スカイダイビング", "activity"],
   snooker: ["Snooker", "Snooker", "スヌーカー"],
   snowboarding: ["Snowboarding", "Snowboard", "スノーボード"],
   snowmobile: ["Snowmobile", "Motoneige", "スノーモービル"],
@@ -149,8 +150,8 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   sport_climbing: ["Sport climbing", "Escalade sportive", "スポーツクライミング"],
   squash: ["Squash", "Squash", "スカッシュ"],
   stock_car_racing: ["Stock car racing", "Course de stock-cars", "ストックカーレース"],
-  strongman: ["Strongman", "Strongman", "ストロングマン"],
-  stunt: ["Stunt", "Cascades", "スタント"],
+  strongman: ["Strongman", "Strongman", "ストロングマン", "activity"],
+  stunt: ["Stunt", "Cascades", "スタント", "activity"],
   submission_grappling: ["Submission grappling", "Grappling", "サブミッショングラップリング"],
   sumo: ["Sumo", "Sumo", "相撲"],
   supercross: ["Supercross", "Supercross", "スーパークロス"],
@@ -177,12 +178,17 @@ const SPORT_NAMES: Record<string, readonly [string, string, string]> = {
   wheelchair_rugby: ["Wheelchair rugby", "Rugby en fauteuil", "車いすラグビー"],
   wheelchair_tennis: ["Wheelchair tennis", "Tennis en fauteuil", "車いすテニス"],
   windsurfing: ["Windsurfing", "Planche à voile", "ウインドサーフィン"],
-  wingsuit: ["Wingsuit", "Wingsuit", "ウイングスーツ"],
+  wingsuit: ["Wingsuit", "Wingsuit", "ウイングスーツ", "activity"],
   wrestling: ["Wrestling", "Lutte", "レスリング"],
 };
 
 /** The sport or activity's name in the reader's language; a code not in the list is shown as written, underscores spaced. */
 export function sportName(code: string, locale: Locale): string {
   const names = SPORT_NAMES[code];
-  return names ? names[LOCALES.indexOf(locale)] : code.replaceAll("_", " ");
+  return names ? (names[LOCALES.indexOf(locale)] as string) : code.replaceAll("_", " ");
+}
+
+/** Whether a code is a competitive sport or another activity (the list's category field). */
+export function sportCategory(code: string): "sport" | "activity" {
+  return SPORT_NAMES[code]?.[3] ?? "sport";
 }

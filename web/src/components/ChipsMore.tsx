@@ -21,7 +21,7 @@ export function ChipsMore({ label, children, closeOnRow = false }: { label: stri
     if (!closeOnRow || !row) return;
     const shut = (e: Event) => {
       const link = (e.target as Element).closest("nav a");
-      if (link && row.contains(link)) setOpen(false);
+      if (link && row.contains(link) && !link.closest(".pmore-list")) setOpen(false);
     };
     row.addEventListener("click", shut);
     return () => row.removeEventListener("click", shut);

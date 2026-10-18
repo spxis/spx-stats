@@ -36,6 +36,13 @@ const SPORT = /^[a-z][a-z0-9_]{0,39}$/;
 const SOURCE = /^[a-z][a-z0-9_]{0,39}$/;
 const COUNTRY = /^[A-Za-z]{2}$/;
 
+/** The sport filter's code for people with no sport or activity at all (derived, never stored). */
+export const NO_SPORT = "none";
+
+/** Codes that are the same sport: choosing one matches both. */
+const SAME_SPORT: Record<string, readonly string[]> = { hockey: ["hockey", "ice_hockey"], ice_hockey: ["hockey", "ice_hockey"] };
+export const sportCodes = (code: string): readonly string[] => SAME_SPORT[code] ?? [code];
+
 export type SeasonsFilter = "yes" | "no";
 
 export interface PeopleSearch {
@@ -153,7 +160,10 @@ export function peopleWhere(f: PeopleSearch): Sql {
   const letterCol = (f.letterBy ?? "last") === "first" ? "letter_first" : "letter_last";
   const parts: Sql[] = [
     ...f.words.map((w): Sql => ({ sql: "search like ?", args: [`%${w}%`] })),
-    ...(f.sport ? [{ sql: inList("sports"), args: [f.sport] }] : []),
+    ...(f.sport === NO_SPORT ? [{ sql: "json_array_length(sports) = 0", args: [] }] : []),
+    ...(f.sport && f.sport !== NO_SPORT
+      ? [{ sql: `exists (select 1 from json_each(sports) where value in (${sportCodes(f.sport).map(() => "?").join(", ")}))`, args: [...sportCodes(f.sport)] }]
+      : []),
     ...(f.country ? [{ sql: "country = ?", args: [f.country] }] : []),
     ...(f.league ? [{ sql: inList("leagues"), args: [f.league] }] : []),
     ...(yearWhere(f) ? [yearWhere(f) as Sql] : []),
