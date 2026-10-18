@@ -5,6 +5,7 @@ import "./alignment.css";
 export interface SegChip {
   code: string;
   short: string;
+  title?: string;
 }
 
 /**
@@ -21,7 +22,7 @@ export function SegChips({ aria, current, items, href }: {
   return (
     <nav className="seg views wrap" aria-label={aria}>
       {items.map((item) => (
-        <Link key={item.code || "all"} href={href(item.code)} prefetch={false} aria-current={item.code === current ? "page" : undefined}>{item.short}</Link>
+        <Link key={item.code || "all"} href={href(item.code)} prefetch={false} title={item.title} aria-current={item.code === current ? "page" : undefined}>{item.short}</Link>
       ))}
     </nav>
   );

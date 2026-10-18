@@ -10,6 +10,7 @@ import { CHIPS_SHOWN } from "@/components/PlayerCountries";
 import { PlayersFilterBar } from "@/components/PlayersFilterBar";
 import { SegChips } from "@/components/SegChips";
 import { SortTable } from "@/components/SortTable";
+import { SourceKey } from "@/components/SourceKey";
 import { SportChip } from "@/components/SportChip";
 import { queryHref } from "@/components/ViewTabs";
 import { requireAdmin } from "@/lib/auth/user";
@@ -23,6 +24,7 @@ import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { sportName } from "@/lib/sportNames";
+import { sourceLabel } from "@/lib/sourceLabels";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
 import { PeopleTabs } from "./PeopleTabs";
@@ -58,7 +60,7 @@ function filtersOf(parsed: ReturnType<typeof parsePeopleSearch>, say: Speaker["s
     sport ? sportName(sport, locale) : "",
     nat ? countryName(nat, locale) : "",
     seasons ? (seasons === "yes" ? say("peopleAdmin.seasons.yes") : say("peopleAdmin.seasons.no")) : "",
-    source.replaceAll("_", " "),
+    source ? sourceLabel(source).name : "",
   ].filter(Boolean);
 }
 
@@ -117,7 +119,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
   const byName = new Intl.Collator(LOCALE_TAG[locale], { sensitivity: "base" });
   const sportMore = sportSplit?.more.map((s) => ({ code: s.code, short: sportName(s.code, locale) })).sort((a, b) => byName.compare(a.short, b.short)) ?? [];
   const sourceChips = sources?.length
-    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: s.code.replaceAll("_", " ") }))]
+    ? [{ code: "", short: say("phase.all") }, ...sources.map((s) => ({ code: s.code, short: sourceLabel(s.code).short, title: sourceLabel(s.code).name }))]
     : [];
   const seasonChips = [
     { code: "", short: say("phase.all") },
@@ -129,6 +131,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     { code: "yes", short: say("peopleAdmin.dated.only") },
   ];
   const filters = filtersOf(parsed, say, locale);
+  const keyCodes = [...new Set([...(result.kind === "ok" ? result.rows.flatMap((p) => p.sources) : []), ...(source ? [source] : [])])].sort();
   const table = result.kind === "ok" ? tableOf(result.rows, [
     {
       key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PersonAdminRow) => p.name,
@@ -163,7 +166,10 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
       cell: (p: PersonAdminRow) => (p.has_seasons ? (years(p.first_season, p.last_season) ?? p.seasons_played) : dash),
     },
     { key: "qid", label: "QID", rest: "qid", get: (p: PersonAdminRow) => p.qid ?? "", cell: (p: PersonAdminRow) => (p.qid ? <a href={`https://www.wikidata.org/wiki/${p.qid}`} rel="noreferrer">{p.qid}</a> : dash) },
-    { key: "sources", label: say("peopleAdmin.source.aria"), rest: "sources", get: (p: PersonAdminRow) => p.sources[0] ?? "", cell: (p: PersonAdminRow) => (p.sources.length ? <span className="note">{p.sources.join(", ")}</span> : dash) },
+    {
+      key: "sources", label: say("peopleAdmin.source.col"), rest: "sources", get: (p: PersonAdminRow) => p.sources[0] ?? "",
+      cell: (p: PersonAdminRow) => (p.sources.length ? p.sources.map((c, i) => <Fragment key={c}>{i ? " " : null}<SportChip name={sourceLabel(c).short} title={sourceLabel(c).name} /></Fragment>) : dash),
+    },
   ] satisfies ColumnSpec<PersonAdminRow>[], (p) => p.person_id) : null;
 
   return (
@@ -239,6 +245,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
           ) : null}
         </div>
       </section>
+      <SourceKey codes={keyCodes} title={say("peopleAdmin.sourceKey.title")} note={say("peopleAdmin.sourceKey.note")} />
     </>
   );
 }
