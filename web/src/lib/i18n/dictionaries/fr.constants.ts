@@ -656,6 +656,7 @@ export const FR: Dictionary = {
   "map.viewCountry": "Pays",
   "map.viewState": "État / province",
   "map.pickCountry": "Pays à afficher",
+  "map.pickBoth": "Les deux",
   "map.conference": "Conférence",
   "map.division": "Division",
   "map.allConf": "Toutes les conférences",

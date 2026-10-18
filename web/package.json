@@ -35,6 +35,7 @@
     "test:idle": "node --test scripts/idleTeams.test.ts",
     "test:outage": "node --test scripts/outage.test.ts",
     "test:champions": "node --test scripts/champions.test.ts",
+    "test:na": "node --test scripts/northAmerica.test.ts",
     "test:range": "node --test scripts/listRange.test.ts",
     "test:routing": "node --test scripts/routing.test.ts",
     "test:seasons": "node --test scripts/gameSeasons.test.ts scripts/gamesCodec.test.ts",

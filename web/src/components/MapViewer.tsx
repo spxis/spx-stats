@@ -4,7 +4,7 @@ import Link from "@/components/Link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore, type ReactNode } from "react";
 import type { MapBox } from "@johnmorrisdotca/chizu";
-import { regionPoint, type RegionCountry } from "@/lib/regionProject";
+import { regionPoint, type RegionCountry, type RegionView } from "@/lib/regionProject";
 import { abbreviationLabels, chizu, NS, pinText, regionsOf, selectionOf, type Pin } from "./mapDraw";
 import { Credits } from "./Credits";
 import { AddressLink } from "./AddressLink";
@@ -101,7 +101,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
   const [conf, setConf] = useState("");
   const [div, setDiv] = useState("");
   const [mode, setMode] = useState<"country" | "state">("country");
-  const [cc, setCc] = useState<RegionCountry>("US");
+  const [cc, setCc] = useState<RegionView>("NA");
   const [logos, setLogos] = useState(false);
   const logosOn = useRef(false);
   const [placedCount, setPlacedCount] = useState<number | null>(null);
@@ -118,7 +118,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
   const tones = useMemo(() => toneMap(pins), [pins]);
   const shown = useMemo(() => pins.filter((p) => (!conf || p.conf === conf) && (!div || p.div === div)), [pins, conf, div]);
   const chosen = selected != null ? pins.find((p) => p.f === selected) : undefined;
-  const country: RegionCountry | null = ccs.includes(cc) ? cc : ccs[0] ?? null;
+  const country: RegionView | null = cc === "NA" ? (ccs.length > 1 ? "NA" : ccs[0] ?? null) : ccs.includes(cc) ? cc : ccs[0] ?? null;
   const stateView = mode === "state" && country != null;
 
   // Draw: a new map whenever the view kind, country, filter or pins change. Pan and zoom after that only move the window.
@@ -134,7 +134,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
       const bounds: MapBox = { x: 0, y: 0, width: map.width, height: stateView && country === "US" ? 606 : map.height };
       const place = (t: Pin): [number, number] | null => {
         if (!stateView) return projectPoint(WORLD, Number(t.lon), Number(t.lat));
-        const p = t.cc === country ? regionPoint(country!, Number(t.lon), Number(t.lat)) : null;
+        const p = (country === "NA" ? t.cc === "US" || t.cc === "CA" : t.cc === country) ? regionPoint(country!, Number(t.lon), Number(t.lat)) : null;
         return p && p[0] >= 0 && p[0] <= bounds.width && p[1] >= 0 && p[1] <= bounds.height ? p : null;
       };
       const sel = pick.current.selected;
@@ -406,6 +406,7 @@ export function MapViewer({ pins, title, total, note, onNavigate, bar, selected,
         ) : null}
         {stateView && ccs.length > 1 ? (
           <div className="seg" role="group" aria-label={say("map.pickCountry")}>
+            <button type="button" aria-pressed={country === "NA"} onClick={() => setCc("NA")}>{say("map.pickBoth")}</button>
             {ccs.map((c) => <button key={c} type="button" aria-pressed={c === country} onClick={() => setCc(c)}>{countryName(c)}</button>)}
           </div>
         ) : null}

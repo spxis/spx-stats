@@ -765,6 +765,7 @@ export const PHRASES = {
   "map.viewCountry": "Country",
   "map.viewState": "State / province",
   "map.pickCountry": "Country to show",
+  "map.pickBoth": "Both",
   "map.conference": "Conference",
   "map.division": "Division",
   "map.allConf": "All conferences",

@@ -656,6 +656,7 @@ export const JA: Dictionary = {
   "map.viewCountry": "国",
   "map.viewState": "州・省",
   "map.pickCountry": "表示する国",
+  "map.pickBoth": "両方",
   "map.conference": "カンファレンス",
   "map.division": "地区",
   "map.allConf": "すべてのカンファレンス",

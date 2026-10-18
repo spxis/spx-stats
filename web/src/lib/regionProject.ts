@@ -1,4 +1,5 @@
 import { geoAlbers, geoConicConformal } from "d3";
+import { naPoint } from "./northAmerica";
 
 /**
  * Chizu's maps of the states and of the provinces are drawn in projections of their own, so its projectPoint cannot place
@@ -13,9 +14,12 @@ const PROJECTIONS = {
 };
 
 export type RegionCountry = keyof typeof PROJECTIONS;
+/** A country's own map, or "NA": the states and provinces on one map (lib/northAmerica.ts). */
+export type RegionView = RegionCountry | "NA";
 
 /** Where a longitude and latitude fall on the country's map of states or provinces, or null. */
-export function regionPoint(cc: RegionCountry, lon: number, lat: number): [number, number] | null {
+export function regionPoint(cc: RegionView, lon: number, lat: number): [number, number] | null {
+  if (cc === "NA") return naPoint(lon, lat);
   const p = PROJECTIONS[cc]([lon, lat]);
   return p && Number.isFinite(p[0]) && Number.isFinite(p[1]) ? [p[0], p[1]] : null;
 }

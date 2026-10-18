@@ -144,6 +144,22 @@ cross join lateral unnest(datemultirange(s.vd) - coalesce(g.a, '{}'::datemultira
 where not isempty(u.rng)
 on conflict (franchise_id, valid_during, source_id) do nothing;
 
+-- A club whose name has no Wikidata item of its own (the Atlanta Thrashers and the Phoenix Coyotes are the one item of the Jets and the Coyotes of today)
+-- gets its seed venues (db/seed/home_venue.csv) for the years of that name, where no brand row has a venue already.
+insert into core.franchise_brand (franchise_id, valid_during, home_venue, latitude, longitude, source_id, source_key)
+select i.franchise_id, r.rng, v.label, v.latitude, v.longitude, (select source_id from meta.source where code = 'wikipedia'), h.qid
+from seed_home h
+join (select distinct i.franchise_id, fl.league_code, i.full_name, i.valid_during
+      from core.franchise_identity i join core.franchise_league fl using (franchise_id)) i
+  on i.league_code = h.league and pg_temp.norm(i.full_name) = pg_temp.norm(h.franchise)
+cross join lateral (select daterange(h.from_d, h.until_d) * i.valid_during as rng) r
+join lateral (select p.label, p.latitude, p.longitude from legacy_franchise_info.place p where p.qid = h.qid and p.latitude is not null
+              union all select g.label, g.latitude, g.longitude from legacy_game_venue.venue g where g.qid = h.qid and g.latitude is not null limit 1) v on true
+where not isempty(r.rng)
+  and not exists (select 1 from legacy_team_brand.team t where t.league_code = h.league and pg_temp.norm(t.label) = pg_temp.norm(h.franchise))
+  and not exists (select 1 from core.franchise_brand b where b.franchise_id = i.franchise_id and b.latitude is not null and b.valid_during && r.rng)
+on conflict (franchise_id, valid_during, source_id) do nothing;
+
 -- Team colours from Wikipedia's Lua colour modules. An identity (a name and its years)
 -- takes the entries of its league whose name matches: an undated entry fills the years no
 -- dated entry of that identity covers (slivers under 180 days are dropped when dated entries

@@ -68,8 +68,10 @@ export function chizu(): Promise<Chizu> {
 }
 
 /** A country's states or provinces (Natural Earth admin-1), fetched the first time that country is shown. */
-export function regionsOf(cc: "US" | "CA"): Promise<ChizuMap> {
-  return (cc === "US" ? import("@johnmorrisdotca/chizu/divisions/us") : import("@johnmorrisdotca/chizu/divisions/ca")).then((m) => m.default as ChizuMap);
+export function regionsOf(cc: "US" | "CA" | "NA"): Promise<ChizuMap> {
+  const load = (c: "us" | "ca") => (c === "us" ? import("@johnmorrisdotca/chizu/divisions/us") : import("@johnmorrisdotca/chizu/divisions/ca")).then((m) => m.default as ChizuMap);
+  if (cc === "NA") return Promise.all([load("us"), load("ca"), import("@/lib/northAmerica")]).then(([us, ca, na]) => na.northAmericaMap(us, ca));
+  return load(cc === "US" ? "us" : "ca");
 }
 
 /** A window round the points, wider than tall, with room to spare; never smaller than a region. */
