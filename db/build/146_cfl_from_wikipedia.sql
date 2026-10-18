@@ -35,6 +35,17 @@ delete from meta.verification v using core.game g, core.season s
 where v.source_id = (select source_id from src) and v.entity_kind = 'game' and v.entity_id = g.game_id and s.season_id = g.season_id and s.league_code = 'cfl';
 delete from meta.data_issue where source_id = (select source_id from src) and issue like 'CFL:%';
 delete from core.external_id where source_id = (select source_id from src) and entity_kind = 'game' and external_key like 'wpcfl:%';
+-- A rerun keeps the number of every Wikipedia game it adds again (the site's game addresses carry it): the ids are
+-- remembered before the delete and given back on insert, by source_key, else by day and the two franchises (a club name
+-- spelt another way in a newer article changes the key, not the game). Child rows (game_league_id, game_venue, ...)
+-- cascade with the delete: rerun 212, 198, 199 and 209 afterwards.
+create temp table old_wp_game as
+select g.source_key, g.game_id, g.game_date, th.franchise_id as hf, ta.franchise_id as af
+from core.game g join core.season s on s.season_id = g.season_id
+join core.team_season th on th.team_season_id = g.home_team_season_id join core.team_season ta on ta.team_season_id = g.away_team_season_id
+where g.source_id = (select source_id from src) and s.league_code = 'cfl' and g.source_key like 'wpcfl:%';
+create temp table old_wp_game_day as
+select distinct on (game_date, hf, af) game_date, hf, af, game_id from old_wp_game order by game_date, hf, af, game_id;
 delete from core.game g using core.season s where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code = 'cfl';
 
 -- Club names (lower case, no dots or footnote marks) -> franchise, by the year a season starts.
@@ -46,7 +57,7 @@ insert into amap values
   ('hamilton tigercats', 1946, 9999, '163', null), ('hamilton tiger cats', 1946, 9999, '163', null),
   ('ottawa rough riders', 1946, 1996, null, 'OTT1'), ('ottawa renegades', 2002, 2005, '164', null), ('ottawa redblacks', 2014, 9999, null, 'OTT3'),
   ('toronto argonauts', 1946, 9999, '165', null),
-  ('winnipeg blue bombers', 1946, 9999, '166', null),
+  ('winnipeg blue bombers', 1946, 9999, '166', null), ('winipeg blue bombers', 1975, 1975, '166', null), -- sic, a typo in a 1975 club article
   ('edmonton eskimos', 1946, 9999, '167', null), ('edmonton football team', 2020, 2021, '167', null), ('edmonton elks', 2021, 9999, '167', null),
   ('saskatchewan roughriders', 1946, 9999, '168', null), ('saskatchewan rough riders', 1946, 9999, '168', null),
   ('calgary stampeders', 1946, 9999, '169', null),
@@ -248,7 +259,8 @@ from mm m where m.status = 'final' and (m.home_score <> m.r_h or m.away_score <>
 -- Where two pages of Wikipedia's own disagree about a game it adds.
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'game', 'wpcfl:' || n.season || ':' || n.phase || ':' || n.game_date || ':' || n.home_team || ':' || n.away_team || ':' || n.game_seq,
-       'CFL: the two clubs'' pages disagree: ' || n.conflict, 'Home club''s page taken'
+       case when n.conflict like 'date marked uncertain%' then 'CFL: ' || n.conflict else 'CFL: the two clubs'' pages disagree: ' || n.conflict end,
+       case when n.conflict like 'date marked uncertain%' then 'Date kept as the article gives it' else 'Home club''s page taken' end
 from ng n where n.conflict is not null and n.wid not in (select key from matched) and n.conflict not like 'home team%';
 
 -- An SPX result in a season Wikipedia covers, with no game there to match it.
@@ -257,21 +269,27 @@ select (select source_id from src), 'game', g.source_key, 'CFL: SPX game not fou
 from spx_g s join core.game g using (game_id)
 where s.game_id not in (select game_id from matched) and s.status = 'final' and s.start_year in (select distinct season from wg);
 
--- A game only one club's page lists is not added: nothing corroborates its date or score.
+-- A game only one club's page lists is added only when that club's whole schedule table adds up to the published
+-- standings (schedule_checked: as many games, the same wins, losses and ties); else nothing corroborates its date or score.
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'game', 'wpcfl:' || n.season || ':' || n.phase || ':' || n.game_date || ':' || n.home_team || ':' || n.away_team || ':' || n.game_seq,
        'CFL: only one club''s Wikipedia page lists this game (' || n.src || ')', 'Not added; needs a second source'
-from ng n where n.wid not in (select key from matched) and n.views < 2 and n.phase = 'regular' and n.home_pts is not null;
+from ng n where n.wid not in (select key from matched) and n.views < 2 and not n.schedule_checked and n.phase = 'regular' and n.home_pts is not null;
 
-insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
+insert into core.game (game_id, season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
                        home_score, away_score, went_to_overtime, source_id, source_key)
-select s.season_id, n.phase::core.season_phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
+overriding system value
+select coalesce(o.game_id, o2.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase::core.season_phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
        n.home_pts, n.away_pts, case when n.phase = 'regular' then n.overtime end, (select source_id from src),
        'wpcfl:' || n.season || ':' || n.phase || ':' || n.game_date || ':' || n.home_team || ':' || n.away_team || ':' || n.game_seq
 from ng n join core.season s on s.league_code = 'cfl' and s.start_year = n.season
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
-where n.wid not in (select key from matched) and (n.views >= 2 or n.phase = 'playoffs') and n.home_pts is not null and n.away_pts is not null;
+left join old_wp_game o on o.source_key = 'wpcfl:' || n.season || ':' || n.phase || ':' || n.game_date || ':' || n.home_team || ':' || n.away_team || ':' || n.game_seq
+left join old_wp_game_day o2 on o.game_id is null and n.game_seq = 0 and o2.game_date = n.game_date and o2.hf = n.home_f and o2.af = n.away_f
+  and not exists (select 1 from old_wp_game ok where ok.game_id = o2.game_id and exists (select 1 from ng n3
+        where 'wpcfl:' || n3.season || ':' || n3.phase || ':' || n3.game_date || ':' || n3.home_team || ':' || n3.away_team || ':' || n3.game_seq = ok.source_key))
+where n.wid not in (select key from matched) and (n.views >= 2 or n.schedule_checked or n.phase = 'playoffs') and n.home_pts is not null and n.away_pts is not null;
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', g.game_id, g.source_id, substr(g.source_key, 1) from core.game g

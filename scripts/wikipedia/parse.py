@@ -318,3 +318,101 @@ def brackets(text, year):
 
 def seed_no(s):
     m = re.search(r"(\d+)", s or ""); return int(m.group(1)) if m else None
+
+
+# ---------------------------------------------------------------- playoff tables (1958-1972)
+# The season articles of those years tabulate every playoff game in wikitables (semi-finals, finals),
+# each with its date and an Away and a Home column; the {{8TeamBracket}} there has no home side. The
+# Grey Cup table has no date per row and stays with the bracket.
+TEAM_SCORE_RE = re.compile(r"^(.+?)\s+(\d{1,3})$")
+
+
+def playoff_table_games(text, year):
+    """Playoff games from the wikitables under the playoffs heading: a list of dicts (round_name, game_date, week=None,
+    home, away, home_pts, away_pts, game_no, uncertain, src). A row counts only with a date and two team-and-score
+    cells; the home side is the Home column of the table (the header names the order, Away first by default)."""
+    out = []
+    for h2, h3, tab in tables(text):
+        if not re.search(r"playoff", h2, re.I): continue
+        rs = rows(tab)
+        cap = re.search(r"^\|\+\s*(.*)", tab, re.M)
+        rname = clean(cap.group(1)) if cap else h3
+        rname = re.sub(r"\s+", " ", rname.replace("-", " ").replace("Finals", "Final").replace("finals", "final")).strip()
+        away_first = True
+        for attr, cells in rs:
+            cl = [clean(c) for c in cells]
+            low = [c.lower() for c in cl]
+            if "away" in low and "home" in low:
+                away_first = low.index("away") < low.index("home")
+        for attr, cells in rs:
+            cl = [clean(c) for c in cells]
+            ts = [(i, TEAM_SCORE_RE.match(c)) for i, c in enumerate(cl)]
+            ts = [(i, m) for i, m in ts if m and not DATE_RE.search(c := cl[i]) and re.search(r"[A-Za-z]{3}", m.group(1))]
+            if len(ts) != 2: continue
+            dcell = next((c for i, c in enumerate(cl) if DATE_RE.search(c) and i not in (ts[0][0], ts[1][0])), None)
+            if dcell is None: continue
+            d = mk_date(year, dcell)
+            if d is None: continue
+            no = next((int(c) for c in cl[:1] if re.fullmatch(r"\d", c)), None)
+            first, second = ts[0][1], ts[1][1]
+            (a, b) = (first, second) if away_first else (second, first)
+            out.append(dict(round_name=rname, game_date=d, week=None, away=a.group(1).strip(), home=b.group(1).strip(),
+                            away_pts=int(a.group(2)), home_pts=int(b.group(2)), game_no=no, uncertain="?" in dcell,
+                            src=f"{rname}: " + " | ".join(cl)))
+    return out
+
+
+# ---------------------------------------------------------------- complete schedules
+
+def nz(name):
+    """A club's name as letters only, so 'Hamilton Tiger-Cats' and 'Hamilton Tiger Cats' meet."""
+    return re.sub(r"[^a-z]", "", name.lower())
+
+
+def complete_schedules(views, standings_rows):
+    """Clubs whose own schedule table is the whole season: as many games as the published standings count and the same
+    wins, losses and ties. A game only that club's page lists (its opponent has no article, or does not list it) then
+    stands on the standings' agreement. Returns the set of nz(club) names."""
+    by = {}
+    for v in views: by.setdefault(nz(v["team"]), []).append(v)
+    out, seen = set(), set()
+    for s in standings_rows:
+        k = nz(s["team"])
+        if k in seen or k not in by or s["w"] is None or s["l"] is None: continue
+        seen.add(k)
+        vs = by[k]
+        w, l, t = (sum(1 for v in vs if v["result"] == r) for r in "WLT")
+        if w == s["w"] and l == s["l"] and t == (s["t"] or 0) and len(vs) == (s["gp"] if s["gp"] is not None else s["w"] + s["l"] + (s["t"] or 0)):
+            out.add(k)
+    return out
+
+
+def trusted_singles(merged, complete, standings_rows):
+    """The ids of the games only one club's page lists that may be loaded. The logging club's whole schedule matches the
+    standings (complete) and the opponent's does not (a complete opponent that does not list the game contradicts it).
+    Then any club whose loaded games would exceed its published games, wins, losses or ties loses the single-page games
+    it is in (a page that names the wrong opponent shows up this way), until none does."""
+    st = {}
+    for s in standings_rows:
+        st.setdefault(nz(s["team"]), s)
+    ok = {id(g) for g in merged if g["views"] == 1 and nz(g["teams"][0]) in complete and nz(g["teams"][1]) not in complete}
+    singles = [g for g in merged if id(g) in ok]
+    for _ in range(5):
+        tally = {}
+        for g in merged:
+            if g["views"] < 2 and id(g) not in ok: continue
+            if g["home"] is None or g["home_pts"] is None: continue
+            for club, mine, theirs in ((g["home"], g["home_pts"], g["away_pts"]), (g["away"], g["away_pts"], g["home_pts"])):
+                t = tally.setdefault(nz(club), [0, 0, 0, 0])
+                t[0] += 1
+                t[1 if mine > theirs else 2 if mine < theirs else 3] += 1
+        bad = set()
+        for club, (n, w, l, t) in tally.items():
+            r = st.get(club)
+            if r is None or r["w"] is None or r["l"] is None: continue
+            gp = r["gp"] if r["gp"] is not None else r["w"] + r["l"] + (r["t"] or 0)
+            if n > gp or w > r["w"] or l > r["l"] or t > (r["t"] or 0): bad.add(club)
+        drop = {id(g) for g in singles if id(g) in ok and (nz(g["home"] or "") in bad or nz(g["away"] or "") in bad)}
+        if not drop: break
+        ok -= drop
+    return ok
