@@ -63,3 +63,10 @@ test("the league page's repeat box counts a run that spans the gap", () => {
   assert.equal(box?.n, 2);
   assert.equal(box?.from, "2019");
 });
+
+test("a title counts as reigning only from the most recent completed season of a league still playing", () => {
+  const mixed = [season(1978, 1, { league: "wha" }), season(2024, 5, { league: "nhl" }), season(2025, 6, { league: "nhl" }), season(2026, null, { league: "nhl" })];
+  assert.equal(titleHolders(mixed, "wha").reigning, null);
+  assert.equal(titleHolders(mixed, "nhl").reigning?.year, 2025);
+  assert.equal(titleHolders([...mixed.slice(0, 3), season(2026, 7, { league: "nhl" })], "nhl").reigning?.year, 2026);
+});

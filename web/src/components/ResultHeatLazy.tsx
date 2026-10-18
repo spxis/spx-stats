@@ -22,8 +22,9 @@ export function ResultHeatLazy({ teamPath, lg, lock, eager = false, compact = fa
   const games = useMemo(() => (data ? unpackHeat(data) : []), [data]);
   if (data) return <ResultHeat lg={lg} games={games} lock={lock} compact={compact} />;
   return (
-    <div ref={ref} className="rheat-lazy" id={eager ? undefined : "results-calendar"} style={{ minHeight: state === "failed" ? undefined : 160 }}>
+    <div ref={ref} className="rheat-lazy" id={eager ? undefined : "results-calendar"} style={{ minHeight: state === "failed" || state === "empty" ? undefined : 160 }}>
       {state === "loading" || (eager && state === "idle") ? <p className="note" role="status">{say("load.loading")}</p> : null}
+      {state === "empty" ? <p className="note">{say("rheat.none")}</p> : null}
       {state === "failed" ? <p className="note" role="status">{say("load.failed")}</p> : null}
     </div>
   );

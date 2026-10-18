@@ -17,7 +17,7 @@ export function satYears(seasons: SeasonSummaryRow[], lg: string, outageYears: I
 }
 
 /**
- * Who holds a league's title: the latest season with a champion, and each season's champion. `sat` are the years the league did
+ * Who holds a league's title: the latest season with a champion (only while it is the last or last but one season of the data), and each season's champion. `sat` are the years the league did
  * not play (see satYears); `before(year)` is the champion going into a year, which stays the last one crowned when the seasons in
  * between were not played, and is null when the season just before was played without a champion on record.
  */
@@ -34,7 +34,10 @@ export function titleHolders(seasons: SeasonSummaryRow[], lg: string, outageYear
     }
     return null;
   };
-  return { reigning: list.at(-1) ?? null, byYear, sat, before };
+  // Reigning means the title of the most recent completed season of a league still playing: a defunct league has none.
+  const latest = Math.max(0, ...seasons.map((x) => x.year));
+  const last = list.at(-1) ?? null;
+  return { reigning: last && last.year >= latest - 1 ? last : null, byYear, sat, before };
 }
 
 /**

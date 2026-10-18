@@ -18,8 +18,9 @@ export function OpponentHeatLazy({ teamPath }: { teamPath: string }) {
   const { state, data } = useFetchedJson<OpponentHeatView>(opponentsRestPath(teamPath), "view", seen);
   if (data) return <OpponentHeat view={data} />;
   return (
-    <div ref={ref} id="opponents" style={{ minHeight: state === "failed" ? undefined : 420 }}>
+    <div ref={ref} id="opponents" style={{ minHeight: state === "failed" || state === "empty" ? undefined : 420 }}>
       {state === "loading" ? <p className="note" role="status">{say("load.loading")}</p> : null}
+      {state === "empty" ? <p className="note">{say("opheat.none")}</p> : null}
       {state === "failed" ? <p className="note" role="status">{say("load.failed")}</p> : null}
     </div>
   );
