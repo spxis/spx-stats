@@ -63,6 +63,7 @@ const preview = z.object({
   warnings: z.array(z.string()).default([]),
   totals: z.object({ add: z.number().optional(), change: z.number().optional(), remove: z.number().optional(), bytes_delta: z.number().optional() }).partial().default({}),
   file: z.string().optional(),
+  target: z.string().optional(),
   before: z.record(z.string(), z.number()).nullish(),
   after: z.record(z.string(), z.number()).nullish(),
   auto: z.object({

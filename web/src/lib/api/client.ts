@@ -3,22 +3,12 @@ import { cache } from "react";
 import type { z } from "zod";
 import { queuedAtBuild } from "./buildShare";
 import { API_KEY, PAGE_SIZE, REST_URL, RETRY_REVALIDATE, REVALIDATE } from "./config";
+import { ApiError } from "./error";
 import { isTransient } from "./failure";
 import { tagsFor } from "./tags";
+import { withChecked } from "../turso/checked";
 
-/** A failed read of the archive (a busy or slow database, a bad answer). Pages show the inline "Couldn't load" note for it, not a 404 or 500. */
-export class ApiError extends Error {
-  name = "ApiError";
-  /** The HTTP status the database answered with, when it answered. */
-  status?: number;
-  /** The database could not answer (5xx, timeout, network): see failure.ts for what a page does with it. */
-  transient: boolean;
-  constructor(message: string, status?: number, transient = false) {
-    super(message);
-    this.status = status;
-    this.transient = transient;
-  }
-}
+export { ApiError };
 
 /** Seconds a request may take before it is given up on and tried again. */
 const TIMEOUT_MS = 8000;
@@ -90,7 +80,7 @@ export async function rows<S extends z.ZodType>(view: string, query: string, sch
       if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
       out.push(parsed.data);
     }
-    if (part.length < PAGE_SIZE) return out;
+    if (part.length < PAGE_SIZE) return withChecked(view, out);
   }
 }
 
@@ -98,11 +88,11 @@ export async function rows<S extends z.ZodType>(view: string, query: string, sch
 export async function rowsSlice<S extends z.ZodType>(view: string, query: string, from: number, size: number, schema: S): Promise<z.infer<S>[]> {
   const part = (await (await get(view, query, from, size)).json()) as unknown;
   if (!Array.isArray(part)) throw new ApiError(`${view}: expected a list of rows`);
-  return part.map((row) => {
+  return withChecked(view, part.map((row) => {
     const parsed = schema.safeParse(row);
     if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
     return parsed.data;
-  });
+  }));
 }
 
 /**
@@ -121,5 +111,5 @@ export async function rowsWindow<S extends z.ZodType>(view: string, query: strin
     if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
     out.push(parsed.data);
   }
-  return { rows: out, total: Number(total) };
+  return { rows: await withChecked(view, out), total: Number(total) };
 }

@@ -1,18 +1,18 @@
 /**
- * The PostgREST query behind the admin people list. Pure: nothing a caller types reaches the
+ * The SQL behind the admin people list (Turso table api_person_admin). Pure: nothing a caller types reaches the
  * query unchecked. Same filter keys as /players (`q`, `nat`, `letter`, `letter_by`, `from`, `to`,
  * `league`, `sort`, `page`, `after`) plus `sport`, `seasons` and `source`. Used by the admin page
  * and by scripts/adminPeople.test.ts.
  */
 import { isLeague } from "./leagues.ts";
-import { letterFilterPlain, listQuery, orderOf, readLetter, searchFilters, searchWords, type Col, type LetterBy, type Order, type Val } from "./listQuery.ts";
+import { orderOf, readLetter, searchWords, type Col, type LetterBy, type Order, type Val } from "./listQuery.ts";
 import type { SortKey } from "./sort.ts";
 
 export { searchWords, readLetter };
 export type { LetterBy, Order, Val };
 
 export const PEOPLE_PER_PAGE = 100;
-export const PERSON_ADMIN_VIEW = "person_admin";
+export const PERSON_ADMIN_TABLE = "api_person_admin";
 export const PERSON_ADMIN_SELECT = [
   "person_id",
   "name",
@@ -127,58 +127,76 @@ export function parsePeopleSearch(q: Record<string, string | string[] | undefine
   };
 }
 
+/** A value bound to a `?` of the query. Nothing a caller types is ever put into the SQL text: only these allow-listed column names are. */
+export type Arg = string | number | null;
+export interface Sql { sql: string; args: Arg[] }
+
+const inList = (col: string) => `exists (select 1 from json_each(${col}) where value = ?)`;
+
 /**
  * The year range, over the years we know for each person: their club seasons when they have any, else their birth year. A person with no
- * years at all stays in the list, unless the reader asks for `dated` only. One `and=(or(...))` so it never clashes with the cursor's `or=`.
+ * years at all stays in the list, unless the reader asks for `dated` only.
  */
-export function yearFilter(f: Pick<PeopleSearch, "from" | "to" | "dated">): string {
-  if (f.from == null && f.to == null) return f.dated ? "and=(or(first_season.not.is.null,birth_year.not.is.null))" : "";
+export function yearWhere(f: Pick<PeopleSearch, "from" | "to" | "dated">): Sql | null {
+  if (f.from == null && f.to == null) return f.dated ? { sql: "(first_season is not null or birth_year is not null)", args: [] } : null;
   const lo = f.from ?? -9999;
   const hi = f.to ?? 9999;
-  const clauses = [
-    `and(first_season.lte.${hi},last_season.gte.${lo})`,
-    `and(first_season.is.null,birth_year.gte.${lo},birth_year.lte.${hi})`,
-    ...(f.dated ? [] : ["and(first_season.is.null,birth_year.is.null)"]),
-  ];
-  return `and=(or(${clauses.join(",")}))`;
+  const clauses = ["(first_season <= ? and last_season >= ?)", "(first_season is null and birth_year >= ? and birth_year <= ?)"];
+  const args: Arg[] = [hi, lo, lo, hi];
+  if (!f.dated) clauses.push("(first_season is null and birth_year is null)");
+  return { sql: `(${clauses.join(" or ")})`, args };
 }
 
-/** PostgREST filters for api.person_admin. Each value is already allow-listed. A-Z uses the indexed letter columns (migration 123). Birth years use from/to (the same slider as /players). */
-export function peopleAdminFilters(f: PeopleSearch): string[] {
+/** The WHERE of the people table: one `like` per search word on the folded name, the other filters allow-listed. */
+export function peopleWhere(f: PeopleSearch): Sql {
   const letter = readLetter(f.letter);
   const letterCol = (f.letterBy ?? "last") === "first" ? "letter_first" : "letter_last";
-  return [
-    ...searchFilters(f.words),
-    f.sport ? `sports=cs.${encodeURIComponent(`{${f.sport}}`)}` : "",
-    f.country ? `country=eq.${encodeURIComponent(f.country)}` : "",
-    f.league ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
-    yearFilter(f),
-    f.seasons === "yes" ? "has_seasons=eq.true" : f.seasons === "no" ? "has_seasons=eq.false" : "",
-    f.source ? `sources=cs.${encodeURIComponent(`{${f.source}}`)}` : "",
-    letter ? `${letterCol}=eq.${letter}` : "",
-  ].filter(Boolean);
+  const parts: Sql[] = [
+    ...f.words.map((w): Sql => ({ sql: "search like ?", args: [`%${w}%`] })),
+    ...(f.sport ? [{ sql: inList("sports"), args: [f.sport] }] : []),
+    ...(f.country ? [{ sql: "country = ?", args: [f.country] }] : []),
+    ...(f.league ? [{ sql: inList("leagues"), args: [f.league] }] : []),
+    ...(yearWhere(f) ? [yearWhere(f) as Sql] : []),
+    ...(f.seasons ? [{ sql: `has_seasons = ${f.seasons === "yes" ? 1 : 0}`, args: [] }] : []),
+    ...(f.source ? [{ sql: inList("sources"), args: [f.source] }] : []),
+    ...(letter ? [{ sql: `${letterCol} = ?`, args: [letter] }] : []),
+  ];
+  return { sql: parts.length ? ` where ${parts.map((p) => p.sql).join(" and ")}` : "", args: parts.flatMap((p) => p.args) };
 }
 
-export function peopleAdminQuery(f: PeopleSearch, order: Order = peopleOrder([{ key: "name", dir: "asc" }]), after?: readonly Val[] | null): string {
-  return listQuery({ filters: peopleAdminFilters(f), select: PERSON_ADMIN_SELECT, order, after });
-}
+/** `order by`, empty values last either way, the field names coming only from PEOPLE_SORTS and PEOPLE_TIE. */
+export const orderSql = (o: Order): string => `order by ${o.map((c) => `${c.field} ${c.dir}${c.nullable ? " nulls last" : ""}`).join(", ")}`;
 
-/** Fallback on api.people when person_admin is not installed: name, country, birth dates, seasons_played. No sport, QID or source. */
-export function peopleFallbackQuery(f: PeopleSearch, order: Order = peopleOrder([{ key: "name", dir: "asc" }]), after?: readonly Val[] | null): string {
-  const letter = readLetter(f.letter);
-  const filters = [
-    ...f.words.map((w) => `name=ilike.${encodeURIComponent(`*${w}*`)}`),
-    f.country ? `or=${encodeURIComponent(`(birth_country_code.eq.${f.country},nationality_code.eq.${f.country})`)}` : "",
-    f.league ? `leagues=cs.${encodeURIComponent(`{${f.league}}`)}` : "",
-    f.from != null ? `birth_date=gte.${f.from}-01-01` : "",
-    f.to != null ? `birth_date=lte.${f.to}-12-31` : "",
-    f.seasons === "yes" ? "seasons_played=gt.0" : f.seasons === "no" ? "seasons_played=eq.0" : "",
-    letter ? letterFilterPlain(letter, f.letterBy ?? "last") : "",
-  ].filter(Boolean);
-  return listQuery({
-    filters,
-    select: ["person_id", "name", "kind", "birth_country_code", "nationality_code", "birth_date", "death_date", "leagues", "seasons_played", "first_season", "last_season"],
-    order: order.map((c) => (c.field === "birth_year" ? { ...c, field: "birth_date", num: false } : c)).filter((c) => !["sports", "qid", "sources", "has_seasons"].includes(c.field)),
-    after,
+/** The rows after a cursor: the sort fields' values of the last row seen, with empty values last. */
+export function afterSql(o: Order, vals: readonly Val[]): Sql {
+  const same = (c: Order[number], v: Val): Sql => (v == null ? { sql: `${c.field} is null`, args: [] } : { sql: `${c.field} = ?`, args: [v] });
+  const parts: Sql[] = [];
+  o.forEach((c, i) => {
+    const v = vals[i];
+    if (v == null) return;
+    const lead = o.slice(0, i).map((p, j) => same(p, vals[j]));
+    const past: Sql = { sql: `${c.field} ${c.dir === "asc" ? ">" : "<"} ?`, args: [v] };
+    for (const last of c.nullable ? [past, { sql: `${c.field} is null`, args: [] as Arg[] }] : [past]) {
+      const all = [...lead, last];
+      parts.push({ sql: `(${all.map((a) => a.sql).join(" and ")})`, args: all.flatMap((a) => a.args) });
+    }
   });
+  if (!parts.length) return { sql: "1 = 0", args: [] };
+  return { sql: `(${parts.map((p) => p.sql).join(" or ")})`, args: parts.flatMap((p) => p.args) };
+}
+
+export function peopleCountQuery(f: PeopleSearch): Sql {
+  const w = peopleWhere(f);
+  return { sql: `select count(*) as n from ${PERSON_ADMIN_TABLE}${w.sql}`, args: w.args };
+}
+
+/** One page: `limit` rows from `offset`, or the `limit` rows after the cursor. */
+export function peopleQuery(f: PeopleSearch, order: Order, limit: number, offset = 0, after?: readonly Val[] | null): Sql {
+  const w = peopleWhere(f);
+  const cursor = after ? afterSql(order, after) : null;
+  const where = cursor ? `${w.sql ? `${w.sql} and ` : " where "}${cursor.sql}` : w.sql;
+  return {
+    sql: `select ${PERSON_ADMIN_SELECT.join(", ")} from ${PERSON_ADMIN_TABLE}${where} ${orderSql(order)} limit ${Math.trunc(limit)} offset ${Math.trunc(offset)}`,
+    args: [...w.args, ...(cursor ? cursor.args : [])],
+  };
 }

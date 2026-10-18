@@ -108,10 +108,14 @@ test("every server fetch of the archive carries cache tags the release runner ca
   // The only other read of the archive is the signed-in admin's, which is never kept (no-store) or is the 60 second tagged summary.
   assert.equal([...client.matchAll(/\bfetch\(/g)].length, 1);
   assert.equal([...releases.matchAll(/\bfetch\(/g)].length, 2);
+  // Turso is read through one module; its kept reads carry the tags the release runner revalidates (turso and turso:<table>).
+  const turso = readFileSync(new URL("lib/turso/client.ts", SRC), "utf8");
+  assert.equal([...turso.matchAll(/\bfetch\(/g)].length, 1);
+  assert.match(turso, /next: \{ revalidate: [^}]*tags \}/);
+  assert.match(turso, /`turso:\$\{t\}`/);
   // No other module in the site reaches the archive.
   for (const { f, text } of sourceFiles) {
-    // adminPeople.ts is the admin's own list, read per request with no-store.
-    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts" || f === "lib/adminPeople.ts") continue;
+    if (f === "lib/api/client.ts" || f === "lib/releases/client.ts" || f === "lib/api/config.ts") continue;
     assert.doesNotMatch(text, /\bREST_URL\b/, `${f}: reads the archive without cache tags`);
   }
 });

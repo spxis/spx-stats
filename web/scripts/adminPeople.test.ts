@@ -1,20 +1,23 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import {
+  afterSql,
   parsePeopleSearch,
-  peopleAdminFilters,
-  peopleAdminQuery,
-  peopleFallbackQuery,
+  peopleCountQuery,
   peopleOrder,
+  peopleQuery,
+  peopleWhere,
   readCountry,
   readSeasons,
   readSource,
   readSport,
   readYear,
   searchWords,
-  yearFilter,
+  yearWhere,
 } from "../src/lib/adminPeopleQuery.ts";
 import { cursorOf } from "../src/lib/listQuery.ts";
+
+const NAME_ASC = peopleOrder([{ key: "name", dir: "asc" }]);
 
 test("a name is folded and split the same way as the players list", () => {
   assert.deepEqual(searchWords("Usain Bolt"), ["usain", "bolt"]);
@@ -40,10 +43,11 @@ test("an empty form lists from the start", () => {
   const idle = parsePeopleSearch({});
   assert.equal(idle.page, 1);
   assert.deepEqual(idle.words, []);
-  assert.equal(peopleAdminFilters(idle).length, 0);
-  const q = peopleAdminQuery(idle);
-  assert.ok(q.includes("select=person_id,name"));
-  assert.ok(q.includes("order=name.asc,person_id.asc"));
+  assert.deepEqual(peopleWhere(idle), { sql: "", args: [] });
+  const q = peopleQuery(idle, NAME_ASC, 100);
+  assert.ok(q.sql.startsWith("select person_id, name,"));
+  assert.ok(q.sql.includes("from api_person_admin order by name asc, person_id asc limit 100 offset 0"));
+  assert.deepEqual(q.args, []);
 });
 
 test("swapped birth years are put in order", () => {
@@ -57,69 +61,56 @@ test("nat and letter match the players list keys", () => {
   assert.equal(f.country, "JM");
   assert.equal(f.letter, "b");
   assert.equal(f.letterBy, "first");
-  const filters = peopleAdminFilters(f);
-  assert.ok(filters.includes("country=eq.JM"));
-  assert.ok(filters.includes("letter_first=eq.b"));
-  const last = peopleAdminFilters(parsePeopleSearch({ letter: "B" }));
-  assert.ok(last.includes("letter_last=eq.b"));
+  assert.deepEqual(peopleWhere(f), { sql: " where country = ? and letter_first = ?", args: ["JM", "b"] });
+  assert.deepEqual(peopleWhere(parsePeopleSearch({ letter: "B" })), { sql: " where letter_last = ?", args: ["b"] });
 });
 
 test("a year range uses club seasons, else birth year, and keeps people with no year unless only dated ones are asked for", () => {
-  const all = yearFilter(parsePeopleSearch({ from: "1953", to: "2007" }));
-  assert.equal(all, "and=(or(and(first_season.lte.2007,last_season.gte.1953),and(first_season.is.null,birth_year.gte.1953,birth_year.lte.2007),and(first_season.is.null,birth_year.is.null)))");
-  const dated = yearFilter(parsePeopleSearch({ from: "1953", to: "2007", dated: "yes" }));
-  assert.ok(!dated.includes("birth_year.is.null"));
-  assert.equal(yearFilter(parsePeopleSearch({})), "");
-  assert.equal(yearFilter(parsePeopleSearch({ dated: "yes" })), "and=(or(first_season.not.is.null,birth_year.not.is.null))");
-  const q = peopleAdminQuery(parsePeopleSearch({ from: "1953", to: "2007" }), peopleOrder([{ key: "name", dir: "asc" }]), ["Al", 5]);
-  assert.equal(q.split("&").filter((x) => x.startsWith("or=")).length, 1, "the cursor keeps its own or=");
+  const all = yearWhere(parsePeopleSearch({ from: "1953", to: "2007" }));
+  assert.equal(all?.sql, "((first_season <= ? and last_season >= ?) or (first_season is null and birth_year >= ? and birth_year <= ?) or (first_season is null and birth_year is null))");
+  assert.deepEqual(all?.args, [2007, 1953, 1953, 2007]);
+  const dated = yearWhere(parsePeopleSearch({ from: "1953", to: "2007", dated: "yes" }));
+  assert.ok(!dated?.sql.includes("birth_year is null"));
+  assert.equal(yearWhere(parsePeopleSearch({})), null);
+  assert.equal(yearWhere(parsePeopleSearch({ dated: "yes" }))?.sql, "(first_season is not null or birth_year is not null)");
 });
 
-test("a name search reads the folded name of api.person_admin, one filter per word, accents ignored", () => {
-  const f = peopleAdminFilters(parsePeopleSearch({ q: "Terry Fox" }));
-  assert.deepEqual(f, ["search=like.*terry*", "search=like.*fox*"]);
-  assert.deepEqual(peopleAdminFilters(parsePeopleSearch({ q: "Steve Fonyó" })), ["search=like.*steve*", "search=like.*fonyo*"]);
+test("a name search reads the folded name, one like per word, accents ignored", () => {
+  assert.deepEqual(peopleWhere(parsePeopleSearch({ q: "Terry Fox" })), { sql: " where search like ? and search like ?", args: ["%terry%", "%fox%"] });
+  assert.deepEqual(peopleWhere(parsePeopleSearch({ q: "Steve Fonyó" })).args, ["%steve%", "%fonyo%"]);
 });
 
 test("a first-name letter page filters on letter_first and orders by name with the person id as the tie-break", () => {
   const f = parsePeopleSearch({ letter: "T", letter_by: "first", page: "8" });
   assert.equal(f.page, 8);
-  const q = peopleAdminQuery(f);
-  assert.ok(q.startsWith("letter_first=eq.t&select="));
-  assert.ok(q.endsWith("order=name.asc,person_id.asc"));
-  assert.ok(!q.includes("letter_last"));
+  const q = peopleQuery(f, NAME_ASC, 100, 700);
+  assert.ok(q.sql.includes("where letter_first = ? order by name asc, person_id asc limit 100 offset 700"));
+  assert.ok(!q.sql.includes("letter_last"));
 });
 
-test("the admin view query is one request with allow-listed filters", () => {
-  const f = parsePeopleSearch({ q: "Bolt", sport: "athletics", nat: "jm", from: "1980", to: "1990", seasons: "no", source: "wikidata_meigen" });
-  const filters = peopleAdminFilters(f);
-  assert.equal(filters.filter((x) => x.startsWith("search=")).length, 1);
-  assert.ok(filters.some((x) => x.startsWith("sports=cs.")));
-  assert.ok(filters.includes("country=eq.JM"));
-  assert.ok(filters.some((x) => x.startsWith("and=(or(and(first_season.lte.1990,last_season.gte.1980)")));
-  assert.ok(filters.includes("has_seasons=eq.false"));
-  assert.ok(filters.some((x) => x.startsWith("sources=cs.")));
-  const q = peopleAdminQuery(f);
-  assert.ok(q.includes("select=person_id,name"));
-  assert.ok(q.includes("order=name.asc,person_id.asc"));
-  assert.equal(q.includes(";"), false);
+test("the query is one statement with allow-listed filters and every value bound", () => {
+  const f = parsePeopleSearch({ q: "Bolt'; drop table x; --", sport: "athletics", nat: "jm", from: "1980", to: "1990", seasons: "no", source: "wikidata_meigen" });
+  const q = peopleQuery(f, NAME_ASC, 100);
+  assert.equal(q.sql.includes("drop"), false);
+  assert.equal(q.sql.includes("'"), false);
+  assert.equal(q.sql.includes(";"), false);
+  assert.ok(q.sql.includes("exists (select 1 from json_each(sports) where value = ?)"));
+  assert.ok(q.sql.includes("exists (select 1 from json_each(sources) where value = ?)"));
+  assert.ok(q.sql.includes("has_seasons = 0"));
+  assert.ok(q.args.includes("athletics") && q.args.includes("wikidata_meigen") && q.args.includes("JM"));
+  const c = peopleCountQuery(f);
+  assert.ok(c.sql.startsWith("select count(*) as n from api_person_admin where"));
+  assert.equal(c.args.length, q.args.length);
 });
 
-test("a keyset cursor is an or= filter on the sort fields", () => {
-  const order = peopleOrder([{ key: "name", dir: "asc" }]);
-  const q = peopleAdminQuery(parsePeopleSearch({}), order, ["Bolt", 1]);
-  assert.ok(q.includes("or="));
-  assert.ok(q.includes("name.gt."));
+test("a keyset cursor continues after the last row, with empty values last", () => {
+  const after = afterSql(NAME_ASC, ["Bolt", 1]);
+  assert.equal(after.sql, "((name > ?) or (name = ? and person_id > ?))");
+  assert.deepEqual(after.args, ["Bolt", "Bolt", 1]);
+  const born = afterSql(peopleOrder([{ key: "born", dir: "desc" }]), [1986, "Bolt", 1]);
+  assert.ok(born.sql.startsWith("((birth_year < ?) or (birth_year is null) or (birth_year = ? and name > ?)"));
+  const q = peopleQuery(parsePeopleSearch({ q: "bolt" }), NAME_ASC, 101, 0, ["Bolt", 1]);
+  assert.ok(q.sql.includes("where search like ? and ((name > ?)"));
   const cursor = cursorOf("name.asc", ["Bolt", 1]);
-  const f = parsePeopleSearch({ after: cursor });
-  assert.equal(f.after, cursor);
-});
-
-test("the people fallback cannot filter by sport or source", () => {
-  const f = parsePeopleSearch({ q: "Bolt", seasons: "no", nat: "JM" });
-  const q = peopleFallbackQuery(f);
-  assert.ok(q.includes("name=ilike."));
-  assert.ok(q.includes("seasons_played=eq.0"));
-  assert.equal(q.includes("sport"), false);
-  assert.equal(q.includes("qid"), false);
+  assert.equal(parsePeopleSearch({ after: cursor }).after, cursor);
 });

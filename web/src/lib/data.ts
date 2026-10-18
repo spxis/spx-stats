@@ -8,6 +8,7 @@ import {
   seasonNoteSchema, seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
 } from "./api/schemas";
 import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
+import { tursoConfigured, tursoQuality, tursoTotals } from "./turso/aggregates";
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons";
@@ -24,7 +25,8 @@ export const getSummary = cache(async (): Promise<{ seasons: SeasonSummaryRow[];
     rows("totals", "select=*", totalsSchema),
   ]);
   if (!totals[0]) throw new ApiError("totals: no row");
-  return { seasons: await withUpcomingClubs(seasons), totals: totals[0] };
+  const own = tursoConfigured() ? await tursoTotals() : null;
+  return { seasons: await withUpcomingClubs(seasons), totals: own ? { ...totals[0], ...own } : totals[0] };
 });
 
 /**
@@ -284,7 +286,7 @@ function sum<T extends { n: number }>(list: T[], key: (x: T) => string): T[] {
 
 export const getQuality = cache(async () => {
   const [q, by] = await Promise.all([
-    rows("quality", "select=*&order=n.desc", qualitySchema),
+    tursoConfigured() ? tursoQuality() : rows("quality", "select=*&order=n.desc", qualitySchema),
     rows("games_by_source", "select=*&order=league,games.desc", gamesBySourceSchema),
   ]);
   const checks = sum(

@@ -23,6 +23,7 @@
     "i18n:review": "node scripts/i18n-review.ts",
     "test:i18n": "node --test scripts/i18n.test.ts",
     "test:auth": "node --conditions=react-server --test scripts/auth.test.ts scripts/authPreview.test.ts",
+    "test:turso": "node --conditions=react-server --test scripts/turso.test.ts scripts/adminPeople.test.ts",
     "test:revalidate": "node --test scripts/revalidate.test.ts",
     "test:releases": "node --test scripts/releases.test.ts",
     "test:localtime": "node --test scripts/localTime.test.ts",

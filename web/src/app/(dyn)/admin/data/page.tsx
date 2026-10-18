@@ -174,6 +174,7 @@ function PendingCard({ r, query, paused }: { r: Release; query: Query; paused: b
       </p>
       {r.notes ? <p>{r.notes}</p> : null}
       <AutoNote r={r} paused={paused} />
+      {r.preview?.target === "turso" ? <p className="note">Goes to Turso, not production: the last column counts Turso rows. Production is not touched.</p> : null}
       {r.kind === "ds1_step" && r.preview?.file ? <p className="note">Runs <code>{r.preview.file}</code> on DS1 only, in one transaction. Production is not touched.</p> : null}
       {blockers.length ? (
         <ul className="dr-alert" role="alert">
