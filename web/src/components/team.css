@@ -98,3 +98,25 @@ h2 .gamesteam .logo { margin: 0 8px 0 0; vertical-align: -4px; }
   .headcorner { position: static; width: 100%; max-width: 260px; margin-bottom: 8px; }
   .head:has(.headcorner) { min-height: 0; }
 }
+
+/* A team's season header: the season title with its buttons and the map in the top-right corner, the ranks as small chips under the name. */
+.tshead { gap: 8px; }
+.tscorner { display: flex; align-items: flex-start; gap: 14px; }
+.tsseason { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; }
+.tsseason .seasonnav { position: static; }
+.tscorner .mapbtn { position: static; width: 190px; flex: none; }
+.tshead .ranks ul { display: flex; flex-wrap: wrap; justify-content: flex-start; gap: 6px; font: 600 13px/1 var(--body); }
+.tshead .ranks li { padding: 5px 9px; border: 1px solid var(--rule); background: var(--panel); }
+.tshead .ranks p { margin: 4px 0 0; text-align: left; }
+.tshead h1 { margin: 0; }
+.tshead :is(.lede, .note) { margin: 0; font-size: 16px; }
+@media (min-width: 641px) {
+  .tscorner { position: absolute; top: 0; right: 0; }
+  .tshead { min-height: 150px; }
+  .tshead :is(h1, .ranks, .lede, .reigning) { max-width: calc(100% - 470px); }
+}
+@media (max-width: 640px) {
+  .tscorner { flex-direction: row; flex-wrap: wrap; align-items: flex-start; gap: 8px 12px; }
+  .tsseason { align-items: flex-start; }
+  .tscorner .mapbtn { width: 150px; }
+}

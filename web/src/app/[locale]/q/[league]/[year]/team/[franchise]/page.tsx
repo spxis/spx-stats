@@ -194,23 +194,23 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       {b?.primary_hex ? (
         <div className="teamband" style={{ "--tp": `#${b.primary_hex}`, "--ts": `#${b.secondary_hex || b.primary_hex}` } as React.CSSProperties} />
       ) : null}
-      <section className="head fade">
-        {seasonNav}
-        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
-        <div className="namerow">
-          <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<Flag code={countryAt(place?.latitude, place?.longitude)} /></h1>
-          <div className="seasonside">
+      <section className="head fade tshead">
+        <div className="tscorner">
+          <div className="tsseason">
+            {seasonNav}
             <Link className="seasonlabel" href={seasonPath(lg, y)}>{say("season.title", { label: season })}</Link>
-            {ranks || figureRanks.length ? <TeamRanks lg={lg} year={y} ranks={ranks} figures={figureRanks} /> : null}
           </div>
+          {mePin ? <SeasonMapThumb me={mePin} leagueShort={LG[lg]} seasonLabel={season} name={name} /> : null}
         </div>
+        <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
+        <h1 className="teamname"><TeamLogo url={logo} size={56} />{name}<Flag code={countryAt(place?.latitude, place?.longitude)} /></h1>
+        {ranks || figureRanks.length ? <TeamRanks lg={lg} year={y} ranks={ranks} figures={figureRanks} /> : null}
         {isChamp ? <span className="reigning" title={trophyPhrase(lg, y) ? say(trophyPhrase(lg, y)!) : undefined}><BadgeCup league={lg} />{say("tseason.champions", { season })}</span> : null}
         <p className="lede">
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>        </p>
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={mePin.venue ?? place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
-        {mePin ? <SeasonMapThumb me={mePin} leagueShort={LG[lg]} seasonLabel={season} name={name} /> : null}
         <CompareControl lg={lg} f={f} name={name} year={y} />
       </section>
       {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
