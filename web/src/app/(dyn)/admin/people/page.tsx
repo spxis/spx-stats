@@ -13,8 +13,11 @@ import { SportChip } from "@/components/SportChip";
 import { queryHref } from "@/components/ViewTabs";
 import { requireAdmin } from "@/lib/auth/user";
 import { hasFlag } from "@/lib/flagCodes";
+import type { Speaker } from "@/lib/i18n/i18n";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { listTitle } from "@/lib/listTitle";
 import { parsePeopleSearch, PEOPLE_SORTS, peopleCountries, peopleLetterCounts, peopleSources, peopleSpan, peopleSports, searchPeople, type PersonAdminRow } from "@/lib/adminPeople";
+import type { Locale } from "@/lib/locale";
 import { countryName } from "@/lib/people-format";
 import { chipSplit } from "@/lib/playerCountryModel";
 import { getPlayerPaths } from "@/lib/playerLinks";
@@ -30,8 +33,6 @@ import { PeopleTabs } from "./PeopleTabs";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
-export const metadata: Metadata = { title: "People", robots: { index: false, follow: false } };
-
 type Query = Record<string, string | string[] | undefined>;
 
 const DEF_SORT = "name.asc";
@@ -42,6 +43,27 @@ const dash = <span className="note">–</span>;
 function years(from: number | null, to: number | null): string | null {
   if (from == null) return null;
   return to == null || to === from ? String(from) : `${from}–${to}`;
+}
+
+/** The filters that narrow the list, said after the page word in the heading and the tab's title. */
+function filtersOf(parsed: ReturnType<typeof parsePeopleSearch>, say: Speaker["say"], locale: Locale): string[] {
+  const league = parsed.league ?? "";
+  const nat = parsed.country ?? "";
+  const sport = parsed.sport ?? "";
+  const seasons = parsed.seasons ?? "";
+  const source = parsed.source ?? "";
+  return [
+    league ? league.toUpperCase() : "",
+    sport ? sportName(sport, locale) : "",
+    nat ? countryName(nat, locale) : "",
+    seasons ? (seasons === "yes" ? say("peopleAdmin.seasons.yes") : say("peopleAdmin.seasons.no")) : "",
+    source.replaceAll("_", " "),
+  ].filter(Boolean);
+}
+
+export async function generateMetadata({ searchParams }: { searchParams: Promise<Query> }): Promise<Metadata> {
+  const { say, locale } = await currentSpeaker();
+  return { title: listTitle(say("peopleAdmin.title"), filtersOf(parsePeopleSearch(await searchParams), say, locale)), robots: { index: false, follow: false } };
 }
 
 export default async function AdminPeopleSearchPage({ searchParams }: { searchParams: Promise<Query> }) {
@@ -98,13 +120,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     { code: "yes", short: say("peopleAdmin.seasons.yesChip") },
     { code: "no", short: say("peopleAdmin.seasons.noChip") },
   ];
-  const filters = [
-    league ? league.toUpperCase() : "",
-    sport,
-    nat ? countryName(nat, locale) : "",
-    seasons ? (seasons === "yes" ? say("peopleAdmin.seasons.yes") : say("peopleAdmin.seasons.no")) : "",
-    source,
-  ].filter(Boolean);
+  const filters = filtersOf(parsed, say, locale);
   const table = result.kind === "ok" ? tableOf(result.rows, [
     {
       key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PersonAdminRow) => p.name,
