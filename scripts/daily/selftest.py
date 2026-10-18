@@ -488,6 +488,114 @@ def test_starts():
     check("start" not in by["2026_02_SEA_NE"], "nflverse: NA gametime is not a start")
 
 
+def test_isolation():
+    """A league, a club or a game that fails costs only itself (tickets: one league or club must never block the others)."""
+    import contextlib, io, json, tempfile, types
+    import apply as A, run as R
+
+    def go(fail=(), raise_in=(), bad_game=None, skipped_clubs=None, errors=None, missing=None):
+        leagues = ["nhl", "nba", "mlb", "nfl", "cfl"]
+        calls, staged_seen = [], {}
+
+        class Fake:
+            @staticmethod
+            def staging_row(g):
+                if g["source_key"] == bad_game: raise KeyError("no such club")
+                return dict(source_key=g["source_key"], home_name="H", away_name="A")
+
+            @staticmethod
+            def observation(g, roster): return dict(game_ref=g["source_key"], home_name="H", away_name="A")
+
+            @staticmethod
+            def apply(todo, pages, raw, staged, obs, lseasons, nfl, log_dir, rehearse_only=False, result=None, files=(), league=""):
+                calls.append(league); staged_seen[league] = len(staged)
+                if league in raise_in: raise RuntimeError("boom")
+                if league in fail:
+                    result["reason"] = "a check failed: each club article's rows = the club's games in core | 6 of 101 clubs unexplained"
+                    return 1
+                result.update(committed=True, pages_new=2, clubs_skipped=(skipped_clubs or {}).get(league, []), games_skipped=len((skipped_clubs or {}).get(league, [])) * 3,
+                              load=dict(games_changed=4, tables={"core.game": dict(ins=0, upd=4, **{"del": 0})}))
+                return 0
+
+        gm = lambda lg: [dict(source_key="%s:%d" % (lg, i)) for i in range(5)]
+        a = types.SimpleNamespace(raw_dir="/nonexistent", log_dir="/nonexistent", rehearse=False, apply=True)
+        built = [lg for lg in leagues if lg not in (errors or {})]
+        plans = {lg: [] for lg in leagues}
+        report = {lg: dict(missing=(missing or {}).get(lg, [])) for lg in leagues}
+        result = {}
+        with contextlib.redirect_stdout(io.StringIO()):
+            rc = R.write_leagues(a, built, errors or {}, {lg: 2026 for lg in leagues}, plans, report, {lg: gm(lg) for lg in leagues}, {lg: [] for lg in leagues},
+                                 {lg: None for lg in leagues}, {"pages": {}}, result, A=Fake)
+        return rc, result, calls, staged_seen
+
+    rc, res, calls, staged = go()
+    out = {lg: x["outcome"] for lg, x in res["league_results"].items()}
+    check(rc == 0 and set(out.values()) == {"ok"} and len(out) == 5 and res["committed"], "all five leagues pass: every league ok, exit 0")
+    check(res["load"]["games_changed"] == 20 and res["load"]["tables"]["core.game"]["upd"] == 20, "all pass: the release hook gets the sum of the leagues' tables")
+    rc, res, calls, staged = go(fail=("mlb",))
+    out = {lg: x["outcome"] for lg, x in res["league_results"].items()}
+    check(rc == 1 and out == {"nhl": "ok", "nba": "ok", "mlb": "failed", "nfl": "ok", "cfl": "ok"}, "one league fails its checks: only it is failed, the other four are saved, exit 1 (the next run tries it again)")
+    check("clubs unexplained" in res["league_results"]["mlb"]["reason"] and sorted(calls) == ["cfl", "mlb", "nba", "nfl", "nhl"] and res["committed"], "the failed league says which check; the others were still applied")
+    rc, res, calls, staged = go(raise_in=("nba",))
+    check(rc == 1 and res["league_results"]["nba"]["outcome"] == "failed" and res["league_results"]["nhl"]["outcome"] == "ok" and res["league_results"]["cfl"]["outcome"] == "ok", "an exception in one league is that league's failure only")
+    rc, res, calls, staged = go(fail=("nhl", "nba", "mlb", "nfl", "cfl"))
+    check(rc == 1 and {x["outcome"] for x in res["league_results"].values()} == {"failed"} and not res["committed"] and res["load"]["tables"] == {}, "all five fail: all failed, nothing committed, exit 1")
+    rc, res, calls, staged = go(skipped_clubs={"mlb": ["Cleveland Guardians"]})
+    x = res["league_results"]["mlb"]
+    check(rc == 0 and x["outcome"] == "warning" and x["clubs_skipped"] == ["Cleveland Guardians"] and x["games_skipped"] == 3 and x["committed"], "one club left out: its league still commits, with a warning that names the club and counts the games")
+    check(all(res["league_results"][lg]["outcome"] == "ok" for lg in ("nhl", "nba", "nfl", "cfl")), "one club left out: the other leagues are untouched")
+    rc, res, calls, staged = go(bad_game="nhl:3")
+    check(staged["nhl"] == 4 and staged["nba"] == 5 and res["league_results"]["nhl"]["games_skipped"] == 1 and res["league_results"]["nhl"]["outcome"] == "warning" and rc == 0,
+          "one game that cannot be staged is left out alone: the other four of its league and every other league are saved")
+    check(res["league_results"]["nhl"]["games_unreadable"][0]["game"] == "nhl:3", "the unreadable game is named")
+    rc, res, calls, staged = go(errors={"cfl": "RuntimeError: its source is down"})
+    check(rc == 1 and res["league_results"]["cfl"]["outcome"] == "failed" and "cfl" not in calls and res["league_results"]["nhl"]["outcome"] == "ok", "a league whose sources fail is failed without stopping the others")
+    rc, res, calls, staged = go(missing={"nfl": ["2026 X season"]})
+    check(rc == 0 and res["league_results"]["nfl"]["outcome"] == "skipped" and "nfl" not in calls, "a league with pages missing is skipped with the reason, not failed")
+
+    # apply(): the club-count check names an odd club -> a second rehearsal without its games -> commit; a real failure blocks the league
+    seen = []
+
+    def runner(modes):
+        def fake(script, label, log_path, show=True):
+            wd = os.path.dirname(script)
+            main = open(script).read() if script.endswith("main.sql") else ""
+            seen.append(dict(label=label, load=open(os.path.join(wd, "load.sql")).read() if os.path.exists(os.path.join(wd, "load.sql")) else "", main=main))
+            return 0, modes[label if label != "rehearsal" else "rehearsal%d" % sum(1 for s in seen if s["label"] == "rehearsal")]
+        return fake
+    staged = [dict(source_key="k1", home_name="Cleveland Guardians", away_name="Tampa Bay Rays", league="mlb", season=2026),
+              dict(source_key="k2", home_name="Tampa Bay Rays", away_name="Boston Red Sox", league="mlb", season=2026)]
+    obs = [dict(game_ref="k1", home_name="Cleveland Guardians", away_name="Tampa Bay Rays"), dict(game_ref="k2", home_name="Tampa Bay Rays", away_name="Boston Red Sox")]
+    odd = 'DAILY_CLUB ' + json.dumps(dict(league="mlb", season=2026, club="Cleveland Guardians", page_rows=174, core_games=181, held=0, singles=0))
+    saved = (A.run_script, A.run_script_text, A.held_revisions)
+    A.held_revisions = lambda: set()
+    A.run_script_text = lambda sql, label, log: (0, "")
+    try:
+        with tempfile.TemporaryDirectory() as logs, contextlib.redirect_stdout(io.StringIO()):
+            A.run_script = runner({"rehearsal1": "RESULT: rolled back (rehearsal), every check passed\n" + odd + "\n", "rehearsal2": "RESULT: rolled back (rehearsal), every check passed\n",
+                                   "load": 'RESULT: committed\nDAILY_SUMMARY {"games_changed": 1, "tables": {}}\n'})
+            res = {}
+            rc = A.apply([], {}, "/nonexistent", staged, obs, [("mlb", 2026)], None, logs, result=res, league="mlb")
+        rehearsals = [s for s in seen if s["label"] == "rehearsal"]
+        check(rc == 0 and res["committed"] and res["clubs_skipped"] == ["Cleveland Guardians"] and res["games_skipped"] == 1, "apply: an odd club is left out, the league still commits")
+        check(len(rehearsals) == 2 and '"k1"' in rehearsals[0]["load"] and '"k1"' not in rehearsals[1]["load"] and '"k2"' in rehearsals[1]["load"],
+              "apply: the second rehearsal and the load hold every game except the odd club's")
+        check("insert into _skip values ('Cleveland Guardians')" in rehearsals[1]["main"] and "insert into _skip" not in rehearsals[0]["main"], "apply: the skipped club reaches the checks")
+        seen.clear()
+        with tempfile.TemporaryDirectory() as logs, contextlib.redirect_stdout(io.StringIO()):
+            A.run_script = runner({"rehearsal1": "DAILY_FAIL the same report a second time adds no observation | corrupt\nRESULT: rolled back, a check failed\n"})
+            res = {}
+            rc = A.apply([], {}, "/nonexistent", staged, obs, [("mlb", 2026)], None, logs, result=res, league="mlb")
+        check(rc == 1 and not res["committed"] and "second time" in res["reason"] and not any(s["label"] == "load" for s in seen), "apply: a check that finds corrupt data blocks the league, nothing is loaded")
+    finally:
+        A.run_script, A.run_script_text, A.held_revisions = saved
+    A_main = A.main_script
+    with tempfile.TemporaryDirectory() as wd:
+        for n in ("archive.sql", "load.sql", "report.sql"): open(os.path.join(wd, n), "w").write("")
+        text = open(A_main(wd, False, True, "nhl", ["It's"])).read()
+    check("\\set league 'nhl'" in text and "insert into _skip values ('It''s');" in text and "\\set clubcheck " in text, "main script: the league, the skipped clubs (quoted) and the club check file")
+
+
 def run():
     test_observation()
     test_starts()
@@ -498,11 +606,12 @@ def run():
     test_doubleheader()
     test_stage2()
     test_release_hook()
+    test_isolation()
     if FAILS:
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL), recorded start times and the release hook (auto and review routes)")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL), recorded start times, the release hook (auto and review routes) and the isolation of leagues, clubs and games")
     return 0
 
 

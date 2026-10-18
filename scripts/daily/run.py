@@ -94,11 +94,15 @@ def parse_pages(league, y, pages, roster, raw_dir, state):
         if not os.path.exists(path): continue
         text = open(path, encoding="utf-8").read()
         rev = state["pages"].get(p["title"], {}).get("revid")
-        if p["kind"] == "league":
-            cs, b = P.parse_mlb_postseason(text, y, roster, p["title"])
-            for c in cs: c["league_page"] = True
-        else:
-            cs, b = P.PARSERS[league](text, y, p["team"], roster, p["title"])
+        try:
+            if p["kind"] == "league":
+                cs, b = P.parse_mlb_postseason(text, y, roster, p["title"])
+                for c in cs: c["league_page"] = True
+            else:
+                cs, b = P.PARSERS[league](text, y, p["team"], roster, p["title"])
+        except Exception as e:      # one page that cannot be read costs that page only; its club then shows in the club-count check
+            bad.append((p["title"], "page could not be parsed: %s: %s" % (type(e).__name__, str(e)[:200])))
+            continue
         for c in cs: c["revid"] = rev
         claims += cs; bad += [(p["title"], x) for x in b]; nparsed += 1
     return claims, bad, nparsed
@@ -194,6 +198,79 @@ def main():
     return rc
 
 
+def write_leagues(a, built, league_errors, seasons, plans, report, all_games, league_claims, rosters, state, result, A=None):
+    """Stage 2 for each league on its own: its rehearsal, its checks, its commit. A league that fails (or cannot be read, or lacks pages) never
+    stops another; a game that cannot be staged is left out alone and counted. `result["league_results"]` is the per-league outcome the heartbeat
+    keeps: outcome ok | warning (something was left out) | skipped | failed, a reason, the games and clubs left out, and the rows written.
+    -> the exit code: 1 when any league failed (the next run tries that league again), else 0."""
+    if A is None:
+        import apply as A
+    results = result["league_results"] = {}
+    for lg, err in league_errors.items():
+        results[lg] = dict(outcome="failed", reason="could not read its sources: " + err, games_skipped=0, clubs_skipped=[])
+    result["leagues"] = []
+    rc = 1 if league_errors else 0
+    tables, changed = {}, 0
+    for lg in built:
+        r = report[lg]
+        lr = results[lg] = dict(outcome="failed", reason=None, games_skipped=0, clubs_skipped=[])
+        if r["missing"]:
+            lr.update(outcome="skipped", reason="pages missing: " + ", ".join(r["missing"][:3]))
+            print("\n%s NOT applied: %s" % (lg.upper(), lr["reason"])); continue
+        try:
+            todo = [dict(p, path=raw_path(a.raw_dir, p), claims=[c for c in league_claims[lg] if c["page"] == p["title"]]) for p in plans[lg]]
+            staged, observations, unstaged = [], [], []
+            for g in all_games[lg]:
+                try:       # one game that cannot be staged is left out alone
+                    row, obs = A.staging_row(g), A.observation(g, rosters[lg])
+                except Exception as e:
+                    unstaged.append(dict(game=g.get("source_key"), reason="%s: %s" % (type(e).__name__, str(e)[:200]))); continue
+                staged.append(row); observations.append(obs)
+            nfl = None
+            if lg == "nfl":
+                sub = nflverse_subset(a.raw_dir, seasons["nfl"])
+                info = state.get("nflverse", {})
+                if sub:
+                    fetched = info.get("fetched_at") or datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(a.raw_dir, "nflverse", "games.csv")), datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                    nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
+                               claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
+            files = []
+            bdl = [c for c in league_claims.get(lg, []) if c["source"] == B.SOURCE]
+            if lg in ("nba", "mlb", "nfl") and bdl:
+                sub = B.subset(a.raw_dir, seasons[lg]) if lg == "nba" else S.subset(a.raw_dir, lg, seasons[lg])
+                fetched = state.get(B.SOURCE if lg == "nba" else S.state_key(lg), {}).get("fetched_at") or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+                if sub: files.append(dict(source=B.SOURCE, league=lg, season=seasons[lg], title=B.TITLE if lg == "nba" else S.title(lg), ext="json", data=sub[0], sha256=sub[1],
+                                          day=fetched[:10], fetched_at=fetched, claims=bdl, **({} if lg == "nba" else {"stem": S.stem(lg, seasons[lg])})))
+            res = {}
+            code = A.apply(todo, state["pages"], a.raw_dir, staged, observations, [(lg, seasons[lg])], nfl, a.log_dir,
+                           rehearse_only=a.rehearse and not a.apply, result=res, files=files, league=lg)
+        except Exception as e:
+            code, res, unstaged = 1, dict(reason="%s: %s" % (type(e).__name__, str(e)[:300])), []
+        lr["games_skipped"] = len(unstaged) + res.get("games_skipped", 0)
+        lr["clubs_skipped"] = res.get("clubs_skipped", [])
+        if unstaged: lr["games_unreadable"] = unstaged[:20]
+        if code != 0:
+            lr.update(outcome="failed", reason=res.get("reason") or "the league's load stopped (exit %d)" % code)
+            rc = 1
+            print("\n%s FAILED, the other leagues go on: %s" % (lg.upper(), lr["reason"])); continue
+        result["leagues"].append(lg)
+        lr.update(outcome="warning" if lr["games_skipped"] or lr["clubs_skipped"] else "ok", committed=bool(res.get("committed")), pages_new=res.get("pages_new"))
+        if lr["outcome"] == "warning":
+            lr["reason"] = "left out: %d club(s)%s, %d game(s)" % (len(lr["clubs_skipped"]), " (" + ", ".join(lr["clubs_skipped"]) + ")" if lr["clubs_skipped"] else "", lr["games_skipped"])
+        load = res.get("load") or {}
+        if res.get("committed"):
+            lr["games_changed"] = load.get("games_changed", 0)
+            changed += load.get("games_changed", 0) or 0
+            for t, n in (load.get("tables") or {}).items():
+                m = tables.setdefault(t, dict(ins=0, upd=0, del_=0))
+                m["ins"] += n.get("ins", 0); m["upd"] += n.get("upd", 0); m["del_"] += n.get("del", 0)
+    result["skipped"] = ["%s (%s)" % (lg.upper(), x["reason"]) for lg, x in results.items() if x["outcome"] == "skipped"]
+    result["games_skipped"] = sum(x["games_skipped"] for x in results.values())
+    result["committed"] = any(x.get("committed") for x in results.values())
+    result["load"] = dict(games_changed=changed, tables={t: dict(ins=m["ins"], upd=m["upd"], **{"del": m["del_"]}) for t, m in tables.items()})
+    return rc
+
+
 def run(a, result):
     """The whole run for the parsed arguments. `result` collects what the heartbeat records."""
     writing = a.apply or a.rehearse
@@ -214,7 +291,9 @@ def run(a, result):
     every = [p for lg in leagues for p in plans[lg]]
     changed_all, missing_all, _ = refresh(client, state, every, a.raw_dir, a.offline)     # one revisions pass for all leagues
     W.save_state(a.state, state)
+    league_errors = {}
     for lg in leagues:
+      try:       # one league that cannot be built (its sources, its parser) stops that league only
         y, roster, pages = seasons[lg], rosters[lg], plans[lg]
         titles = {p["title"] for p in pages}
         changed, missing = [t for t in changed_all if t in titles], [t for t in missing_all if t in titles]
@@ -236,16 +315,20 @@ def run(a, result):
         stamps = sorted(state["pages"][t].get("timestamp", "") for t in titles if t in state["pages"])
         report[lg] = dict(season=y, pages=len(pages), changed=len(changed), missing=missing, parsed=nparsed, claims=len(claims), preseason=pre,
                           bad=bad, games=len(gs), second=second, newest_rev=stamps[-1] if stamps else None, oldest_rev=stamps[0] if stamps else None)
+      except Exception as e:
+        league_errors[lg] = "%s: %s" % (type(e).__name__, str(e)[:300])
+        print("%s FAILED while reading its sources; the other leagues go on: %s" % (lg.upper(), league_errors[lg]))
     W.save_state(a.state, state)
+    built = [lg for lg in leagues if lg not in league_errors]
     print("\n== Wikipedia pages ==")
-    for lg in leagues:
+    for lg in built:
         r = report[lg]
         print("%-4s season %-8s pages %3d  changed/downloaded %3d  parsed %3d  missing %s  rows unreadable %d  revisions %s .. %s" % (
             lg.upper(), season_label(lg, r["season"]), r["pages"], r["changed"], r["parsed"], r["missing"] or "none", len(r["bad"]),
             (r["oldest_rev"] or "-")[:16], (r["newest_rev"] or "-")[:16]))
         if r["second"]: print("     second sources: " + "; ".join(r["second"]))
     print("\n== Games found (preseason excluded) ==")
-    for lg in leagues:
+    for lg in built:
         gs = all_games[lg]
         c = collections.Counter(g["status"] for g in gs); k = collections.Counter(g["confidence"] for g in gs if g["status"] == "final")
         ph = collections.Counter(g["phase"] for g in gs)
@@ -267,37 +350,11 @@ def run(a, result):
                       f, indent=1, ensure_ascii=False, default=str)
     rc = 0
     if writing:
-        import apply as A
-        todo, staged, observations, lseasons, skipped = [], [], [], [], []
-        for lg in leagues:
-            r = report[lg]
-            if r["missing"]:
-                skipped.append("%s (pages missing: %s)" % (lg.upper(), ", ".join(r["missing"][:3]))); continue
-            for p in plans[lg]:
-                todo.append(dict(p, path=raw_path(a.raw_dir, p), claims=[c for c in league_claims[lg] if c["page"] == p["title"]]))
-            staged += [A.staging_row(g) for g in all_games[lg]]
-            observations += [A.observation(g, rosters[lg]) for g in all_games[lg]]
-            lseasons.append((lg, seasons[lg]))
-        nfl = None
-        if "nfl" in [lg for lg, _ in lseasons]:
-            sub = nflverse_subset(a.raw_dir, seasons["nfl"])
-            info = state.get("nflverse", {})
-            if sub:
-                fetched = info.get("fetched_at") or datetime.datetime.fromtimestamp(os.path.getmtime(os.path.join(a.raw_dir, "nflverse", "games.csv")), datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-                nfl = dict(data=sub[0], sha256=sub[1], season=seasons["nfl"], day=fetched[:10], fetched_at=fetched,
-                           claims=[c for c in league_claims["nfl"] if c["source"] == "nflverse"])
-        files = []
-        for lg in ("nba", "mlb", "nfl"):
-            bdl = [c for c in league_claims.get(lg, []) if c["source"] == B.SOURCE]
-            if lg not in [x for x, _ in lseasons] or not bdl: continue
-            sub = B.subset(a.raw_dir, seasons[lg]) if lg == "nba" else S.subset(a.raw_dir, lg, seasons[lg])
-            fetched = state.get(B.SOURCE if lg == "nba" else S.state_key(lg), {}).get("fetched_at") or datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-            if sub: files.append(dict(source=B.SOURCE, league=lg, season=seasons[lg], title=B.TITLE if lg == "nba" else S.title(lg), ext="json", data=sub[0], sha256=sub[1],
-                                      day=fetched[:10], fetched_at=fetched, claims=bdl, **({} if lg == "nba" else {"stem": S.stem(lg, seasons[lg])})))
-        if skipped: print("\nNOT applied: " + "; ".join(skipped))
-        result.update(leagues=[lg for lg, _ in lseasons], skipped=skipped)
-        rc = A.apply(todo, state["pages"], a.raw_dir, staged, observations, lseasons, nfl, a.log_dir, rehearse_only=a.rehearse and not a.apply, result=result, files=files)
-        if rc == 0 and result.get("committed"):
+        rc = write_leagues(a, built, league_errors, seasons, plans, report, all_games, league_claims, rosters, state, result)
+        print("\n== Leagues ==")
+        for lg, x in result["league_results"].items():
+            print("%-4s %-8s %s" % (lg.upper(), x["outcome"], x.get("reason") or ""))
+        if result.get("committed"):
             import release_hook
             load = result.get("load") or {}
             result["release"] = release_hook.prepare_release(load.get("tables"), datetime.date.today().isoformat(), load)

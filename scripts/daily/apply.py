@@ -25,6 +25,7 @@ MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wi
 BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
+CLUBCHECK = os.path.join(HERE, "clubcheck.sql")
 
 
 def lit(s):
@@ -211,7 +212,7 @@ def report_sql(observations):
     return "set local role ingest_writer;\nselect ingest.report_results(%s) as j \\gset\nreset role;\n" % jlit(observations)
 
 
-def main_script(workdir, with_archive, commit):
+def main_script(workdir, with_archive, commit, league="", skip=()):
     """The one transaction: migrations, snapshot, [archive], raw load, 152, report, bulk step, report again, snapshot, checks, commit or rollback."""
     mig = []
     for i, m in enumerate(MIGRATIONS):
@@ -220,7 +221,9 @@ def main_script(workdir, with_archive, commit):
     bld = os.path.join(workdir, "build.sql")
     open(bld, "w").write(strip_txn(BUILD))
     rep = os.path.join(workdir, "report.sql")
-    s = ["\\set ON_ERROR_STOP on", "\\set commit " + ("true" if commit else "false"), "begin;", "set client_min_messages = warning;",
+    s = ["\\set ON_ERROR_STOP on", "\\set commit " + ("true" if commit else "false"), "\\set league " + lit(league), "\\set clubcheck " + CLUBCHECK,
+         "begin;", "set client_min_messages = warning;",
+         "create temp table _skip (club text not null);"] + ["insert into _skip values (%s);" % lit(c) for c in skip] + [
          "create temp table _snap (snap text, what text, league text, k text, n bigint);",
          "create temp table _gh (snap text, game_id bigint, source_id smallint, game_date date, st text, h text);",
          "create temp table _checks (name text not null, ok boolean not null, detail text);"]
@@ -251,6 +254,7 @@ def main_script(workdir, with_archive, commit):
           "'games_made', (select (j ->> 'games_made')::int from _rep), 'games_changed_by_replay', (select (j ->> 'games_changed')::int from _rep), "
           "'tables', coalesce((select jsonb_object_agg(schemaname || '.' || relname, jsonb_build_object('ins', n_tup_ins, 'upd', n_tup_upd, 'del', n_tup_del)) "
           "from pg_stat_xact_all_tables where schemaname in ('core', 'meta', 'ref') and n_tup_ins + n_tup_upd + n_tup_del > 0), '{}'::jsonb))::text;",
+          "select 'DAILY_FAIL ' || name || ' | ' || coalesce(detail, '') from _checks where not ok;",
           "\\pset format aligned", "\\pset tuples_only off",
           "\\if :all_ok", "  \\if :commit", "    commit;", "    \\echo RESULT: committed", "  \\else", "    rollback;", "    \\echo RESULT: rolled back (rehearsal), every check passed", "  \\endif",
           "\\else", "  rollback;", "  \\echo RESULT: rolled back, a check failed", "\\endif"]
@@ -268,27 +272,90 @@ def daily_summary(out):
     return None
 
 
-def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False, result=None, files=()):
+def lines_of(out, tag):
+    """The JSON payloads of the `tag {json}` lines of a script's output."""
+    got = []
+    for ln in out.splitlines():
+        if ln.startswith(tag + " "):
+            try: got.append(json.loads(ln[len(tag) + 1:]))
+            except ValueError: pass
+    return got
+
+
+def failed_checks(out):
+    """['check name | detail', ...] from the DAILY_FAIL lines."""
+    return [ln[len("DAILY_FAIL "):] for ln in out.splitlines() if ln.startswith("DAILY_FAIL ")]
+
+
+def without_clubs(staged, observations, clubs):
+    """Staged games and observations without any game a skipped club plays in. -> (staged, observations, dropped source keys)"""
+    clubs = set(clubs)
+    if not clubs: return staged, observations, []
+    keep = lambda r: r["home_name"] not in clubs and r["away_name"] not in clubs
+    dropped = [r["source_key"] for r in staged if not keep(r)]
+    return [r for r in staged if keep(r)], [o for o in observations if keep(o)], dropped
+
+
+def record_issues(league, season, issues, day):
+    """One meta.data_issue row per club left out of a committed league load, once; the open rows of this league and season for clubs no
+    longer left out are closed. Best effort: a failure here never changes the load's outcome."""
+    try:
+        sid = "(select source_id from meta.source where code = 'wikipedia_daily')"
+        sql = ["begin;"]
+        for s in issues:
+            sql.append("insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution) select %s, %s, %s, %s, %s "
+                       "where not exists (select 1 from meta.data_issue i where i.source_id = %s and i.entity_kind = %s and i.entity_key = %s and i.issue = %s and i.resolved_at is null);"
+                       % (sid, lit(s["kind"]), lit(s["key"]), lit(s["issue"]), lit("left out of the daily load on %s; the rest of the league was saved" % day),
+                          sid, lit(s["kind"]), lit(s["key"]), lit(s["issue"])))
+        keys = "{" + ",".join('"%s"' % s["key"].replace("\\", "\\\\").replace('"', '\\"') for s in issues) + "}"
+        sql.append("update meta.data_issue set resolved_at = now() where source_id = %s and resolved_at is null and issue like 'daily: left out%%' and entity_key like %s and entity_key <> all (%s::text[]);"
+                   % (sid, lit("%s:%s:%%" % (league, season)), lit(keys)))
+        sql.append("commit;")
+        rc, out = run_script_text("\n".join(sql), "issues", os.path.join(tempfile.gettempdir(), "spx-daily-issues.log"))
+        return rc == 0
+    except Exception as e:
+        print("data issues could not be recorded (%s)" % e)
+        return False
+
+
+def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_seasons, nfl, log_dir, rehearse_only=False, result=None, files=(), league=""):
     """todo_pages: [dict(league, season, kind, title, team, path, claims)]; staged_games: staging rows; observations: what
     ingest.report_results takes; nfl: dict or None. `result`, if given, is filled in for the caller (heartbeat, release hook):
-    pages_new, archive_rows, committed, and the DAILY_SUMMARY of the committed load."""
+    pages_new, archive_rows, committed, the DAILY_SUMMARY of the committed load, and what was left out.
+    One league per call (`league`; run.py calls it once for each): its rehearsal, its checks and its commit are its own.
+    A club the club-count check cannot explain is left out of that league's load (its games are not staged or reported) and the rehearsal runs
+    again without it; a check that still fails blocks the league and nothing is written for it."""
     if result is None: result = {}
     os.makedirs(log_dir, exist_ok=True)
     stamp = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    log = os.path.join(log_dir, "%s-apply.log" % stamp)
+    log = os.path.join(log_dir, "%s-apply%s.log" % (stamp, "-" + league if league else ""))
     held = held_revisions()
     archive, pages, claims = plan_load(todo_pages, held, pages_state, raw_dir, nfl, files)
     print("\nDS1 holds %d page revisions; new to load: %d (%d claim rows); staged games: %d; observations to report: %d" % (
         len(held), len(pages), sum(len(c[3]) for c in claims), len(staged_games), len(observations)))
-    result.update(pages_new=len(pages), archive_rows=len(archive), committed=False)
+    result.update(pages_new=len(pages), archive_rows=len(archive), committed=False, clubs_skipped=[], games_skipped=0)
+    skip, dropped = [], []
     with tempfile.TemporaryDirectory(prefix="spx-daily-") as wd:
         open(os.path.join(wd, "archive.sql"), "w").write(archive_sql(archive))
-        open(os.path.join(wd, "load.sql"), "w").write(load_sql(pages, claims, staged_games, leagues_seasons))
-        open(os.path.join(wd, "report.sql"), "w").write(report_sql(observations))
-        print("\n===== REHEARSAL (one transaction, ends in ROLLBACK; log %s) =====" % log)
-        rc, out = run_script(main_script(wd, True, False), "rehearsal", log)
-        if rc or "RESULT: rolled back (rehearsal)" not in out:
-            print("\nREHEARSAL FAILED: nothing was written to DS1. Stopping."); return 1
+        for attempt in (0, 1):
+            st, ob, dropped = without_clubs(staged_games, observations, skip)
+            open(os.path.join(wd, "load.sql"), "w").write(load_sql(pages, claims, st, leagues_seasons))
+            open(os.path.join(wd, "report.sql"), "w").write(report_sql(ob))
+            print("\n===== REHEARSAL%s (one transaction, ends in ROLLBACK; log %s) =====" % (" " + league.upper() if league else "", log))
+            rc, out = run_script(main_script(wd, True, False, league, skip), "rehearsal", log)
+            if rc or "RESULT: rolled back (rehearsal)" not in out:
+                result["failed_checks"] = failed_checks(out)
+                result["reason"] = ("a check failed: " + "; ".join(result["failed_checks"])[:400]) if result["failed_checks"] else "the rehearsal stopped with an error (exit %d)" % rc
+                print("\nREHEARSAL FAILED: nothing was written to DS1 for this league. Stopping it."); return 1
+            odd = [c for c in lines_of(out, "DAILY_CLUB") if c["club"] not in skip]
+            if odd and attempt == 0:
+                skip = sorted({c["club"] for c in odd})
+                result["club_details"] = odd
+                print("\n%d club(s) cannot be explained by their articles: %s. Their games are left out; rehearsing again without them." % (len(skip), ", ".join(skip)))
+                continue
+            break
+        result["clubs_skipped"] = skip
+        result["games_skipped"] = len(dropped)
         if rehearse_only:
             print("\nrehearsal clean; --rehearse: nothing written."); return 0
         if archive:
@@ -297,12 +364,20 @@ def apply(todo_pages, pages_state, raw_dir, staged_games, observations, leagues_
             ap = os.path.join(wd, "archive_run.sql")
             open(ap, "w").write("\\set ON_ERROR_STOP on\nbegin;\n" + strip_txn(MIGRATIONS[0]) + "\n\\i " + os.path.join(wd, "archive.sql") + "\nselect count(*) as archived_this_run, pg_size_pretty(sum(length(data))) as size from legacy_files.raw_archive where name in (" + ", ".join(lit(a["name"]) for a in archive) + ");\ncommit;\n")
             rc, out = run_script(ap, "archive", log)
-            if rc: print("\nARCHIVE FAILED; nothing loaded."); return 1
+            if rc:
+                result["reason"] = "the archive step failed (exit %d)" % rc
+                print("\nARCHIVE FAILED; nothing loaded."); return 1
         print("\n===== LOAD (one transaction; commits only if every check passes) =====")
-        rc, out = run_script(main_script(wd, False, True), "load", log)
+        rc, out = run_script(main_script(wd, False, True, league, skip), "load", log)
         if rc or "RESULT: committed" not in out:
+            result["failed_checks"] = failed_checks(out)
+            result["reason"] = ("a check failed: " + "; ".join(result["failed_checks"])[:400]) if result["failed_checks"] else "the load stopped with an error (exit %d)" % rc
             print("\nLOAD DID NOT COMMIT: nothing was written by it."); return 1
         result.update(committed=True, load=daily_summary(out))
+    if leagues_seasons:
+        season = leagues_seasons[0][1]
+        issues = [dict(kind="club", key="%s:%s:%s" % (league, season, c), issue="daily: left out, its article's games do not match the database") for c in skip]
+        result["issues_recorded"] = record_issues(league, season, issues, datetime.date.today().isoformat())
     print("\n===== api.refresh() =====")
     rc, out = run_script_text("select api.refresh();", "refresh", log)
     print("api.refresh(): " + ("done" if rc == 0 else "FAILED (exit %d): %s" % (rc, out.strip()[-300:])))

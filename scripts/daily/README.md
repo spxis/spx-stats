@@ -198,6 +198,27 @@ Re-running is a no-op: a revision DS1 holds is neither archived nor loaded again
 `last_seen` and `seen_count`), and the state machine changes nothing it has already done. The output shows the second report of the same
 transaction: 0 new observations, 0 games changed.
 
+**One league, club or game never stops the others.** `--apply` runs stage 2 once for each league (`write_leagues` in `run.py`): its own rehearsal,
+its own checks (`checks.sql` looks only at that league, psql variable `:league`) and its own commit. In order of scope:
+- **League:** a league that cannot be read, has pages missing, or fails a check is `failed` or `skipped` in the heartbeat; the other leagues are
+  saved. The run then exits 1, so the next try of the day (and the next day) runs that league again; leagues already saved change nothing.
+- **Season:** the job writes the one season each league is in, so a season is the league's scope.
+- **Club:** the club-count check (`clubcheck.sql`) compares each club's article rows with the club's games in core; games core holds that the club's own
+  article does not list yet (the later games of an MLB series, balldontlie-only games) are explained, held and single-source games are explained. A club
+  still unexplained (one, or up to 3 percent of the clubs) passes the check with a WARN and is **left out of that league's load**: the rehearsal runs
+  again without its games and the load saves everything else. One `meta.data_issue` row per club and season (`entity_kind = 'club'`, key
+  `<league>:<season>:<club>`, issue starting `daily: left out`) records it and is closed by the first run that no longer leaves the club out. More than
+  3 percent of the clubs unexplained is a mapping fault: the check fails and that league is blocked.
+- **Game:** a page that cannot be parsed costs that page; a game that cannot be staged is left out and named in `league_results.<league>.games_unreadable`.
+- **Corrupt data still blocks:** every other check (a final game changed, a game of another source deleted, a second report that is not a no-op, the
+  raw archive's hashes, ...) failing blocks its league and writes nothing for it.
+
+The heartbeat `summary.league_results` has, per league, `outcome` (`ok`, `warning` when something was left out, `skipped`, `failed`), `reason`,
+`games_skipped`, `clubs_skipped`, `games_changed`; `summary.games_skipped` is the total. The Cleveland Guardians case (2026-10-16 to 18, 174 article rows
+against 181 games in core): the 7 extra games were games core holds that the club's article does not list yet (most likely the ALCS games from the
+league page); they are now counted as off-page games, and any club still unexplained is left out alone. Tests: `run.py --self-test`
+(one club, one league, all leagues pass, all fail, one game, one page) and `bash scripts/daily/test/clubcheck-test.sh` (scratch Postgres in Docker).
+
 ## The ingest API (migrations 044 and 046)
 
 Decision (John, 2026-10-12): history stays bulk; **daily and later live scores go through a narrow API**, not through table privileges
@@ -338,7 +359,7 @@ the NAS, host networking, state on a mounted `data/` folder. It sleeps until 10:
 re-checks the last 7 days itself), retrying a failed day after an hour up to 3 times. $0, no cloud. Nothing is fetched or polled between runs.
 
 **Heartbeat.** Each `--apply` writes a row to `ingest.daily_run` (migration 048, DS1 only): started, finished, outcome
-(`running`/`ok`/`failed`), host, code version and a `summary` (counts, tables written, release hook result, requests, error). No row for a day
+(`running`/`ok`/`failed`), host, code version and a `summary` (counts, tables written, per-league outcome, release hook result, requests, error). No row for a day
 means the job did not start; a row left `running` means it died. The release side can show it on `/admin/data` later; no UI here.
 It is not `meta.load_run`: `meta` is a release schema (the row would count as drift) and that table's `kind` has no `daily`.
 

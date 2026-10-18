@@ -2,6 +2,10 @@
 -- db/build/152 (temp tables src, club, sg, scope, owned_season), the first ingest.report_results (temp tables _res, _rep) and the
 -- second one (_res2, _rep2); _checks and _run are made by the caller. Any check that fails makes run.py roll the whole transaction back. Read-only.
 
+-- Only the league this run applies is checked (run.py applies one league at a time; psql variable :league, empty = all): a fault in
+-- another league's data must not stop this one.
+delete from scope where :'league' <> '' and league <> :'league';
+
 \echo
 \echo '== Before / after (changed rows, and every season, team season and game row of the leagues loaded) =='
 select coalesce(a.what, b.what) as what, coalesce(a.league, b.league) as league, coalesce(a.k, b.k) as k,
@@ -48,7 +52,8 @@ where b.snap = 'before' and b.source_id = (select source_id from src) and a.h <>
 -- the games themselves
 insert into _checks
 select 'every final game has both scores', count(*) = 0, count(*) || ' finals without a score'
-from core.game where status = 'final' and (home_score is null or away_score is null);
+from core.game g join core.season s using (season_id)
+where g.status = 'final' and (g.home_score is null or g.away_score is null) and s.league_code in (select league from scope);
 insert into _checks
 select 'no duplicate games (same teams, same day; MLB: at most a doubleheader)', count(*) = 0, count(*) || ' duplicated groups' || coalesce(': ' || string_agg(k, '; ' order by k) filter (where k is not null), '')
 from (select s.league_code || ' ' || s.start_year || ' ' || g.game_date || ' ' || least(h.franchise_id, a.franchise_id) || '/' || greatest(h.franchise_id, a.franchise_id) as k, s.league_code, count(*) n
@@ -59,7 +64,8 @@ from (select s.league_code || ' ' || s.start_year || ' ' || g.game_date || ' ' |
 insert into _checks
 select 'a game belongs to the season of both its team seasons', count(*) = 0, count(*) || ' crossed'
 from core.game g join core.team_season h on h.team_season_id = g.home_team_season_id join core.team_season a on a.team_season_id = g.away_team_season_id
-where g.source_id = (select source_id from src) and (h.season_id <> g.season_id or a.season_id <> g.season_id or h.franchise_id = a.franchise_id);
+where g.source_id = (select source_id from src) and (h.season_id <> g.season_id or a.season_id <> g.season_id or h.franchise_id = a.franchise_id)
+  and g.season_id in (select x.season_id from core.season x where x.league_code in (select league from scope));
 insert into _checks
 select 'every result and cancelled game staged is a game', count(*) = 0, count(*) || ' missing' || coalesce(': ' || string_agg(c.source_key, '; '), '')
 from (select s.source_key from sg s where s.act in ('result', 'cancel')
@@ -74,9 +80,9 @@ insert into _checks
 select 'team seasons made here carry the club''s name', count(*) = 0, count(*) || ' without an identity'
 from core.team_season where source_id = (select source_id from src) and franchise_identity_id is null;
 insert into _checks
-select 'raw archive holds each page as downloaded (sha256 of the bytes)', count(*) = 0, count(*) || ' of ' || (select count(*) from legacy_wikipedia_daily.page) || ' differ or are missing'
+select 'raw archive holds each page as downloaded (sha256 of the bytes)', count(*) = 0, count(*) || ' of ' || (select count(*) from legacy_wikipedia_daily.page where league in (select league from scope)) || ' differ or are missing'
 from legacy_wikipedia_daily.page p left join legacy_files.raw_archive a on a.name = p.archive_name
-where a.name is null or encode(sha256(a.data), 'hex') <> p.sha256 or a.sha256 <> p.sha256;
+where p.league in (select league from scope) and (a.name is null or encode(sha256(a.data), 'hex') <> p.sha256 or a.sha256 <> p.sha256);
 
 -- the ingest log
 insert into _checks
@@ -108,21 +114,14 @@ select p.league, p.season, p.title, p.club, c.franchise_id,
           and not exists (select 1 from core.game g where g.source_key = x.source_key and g.source_id = (select source_id from src))
           and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = x.source_key)) as held,
        (select count(*) from sg x where x.confidence = 'single' and c.franchise_id in (x.hf, x.af)) as singles,
-       (select count(*) from sg x where x.sources = array['balldontlie']::text[] and c.franchise_id in (x.hf, x.af)) as bdl_only
+       -- games core holds for the club that its own article does not list (yet): only balldontlie lists them, or only the other club's article
+       -- and the league page (the later games of an MLB series before the club's article has them)
+       (select count(*) from sg x where x.act in ('result', 'schedule', 'cancel') and c.franchise_id in (x.hf, x.af) and not ('wp:' || p.title) = any (x.sources)) as off_page
 from (select distinct on (source, title) * from legacy_wikipedia_daily.page where kind = 'team' order by source, title, page_id desc) p
 join club c on c.league = p.league and c.name = p.club
 join core.season s on s.league_code = p.league and s.start_year = p.season
 where (p.league, p.season) in (select league, season from scope) and p.league <> 'nfl';
-insert into _checks
-select 'each club article''s rows = the club''s games in core (franchise mapping; NFL left out)',
-       -- one club that differs must not stop every league (2026-10-16 to 18: Cleveland 174 vs 181 rolled back all five leagues): up to 3 percent of clubs, at least 1,
-       -- pass with a WARN in the detail; more than that is a mapping fault and still fails
-       count(*) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles) <= greatest(1, floor(count(*) * 0.03)),
-       case when count(*) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles) > 0 then 'WARN (allowed, up to 3 percent of clubs): ' else '' end
-       || count(*) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles) || ' of ' || count(*) || ' clubs unexplained; '
-       || count(*) filter (where page_rows <> core_games - bdl_only) || ' differ by a held or single-source game' ||
-       coalesce(': ' || string_agg(club || ' ' || page_rows || ' vs ' || (core_games - bdl_only), '; ' order by club) filter (where abs(page_rows - (core_games - bdl_only) - held) > singles), '')
-from _clubcount;
+\i :clubcheck
 
 \echo
 \echo '== Checks =='
