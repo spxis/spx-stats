@@ -1,8 +1,9 @@
-import { buildSlugs, seasonSlug, tableOf, type NameRow, type SeasonNameRow } from "../src/lib/slug.ts";
+import { buildSlugs, makePaths, parseSeasonSeg, resolveTeamSeason, seasonSlug, tableOf, type NameRow, type SeasonNameRow } from "../src/lib/slug.ts";
 
 /**
  * Lists the team and team-season slugs per league from the live archive (run in web/: node scripts/check-slugs.ts [--all]).
- * Prints the slugs that had to be told apart, and exits 1 if any two franchises still share a slug.
+ * Prints the slugs that had to be told apart, and exits 1 if any two franchises still share a slug, or if the team-season address built for any
+ * season of any league (the women's leagues included: it is the link of every standings row) does not read back as that team in that season.
  */
 const REST = (process.env.NEXT_PUBLIC_SUPABASE_URL || "https://njpvfrceahkvnrduerkk.supabase.co").replace(/\/+$/, "") + "/rest/v1/";
 const KEY = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || "sb_publishable_FmeiL6oX9_Mrb8psQZFSQg_YO_O4afC";
@@ -29,6 +30,15 @@ for (const [lg, L] of Object.entries(s.leagues)) {
     if (!e.s) { console.log(`${lg} ${f}: empty slug`); bad++; }
     if (seen.has(e.s)) { console.log(`${lg}: franchise slug ${e.s} used by ${seen.get(e.s)} and ${f}`); bad++; }
     seen.set(e.s, Number(f));
+  }
+  const paths = makePaths(tableOf(s));
+  for (const [f, set] of L.years) {
+    for (const y of set) {
+      const path = paths.teamSeason(lg, f, y);
+      const [, , seg, , slug] = path.split("/");
+      const ys = parseSeasonSeg(lg, seg);
+      if (!ys || ys.y !== y || !ys.canonical || resolveTeamSeason(L, y, slug) !== f || resolveTeamSeason(L, y, String(f)) !== f) { console.log(`${lg}: ${path} does not resolve back to franchise ${f} in ${y}`); bad++; }
+    }
   }
   const perYear = new Map<string, number>();
   for (const [f, set] of L.years) {
