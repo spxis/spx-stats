@@ -286,7 +286,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       ) : null}
       {d.games.length ? (
         <section className="section">
-          <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={selection}>
+          <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={selection} groupFilter={typeof sp.conf === "string" || typeof sp.div === "string"}>
             {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
           </SeasonGames>
           <noscript><p className="note"><Link href={`${scoresPath(lg)}?season=${seasonSeg(lg, y)}`}>{say("nav.scores")}</Link></p></noscript>

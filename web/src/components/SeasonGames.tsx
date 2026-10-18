@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import type { AbbrMap } from "@/lib/abbr";
+import { localToday } from "@/lib/format";
 import { resolveSelection, type Selection } from "@/lib/season";
 import { replaceQuery } from "@/lib/urlQuery";
 import { GameCalendar } from "./GameCalendar";
@@ -16,21 +17,22 @@ import { TeamLogo } from "./TeamLogo";
  * (or by the team's result on its days), and the games of the chosen day or month.
  * The games come packed (lib/gamesCodec.ts) from the season's `rows/games` address and are unpacked once, by the SeasonGamesProvider around the page (the week strip reads them too); until they have come the part says it is loading. The selection lives in the address (?phase=&team=&month=&day=), so a reload or shared link keeps it.
  */
-export function SeasonGames({ lg, abbrs, year, initial, children }: { lg: string; abbrs: AbbrMap; year?: number; initial: Selection; children?: React.ReactNode }) {
+export function SeasonGames({ lg, abbrs, year, initial, groupFilter = false, children }: { lg: string; abbrs: AbbrMap; year?: number; initial: Selection; groupFilter?: boolean; children?: React.ReactNode }) {
   const { say } = useSpeaker();
   const { ready, failed, games, teams } = useSeasonGames();
   const teamList = useMemo(() => [...teams.values()], [teams]);
   const [want, setWant] = useState<Selection>(initial);
-  const { byDay, months, month, day } = useMemo(() => resolveSelection(games, want), [games, want]);
+  const today = useSyncExternalStore(() => () => {}, localToday, () => "");
+  const { byDay, months, month, day, weeks, week, shownWeek } = useMemo(() => resolveSelection(games, want, today), [games, want, today]);
   const { phase, team } = want;
 
   // Keep the address in step with what is shown (the same query the server read); other keys such as ?sort= stay.
   useEffect(() => {
     if (!ready) return; // until the games have come the month and day are unknown, and the address must keep what it holds
-    replaceQuery({ phase: phase !== "r" ? phase : null, team: team || null, month: month || null, day: day || null });
-  }, [ready, phase, team, month, day]);
+    replaceQuery({ phase: phase !== "r" ? phase : null, team: team || null, month: month || null, day: day || null, week: week || null });
+  }, [ready, phase, team, month, day, week]);
 
-  const set = (patch: Partial<Selection>) => setWant({ phase, team, month, day, ...patch });
+  const set = (patch: Partial<Selection>) => setWant({ phase, team, month, day, week, ...patch });
 
   const chosen = teams.get(Number(team));
   const heading = (
@@ -75,8 +77,9 @@ export function SeasonGames({ lg, abbrs, year, initial, children }: { lg: string
       {heading}
       {controls}
       <GameCalendar lg={lg} abbrs={abbrs} year={year} teams={teams} byDay={byDay} months={months} month={month} day={day} team={team}
-        onMonth={(m) => set({ month: m, day: "" })} onDay={(d) => set({ day: d })}
-        onJump={(d) => set({ month: d.slice(0, 7), day: d })} />
+        weeks={weeks} week={shownWeek} onWeek={(w) => set({ week: w, day: "" })} note={groupFilter ? say("games.allGroups") : undefined}
+        onMonth={(m) => set({ month: m, day: "", week: "" })} onDay={(d) => set({ day: d })}
+        onJump={(d) => set({ month: d.slice(0, 7), day: d, week: "" })} />
     </>
   );
 }

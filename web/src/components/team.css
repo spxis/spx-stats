@@ -14,6 +14,29 @@
 .monthchips button { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 9px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
 .monthchips button[aria-pressed="true"] { background: var(--accent-text); border-color: var(--accent-text); color: var(--paper); }
 
+/* The week buttons of a month's game list, and the list itself: one line a game under a heading a day, the columns aligned. */
+.weekchips { display: flex; flex-wrap: wrap; gap: 4px; }
+.weekchips button { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--muted); cursor: pointer; white-space: nowrap; }
+.weekchips button[aria-pressed="true"] { background: var(--accent-text); border-color: var(--accent-text); color: var(--paper); }
+.glist { display: flex; flex-direction: column; max-width: 920px; }
+.gday { padding-block: 10px; border-bottom: 1px solid var(--rule); }
+.gday h3 { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin-bottom: 6px; }
+.glrow { display: grid; grid-template-columns: minmax(0, 1fr) 72px minmax(0, 1fr) 150px; align-items: center; gap: 0 12px; padding: 4px 0; font-size: 15px; }
+.glrow .gaway, .glrow .ghome { display: flex; align-items: center; gap: 6px; min-width: 0; }
+.glrow .gaway { justify-content: flex-end; text-align: right; }
+.glrow .gaway a, .glrow .ghome a { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+.glrow .won, .glrow .won a { font-weight: 600; }
+.glrow .gscore { font: 500 15px var(--mono); text-align: center; white-space: nowrap; }
+.glrow .gmeta { display: flex; gap: 6px; align-items: center; font-size: 12px; color: var(--muted); }
+.glrow .got { font: 600 12px/1 var(--mono); color: var(--ink); }
+@media (max-width: 640px) {
+  .glrow { grid-template-columns: minmax(0, 1fr) auto; grid-template-areas: "away score" "home meta"; row-gap: 2px; padding-block: 6px; }
+  .glrow .gaway { grid-area: away; justify-content: flex-start; text-align: left; }
+  .glrow .gscore { grid-area: score; text-align: right; }
+  .glrow .ghome { grid-area: home; }
+  .glrow .gmeta { grid-area: meta; justify-content: flex-end; }
+}
+
 .months { position: relative; }
 .cal .opab, .cell .opab { font: 600 11px/1 var(--mono); color: var(--ink); letter-spacing: 0; }
 .cell .opab { display: inline-flex; align-items: center; gap: 3px; min-width: 0; }

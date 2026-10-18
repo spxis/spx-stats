@@ -282,6 +282,10 @@ export const JA: Dictionary = {
   "cal.dayNote": "{date}：{games}。",
   "cal.monthNote": "{month}：{games}。日を選ぶとその日だけが見られます。",
   "cal.showMonth": "月全体を表示",
+  "cal.weeks": "週",
+  "cal.weekN": "第{n}週：{range}",
+  "cal.weekNote": "{range}：{games}。日を選ぶとその日だけが見られます。",
+  "games.allGroups": "カンファレンスとディビジョンの選択は、プレーオフ表と順位表のためのものです。この一覧はすべての試合を表示します。",
 
   // table columns and figures
   "table.sortAsc": "{label}、昇順に並べ替え",

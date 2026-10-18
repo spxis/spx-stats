@@ -282,6 +282,10 @@ export const FR: Dictionary = {
   "cal.dayNote": "{date} : {games}. ",
   "cal.monthNote": "{month} : {games}. Choisissez un jour pour ne voir que celui-là. ",
   "cal.showMonth": "Afficher tout le mois",
+  "cal.weeks": "Semaines",
+  "cal.weekN": "Semaine {n} : {range}",
+  "cal.weekNote": "{range} : {games}. Choisissez un jour pour ne voir que celui-là. ",
+  "games.allGroups": "Le choix de conférence ou de division vaut pour le tableau des séries et le classement ; cette liste montre tous les matchs.",
 
   // table columns and figures
   "table.sortAsc": "{label}, trier en ordre croissant",

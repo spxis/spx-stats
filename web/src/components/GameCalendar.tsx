@@ -7,7 +7,7 @@ import { atUtc, isoDay, localToday } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";
 import type { Speaker } from "@/lib/i18n/i18n";
 import { RESULT_KEY } from "@/lib/i18n/keys";
-import type { ClubTeam, GameTuple } from "@/lib/season";
+import type { ClubTeam, GameTuple, MonthWeek } from "@/lib/season";
 import { DatePicker } from "./DatePicker";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { Rich } from "./i18n/Rich";
@@ -51,6 +51,33 @@ export function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTupl
   );
 }
 
+/** One game as a line of the list: away club, score (a link to the game's page), home club, then the overtime mark, the source and the check. The columns line up from game to game. */
+function GameLine({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; teams: Map<number, ClubTeam>; year?: number; abbrs: AbbrMap }) {
+  const { say } = useSpeaker();
+  const [, a, as, hs, h, , st, src, ot, v, gid] = g;
+  const fin = st === "f";
+  const nm = (id: number) => teams.get(id)?.name || "—";
+  const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
+  const text = fin ? `${as}–${hs}` : say(st === "s" ? "game.scheduled" : "game.noResult");
+  return (
+    <div className="glrow">
+      <span className={"gaway" + (fin && (as ?? 0) > (hs ?? 0) ? " won" : "")}><TeamLabel lg={lg} f={teams.get(a)?.f} name={nm(a)} year={year} abbr={ab(a)} logo={teams.get(a)?.logo} /></span>
+      <span className="gscore">
+        {year != null
+          ? <Link className="scorelink" href={gamePath(lg, year, gid, nm(a), nm(h))} prefetch={false} title={say("gm.viewGameTitle", { away: nm(a), home: nm(h) })}>{text}</Link>
+          : text}
+      </span>
+      <span className={"ghome" + (fin && (hs ?? 0) > (as ?? 0) ? " won" : "")}><TeamLabel lg={lg} f={teams.get(h)?.f} name={nm(h)} year={year} abbr={ab(h)} logo={teams.get(h)?.logo} /></span>
+      <span className="gmeta">
+        {fin && ot ? <span className="got">{say(lg === "mlb" ? "game.extras" : "game.ot")}</span> : null}
+        <Badge src={src} />
+        {v === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓"}</span> : null}
+        {v === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠"}</span> : null}
+      </span>
+    </div>
+  );
+}
+
 /** A team's result on a day: W, L or T and the score; N when the game has no result. */
 function result(list: GameTuple[], team: string, say: Speaker["say"]): { r: "W" | "L" | "T" | "N"; letter: string; score: string; opp: number; home: boolean } {
   const g = list[0];
@@ -81,14 +108,20 @@ interface Props {
   onDay: (day: string) => void;
   /** Offers a date picker that jumps to a day (month and day together); the days with games are marked. */
   onJump?: (day: string) => void;
+  /** The month's weeks that hold games, the one listed ("all" for the whole month) and how to choose another; without them the whole month is listed. */
+  weeks?: readonly MonthWeek[];
+  week?: string;
+  onWeek?: (week: string) => void;
+  /** A line under the buttons, for what the list does not do (a filter in the address that is not about these games). */
+  note?: string;
 }
 
 /**
  * The month calendar shared by the season page and a team's season: each day shaded by how many games it held,
  * or by the team's result on its days, with the games of the chosen day or month beneath it.
  */
-export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day, team = "", dayOnly = false, onMonth, onDay, onJump }: Props) {
-  const { say, plural, dt } = useSpeaker();
+export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day, team = "", dayOnly = false, onMonth, onDay, onJump, weeks, week = "", onWeek, note }: Props) {
+  const { say, plural, fmt, dt } = useSpeaker();
   const today = useSyncExternalStore(() => () => {}, localToday, () => "");
   const monthsRef = useRef<HTMLDivElement>(null);
   const first = atUtc(`${month}-01`);
@@ -123,9 +156,11 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
     const box = monthsRef.current, chip = box?.querySelector<HTMLElement>('[aria-pressed="true"]');
     if (box && chip) box.scrollLeft = chip.offsetLeft - (box.clientWidth - chip.offsetWidth) / 2;
   }, [month]);
+  const chosenWeek = weeks?.find((w) => w.start === week) ?? null;
   const shown = day
     ? [[day, byDay.get(day) ?? []] as const]
-    : [...byDay].filter(([k]) => k.slice(0, 7) === month).sort((a, b) => a[0].localeCompare(b[0]));
+    : [...byDay].filter(([k]) => k.slice(0, 7) === month && (!chosenWeek || (k >= chosenWeek.start && k <= chosenWeek.end))).sort((a, b) => a[0].localeCompare(b[0]));
+  const range = (w: MonthWeek) => (w.start === w.end ? dt.monthDay(atUtc(w.start)) : `${dt.monthDay(atUtc(w.start))}–${atUtc(w.end).getUTCDate()}`);
   const n = shown.reduce((a, [, l]) => a + l.length, 0);
   // The page is drawn once for everyone and a month of baseball is 450 rows of 1 KB; the server's (and the first client) render lists the first days' games only, and the
   // rest follow once the page is live (the data is already here). The count in the note above is the month's whole.
@@ -168,16 +203,27 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
           <p className="note">{say("cal.pickGame", { month: dt.monthYear(first) })}</p>
         ) : (
           <>
+            {weeks?.length && onWeek ? (
+              <div className="weekchips" role="group" aria-label={say("cal.weeks")}>
+                {weeks.map((w) => (
+                  <button key={w.start} type="button" aria-pressed={!day && w.start === week} onClick={() => onWeek(w.start)}>{say("cal.weekN", { n: fmt(w.n), range: range(w) })}</button>
+                ))}
+                <button type="button" aria-pressed={!day && week === "all"} onClick={() => onWeek("all")}>{say("filter.all")}</button>
+              </div>
+            ) : null}
             <p className="note">
-              {day ? say("cal.dayNote", { date: dt.full(atUtc(day)), games: plural("count.games", n) }) : say("cal.monthNote", { month: dt.monthYear(first), games: plural("count.games", n) })}
+              {day
+                ? say("cal.dayNote", { date: dt.full(atUtc(day)), games: plural("count.games", n) })
+                : chosenWeek ? say("cal.weekNote", { range: range(chosenWeek), games: plural("count.games", n) }) : say("cal.monthNote", { month: dt.monthYear(first), games: plural("count.games", n) })}
               {day ? <button type="button" className="linkish" onClick={() => onDay("")}>{say("cal.showMonth")}</button> : null}
             </p>
-            <div className="games">
+            {note ? <p className="note">{note}</p> : null}
+            <div className="glist">
               {listed.map(([date, list]) => (
-                <div className="day" key={date}>
+                <section className="gday" key={date}>
                   <h3>{dt.short(atUtc(date))}</h3>
-                  {list.map((g, i) => <GameRow key={i} lg={lg} g={g} teams={teams} year={year} abbrs={abbrs} />)}
-                </div>
+                  {list.map((g, i) => <GameLine key={i} lg={lg} g={g} teams={teams} year={year} abbrs={abbrs} />)}
+                </section>
               ))}
             </div>
           </>

@@ -378,6 +378,10 @@ export const PHRASES = {
   "cal.dayNote": "{date}: {games}. ",
   "cal.monthNote": "{month}: {games}. Pick a day to see just that day. ",
   "cal.showMonth": "Show the whole month",
+  "cal.weeks": "Weeks",
+  "cal.weekN": "Week {n}: {range}",
+  "cal.weekNote": "{range}: {games}. Pick a day to see just that day. ",
+  "games.allGroups": "The conference and division choices are for the bracket and the standings; this list shows every game.",
 
   // table columns and figures
   "table.sortAsc": "{label}, sort ascending",
