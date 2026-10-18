@@ -30,7 +30,9 @@ export const getRetiredNumbers = cache(async (lg: string, f: number): Promise<Re
       `or=(franchise_id.eq.${f},and(league.eq.${lg},franchise_id.is.null))&select=*&order=jersey_number,name`,
       retiredSchema,
     );
-    return list.filter((r) => r.league === lg && (r.franchise_id === f || r.franchise_id == null));
+    return list
+      .filter((r) => r.league === lg && (r.franchise_id === f || r.franchise_id == null))
+      .sort((a, b) => (a.retired_on ? 0 : 1) - (b.retired_on ? 0 : 1) || (a.retired_on ?? "").localeCompare(b.retired_on ?? "") || a.jersey_number - b.jersey_number);
   } catch (e) {
     if (e instanceof ApiError && e.status != null && e.status >= 400 && e.status < 500) return [];
     throw e;
