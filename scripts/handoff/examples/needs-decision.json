@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "project": "spx-stats",
+  "ticket_id": "cmvdjc68s0000jj06d65ouvms",
+  "title": "Retired numbers and cities: production too full",
+  "status": "needs-decision",
+  "written_by": "machine1",
+  "written_at": "2026-10-18T12:00:00Z",
+  "kind": "data",
+  "site_only": false,
+  "commits": ["132d760"],
+  "release_tables": ["core.person_jersey", "core.team_season_city"],
+  "notes_for_john": "Both fixes are done on DS1 but not released. Production is 457 MB and release.py prepare allows 450 MB. Releases 2026.10.18-1 to -3 were withdrawn. core.person_jersey is 22 MB on production; its jersey-roster rows copy core.roster_stint and a rerun rewrites about 59k rows.",
+  "decision": {
+    "question": "How do we make room on production for the jersey data?",
+    "options": [
+      {"id": "A", "label": "Stop publishing jersey-roster rows; the site reads numbers from core.roster_stint", "note": "about 20 MB saved"},
+      {"id": "B", "label": "Move to Supabase Pro", "note": "breaks the budget"},
+      {"id": "C", "label": "Trim api.player_index (41 MB) or api.person_admin (27 MB)"}
+    ],
+    "recommendation": "A"
+  }
+}

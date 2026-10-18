@@ -80,11 +80,18 @@ data repair. If you start a subagent, copy this section into its instructions; i
   session prepares only after all DS1 work is done (and after the 10:00 ET daily job), and withdraws stale releases itself
   (`release.py withdraw`). `prepare` rehearses the apply on production in a transaction that always rolls back; a failed rehearsal is a
   blocker. Never tell John which release to approve unless you are the coordinating session.
-- **Hand-off, not action.** When your work needs a data step, write the files, test them on scratch and end your report with a block
-  headed `FOR THE COORDINATING SESSION:` and, on the same line, who you are (the name John uses for you, and "subagent of ..." if
-  you were started by another agent) and the ticket id and title, e.g. `FOR THE COORDINATING SESSION: <your name>, ticket cmv... (title)`; then each command in order (from the repo root), the row counts you expect after it, the tables
-  the release must carry, and a loud line if you changed `db/checks`, `scripts/release` or `scripts/sync` (the release runner must
-  then be rebuilt at your commit before any prepare).
+- **Hand-off, not action.** When a ticket is finished, write a hand-off file; nobody relays text. Push your commits to `main`, then put
+  `<ticket-id>.json` in Dropbox `/Projects/Handoff/<project>/` (Mac: `~/Library/CloudStorage/Dropbox/Projects/Handoff/<project>/`; never in
+  the repo): commits, site-only or not, migration files and the objects they create, DS1 steps in order with the row counts you expect, the tables
+  the release must carry, pages to check, notes for John, a loud note if you changed `db/checks`, `scripts/release` or `scripts/sync` (the
+  release runner must then be rebuilt at your commit before any prepare). Statuses: `ready`, `data-applied-not-released`, `blocked`,
+  `needs-decision` (with options and your recommendation), `deployed`, `released`, `failed`, `needs-change`. Write it with
+  `python3 -I scripts/handoff/handoff.py check|write <file>`; format, schema, samples: [`scripts/handoff/README.md`](scripts/handoff/README.md).
+  Test your files on scratch first. End your report with `HAND-OFF WRITTEN: <path>`, who you are and the ticket (`<your name>, ticket cmv... (title)`).
+  John (or the coordinating session) runs `bash scripts/deploy.sh`, which checks, deploys, applies and answers in `replies/<ticket-id>.json`.
+- **Check replies.** At the start of every session and before you finish, run `python3 -I scripts/handoff/handoff.py replies` (Dropbox
+  `/Projects/Handoff/<project>/replies/`; outside agents read the folder or ask John). Act on `failed`, `needs-change` and `blocked` (fix, push,
+  write the hand-off again as `ready`); then `handoff.py read <ticket-id>` moves the handled reply to `replies/read/`. Replies only ever grow.
 - **Check a name is free before you create it.** Before `create table`/`view`/`function`, look for the name in `db/migrations` and on
   DS1 (`\d core.<name>` through a read-only session) and production's schema. *Broken:* a migration created `core.game_official`,
   which already is the referees table.
@@ -413,6 +420,16 @@ A push to `main` deploys nothing.
 The agent that finished and pushed a feature deploys it. The coordinating session deploys only when asked. Deploy only
 a commit that is on `origin/main` and passed the checks above; a deployment carries everything on `main`, not just
 your commit.
+
+**Normal path: `bash scripts/deploy.sh`** (John or the coordinating session; `--dry-run` changes nothing). It reads the waiting hand-offs
+([section 1](#who-may-change-what-every-agent-every-subagent), [`scripts/handoff/README.md`](scripts/handoff/README.md)), confirms every
+migration object a hand-off needs exists on production (`to_regclass` through the Management API, keychain item `spx-stats SUPABASE_ACCESS_TOKEN`)
+and every Turso table, and refuses with the names if not. It then deploys a clean `git archive` of `origin/main` exactly as the CLI block below,
+waits for READY, runs `check-live-auth.sh`, checks each listed page with the Vercel protection-bypass header (keychain item
+`spx-stats VERCEL_AUTOMATION_BYPASS_SECRET`; skipped, and the reply says so, when absent), marks the tickets done, writes `replies/<ticket-id>.json`
+and moves the hand-offs to `done/`. Data steps show the `ds1-apply --dry-run` plan, apply only after a y/N, then `release.py prepare`; John still approves
+at `/admin/data`. Packages get a tag push (after a y/N) instead of a deploy. Tests: `bash scripts/handoff/test/handoff-test.sh`. Untested against real
+Vercel, Supabase and DS1: the stubs cover the logic only. The manual routes below stay as the fallback.
 
 **Preferred on a Mac: build against DS1, deploy prebuilt** (**untested** end to end; its PostgREST and data check are tested
 against a stand-in database). Each `next build` used to read production PostgREST hundreds of times (a parallel build stalled

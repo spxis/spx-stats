@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "project": "spx-stats",
+  "ticket_id": "cmvexample0site0ready001",
+  "history": [
+    {
+      "at": "2026-10-18T15:02:11Z",
+      "from": "deploy.sh",
+      "status": "blocked",
+      "detail": "missing on production: api.team_season_header (apply the migration there first: AGENTS.md section 8, item 4)"
+    },
+    {
+      "at": "2026-10-18T16:40:02Z",
+      "from": "deploy.sh",
+      "status": "deployed",
+      "version": "9057b70",
+      "deployment": "dpl_Example123",
+      "checked": ["production has the 3 needed object(s)", "sign-in check ok", "/ 200", "/nhl/2012 200"],
+      "detail": "deployed 9057b70 to production; checks passed"
+    }
+  ]
+}

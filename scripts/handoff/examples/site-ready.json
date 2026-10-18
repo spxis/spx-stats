@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "project": "spx-stats",
+  "ticket_id": "cmvexample0site0ready001",
+  "title": "Team-season header: compact layout",
+  "status": "ready",
+  "written_by": "machine2",
+  "written_at": "2026-10-18T14:00:00Z",
+  "kind": "site",
+  "site_only": false,
+  "commits": ["503e5e9"],
+  "migrations": [
+    {"file": "db/migrations/140_team_season_header.sql", "objects": ["api.team_season_header", "function:api.team_season_header_rows(integer)", "column:core.team_season.header_note"]}
+  ],
+  "turso_tables": ["api_totals"],
+  "pages": ["/", "/nhl/2012", "/teams"],
+  "notes_for_john": "Migration 140 must already be on production; deploy.sh refuses otherwise."
+}

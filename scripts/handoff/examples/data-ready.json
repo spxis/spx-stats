@@ -1,0 +1,21 @@
+{
+  "schema_version": 1,
+  "project": "spx-stats",
+  "ticket_id": "cmvexample0data0ready001",
+  "title": "Jersey numbers: fix nickname matching",
+  "status": "ready",
+  "written_by": "subagent of machine2",
+  "written_at": "2026-10-18T14:30:00Z",
+  "kind": "data",
+  "site_only": false,
+  "commits": ["132d760"],
+  "ds1_steps": [
+    {"file": "db/build/220_jersey_numbers.sql", "expect": "core.person_jersey 59,412 rows (was 59,380)"},
+    {"file": "db/build/197_city.sql", "expect": "core.team_season_city +1,269 rows"}
+  ],
+  "release_tables": ["core.person_jersey", "core.team_season_city"],
+  "release_title": "Jersey numbers and team cities",
+  "deploy_after_release": true,
+  "pages": ["/players"],
+  "notes_for_john": "Check the production size line in the release preview before approving."
+}
