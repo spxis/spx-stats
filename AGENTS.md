@@ -69,7 +69,7 @@ end. **manual** = a person or the coordinating session has to do it.
 ### Who may change what (every agent, every subagent)
 
 Several agents work at once, some started by other agents. Each rule here was broken on 2026-10-15 and cost a failed release or a
-data repair. If you start a subagent, copy this section into its instructions; if a subagent cannot follow it, it stops and reports.
+data repair. If you start a subagent, copy this section into its instructions (the hand-off bullet at the end says how); if a subagent cannot follow it, it stops and reports.
 
 - **Only the coordinating session writes data.** That means: any write to DS1 or production (psql, `scripts/mac/ds1-apply.sh`, the
   Supabase API or connector), any migration anywhere (add-only ones included), any `db/build` step or `build_core.sh` against DS1,
@@ -129,6 +129,11 @@ data repair. If you start a subagent, copy this section into its instructions; i
 - **Next writes `web/AGENTS.md` and may edit `tsconfig.json` on `next dev`.** Delete that file and revert the edit; never commit them.
 - **One ticket at a time**, the ones John gave you, in a new worktree each from the latest `origin/main`. Do not deploy and do not
   mark a ticket done: the coordinating session does both after the deploy.
+- **Handing work to another AI** (Grok, GPT, any model, CLI or subagent, whoever you are): begin its instructions with the exact line
+  `Read AGENTS.md in the repo root first, then Dropbox /Backups/spx-stats/START-HERE.md, and follow both.` Then paste this section, the
+  hand-off and reply rule (write hand-offs with `scripts/handoff/handoff.py`, read replies at start and finish) and the naming rule (it
+  reports as `subagent of <your name>` with its ticket id and title). A tool that cannot read files gets these rules pasted in full.
+  You stay responsible: check its work before it reaches main, and never let it deploy, write data or post on GitHub.
 
 ## 2. Talking to John
 

@@ -37,6 +37,9 @@ Read next: [web-map.md](web-map.md) (where the code lives).
   [Who may change what](../AGENTS.md#who-may-change-what-every-agent-every-subagent)
 - **Ask before deleting or overwriting data.** Production changes only through approved data releases.
   [§11](../AGENTS.md#11-safety)
+- **Handing work to another AI** (any model, CLI or subagent): its instructions start with the line "Read AGENTS.md in the
+  repo root first, then Dropbox /Backups/spx-stats/START-HERE.md, and follow both", and carry the rules. You check its work.
+  [Who may change what](../AGENTS.md#who-may-change-what-every-agent-every-subagent)
 
 ## Worktree and commits
 
