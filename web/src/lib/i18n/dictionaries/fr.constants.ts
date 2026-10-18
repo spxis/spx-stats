@@ -174,6 +174,8 @@ export const FR: Dictionary = {
   "team.retired": "Numéros retirés",
   "team.retiredNote": "Les numéros que {name} a retirés, tels que les sources les nomment.",
   "team.retiredLeague": "À l’échelle de la ligue",
+  "player.retired": "Numéros retirés",
+  "player.retiredAlt": "Numéro {number} retiré par {team}",
   "team.springHead": "Camp d’entraînement printanier",
   "team.leagueCactus": "Ligue du Cactus",
   "team.leagueGrapefruit": "Ligue du Pamplemousse",

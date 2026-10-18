@@ -14,8 +14,7 @@ export function RetiredBannerItem({ src, alt, label, cap, href, width, height }:
   const li = useRef<HTMLLIElement>(null);
   const touch = useRef(false);
 
-  useEffect(() => {
-    if (!zoom) { setDx(0); return; }
+  const show = () => {
     const r = li.current?.getBoundingClientRect();
     if (r) {
       const half = (r.width * SCALE - r.width) / 2;
@@ -23,6 +22,11 @@ export function RetiredBannerItem({ src, alt, label, cap, href, width, height }:
       const right = r.right + half;
       setDx(left < 6 ? 6 - left : right > innerWidth - 6 ? innerWidth - 6 - right : 0);
     }
+    setZoom(true);
+  };
+
+  useEffect(() => {
+    if (!zoom) return;
     const out = (e: Event) => { if (!li.current?.contains(e.target as Node)) setZoom(false); };
     const esc = (e: KeyboardEvent) => { if (e.key === "Escape") setZoom(false); };
     document.addEventListener("pointerdown", out);
@@ -34,7 +38,7 @@ export function RetiredBannerItem({ src, alt, label, cap, href, width, height }:
     if (!touch.current) return;
     touch.current = false;
     e.preventDefault();
-    setZoom(!zoom);
+    if (zoom) setZoom(false); else show();
   };
   const img = (
     // eslint-disable-next-line @next/next/no-img-element -- kept SVG from this app, not a remote bitmap
@@ -45,7 +49,7 @@ export function RetiredBannerItem({ src, alt, label, cap, href, width, height }:
     title: label,
     onPointerDown: (e: React.PointerEvent) => { touch.current = e.pointerType === "touch" || e.pointerType === "pen"; },
     onClick: tap,
-    onFocus: (e: React.FocusEvent) => { if (e.currentTarget.matches(":focus-visible")) setZoom(true); },
+    onFocus: (e: React.FocusEvent) => { if (e.currentTarget.matches(":focus-visible")) show(); },
     onBlur: () => setZoom(false),
   };
   return (
@@ -54,10 +58,10 @@ export function RetiredBannerItem({ src, alt, label, cap, href, width, height }:
       className="retired-item"
       data-zoom={zoom ? "1" : undefined}
       style={zoom ? { "--dx": `${dx}px` } as React.CSSProperties : undefined}
-      onPointerEnter={(e) => { if (e.pointerType === "mouse") setZoom(true); }}
+      onPointerEnter={(e) => { if (e.pointerType === "mouse") show(); }}
       onPointerLeave={(e) => { if (e.pointerType === "mouse") setZoom(false); }}
     >
-      {href ? <Link href={href} prefetch={false} {...common}>{img}</Link> : <span tabIndex={0} {...common} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setZoom(!zoom); } }}>{img}</span>}
+      {href ? <Link href={href} prefetch={false} {...common}>{img}</Link> : <span tabIndex={0} {...common} onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); if (zoom) setZoom(false); else show(); } }}>{img}</span>}
       {href ? <Link href={href} prefetch={false} className="retired-cap" title={label} tabIndex={-1}>{cap}</Link> : <span className="retired-cap">{cap}</span>}
     </li>
   );

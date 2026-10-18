@@ -278,6 +278,8 @@ export const PHRASES = {
   "team.retired": "Retired numbers",
   "team.retiredNote": "Numbers {name} has retired, as the sources name them.",
   "team.retiredLeague": "League-wide",
+  "player.retired": "Retired numbers",
+  "player.retiredAlt": "Number {number} retired by {team}",
   "team.springHead": "Spring training",
   "team.leagueCactus": "Cactus League",
   "team.leagueGrapefruit": "Grapefruit League",

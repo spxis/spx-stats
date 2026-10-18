@@ -24,6 +24,8 @@ import { positionBook } from "@/components/PositionKey";
 import { PlayerBoard } from "@/components/PlayerBoard";
 import { CupsProvider } from "@/components/TrophyIcon";
 import { cupsFor } from "@/lib/cups";
+import { getPersonRetired } from "@/lib/retiredNumbers";
+import { PlayerRetired } from "@/components/PlayerRetired";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
 import { buildBoard } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
@@ -109,7 +111,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
   const { d, home } = at;
   const { say, locale, dt, fmt } = await currentSpeaker();
-  const [brands, summary, record] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id)]);
+  const [brands, summary, record, retired] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id)]);
   const { person: p, awards, teams } = d;
   const lgs = (p.leagues ?? []).filter(isLeague);
   const paths = await getPaths();
@@ -188,6 +190,11 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
       {isLeague(home) ? <AccentStyle league={home} /> : null}
       <section className="head fade">
         {homePin ? <BirthMap home={homePin} pins={[homePin, ...teamPins]} name={p.name} /> : null}
+        <PlayerRetired
+          rows={retired}
+          team={(r) => teams.filter((t) => t.league === r.league && t.franchise_id === r.franchise_id).sort((a, b) => b.to_year - a.to_year)[0]?.team || say("team.fallback", { id: r.franchise_id ?? 0 })}
+          href={(r) => `${paths.team(r.league, r.franchise_id ?? 0)}#retired`}
+        />
         <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say("player.eyebrow")}</span>
         <h1>{p.name}</h1>
         {p.birth_date ? <p className="lede">{p.death_date ? say("player.lifespan", { from: yr(p.birth_date), to: yr(p.death_date) }) : say("player.bornYear", { year: yr(p.birth_date) })}</p> : null}

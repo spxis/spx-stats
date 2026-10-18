@@ -388,11 +388,11 @@
   .seasonlabel:hover { text-decoration: underline; }
   .teamband { height: 10px; background: linear-gradient(90deg, var(--tp) 0 70%, var(--ts) 70% 100%); margin-bottom: -18px; }
   .retired-banners { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 14px; overflow-x: visible; padding-block: 4px; }
-  .retired-banners li { flex: none; width: 92px; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
-  .retired-pic { display: block; position: relative; width: 92px; aspect-ratio: 160 / 224; text-decoration: none; color: inherit; perspective: 700px; }
-  .retired-cap { font: 600 12px/1.2 var(--display); text-align: center; color: var(--muted); max-width: 92px; text-decoration: none; }
+  .retired-banners li, .pretired li { flex: none; width: var(--bw, 92px); display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+  .retired-pic { display: block; position: relative; width: var(--bw, 92px); aspect-ratio: 160 / 224; text-decoration: none; color: inherit; perspective: 700px; }
+  .retired-cap { font: 600 12px/1.2 var(--display); text-align: center; color: var(--muted); max-width: var(--bw, 92px); text-decoration: none; }
   a.retired-cap:hover { text-decoration: underline; }
-  .retired-banner { --z: 1.9; display: block; position: absolute; left: 50%; top: 50%; width: calc(92px * var(--z)); max-width: none; height: auto; transform: translate(-50%, -50%) scale(calc(1 / var(--z))); transition: transform .18s ease; }
+  .retired-banner { --z: 1.9; display: block; position: absolute; left: 50%; top: 50%; width: calc(var(--bw, 92px) * var(--z)); max-width: none; height: auto; transform: translate(-50%, -50%) scale(calc(1 / var(--z))); transition: transform .18s ease; }
   .retired-item[data-zoom] { z-index: 5; }
   .retired-item[data-zoom] .retired-banner { transform: translate(calc(-50% + var(--dx, 0px)), -50%) scale(1); filter: drop-shadow(0 6px 10px rgb(0 0 0 / .3)); }
   @media (prefers-reduced-motion: no-preference) {

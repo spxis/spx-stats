@@ -174,6 +174,8 @@ export const JA: Dictionary = {
   "team.retired": "永久欠番",
   "team.retiredNote": "{name}が永久欠番にした番号。出典が挙げるもののみ。",
   "team.retiredLeague": "リーグ全体",
+  "player.retired": "永久欠番",
+  "player.retiredAlt": "{team}の永久欠番 {number}",
   "team.springHead": "春季キャンプ",
   "team.leagueCactus": "カクタスリーグ",
   "team.leagueGrapefruit": "グレープフルーツリーグ",

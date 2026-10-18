@@ -38,3 +38,18 @@ export const getRetiredNumbers = cache(async (lg: string, f: number): Promise<Re
     throw e;
   }
 });
+
+/** Numbers a club retired for one person, oldest first. Empty when the view is missing or there are none. */
+export const getPersonRetired = cache(async (personId: number): Promise<RetiredNumber[]> => {
+  try {
+    const list = await readRows(
+      "retired_number",
+      `person_id=eq.${personId}&franchise_id=not.is.null&select=*&order=retired_on.nullslast,jersey_number`,
+      retiredSchema,
+    );
+    return list.filter((r) => r.person_id === personId && r.franchise_id != null);
+  } catch (e) {
+    if (e instanceof ApiError && e.status != null && e.status >= 400 && e.status < 500) return [];
+    throw e;
+  }
+});
