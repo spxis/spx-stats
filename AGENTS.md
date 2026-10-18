@@ -3,6 +3,8 @@
 The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://spxn.com
 ("SPXN · SPX Network"). The owner is John Morris. Read this whole file before working.
 
+Short on time? Read [docs/agent-quickstart.md](docs/agent-quickstart.md) and [docs/web-map.md](docs/web-map.md) first, then the sections you need.
+
 This is one of exactly two places that hold agent instructions:
 
 1. **This file** (public): rules and commands. It has variable names only, never values.
