@@ -31,37 +31,50 @@ delete from meta.data_issue
    and entity_key like 'jersey-%';
 
 create temp table names as
-select fl.league_code, i.franchise_id,
+select fl.league_code, i.franchise_id, upper_inf(i.valid_during) as open_name,
        legacy_wikipedia_jersey.name_key(i.full_name) as k, 1 as tier
 from core.franchise_identity i
 join core.franchise_league fl on fl.franchise_id = i.franchise_id
 union
-select fl.league_code, i.franchise_id,
+select fl.league_code, i.franchise_id, upper_inf(i.valid_during),
        legacy_wikipedia_jersey.name_key(i.location || i.nickname), 2
 from core.franchise_identity i
 join core.franchise_league fl on fl.franchise_id = i.franchise_id
 union
-select fl.league_code, i.franchise_id,
+select fl.league_code, i.franchise_id, upper_inf(i.valid_during),
        legacy_wikipedia_jersey.name_key(i.location), 3
 from core.franchise_identity i
 join core.franchise_league fl on fl.franchise_id = i.franchise_id
-where length(legacy_wikipedia_jersey.name_key(i.location)) >= 4;
+where length(legacy_wikipedia_jersey.name_key(i.location)) >= 4
+union
+select fl.league_code, i.franchise_id, upper_inf(i.valid_during),
+       legacy_wikipedia_jersey.name_key(i.nickname), 4
+from core.franchise_identity i
+join core.franchise_league fl on fl.franchise_id = i.franchise_id
+where length(legacy_wikipedia_jersey.name_key(i.nickname)) >= 4;
 
--- A key that names two clubs in the same league at the same tier is not used.
+-- A key that names two clubs in the same league at the same tier is not used, unless exactly one of
+-- them still carries that name today (the lists name today's clubs: Ottawa, Montreal, Denver, Orioles).
 create temp table team_key as
-select league_code, k, min(franchise_id) as franchise_id
+select league_code, k,
+       (array_agg(franchise_id order by cur desc, franchise_id))[1] as franchise_id
 from (
-  select *, min(tier) over (partition by league_code, k) as best
-  from names
-  where k <> ''
+  select n.league_code, n.k, n.franchise_id, n.tier,
+         bool_or(n.open_name) as cur,
+         min(n.tier) over (partition by n.league_code, n.k) as best
+  from names n
+  where n.k <> ''
+  group by n.league_code, n.k, n.franchise_id, n.tier
 ) x
 where tier = best
 group by league_code, k
-having count(distinct franchise_id) = 1;
+having count(distinct franchise_id) = 1
+    or count(distinct franchise_id) filter (where cur) = 1;
 
 create temp table raw as
 select r.*, a.revision_id, a.title as article_title,
-       tk.franchise_id
+       tk.franchise_id,
+       (r.league_wide or r.team_key = 'allmlb') as is_wide
 from legacy_wikipedia_jersey.retired r
 join legacy_wikipedia_jersey.article a using (article_code)
 left join team_key tk on tk.league_code = r.league_code and tk.k = r.team_key
@@ -74,7 +87,7 @@ select (select source_id from wp), 'retired_number',
               r.jersey_number, coalesce(r.team_name, '?'), r.league_code),
        'Left unmatched: team name did not fit one franchise of that league'
 from raw r
-where r.franchise_id is null and not r.league_wide and r.team_key is not null;
+where r.franchise_id is null and not r.is_wide and r.team_key is not null;
 
 -- People: Wikidata QID first, then a unique name in that franchise, then a unique name in the league.
 create temp table qid as
@@ -161,7 +174,7 @@ insert into core.retired_number
   (league_code, franchise_id, jersey_number, person_id, honor_name,
    retired_on, tenure_text, source_id, source_key)
 select c.league_code,
-       case when c.league_wide then null else c.franchise_id end,
+       case when c.is_wide then null else c.franchise_id end,
        c.jersey_number,
        c.person_id,
        case when c.person_id is null then c.player_name end,
@@ -171,20 +184,36 @@ select c.league_code,
        'jersey-retired:' || c.article_code || ':' || c.row_number
         || ':r' || coalesce(c.revision_id::text, '0')
 from chosen c
-where c.person_id is not null or c.player_name is not null;
+where (c.person_id is not null or c.player_name is not null)
+  and (c.is_wide or c.franchise_id is not null);
+
+-- A number a league retired for everyone, noted on the club row that first retired it (Russell, NBA 2022).
+insert into core.retired_number
+  (league_code, franchise_id, jersey_number, person_id, honor_name,
+   retired_on, tenure_text, source_id, source_key)
+select c.league_code, null, c.jersey_number, c.person_id,
+       case when c.person_id is null then c.player_name end,
+       null, c.tenure_text, (select source_id from wp),
+       'jersey-retired:' || c.article_code || ':' || c.row_number
+        || ':r' || coalesce(c.revision_id::text, '0') || ':league'
+from chosen c
+where not c.is_wide and c.franchise_id is not null
+  and c.notes ~* 'retired league-wide'
+  and (c.person_id is not null or c.player_name is not null);
 
 -- A retired number is also a number that person wore.
 insert into core.person_jersey
   (person_id, franchise_id, league_code, jersey_number, from_year, to_year, source_id, source_key)
 select c.person_id,
-       case when c.league_wide then null else c.franchise_id end,
+       case when c.is_wide then null else c.franchise_id end,
        c.league_code,
        c.jersey_number,
        null, null,
        (select source_id from wp),
        'jersey-retired:' || c.article_code || ':' || c.row_number || ':wore'
 from chosen c
-where c.person_id is not null;
+where c.person_id is not null
+  and (c.is_wide or c.franchise_id is not null);
 
 -- Wikidata P1618, QID-matched people only.
 create temp table wd_team as
