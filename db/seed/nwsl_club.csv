@@ -13,7 +13,7 @@ Seattle Reign FC,nwsl,2024,9999,new:SEATTLE,US,,restored name
 Seattle Reign,nwsl,2024,9999,new:SEATTLE,US,,short form of the restored name
 Sky Blue FC,nwsl,2013,2020,new:GOTHAM,US,,named NJ/NY Gotham FC in 2021
 Sky Blue,nwsl,2013,2020,new:GOTHAM,US,,short form
-NJ/NY Gotham FC,nwsl,2021,2023,new:GOTHAM,US,,
+NJ/NY Gotham FC,nwsl,2021,2024,new:GOTHAM,US,,the 2024 season articles still use this name
 Gotham FC,nwsl,2024,9999,new:GOTHAM,US,,
 Gotham,nwsl,2024,9999,new:GOTHAM,US,,short form
 Washington Spirit,nwsl,2013,9999,new:WASHINGTON,US,,
@@ -28,6 +28,8 @@ Utah Royals,nwsl,2024,9999,new:UTAH,US,,short form of the revival
 Racing Louisville FC,nwsl,2021,9999,new:LOUISVILLE,US,,
 Racing Louisville,nwsl,2021,9999,new:LOUISVILLE,US,,short form
 Kansas City Current,nwsl,2021,9999,new:KCCURRENT,US,,not FC Kansas City
+Kansas City NWSL,nwsl,2021,2021,new:KCCURRENT,US,,placeholder name of the 2021 season
+Kansas City,nwsl,2021,2021,new:KCCURRENT,US,,short form of the 2021 placeholder name
 Angel City FC,nwsl,2022,9999,new:ANGELCITY,US,,
 Angel City,nwsl,2022,9999,new:ANGELCITY,US,,short form
 San Diego Wave FC,nwsl,2022,9999,new:SANDIEGO,US,,

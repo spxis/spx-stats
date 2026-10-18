@@ -104,7 +104,7 @@ def team_titles(y, text):
     """Club-season articles: [[2013 Portland Thorns FC season]], [[2025 Gotham FC season]]."""
     out = set()
     for m in re.findall(r"\[\[(%d [^\]|#]+? season)" % y, text):
-        if re.search(r"National Women's Soccer League season$|NWSL season$", m): continue
+        if re.search(r"National Women's Soccer League season$", m) or m.strip() == "%d NWSL season" % y: continue
         if re.search(r"(draft|Playoffs|Finals|All-Star|Championship|Challenge Cup|College|Allocation)$", m, re.I): continue
         out.add(m.strip())
     return out

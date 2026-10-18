@@ -14,9 +14,9 @@ import wikibox as B  # noqa: E402
 
 SKIP_HEAD = re.compile(
     r"pre-?season|exhibition|friendli|challenge cup|summer cup|liga mx|"
-    r"concacaf|champions cup|w champions|invitational|college draft|allocation",
+    r"women.?s cup|concacaf|champions cup|w champions|invitational|college draft|allocation",
     re.I)
-PLAYOFF_HEAD = re.compile(r"playoff|championship|semi-?final|quarter-?final|\bfinals?\b", re.I)
+PLAYOFF_HEAD = re.compile(r"playoff|post-?\s?season|championship|semi-?final|quarter-?final|\bfinals?\b", re.I)
 SEASON_TEAM = re.compile(r"^(\d{4}) (.+) season$")
 
 
@@ -31,6 +31,7 @@ def club_from(link, text):
         if m: return " ".join(m.group(2).replace("\xa0", " ").split())
     t = re.sub(r"\s+", " ", (text or "").replace("\xa0", " ").strip().strip("."))
     t = re.sub(r"\s*\([^)]*\)\s*$", "", t)
+    t = re.sub(r"^#\d+\s+", "", t)   # a playoff seed in front of the name
     if t: return t
     if link:
         t = re.sub(r"\s*\([^)]*\)\s*$", "", link.strip())
@@ -58,6 +59,10 @@ def games_from_boxes(boxes, src_name=""):
         if not d:
             if b.get("score1") is not None: bad.append((src_name, "no date " + (b.get("score_raw") or "")[:80]))
             continue
+        yr = int(src_name[:4]) if re.match(r"^\d{4} ", src_name or "") else None
+        if yr and d[:4] != str(yr):
+            bad.append((src_name, f"date {d} outside the {yr} season: " + (b.get("score_raw") or "")[:60]))
+            continue
         home = club_from(b["team1"].get("link"), b["team1"].get("text"))
         away = club_from(b["team2"].get("link"), b["team2"].get("text"))
         s1, s2 = b.get("score1"), b.get("score2")
@@ -65,7 +70,7 @@ def games_from_boxes(boxes, src_name=""):
             bad.append((src_name, "clubs " + (b.get("score_raw") or "")[:80])); continue
         if s1 is None or s2 is None:
             raw = (b.get("score_raw") or "")
-            if re.search(r"TBD|cancelled|canceled|postponed|v\s*$|–\s*$", raw, re.I) or not raw.strip():
+            if re.search(r"TBD|cancelled|canceled|postponed|PPD|^\s*P\s*[–-]\s*P\s*$|v\s*$|–\s*$", raw, re.I) or not raw.strip():
                 continue
             bad.append((src_name, raw[:120])); continue
         ot = bool(b.get("aet") or b.get("golden"))
@@ -99,6 +104,11 @@ def merge_games(rows):
     groups, order = {}, []
     for g in rows:
         k = (g["phase"], g["date"], g["home"], g["away"])
+        if k not in groups and (g["phase"], g["date"], g["away"], g["home"]) in groups:
+            # the two articles name opposite home clubs for one match: keep the first article's side, turn this view round
+            g = dict(g, home=g["away"], away=g["home"], home_pts=g["away_pts"], away_pts=g["home_pts"],
+                     conflict=((g.get("conflict") + "; ") if g.get("conflict") else "") + "Wikipedia logs name opposite home clubs")
+            k = (g["phase"], g["date"], g["home"], g["away"])
         if k not in groups:
             groups[k] = dict(g)
             groups[k]["views"] = g.get("views") or 1
@@ -126,10 +136,28 @@ def merge_games(rows):
             if g.get("conflict"):
                 cur["conflict"] = g["conflict"]
         cur["conflict"] = (cur["conflict"] + "; " if cur.get("conflict") else "") + note
-    return _merge_close_dates([groups[k] for k in order])
+    return _one_playoff_game_per_pair(_merge_close_dates([groups[k] for k in order]))
 
 
-def _merge_close_dates(games, days=3):
+def _one_playoff_game_per_pair(games):
+    """An NWSL playoff round is one game: the same two clubs in the playoffs of a season are one game
+    whatever date a club article gives it. The row both articles agree on (most views) is kept."""
+    keep, drop = {}, set()
+    for i, g in enumerate(games):
+        if g["phase"] != "playoffs": continue
+        k = frozenset((g["home"], g["away"]))
+        j = keep.get(k)
+        if j is None:
+            keep[k] = i; continue
+        a, b = games[j], g
+        if (b.get("views") or 1) > (a.get("views") or 1):
+            keep[k] = i; drop.add(j)
+        else:
+            drop.add(i)
+    return [g for i, g in enumerate(games) if i not in drop]
+
+
+def _merge_close_dates(games, days=3, wide=10):
     """Two club pages often disagree by a day (late kickoff / time zone). Same clubs + close dates are one game."""
     used, out = set(), []
     for i, a in enumerate(games):
@@ -137,11 +165,16 @@ def _merge_close_dates(games, days=3):
         for j, b in enumerate(games):
             if j <= i or j in used: continue
             if (a["phase"], a["home"], a["away"]) != (b["phase"], b["home"], b["away"]): continue
+            if (a.get("views") or 1) > 1 or (b.get("views") or 1) > 1: continue   # a match both articles agree on is a match of its own
+            if a.get("src") == b.get("src"): continue
             try:
                 da, db = datetime.date.fromisoformat(a["date"]), datetime.date.fromisoformat(b["date"])
             except ValueError:
                 continue
-            if abs((da - db).days) > days: continue
+            gap = abs((da - db).days)
+            # a game each club logs on its own date a week apart, same score, is one rescheduled game
+            same_score = (a["home_pts"], a["away_pts"]) == (b["home_pts"], b["away_pts"])
+            if gap > days and not (gap <= wide and same_score and a["phase"] == "regular"): continue
             take_b = b["home"] in (b.get("src") or "") and b["home"] not in (a.get("src") or "")
             score_diff = (b["home_pts"], b["away_pts"]) != (a["home_pts"], a["away_pts"])
             note_scores = (b["home_pts"], b["away_pts"], a["home_pts"], a["away_pts"], b["date"], a["date"])

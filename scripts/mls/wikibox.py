@@ -9,7 +9,7 @@ from datetime import date
 MONTHS = {m.lower(): i for i, m in enumerate(["January", "February", "March", "April", "May", "June", "July", "August", "September", "October",
                                               "November", "December"], 1)}
 MONTHS.update({k[:3]: v for k, v in list(MONTHS.items())})
-BOX = re.compile(r"\{\{\s*(?:football\s*box(?:\s*collapsible)?|footballbox(?:[ _]collapsible)?|football_box(?:_collapsible)?)\s*(?=\||\n)", re.I)
+BOX = re.compile(r"\{\{\s*(?:football\s*box(?:\s*collapsible)?|footballbox(?:[ _]collapsible)?|football_box(?:_collapsible)?)\s*(?:<!--.*?-->\s*)?(?=\||\n)", re.I)
 HEADING = re.compile(r"^(={2,6})\s*(.+?)\s*\1\s*$", re.M)
 
 
@@ -68,6 +68,12 @@ def _parse_date(raw, default_year=None):
     m = re.search(r"\{\{\s*(?:start[ _]date|dts|date)\s*\|\s*(?:df=\w+\|)?(\d{4})\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})", s, re.I)
     if m:
         return date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
+    m = re.search(r"\{\{\s*start[ _]date\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})\s*\|\s*df\s*=\s*y", s, re.I)
+    if m and default_year:      # {{Start date|25|02|df=y}}: day, month, no year (the article's season)
+        return date(default_year, int(m.group(2)), int(m.group(1))).isoformat()
+    m = re.search(r"\{\{\s*dts\s*\|\s*(?:df=\w+\|)?\s*\|\s*(\d{1,2})\s*\|\s*(\d{1,2})", s, re.I)
+    if m and default_year:      # {{dts||4|26}}: the year left empty is the article's season
+        return date(default_year, int(m.group(1)), int(m.group(2))).isoformat()
     s = re.sub(r"\[\[([^\]|]*\|)?([^\]]*)\]\]", r"\2", s)
     m = re.search(r"(\d{4})-(\d{2})-(\d{2})", s)
     if m:
@@ -78,16 +84,23 @@ def _parse_date(raw, default_year=None):
     m = re.search(r"(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?,?\s+(\d{4})", s)
     if m and m.group(2).lower() in MONTHS:
         return date(int(m.group(3)), MONTHS[m.group(2).lower()], int(m.group(1))).isoformat()
-    if default_year:       # "April 13": the article's season
+    if default_year:       # "April 13", "Sat Mar 25", "15 May", "Sat 24 March", "April 23, 6:00 pm CDT": the article's season
+        s = re.sub(r"^\W*(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\.?,?\s+(?=[A-Za-z0-9])", "", s)
+        s = re.sub(r",?\s+(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\.?\W*$", "", s)
+        s = re.sub(r",?\s+\d{1,2}(?::\d{2})?\s*(?:[ap]\.?m\.?|noon)\b.*$", "", s, flags=re.I)
         m = re.fullmatch(r"\W*([A-Za-z]{3,9})\.?\s+(\d{1,2})(?:st|nd|rd|th)?\W*", s)
-        if m and m.group(1).lower() in MONTHS:
-            return date(default_year, MONTHS[m.group(1).lower()], int(m.group(2))).isoformat()
+        day_first = re.fullmatch(r"\W*(\d{1,2})(?:st|nd|rd|th)?\s+([A-Za-z]{3,9})\.?\W*", s)
+        if day_first: m = day_first; mon, day = day_first.group(2), day_first.group(1)
+        elif m: mon, day = m.group(1), m.group(2)
+        if m and (mon.lower() in MONTHS or mon.lower()[:3] in MONTHS):
+            return date(default_year, MONTHS.get(mon.lower()) or MONTHS[mon.lower()[:3]], int(day)).isoformat()
     return None
 
 
 def parse_score(raw):
     """(score1, score2, flags) from a box's score text. flags: aet, golden (sudden death), so (old MLS shootout), series (a series score, not a match)."""
     s = strip_markup(raw or "")
+    s = re.sub(r"\{\{\s*(?:endash|ndash|en dash)\s*\}\}", "–", s, flags=re.I)
     s = re.sub(r"\[\[([^\]|]*\|)?([^\]]*)\]\]", r"\2", s)
     flags = {"aet": False, "golden": False, "so": False, "series": False}
     low = s.lower()

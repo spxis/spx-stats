@@ -57,12 +57,62 @@ def nick_key(name):
     t = re.sub(r"\s+", " ", (name or "").replace("\xa0", " ").strip())
     t = re.sub(r"^(FC|CF|SC)\s+", "", t, flags=re.I)
     t = re.sub(r"\s+(FC|CF|SC)$", "", t, flags=re.I)
-    t = re.sub(r"^(NJ/NY|NJ-NY|NWSL)\s+", "", t, flags=re.I)
+    t = re.sub(r"^(NJ/NY|NY/NJ|NJ-NY|NY-NJ|NWSL)\s+", "", t, flags=re.I)
+    t = re.sub(r"\s+NWSL$", "", t, flags=re.I)
     return t.lower()
 
 
 def remap(name, canon):
-    return canon.get(nick_key(name), name)
+    """The season's own spelling of a club. 'Kansas City NWSL' and 'Kansas City Current' are the
+    standings' 'Kansas City' when exactly one known club's key is a word-prefix of the other."""
+    k = nick_key(name)
+    if k in canon: return canon[k]
+    hits = {v for ck, v in canon.items() if k.startswith(ck + " ") or ck.startswith(k + " ")}
+    return hits.pop() if len(hits) == 1 else name
+
+
+def drop_miscopied(rows, title_of):
+    """A club article that names the wrong opponent for a match (2021: Chicago's page gave its 22 May game to Kansas City;
+    Gotham's page and the standings say Gotham) leaves one line no other article repeats. Drop a line only when its
+    opponent's own article (loaded) lacks it AND a third club's article lists a match of the same club on that date
+    that the first club's article lacks. The dropped line is reported in unparsed; nothing else is guessed."""
+    art = {}   # club (whose article it is) -> {(date, frozenset pair)}
+    for g in rows:
+        for nm, t in title_of.items():
+            if g["src"].startswith(t + " ") or g["src"].startswith(t):
+                art.setdefault(nm, set()).add((g["date"], frozenset((g["home"], g["away"]))))
+                break
+    keep, drop = [], []
+    for g in rows:
+        owner = next((nm for nm, t in title_of.items() if g["src"].startswith(t)), None)
+        if owner is None or owner not in (g["home"], g["away"]):
+            keep.append(g); continue
+        other = g["away"] if owner == g["home"] else g["home"]
+        pair = frozenset((owner, other))
+        if other not in art or (g["date"], pair) in art[other]:
+            keep.append(g); continue
+        third = [c for c, ks in art.items() if c not in (owner, other)
+                 and any(d == g["date"] and owner in pr and (d, pr) not in art.get(owner, set()) for d, pr in ks)]
+        (drop if third else keep).append(g)
+    return keep, drop
+
+
+def arbitrate_by_standings(games, st):
+    """Two club articles disagree on a score and the published standings (a third, independent table) agree with only one:
+    take the side the standings support, keep both readings in conflict. Only a game with that disagreement is touched,
+    and only when the swap lowers the number of standings differences."""
+    for g in games:
+        m = re.match(r".*?Wikipedia logs disagree: (\d+)\u2013(\d+) vs (\d+)\u2013(\d+)", g.get("conflict") or "")
+        if not m or g["phase"] != "regular": continue
+        dh, da, kh, ka = map(int, m.groups())
+        if (dh, da) == (kh, ka) or (g["home_pts"], g["away_pts"]) != (kh, ka): continue
+        before = len(P.check(games, st))
+        g["home_pts"], g["away_pts"] = dh, da
+        if len(P.check(games, st)) < before:
+            g["conflict"] += "; standings table supports " + f"{dh}\u2013{da}"
+        else:
+            g["home_pts"], g["away_pts"] = kh, ka
+    return games
 
 
 def run(y, dry=False):
@@ -115,8 +165,16 @@ def run(y, dry=False):
     for g in raw_games:
         g["home"] = remap(g["home"], canon)
         g["away"] = remap(g["away"], canon)
+    # a club that is not in the season's standings or club-season articles is a friendly (a college side, a foreign club)
+    known = set(canon.values())
+    outside = [g for g in raw_games if g["home"] not in known or g["away"] not in known]
+    raw_games = [g for g in raw_games if g["home"] in known and g["away"] in known]
+    unp += [(g["src"][:40], f"club outside the league: {g['home']} / {g['away']} {g['date']}") for g in outside]
+    raw_games, miscopied = drop_miscopied(raw_games, title_of)
+    unp += [(g["src"][:40], f"opponent contradicted by the other club's article: {g['home']} / {g['away']} {g['date']}") for g in miscopied]
     games = P.merge_games(raw_games)
 
+    games = arbitrate_by_standings(games, st)
     diffs = P.check(games, st)
     reg = sum(1 for g in games if g["phase"] == "regular")
     print(f"{y}: teams={len(title_of) or len(canon)} standings={len(st)} games={len(games)} (regular {reg}, playoffs {len(games) - reg}) "

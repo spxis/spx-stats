@@ -171,6 +171,19 @@ class T(unittest.TestCase):
         self.assertEqual(len(gs), 1)
         self.assertEqual(gs[0]["phase"], "playoffs")
 
+    def test_box_with_comment_after_name(self):
+        gs, bad = P.games_from_boxes(P.B.boxes(
+            "=== Regular season ===\n{{football box collapsible <!-- All stats added from report -->\n"
+            "|date = {{Start date|2025|09|06}}\n|team1 = [[Bay FC]]\n|score = 0–2\n|team2 = [[Kansas City Current]]\n}}\n",
+            2025), "2025 Bay FC season")
+        self.assertEqual((len(gs), bad), (1, []))
+
+    def test_womens_cup_is_not_the_season(self):
+        gs, bad = P.games_from_boxes(P.B.boxes(
+            "=== The Women's Cup ===\n{{football box collapsible\n|round = Championship\n|date = August 20\n"
+            "|team1 = Racing Louisville FC\n|score = 1–2\n|team2 = [[OL Reign]]\n}}\n", 2022), "2022 Racing Louisville FC season")
+        self.assertEqual(gs, [])
+
     def test_merge_keeps_home_score_when_logs_disagree(self):
         rows = [
             dict(phase="regular", date="2013-07-31", home="Portland Thorns FC", away="Sky Blue FC",
