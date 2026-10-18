@@ -7,6 +7,7 @@ import { seasonLabel } from "@/lib/leagues";
 import { seasonPath } from "@/lib/slug";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
 import { useSpeaker } from "./i18n/LocaleProvider";
+import { AwardCup } from "./TrophyIcon";
 import { SortTable } from "./SortTable";
 import { TeamLabel } from "./TeamLabel";
 import { useMoreLines } from "./useMoreLines";
@@ -32,7 +33,7 @@ export function AwardsGrid({ lg, columns, head, logos, total }: { lg: string; co
           const w = s.c[c.code];
           if (w == null) return null;
           if (typeof w === "number") return <Link href={seasonPath(lg, s.y)} prefetch={false} title={say("awards.openSeason")}>{plural("count.winners", w)}</Link>;
-          return w.map((x, i) => <div key={i}>{winner(x)}</div>);
+          return w.map((x, i) => <div key={i} className="awardwin"><AwardCup league={lg} />{winner(x)}</div>);
         },
       })),
     ];

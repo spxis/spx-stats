@@ -57,6 +57,15 @@ export function cupsFor(leagues: Iterable<string>): Record<string, string> {
   return Object.fromEntries([...new Set(leagues)].map((league) => [league, cupSvg(league)]));
 }
 
+/** The line cup of some leagues as `<symbol>`s of one sprite (components/CupSprite.tsx): a cell draws one with `<use href="#cup-<league>">`, so each drawing is on the page once. */
+export function cupSymbols(leagues: Iterable<string>): string {
+  return [...new Set(leagues)].map((league) => {
+    const svg = cupSvg(league);
+    const viewBox = /viewBox="([^"]*)"/.exec(svg)?.[1];
+    return `<symbol id="cup-${league}" viewBox="${viewBox}">${svg.replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")}</symbol>`;
+  }).join("");
+}
+
 /** A banner trophy, drawn large: polished metal, leaning a little toward the eye, no title (the page labels it in the reader's language). It is the first frame of the turn the browser then runs. */
 export function bannerCupSvg(league: string): string {
   const [emblem] = CUPS[league] ?? CUPS.nhl;

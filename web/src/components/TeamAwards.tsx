@@ -1,4 +1,5 @@
 import { AwardsTable } from "@/components/AwardsTable";
+import { CupSprite } from "@/components/CupSprite";
 import { AWARD_HEAD } from "@/lib/awardLines";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { teamAwardLines } from "@/lib/teamAwardLines";
@@ -12,6 +13,7 @@ export async function TeamAwards({ lg, f, teamPath, full = false }: { lg: string
     <section className="section" id="awards">
       <h2>{say("awards.title")}</h2>
       <p className="note">{say("awards.teamNote", { awards: plural("count.awards", list.lines.length) })}</p>
+      <CupSprite leagues={[lg]} />
       <div className="tablebox"><AwardsTable lg={lg} teamPath={teamPath} head={full ? list.lines : list.lines.slice(0, AWARD_HEAD)} logos={list.logos} total={list.lines.length} /></div>
     </section>
   );
