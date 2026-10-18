@@ -24,6 +24,7 @@ import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/al
 import { getSeasonAlignment, getStandingsAsOf } from "@/lib/alignmentData";
 import { chosenGroup, groupChoices, placeHeading, placeLabel, rowClasses } from "@/lib/standingsGroups";
 import type { StandingRow } from "@/lib/api/types";
+import { joinList } from "@/lib/people-format";
 import { abbrFor, abbrsForYear } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
 import { titleHolders, titleStreak } from "@/lib/champions";
@@ -152,11 +153,14 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const heading = placeHeading(lg, st);
   const pub = d.standings.find((r) => r.basis === "published");
   const basis = asOf ? say("season.basisAsOf") : pub ? (isSpx(pub.source) ? say("season.basisSpx") : say("season.basisSource", { source: srcName(say, pub.source) })) : say("season.basisDerived");
+  const computed = d.standings.filter((r) => r.basis !== "published").flatMap((r) => (r.team ? [r.team] : []));
+  const mixedNote = computed.length ? say("season.basisMixed", { teams: joinList(computed, locale) }) : "";
   const startDay = seasonStartDay(d.games.map((g) => ({ date: g[0], phase: g[5], status: g[6] })));
   const nothingPlayed = !d.games.some((g) => g[6] === "f");
   const standingsNote = [
     // (a season with published standings but no game results, the WHA's, is not an unstarted one)
     nothingPlayed && !asOf && !pub ? say("season.standingsNone") : say("season.standingsNote", { basis }),
+    !asOf && pub ? mixedNote : "",
     dateWanted && !dateAsked ? say("season.dateLate") : "",
     dateAsked && !asOf ? say("season.dateMissing") : "",
     view === "wildcard" ? say("season.wildCardNote") : "",

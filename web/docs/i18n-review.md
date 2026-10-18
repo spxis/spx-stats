@@ -25,6 +25,7 @@ SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia 
 | Every page: header and footer | Teams | Équipes | **チーム** | Teams. |  |
 | Every page: header and footer | Players | Joueurs | **選手** | Players (the word for an athlete). |  |
 | Every page: header and footer | About | À propos | **このサイトについて** | About this site. |  |
+| Every page: header and footer; About page, /about (the SPXIS marks) | Soccer | Soccer | **サッカー** | Soccer (the sport). |  |
 | Every page: header and footer | Leagues | Ligues | **リーグ** | Leagues. |  |
 | Every page: header and footer | All-time | Historique | **通算** | Total / cumulative (through all years). |  |
 | Every page: header and footer | About SPXN | À propos de SPXN | **SPXNについて** | About SPXN. |  |
@@ -67,7 +68,6 @@ SPX Network, SPXN, Retrosheet, Lahman, nflverse, Wikipedia, Wikidata, Wikimedia 
 | About page, /about (the SPXIS marks) | The spxn shield, established 1997. | Le blason spxn, fondé en 1997. | **spxnのシールド、1997年設立。** | spxn's shield, established 1997. |  |
 | About page, /about (the SPXIS marks) | SPX Interactive Software, with the swoosh. | SPX Interactive Software, avec le swoosh. | **スウッシュを使ったSPX Interactive Software。** | SPX Interactive Software, which uses the swoosh. |  |
 | About page, /about (the SPXIS marks) | The SPXIS shield, established 1997. | Le blason SPXIS, fondé en 1997. | **SPXISのシールド、1997年設立。** | SPXIS's shield, established 1997. |  |
-| About page, /about (the SPXIS marks) | Soccer | Soccer | **サッカー** | Soccer (the sport). |  |
 | About page, /about (the SPXIS marks) | The SPXIS marks | Les marques SPXIS | **SPXISのマーク** | SPXIS's marks (the word for a logo or symbol). |  |
 | About page, /about (the SPXIS marks) | SPXN grew out of SportsInteractive, established in 1997. These are its marks through the years. | SPXN est issu de SportsInteractive, fondé en 1997. Voici ses marques au fil des ans. | **SPXNは、1997年に設立されたSportsInteractiveから生まれました。年代ごとのマークをご覧ください。** | SPXN was born from SportsInteractive, established in 1997. Please look at the marks of each period. |  |
 | About page, /about (the SPXIS marks) | These are SPXIS marks, © SportsInteractive. They are not under the licences that cover the site's data. | Ce sont des marques de SPXIS, © SportsInteractive. Elles ne relèvent pas des licences qui couvrent les données du site. | **これらはSPXISのマークで、© SportsInteractiveです。サイトのデータに適用されるライセンスの対象ではありません。** | These are SPXIS's marks and are © SportsInteractive. They are not covered by the licences that apply to the site's data. |  |
