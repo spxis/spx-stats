@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { isAdmin } from "../src/lib/auth/admin.ts";
 import { authProviders } from "../src/lib/auth/providers.ts";
 import { authConfigured } from "../src/lib/auth/enabled.ts";
-import { loopbackRequest, previewAdminEmail, previewMode, previewSignInEnabled, previewUser } from "../src/lib/auth/preview.ts";
+import { DEV_ADMIN, devLogin, devPageAllowed, loopbackRequest, previewAdminEmail, previewMode, previewSignInEnabled, previewUser } from "../src/lib/auth/preview.ts";
 
 /** The preview-only sign-in ("Sign in (this Mac)", lib/auth/preview.ts). Run in web/: pnpm test:auth (it needs --conditions=react-server for config.ts). */
 const hdr = (h: Record<string, string>) => ({ get: (n: string) => h[n] ?? null });
@@ -63,4 +63,24 @@ test("which address the preview signs in as, and that it counts as an admin only
   assert.equal(isAdmin("someone@example.com", true, { ...preview, ADMIN_EMAILS: "someone@example.com" }), true, "the first listed address is the preview admin");
   assert.equal(isAdmin("john@spxis.com", true, { AUTH_SECRET: "s" }), false, "outside the preview nobody is an admin without the list");
   assert.equal(isAdmin("john@spxis.com", true, { ...preview, VERCEL: "1" }), false);
+});
+
+test("the dev sign-in needs next dev, SPXN_DEV_LOGIN=1 and no VERCEL; a production build has neither the provider nor the /dev page", () => {
+  const dev = { NODE_ENV: "development", SPXN_DEV_LOGIN: "1" };
+  assert.equal(devLogin(dev), true);
+  for (const env of [{}, { SPXN_DEV_LOGIN: "1" }, { NODE_ENV: "development" }, { NODE_ENV: "production", SPXN_DEV_LOGIN: "1" }, { NODE_ENV: "test", SPXN_DEV_LOGIN: "1" }, { ...dev, SPXN_DEV_LOGIN: "true" }, { ...dev, VERCEL: "1" }]) {
+    assert.equal(devLogin(env), false, JSON.stringify(env));
+    assert.deepEqual(ids(env), []);
+    assert.equal(authConfigured(env), false);
+    assert.equal(devPageAllowed(env, hdr({ host: "localhost:7702" })), false);
+  }
+  assert.deepEqual(ids(dev), ["preview"], "no signing secret is needed");
+  assert.equal(authConfigured(dev), true);
+  assert.equal(previewAdminEmail(dev), DEV_ADMIN);
+  assert.equal(isAdmin(DEV_ADMIN, true, dev), true);
+  assert.equal(isAdmin(DEV_ADMIN, true, { NODE_ENV: "production", SPXN_DEV_LOGIN: "1", ADMIN_EMAILS: "a@example.com" }), false);
+  assert.equal(devPageAllowed(dev, hdr({ host: "localhost:7702" })), true);
+  assert.equal(devPageAllowed(dev, hdr({ host: "spxn.com" })), false);
+  assert.equal(devPageAllowed(dev, hdr({ host: "localhost:7702", "x-forwarded-host": "spxn.com" })), false);
+  assert.equal(previewUser(dev, hdr({ host: "192.0.2.5:7702" })), null);
 });

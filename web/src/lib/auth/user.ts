@@ -4,7 +4,7 @@ import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { isAdmin } from "./admin";
 import { authEnabled, authOptions } from "./config";
-import { loopbackRequest, previewSignInEnabled } from "./preview";
+import { devLogin, loopbackRequest, previewSignInEnabled } from "./preview";
 
 export type SessionUser = { name: string | null; email: string; image: string | null; admin: boolean };
 
@@ -32,5 +32,12 @@ export async function requireUser(path: string): Promise<SessionUser> {
 export async function requireAdmin(): Promise<SessionUser> {
   const user = await currentUser();
   if (!user?.admin) notFound();
+  return user;
+}
+
+/** For admin actions that write (approve, hold, request, file a ticket): refused under the dev sign-in, whose fake admin must never reach DS1 or production. */
+export async function requireAdminWrite(): Promise<SessionUser> {
+  const user = await requireAdmin();
+  if (devLogin(process.env)) throw new Error("Writes are turned off with the dev sign-in (SPXN_DEV_LOGIN).");
   return user;
 }

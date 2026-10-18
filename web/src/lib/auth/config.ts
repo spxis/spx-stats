@@ -2,7 +2,7 @@ import "server-only";
 import type { NextAuthOptions } from "next-auth";
 import { AUTH_CLIENT_SECRET, AUTH_ID, AUTH_SECRET, authConfigured, firstEnv } from "./enabled";
 import { authProviders } from "./providers";
-import { previewSignInEnabled } from "./preview";
+import { devLogin, previewSignInEnabled } from "./preview";
 
 /**
  * Google sign-in with next-auth, set up the way Itsutsu and UmaKuma do it and with the same variable
@@ -15,7 +15,8 @@ import { previewSignInEnabled } from "./preview";
  */
 const clientId = firstEnv(process.env, AUTH_ID);
 const clientSecret = firstEnv(process.env, AUTH_CLIENT_SECRET);
-const secret = firstEnv(process.env, AUTH_SECRET);
+// The dev sign-in (SPXN_DEV_LOGIN=1 under next dev) signs its throwaway session with a fixed key when none is set; devLogin is false in every production build.
+const secret = firstEnv(process.env, AUTH_SECRET) ?? (devLogin(process.env) ? "dev-sign-in-not-a-secret" : null);
 
 /** False when any of the three is missing: the login UI is then hidden and every auth route is a 404. (A prebuilt deploy's build cannot see the secrets and says so with SPX_AUTH_CONFIGURED: lib/auth/enabled.ts.) */
 export function authEnabled(): boolean {

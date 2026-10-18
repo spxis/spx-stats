@@ -17,17 +17,31 @@ type Headers = { get(name: string): string | null };
 /** The fallback admin when neither SPX_PREVIEW_ADMIN nor ADMIN_EMAILS names one: the owner's address, which AGENTS.md already publishes as the commit address. */
 export const DEFAULT_PREVIEW_ADMIN = "john@spxis.com";
 
+/** The fake admin of the dev sign-in: a reserved address that is not a real mailbox. */
+export const DEV_ADMIN = "dev-admin@example.invalid";
+
+/** The dev sign-in for agents' own servers: needs `next dev` (NODE_ENV=development), SPXN_DEV_LOGIN=1 and no VERCEL. A production build never has it. */
+export function devLogin(env: Env): boolean {
+  return env.NODE_ENV === "development" && env.SPXN_DEV_LOGIN === "1" && !env.VERCEL;
+}
+
+/** The /dev page answers only when the dev sign-in is on and the request names a loopback host. */
+export function devPageAllowed(env: Env, headers: Headers): boolean {
+  return devLogin(env) && loopbackRequest(headers);
+}
+
 export function previewMode(env: Env): boolean {
-  return env.SPX_PREVIEW === "1" && !env.VERCEL;
+  return (env.SPX_PREVIEW === "1" || devLogin(env)) && !env.VERCEL;
 }
 
 /** Whether the preview sign-in may be offered at all (a signing secret is needed to make a session). */
 export function previewSignInEnabled(env: Env): boolean {
-  return previewMode(env) && Boolean((env.AUTH_SECRET ?? env.NEXTAUTH_SECRET ?? "").trim());
+  return previewMode(env) && (devLogin(env) || Boolean((env.AUTH_SECRET ?? env.NEXTAUTH_SECRET ?? "").trim()));
 }
 
 /** The address the preview signs in as: SPX_PREVIEW_ADMIN, else the first ADMIN_EMAILS (or ADMIN_GOOGLE_ALLOWED_EMAILS) entry, else the default. */
 export function previewAdminEmail(env: Env): string {
+  if (devLogin(env) && env.SPX_PREVIEW !== "1") return DEV_ADMIN;
   const own = (env.SPX_PREVIEW_ADMIN ?? "").trim().toLowerCase();
   if (own) return own;
   for (const name of ["ADMIN_EMAILS", "ADMIN_GOOGLE_ALLOWED_EMAILS"]) {

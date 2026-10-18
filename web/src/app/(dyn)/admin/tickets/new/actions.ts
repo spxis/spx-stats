@@ -5,7 +5,7 @@ import { boardCreate, boardGrade } from "@/lib/board/client";
 import { BOARD_KINDS, BOARD_PRIORITIES, draftProblems, type BoardKind, type BoardPriority } from "@/lib/board/rules";
 import { sameOrigin } from "@/lib/auth/origin";
 import { NOT_CONFIRMED, isConfirmed } from "@/lib/confirm";
-import { requireAdmin } from "@/lib/auth/user";
+import { requireAdminWrite } from "@/lib/auth/user";
 
 export type FileState = { ok: boolean; message: string } | null;
 
@@ -14,7 +14,7 @@ export type FileState = { ok: boolean; message: string } | null;
  * whose Origin is not this site, and validates every field again. The board token stays on the server.
  */
 export async function fileTicket(_previous: FileState, form: FormData): Promise<FileState> {
-  const user = await requireAdmin();
+  const user = await requireAdminWrite();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
   if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
 

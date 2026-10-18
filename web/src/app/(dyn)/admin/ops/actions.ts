@@ -2,7 +2,7 @@
 
 import { cookies, headers } from "next/headers";
 import { sameOrigin } from "@/lib/auth/origin";
-import { requireAdmin } from "@/lib/auth/user";
+import { requireAdminWrite } from "@/lib/auth/user";
 import { isConfirmed } from "@/lib/confirm";
 import { speaker } from "@/lib/i18n/i18n";
 import { effectiveLocale, LOCALE_COOKIE_NAME } from "@/lib/locale";
@@ -21,7 +21,7 @@ const isKind = (v: unknown): v is RequestKind => typeof v === "string" && (REQUE
  * requests so the message is specific. Answers in the reader's language.
  */
 export async function opsRequest(_previous: OpsState, form: FormData): Promise<OpsState> {
-  const user = await requireAdmin();
+  const user = await requireAdminWrite();
   // A server action cannot use currentSpeaker() (root params exist only in a route): read the language from the cookie and Accept-Language directly.
   const incoming = await headers();
   const { say } = speaker(effectiveLocale((await cookies()).get(LOCALE_COOKIE_NAME)?.value ?? null, incoming.get("accept-language")));
