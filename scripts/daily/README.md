@@ -376,3 +376,11 @@ role · `114_game_starts_at.sql` the recorded start, applied last so a run does 
 `db/tests/` (`run-ingest-tests.sh`, `run-rebuild-proof.sh`).
 Fixtures are excerpts of Wikipedia articles (CC BY-SA 4.0); the first line of each names the article and revision, and the
 authors are in the article history.
+
+## Source registry, terms gate and shared limiter (migration 137)
+
+`sources.py` is the registry (tier green / grey / red, terms notes, evidence link, spacing, cache time, hosts); `python3 -I scripts/daily/sources.py [--json]` prints it.
+Red is never fetched, grey only by the once-a-day job and manual requests (never a default, `daily_cap` is stored but not yet enforced), green may be a default.
+`limiter.py` is the one token bucket, queue and 60 s cache for every request (Wikipedia, balldontlie, nflverse go through it): state in DS1 `ingest.source_limiter` / `ingest.source_cache`
+for `--apply` and `--rehearse` runs (the scheduled job and the runner are separate containers), a lock file for read-only runs. `--force-fetch` skips the cache and still queues.
+Tests: `python3 -I scripts/daily/limiter_test.py [--ds1 "<scratch dsn>"]` (also part of `run.py --self-test`).

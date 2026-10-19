@@ -276,7 +276,7 @@ def test_balldontlie():
     with tempfile.TemporaryDirectory() as raw:
         st = {}
         n = B.fetch(2026, D(2026, 10, 15), raw, st, "k", today=D(2026, 10, 12), sleep=slept.append, get=fake_get)
-        check(n == 2 and slept == [B.PAGE_GAP] and "start_date" not in calls[0][1] and calls[1][1].get("cursor") == 5, "fetch: whole season, two pages, one 13 s pause")
+        check(n == 2 and slept == [] and "start_date" not in calls[0][1] and calls[1][1].get("cursor") == 5, "fetch: whole season, two pages (the 13 s pause is the shared limiter's, tested in limiter_test.py)")
         check(len(B.load_cache(raw, 2026)["games"]) == len(d["data"]) and st["balldontlie"]["full_at"] == "2026-10-12", "fetch: games cached by id, whole read recorded")
         sub1 = B.subset(raw, 2026)
         calls.clear(); slept.clear()
@@ -312,13 +312,6 @@ def test_bdlsports():
         check(want == table, "%s table: every id, abbreviation and name equals the saved /teams response (the Athletics are DS1's Sacramento Athletics)" % lg)
         check(len({a for a, _ in table.values()}) == len(table) and len({n for _, n in table.values()}) == len(table), "%s table: abbreviations and names are all different" % lg)
     rosters = {lg: roster(lg, [(n, n, n, a) for a, n in S.SPORTS[lg]["teams"].values()]) for lg in ("mlb", "nfl")}
-    # the clock is shared: a request waits for the gap since the last one, whatever the sport
-    waits = []
-    B._LAST[0] = 100.0
-    B.pace(sleep=waits.append, now=lambda: 104.0)
-    B._LAST[0] = None
-    B.pace(sleep=waits.append, now=lambda: 104.0)
-    check(waits == [B.PAGE_GAP - 4.0], "pace: 9 s still to wait 4 s after the last request, nothing before the first (%r)" % waits)
     # MLB
     d = json.loads(fx("balldontlie_mlb_games.json"))["data"]
     cs, bad = S.claims_from("mlb", d, rosters["mlb"], 2026)
@@ -629,7 +622,13 @@ def test_runlog_hook():
         H.runlog = saved
 
 
+def test_limiter():
+    import limiter_test
+    for f in limiter_test.run_unit(): FAILS.append("limiter: " + f)
+
+
 def run():
+    test_limiter()
     test_runlog_hook()
     test_observation()
     test_starts()
@@ -645,7 +644,7 @@ def run():
         print("SELF-TEST FAILED:")
         for f in FAILS: print("  -", f)
         return 1
-    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL), recorded start times, the release hook (auto and review routes) and the isolation of leagues, clubs and games")
+    print("self-test ok: parsers (NHL x2 layouts, MLB club + postseason, NFL, CFL, NBA), pairing, the stage 2 staging rows, the ingest observations, balldontlie (table, fixture, fetching, archive; NBA, MLB and NFL), recorded start times, the source registry, terms gate, shared rate limiter and cache, the release hook (auto and review routes) and the isolation of leagues, clubs and games")
     return 0
 
 

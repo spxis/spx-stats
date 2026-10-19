@@ -33,6 +33,7 @@ import re
 import subprocess
 import sys
 import time
+import traceback
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -102,6 +103,16 @@ class AfterCommit(RuntimeError):
 
 def log(msg):
     print("%s %s" % (datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%d %H:%M:%S"), msg), flush=True)
+
+
+def scrub_all(text):
+    """scrub() without its length cap, for the job's whole output."""
+    text = str(text)
+    for name in ("SUPABASE_ACCESS_TOKEN", "PGPASSWORD", "REVALIDATE_SECRET", "TURSO_AUTH_TOKEN", "TURSO_RUNLOG_TOKEN", "BALLDONTLIE_API_KEY"):
+        v = os.environ.get(name)
+        if v:
+            text = text.replace(v, "***")
+    return text
 
 
 def scrub(text):
@@ -1544,10 +1555,54 @@ def run_rollback(ctx, rel):
 
 # ---------------------------------------------------------------------------------------------------- score update requests
 
+SUMMARY_MAX = 590   # meta.score_update_request.summary allows 600 characters (migration 053)
+
+
+def tail_lines(text, n=30):
+    """The last n non-empty lines of the job's output, each cut to 300 characters."""
+    return [ln.rstrip()[:300] for ln in str(text).splitlines() if ln.strip()][-n:]
+
+
+def exit_reason(code):
+    if code == 124:
+        return "stopped after %d seconds, the time limit" % DAILY_TIMEOUT
+    if code < 0:
+        return "killed by signal %d" % -code
+    return "exit %d" % code
+
+
+def failure_summary(code, out, prepared=None):
+    """What the admin reads on the request row when the scores job failed: the exit reason and as many of the job's last lines as fit (the newest first
+    in importance, shown oldest first). `prepared` is the number of a release the job still prepared from the leagues that did save."""
+    head = "The scores job did not finish (%s). %s " % (exit_reason(code), ("Release %s was prepared from the leagues that did save; this request does not approve it." % prepared)
+                                                       if prepared else "Nothing was published.")
+    room, keep = SUMMARY_MAX - len(head) - len("Last lines: "), []
+    for ln in reversed(tail_lines(out, 30)):
+        ln = ln.strip()[:200]
+        if room - len(ln) - 3 < 0:
+            break
+        keep.append(ln)
+        room -= len(ln) + 3
+    return head + ("Last lines: " + " | ".join(reversed(keep)) if keep else "The job printed nothing.")
+
+
+def request_event(req_id, who, outcome, summary, code=None, out="", release_number=None):
+    """One run log entry per scores request: who pressed it, what happened, and for a failure the job's exit reason and its last 30 lines. Never raises."""
+    if RF is None:
+        return
+    try:
+        detail = {"request": req_id, "requested_by": who}
+        if code is not None:
+            detail.update(exit_code=code, reason=exit_reason(code), last_lines=tail_lines(scrub(out), 30))
+        RF.note("score-request", "job", outcome, summary[:600], detail=detail, links={"release": release_number} if release_number else None, actor=who, scope=str(req_id))
+    except Exception:  # noqa: BLE001
+        pass
+
+
 def finish_request(ctx, rid, status, summary, release_number=None):
     """Write the end state of a request on production. Only a queued or running row can be finished."""
     sets = "status = %s, finished_at = now(), summary = %s, release_number = %s" % (
-        C.ql(status), C.ql(scrub(summary)[:500]), C.ql(release_number) if release_number else "null")
+        C.ql(status), C.ql(scrub(summary)[:SUMMARY_MAX]), C.ql(release_number) if release_number else "null")
     prod_exec(ctx.prod, "with u as (update meta.score_update_request set %s where id = %d and status in ('queued', 'running') "
                         "returning 1) select count(*) as j from u" % (sets, rid))
     log("score update request %d: %s: %s" % (rid, status, scrub(summary)[:200]))
@@ -1569,14 +1624,22 @@ def run_daily_job(ctx):
     cache = os.environ.get("RELEASE_DAILY_CACHE") or os.path.join(os.path.dirname(SNAP_DIR.rstrip("/")), "daily")
     for d in ("raw", "logs"):
         os.makedirs(os.path.join(cache, d), exist_ok=True)
-    env = dict(os.environ, DAILY_PREPARE_RELEASE="1", DAILY_RELEASE_KIND="daily_scores", SPX_DAILY_CACHE=cache)
+    env = dict(os.environ, DAILY_PREPARE_RELEASE="1", DAILY_RELEASE_KIND="daily_scores", SPX_DAILY_CACHE=cache, PYTHONUNBUFFERED="1")
     cmd = [sys.executable, "-I", ctx.daily_script, "--apply", "--state", os.path.join(cache, "state.json"),
            "--raw-dir", os.path.join(cache, "raw"), "--log-dir", os.path.join(cache, "logs")]
     try:
         r = subprocess.run(cmd, capture_output=True, text=True, timeout=DAILY_TIMEOUT, env=env)
-    except subprocess.TimeoutExpired:
-        return 124, "the scores job ran longer than %d seconds and was stopped" % DAILY_TIMEOUT
-    return r.returncode, scrub(r.stdout + "\n" + r.stderr)
+        code, out = r.returncode, (r.stdout or "") + "\n" + (r.stderr or "")
+    except subprocess.TimeoutExpired as e:
+        part = [x.decode("utf-8", "replace") if isinstance(x, bytes) else (x or "") for x in (e.stdout, e.stderr)]
+        code, out = 124, "\n".join(part) + "\nthe scores job ran longer than %d seconds and was stopped" % DAILY_TIMEOUT
+    out = scrub_all(out)
+    try:
+        with open(os.path.join(cache, "logs", "request-%s.log" % time.strftime("%Y%m%d-%H%M%S")), "w", encoding="utf-8") as f:
+            f.write(out)
+    except OSError:
+        pass
+    return code, out
 
 
 def approve_for_request(ctx, rel, who):
@@ -1652,30 +1715,40 @@ def request_pass(ctx):
         log("score update request %d from %s: running the scores job" % (req["id"], who))
         before = ctx.ds1.run("select coalesce(max(id), 0) as m from meta.data_release")[0]["m"]
         code, out = run_daily_job(ctx)
-        for line in out.strip().splitlines()[-6:]:
-            log("scores job: " + line[:300])
-        if code != 0:
-            finish_request(ctx, req["id"], "failed", "The scores job did not finish (exit %d). Nothing was published. Details are in the runner log." % code)
-            return
+        for line in tail_lines(out, 30 if code != 0 else 6):
+            log("scores job: " + line)
         made = ctx.ds1.run("select * from meta.data_release where id > %d and created_by = 'daily-job' and status = 'pending' order by id" % before)
+        if code != 0:
+            summary = failure_summary(code, out, made[0]["number"] if made else None)
+            finish_request(ctx, req["id"], "failed", summary, made[0]["number"] if made else None)
+            request_event(req["id"], who, "failed", summary, code, out)
+            return
         hook = re.findall(r"release hook: (\w+):", out)
         if not made:
             if hook and hook[-1] != "nothing":
-                finish_request(ctx, req["id"], "failed", "Scores were updated on DS1 but the release could not be prepared (%s). Details are in the runner log." % hook[-1])
+                summary = "Scores were updated on DS1 but the release could not be prepared (%s). Last lines: %s" % (hook[-1], " | ".join(tail_lines(out, 3))[-300:])
+                finish_request(ctx, req["id"], "failed", summary)
+                request_event(req["id"], who, "failed", summary, 0, out)
             else:
-                finish_request(ctx, req["id"], "nothing", "Nothing new: DS1 and production already agree. Wikipedia often updates hours after games end, so try again later.")
+                summary = "Nothing new: DS1 and production already agree. Wikipedia often updates hours after games end, so try again later."
+                finish_request(ctx, req["id"], "nothing", summary)
+                request_event(req["id"], who, "ok", summary)
             return
         rel = made[0]
         games = ((rel["preview"] or {}).get("auto") or {}).get("games") or 0
         approved, why = approve_for_request(ctx, rel, who)
         if approved:
-            finish_request(ctx, req["id"], "done", "Release %s approved by your request (%s). It is applied within a minute."
-                           % (rel["number"], "%d games" % games if games else "scores"), rel["number"])
+            summary = "Release %s approved by your request (%s). It is applied within a minute." % (rel["number"], "%d games" % games if games else "scores")
         else:
-            finish_request(ctx, req["id"], "done", "Release %s was prepared, but %s." % (rel["number"], why), rel["number"])
+            summary = "Release %s was prepared, but %s." % (rel["number"], why)
+        finish_request(ctx, req["id"], "done", summary, rel["number"])
+        request_event(req["id"], who, "ok" if approved else "warning", summary, release_number=rel["number"])
     except Exception as e:  # noqa: BLE001 - the request must not stay running
         try:
-            finish_request(ctx, req["id"], "failed", "The update failed: %s" % scrub(e)[:200])
+            tb = traceback.format_exc()
+            summary = "The update failed: %s. Last lines: %s" % (scrub(e)[:160], " | ".join(tail_lines(scrub(tb), 4))[-250:])
+            finish_request(ctx, req["id"], "failed", summary)
+            request_event(req["id"], who, "failed", summary, 1, tb)
         except Exception as e2:  # noqa: BLE001
             log("could not record the failure of request %d: %s" % (req["id"], scrub(e2)))
     finally:

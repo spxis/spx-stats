@@ -5,7 +5,7 @@ a season whose schedule the articles do not carry yet (the 2026-27 season: the a
 Documentation: https://docs.balldontlie.io  (NBA, "Get all games": GET https://api.balldontlie.io/v1/games, filters seasons[],
 start_date, end_date, postseason, per_page up to 100, a `cursor` for the next page; "Get all teams": GET /v1/teams).
 Only the free tier's endpoints are used (teams and games). Never call a paid endpoint and never start a trial.
-The free tier allows 5 requests a minute (the response says so in x-ratelimit-*), so every request is spaced 13 s apart.
+The free tier allows 5 requests a minute (the response says so in x-ratelimit-*), so every request is spaced 13 s apart by the shared limiter (limiter.py; the spacing is in sources.py and equals PAGE_GAP).
 
 The key: on a Mac, the keychain item 'spx-stats balldontlie api key', read inside this process; elsewhere (the Docker job on the NAS)
 the environment variable BALLDONTLIE_API_KEY, kept in daily.env. It is never printed or logged. With no key the source is skipped.
@@ -19,7 +19,7 @@ import datetime, hashlib, json, os, subprocess, sys, time, urllib.error, urllib.
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import parsers as P, teams as T
+import limiter as LM, parsers as P, sources as SRC, teams as T
 
 API = "https://api.balldontlie.io/v1"
 KEYCHAIN_ITEM = "spx-stats balldontlie api key"
@@ -83,34 +83,37 @@ def subset(raw_dir, season):
     return data, hashlib.sha256(data).hexdigest()
 
 
-_LAST = [None]       # when the last request to balldontlie ended (monotonic): one clock for every sport, because the 5 a minute are the account's
+class Throttled(Exception):
+    """HTTP 429: the account's 5 a minute are used up. The limiter then holds every caller off for `wait` seconds."""
+
+    def __init__(self, wait): self.wait = wait
 
 
-def pace(sleep=time.sleep, now=time.monotonic):
-    """Wait until PAGE_GAP seconds have passed since the last request of ANY sport in this process (NBA, MLB and NFL share the limit)."""
-    if _LAST[0] is not None:
-        wait = PAGE_GAP - (now() - _LAST[0])
-        if wait > 0: sleep(wait)
+def _request(url, key):
+    """ONE request to balldontlie (the caller holds the source's slot). -> the parsed JSON."""
+    SRC.guard_url(url)
+    req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; john@spxis.com)")})
+    try:
+        with urllib.request.urlopen(req, timeout=60) as r:
+            return json.loads(r.read().decode("utf-8"))
+    except urllib.error.HTTPError as e:
+        if e.code == 429: raise Throttled(max(int(e.headers.get("Retry-After") or 0), 30))
+        if e.code in (401, 403): raise RuntimeError("balldontlie refused the key (HTTP %d); the free tier covers teams and games only" % e.code)
+        raise RuntimeError("balldontlie: HTTP %d for %s" % (e.code, url.split("?")[0].rsplit("/v1", 1)[-1]))
 
 
-def _get(path, params, key, sleep=time.sleep, base=None):
-    """One GET, with the rate limit respected: at least PAGE_GAP s after the previous request of any sport, and a wait on a 429.
+def _get(path, params, key, sleep=time.sleep, base=None, limiter=None):
+    """One GET through the shared limiter (limiter.py): one request at a time for the whole account (NBA, MLB and NFL, scheduled runs and
+    admin requests alike), PAGE_GAP s after the previous one, an answer from the last minute reused, and every caller held off after a 429.
     `base` is the sport's API root (the NBA's is API; MLB and NFL are bdlsports.py's)."""
     url = (base or API) + path + ("?" + urllib.parse.urlencode(params, doseq=True, safe="[]") if params else "")
+    lim = limiter or LM.default()
     for attempt in range(4):
-        pace(sleep)
         try:
-            req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; john@spxis.com)")})
-            try:
-                with urllib.request.urlopen(req, timeout=60) as r:
-                    return json.loads(r.read().decode("utf-8"))
-            finally:
-                _LAST[0] = time.monotonic()
-        except urllib.error.HTTPError as e:
-            if e.code == 429 and attempt < 3:
-                sleep(max(int(e.headers.get("Retry-After") or 0), 30)); continue
-            if e.code in (401, 403): raise RuntimeError("balldontlie refused the key (HTTP %d); the free tier covers teams and games only" % e.code)
-            raise RuntimeError("balldontlie: HTTP %d for %s" % (e.code, path))
+            return lim.fetch(SOURCE, url, lambda: _request(url, key))[0]
+        except Throttled as e:
+            if attempt == 3: break
+            lim.penalize(SOURCE, e.wait)
     raise RuntimeError("balldontlie: rate limited")
 
 
@@ -127,7 +130,6 @@ def fetch(season, since, raw_dir, state, key, today=None, sleep=time.sleep, get=
     if not full: params.update(start_date=since.isoformat(), end_date=(today + datetime.timedelta(days=1)).isoformat())   # results: nothing later has one
     n, cursor = 0, None
     while True:
-        if n: sleep(PAGE_GAP)
         d = get("/games", dict(params, **({"cursor": cursor} if cursor else {})), key)
         n += 1
         for g in d.get("data", []): cache["games"][str(g["id"])] = g

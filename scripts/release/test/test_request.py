@@ -212,8 +212,9 @@ def request_flow(x):
     q = queue()
     rc, out, err = x.run("fail")
     r = req(q)
-    ok("a failed job is failed, with a short summary and no release",
-       r["status"] == "failed" and "exit 3" in r["summary"] and "boom" not in r["summary"] and psql(PROD, "select count(*) from meta.data_release") == "0", r)
+    ok("a failed job is failed, with its exit reason and its last output lines on the row, and no release",
+       r["status"] == "failed" and "exit 3" in r["summary"] and "Last lines: " in r["summary"] and "boom" in r["summary"] and len(r["summary"]) <= 600
+       and psql(PROD, "select count(*) from meta.data_release") == "0", r)
     q = queue_after_cooldown()
     rc, out, err = x.run("hookfail")
     ok("a release that could not be prepared is failed too", req(q)["status"] == "failed" and "could not be prepared" in req(q)["summary"], req(q))

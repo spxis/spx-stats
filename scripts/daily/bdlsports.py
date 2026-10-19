@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """balldontlie, free tier: MLB and NFL games. An independent second source for the two leagues whose only other checks are the clubs'
 Wikipedia articles (MLB) and those plus nflverse (NFL). The NBA is balldontlie.py; this file reuses its key, its request function and
-its clock, so NBA + MLB + NFL together stay under the account's 5 requests a minute (every request waits PAGE_GAP s after the last one).
+its clock, so NBA + MLB + NFL together stay under the account's 5 requests a minute (every request waits for the shared limiter, PAGE_GAP s after the last one).
 
 Documentation: https://docs.balldontlie.io ; MLB at https://mlb.balldontlie.io, NFL at https://nfl.balldontlie.io
   MLB  GET https://api.balldontlie.io/mlb/v1/games   seasons[], dates[], season_type=regular|postseason|spring_training, per_page <= 100, cursor
@@ -101,7 +101,7 @@ def subset(raw_dir, league, season):
 def fetch(league, season, since, raw_dir, state, key, today=None, get=None):
     """Bring the cached season up to date: the whole season when none is cached or the last whole read is a week old (or `since` is
     more than MAX_WINDOW_DAYS back), otherwise the days from `since` to tomorrow in one request. -> number of requests. A failure part way
-    keeps what was read (games merge by id) and does not count as a whole read. The pause between requests is balldontlie.pace()'s."""
+    keeps what was read (games merge by id) and does not count as a whole read. The pause between requests is the shared limiter's (limiter.py)."""
     get = get or B._get
     sp = SPORTS[league]
     today = today or datetime.date.today()

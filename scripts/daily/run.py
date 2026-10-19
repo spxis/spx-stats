@@ -23,7 +23,7 @@ import argparse, collections, csv, datetime, hashlib, io, json, os, re, sys, tim
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import balldontlie as B, bdlsports as S, games as G, parsers as P, teams as T, wikiapi as W
+import balldontlie as B, bdlsports as S, games as G, limiter as LM, parsers as P, sources as SRC, teams as T, wikiapi as W
 
 CACHE = os.path.expanduser(os.environ.get("SPX_DAILY_CACHE", "~/Library/Caches/spx-stats-daily"))
 LEAGUES = ["nhl", "nba", "mlb", "nfl", "cfl"]
@@ -130,16 +130,21 @@ def nflverse_claims(season, roster, state, raw_dir, offline):
     if not offline:
         h = {"User-Agent": UA}
         if info.get("etag") and os.path.exists(path): h["If-None-Match"] = info["etag"]
-        try:
-            req = 1
-            with urllib.request.urlopen(urllib.request.Request(NFLVERSE_URL, headers=h), timeout=120, context=W.CTX) as r:
-                data = r.read()
-                os.makedirs(os.path.dirname(path), exist_ok=True)
-                with open(path, "wb") as f: f.write(data)
-                info["etag"] = r.headers.get("ETag")
-                info["fetched_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
-        except urllib.error.HTTPError as e:
-            if e.code != 304: raise
+
+        def one_request():
+            SRC.guard_url(NFLVERSE_URL)
+            try:
+                with urllib.request.urlopen(urllib.request.Request(NFLVERSE_URL, headers=h), timeout=120, context=W.CTX) as r:
+                    data = r.read()
+                    os.makedirs(os.path.dirname(path), exist_ok=True)
+                    with open(path, "wb") as f: f.write(data)
+                    info["etag"] = r.headers.get("ETag")
+                    info["fetched_at"] = datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+            except urllib.error.HTTPError as e:
+                if e.code != 304: raise
+            return {"checked": True}
+        _, cached = LM.default().fetch("nflverse", "games.csv", one_request, force=None if os.path.exists(path) else True)   # asked in the last minute (by any run): not again, unless this cache folder has no copy
+        req = 0 if cached else 1
     if not os.path.exists(path): return [], [], req
     claims, bad = [], []
     ptype = {"REG": "regular", "WC": "playoffs", "DIV": "playoffs", "CON": "playoffs", "SB": "playoffs"}
@@ -177,6 +182,7 @@ def main():
     ap.add_argument("--raw-dir", default=os.path.join(CACHE, "raw"))
     ap.add_argument("--no-balldontlie", action="store_true", help="do not read balldontlie (NBA, MLB, NFL) this run")
     ap.add_argument("--offline", action="store_true", help="parse the cached pages only; no request at all")
+    ap.add_argument("--force-fetch", action="store_true", help="ignore the minute-old answers of the shared cache (every request still waits its turn in the limiter's queue); also SPX_FORCE_FETCH=1")
     ap.add_argument("--no-ds1", action="store_true", help="skip the DS1 comparison (rosters then come from the cache)")
     ap.add_argument("--since", help="report DS1 games on or after this date that Wikipedia lacks (default: 7 days ago)")
     ap.add_argument("--json", help="write the games to this file")
@@ -288,7 +294,9 @@ def run(a, result):
     state = W.load_state(a.state)
     rosters, rsrc = T.load_rosters(leagues, os.path.join(os.path.dirname(a.state), "rosters.json"))
     print("run %s | clubs from %s | state %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), rsrc, a.state))
-    client = W.Client()
+    LM.USE_DS1[0] = writing
+    if a.force_fetch: os.environ["SPX_FORCE_FETCH"] = "1"
+    client = W.Client(force=True if a.force_fetch else None)
     all_games, report, extra_req, league_claims, bdl_req = {}, {}, 0, {}, {}
     plans = {lg: plan(lg, seasons[lg], rosters[lg]) for lg in leagues}
     every = [p for lg in leagues for p in plans[lg]]
@@ -365,6 +373,10 @@ def run(a, result):
     print("\n== Requests this run ==")
     bdl_note = (" - balldontlie " + ", ".join("%s %d" % (lg.upper(), n) for lg, n in bdl_req.items())) if bdl_req else ""
     print("Wikipedia API: %d (%s) | other: %d (nflverse, balldontlie%s)" % (client.requests, ", ".join("%s x%d" % (k, sum(1 for w, n in reqs if w == k)) for k in ("revisions", "content")), extra_req, bdl_note))
+    if not a.offline and LM._DEFAULT[0] is not None:
+        st = LM._DEFAULT[0].stats
+        print("Limiter: %d answer(s) reused from the last minute, %d fetched, %d s spent waiting in the queue" % (st["hits"], st["fetched"], round(st["waited"])))
+        result.update(limiter=dict(reused=st["hits"], fetched=st["fetched"], waited_seconds=round(st["waited"])))
     result.update(wikipedia_requests=client.requests, other_requests=extra_req, balldontlie_requests=bdl_req)
     return rc
 
