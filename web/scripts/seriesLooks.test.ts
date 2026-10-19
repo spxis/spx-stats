@@ -93,3 +93,16 @@ test("every pair among the sampled clubs is sound, in either order", () => {
   const clubs = Object.keys(CLUB) as Club[];
   for (const a of clubs) for (const b of clubs) assertSound(pair("mlb", a, b), `${a}-${b}`);
 });
+
+/** NWSL colours as db/seed/nwsl_colour.csv holds them (secondary empty where the article states none). */
+const NWSL: Record<string, [string, string | null]> = {
+  thorns: ["99242B", "000000"], dash: ["FF6900", "8AB7E9"], pride: ["61259E", "00ABFF"], courage: ["00416B", "B4A269"],
+  louisville: ["14002F", "C5B5F2"], current: ["CF3339", "62CBC9"], wave: ["032E62", "FC1896"], bay: ["0C2032", "FF5049"],
+  royals: ["0E1735", "FDB71A"], stars: ["072743", "DA1A23"], reign: ["292431", "D0A66B"], gotham: ["000000", "A9F1FD"],
+  breakers: ["0A3BD1", null], fckc: ["003F77", null], spirit: ["000000", "EDE939"], angelCity: ["000000", "F1B1A5"],
+};
+
+test("every pair of NWSL clubs is sound, in either order (Gotham v Spirit are both black)", () => {
+  const side = (k: string) => ({ primary_hex: NWSL[k][0], secondary_hex: NWSL[k][1] }) as Parameters<typeof seriesLooks>[1];
+  for (const a of Object.keys(NWSL)) for (const b of Object.keys(NWSL)) if (a !== b) assertSound(seriesLooks("nwsl", side(a), side(b)), `${a}-${b}`);
+});
