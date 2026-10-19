@@ -42,6 +42,12 @@ delete from core.external_id where source_id = (select source_id from src) and e
 create temp table old_game_id as
 select g.source_key, g.game_id from core.game g join core.season s on s.season_id = g.season_id
 where g.source_id = (select source_id from src) and s.league_code = 'nba';
+-- The same game under another key: a re-read of the articles can turn a game round (home and road swapped: one club's log wrote "vs" for a road
+-- game) or move its date by a day. Such a game gets its old number back through (season, phase, date, the two clubs, number that day), when no key matches.
+create temp table old_game_pair as
+select o.game_id, m[1]::int as season, m[2] as phase, m[3]::date as game_date, least(m[4], m[5]) as club_a, greatest(m[4], m[5]) as club_b, m[6]::int as seq
+from old_game_id o, lateral regexp_match(o.source_key, '^wpnba:(\d+):([a-z]+):(\d{4}-\d\d-\d\d):([^:]*):([^:]*):(\d+)$') m
+where m is not null;
 delete from core.game g using core.season s where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code = 'nba';
 
 -- Club names (lower case, as the article titles give them) -> franchise, by the year a season starts.
@@ -100,7 +106,7 @@ select row_number() over (order by g.season, g.game_date, g.phase, g.home_team, 
        case when o.team is null then g.home_pts when lower(o.team) = lower(g.home_team) then o.pf else o.pa end as home_pts,
        case when o.team is null then g.away_pts when lower(o.team) = lower(g.home_team) then o.pa else o.pf end as away_pts,
        g.overtime, g.neutral_site,
-       g.views, g.conflict, g.home_team, g.away_team, h.franchise_id home_f, a.franchise_id away_f,
+       g.views, g.conflict, g.home_team, g.away_team, g.game_seq, h.franchise_id home_f, a.franchise_id away_f,
        'wpnba:' || g.season || ':' || g.phase || ':' || g.game_date || ':' || g.home_team || ':' || g.away_team || ':' || g.game_seq as key,
        o.team is not null as tie_fixed
 from legacy_wikipedia_nba.game g
@@ -282,13 +288,18 @@ where s.game_id not in (select game_id from matched) and s.status = 'final' and 
 insert into core.game (game_id, season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
                        home_score, away_score, went_to_overtime, round_label, source_id, source_key, notes)
 overriding system value
-select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
+select coalesce(o.game_id, o2.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
        n.home_pts, n.away_pts, case when n.overtime then true end, n.round_name, (select source_id from src), n.key,
        case when n.conflict is not null then 'Wikipedia logs disagree: ' || n.conflict end
 from ng n join core.season s on s.league_code = 'nba' and s.start_year = n.yr
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
 left join old_game_id o on o.source_key = n.key
+left join lateral (select p.game_id from old_game_pair p
+                   where o.game_id is null and p.season = n.yr and p.phase = n.phase::text and p.game_date = n.game_date
+                     and p.club_a = least(n.home_team, n.away_team) and p.club_b = greatest(n.home_team, n.away_team) and p.seq = n.game_seq
+                     and p.game_id not in (select o3.game_id from old_game_id o3 join ng n3 on n3.key = o3.source_key)
+                   order by p.game_id limit 1) o2 on true
 where n.gid not in (select key from matched);
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'game', n.key, 'NBA: Wikipedia''s two logs disagree: ' || n.conflict,
