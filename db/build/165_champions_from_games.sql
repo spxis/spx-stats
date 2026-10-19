@@ -29,7 +29,7 @@ select a.award_id, f.season_id, w.team_season_id, coalesce(wi.full_name, 'franch
             else format('Won the final %s games to %s against %s', greatest(f.t1_wins, f.t2_wins), least(f.t1_wins, f.t2_wins), coalesce(li.full_name, 'their opponent')) end as note,
        (select source_id from meta.source where code = 'spx_stats_derived') as source_id, 'final:' || f.league_code || ':' || f.start_year as source_key
 from final_series f
-join core.award a on a.league_code = f.league_code and a.kind = 'championship'
+join core.award a on a.league_code = f.league_code and a.kind = 'championship' and a.code <> 'mlb_early_championship'  -- (the pre-1903 champions of 167 are not World Series)
 join core.team_season w on w.team_season_id = case when f.t1_wins > f.t2_wins then f.t1 else f.t2 end
 join core.team_season l on l.team_season_id = case when f.t1_wins > f.t2_wins then f.t2 else f.t1 end
 left join core.franchise_identity wi on wi.franchise_identity_id = w.franchise_identity_id
