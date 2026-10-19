@@ -2388,7 +2388,7 @@ export const PHRASES = {
   "runs.alert.resolvedAt": "Fixed {time}.",
   "runs.alert.dismiss": "Dismiss",
   "runs.alert.dismissAll": "Dismiss all",
-  "runs.alert.cannotDismiss": "This site has no token to write the alerts, so they cannot be dismissed here.",
+  "runs.alert.cannotDismiss": "Dismissing needs TURSO_RUNLOG_TOKEN (a Turso token that can write) on the site. It is not set, so these alerts stay until it is.",
   "runs.alert.unreadable": "The alerts could not be read, so none may be shown.",
   "runs.alert.link": "Open the run log",
   "peopleAdmin.title": "People",
