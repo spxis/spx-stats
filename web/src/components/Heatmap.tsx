@@ -83,11 +83,9 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
     return new Map(groups.map((f) => [f.id, f]));
   }, [groups]);
 
-  const rowHOf = (id: string) => {
-    const fam = familyOfRow.get(id);
-    if (!fam) return ROW;
-    return years.some((y) => (familyYearCell(y, fam, byLeague)?.chips.length ?? 0) > 0) ? ROW + CHIP + 3 : ROW;
-  };
+  // One height for every row: if any family shows sibling chips, all rows make room for them.
+  const anyChips = [...familyOfRow.values()].some((fam) => years.some((y) => (familyYearCell(y, fam, byLeague)?.chips.length ?? 0) > 0));
+  const rowHOf = () => (anyChips ? ROW + CHIP + 3 : ROW);
   const rowHs = leagues.map(rowHOf);
   const rowTop = (i: number) => rowHs.slice(0, i).reduce((n, h) => n + h, 0);
 
