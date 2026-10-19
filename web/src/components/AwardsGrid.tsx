@@ -2,6 +2,7 @@
 
 import Link from "@/components/Link";
 import { useMemo } from "react";
+import { trophyPath } from "@/lib/awardTrophy";
 import { awardGridPagePath, awardGridRestPath, type AwardColumn, type AwardSeason, type AwardWinner } from "@/lib/awardGrid";
 import { seasonLabel } from "@/lib/leagues";
 import { seasonPath } from "@/lib/slug";
@@ -27,7 +28,7 @@ export function AwardsGrid({ lg, columns, head, logos, total }: { lg: string; co
     const specs: ColumnSpec<AwardSeason>[] = [
       { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (s) => s.y, cell: (s) => <Link href={seasonPath(lg, s.y)} prefetch={false}>{seasonLabel(lg, s.y)}</Link> },
       ...columns.map((c): ColumnSpec<AwardSeason> => ({
-        key: c.code, label: c.name, cls: "wincell",
+        key: c.code, label: c.name, cls: "wincell", corner: { href: trophyPath(c.code), label: say("trophies.openPage", { name: c.name }) },
         get: (s) => { const w = s.c[c.code]; return w == null ? null : typeof w === "number" ? `~${w}` : w[0]?.w ?? null; },
         cell: (s) => {
           const w = s.c[c.code];

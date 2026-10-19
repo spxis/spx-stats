@@ -48,6 +48,8 @@ export interface SortColumn {
   hideLabel?: boolean;
   /** The header is a label, not a sort button. For a value the remote list cannot order by (it is not a field of that view). */
   nosort?: boolean;
+  /** A small link drawn in the header's corner (to the page of the award the column is about); `label` is its accessible name. */
+  corner?: { href: string; label: string };
 }
 
 /** One row: what each cell draws, and the value each column sorts by (a column without one sorts as blank). */

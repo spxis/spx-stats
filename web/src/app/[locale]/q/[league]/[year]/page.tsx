@@ -31,6 +31,7 @@ import { brandFor, logoFor, teamTone } from "@/lib/brand";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
 import { getOutage, getOutageYears, getTitleNotAwarded } from "@/lib/outageData";
+import { trophyPath } from "@/lib/awardTrophy";
 import { NotAwarded } from "@/components/NotAwarded";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -248,7 +249,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       {champ ? (
         <>
           <TrophyBanner lg={lg} year={y}>
-            <span className="cup">{championshipName(lg, y, champ.award)}</span>
+            <span className="cup"><Link href={trophyPath(champ.award_code)} prefetch={false}>{championshipName(lg, y, champ.award)}</Link></span>
             <Badge src={champ.source} />
             <span className="who"><TeamLabel lg={lg} f={champF} name={champ.winner} year={d.teams.some((t) => t.f === champF && played.has(t.id)) ? y : undefined} logo={logoFor(brands, champF, y)} size={40} shape="circle" /></span>
             <span className="how"><ChampionNote lg={lg} year={y} champ={champF} note={champ.note} alone /></span>
@@ -284,7 +285,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <div className="awards">
             {awards.map((a, i) => (
               <div className="award" key={i}>
-                <span className="name">{a.award}</span>
+                <span className="name"><Link href={trophyPath(a.award_code)} prefetch={false}>{a.award}</Link></span>
                 <span className="winner">{a.person_id != null ? <Link href={player(a.person_id, a.winner ?? "", lg)} prefetch={false}>{a.winner}</Link> : <TeamLabel lg={lg} f={a.franchise_id} name={a.winner} year={d.teams.some((t) => t.f === a.franchise_id && played.has(t.id)) ? y : undefined} logo={logoFor(brands, a.franchise_id, y)} />}</span>
                 <span className="note">{a.note || ""} <Badge src={a.source} /></span>
               </div>

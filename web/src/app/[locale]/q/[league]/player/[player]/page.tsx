@@ -28,6 +28,7 @@ import { cupsFor } from "@/lib/cups";
 import { getPersonRetired } from "@/lib/retiredNumbers";
 import { PlayerRetired } from "@/components/PlayerRetired";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
+import { trophyPath } from "@/lib/awardTrophy";
 import { COACH_AWARDS, getPersonCoaching } from "@/lib/personCoaching";
 import { recordText } from "@/lib/record";
 import { buildBoard } from "@/lib/playerBoardData";
@@ -183,7 +184,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
 
   const awardCols = (items: typeof d.awards) => tableOf(items, [
     { key: "season", label: say("col.season"), num: true, get: (r) => r.year, cell: (r) => <Link href={seasonPath(r.league, r.year)} prefetch={false}>{`${leagueName(r.league)} ${seasonLabel(r.league, r.year)}`}</Link> },
-    { key: "award", label: say("col.award"), cls: "team", get: (r) => r.award },
+    { key: "award", label: say("col.award"), cls: "team", get: (r) => r.award, cell: (r) => <Link href={trophyPath(r.award_code)} prefetch={false}>{r.award}</Link> },
     { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => (r.team ? <TeamLabel lg={r.league} f={r.franchise_id} name={r.team} logo={logoFor(brands, r.franchise_id, r.year)} /> : "") },
     { key: "note", label: say("col.note"), cls: "note", get: (r) => r.note, cell: (r) => r.note || "" },
   ], (r, i) => `${r.award_code}|${r.year}|${i}`);

@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.154.0", date: "2026-10-19", href: "/trophies",
+    title: "Trophies",
+    text: "Every award now has its own page: what it honours, when it was first given and every winner by season, with who won it most and its longest runs. Each league has a trophies page, and /trophies ranks the most decorated people and clubs across all leagues. Award names on player, team and season pages open the trophy." },
   { version: "0.153.0", date: "2026-10-19",
     title: "Invite-only access",
     text: "While the site is closed, every page needs a Google sign-in from an invited address. Anyone else sees a short invite page and no data. Admins keep an invite list." },

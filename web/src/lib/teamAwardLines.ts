@@ -12,7 +12,7 @@ export async function teamAwardLines(lg: string, f: number): Promise<AwardList |
   if (!list) return null;
   const logos: string[] = [];
   const lines = list.map((r): AwardLine => {
-    const l: AwardLine = { y: r.year, a: r.kind === "championship" ? championshipName(lg, r.year, r.award) : r.award };
+    const l: AwardLine = { y: r.year, a: r.kind === "championship" ? championshipName(lg, r.year, r.award) : r.award, c: r.award_code };
     if (r.winner) l.w = r.winner;
     if (r.person_id != null) l.h = player(r.person_id, r.winner ?? "", lg);
     else {

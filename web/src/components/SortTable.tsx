@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { memo, useEffect, useMemo, useRef, useState, useSyncExternalStore, useTransition } from "react";
+import Link from "./Link";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { formatSort, parseSort, sortRows, type SortColumn, type SortKey, type SortRow } from "@/lib/sort";
 import { hrefWith, replaceQuery } from "@/lib/urlQuery";
@@ -135,6 +136,7 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
                   <span className={c.hideLabel ? "sr-only" : undefined}>{c.label}</span>
                   <span className="arrow" aria-hidden="true">{on ? (first.dir === "desc" ? "▼" : "▲") : "↕"}</span>
                 </button>
+                {c.corner ? <Link className="thcorner" href={c.corner.href} prefetch={false} aria-label={c.corner.label} title={c.corner.label}>↗</Link> : null}
               </th>
             );
           })}

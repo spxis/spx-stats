@@ -2,6 +2,7 @@
 
 import Link from "@/components/Link";
 import { useMemo } from "react";
+import { trophyPath } from "@/lib/awardTrophy";
 import { awardPagePath, awardRestPath, type AwardLine } from "@/lib/awardLines";
 import { seasonLabel } from "@/lib/leagues";
 import { seasonPath } from "@/lib/slug";
@@ -21,7 +22,7 @@ export function AwardsTable({ lg, teamPath, head, logos, total }: { lg: string; 
   const more = useMoreLines<AwardLine>(awardRestPath(teamPath), head);
   const table = useMemo(() => tableOf(more.lines, [
     { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (r) => r.y, cell: (r) => <Link href={seasonPath(lg, r.y)} prefetch={false}>{seasonLabel(lg, r.y)}</Link> },
-    { key: "award", label: say("col.award"), get: (r) => r.a },
+    { key: "award", label: say("col.award"), get: (r) => r.a, cell: (r) => (r.c ? <Link href={trophyPath(r.c)} prefetch={false}>{r.a}</Link> : r.a) },
     { key: "winner", label: say("col.wonBy"), cls: "team wincell", get: (r) => r.w ?? null, cell: (r) => <span className="awardwin"><AwardCup league={lg} />{r.h ? <Link href={r.h} prefetch={false}>{r.w}</Link> : <><TeamLogo url={r.lo != null ? logos[r.lo] : null} />{r.w}</>}</span> },
     { key: "kind", label: "", get: (r) => (r.p ? say("awards.badgePlayer") : say("awards.badgeTeam")), cell: (r) => <span className="badge">{r.p ? say("awards.badgePlayer") : say("awards.badgeTeam")}</span> },
   ], (_r, i) => i), [more.lines, say, lg, logos]);

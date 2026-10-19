@@ -7,6 +7,8 @@ export interface AwardLine {
   y: number;
   /** The award's name. */
   a: string;
+  /** The award's code (its trophy's page, lib/awardTrophy.ts). */
+  c?: string;
   /** The winner's name. */
   w?: string;
   /** The address of the winner's page, for a player. */

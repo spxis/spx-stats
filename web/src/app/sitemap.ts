@@ -1,9 +1,11 @@
 import type { MetadataRoute } from "next";
 import { getCityData } from "@/lib/cityData";
 import { getLeagueCounts } from "@/lib/countryData";
+import { trophiesPath, trophyPath } from "@/lib/awardTrophy";
 import { getSummary, getTeamIndex, getTeamSeasonIndex } from "@/lib/data";
 import { ALL_LEAGUES, SITE_URL } from "@/lib/leagues";
 import { getPaths } from "@/lib/teamSlugs";
+import { getTrophyList } from "@/lib/trophyData";
 import { getVenueSlugs } from "@/lib/venueData";
 import { leadersPath } from "@/lib/leaderStats";
 import { scoresPath } from "@/lib/scores";
@@ -21,7 +23,7 @@ const url = (path: string) => `${SITE_URL}${path}`;
 
 // The sitemap is built at deploy time, so a failed read of the archive leaves that part out instead of failing the build.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams, countryData, mlsSeasons, mlsClubs, matchPairs] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams(), getLeagueCounts(), getMlsSeasons(), getMlsClubs(), getMatchPairs()]);
+  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams, countryData, mlsSeasons, mlsClubs, matchPairs, trophyList] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams(), getLeagueCounts(), getMlsSeasons(), getMlsClubs(), getMatchPairs(), getTrophyList()]);
   const seasons = summary.status === "fulfilled" ? summary.value.seasons : [];
   const lastModified = summary.status === "fulfilled" ? new Date(summary.value.totals.refreshed_at) : new Date();
   const held = new Set(seasons.filter((s) => s.games > 0).map((s) => `${s.league}|${s.year}`));
@@ -49,6 +51,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...(soccerTeams.status === "fulfilled" ? soccerTeams.value.filter((t) => t.tournaments > 0).map((t) => ({ url: url(soccerTeamPath(t.slug)), lastModified })) : []),
     ...h2hUrls,
   ];
+  // A trophy page exists for each award the archive holds, and a league's trophies page for each league that has one (lib/awardTrophy.ts).
+  const trophyUrls = trophyList.status === "fulfilled" && trophyList.value.length
+    ? [trophiesPath(), ...[...new Set(trophyList.value.map((t) => t.league))].map((l) => trophiesPath(l)), ...trophyList.value.map((t) => trophyPath(t.code))].map((p) => ({ url: url(p), lastModified }))
+    : [];
   // MLS pages exist once the archive holds a season.
   const mlsUrls = mlsSeasons.status === "fulfilled" && mlsSeasons.value.length
     ? [MLS_PATH, ...mlsSeasons.value.map((x) => mlsSeasonPath(x.year)), ...(mlsClubs.status === "fulfilled" ? mlsClubs.value.map((c) => mlsClubPath(c.slug)) : [])].map((p) => ({ url: url(p), lastModified }))
@@ -70,6 +76,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...venueUrls,
     ...soccerUrls,
     ...mlsUrls,
+    ...trophyUrls,
     ...countryUrls,
     ...worldUrls,
     ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/countries", "/players", "/terms", "/privacy","/sources", "/quality", "/logos", "/help-wikipedia", "/releases", "/releases/older"].map((p) => ({ url: url(p), lastModified })),

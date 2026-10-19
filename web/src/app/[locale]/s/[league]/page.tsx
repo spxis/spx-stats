@@ -13,6 +13,7 @@ import { TeamLabel } from "@/components/TeamLabel";
 import { TrophyBanner } from "@/components/TrophyBanner";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
+import { trophiesPath, CHAMPIONSHIP_CODE, trophyPath } from "@/lib/awardTrophy";
 import { logoFor } from "@/lib/brand";
 import { championRow } from "@/lib/champions";
 import { getCupTitles } from "@/lib/cupData";
@@ -86,6 +87,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           <Link href={`/${lg}/scores`}>{say("nav.scores")}</Link>
           <Link href={`/${lg}/all-time`}>{say("allTime.title")}</Link>
           <Link href={`/${lg}/alignment`}>{say("align.title")}</Link>
+          <Link href={trophiesPath(lg)}>{say("trophies.title")}</Link>
           {info.closed ? null : <Link href={`/${lg}/world`}>{say("country.mapList")}</Link>}
         </nav>
       </section>
@@ -107,7 +109,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
       ) : null}
       {latest ? (
         <TrophyBanner lg={lg}>
-          <span className="cup">{say("trophy.latest")}</span>
+          <span className="cup">{CHAMPIONSHIP_CODE[lg] ? <Link href={trophyPath(CHAMPIONSHIP_CODE[lg])} prefetch={false}>{say("trophy.latest")}</Link> : say("trophy.latest")}</span>
           <span className="who"><TeamLabel lg={lg} f={latest.f} name={latest.name} year={withGames.some((x) => x.year === latest.year) ? latest.year : undefined} logo={logoFor(brands, latest.f, latest.year)} size={40} shape="circle" /></span>
           <span className="how">
             <Link href={seasonPath(lg, latest.year)} prefetch={false}>{say("season.title", { label: latest.label })}</Link>

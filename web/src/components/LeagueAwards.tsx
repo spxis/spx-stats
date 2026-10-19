@@ -1,8 +1,11 @@
+import Link from "@/components/Link";
 import { AwardsGrid } from "@/components/AwardsGrid";
 import { CupSprite } from "@/components/CupSprite";
 import { AWARD_GRID_HEAD, awardHead } from "@/lib/awardGrid";
+import { trophiesPath } from "@/lib/awardTrophy";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { leagueAwardGrid } from "@/lib/leagueTables";
+import { leagueInfo } from "@/lib/leagues";
 import "@/components/people.css";
 import { guard } from "@/lib/loadGuard";
 
@@ -18,7 +21,7 @@ export const LeagueAwards = guard(async function LeagueAwards({ lg, full = false
   return (
     <section className="section">
       {full ? <h1>{say("awards.bySeason")}</h1> : <h2>{say("awards.bySeason")}</h2>}
-      <p className="note">{say("awards.bySeasonNote", { winners: plural("count.awardWinners", grid.winners), seasons: plural("count.seasons", grid.seasons.length) })}</p>
+      <p className="note">{say("awards.bySeasonNote", { winners: plural("count.awardWinners", grid.winners), seasons: plural("count.seasons", grid.seasons.length) })} <Link href={trophiesPath(lg)} prefetch={false}>{say("trophies.seeAll", { league: leagueInfo(lg)?.short ?? lg.toUpperCase() })}</Link></p>
       <CupSprite leagues={[lg]} />
       <div className="tablebox awardsgrid"><AwardsGrid lg={lg} columns={grid.columns} head={head.seasons} logos={head.logos} total={grid.seasons.length} /></div>
     </section>

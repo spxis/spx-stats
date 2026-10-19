@@ -4,7 +4,9 @@
 import "server-only";
 import { TROPHY_BASEBALL } from "@johnmorrisdotca/dougu-sports/trophy/baseball";
 import { TROPHY_BASKETBALL } from "@johnmorrisdotca/dougu-sports/trophy/basketball";
+import { TROPHY_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/bowl";
 import { TROPHY_CANADIAN_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/canadian-bowl";
+import { TROPHY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/cup";
 import { TROPHY_FOOTBALL } from "@johnmorrisdotca/dougu-sports/trophy/football";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
 import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-ball";
@@ -86,4 +88,55 @@ export function bigCupSvg(league: string): string {
 export function medalSvg(place: number): string {
   const found = MEDALS[place];
   return found ? unsized(found[0].svg({ style: "metal", size: 64, title: found[1] })) : "";
+}
+
+/**
+ * The drawing of one award for the trophy pages (lib/awardTrophy.ts, app/[locale]/s/[league]/trophy). A league's championship is drawn as its cup above. Every other
+ * award has no drawing of its own in the package yet, so it is drawn with a plain stand-in: a generic cup for an award to a person, a bowl for an award to a team,
+ * and the page says so (`named` is false). When the package gets a named drawing (the Calder, the Hart, the Vezina), add it to NAMED by the award's code (one import and
+ * one line): the pages then draw it, in the list and large on the award's own page, and drop the note.
+ */
+const NAMED: Record<string, Emblem> = {};
+
+export interface TrophyArt {
+  /** One per distinct drawing: what the sprite's symbol and the cards share, so a drawing used by many awards is on the page once. */
+  key: string;
+  emblem: Emblem;
+  /** The award has a drawing of its own (its league's cup, or a named one), not a stand-in. */
+  named: boolean;
+}
+
+const GENERIC_PERSON: TrophyArt = { key: "generic-cup", emblem: TROPHY_CUP, named: false };
+const GENERIC_TEAM: TrophyArt = { key: "generic-bowl", emblem: TROPHY_BOWL, named: false };
+
+/** The drawing for an award by its code and kind (`championship`, `team_award` or `person_award`). */
+export function trophyArt(code: string, kind: string): TrophyArt {
+  const own = NAMED[code];
+  if (own) return { key: code, emblem: own, named: true };
+  if (kind === "championship") {
+    const league = code.slice(0, Math.max(0, code.indexOf("_")));
+    const cup = CUPS[league];
+    if (cup) return { key: `cup-${league}`, emblem: cup[0], named: true };
+    return GENERIC_TEAM;
+  }
+  return kind === "team_award" ? GENERIC_TEAM : GENERIC_PERSON;
+}
+
+/** The line drawings of some trophies as `<symbol>`s of one sprite (components/TrophySprite.tsx): a card draws one with `<use href="#trophy-<key>">`, once however many cards share it. */
+export function trophySymbols(arts: Iterable<TrophyArt>): string {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const a of arts) {
+    if (seen.has(a.key)) continue;
+    seen.add(a.key);
+    const svg = unsized(a.emblem.svg({ style: "line", size: 64, title: false }));
+    const viewBox = /viewBox="([^"]*)"/.exec(svg)?.[1];
+    out.push(`<symbol id="trophy-${a.key}" viewBox="${viewBox}">${svg.replace(/^<svg[^>]*>/, "").replace(/<\/svg>$/, "")}</symbol>`);
+  }
+  return out.join("");
+}
+
+/** A trophy drawn large on its own page: polished metal, leaning a little toward the eye, titled with the award's name. */
+export function trophyBigSvg(art: TrophyArt, name: string): string {
+  return unsized(art.emblem.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: name }));
 }
