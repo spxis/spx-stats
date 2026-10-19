@@ -72,6 +72,9 @@ export async function SiteFooter() {
           </div>
         </nav>
       </div>
+      <p className="foot-unofficial" id="unofficial">
+        {say("footer.unofficial")} <Link href="/logos#owners">{say("footer.unofficialLink")}</Link>
+      </p>
       <div className="foot-fine">
         <p>{say("footer.archive")}</p>
         <p className="retro">

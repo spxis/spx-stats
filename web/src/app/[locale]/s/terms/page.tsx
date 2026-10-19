@@ -1,5 +1,5 @@
 import Link from "@/components/Link";
-import { Credits } from "@/components/Credits";
+import { CC_BY_SA_URL, Credits } from "@/components/Credits";
 import { Rich } from "@/components/i18n/Rich";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
@@ -31,6 +31,9 @@ export default async function TermsPage() {
         <h2>{say("terms.asisTitle")}</h2>
         <p><Rich text={say("terms.asis")} parts={{ quality: <Link href="/quality">{say("nav.quality")}</Link> }} /></p>
         <p><Rich text={say("terms.errors")} parts={{ link: issues }} /></p>
+        <h2>{say("terms.unofficialTitle")}</h2>
+        <p>{say("footer.unofficial")}</p>
+        <p>{say("terms.marks")} <Link href="/logos#owners">{say("footer.unofficialLink")}</Link></p>
         <h2>{say("terms.creditsTitle")}</h2>
         <p>{say("footer.archive")}</p>
         <p className="retro">
@@ -44,6 +47,7 @@ export default async function TermsPage() {
         </p>
         <p><Rich text={say("terms.lahman")} parts={{ sources: <Link href="/sources">{say("nav.sources")}</Link> }} /></p>
         <p>{say("terms.wikipedia")}</p>
+        <p><Credits say={say} use={["wikipedia"]} /></p>
         <p><Credits say={say} use={["maps"]} /></p>
         <p><Credits say={say} use={["flags"]} /></p>
         <p><Credits say={say} use={["addresses"]} /></p>
@@ -52,6 +56,8 @@ export default async function TermsPage() {
         <p><Credits say={say} use={["brackets"]} /></p>
         <p><Credits say={say} use={["jerseys"]} /></p>
         <p><Rich text={say("terms.fullList")} parts={{ sources: <Link href="/sources">{say("nav.sources")}</Link> }} /></p>
+        <h2>{say("terms.wikiTitle")}</h2>
+        <p><Rich text={say("terms.wikiShare")} parts={{ licence: <a href={CC_BY_SA_URL} target="_blank" rel="noopener noreferrer">CC BY-SA 4.0</a> }} /></p>
         <h2>{say("terms.logosTitle")}</h2>
         <p>
           <Rich text={say("footer.logos")} parts={{ link: <Link href="/logos">{say("footer.aboutLogos")}</Link> }} />

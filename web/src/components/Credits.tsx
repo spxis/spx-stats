@@ -20,6 +20,8 @@ export const githubUrl = (lib: Lib) => `https://github.com/johnmorrisdotca/${lib
 export const NATURAL_EARTH_URL = "https://www.naturalearthdata.com";
 export const COMMONS_URL = "https://commons.wikimedia.org";
 export const SPORTSLOGOS_URL = "https://www.sportslogos.net";
+export const WIKIPEDIA_REUSE_URL = "https://en.wikipedia.org/wiki/Wikipedia:Reusing_Wikipedia_content";
+export const CC_BY_SA_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
 
 const link = (href: string, text: string) => <a href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
 
@@ -32,7 +34,7 @@ export function LibCredit({ lib }: { lib: Lib }) {
 }
 
 /** What a page can credit: the map (Chizu and Natural Earth), the flags (Hata and Wikimedia Commons), the formatted addresses (address-plus), the playing surfaces (Kyogijo Stadiums), the trophy and medal icons (Dougu Sports), the bracket layout (Taisen Brackets), the team logos that come from SportsLogos.Net. */
-export type CreditKind = "maps" | "flags" | "addresses" | "surfaces" | "emblems" | "brackets" | "logos" | "jerseys";
+export type CreditKind = "maps" | "flags" | "addresses" | "surfaces" | "emblems" | "brackets" | "logos" | "jerseys" | "wikipedia";
 
 /** The credit sentences for `use`, side by side, in the reader's language. Put it in a `<p className="note">`. */
 export function Credits({ say, use }: { say: Speaker["say"]; use: readonly CreditKind[] }) {
@@ -44,6 +46,7 @@ export function Credits({ say, use }: { say: Speaker["say"]; use: readonly Credi
     emblems: <Rich text={say("credit.emblems")} parts={{ dougu: <LibCredit lib="dougu-sports" /> }} />,
     brackets: <Rich text={say("credit.brackets")} parts={{ taisen: <LibCredit lib="taisen-brackets" /> }} />,
     jerseys: <Rich text={say("credit.jerseys")} parts={{ senshu: <LibCredit lib="senshu-jerseys" /> }} />,
+    wikipedia: <Rich text={say("credit.wikipedia")} parts={{ reuse: link(WIKIPEDIA_REUSE_URL, say("credit.wikipediaLink")), licence: link(CC_BY_SA_URL, "CC BY-SA 4.0") }} />,
     logos: <Rich text={say("credit.logos")} parts={{ sportslogos: link(SPORTSLOGOS_URL, "SportsLogos.Net"), link: <Link href="/logos">{say("credit.logosLink")}</Link> }} />,
   };
   return (

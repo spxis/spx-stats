@@ -1,5 +1,6 @@
 import Link from "@/components/Link";
 import { BrandHistory } from "@/components/BrandHistory";
+import { Credits } from "@/components/Credits";
 import { Rich } from "@/components/i18n/Rich";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { pageMeta } from "@/lib/meta";
@@ -37,6 +38,7 @@ export default async function AboutPage() {
             logos: <Link href="/logos">{say("nav.logos")}</Link>,
           }} />
         </p>
+        <p><Credits say={say} use={["wikipedia"]} /></p>
         <h2>{say("about.ownerTitle")}</h2>
         <p>{say("about.owner")}</p>
         <h2>{say("about.contactTitle")}</h2>

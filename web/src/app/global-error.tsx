@@ -7,6 +7,7 @@ export default function GlobalError({ retry }: { error: Error & { digest?: strin
       <body style={{ fontFamily: "system-ui, sans-serif", padding: "2rem" }}>
         <p>Couldn’t load this right now — try again</p>
         <button type="button" onClick={() => retry()}>Try again</button>
+        <p>SPXN is an unofficial fan project. It is not affiliated with, or endorsed by, the NHL, NBA, MLB, NFL, CFL or any team or league.</p>
       </body>
     </html>
   );

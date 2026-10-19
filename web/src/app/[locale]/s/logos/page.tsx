@@ -35,7 +35,7 @@ export default guard(async function LogosPage() {
         <p className="lede">{say("logos.lede")}</p>
       </section>
       <section className="section prose">
-        <h2>{say("logos.ownersTitle")}</h2>
+        <h2 id="owners">{say("logos.ownersTitle")}</h2>
         <p>{say("logos.owners")}</p>
         <h2>{say("logos.whyTitle")}</h2>
         <p>{say("logos.why")}</p>

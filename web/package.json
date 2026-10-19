@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.149.3",
+  "version": "0.149.4",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -23,6 +23,7 @@
     "test:trophies": "node --conditions=react-server --test scripts/trophies.test.ts",
     "i18n:review": "node scripts/i18n-review.ts",
     "test:i18n": "node --test scripts/i18n.test.ts",
+    "test:footer": "node --test scripts/footer.test.ts",
     "test:auth": "node --conditions=react-server --test scripts/auth.test.ts scripts/authPreview.test.ts",
     "test:turso": "node --conditions=react-server --test scripts/turso.test.ts scripts/adminPeople.test.ts",
     "test:revalidate": "node --test scripts/revalidate.test.ts",

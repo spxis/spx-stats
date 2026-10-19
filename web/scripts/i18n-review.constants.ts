@@ -30,6 +30,10 @@ export const READBACK: Readonly<Record<string, string>> = {
     "NFL data is from {nflverse} (CC BY 4.0). NHL results and standings outside SPX's seasons are from the NHL. Award names and winners are from {wikidata} (CC0).",
   "footer.logos":
     "Team logos are trademarks of their respective owners and are shown only to identify each team. SPXN is not partnered with any team or league. {link}.",
+  "footer.unofficial":
+    "SPXN is a non-official fan project. It is not partnered with, and has not been approved by, the NHL, NBA, MLB, NFL, CFL, or any team or league.",
+  "footer.unofficialLink":
+    "Notice about the logos.",
   "footer.aboutLogos": "About the logos.",
   "footer.credits": "Notices about data sources, licences and logos are posted on {link}.",
   "legal.updated": "Last update date: {date}",
@@ -50,6 +54,10 @@ export const READBACK: Readonly<Record<string, string>> = {
     "When another data source matches SPX, the value is shown as \"confirmed\". When they do not match, we record the difference and keep using SPX's value as it is.",
   "about.holes":
     "There are games and seasons that are missing. Where the data has a hole, we do not guess; we leave it blank.",
+  "credit.wikipediaLink":
+    "English-language Wikipedia.",
+  "credit.wikipedia":
+    "Data such as personal information is taken from {reuse} and used under the {licence} licence.",
   "about.more":
     "For the licence and source of each, see {sources}; for what we check and the known problems, see {quality}; for the reason team logos are shown, see {logos}.",
   "about.ownerTitle": "The operator.",
@@ -96,6 +104,10 @@ export const READBACK: Readonly<Record<string, string>> = {
   "terms.asisTitle": "Provided as it is; no guarantee.",
   "terms.asis":
     "SPXN is provided as it is, and does not promise that the content is complete, correct or the latest. Old records have gaps, data sources can contradict each other, and mistakes can creep in. Known problems are recorded on {quality}. Please use it at your own responsibility. To the extent the law permits, the owner takes no responsibility for damage that arises from use.",
+  "terms.unofficialTitle":
+    "This is a non-official site.",
+  "terms.marks":
+    "The names, logos and other trademarks of teams and leagues belong to their respective owners. They are shown only to indicate which team's or league's data it is.",
   "terms.errors":
     "To report a mistake, ask about reusing content, or ask for a logo to be deleted, please create an Issue on GitHub: {link}.",
   "terms.creditsTitle": "Data sources and credits.",
@@ -112,6 +124,10 @@ export const READBACK: Readonly<Record<string, string>> = {
   "credit.jerseys": "Retired-number banners: {senshu}.",
   "credit.logos": "Some historic logos: {sportslogos}; they are shown small to identify the team ({link}).",
   "credit.logosLink": "about the logos",
+  "terms.wikiTitle":
+    "Text from Wikipedia.",
+  "terms.wikiShare":
+    "Part of the text on this site is based on English-language Wikipedia: notes about seasons that were shortened or cancelled, notes about awards that were not given, head coaches, venue information (surface, roof, size of the field), basketball players' statistics, and the birthplaces of some players. The {licence} licence still applies to this text, and people who reuse it are required to cite Wikipedia as the source and share it under the same licence. Where a matching Wikipedia article exists, the note links to that article.",
   "terms.fullList":
     "The list of data sources, and the licence and source of each, are on {sources}.",
   "terms.logosTitle": "Logos and names.",

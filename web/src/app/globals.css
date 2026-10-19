@@ -355,6 +355,7 @@
   .foot-cols { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px 24px; margin-bottom: 6px; }
   .foot-col { display: flex; flex-direction: column; gap: 0; min-width: 0; }
   .foot-col b { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .1em; color: var(--ink); }
+  .foot .foot-unofficial { color: var(--ink); font-size: 16px; line-height: 1.45; max-width: 70ch; margin-block: 6px 8px; }
   .foot-fine { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 4px 32px; }
   .foot-base { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 0 24px; }
   .foot-base .langpick { margin-top: 0; }
