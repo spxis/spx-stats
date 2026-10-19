@@ -2,7 +2,7 @@
 
 Soccer is the sixth sport on spxn.com (after hockey, basketball, baseball, American and Canadian football). John approved it on
 2026-10-13. The first competition is the FIFA World Cup: men's 1930-2022 and women's 1991-2019, with the 2026 men's tournament from
-openfootball. The women's 2023 tournament is not in any allowed source we hold (see "Not done").
+openfootball. The women's 2023 tournament comes from English Wikipedia's group, knockout and final articles (see "Women's World Cup 2023").
 Major League Soccer (1996 to now), the first club competition, reuses these tables: see [docs/mls.md](mls.md).
 
 ## Data model (migration 066, `core.soccer_*`)
@@ -96,9 +96,17 @@ Production only through a data release (AGENTS.md section 8, item 5), after migr
 `core.soccer_goal,core.soccer_booking,core.soccer_substitution,core.soccer_penalty_kick,core.soccer_match_manager,core.soccer_match_referee,`
 `core.soccer_squad,core.soccer_manager,core.soccer_award,meta.verification,meta.data_issue`.
 
+## Women's World Cup 2023
+
+`scripts/worldcup/wwc2023.py fetch` saves the English Wikipedia (CC BY-SA 4.0) articles "2023 FIFA Women's World Cup", Groups A to H, "knockout stage" and "final"
+and the Wikidata ids of the ten stadium articles; `wwc2023.py sql` reads their football boxes into `legacy_worldcup.of_match / of_goal / of_stadium` with `year = 2023`
+(no men's tournament has that year, so the 2026 men's rows and these never meet); `db/build/200_wwc2023_from_wikipedia.sql` builds the tournament `wwc2023`, its 64
+matches (`source_key` `wwc-2023-NNN`), 164 goals, the 32 teams' path and the group tables. The load refuses a match whose goals do not add up to its score. Zambia,
+Vietnam and the Philippines are new national teams (`X-zambia`, `X-vietnam`, `X-philippines`). Stadium items are in `db/seed/soccer_venue_ids.csv` (origin `wwc`).
+
 ## Not done
 
-- Women's 2023: neither allowed source has it. A Wikipedia (CC BY-SA 4.0) load would be a separate ticket.
+- Women's 2023: no lineups, cards, squads, managers or referees (Wikipedia's match boxes give the referee's name only; not loaded), and its goals have a scorer's name but no player.
 - Lineups, cards and managers for 2026.
 - A country page for a nation across men's and women's merged with its predecessor (`continues_team_id` is stored, not yet used to merge records).
 - Linking stadium names to venue pages: the stadiums are `core.venue` rows (`scripts/world_stadiums/`); step 207 fills `venue_id` after the soccer data is on production, and the pages follow.
