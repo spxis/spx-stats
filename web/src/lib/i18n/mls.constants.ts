@@ -111,7 +111,7 @@ export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
   "soccer.leagues": "Ligues",
 
   "mls.title": "Major League Soccer",
-  "mls.metaDesc": "La Major League Soccer sur SPXN : toutes les saisons depuis 1996 avec les gagnants du Bouclier des partisans et de la Coupe MLS, les classements par conférence, les séries, les résultats et les clubs.",
+  "mls.metaDesc": "La Major League Soccer sur SPXN : toutes les saisons depuis 1996 avec les gagnants du Bouclier des partisans et de la Coupe MLS, les classements par conférence, les séries éliminatoires, les résultats et les clubs.",
   "mls.lede": "Toutes les saisons de la Major League Soccer depuis ses débuts en 1996 : qui a gagné le Bouclier des partisans et la Coupe MLS, les classements par conférence, les séries éliminatoires et les résultats. Ouvrez une saison pour ses classements, ses rondes éliminatoires, ses matchs et ses meneurs, ou un club pour ses noms, ses saisons et ses titres.",
   "mls.none": "Aucune donnée de la Major League Soccer n’a encore été publiée.",
   "mls.figSeasons": "Saisons",
@@ -136,7 +136,7 @@ export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
   "mls.credit": "Données de la MLS : articles de saison et de club de {wikipedia} ({licence}), modifiés par SPXN : tableaux et fiches de match intégrés à cette archive et rattachés aux clubs. Résultats de 2005 à 2025 et seconde vérification : {openfootball} (CC0). Identifiants d’éléments : {wikidata} (CC0). Aucun logo de la ligue ni des clubs n’est utilisé.",
 
   "mls.season": "Saison {year} de la MLS",
-  "mls.s.metaDesc": "{title} : champion {champion}, Bouclier des partisans {shield}, {matches} matchs, avec les classements par conférence, les séries, les résultats et les meneurs.",
+  "mls.s.metaDesc": "{title} : champion {champion}, Bouclier des partisans {shield}, {matches} matchs, avec les classements par conférence, les séries éliminatoires, les résultats et les meneurs.",
   "mls.s.lede": "{teams} clubs, {dates}. Les classements par conférence et le classement général, les rondes éliminatoires, tous les résultats dont nous disposons et les meneurs de la saison.",
   "mls.s.all": "Toutes les saisons et tous les clubs",
   "mls.cupWinner": "Champion de la Coupe MLS",
@@ -162,7 +162,7 @@ export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
   "mls.tablesNote": "Une barre à gauche d’une ligne signale un club qui a participé aux séries. Les rangs et les points sont ceux de l’article de la saison.",
   "mls.col.soWins": "VTB",
   "mls.col.soWinsTitle": "Victoires aux tirs de barrage (valant un point, 1996–1999)",
-  "mls.tieTitle": "Une confrontation éliminatoire; les matchs sont présentés du point de vue de {team}.",
+  "mls.tieTitle": "Une confrontation éliminatoire ; les matchs sont présentés du point de vue de {team}.",
   "mls.stage.regular": "Saison régulière",
   "mls.stage.wildCard": "Ronde des cartes sauvages",
   "mls.stage.roundOne": "Première ronde",
@@ -186,7 +186,7 @@ export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
   "mls.team.names": "Noms",
   "mls.team.titles": "Titres",
   "mls.team.cups": "Coupe MLS ({n})",
-  "mls.team.shields": "Bouclier des partisans ({n})",
+  "mls.team.shields": "Supporters’ Shield ({n})",
   "mls.team.finalsLost": "Finales de la Coupe MLS perdues ({n})",
   "mls.team.record": "Fiche de saison régulière",
   "mls.team.recordLine": "Matchs joués : {p}. Victoires : {w}, nuls : {d}, défaites : {l}. Buts : {gf}–{ga}.",
@@ -203,7 +203,7 @@ export const MLS_FR: Record<keyof typeof MLS_EN, string> = {
   // the match banner (components/Showdown.tsx)
   "mls.sd.champions": "Champions de la Coupe MLS",
   "mls.sd.record": "{year} : {w} V – {d} N – {l} D, buts {gf}–{ga}",
-  "mls.sd.recordSo": "{year} : {w} V – {l} D, tirs de barrage gagnés : {sw}, buts {gf}–{ga}",
+  "mls.sd.recordSo": "{year} : {w} V – {l} D, {sw} victoires en tirs de barrage, buts {gf}–{ga}",
   "mls.sd.team": "{club} dans la MLS",
 };
 
@@ -217,7 +217,7 @@ export const MLS_JA: Record<keyof typeof MLS_EN, string> = {
   "mls.figSeasons": "シーズン",
   "mls.figClubs": "クラブ",
   "mls.seasons": "シーズン",
-  "mls.seasonsNote": "{first}〜{last}年、計{n}。得点はレギュラーシーズンのものです。「レギュラーシーズン」欄の「138 / 160」のような表示は、そのシーズンの順位表にある160試合のうち138試合の結果を収録していることを示します。残りの試合は、ここで使っている情報源のどれにも載っていません。",
+  "mls.seasonsNote": "{first}〜{last}年、計{n}シーズン。得点はレギュラーシーズンのものです。「レギュラーシーズン」欄の「138 / 160」のような表示は、そのシーズンの順位表にある160試合のうち138試合の結果を収録していることを示します。残りの試合は、ここで使っている情報源のどれにも載っていません。",
   "mls.clubs": "クラブ",
   "mls.clubsNote": "各クラブのレギュラーシーズン通算成績（これまでの全名称を合算）です。アーカイブにある試合から集計しており、結果が欠けているシーズンは、収録されている試合だけを数えています。勝ち点は各シーズンの順位表の勝ち点を合計したもので、勝利3点、引き分け1点、1996〜1999年はシュートアウト勝利が1点です。",
   "mls.inProgress": "シーズン進行中",
@@ -259,7 +259,7 @@ export const MLS_JA: Record<keyof typeof MLS_EN, string> = {
   "mls.east": "イースタン・カンファレンス",
   "mls.west": "ウェスタン・カンファレンス",
   "mls.overall": "全体の順位表",
-  "mls.tablesNote": "行の左端の帯は、プレーオフに進んだクラブを示します。順位と勝ち点は、そのシーズンの記事に載っているとおりです。",
+  "mls.tablesNote": "行の左端の帯は、プレーオフに出場したクラブを示します。順位と勝ち点は、そのシーズンの記事に載っているとおりです。",
   "mls.col.soWins": "SO勝",
   "mls.col.soWinsTitle": "シュートアウト勝利（勝ち点1、1996〜1999年）",
   "mls.tieTitle": "プレーオフの対戦。各試合は{team}側から見た結果です。",
@@ -276,7 +276,7 @@ export const MLS_JA: Record<keyof typeof MLS_EN, string> = {
   "mls.reach.roundOne": "第1ラウンドで敗退",
   "mls.reach.wildCard": "ワイルドカード戦で敗退",
   "mls.reach.missed": "プレーオフ進出ならず",
-  "mls.score.so": "{team}がシュートアウトを制した",
+  "mls.score.so": "{team}がシュートアウトを制しました",
 
   "mls.team.eyebrow": "MLSのクラブ",
   "mls.team.title": "{team}のMLS記録",
@@ -295,7 +295,7 @@ export const MLS_JA: Record<keyof typeof MLS_EN, string> = {
   "mls.home": "ホーム",
   "mls.away": "アウェー",
 
-  "mls.m.metaDesc": "{title}：{year}年メジャーリーグサッカーの{stage}。",
+  "mls.m.metaDesc": "{title}：{year}年メジャーリーグサッカーシーズンの{stage}。",
   "mls.m.crowd": "観客数 {n}人",
   "mls.m.confirmed": "この結果は第2の情報源で確認されています。",
   "mls.m.noDetail": "MLSの試合については、得点経過、先発メンバー、カードの情報はアーカイブにありません。",

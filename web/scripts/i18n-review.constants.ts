@@ -66,9 +66,12 @@ export const READBACK: Readonly<Record<string, string>> = {
   "about.contact":
     "Please create a GitHub Issue (a request or report) and let us know: {link}. The site's code is also public there.",
   "about.contactLink": "github.com/spxis/spx-stats (an address; not translated).",
+  "about.wiki":
+    "Some recent scores are still missing. If you want to improve Wikipedia, please see {link}.",
+  "about.wikiLink": "Fill in the blanks of Wikipedia.",
   "brand.title": "SPXIS's marks (the word for a logo or symbol).",
   "brand.lede": "SPXN was born from SportsInteractive, established in 1997. Please look at the marks of each period.",
-  "brand.y1997": "SportsInteractive's shield (a shield-shaped emblem), established 1997.",
+  "brand.y1997": "SportsInteractive's shield, established 1997.",
   "brand.y2006": "spxn.com, the sportsinteractive network that uses the swoosh.",
   "brand.y2006shield": "spxn's shield, established 1997.",
   "brand.y2007": "SPX Interactive Software, which uses the swoosh.",
@@ -87,7 +90,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "brand.exLogoTeam": "Logo, team colours.",
   "brand.exAbbrTeam": "Abbreviation, team colours.",
   "brand.exLogoNavy": "Logo, SPXN navy.",
-  "brand.exAbbrNavy": "Abbreviation, SPXN navy, league name in the band at the top.",
+  "brand.exAbbrNavy": "Abbreviation, SPXN navy, league name in the band.",
   "footer.brand": "SportsInteractive, established 1997. SPXIS's marks are © SportsInteractive. {link}",
   "footer.brandLink": "About the marks.",
   "terms.eyebrow": "SPX Network (a name; not translated).",
@@ -112,7 +115,7 @@ export const READBACK: Readonly<Record<string, string>> = {
     "To report a mistake, ask about reusing content, or ask for a logo to be deleted, please create an Issue on GitHub: {link}.",
   "terms.creditsTitle": "Data sources and credits.",
   "terms.lahman":
-    "For baseball data we also use the Lahman Baseball Database. Its licence and source are posted on {sources}.",
+    "For baseball data we also use the Lahman Baseball Database. Its licence and credit are posted on {sources}.",
   "terms.wikipedia":
     "The notes about shortened seasons are made on the basis of Wikipedia (CC BY-SA 4.0). Each note has a link to the original Wikipedia article.",
   "address.credit": "The addresses are formatted using {link}.",
@@ -129,7 +132,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "terms.wikiShare":
     "Part of the text on this site is based on English-language Wikipedia: notes about seasons that were shortened or cancelled, notes about awards that were not given, head coaches, venue information (surface, roof, size of the field), basketball players' statistics, and the birthplaces of some players. The {licence} licence still applies to this text, and people who reuse it are required to cite Wikipedia as the source and share it under the same licence. Where a matching Wikipedia article exists, the note links to that article.",
   "terms.fullList":
-    "The list of data sources, and the licence and source of each, are on {sources}.",
+    "The list of sources, and the licence and credit of each, are on {sources}.",
   "terms.logosTitle": "Logos and names.",
   "terms.logosRemoval":
     "If you hold the rights to a logo shown here and wish it deleted, please create an Issue. We will delete it promptly: {link}.",
@@ -154,7 +157,7 @@ export const READBACK: Readonly<Record<string, string>> = {
     "If you have not chosen a language, we display to match your browser's language setting. Nothing is saved for that.",
   "privacy.trackingTitle": "No ads and no tracking.",
   "privacy.tracking":
-    "SPXN has no ads, no access analysis, and no tracking cookies or scripts. The scripts, fonts, maps and flags that a page loads are all the site's own.",
+    "SPXN has no ads, no access analysis, and no tracking cookies or scripts. The scripts, fonts, maps and flags that a page loads are served from the site itself.",
   "privacy.visitsTitle":
     "Home grounds you have visited.",
   "privacy.visits":
@@ -195,7 +198,7 @@ export const READBACK: Readonly<Record<string, string>> = {
   "resume.title": "Athletic career.",
   "resume.kind.draft": "Draft (the English word written in Japanese letters).",
   "awards.title": "Honours / citations.",
-  "col.playoffs": "PO (short for playoffs, in English letters).",
+  "col.playoffs": "Playoffs.",
   "venues.tabs": "Map of home grounds.",
   "map.viewState": "State / province (the combined word for a US state and a Chinese-style province).",
   "h2h.pick.button": "Change the team: {team}",

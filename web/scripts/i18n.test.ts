@@ -37,6 +37,16 @@ for (const [name, dictionary] of Object.entries(dictionaries)) {
   });
 }
 
+// The whole catalogue, not only the scoped files: a batch fix (scripts/i18n/batch.py apply) must not add a key or change a {placeholder}.
+for (const [name, dictionary] of Object.entries(dictionaries)) {
+  test(`${name}: no key English lacks, and every {placeholder} English has (whole catalogue)`, () => {
+    const own = Object.keys(dictionary);
+    assert.deepEqual(own.filter((k) => !(k in english)), []);
+    const bad = own.filter((k) => placeholders(dictionary[k] as string).join() !== placeholders(english[k] as string).join());
+    assert.deepEqual(bad, []);
+  });
+}
+
 test("every Japanese line on the sheet has a reading, and no reading is left over", () => {
   const listed = new Set([...keys, ...TODO_KEYS]);
   assert.deepEqual([...listed].filter((k) => !READBACK[k]), []);
