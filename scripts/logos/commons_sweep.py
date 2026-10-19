@@ -104,6 +104,8 @@ def main(ident_file, out):
     # 3. imageinfo for the files worth reading: image types naming the club's nickname, or "logo" in the title
     cand = set()
     for name, hits in raw["search"].items():
+        if name not in nick:    # the cache also holds earlier sweeps' clubs (a gap sweep after the full one)
+            continue
         for t in hits:
             n = norm(t)
             if IMAGE_EXT.search(t) and (nick[name] in n) and (not re.search(r"\.jpe?g$", t, re.I) or "logo" in n):

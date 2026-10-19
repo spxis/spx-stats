@@ -110,3 +110,12 @@ nha,Toronto Blueshirts,1912,fill,Toronto_Blueshirts_logo.svg,undated,0,reject,,u
 pcha,New Westminster Royals,1911,fill,9dghvv7iuyeccws54g5ahpzyv,dated,0,accept,,
 pcha,Portland Rosebuds,1914,fill,w3dllgraqkp4szaj3m5p446um,dated,0,accept,,
 wchl,Saskatoon Sheiks,1925,fill,SaskatoonSheiks.png,undated,0,accept,,
+nfl,Detroit Tigers,1920,fill,Detroit_Tigers_logo1.svg,undated,0,reject,,"the baseball Tigers' logo, not the NFL club"
+nfl,Dallas Texans,1952,fill,Dallas_Texans_logo.webp,dated,0,reject,,"the AFL Texans of 1960 (the Chiefs), not the 1952 NFL club"
+aafc,Buffalo Bills,1946,fill,Buffalo_Bills_blue.png,dated,1,reject,,"the Bills' 2011 wordmark, not the AAFC club"
+nfl,Cincinnati Reds,1933,fill,Cincinnati_Reds_logo.svg,undated,0,reject,,"the baseball Reds' logo, not the NFL club"
+pwhl,Vancouver Goldeneyes,2025,fill,VAN_PWHL.webp,dated,0,reject,,"the announcement logo before the club had its name; wait for the Goldeneyes mark"
+pwhl,Seattle Torrent,2025,fill,PWHL_Seattle_Logo.webp,dated,0,reject,,"the placeholder logo before the club had an identity; wait for the Torrent mark"
+wnba,Portland Fire,2026,fill,Rose_City_SportsNet_Logo.png,undated,1,reject,,"a television network's logo, not the club"
+wnba,Las Vegas Aces,2018,fill,Las_Vegas_Aces_logo.svg,dated,0,accept,,"Commons tags it Public domain (text logo); the claim is not checked, the site shows it small as it shows every logo"
+wnba,Connecticut Sun,2021,fill,Connecticut_Sun_wordmark_logo_2021.png,dated,1,accept,,"a wordmark: the only free file; the era's sun mark has none"
