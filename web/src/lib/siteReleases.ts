@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.152.0", date: "2026-10-19", href: "/nhl/2023-24",
+    title: "Standings race chart",
+    text: "Each season page now draws how the league's standings changed week by week, one line per club. Point at a line to see a club's place and record, press it to follow it, or open the table of ranks." },
   { version: "0.151.0", date: "2026-10-19", href: "/releases",
     title: "Releases page",
     text: "A public list of site versions, newest first. Each version names the feature it shipped, the day it went out, and links to the page where you can see it." },

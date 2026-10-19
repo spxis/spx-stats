@@ -12,6 +12,7 @@ import { SeasonOutage } from "@/components/SeasonOutage";
 import { SeasonGames } from "@/components/SeasonGames";
 import { SeasonGamesProvider } from "@/components/SeasonGamesData";
 import { SeasonWeek } from "@/components/SeasonWeek";
+import { SeasonRace } from "@/components/SeasonRace";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
 import { StandingsFocus } from "@/components/StandingsFocus";
@@ -26,7 +27,7 @@ import { chosenGroup, groupChoices, placeHeading, placeLabel, rowClasses } from 
 import type { StandingRow } from "@/lib/api/types";
 import { joinList } from "@/lib/people-format";
 import { abbrFor, abbrsForYear } from "@/lib/abbr";
-import { logoFor } from "@/lib/brand";
+import { brandFor, logoFor, teamTone } from "@/lib/brand";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/lib/data";
 import { getOutage, getOutageYears, getTitleNotAwarded } from "@/lib/outageData";
@@ -124,6 +125,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
     year: y, me: -1, clubs: d.teams.flatMap((t) => (t.f != null ? [{ franchise_id: t.f, team: t.name }] : [])), brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts, say,
     href: (f) => paths.teamSeason(lg, f, y),
   }).map(({ f, name, abbr, lat, lon, venue, place, href, cc, conf, div }) => ({ f, name, abbr, lat, lon, venue, place, href, cc, conf, div }));
+  // What the standings race needs of each club (the page is one kept copy: names, short forms and colours only).
+  const raceClubs = Object.fromEntries(d.teams.map((t) => [t.id, { name: t.name ?? say("team.fallback", { id: t.f ?? t.id }), abbr: abbrFor(abbrs, t.f, y, t.name), tone: teamTone(t.f != null ? brandFor(brands, t.f, y) : null) }]));
   const note = scheduleNote({ say, plural, locale }, notes, lg, y, d.standings, complete);
   const winner = complete ? holders.byYear.get(y)?.champion_franchise : null;
   const selection = parseSelection(sp);
@@ -270,6 +273,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
             <p className="note">{standingsNote}</p>
             <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
           </StandingsFocus>
+          {asOf ? null : <SeasonRace clubs={raceClubs} countsOtl={d.standings.some((r) => r.otl != null)} weekStart={lg === "nfl" ? 2 : 1} />}
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />

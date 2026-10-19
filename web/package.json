@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.151.0",
+  "version": "0.152.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -47,6 +47,7 @@
     "test:seasons": "node --test scripts/gameSeasons.test.ts scripts/gamesCodec.test.ts",
     "test:failure": "node --test scripts/apiFailure.test.ts",
     "test:streaks": "node --test scripts/streaks.test.ts scripts/seasonBoxes.test.ts",
+    "test:race": "node --test scripts/standingsRace.test.ts",
     "test:headings": "node --test scripts/sankeyHeadings.test.ts",
     "test:labels": "node --test scripts/seasonLabel.test.ts",
     "test:week": "node --test scripts/weekStrip.test.ts",
