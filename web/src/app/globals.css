@@ -193,6 +193,13 @@
   .dr-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 0 4px; border-bottom: 2px solid var(--ink); }
   .dr-tabs a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; text-decoration: none; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
   .dr-tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .adm-tabs { display: flex; flex-wrap: nowrap; gap: 8px; margin: 0 0 12px; padding: 0 0 4px; overflow-x: auto; overscroll-behavior-x: contain; scrollbar-width: thin; -webkit-overflow-scrolling: touch; }
+  .adm-tabs a { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; white-space: nowrap; font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; text-decoration: none; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
+  .adm-tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .adm-sections { margin-bottom: 8px; border-bottom: 2px solid var(--ink); }
+  .adm-sections a { font-size: 16px; }
+  .adm-subtabs { margin-bottom: 20px; }
+  .adm-subtabs a { min-height: 40px; font-size: 14px; }
   .ops-top { display: flex; flex-wrap: wrap; align-items: center; gap: 14px; }
   .ops-grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 28px; }
   @media (min-width: 1100px) { .ops-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }

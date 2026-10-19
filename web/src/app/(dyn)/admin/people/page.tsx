@@ -27,7 +27,6 @@ import { sportCategory, sportName } from "@/lib/sportNames";
 import { sourceLabel } from "@/lib/sourceLabels";
 import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
-import { PeopleTabs } from "./PeopleTabs";
 
 /**
  * Every core.person, including athletes with no club season. Admin only, drawn per request.
@@ -205,7 +204,6 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
       <section className="section plist">
         <PlayersFilterBar
           path="/admin/people"
-          tabs={<PeopleTabs current="search" />}
           href={href}
           league={league}
           q={q}

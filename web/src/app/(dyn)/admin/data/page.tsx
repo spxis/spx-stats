@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ConfirmSummary } from "@/components/ConfirmSummary";
 import { LocalTime, Stamped } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
 import { ReleaseError, apiHealth, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
-import { TABS, TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, type Tab } from "@/lib/releases/rules";
+import { TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, type Tab } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
 import { AutoSwitch } from "./AutoSwitch";
 import { DecisionCard } from "./DecisionCard";
@@ -15,7 +16,7 @@ import { TabMemory } from "./TabMemory";
 
 /**
  * Data releases for admins: what is waiting for approval, what ran, whether DS1 and production agree, how much space
- * production uses, and the settings (the auto-approval switch and scores update requests). Four tabs, chosen with ?tab= and
+ * production uses, and the settings (the auto-approval switch and scores update requests). Four tabs (drawn by the admin shell, app/(dyn)/admin/AdminTabs.tsx), chosen with ?tab= and
  * remembered per viewer. Admin is checked on the server for every request and anyone else gets a 404. Never cached. English only.
  */
 export const dynamic = "force-dynamic";
@@ -75,8 +76,6 @@ const REQUEST_COLUMNS: SortColumn[] = [
   { key: "summary", label: "What happened" },
   { key: "release", label: "Release", cls: "nowrap" },
 ];
-
-const TAB_LABELS: Record<Tab, string> = { pending: "Pending", history: "History", drift: "Drift", settings: "Settings" };
 
 type Show = "collapsed" | "all" | "auto" | "manual";
 const SHOWS: { key: Show; label: string }[] = [
@@ -391,7 +390,6 @@ function SettingsTab({ data, query, paused }: { data: Dashboard; query: Query; p
 function Report({ data, query, tab }: { data: Dashboard; query: Query; tab: Tab }) {
   const drift = driftState(data.sync, finished(data));
   const paused = data.auto?.paused === true;
-  const badge: Record<Tab, number> = { pending: data.pending.length, history: 0, drift: drift.differs.length, settings: 0 };
   return (
     <>
       {paused && tab !== "settings" ? (
@@ -407,14 +405,6 @@ function Report({ data, query, tab }: { data: Dashboard; query: Query; tab: Tab 
       {drift.outdated.length > 0 && drift.differs.length === 0 && tab !== "drift" ? (
         <p className="note" role="status">The last comparison ({when(drift.lastChecked)}) is out of date: release {drift.newerRelease} finished after it. <Link href="?tab=drift">Drift</Link></p>
       ) : null}
-      <nav className="dr-tabs" aria-label="Data releases">
-        {TABS.map((t) => (
-          <Link key={t} href={`?tab=${t}`} aria-current={tab === t ? "page" : undefined}>
-            {TAB_LABELS[t]}
-            {badge[t] > 0 ? <span className={`tk-badge ${t === "drift" ? "stale" : "live"}`}>{badge[t]}</span> : null}
-          </Link>
-        ))}
-      </nav>
       <TabMemory tab={tab} />
       {tab === "pending" ? <PendingTab data={data} query={query} paused={paused} /> : null}
       {tab === "history" ? <HistoryTab data={data} query={query} /> : null}
@@ -428,6 +418,12 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
   await requireAdmin();
   const query = await searchParams;
   const tab = parseTab(query.tab, (await cookies()).get(TAB_COOKIE)?.value);
+  if (first(query.tab) !== tab) {
+    // the admin shell's tab bar reads the tab from the address: send the remembered one there, keeping the rest of the query
+    const params = new URLSearchParams({ tab });
+    for (const [k, v] of Object.entries(query)) if (k !== "tab" && v !== undefined) for (const x of Array.isArray(v) ? v : [v]) params.append(k, x);
+    redirect(`/admin/data?${params.toString()}`);
+  }
 
   let data: Dashboard | null = null;
   let problem = "";
@@ -444,7 +440,6 @@ export default async function AdminDataPage({ searchParams }: { searchParams: Pr
       <section className="head fade">
         <h1>Data releases</h1>
         <p className="lede">Production changes only through numbered releases. Approve or reject each one here; the runner next to DS1 applies the approved ones and checks the result.</p>
-        <p className="note">The machine side (harvester, Dropbox backup, DS1 against production, watchdog): <Link href="/admin/ops">Ops</Link>.</p>
         {problem ? <p className="note" role="alert">{problem}</p> : null}
         {health ? (
           <p className={health.kind === "down" ? "dr-alert" : "note"} role={health.kind === "down" ? "alert" : "status"}>

@@ -6,7 +6,6 @@ import { requireAdmin } from "@/lib/auth/user";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { playerPath } from "@/lib/playerPath";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
-import { PeopleTabs } from "../PeopleTabs";
 
 /**
  * People records that might be one person, for an admin to decide. The list is a snapshot in the code
@@ -79,7 +78,6 @@ export default async function AdminPeopleReviewPage({ searchParams }: { searchPa
       <section className="head fade">
         <h1>{say("peopleAdmin.reviewTitle")}</h1>
         <p className="lede">{say("peopleAdmin.reviewLede")}</p>
-        <PeopleTabs current="review" />
         <nav className="tk-chips" aria-label={say("peopleAdmin.reviewFilter")}>
           <Link prefetch={false} className={lean ? undefined : "on"} href={href({ lean: undefined })}>All <span>{PERSON_REVIEW.filter((p) => matches(p, true)).length}</span></Link>
           {LEANS.map((l) => (
