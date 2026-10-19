@@ -44,7 +44,7 @@ export function StandingsRace({ race, clubs, countsOtl, hasTies }: Props) {
   const { weeks, teams } = race;
   const N = teams.length, K = weeks.length;
   const narrow = W < 520;
-  const rowH = narrow ? 17 : 21;
+  const rowH = narrow ? 22 : 21;
   const m = { t: 14, r: narrow ? 40 : 52, b: 26, l: narrow ? 28 : 36 };
   const H = m.t + (N - 1) * rowH + m.b;
   const x = scaleLinear([0, K - 1], [m.l, W - m.r]);
@@ -146,6 +146,7 @@ export function StandingsRace({ race, clubs, countsOtl, hasTies }: Props) {
         {lit ? (
           <>
             <b>{club(lit.id).name}</b>
+            <span>{say("race.finalRec", { place: place(lit.ranks[K - 1] ?? N), record: record(lit.recs[K - 1]) })}</span>
             {pinned != null ? <button type="button" className="raceclear" onClick={() => setPinned(null)}>{say("race.clear")}</button> : null}
           </>
         ) : <span className="hint">{say("race.hint")}</span>}
