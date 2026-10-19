@@ -90,6 +90,7 @@ export function UserMenu({ user, version, waiting = 0, alerts = 0 }: { user: Men
               <Link role="menuitem" href="/admin/data">{waiting > 0 ? say("menu.dataReleasesWaiting", { count: waiting }) : say("menu.dataReleases")}</Link>
               <Link role="menuitem" href="/admin/runs">{alerts > 0 ? say("menu.runsAlerts", { count: alerts }) : say("menu.runs")}</Link>
               <Link role="menuitem" href="/admin/ops">Ops (DS1 and backups)</Link>
+              <Link role="menuitem" href="/admin/invites">{say("menu.invites")}</Link>
               <Link role="menuitem" href="/admin/logos">Logos to review</Link>
             </div>
             </>

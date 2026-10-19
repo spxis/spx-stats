@@ -174,7 +174,7 @@ test("no rewrite touches the API, the build's files, the drawings or the signed-
     "/api/me", "/api/locale", "/api/revalidate", "/api/players", "/api/players/suggest", "/api/teams", "/api/teams/suggest", "/api/venues", "/api/anything/at/all", "/api",
     "/_next/static/chunks/main.js", "/_next/image", "/surface/nfl.en.svg", "/surface/nhl.fr.svg",
     "/sitemap.xml", "/robots.txt", "/venues.csv", "/venues.geojson", "/soccer-flags.svg", "/soccer-flags-round.svg", "/soccer-flag/ES.svg", "/flag/ES.svg", "/flag/CA.round.svg", "/soccer-flag/GB-ENG.svg", "/soccer-road/2022.en.svg", "/soccer-road/2019.fr.svg", "/bracket-svg/nba-2023.wide.en.svg", "/bracket-svg/nfl-2025.inphone.fr.svg", "/bracket-svg/soccer-2022.wide.ja.svg",
-    "/admin", "/admin/data", "/admin/ops", "/admin/people", "/admin/people/review", "/admin/logos", "/admin/tickets", "/admin/tickets/new", "/admin/tickets/abc", "/me", "/me/profile", "/me/settings", "/login", "/tickets", "/tickets/abc",
+    "/admin", "/admin/data", "/admin/ops", "/admin/people", "/admin/people/review", "/admin/logos", "/admin/tickets", "/admin/tickets/new", "/admin/tickets/abc", "/admin/invites", "/invite-only", "/me", "/me/profile", "/me/settings", "/login", "/tickets", "/tickets/abc",
     ...found.map(([, address]) => address),
   ]);
   const cases: Omit<Req, "path">[] = [{}, { cookie: "spxn-locale=fr" }, { acceptLanguage: "ja" }, { query: { q: "x", view: "y" } }];
@@ -355,11 +355,14 @@ test("resolvePageDestination matches the rewrite table (src/proxy.ts uses it for
 test("the proxy rewrites public pages and leaves reserved first segments alone", () => {
   const text = readFileSync(join(SRC, "proxy.ts"), "utf8");
   assert.match(text, /resolvePageDestination/);
-  assert.match(text, /export function proxy/);
+  assert.match(text, /export async function proxy/);
   assert.match(text, /matcher:\s*\[/);
-  for (const root of ["api/", "_next/", "surface/", "admin", "login", "tickets", "brand/", "favicon"]) {
-    assert.match(text, new RegExp(root.replace(/[.*]/g, "\\$&")), root);
-  }
+  // The invite-only gate (lib/invite) must see every request, so the matcher lists only what never needs a decision; the reserved first segments are
+  // left alone by resolvePageDestination itself (the test above covers each one).
+  assert.match(text, /decideGate/);
+  assert.match(text, /siteClosed\(process\.env\)/);
+  assert.match(text, /_next\/static\//);
+  for (const root of RESERVED_ROOTS) assert.equal(resolvePageDestination(`/${root}/x`, new URLSearchParams(), null, null), null, root);
 });
 
 test("Link prefetch is off by default so a long table stays under the firewall; the header menu turns it on", () => {

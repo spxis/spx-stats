@@ -6,6 +6,7 @@ import { authEnabled, googleConfigured } from "@/lib/auth/config";
 import { loopbackRequest, previewSignInEnabled } from "@/lib/auth/preview";
 import { safeDestination } from "@/lib/auth/redirect";
 import { currentUser } from "@/lib/auth/user";
+import { siteClosed } from "@/lib/invite/rules";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Sign in", robots: { index: false, follow: false } };
@@ -14,6 +15,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (!authEnabled()) notFound();
   const { next, error } = await searchParams;
   const destination = safeDestination(next);
+  // While the site is closed (lib/invite/rules.ts) the one place to sign in is the invite page, which also tells a refused account why.
+  if (siteClosed(process.env)) redirect(`/invite-only?next=${encodeURIComponent(destination)}${error ? "&error=denied" : ""}`);
   if (await currentUser()) redirect(destination);
   // Only the DS1 preview, and only for a request sent to a loopback host, offers the sign-in that needs no Google client.
   const preview = previewSignInEnabled(process.env) && loopbackRequest(await headers());

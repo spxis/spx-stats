@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.152.0",
+  "version": "0.153.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -44,6 +44,7 @@
     "test:na": "node --test scripts/northAmerica.test.ts",
     "test:range": "node --test scripts/listRange.test.ts",
     "test:routing": "node --test scripts/routing.test.ts",
+    "test:invite": "node --conditions=react-server --test scripts/invite.test.ts",
     "test:seasons": "node --test scripts/gameSeasons.test.ts scripts/gamesCodec.test.ts",
     "test:failure": "node --test scripts/apiFailure.test.ts",
     "test:streaks": "node --test scripts/streaks.test.ts scripts/seasonBoxes.test.ts",

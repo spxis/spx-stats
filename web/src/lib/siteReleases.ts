@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.153.0", date: "2026-10-19",
+    title: "Invite-only access",
+    text: "While the site is closed, every page needs a Google sign-in from an invited address. Anyone else sees a short invite page and no data. Admins keep an invite list." },
   { version: "0.152.0", date: "2026-10-19", href: "/nhl/2023-24",
     title: "Standings race chart",
     text: "Each season page now draws how the league's standings changed week by week, one line per club. Point at a line to see a club's place and record, press it to follow it, or open the table of ranks." },

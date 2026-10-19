@@ -16,6 +16,7 @@ const ADMIN_PAGES = [
   ["/admin/ops", "Ops (read only here)"],
   ["/admin/runs", "Run log and alerts (read only here)"],
   ["/admin/logos", "Logos to review"],
+  ["/admin/invites", "Invite list (read only here)"],
 ] as const;
 
 /** Local testing page for agents. A 404 unless `next dev` runs with SPXN_DEV_LOGIN=1 and the request names localhost (lib/auth/preview.ts, devLogin). */

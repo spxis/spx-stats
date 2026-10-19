@@ -89,7 +89,7 @@
 @layer components {
   /* The one control size (--control-h): height and a centred single line; the sideways padding stays with each control. */
   select, input[type="search"], .theme, .signin-link, .usermenu-btn, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a, .seasonnav select,
-  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visiteditor input, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .tk-filters input[type="search"], .tk-filters select, .filter-reset {
+  .venuefilters .chip, .sbox > button, .visittoolrow button, .visiteditor button, .visitedit, .visiteditor input, .visitbtn, .cmpbtn, .pickbtn, .tk-chips a, .tk-filters input[type="search"], .tk-filters input[type="text"], .tk-filters select, .filter-reset {
     box-sizing: border-box; height: var(--control-h); padding-block: 0; line-height: 1;
   }
   .theme, .signin-link, .dayarrow, .dp-btn, .todaybtn, .months .mo, .calhead .nav, .monthchips button, .seasonnav a,

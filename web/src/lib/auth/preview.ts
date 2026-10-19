@@ -17,6 +17,9 @@ type Headers = { get(name: string): string | null };
 /** The fallback admin when neither SPX_PREVIEW_ADMIN nor ADMIN_EMAILS names one: the owner's address, which AGENTS.md already publishes as the commit address. */
 export const DEFAULT_PREVIEW_ADMIN = "john@spxis.com";
 
+/** The key the dev sign-in signs its throwaway session with when no AUTH_SECRET is set (never in a production build: devLogin is false there). */
+export const DEV_SECRET = "dev-sign-in-not-a-secret";
+
 /** The fake admin of the dev sign-in: a reserved address that is not a real mailbox. */
 export const DEV_ADMIN = "dev-admin@example.invalid";
 

@@ -12,6 +12,10 @@
 # that lookup) and exits 1. A caller must then NOT prune old deployments: the previous one is the way back.
 # A browser User-Agent is sent: Vercel bot protection answers 429 to bare curl, which is not a missing sign-in control. HTTP 429 is skipped,
 # never treated as a rollback.
+# The site is invite only while closed (web/src/lib/invite): a request without a session gets a short refusal page marked data-site-gate="closed". With
+# the protection-bypass secret (env VERCEL_AUTOMATION_BYPASS_SECRET, else the keychain item `spx-stats VERCEL_AUTOMATION_BYPASS_SECRET`; sent only to
+# --url) the gate lets the request through and check 2 runs as before. Without it, the marker proves the gate answered and check 2 is reported as
+# skipped, not failed.
 # Settings for tests: SPX_LIVE_URL (the default for --url), SPX_VERCEL_SCOPE.
 
 SCOPE="${SPX_VERCEL_SCOPE:-spxis-projects-0d6306b4}"
@@ -22,7 +26,7 @@ while [ $# -gt 0 ]; do
     --url) URL="${2:-}"; shift ;;
     --new) NEW="${2:-}"; shift ;;
     --skip-list) LIST=0 ;;
-    -h|--help) sed -n '2,16p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown option: $1"; exit 2 ;;
   esac
   shift
@@ -46,6 +50,12 @@ previous_url() {
 problems=()
 skipped=0
 
+# The gate's bypass header, when a secret is at hand (never printed).
+BYPASS="${VERCEL_AUTOMATION_BYPASS_SECRET:-}"
+[ -z "$BYPASS" ] && command -v security >/dev/null 2>&1 && BYPASS="$(security find-generic-password -s 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' -w 2>/dev/null)"
+bypass_args=()
+[ -n "$BYPASS" ] && bypass_args=(-H "x-vercel-protection-bypass: $BYPASS")
+
 providers="$(curl -s -m 20 -A "$UA" -w '\n%{http_code}' "$URL/api/auth/providers" 2>/dev/null)"
 code="${providers##*$'\n'}"; body="${providers%$'\n'*}"
 if [ "$code" = 429 ]; then say "skip $URL/api/auth/providers HTTP 429 (rate limit; not a sign-in failure)"; skipped=1
@@ -53,10 +63,12 @@ elif [ "$code" != 200 ]; then problems+=("$URL/api/auth/providers answered HTTP 
 elif ! printf '%s' "$body" | grep -q '"google"'; then problems+=("$URL/api/auth/providers answered 200 but does not list google")
 fi
 
-home="$(curl -s -m 30 -A "$UA" -w '\n%{http_code}' "$URL/" 2>/dev/null)"
+home="$(curl -s -m 30 -A "$UA" ${bypass_args[@]+"${bypass_args[@]}"} -w '\n%{http_code}' "$URL/" 2>/dev/null)"
 code="${home##*$'\n'}"; body="${home%$'\n'*}"
 if [ "$code" = 429 ]; then say "skip $URL/ HTTP 429 (rate limit; not a sign-in failure)"; skipped=1
 elif [ "$code" != 200 ]; then problems+=("$URL/ answered HTTP ${code:-none}")
+elif printf '%s' "$body" | grep -q 'data-site-gate="closed"' && ! printf '%s' "$body" | grep -q 'class="signin-link"'; then
+  say "skip $URL/ answered the invite-only gate (no bypass secret here, so the home page's sign-in control was not checked)"; skipped=1
 elif ! printf '%s' "$body" | grep -q 'class="signin-link"'; then problems+=("$URL/ has no sign-in control in its HTML (the pages were built signed-out)")
 fi
 

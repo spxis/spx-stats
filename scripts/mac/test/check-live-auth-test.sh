@@ -72,6 +72,11 @@ serve 200 '{"google":{"id":"google"}}' "$GOOD_HOME" 429
 out="$(run --skip-list)"; rc=$?
 [ $rc = 0 ] && echo "$out" | grep -q "ok" && ok "home HTTP 429 is skipped, not a rollback" || bad "home 429 skip ($rc): $out"
 
+# The invite-only gate answers with its marked refusal page: the site is closed, which is not a missing sign-in control.
+serve 200 '{"google":{"id":"google"}}' '<!doctype html><html lang="en" data-site-gate="closed"><body><a href="/invite-only">Sign in</a></body></html>'
+out="$(run --skip-list)"; rc=$?
+[ $rc = 0 ] && echo "$out" | grep -q "invite-only gate" && ok "the closed site's gate page is skipped, not a rollback" || bad "gate page skip ($rc): $out"
+
 # The build assertion of deploy-prebuilt.sh: the kept home page in the build output must carry the sign-in control.
 mkdir -p "$TMP/out/.vercel/output/functions/en"
 printf '%s' "$GOOD_HOME" > "$TMP/out/.vercel/output/functions/en/s.prerender-fallback.html"
