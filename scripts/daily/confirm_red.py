@@ -34,9 +34,9 @@ def max_requests(env=None):
     except ValueError: return 5
 
 
-def candidates(games):
-    """NHL final games whose result only one source gave, or sources disagree on, newest day first."""
-    out = [g for g in games if g.get("league") == "nhl" and g["status"] == "final" and g["confidence"] in ("single", "disputed")]
+def candidates(games, league="nhl"):
+    """A league's final games whose result only one source gave, or sources disagree on, newest day first."""
+    out = [g for g in games if g.get("league") == league and g["status"] == "final" and g["confidence"] in ("single", "disputed")]
     return sorted(out, key=lambda g: g["date"], reverse=True)
 
 
@@ -78,9 +78,9 @@ def judge(game, payload):
     return "unavailable"
 
 
-def row(game, outcome, now):
+def row(game, outcome, now, source=SOURCE):
     return dict(entity_kind="game", game_ref=game["source_key"], league=game["league"], season=game["season"], field="score",
-                outcome=outcome, status=STATUS[outcome], source=SOURCE, checked_at=now.isoformat(timespec="seconds"))
+                outcome=outcome, status=STATUS[outcome], source=source, checked_at=now.isoformat(timespec="seconds"))
 
 
 def confirm(games, limiter=None, http=None, env=None, now=None, log=print):

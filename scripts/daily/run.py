@@ -16,15 +16,15 @@ What a run does (see README.md):
      an independent second source for MLB and NFL games; one request at a time, 13 s apart, whatever the sport)
   5. compare with DS1's core.game and print the summary. A dry run writes nothing; --apply writes to DS1 (never production).
 
-Forbidden sources (never fetched, even to test): NBA.com / cdn.nba.com, NFL.com, cfl.ca, Yahoo, ESPN, Sports Reference, newspapers
-and TV sites. NHL API, MLB statsapi, stats.nba.com and the PWHL feed are confirm-only (confirm_red.py, DAILY_CONFIRM_RED=1): read to
-confirm, never stored.
+Forbidden sources (never fetched, even to test): NBA.com / cdn.nba.com, NFL.com, cfl.ca, ESPN, Sports Reference, newspapers
+and TV sites. NHL API, MLB statsapi, stats.nba.com, the PWHL feed, Yahoo Sports and USA TODAY are confirm-only (confirm_red.py, confirm_sites.py,
+DAILY_CONFIRM_RED=1): read to confirm, never stored.
 """
 import argparse, collections, csv, datetime, hashlib, io, json, os, re, sys, time, urllib.error, urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import balldontlie as B, bdlsports as S, confirm_red as CR, games as G, limiter as LM, parsers as P, sources as SRC, teams as T, wikiapi as W
+import balldontlie as B, bdlsports as S, confirm_red as CR, confirm_sites as CS, games as G, limiter as LM, parsers as P, sources as SRC, teams as T, wikiapi as W
 
 CACHE = os.path.expanduser(os.environ.get("SPX_DAILY_CACHE", "~/Library/Caches/spx-stats-daily"))
 LEAGUES = ["nhl", "nba", "mlb", "nfl", "cfl"]
@@ -332,12 +332,25 @@ def run(a, result):
         print("%s FAILED while reading its sources; the other leagues go on: %s" % (lg.upper(), league_errors[lg]))
     W.save_state(a.state, state)
     built = [lg for lg in leagues if lg not in league_errors]
-    if CR.enabled() and not a.offline and "nhl" in all_games:
-        rows, summary = CR.confirm(all_games["nhl"])
-        if summary:
-            print("\n== Confirm-only check of NHL results (nothing stored but the outcome) ==\n%s" % ", ".join("%s %s" % (k.replace("_", " "), v) for k, v in summary.items()))
+    if CR.enabled() and not a.offline:
+        rows = []
+        if "nhl" in all_games:
+            rows, summary = CR.confirm(all_games["nhl"])
+            if summary:
+                print("\n== Confirm-only check of NHL results (nothing stored but the outcome) ==\n%s" % ", ".join("%s %s" % (k.replace("_", " "), v) for k, v in summary.items()))
+                result.update(red_confirm=summary)
+        site_rows, site_summary = CS.confirm(all_games)
+        if site_summary:
+            print("\n== Confirm-only check of Yahoo Sports and USA TODAY (nothing stored but the outcome) ==")
+            for src, summ in site_summary.items(): print("%-13s %s" % (src, ", ".join("%s %s" % (k.replace("_", " "), v) for k, v in summ.items())))
+            result.update(confirm_sites=site_summary)
+        rows += site_rows
+        if rows:
+            comb = CS.combine(rows)
+            early = sum(1 for c in comb.values() if c["early"])
+            print("confirm-only sources agree on %d of %d games asked about (two or more agree, none disagrees)" % (early, len(comb)))
+            result.update(confirm_early=early, confirm_asked=len(comb))
             if writing: CR.save(rows, CACHE)
-            result.update(red_confirm=summary)
     print("\n== Wikipedia pages ==")
     for lg in built:
         r = report[lg]

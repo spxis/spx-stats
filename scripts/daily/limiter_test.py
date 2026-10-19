@@ -37,8 +37,8 @@ def test_registry():
     tier = lambda t: {i for i, s in SRC.SOURCES.items() if s["tier"] == t}
     check({"wikipedia", "wikidata", "nflverse", "retrosheet", "lahman", "balldontlie", "osm", "cfbd", "odds_api"} == tier("green"), "registry: the green seed is John's list of 2026-10-19")
     check({"wnba_stats", "hockeytech", "cfl_api", "ncaa_stats", "fangraphs", "transfermarkt"} == tier("grey"), "registry: the grey seed is John's list")
-    check({"nhl_api", "pwhl_hockeytech", "mlb_statsapi", "nba_stats"} == tier("red-confirm"), "registry: the confirm-only seed (NHL APIs, PWHL feed, MLB statsapi, stats.nba.com)")
-    check({"nhl_com", "mlb_com", "nba_com", "nfl_com", "cfl_ca", "espn", "sports_reference", "yahoo", "news_tv", "nwsl", "cpl"} <= tier("red"), "registry: the red seed (the websites, ESPN, Sports Reference and the rest of section 3; ESPN and Sports Reference are never confirm-only)")
+    check({"nhl_api", "pwhl_hockeytech", "mlb_statsapi", "nba_stats", "yahoo_sports", "usatoday"} == tier("red-confirm"), "registry: the confirm-only seed (NHL APIs, PWHL feed, MLB statsapi, stats.nba.com, Yahoo Sports, USA TODAY)")
+    check({"nhl_com", "mlb_com", "nba_com", "nfl_com", "cfl_ca", "espn", "sports_reference", "news_tv", "nwsl", "cpl"} <= tier("red"), "registry: the red seed (the websites, ESPN, Sports Reference and the rest of section 3; ESPN and Sports Reference are never confirm-only)")
     check(all(SRC.SOURCES[i]["notes"] and SRC.SOURCES[i]["daily_cap"] for i in tier("grey")) and not any(SRC.SOURCES[i]["default"] for i in tier("grey")), "registry: grey sources carry notes and a daily cap and are never defaults")
     check(SRC.SOURCES["balldontlie"]["spacing"] == 13 and SRC.SOURCES["wikipedia"]["spacing"] > 0 and SRC.SOURCES["balldontlie"]["ttl"] == 60, "registry: balldontlie 13 s apart, answers kept 60 s")
     import balldontlie as B

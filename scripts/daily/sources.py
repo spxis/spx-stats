@@ -12,7 +12,7 @@ requests, one request at a time), how long a fetched answer is reused (`ttl`), w
             "grey area" marker with the notes.
     red     the terms forbid it, or AGENTS.md section 3 bars it: never fetched, not even to test.
     red-confirm  a red source John allowed to be READ to confirm a result other sources gave (2026-10-19; NHL APIs, MLB statsapi, stats.nba.com,
-            PWHL feed). Only purpose "confirm" (limiter.confirm), through the same limiter, and NEVER stored: no cache, no archive, no copied value,
+            PWHL feed, Yahoo Sports and USA TODAY scoreboards). Only purpose "confirm" (limiter.confirm), through the same limiter, and NEVER stored: no cache, no archive, no copied value,
             only an outcome (agrees, disagrees, unavailable). Never selectable, never a default; the admin tools show a "confirm-only" marker.
 
     python3 -I scripts/daily/sources.py [--json]      print the registry (what the source picker will list)
@@ -50,8 +50,8 @@ def _grey(id, name, hosts, leagues=(), url_contains=(), notes=""):
               notes=notes or "No terms of use found for automated collection. Tier set by John on 2026-10-19; the clause and an evidence link are to be added by the terms check.")
 
 
-def _red_confirm(id, name, reason, hosts=(), url_contains=(), evidence=None):
-    return _s(id, name, "red-confirm", reason, spacing=5, hosts=hosts, url_contains=url_contains, evidence=evidence, daily_cap=20, ttl=0,
+def _red_confirm(id, name, reason, hosts=(), url_contains=(), evidence=None, leagues=(), spacing=5):
+    return _s(id, name, "red-confirm", reason, spacing=spacing, hosts=hosts, leagues=leagues, url_contains=url_contains, evidence=evidence, daily_cap=20, ttl=0,
               notes=reason + " Confirm-only (John, 2026-10-19): read to confirm a result, never stored.")
 
 
@@ -94,6 +94,12 @@ SOURCES = {x["id"]: x for x in [
     _red_confirm("nba_stats", "stats.nba.com (confirm-only)", "NBA.com's terms forbid automated collection.", ("stats.nba.com",)),
     _red_confirm("pwhl_hockeytech", "thepwhl.com and the PWHL HockeyTech feed (confirm-only)", "The PWHL's terms forbid it; any HockeyTech request for the PWHL is this source.",
                  ("thepwhl.com", "www.thepwhl.com"), url_contains=("client_code=pwhl", "/pwhl/")),
+    _red_confirm("yahoo_sports", "Yahoo Sports scoreboards (confirm-only)",
+                 "Yahoo's Terms (section 2, member conduct) forbid it: \"access or collect data, or attempt to access or collect data, from our Services using any automated means, devices, programs, algorithms or methodologies, including but not limited to robots, spiders, scrapers, data mining tools, or data gathering or extraction tools, for any purpose without our express, prior permission.\" (read 2026-10-19).",
+                 ("sports.yahoo.com", "yahoo.com"), evidence="https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html", leagues=("nhl", "nba", "mlb", "nfl"), spacing=8),
+    _red_confirm("usatoday", "USA TODAY Sports scoreboards (confirm-only)",
+                 "USA TODAY's Terms of Service forbid it: \"use robots, spiders, scripts, code or any other automatic or manual device, tool or process to 'crawl', 'scrape', search or monitor this Site and/or access, retrieve or copy Content or related information\" (read 2026-10-19).",
+                 ("sportsdata.usatoday.com", "www.usatoday.com", "usatoday.com"), evidence="https://cm.usatoday.com/terms/", leagues=("nhl", "nba", "mlb", "nfl"), spacing=8),
     # ---- red: the terms forbid it
     _red("nhl_com", "nhl.com (the website)", "AGENTS.md section 3: NHL.com's terms bar spidering, scraping and entering NHL content into a database.", ("nhl.com", "www.nhl.com")),
     _red("mlb_com", "mlb.com (the website)", "AGENTS.md section 3: MLB's notice bars automated use.", ("mlb.com", "www.mlb.com"), evidence="http://gdx.mlb.com/components/copyright.txt"),
@@ -104,7 +110,6 @@ SOURCES = {x["id"]: x for x in [
     _red("sports_reference", "Sports Reference (hockey-, basketball-, baseball-, pro-football-reference, FBref)", "AGENTS.md section 3: never use Sports Reference; its data-use page bars scraping.",
          ("sports-reference.com", "hockey-reference.com", "basketball-reference.com", "baseball-reference.com", "pro-football-reference.com", "fbref.com", "www.fbref.com", "www.hockey-reference.com",
           "www.basketball-reference.com", "www.baseball-reference.com", "www.pro-football-reference.com"), evidence="https://www.sports-reference.com/data_use.html"),
-    _red("yahoo", "Yahoo Sports", "AGENTS.md section 3: terms forbid automated collection.", ("yahoo.com", "sports.yahoo.com")),
     _red("news_tv", "Newspapers and TV sites", "AGENTS.md section 3: their terms forbid automated collection."),
     _red("nwsl", "nwslsoccer.com", "Terms forbid automated collection.", ("nwslsoccer.com", "www.nwslsoccer.com")),
     _red("cpl", "cplsoccer.com", "Terms forbid automated collection.", ("cplsoccer.com", "www.cplsoccer.com")),

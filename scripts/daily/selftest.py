@@ -632,9 +632,15 @@ def test_confirm_red():
     for f in confirm_red_test.run_unit(): FAILS.append("confirm-only: " + f)
 
 
+def test_confirm_sites():
+    import confirm_sites_test
+    for f in confirm_sites_test.run_unit(): FAILS.append("confirm-sites: " + f)
+
+
 def run():
     test_limiter()
     test_confirm_red()
+    test_confirm_sites()
     test_runlog_hook()
     test_observation()
     test_starts()

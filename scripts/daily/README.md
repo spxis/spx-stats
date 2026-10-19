@@ -57,7 +57,7 @@ checks + 14 content batches of 10 pages); a run when nothing changed is 3 API re
 | nflverse `games.csv` (nflverse-data release `schedules`) | NFL second check | CC BY 4.0; credit "NFL data from nflverse (github.com/nflverse), CC BY 4.0." (`meta.source` code `nflverse`) |
 | balldontlie, free tier (`api.balldontlie.io/v1`, `/mlb/v1`, `/nfl/v1`, docs `docs.balldontlie.io`) | the NBA schedule and scores (second check beside the clubs' articles, and the only source for a season the articles do not carry yet); the MLB and NFL games as an independent second check | John's free account (teams and games endpoints only; never a paid endpoint, never a trial). Its terms allow storing and publishing the data (John, 2026-10-12). Credit "NBA schedule and scores from balldontlie.io". Provenance: `balldontlie@<sha256 of the archived file>`. See [balldontlie](#balldontlie-the-nba-schedule) and [MLB and NFL](#balldontlie-mlb-and-nfl-the-second-check) |
 
-**Never fetched, not even to test:** NBA.com and `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, Yahoo, ESPN, Sports Reference sites,
+**Never fetched, not even to test:** NBA.com and `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, ESPN, Sports Reference sites,
 newspapers and TV sites. Articles link to some of those (the "Recap" columns); the parsers drop external links and nothing follows them.
 
 **Confirm-only (red-confirm, John 2026-10-19; AGENTS.md section 3):** the NHL APIs, `statsapi.mlb.com`, `stats.nba.com` and the PWHL feed may be
@@ -69,6 +69,20 @@ disputed / not_found, source `nhl_api`, `checked_at`; no score, no `their_value`
 `meta.verification` needs the `core.game_id` and is a step for the coordinating session. The NHL API stays the historic source behind
 `db/build/145_nhl_from_nhlapi.sql` (data already loaded stays, credited "NHL"); the fetch scripts that store data still refuse to run.
 Tests: `python3 -I scripts/daily/confirm_red_test.py` (stub HTTP, no request).
+
+**Confirm-only: Yahoo Sports and USA TODAY** (`confirm_sites.py`, John 2026-10-19; the same rules, the same `DAILY_CONFIRM_RED=1` switch, `DAILY_CONFIRM_MAX`
+requests per source and run; `DAILY_CONFIRM_YAHOO=0` or `DAILY_CONFIRM_USATODAY=0` turns one off). NHL, NBA, MLB and NFL finals that are single-source or
+disputed; neither site carries the CFL. Yahoo: `sports.yahoo.com/<league>/scoreboard/?date=`, one request per day of games (the NFL page carries the whole
+week, so one covers it). USA TODAY: `sportsdata.usatoday.com/<sport>/<league>/scores`, one request per league and run (the page ignores a date; it carries the
+latest day, so a game on an older day is `unavailable` without a request). A page that is not final, a shootout, two games of the same clubs on one day, a
+layout we do not recognise and a missing score are all `unavailable`, never `disagrees`; redirects are not followed; a 429 or 403 stops that source. Terms
+(quoted in `sources.py`, tier red-confirm): Yahoo's Terms section 2 forbid collecting data "using any automated means, devices, programs, algorithms or
+methodologies, including but not limited to robots, spiders, scrapers ..." (https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html); USA TODAY's Terms of
+Service forbid "robots, spiders, scripts, code or any other automatic or manual device, tool or process to 'crawl', 'scrape', search or monitor this Site"
+(https://cm.usatoday.com/terms/). The outcome rows go to the same `<cache>/red-confirm.jsonl` (source `yahoo_sports` / `usatoday`); `combine()` joins them
+with the NHL API's into "N of M confirm-only sources agree" per game, and a run prints how many games have two or more agreeing and none disagreeing (those
+are the ones that could be confirmed early; nothing changes a game's confidence yet). Tests: `python3 -I scripts/daily/confirm_sites_test.py`, trimmed pages
+in `fixtures/yahoo_*.html` and `fixtures/usatoday_*.html` (two or three games each, no live request).
 
 ## Where each league's scores are (checked 2026-10-12)
 

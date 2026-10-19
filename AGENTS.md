@@ -191,7 +191,8 @@ John reads on his phone with little attention to spare, and the phone cannot cha
     `legacy_osm` and `core.brand_venue_osm`, never mixed into CC0 tables (`scripts/osm_venues/README.md`).
 - **Red sources are confirm-only** (John, 2026-10-19, replacing "no new requests, ever" of 2026-10-14; NHL.com's terms bar spidering,
   scraping and entering NHL Content into a database). Red-confirm sources: the NHL APIs (`api-web.nhle.com`, `api.nhle.com`,
-  `statsapi.web.nhl.com`), `statsapi.mlb.com`, `stats.nba.com` and the PWHL HockeyTech feed. They may be READ to CONFIRM a result other
+  `statsapi.web.nhl.com`), `statsapi.mlb.com`, `stats.nba.com`, the PWHL HockeyTech feed and the public scoreboards of Yahoo Sports and USA TODAY
+  (NHL, NBA, MLB, NFL; John, 2026-10-19; their terms forbid automated collection, so confirm-only too). They may be READ to CONFIRM a result other
   sources gave (the daily job, only when Wikipedia's result is single-source or disputed, off unless `DAILY_CONFIRM_RED=1`), a handful
   of requests through the shared limiter, and NEVER stored: no raw archive, no Dropbox copy, no `legacy_*` load, no `core` rows, no value
   copied anywhere. The only thing kept is a verification outcome (agrees, disagrees or unavailable, the source code, `checked_at`, our
