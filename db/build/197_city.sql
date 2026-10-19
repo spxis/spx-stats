@@ -9,6 +9,8 @@
 --   3. venue_nearest  else, for a club whose name is a state or province (the SPX record's region, or db/seed/place_region.csv), the nearest
 --                era with a venue in that same state or province.
 -- A season none of these places is left out and logged in meta.data_issue (entity_kind 'city_unplaced'); no city is guessed.
+-- Every club has a country though (migration 138): a season with no city takes the country on its identity (core.team_season_country, basis 'identity'),
+-- else the one country of every other club of that league season with a known country (basis 'league_season'). Both tables are emptied and filled again.
 
 drop table if exists pg_temp.seed_metro;
 create temp table seed_metro (slug text, name text, name_fr text, note text);
@@ -26,6 +28,7 @@ drop table if exists pg_temp.seed_alias;
 create temp table seed_alias (alias text, slug text, note text);
 \copy seed_alias from 'db/seed/city_alias.csv' with (format csv, header true)
 
+delete from core.team_season_country;
 delete from core.team_season_city;
 delete from ref.city_alias;
 delete from ref.city;
@@ -44,8 +47,8 @@ select core.fold_text(alias), alias, slug, nullif(note, '') from seed_alias;
 -- every team season with the city its identity names
 drop table if exists pg_temp.ts;
 create temp table ts as
-select t.team_season_id, t.franchise_id, s.league_code, s.start_year as year, make_date(s.start_year, 12, 31) as day,
-       i.location, coalesce(i.region, r.region) as iregion, a.city_slug as identity_city
+select t.team_season_id, t.franchise_id, t.season_id, s.league_code, s.start_year as year, make_date(s.start_year, 12, 31) as day,
+       nullif(i.country_code, '') as icountry, i.location, coalesce(i.region, r.region) as iregion, a.city_slug as identity_city
 from core.team_season t
 join core.season s using (season_id)
 left join core.franchise_identity i on i.franchise_identity_id = t.franchise_identity_id
@@ -91,6 +94,24 @@ left join cover c on c.team_season_id = t.team_season_id
 left join near n on n.team_season_id = t.team_season_id
 where coalesce(t.identity_city, c.city_slug, n.city_slug) is not null;
 
+-- the country of a season with no city: its identity's, else the one country every other club of that league season with a known country is in
+drop table if exists pg_temp.season_country;
+create temp table season_country as
+select t.season_id, min(coalesce(c.country_code, t.icountry)) as country_code
+from ts t
+left join core.team_season_city x on x.team_season_id = t.team_season_id
+left join ref.city c on c.slug = x.city_slug
+where coalesce(c.country_code, t.icountry) is not null
+group by t.season_id
+having count(distinct coalesce(c.country_code, t.icountry)) = 1;
+
+insert into core.team_season_country (team_season_id, country_code, basis)
+select t.team_season_id, coalesce(t.icountry, k.country_code), case when t.icountry is not null then 'identity' else 'league_season' end
+from ts t
+left join season_country k on k.season_id = t.season_id
+where not exists (select 1 from core.team_season_city c where c.team_season_id = t.team_season_id)
+  and coalesce(t.icountry, k.country_code) is not null;
+
 -- seasons that no rule placed: one line per club and run of years
 delete from meta.data_issue where entity_kind = 'city_unplaced';
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
@@ -114,4 +135,7 @@ union all select 'placed by identity', count(*) from core.team_season_city where
 union all select 'placed by venue', count(*) from core.team_season_city where basis = 'venue'
 union all select 'placed by nearest venue', count(*) from core.team_season_city where basis = 'venue_nearest'
 union all select 'not placed', (select count(*) from ts) - count(*) from core.team_season_city
+union all select 'country only by identity', count(*) from core.team_season_country where basis = 'identity'
+union all select 'country only by league season', count(*) from core.team_season_country where basis = 'league_season'
+union all select 'no city and no country', (select count(*) from ts) - (select count(*) from core.team_season_city) - (select count(*) from core.team_season_country)
 union all select 'cities with no club', count(*) from ref.city c where not exists (select 1 from core.team_season_city x where x.city_slug = c.slug);

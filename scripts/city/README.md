@@ -27,6 +27,14 @@ seasons up (`web/src/lib/cityModel.ts`, tested by `pnpm test:city`).
 4. Anything else is **not placed**: left off the city pages and logged in `meta.data_issue` (`entity_kind = 'city_unplaced'`).
    No city is guessed. A name with no row in `city_alias.csv` that is a real city is added to the file; a region is left alone.
 
+## Every club has a country (`core.team_season_country`, migration 138)
+
+A season no rule placed still gets its country, so the teams list never shows an empty country. `197_city.sql` fills `core.team_season_country`
+for exactly the seasons that are not in `core.team_season_city`: `identity` (the country on the club's identity that season), else `league_season`
+(the identity names none, and every other club of that league season with a known country is in the same one). No city is guessed from it; the
+teams list shows the flag and no place. `db/checks/094_franchise_country.sql` lists clubs (a league and a franchise) with neither a city nor a country; baseline 0.
+Locations that the loaders cut short (`Evansville Crimson`, `Portland Tho`) are added to `city_alias.csv` as spelt in the data.
+
 ## Decisions (change them in the CSVs, then rebuild)
 
 - **Brooklyn, Manhattan, the Bronx, New York City are New York.** Brooklyn was a separate city until 1898; here the borough
@@ -56,13 +64,14 @@ Run from the repo root. Raw files go outside the repo; DS1 steps go through `scr
     day=$(date +%F); raw=~/Projects/backups/spx-stats/raw/wikidata_city/$day
     python3 -I scripts/city/fetch.py $raw                       # about 25 minutes: one request each 2.5 s plus the query
     python3 -I scripts/city/make_seed.py $raw                   # writes db/seed/city_place.csv; read the CHECK lines
+    # a few new cities only: fetch.py $raw slug slug ... and make_seed.py $raw slug slug ... (the other rows of city_place.csv stay)
     python3 -I scripts/archive_raw.py wikidata_city $raw $day --sql-out archive.sql
     bash scripts/mac/ds1-apply.sh archive.sql --dry-run && bash scripts/mac/ds1-apply.sh archive.sql
     bash scripts/mac/spx-raw-export.sh --check && bash scripts/mac/spx-raw-export.sh     # the Dropbox copy
     bash scripts/mac/ds1-apply.sh db/migrations/062_city.sql --dry-run    # once
     bash scripts/mac/ds1-apply.sh db/build/197_city.sql --dry-run && bash scripts/mac/ds1-apply.sh db/build/197_city.sql
     # production only through a data release (AGENTS.md section 8; John approves at /admin/data), after the migration is applied there:
-    python3 -I scripts/release/release.py prepare --title "Cities" --tables ref.metro,ref.city,ref.city_alias,core.team_season_city
+    python3 -I scripts/release/release.py prepare --title "Cities" --tables ref.metro,ref.city,ref.city_alias,core.team_season_city,core.team_season_country
 
 `fetch.py` matches the English label inside the state or province by the ISO 3166-2 code (P300 of an administrative area the item is
 located in, P131), among human settlements. `make_seed.py` takes the item when there is one, or the one with five times the population

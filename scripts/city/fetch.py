@@ -2,7 +2,8 @@
 """Fetch the Wikidata item (CC0) of every city in db/seed/city.csv: the human settlements with that English label inside that
 state or province (P131 chain to the item whose ISO 3166-2 code, P300, is the city's region), with coordinates (P625) and population (P1082).
 Every response is saved byte for byte under <out>/<slug>.json with a line in <out>/manifest.jsonl (file, url, sha256, bytes, fetched_at).
-Usage: fetch.py [out dir]      default ~/Projects/backups/spx-stats/raw/wikidata_city/<today> ($SPX_RAW_DIR replaces the root; outside the repo)
+Usage: fetch.py [out dir [slug ...]]      default ~/Projects/backups/spx-stats/raw/wikidata_city/<today> ($SPX_RAW_DIR replaces the root; outside the repo)
+Slugs given: only those cities (a few new ones); none: every city.
 One request every 2.5 s with the project's User-Agent; backs off on 429/503. Resumable: a file that exists is kept.
 Run from the repo root. make_seed.py turns the raw files into db/seed/city_place.csv."""
 import csv, hashlib, json, os, sys, time, urllib.error, urllib.parse, urllib.request
@@ -13,7 +14,9 @@ UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)", "Accept"
 LABEL = {"new-york": "New York City"}
 # Cities that the label and region search does not find (Wikidata gives the item's region through a chain that stops short of the state):
 # the item is found by the title of its English Wikipedia article instead, which is exact.
-TITLE = {"east-rutherford": "East Rutherford, New Jersey", "jacksonville": "Jacksonville, Florida", "tampa": "Tampa, Florida"}
+TITLE = {"east-rutherford": "East Rutherford, New Jersey", "jacksonville": "Jacksonville, Florida", "tampa": "Tampa, Florida",
+         "canton": "Canton, Ohio", "hammond": "Hammond, Indiana", "haileybury": "Haileybury, Ontario", "la-rue": "La Rue, Ohio", "orange": "Orange, New Jersey",
+         "tonawanda": "Tonawanda, New York"}
 ENDPOINT ="https://query.wikidata.org/sparql"
 
 out = os.path.expanduser(sys.argv[1] if len(sys.argv) > 1 else os.environ.get("SPX_RAW_DIR", "~/Projects/backups/spx-stats/raw") + f"/wikidata_city/{date.today().isoformat()}")
@@ -58,7 +61,7 @@ def query(label, region):
 
 
 with open("db/seed/city.csv", newline="", encoding="utf-8") as f:
-    cities = list(csv.DictReader(f))
+    cities = [c for c in csv.DictReader(f) if len(sys.argv) < 3 or c["slug"] in sys.argv[2:]]
 print(len(cities), "cities")
 for c in cities:
     path = os.path.join(out, c["slug"] + ".json")

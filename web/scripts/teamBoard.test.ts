@@ -224,6 +224,16 @@ test("a team's home is the city and venue of its latest season; a team with no p
   assert.equal(latestHomes([placed(2020, 1, "nowhere")], cities).size, 0, "a city we do not hold is no home");
 });
 
+test("a club whose latest season has no city but a country shows the country alone; an older country never hides a newer city", () => {
+  const cities = [city("montreal", "CA", 45.5, -73.6), city("orlando", "US", 28.5, -81.4)];
+  const only = (year: number, f: number, cc: string) => ({ league: "nhl", year, f, cc });
+  const homes = latestHomes([placed(2002, 1, "orlando"), placed(2010, 2, "montreal")], cities, false, [only(2003, 1, "US"), only(2005, 2, "US"), only(2020, 3, "CA"), only(2001, 3, "CA")]);
+  assert.deepEqual(homes.get("nhl|1"), { cc: "US", city: "", name: "", region: "", lat: null, lon: null }, "the newer season has no city: the country only, not the old city");
+  assert.equal(homes.get("nhl|2")?.city, "montreal", "a newer placed season wins over an older country-only one");
+  assert.equal(homes.get("nhl|3")?.cc, "CA", "a club with no placed season still has its country");
+  assert.equal(latestHomes([], cities).size, 0);
+});
+
 const brands: BrandMap = {
   7: [
     { league: "nhl", franchise_id: 7, brand_from: null, brand_to: "1980-01-01", primary_hex: null, secondary_hex: null, logo_url: "old.svg", logo_licence: null, logo_page: null, source: "x", home_venue: null, latitude: null, longitude: null },

@@ -3,7 +3,7 @@ import { rows } from "./api/client";
 import { franchiseNameSchema } from "./api/schemas";
 import { teamIndexSchema } from "./api/teams";
 import { getAlignment } from "./alignmentData";
-import { getCities, getPlacements } from "./cityData";
+import { getCities, getCountryOnly, getPlacements } from "./cityData";
 import { getBrands } from "./data";
 import { logoFor } from "./brand";
 import { LEAGUES, PARENT } from "./leagues";
@@ -31,15 +31,16 @@ export interface TeamBoardData {
  * at the time the page is kept, and sent to the browser, so a visit asks the server for nothing.
  */
 export async function getTeamBoard(french: boolean): Promise<TeamBoardData> {
-  const [index, brands, names, cities, placements, ...aligned] = await Promise.all([
+  const [index, brands, names, cities, placements, countryOnly, ...aligned] = await Promise.all([
     rows("team_index", `select=${TEAM_FIELDS.join(",")}&order=name,league,franchise_id`, teamIndexSchema),
     getBrands(),
     rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from.nullsfirst", franchiseNameSchema).catch(() => []),
     getCities().catch(() => []),
     getPlacements().catch(() => []),
+    getCountryOnly().catch(() => []),
     ...LEAGUE_CODES.map((lg) => getAlignment(lg).catch(() => [])),
   ]);
-  const homes = latestHomes(placements, cities, french);
+  const homes = latestHomes(placements, cities, french, countryOnly);
   const spans = new Map<string, NameSpan[]>();
   for (const n of names) {
     const k = `${n.league}|${n.franchise_id}`;
@@ -66,7 +67,7 @@ export async function getTeamBoard(french: boolean): Promise<TeamBoardData> {
       first: t.first_season, last: t.last_season, seasons: t.seasons, titles: t.titles, share: t.share, active: t.active,
       // The logo a club wears now, or the one it wore in its last season when it is gone (the same as before).
       logo: logoIndex(logoFor(brands, t.franchise_id, t.active ? undefined : (t.last_season ?? undefined))),
-      cc: home?.cc ?? null, lat: dot(home?.lat ?? null), lon: dot(home?.lon ?? null), place: home ? `${home.name}, ${home.region}` : null,
+      cc: home?.cc ?? null, lat: dot(home?.lat ?? null), lon: dot(home?.lon ?? null), place: home?.city ? `${home.name}, ${home.region}` : null,
       places: built.get(t.league)?.places.get(t.franchise_id) ?? [],
     };
   });

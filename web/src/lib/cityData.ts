@@ -10,6 +10,7 @@ import { getBrands } from "./data";
 import { LEAGUE_CODES } from "./leagues";
 import type { Speaker } from "./i18n/i18n";
 import type { TeamPaths } from "./slug";
+import type { CountryOnly } from "./teamHome";
 import { getVenueTeams } from "./venueMap";
 import type { Pin } from "@/components/mapDraw";
 
@@ -48,6 +49,14 @@ export const getCities = cache(async (): Promise<CityRef[]> =>
 export const getPlacements = cache(async (): Promise<Placement[]> =>
   (await rows("team_season_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id", placementRow)).map((p) => ({
     league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
+  })));
+
+const countryRow = z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), country_code: z.string() });
+
+/** The country of every club season that has no city (api.team_season_country, migration 138). Throws until that view is on the server. */
+export const getCountryOnly = cache(async (): Promise<CountryOnly[]> =>
+  (await rows("team_season_country", "select=league,year,franchise_id,country_code&order=league,year,franchise_id", countryRow)).map((c) => ({
+    league: c.league, year: c.year, f: c.franchise_id, cc: c.country_code,
   })));
 
 export const getCityData = cache(async (): Promise<CityData> => {
