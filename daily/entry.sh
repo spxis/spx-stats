@@ -1,5 +1,5 @@
 #!/bin/bash
-# The daily scores job: once a day at DAILY_TIME (default 10:00) in DAILY_TZ (default America/Toronto) run
+# The daily scores job: at each time of DAILY_TIMES (default "03:00 10:00") in DAILY_TZ (default America/Toronto; DAILY_TIME, one time, still works) run
 #   scripts/daily/run.py --apply
 # which fetches the clubs' season articles from Wikipedia, cross-checks them and writes the results to DS1 only.
 # Between runs the container just sleeps: nothing is fetched, polled or connected to except at the daily run.
@@ -17,7 +17,7 @@ REPO_URL="${DAILY_REPO_URL:-https://github.com/spxis/spx-stats.git}"
 REF="${DAILY_REF:-origin/main}"
 DIR="${DAILY_REPO:-/work/repo}"
 RUN_TZ="${DAILY_TZ:-America/Toronto}"
-RUN_TIME="${DAILY_TIME:-10:00}"
+RUN_TIMES="${DAILY_TIMES:-${DAILY_TIME:-03:00 10:00}}"
 RETRY_SECS="${DAILY_RETRY_SECS:-3600}"
 MAX_TRIES="${DAILY_MAX_TRIES:-3}"
 DATA="${DAILY_DATA:-/data}"
@@ -26,7 +26,7 @@ export SPX_DAILY_CACHE="${SPX_DAILY_CACHE:-$DATA/cache}"
 mkdir -p "$DATA/logs" "$SPX_DAILY_CACHE"
 
 log() { echo "$(TZ="$RUN_TZ" date '+%Y-%m-%d %H:%M:%S %Z') daily: $*"; }
-at_epoch() { TZ="$RUN_TZ" date -d "$1 $RUN_TIME" +%s; }       # $1: today | tomorrow
+at_epoch() { TZ="$RUN_TZ" date -d "$1 $2" +%s; }       # $1: today | tomorrow, $2: HH:MM
 
 get_code() {
   if [ ! -d "$DIR/.git" ]; then
@@ -64,25 +64,30 @@ if [ "${1:-}" = "once" ]; then
   exit $?
 fi
 
-log "waiting for $RUN_TIME $RUN_TZ each day (job not started yet)"
+log "waiting for $RUN_TIMES $RUN_TZ each day (job not started yet)"
 while true; do
   now="$(date +%s)"
   today="$(TZ="$RUN_TZ" date +%F)"
-  due="$(at_epoch today)"
-  last_ok="$(cat "$DATA/last_ok" 2>/dev/null || true)"
-  tdate=""; tcount=0; tlast=0
-  [ -f "$DATA/tries" ] && read -r tdate tcount tlast < "$DATA/tries"
-  [ "$tdate" = "$today" ] || { tcount=0; tlast=0; }
-  if [ "$now" -ge "$due" ] && [ "$last_ok" != "$today" ] && [ "$tcount" -lt "$MAX_TRIES" ] && [ $((now - tlast)) -ge "$RETRY_SECS" ]; then
-    tcount=$((tcount + 1)); tlast="$now"
-    echo "$today $tcount $tlast" > "$DATA/tries"
-    if run_once; then echo "$today" > "$DATA/last_ok"; else log "try $tcount of $MAX_TRIES failed for $today"; fi
-    continue
-  fi
-  # sleep to the next thing that can happen: today's time, a retry, or tomorrow's time
-  if [ "$now" -lt "$due" ]; then wake="$due"
-  elif [ "$last_ok" != "$today" ] && [ "$tcount" -lt "$MAX_TRIES" ]; then wake=$((tlast + RETRY_SECS))
-  else wake="$(at_epoch tomorrow)"; fi
+  ran=0; wake=""
+  for slot in $RUN_TIMES; do
+    due="$(at_epoch today "$slot")"
+    last_ok="$(cat "$DATA/ok-$slot" 2>/dev/null || true)"
+    tdate=""; tcount=0; tlast=0
+    [ -f "$DATA/tries-$slot" ] && read -r tdate tcount tlast < "$DATA/tries-$slot"
+    [ "$tdate" = "$today" ] || { tcount=0; tlast=0; }
+    if [ "$now" -ge "$due" ] && [ "$last_ok" != "$today" ] && [ "$tcount" -lt "$MAX_TRIES" ] && [ $((now - tlast)) -ge "$RETRY_SECS" ]; then
+      tcount=$((tcount + 1)); tlast="$now"
+      echo "$today $tcount $tlast" > "$DATA/tries-$slot"
+      if run_once; then echo "$today" > "$DATA/ok-$slot"; else log "try $tcount of $MAX_TRIES failed for $today $slot"; fi
+      ran=1; break
+    fi
+    # the next thing that can happen for this slot: its time today, a retry, or its time tomorrow
+    if [ "$now" -lt "$due" ]; then w="$due"
+    elif [ "$last_ok" != "$today" ] && [ "$tcount" -lt "$MAX_TRIES" ]; then w=$((tlast + RETRY_SECS))
+    else w="$(at_epoch tomorrow "$slot")"; fi
+    { [ -z "$wake" ] || [ "$w" -lt "$wake" ]; } && wake="$w"
+  done
+  [ "$ran" = 1 ] && continue
   [ "$wake" -gt "$now" ] || wake=$((now + 60))
   log "sleeping until $(TZ="$RUN_TZ" date -d "@$wake" '+%Y-%m-%d %H:%M %Z')"
   sleep $((wake - now))
