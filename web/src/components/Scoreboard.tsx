@@ -13,7 +13,7 @@ import { loadScores } from "@/lib/scoresData";
 import { stripDates } from "@/lib/weekStrip";
 import { AccentStyle } from "./AccentStyle";
 import { OfficialLinks } from "./OfficialLinks";
-import { StartTime } from "./StartTime";
+import { PendingState } from "./GameState";
 import { DayStrip } from "./DayStrip";
 import { ScoresBar } from "./ScoresBar";
 import { TeamLabel } from "./TeamLabel";
@@ -45,12 +45,14 @@ function Game({ lg, g, brands, abbrs, say, upcoming }: { lg: LeagueCode; g: Game
       {side(g.away_id, g.away_f, g.away, g.away_score, away)}
       {side(g.home_id, g.home_f, g.home, g.home_score, home)}
       <div className="sinfo">
-        <span className={"sstate" + (final ? "" : " pending")}>
-          {final ? (g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")) : upcoming ? say("scores.scheduled") : say("scores.noResult")}
-        </span>
-        {!final && upcoming && g.starts_at ? (
-          <span className="stime" title={say("scores.scheduledStart")}><StartTime iso={g.starts_at} gameDate={g.game_date} /></span>
-        ) : null}
+        {final ? (
+          <span className="sstate">{g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")}</span>
+        ) : (
+          <PendingState
+            text={upcoming ? say("scores.scheduled") : say("scores.noResult")} status={g.status} startsAt={g.starts_at} gameDate={g.game_date}
+            startTitle={say("scores.scheduledStart")} withTime={upcoming}
+          />
+        )}
         {PHASE_TAG[g.phase] ? <span className="badge tag">{say(PHASE_TAG[g.phase])}</span> : null}
         <Badge src={g.source} />
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}

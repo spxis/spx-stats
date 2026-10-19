@@ -9,6 +9,7 @@ import type { Speaker } from "@/lib/i18n/i18n";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { ClubTeam, GameTuple, MonthWeek } from "@/lib/season";
 import { DatePicker } from "./DatePicker";
+import { GameState } from "./GameState";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { Rich } from "./i18n/Rich";
 import { TeamLabel } from "./TeamLabel";
@@ -28,7 +29,7 @@ export function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTupl
   const aw = fin && (as ?? 0) > (hs ?? 0), hw = fin && (hs ?? 0) > (as ?? 0);
   const nm = (id: number) => teams.get(id)?.name || "—";
   const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
-  const text = fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : say(st === "s" ? "game.scheduled" : "game.noResult");
+  const text = fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : <GameState text={say(st === "s" ? "game.scheduled" : "game.noResult")} status={st} gameDate={g[0]} />;
   return (
     <div className="game">
       <span>
@@ -58,7 +59,7 @@ function GameLine({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; tea
   const fin = st === "f";
   const nm = (id: number) => teams.get(id)?.name || "—";
   const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
-  const text = fin ? `${as}–${hs}` : say(st === "s" ? "game.scheduled" : "game.noResult");
+  const text = fin ? `${as}–${hs}` : <GameState text={say(st === "s" ? "game.scheduled" : "game.noResult")} status={st} gameDate={g[0]} />;
   return (
     <div className="glrow">
       <span className={"gaway" + (fin && (as ?? 0) > (hs ?? 0) ? " won" : "")}><TeamLabel lg={lg} f={teams.get(a)?.f} name={nm(a)} year={year} abbr={ab(a)} logo={teams.get(a)?.logo} /></span>

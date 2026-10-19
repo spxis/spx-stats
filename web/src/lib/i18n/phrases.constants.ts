@@ -374,6 +374,8 @@ export const PHRASES = {
   "game.ot": "OT",
   "game.noResult": "no result",
   "game.scheduled": "Scheduled",
+  "game.playedToCome": "Played · score to come",
+  "game.scoreToCome": "Score to come",
   "game.confirmed": "confirmed",
   "game.confirmedTitle": "Confirmed by a second source",
   "game.disputed": "disputed",

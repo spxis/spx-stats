@@ -16,6 +16,7 @@ so a string added in English alone still shows.
 - **Country names** on a team's flag (Canada, United States, Mexico) are translated as ordinary words; the flag drawings themselves have no text.
 - **Season labels** read "2010-11年シーズン" in Japanese and "Saison 2010-11" in French.
 - **Scoreboard start time.** FR "Début prévu" and JA "予定開始" for the scheduled-start tooltip. The clock itself is the reader's local time.
+- **Played, score missing.** FR "Joué · pointage à venir" / "Pointage à venir"; JA "試合済み・スコア待ち" (shiai-zumi, sukoa-machi) / "スコア待ち". Shown when a game is still marked scheduled hours after its start.
 
 - **PWHL / Walter Cup.** FR keeps the English code "PWHL" in the site description (same as NHL/NBA there) and "Coupe Walter" for the trophy and final. JA keeps "PWHL" and "ウォルター・カップ" (Walter Cup). First-pass; not reviewed.
 - **NWSL / NWSL Championship.** FR keeps the English code "NWSL" and "Championnat de la NWSL" for the trophy and final. JA keeps "NWSL" and "NWSLチャンピオンシップ" (NWSL Championship). First-pass; not reviewed.

@@ -5,6 +5,7 @@ import { notFound, permanentRedirect } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
 import { OfficialLinks } from "@/components/OfficialLinks";
 import { GameLeaders } from "@/components/GameLeaders";
+import { GameState } from "@/components/GameState";
 import { GameSurface, placeOf, type DrawnGame } from "@/components/GameSurface";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
@@ -156,7 +157,8 @@ export default guard(async function GamePage({ params }: Params) {
   const h2h = pair ? pairPath(paths, lg, fa!, fh!) : null;
 
   const standing = (s: (typeof sides)[number]) => (s.st && s.st.w != null ? tally({ w: s.st.w, l: s.st.l ?? 0, t: s.st.t ?? 0, otl: s.st.otl ?? 0 }, true) : null);
-  const verdict = !final ? state : winner == null ? say("gm.tied") : say("gm.won", { team: sides[winner].name });
+  const stateNode = !final && g.status === "scheduled" ? <GameState text={state} status={g.status} startsAt={g.starts_at} gameDate={g.game_date} form="long" /> : state;
+  const verdict = !final ? stateNode : winner == null ? say("gm.tied") : say("gm.won", { team: sides[winner].name });
   const gameNo = sg && series ? say("gm.gameN", { n: fmt(sg.n) }) : null;
   const seriesState = sg && series ? (() => {
     const [w0, w1] = sg.run;
@@ -181,7 +183,7 @@ export default guard(async function GamePage({ params }: Params) {
       <Link href={linkTo(x)} prefetch={false} className="gline">
         <span className="gd">{dt.monthDayShort(atUtc(x.game_date))}</span>
         <span className="gv">{say(home ? "gm.vs" : "gm.at", { team: opp ?? "—" })}</span>
-        {r ? <span className="gr">{chip(r)} {home ? `${x.home_score}–${x.away_score}` : `${x.away_score}–${x.home_score}`}</span> : <span className="gr note">{say("scores.scheduled")}</span>}
+        {r ? <span className="gr">{chip(r)} {home ? `${x.home_score}–${x.away_score}` : `${x.away_score}–${x.home_score}`}</span> : <span className="gr note"><GameState text={say("scores.scheduled")} status={x.status} gameDate={x.game_date} /></span>}
       </Link>
     );
   };
@@ -208,7 +210,7 @@ export default guard(async function GamePage({ params }: Params) {
   const meetingLink = (x: PairGame | null, dir: "prev" | "next") => x ? (
     <Link href={linkTo(x)} prefetch={false} className={`gnavlink ${dir}`}>
       <span className="gnavlab">{say(dir === "prev" ? "gm.prevMeeting" : "gm.nextMeeting")}</span>
-      <span className="gnavsub">{dt.monthDayShort(atUtc(x.game_date))}, {x.year === y ? "" : `${seasonLabel(lg, x.year)} · `}{pending(x) ? say("scores.scheduled") : `${x.away} ${scoreOf(x)} ${x.home}`}</span>
+      <span className="gnavsub">{dt.monthDayShort(atUtc(x.game_date))}, {x.year === y ? "" : `${seasonLabel(lg, x.year)} · `}{pending(x) ? <GameState text={say("scores.scheduled")} status={x.status} gameDate={x.game_date} /> : `${x.away} ${scoreOf(x)} ${x.home}`}</span>
     </Link>
   ) : <span className={`gnavlink off ${dir}`}><span className="gnavlab">{say(dir === "prev" ? "gm.prevMeeting" : "gm.nextMeeting")}</span><span className="gnavsub">{say("gm.noneMeeting")}</span></span>;
 
@@ -256,7 +258,7 @@ export default guard(async function GamePage({ params }: Params) {
         <h2>{say("gm.factsHead")}</h2>
         <dl className="gfacts">
           <div><dt>{say("col.date")}</dt><dd><Link href={scoresPath(lg, g.game_date)} prefetch={false}>{date}</Link></dd></div>
-          <div><dt>{say("gm.state")}</dt><dd>{state}</dd></div>
+          <div><dt>{say("gm.state")}</dt><dd>{stateNode}</dd></div>
           <div><dt>{say("gm.competition")}</dt><dd>{playoffs && series ? <>{roundDated}{gameNo ? ` · ${gameNo}` : ""}{" · "}<Link href={seriesPath(paths, lg, y, series)} prefetch={false}>{say("gm.seeSeries")}</Link></> : competition}</dd></div>
           <div>
             <dt>{say("gm.venue")}</dt>
