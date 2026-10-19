@@ -37,6 +37,11 @@ delete from meta.verification v using core.game g, core.season s
 where v.source_id = (select source_id from src) and v.entity_kind = 'game' and v.entity_id = g.game_id and s.season_id = g.season_id and s.league_code = 'nba';
 delete from meta.data_issue where source_id = (select source_id from src) and issue like 'NBA:%';
 delete from core.external_id where source_id = (select source_id from src) and entity_kind = 'game' and external_key like 'wpnba:%';
+-- A rerun keeps the number of every Wikipedia game it adds again (the site's game addresses carry it): remembered by source_key before the delete, given
+-- back on insert. Child rows (game_league_id, game_venue, ...) cascade with the delete: rerun 212, 198, 199 and 209 afterwards.
+create temp table old_game_id as
+select g.source_key, g.game_id from core.game g join core.season s on s.season_id = g.season_id
+where g.source_id = (select source_id from src) and s.league_code = 'nba';
 delete from core.game g using core.season s where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code = 'nba';
 
 -- Club names (lower case, as the article titles give them) -> franchise, by the year a season starts.
@@ -274,14 +279,16 @@ where s.game_id not in (select game_id from matched) and s.status = 'final' and 
   and exists (select 1 from nts n where n.yr = s.start_year and n.franchise_id = s.away_f and n.log_games > 0);
 
 -- Wikipedia's views that disagree with each other (two logs, two scores) are flagged on the game they made.
-insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
+insert into core.game (game_id, season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
                        home_score, away_score, went_to_overtime, round_label, source_id, source_key, notes)
-select s.season_id, n.phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
+overriding system value
+select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase, n.game_date, hts.team_season_id, ats.team_season_id, n.neutral_site, 'final',
        n.home_pts, n.away_pts, case when n.overtime then true end, n.round_name, (select source_id from src), n.key,
        case when n.conflict is not null then 'Wikipedia logs disagree: ' || n.conflict end
 from ng n join core.season s on s.league_code = 'nba' and s.start_year = n.yr
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
+left join old_game_id o on o.source_key = n.key
 where n.gid not in (select key from matched);
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'game', n.key, 'NBA: Wikipedia''s two logs disagree: ' || n.conflict,

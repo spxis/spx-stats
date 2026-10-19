@@ -12,8 +12,6 @@ values ('spx_stats_derived', 'Worked out by spx-stats', 'manual',
         'Values worked out from other sources'' data by a rule in db/build, such as a champion from the final series'' results.')
 on conflict (code) do nothing;
 
-delete from core.award;  -- cascades to names and winners
-
 create temp table catalogue (qid text, league_code text, code text, kind core.award_kind, description text);
 insert into catalogue values
  ('Q211872','nhl','nhl_stanley_cup','championship','Won by the playoff champion.'),
@@ -66,11 +64,15 @@ insert into catalogue values
  ('Q4769521','cfl','cfl_coach_of_the_year','person_award','Coach of the year (Annis Stukus Trophy).'),
  ('Q5608144','cfl','cfl_grey_cup_mvp','person_award','Most valuable player of the Grey Cup.');
 
+-- An award keeps its award_id on a rerun (names and winners hang on it): the ones in the list are updated in place, any Wikidata one the list dropped goes.
+delete from core.award a where a.source_id = (select source_id from meta.source where code = 'wikidata') and a.code not in (select code from catalogue);
 insert into core.award (league_code, code, name, kind, description, source_id)
 select c.league_code, c.code, coalesce(w.label, c.code), c.kind, c.description, (select source_id from meta.source where code = 'wikidata')
 from catalogue c
 left join lateral (select r.row->>'label' as label from legacy_wikidata.result r
-                   where r.query_name like 'award_items%' and r.row->>'item' = 'http://www.wikidata.org/entity/' || c.qid limit 1) w on true;
+                   where r.query_name like 'award_items%' and r.row->>'item' = 'http://www.wikidata.org/entity/' || c.qid limit 1) w on true
+on conflict (code) do update set league_code = excluded.league_code, name = excluded.name, kind = excluded.kind, description = excluded.description,
+  source_id = excluded.source_id;
 
 delete from core.external_id where entity_kind = 'award';
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)

@@ -13,6 +13,9 @@ create temp table src as select source_id from meta.source where code = 'nflvers
 
 delete from meta.verification where source_id = (select source_id from src);
 delete from meta.data_issue where source_id = (select source_id from src);
+-- A rerun keeps the number of every game it adds again (the site's game addresses carry it): remembered by source_key before the delete, given back
+-- on insert. Child rows (game_league_id, game_venue, ...) cascade with the delete: rerun 212, 198, 199 and 209 afterwards.
+create temp table old_game_id as select source_key, game_id from core.game where source_id = (select source_id from src);
 delete from core.game where source_id = (select source_id from src);
 delete from core.external_id where source_id = (select source_id from src);
 
@@ -94,14 +97,16 @@ select (select source_id from src), 'game', (select source_key from core.game wh
        format('SPX has %s-%s, nflverse %s-%s', m.home_score, m.away_score, m.r_h, m.r_a), 'Kept SPX''s; needs a third source'
 from matched m where m.status = 'final' and m.r_h is not null and (m.home_score <> m.r_h or m.away_score <> m.r_a);
 
-insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
+insert into core.game (game_id, season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
                        home_score, away_score, went_to_overtime, source_id, source_key)
-select s.season_id, n.phase, n.gameday, hts.team_season_id, ats.team_season_id, coalesce(n.location = 'Neutral', false),
+overriding system value
+select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase, n.gameday, hts.team_season_id, ats.team_season_id, coalesce(n.location = 'Neutral', false),
        case when n.home_score is not null then 'final' else 'scheduled' end::core.game_status, n.home_score, n.away_score, n.overtime,
        (select source_id from src), 'nflverse:' || n.game_id
 from ng n join core.season s on s.league_code = 'nfl' and s.start_year = n.season
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
+left join old_game_id o on o.source_key = 'nflverse:' || n.game_id
 where n.game_id not in (select key from matched);
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', game_id, source_id, substring(source_key from 10) from core.game where source_id = (select source_id from src)

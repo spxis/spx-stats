@@ -17,6 +17,9 @@ create temp table src as select source_id from meta.source where code = 'retrosh
 
 delete from meta.verification where source_id = (select source_id from src);
 delete from meta.data_issue where source_id = (select source_id from src);
+-- A rerun keeps the number of every Retrosheet game it adds again (the site's game addresses carry it): remembered by source_key before the delete, given
+-- back on insert. Child rows (game_league_id, game_venue, ...) cascade with the delete: rerun 212, 198, 199 and 209 afterwards.
+create temp table old_game_id as select source_key, game_id from core.game where source_id = (select source_id from src);
 delete from core.game where source_id = (select source_id from src);
 delete from core.external_id where source_id = (select source_id from src);
 
@@ -34,10 +37,13 @@ from rmap r join core.external_id e on e.entity_kind = 'franchise' and e.externa
 create temp table defunct as
 select distinct t.team_id from (select home team_id from legacy_retrosheet.game_log union select visitor from legacy_retrosheet.game_log) t
 where t.team_id not in (select team_id from legacy_retrosheet.current_name);
-delete from core.team_season where franchise_id in (select franchise_id from core.franchise where source_id = (select source_id from src));
-delete from core.franchise where source_id = (select source_id from src);
+-- A club's franchise and team seasons keep their ids on a rerun; only a club that is no longer defunct is removed.
+delete from core.team_season where franchise_id in (select franchise_id from core.franchise where source_id = (select source_id from src)
+                                                     and source_key not in (select team_id from defunct));
+delete from core.franchise where source_id = (select source_id from src) and source_key not in (select team_id from defunct);
 insert into core.franchise (sport_code, source_id, source_key)
-select 'baseball', (select source_id from src), team_id from defunct;
+select 'baseball', (select source_id from src), d.team_id from defunct d
+where not exists (select 1 from core.franchise f where f.source_id = (select source_id from src) and f.source_key = d.team_id);
 insert into fr select f.source_key, f.franchise_id from core.franchise f where f.source_id = (select source_id from src);
 
 -- Which franchise each Retrosheet team id was, by date.
@@ -141,9 +147,10 @@ select (select source_id from src), 'game', (select source_key from core.game wh
 from matched m where m.status = 'final' and (m.home_score <> m.r_h or m.away_score <> m.r_a);
 
 -- Every Retrosheet game SPX does not hold.
-insert into core.game (season_id, phase, game_date, home_team_season_id, away_team_season_id, status, home_score, away_score,
+insert into core.game (game_id, season_id, phase, game_date, home_team_season_id, away_team_season_id, status, home_score, away_score,
                        went_to_overtime, notes, source_id, source_key)
-select s.season_id, r.phase, r.game_date, hts.team_season_id, ats.team_season_id,
+overriding system value
+select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, r.phase, r.game_date, hts.team_season_id, ats.team_season_id,
        case when r.home_score is not null and r.visitor_score is not null then 'final' else 'scheduled' end::core.game_status,
        r.home_score, r.visitor_score, case when r.outs > 54 then true when r.outs is not null then false end,
        nullif(concat_ws('; ', case when r.forfeit is not null then 'Forfeit: ' || r.forfeit end,
@@ -153,6 +160,7 @@ from rg_n r
 join core.season s on s.league_code = 'mlb' and s.start_year = r.yr
 join core.team_season hts on hts.franchise_id = r.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = r.away_f and ats.season_id = s.season_id
+left join old_game_id o on o.source_key = r.key
 where r.phase <> 'all_star' and r.key not in (select key from matched) and r.home_f <> r.away_f;
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
