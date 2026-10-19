@@ -41,6 +41,9 @@ create function pg_temp.canon(lg text, lvl text, raw text) returns text[] langua
     when lg in ('afl', 'aafc', 'wha') and lvl = 'conference' then null
     when lg = 'wha' then case regexp_replace(lower(btrim(raw)), ' division$', '') when 'eastern' then array['Eastern Division', 'East'] when 'western' then array['Western Division', 'West']
                                                                       when 'canadian' then array['Canadian Division', 'Canadian'] end
+    -- the BAA and the NBA before 1970 had Eastern and Western Divisions (and a Central Division in 1949-50), not conferences
+    when lg = 'nba' and lvl = 'division' and lower(btrim(raw)) in ('east', 'west') then
+        case lower(btrim(raw)) when 'east' then array['Eastern Division', 'East'] else array['Western Division', 'West'] end
     when lg in ('afl', 'aafc') then case lower(btrim(raw)) when 'eastern' then array['Eastern Division', 'East'] when 'east' then array['Eastern Division', 'East']
                                                  when 'western' then array['Western Division', 'West'] when 'west' then array['Western Division', 'West'] end
     when lg = 'nfl' and lvl = 'conference' then case lower(btrim(raw))
@@ -159,8 +162,8 @@ select 'cfl', season, 'CFL ' || season || ' ' || regexp_replace(division, '[^A-Z
 from legacy_wikipedia_cfl.standing
 union all
 select 'nba', season, division,
-       case when division ~ ' NBA (East|West) standings$' then 'conference' else 'division' end,
-       substring(division from ' NBA (.+) standings$'), null, team, pg_temp.flat(team)
+       case when season >= 1970 and division ~ ' NBA (East|West) standings$' then 'conference' else 'division' end,   -- conferences began with 1970-71
+       substring(division from ' (?:NBA|BAA) (.+) standings$'), null, team, pg_temp.flat(team)   -- the BAA's templates read "1946-47 BAA East standings"
 from legacy_wikipedia_nba.standing
 union all  -- the NFL before 1999: the season's standings templates (step 151 loads them as legacy_wikipedia_nfl.standing; "1991 AFC East standings",
            -- and "1982 AFC standings" for the strike season, which was played without divisions)

@@ -40,6 +40,10 @@ drop table if exists pg_temp.seed_col;
 create temp table seed_col (header text, key text, kind text);
 \copy seed_col from 'db/seed/nba_stat_column.csv' with (format csv, header true)
 
+-- club names an article uses that no identity of the franchise carries
+create temp table club_alias (alias text, club text) on commit drop;
+insert into club_alias values ('New Orleans/Oklahoma City Hornets', 'New Orleans Hornets');
+
 -- ---- 1. Lines with their person and team season --------------------------------------------------------------------------------------
 create temp table ln on commit drop as
 select l.*, a.page_title, a.revid, coalesce(rd.to_qid, t.qid) as qid, t.disambiguation, t.missing,
@@ -56,11 +60,19 @@ left join legacy_rosters.wp_title t on t.title = l.link_title
 left join legacy_rosters.redirect rd on rd.from_qid = t.qid
 left join core.external_id px on px.entity_kind = 'person' and px.source_id = (select source_id from wdsrc) and px.external_key = coalesce(rd.to_qid, t.qid)
 left join lateral (
+  -- the club season whose franchise bore the article's club name that season (the identity of the season itself first); failing that, any name the franchise ever carried,
+  -- compared without punctuation (Kansas City-Omaha / Kansas City–Omaha, Steam Rollers / Steamrollers): a season whose identity row is missing or named otherwise
+  -- (Seattle 2002-07 is "Seattle", the Hornets of 2005-06 are "New Orleans/Oklahoma City") still reaches its team season, and never through the player's name
   select ts.team_season_id
   from core.season s
   join core.team_season ts on ts.season_id = s.season_id
-  join core.franchise_identity fi on fi.franchise_identity_id = ts.franchise_identity_id
-  where s.league_code = 'nba' and s.start_year = l.season and fi.full_name = l.club
+  left join core.franchise_identity fi on fi.franchise_identity_id = ts.franchise_identity_id
+  where s.league_code = 'nba' and s.start_year = l.season
+    and (fi.full_name = l.club
+         or exists (select 1 from core.franchise_identity fx
+                    where fx.franchise_id = ts.franchise_id
+                      and regexp_replace(lower(fx.full_name), '[^a-z]', '', 'g') = regexp_replace(lower(coalesce((select a.club from pg_temp.club_alias a where a.alias = l.club), l.club)), '[^a-z]', '', 'g')))
+  order by (fi.full_name = l.club) desc nulls last
   limit 1) ts on true;
 create index on ln (season, club, phase, tbl, ord);
 
