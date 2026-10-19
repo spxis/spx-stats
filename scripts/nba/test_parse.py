@@ -70,8 +70,10 @@ VISITOR_HOME = r"""
 | '''#''' || '''Date''' || '''Visitor''' || '''Score''' || '''Home''' || '''OT''' || '''Leading scorer''' || '''Attendance''' || '''Record'''
 |- align="center"  bgcolor="#bbffbb"
 | 1 || October 31, 2007 || Mavericks || 92–74 || [[Cleveland Cavaliers|Cleveland]] || NA || [[Jason Terry]] (24) || 20,562 || 1–0
-|- align="center" bgcolor="#ffcccc"
-| 2 || November 2, 2007 || Cleveland || 99–100 || [[Dallas Mavericks|Mavericks]] || OT || [[Jason Terry]] (30) || 20,000 || 1–1
+|- align="center" bgcolor="#bbffbb"
+| 2 || November 2, 2007 || Cleveland || 99–100 || [[Dallas Mavericks|Mavericks]] || OT || [[Jason Terry]] (30) || 20,000 || 2–0
+|- align="center" bgcolor="#bbffbb"
+| 3 || November 5, 2007 || [[Chicago Bulls|Bulls]] || 107–92 || Mavericks || NA || [[Jason Terry]] (30) || 20,000 || 3–0
 |}
 """
 
@@ -109,10 +111,30 @@ class Parse(unittest.TestCase):
 
     def test_visitor_home_table_settles_home_and_road(self):
         v, bad = P.parse_team_page(VISITOR_HOME, 2007, "Dallas Mavericks")
-        self.assertEqual(len(v), 2, bad)
-        a, h = v
+        self.assertEqual(len(v), 3, bad)
+        a, h, w = v
         self.assertEqual((a["loc"], a["pf"], a["pa"], a["ot"], a["opp_text"]), ("A", 92, 74, False, "Cleveland"))
         self.assertEqual((h["loc"], h["pf"], h["pa"], h["ot"], h["opp_text"]), ("H", 100, 99, True, "Cleveland"))
+        # a row marked won whose score is written winner first, whatever the header says: the colour settles the order
+        self.assertEqual((w["loc"], w["pf"], w["pa"]), ("H", 107, 92))
+
+    def test_same_side_claims_are_settled_by_the_arena(self):
+        D = datetime.date
+        def view(team, opp, loc, day, arena):
+            return dict(team=team, phase="regular", date=day, opp=[opp], opp_link=None, opp_text=opp, loc=loc, pf=1, pa=0, ot=False, flag=None, signed=True,
+                        rec=None, tpl=False, num=None, alt=None, round=None, shown=day, src=f"row | W 1-0 | [[{arena}]]")
+        # each club has six home rows at its own arena and six road rows at others'
+        sas = [view("San Antonio Spurs", "Dallas Mavericks", "H", D(2022, 11, k), "AT&T Center") for k in range(1, 7)] + \
+              [view("San Antonio Spurs", "Dallas Mavericks", "A", D(2022, 12, k), "American Airlines Center") for k in range(1, 7)]
+        wol = [view("Minnesota Timberwolves", "Dallas Mavericks", "H", D(2022, 11, k), "Target Center") for k in range(1, 7)] + \
+              [view("Minnesota Timberwolves", "Dallas Mavericks", "A", D(2022, 12, k), "American Airlines Center") for k in range(1, 7)]
+        # the game both write as a road game, one row naming Target Center
+        sas.append(dict(view("San Antonio Spurs", "Minnesota Timberwolves", "A", D(2022, 10, 26), "Target Center"), pf=0, pa=1))
+        wol.append(view("Minnesota Timberwolves", "San Antonio Spurs", "A", D(2022, 10, 26), "Target Center"))
+        games, _ = P.pair({"San Antonio Spurs": sas, "Minnesota Timberwolves": wol}, {"San Antonio Spurs", "Minnesota Timberwolves", "Dallas Mavericks"})
+        g = [x for x in games if x["date"] == D(2022, 10, 26)]
+        self.assertEqual(len(g), 1)
+        self.assertEqual((g[0]["home"], g[0]["conflict"]), ("Minnesota Timberwolves", None))
 
     def test_pair_joins_the_two_clubs_views_of_one_game(self):
         dal, _ = P.parse_team_page(VISITOR_HOME, 2007, "Dallas Mavericks")

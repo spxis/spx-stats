@@ -225,9 +225,19 @@ def parse_vh_row(cells, flag, season, phase, rnd, cols, team):
     if not m: return None
     a, b = int(m.group(1)), int(m.group(2))
     vis, home = cells[cols["vis"]], cells[cols["home"]]
-    if is_me(vis, team) and not is_me(home, team): loc, pf, pa, oc = "A", a, b, home
-    elif is_me(home, team) and not is_me(vis, team): loc, pf, pa, oc = "H", b, a, vis
+    if is_me(vis, team) and not is_me(home, team): loc, oc = "A", home
+    elif is_me(home, team) and not is_me(vis, team): loc, oc = "H", vis
     else: return None
+    # The header says the score is visitor first, but some articles print the winner's score first whatever the header says (a Spurs home win
+    # over the Lakers written 107-92 under Visitor Lakers). A row marked won or lost (its colour) settles the order; else the header does, and
+    # the record's step (the loop in parse_team_page) corrects it where the record is there.
+    hi, lo = max(a, b), min(a, b)
+    if flag in ("W", "L"):
+        pf, pa = (hi, lo) if flag == "W" else (lo, hi)
+        signed = True
+    else:
+        pf, pa = (a, b) if loc == "A" else (b, a)
+        signed = False
     target, label = link_of(clean(oc))
     ot = False
     if cols["ot"] is not None:
@@ -241,7 +251,7 @@ def parse_vh_row(cells, flag, season, phase, rnd, cols, team):
     rec = next((x.group(1) + "-" + x.group(2) for c in reversed(cells) for x in [re.fullmatch(r"\W*(\d{1,2})\s*[\u2013\-]\s*(\d{1,2})\W*", clean(c))] if x), None)
     num = intr(clean(cells[0])) if cols["date"] >= 1 and re.fullmatch(r"\W*\d{1,3}\W*", clean(cells[0])) else None
     return dict(phase=phase, round=norm_round(rnd), num=num, date=d0, alt=None, shown=d0, opp_link=target, opp_text=label, loc=loc, pf=pf, pa=pa, ot=ot,
-                flag=flag, signed=True, rec=rec, tpl=False, src=" | ".join(cells)[:400])
+                flag=flag, signed=signed, rec=rec, tpl=False, src=" | ".join(cells)[:400])
 
 def parse_row(cells, attr, season, phase, rnd, cols=None, team=None):
     flag = flag_of(attr)
@@ -336,6 +346,23 @@ def resolve(text, link, teams, me=None):
     top = max(best.values())
     return sorted(k for k, v in best.items() if v == top and k != me) or sorted(k for k, v in best.items() if v == top)
 
+def link_targets(src):
+    """The article titles a row links to, except season articles (the venue is one of them; so are the leading scorers)."""
+    return {t.strip() for t in re.findall(r"\[\[([^\]|#]+)", src or "") if not re.search(r"\bseason\b", t)}
+
+def home_arenas(views_by_team):
+    """{club: the article it most plays at}: the link that shows in the club's own home rows and not in its road rows (players show in both)."""
+    out = {}
+    for team, vs in views_by_team.items():
+        score = {}
+        for v in vs:
+            if "bullet" in v or v["phase"] != "regular" or v["loc"] not in ("H", "A"): continue
+            for t in link_targets(v["src"]): score[t] = score.get(t, 0) + (1 if v["loc"] == "H" else -1)
+        if score:
+            best = max(score, key=lambda t: score[t])
+            if score[best] >= 5: out[team] = best
+    return out
+
 def pair(views_by_team, teams):
     """Join the two clubs' views of each game. -> list of game dicts, unresolved list."""
     flat, unresolved = [], []
@@ -366,6 +393,7 @@ def pair(views_by_team, teams):
                                            for w in index.get((v["phase"], o), []))]
             v["opp"] = ok[:1] if ok else v["opp"][:1]
             if not ok: v["ambiguous"] = True
+    arenas = home_arenas(views_by_team)
     groups = {}
     for v in flat:
         groups.setdefault((v["phase"], frozenset((v["team"], v["opp"][0]))), []).append(v)
@@ -400,6 +428,17 @@ def pair(views_by_team, teams):
         for k, b in enumerate(B):
             if k not in used: pairs.append((None, b))
         for a, b in pairs:
+            if a and b and a["loc"] == b["loc"] and a["loc"] in ("H", "A"):
+                # both articles claim the same side (one writes "vs" for a road game): the venue in the rows says whose home it was
+                cand = set()
+                for v in (a, b):
+                    t, o = v["team"], v["opp"][0]
+                    tg = link_targets(v["src"])
+                    if arenas.get(t) in tg and arenas.get(o) not in tg: cand.add(t)
+                    elif arenas.get(o) in tg and arenas.get(t) not in tg: cand.add(o)
+                if len(cand) == 1:
+                    home = next(iter(cand))
+                    a = dict(a, loc="H" if a["team"] == home else "A"); b = dict(b, loc="H" if b["team"] == home else "A")
             games.append(merge(phase, a, b))
     games.sort(key=lambda g: (g["date"], g["phase"], g["home"], g["away"]))
     seen = {}
