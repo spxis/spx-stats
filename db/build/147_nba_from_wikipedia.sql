@@ -122,6 +122,12 @@ insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resoluti
 select (select source_id from src), 'game', key, format('NBA: club name not matched to a franchise: %s / %s in %s', away_team, home_team, yr), 'Game left out'
 from ng where home_f is null or away_f is null;
 delete from ng where home_f is null or away_f is null or home_f = away_f;
+-- A basketball game cannot end level. An article that prints equal scores (one writes "L 87-87") gives no result: when the other club's log had a result, the
+-- conflict rule above already took it (tie_fixed); a game still level here is left out and logged, never given a score.
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from src), 'game', key, format('NBA: Wikipedia logs give a tie, not loaded: %s %s-%s %s on %s', away_team, away_pts, home_pts, home_team, game_date), 'Game left out'
+from ng where home_pts = away_pts;
+delete from ng where home_pts = away_pts;
 
 create temp table nst as
 select s.*, s.season as yr, m.franchise_id from legacy_wikipedia_nba.standing s

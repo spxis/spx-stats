@@ -95,8 +95,9 @@ def parse_score_cell(cell, flag):
     hi, lo = max(a, b), min(a, b)
     ot = bool(re.search(r"\(\d?OT\)|\bOT\b", c))
     res = wl.upper() if wl else ("W" if flag == "W" else "L" if flag == "L" else None)
-    if res == "W": return hi, lo, ot, None, True
-    if res == "L": return lo, hi, ot, None, True
+    mixed = bool(wl and flag in ("W", "L") and wl.upper() != flag)   # the cell's own letter and the row's colour disagree: one of them is the other club's
+    if res == "W": return hi, lo, ot, None, True, mixed
+    if res == "L": return lo, hi, ot, None, True, mixed
     return a, b, ot, None, False   # no mark anywhere: as written, team first
 
 def norm_round(r):
@@ -293,7 +294,8 @@ def parse_row(cells, attr, season, phase, rnd, cols=None, team=None):
                 sc = parse_score_cell((w[0] + " " + cells[k + 1]), flag)
                 if sc: break
     if not sc: return "bad"
-    pf, pa, ot, dt, signed = sc
+    mixed = sc[5] if len(sc) > 5 else False
+    pf, pa, ot, dt, signed = sc[:5]
     rec = next((m.group(1) + "-" + m.group(2) for c in reversed(cells) for m in [re.fullmatch(r"\W*(\d{1,2})\s*[\u2013\-]\s*(\d{1,2})\W*", clean(c))] if m), None)
     try:
         d0 = datetime.date(yr if yr is not None else year_for(season, mon, phase), mon, day)
@@ -304,7 +306,7 @@ def parse_row(cells, attr, season, phase, rnd, cols=None, team=None):
     rnd = norm_round(rnd)
     num = intr(clean(cells[0])) if di >= 1 and re.fullmatch(r"\W*\d{1,3}\W*", clean(cells[0])) else None
     return dict(phase=phase, round=rnd, num=num, date=d0, alt=dt, shown=d0, opp_link=target, opp_text=label, loc=loc, pf=pf, pa=pa, ot=ot,
-                flag=flag, signed=signed, rec=rec, tpl=("NBA game" in " ".join(cells).replace("_", " ")), src=" | ".join(cells)[:400])
+                flag=flag, signed=signed, mixed=mixed, rec=rec, tpl=("NBA game" in " ".join(cells).replace("_", " ")), src=" | ".join(cells)[:400])
 
 def parse_bullet(ln, season, team, rnd):
     m = re.match(r"^\*+\s*'*\s*Game\s*\d+'*\s*(?:@|at)?\s*([^()]*?)\s*\((?:[A-Za-z]+day,\s*)?([A-Za-z]+\.?\s+\d{1,2})\)\s*:?\s*(.*)$", ln, re.I)
@@ -428,6 +430,10 @@ def pair(views_by_team, teams):
         for k, b in enumerate(B):
             if k not in used: pairs.append((None, b))
         for a, b in pairs:
+            if a and b and a["pf"] == b["pf"] and a["pa"] == b["pa"] and a["pf"] != a["pa"] and bool(a.get("mixed")) != bool(b.get("mixed")):
+                # both clubs claim the same outcome (each "won" or each "lost"): the one whose letter and colour disagree is the one that is wrong
+                if a.get("mixed"): a = dict(a, pf=a["pa"], pa=a["pf"], mixed=False)
+                else: b = dict(b, pf=b["pa"], pa=b["pf"], mixed=False)
             if a and b and a["loc"] == b["loc"] and a["loc"] in ("H", "A"):
                 # both articles claim the same side (one writes "vs" for a road game): the venue in the rows says whose home it was
                 cand = set()
