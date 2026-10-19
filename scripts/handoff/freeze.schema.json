@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "spx-stats freeze",
+  "description": "Dropbox /Projects/Handoff/<project>/FREEZE.json. Written only by the release-master. While frozen, nobody but the release-master runs ds1-apply.sh, release.py, deploy.sh or any DS1 step, and builders do not change db/build steps already handed off.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "frozen", "reason", "releases", "since", "by"],
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [1]},
+    "frozen": {"type": "boolean"},
+    "reason": {"type": "string", "maxLength": 400},
+    "releases": {"type": "array", "items": {"type": "string", "pattern": "^[0-9]{4}\\.[0-9]{2}\\.[0-9]{2}-[0-9]+$"}},
+    "since": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"},
+    "by": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,30}$"}
+  }
+}

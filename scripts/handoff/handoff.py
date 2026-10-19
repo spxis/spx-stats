@@ -26,6 +26,7 @@ import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 PROJECT = os.environ.get("SPX_HANDOFF_PROJECT", "spx-stats")
+RESERVED = ("ROLES.json", "FREEZE.json")   # coordination files (coord.py) share the folder; they are not hand-offs
 SECRET_RES = [
     re.compile(r"(?i)\b(password|passwd|token|secret|api[_-]?key)\b\s*[:=]\s*[^\s\"']{8,}"),
     re.compile(r"eyJ[A-Za-z0-9_-]{20,}"),
@@ -174,7 +175,7 @@ def waiting(d, ticket=None):
     out = []
     for n in sorted(os.listdir(d)):
         p = os.path.join(d, n)
-        if not n.endswith(".json") or not os.path.isfile(p):
+        if not n.endswith(".json") or not os.path.isfile(p) or n in RESERVED:
             continue
         if ticket and n != ticket + ".json":
             continue

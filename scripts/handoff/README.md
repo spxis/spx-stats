@@ -61,6 +61,9 @@ himself read the same folder (or ask him for the file). A later reply continues 
     handoff.py reply T --status S --by WHO --detail TEXT [--version SHA] [--deployment X] [--release N] [--checked TEXT]... [--change TEXT]
     handoff.py replies | read T | done T | sql FILE | dir
 
+`ROLES.json` and `FREEZE.json` in the same folder are coordination files, not hand-offs (`handoff.py list` skips them); the channel between sessions
+(roles, status, inbox, freeze, journal) is `coord.py`, see [docs/coordination.md](../../docs/coordination.md). Tests: `bash scripts/handoff/test/coord-test.sh`.
+
 Folder override: `SPX_HANDOFF_DIR`. Tests (no network): `bash scripts/handoff/test/handoff-test.sh`.
 
 ## deploy.sh

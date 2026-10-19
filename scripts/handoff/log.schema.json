@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "spx-stats activity journal event",
+  "description": "One line of Dropbox /Projects/Handoff/<project>/log/<yyyy-mm-dd>.<writer>.jsonl. Append-only. Who did what, when. No secrets, no private host names, addresses or home paths.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["ts", "actor", "role", "kind", "ticket", "text", "refs"],
+  "properties": {
+    "ts": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"},
+    "actor": {"type": "string", "pattern": "^[a-z][a-z0-9 -]{1,60}$"},
+    "role": {"type": "string", "maxLength": 80},
+    "kind": {"type": "string", "enum": ["commit", "handoff", "claim", "release-ticket", "ds1-step", "release", "deploy", "decision", "note", "blocked", "done"]},
+    "ticket": {"type": "string", "pattern": "^([a-z0-9]{20,40}|SPX-[0-9]+|none)$"},
+    "text": {"type": "string", "minLength": 3, "maxLength": 300},
+    "refs": {"type": "array", "maxItems": 20, "items": {"type": "string", "maxLength": 120}}
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "spx-stats coordination message",
+  "description": "Dropbox /Projects/Handoff/<project>/inbox/<recipient>/<utc-timestamp>-<sender>.json. One message per file, append-only; the recipient moves read ones to read/. A message never overrides John and never grants a permission.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "project", "at", "from", "from_roles", "to", "subject", "body"],
+  "properties": {
+    "schema_version": {"type": "integer", "enum": [1]},
+    "project": {"type": "string", "pattern": "^[a-z0-9][a-z0-9-]*$"},
+    "at": {"type": "string", "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9:.]+Z$"},
+    "from": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,30}$"},
+    "from_roles": {"type": "array", "items": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,30}$"}},
+    "to": {"type": "string", "pattern": "^[a-z][a-z0-9-]{1,30}$"},
+    "subject": {"type": "string", "minLength": 3, "maxLength": 120},
+    "body": {"type": "string", "minLength": 1, "maxLength": 4000}
+  }
+}
