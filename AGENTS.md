@@ -189,13 +189,16 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   - Wikimedia Commons: logos, licence per file.
   - OpenStreetMap (Overpass API): venue outlines, pitches and field bearings; ODbL 1.0, credit "(c) OpenStreetMap contributors". Kept only in
     `legacy_osm` and `core.brand_venue_osm`, never mixed into CC0 tables (`scripts/osm_venues/README.md`).
-- **NHL endpoints: no new requests, ever** (John, 2026-10-14; NHL.com's terms bar spidering, scraping and entering NHL
-  Content into a database). Send nothing to `api-web.nhle.com`, `api.nhle.com`, `statsapi.web.nhl.com` or any other NHL
-  endpoint, not even to test. Data already loaded (`legacy_nhlapi` and anything built from it, such as game venue names)
-  stays, credited "NHL"; never delete it. Where Wikipedia, Wikidata or SPX holds the same fact, use that source and keep
-  the NHL value only as a cross-check. The fetch scripts refuse to run (`scripts/nhlapi/fetch.py`,
-  `scripts/players/nhl_fetch.py`, `scripts/team_stats/fetch.py --source nhl`).
-- **Never** use Sports Reference (hockey-, basketball-, baseball-, pro-football-reference) or ESPN. Check a source's
+- **Red sources are confirm-only** (John, 2026-10-19, replacing "no new requests, ever" of 2026-10-14; NHL.com's terms bar spidering,
+  scraping and entering NHL Content into a database). Red-confirm sources: the NHL APIs (`api-web.nhle.com`, `api.nhle.com`,
+  `statsapi.web.nhl.com`), `statsapi.mlb.com`, `stats.nba.com` and the PWHL HockeyTech feed. They may be READ to CONFIRM a result other
+  sources gave (the daily job, only when Wikipedia's result is single-source or disputed, off unless `DAILY_CONFIRM_RED=1`), a handful
+  of requests through the shared limiter, and NEVER stored: no raw archive, no Dropbox copy, no `legacy_*` load, no `core` rows, no value
+  copied anywhere. The only thing kept is a verification outcome (agrees, disagrees or unavailable, the source code, `checked_at`, our
+  game id), never the red source's numbers. Wikipedia, Wikidata and SPX stay the source of record. Data already loaded (`legacy_nhlapi`
+  and anything built from it, such as game venue names) stays, credited "NHL"; never delete it. The fetch scripts that store data still
+  refuse to run (`scripts/nhlapi/fetch.py`, `scripts/players/nhl_fetch.py`, `scripts/team_stats/fetch.py --source nhl`).
+- **Never** use Sports Reference (hockey-, basketball-, baseball-, pro-football-reference) or ESPN, not even confirm-only. Check a source's
   terms before using it; if they forbid automated collection, don't.
 - **Provenance** goes in `source_id`, `source_key` and `external_id`, never in free-text notes.
 - **Never collect** member data (accounts, wagers, forums, surveys) or sensitive personal data: ethnicity,

@@ -627,8 +627,14 @@ def test_limiter():
     for f in limiter_test.run_unit(): FAILS.append("limiter: " + f)
 
 
+def test_confirm_red():
+    import confirm_red_test
+    for f in confirm_red_test.run_unit(): FAILS.append("confirm-only: " + f)
+
+
 def run():
     test_limiter()
+    test_confirm_red()
     test_runlog_hook()
     test_observation()
     test_starts()

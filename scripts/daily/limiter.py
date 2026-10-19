@@ -22,6 +22,11 @@ protects processes on that machine only (so does a DS1 that cannot be reached, w
     with L.slot("wikipedia", "page X") as s: ...                                       # a slot for a request the caller makes itself
     L.penalize("balldontlie", 30)                                                     # a 429: nobody asks for 30 s
 
+  Confirm-only sources (sources.py tier red-confirm: the NHL APIs and the like) have ONE entry, confirm(): it takes a place in the same queue
+  and respects the same spacing, but the answer is returned to the caller and kept nowhere: no cache read, no cache write (the stores refuse it).
+
+    answer = L.confirm("nhl_api", "score 2026-10-17", lambda: one_http_request())     # in memory only; the caller compares and discards it
+
     python3 -I scripts/daily/limiter.py status        # who is queued and who holds each source (DS1)
 """
 import contextlib, copy, json, os, random, subprocess, sys, threading, time
@@ -123,10 +128,12 @@ class MemoryStore(Store):
         return True
 
     def cache_get(self, source, key):
+        SRC.assert_storable(source)
         e = self.cache.get((source, key))
         return (self.clock() - e[0], copy.deepcopy(e[1])) if e else None
 
     def cache_put(self, source, key, value):
+        SRC.assert_storable(source)
         self.cache[(source, key)] = (self.clock(), copy.deepcopy(value))
         for k in [k for k, e in self.cache.items() if self.clock() - e[0] > CACHE_KEEP]: del self.cache[k]
 
@@ -173,11 +180,13 @@ class FileStore(Store):
             return True
 
     def cache_get(self, source, key):
+        SRC.assert_storable(source)
         with self._locked() as (d, _):
             e = d["cache"].get(source + "\x00" + key)
             return (time.time() - e["at"], e["value"]) if e else None
 
     def cache_put(self, source, key, value):
+        SRC.assert_storable(source)
         with self._locked() as box:
             d = box[0]
             d["cache"][source + "\x00" + key] = {"at": time.time(), "value": value}
@@ -225,6 +234,7 @@ class Ds1Store(Store):
         return "U" in out
 
     def cache_get(self, source, key):
+        SRC.assert_storable(source)
         out = self.run("select 'C|' || extract(epoch from now() - fetched_at)::float8 || '|' || value::text from ingest.source_cache where source = %s and key = %s;" % (_lit(source), _lit(key)))
         line = next((l for l in out.splitlines() if l.startswith("C|")), None)
         if not line: return None
@@ -232,6 +242,7 @@ class Ds1Store(Store):
         return float(age), json.loads(value)
 
     def cache_put(self, source, key, value):
+        SRC.assert_storable(source)
         self.run("insert into ingest.source_cache (source, key, value) values (%s, %s, %s::jsonb) on conflict (source, key) do update set value = excluded.value, fetched_at = now();\n"
                  "delete from ingest.source_cache where fetched_at < now() - interval '%d seconds';" % (_lit(source), _lit(key), _lit(json.dumps(value)), CACHE_KEEP))
 
@@ -260,12 +271,12 @@ class Limiter:
         self.stats = dict(hits=0, fetched=0, waited=0.0)
         self._held = threading.local()                  # sources this thread holds: a fetch() wraps a caller that takes its own slot per attempt
 
-    def _spec(self, source):
-        return SRC.require(source, self.reg)
+    def _spec(self, source, purpose="daily"):
+        return SRC.require(source, self.reg, purpose)
 
     @contextlib.contextmanager
-    def slot(self, source, label=""):
-        spec = self._spec(source)                        # the terms gate: before anyone is queued
+    def slot(self, source, label="", purpose="daily"):
+        spec = self._spec(source, purpose)                        # the terms gate: before anyone is queued
         held = self._held.__dict__.setdefault("s", set())
         if source in held:                               # already ours (fetch/fetch_many hold it): wait only for a penalty, take no second place
             while True:
@@ -314,14 +325,22 @@ class Limiter:
             held.discard(source)
             self.store.update(source, lambda st, now: (finish(st, now, spec, ticket[0], s.used, s.retry_after), None), self.sleep)
 
-    def penalize(self, source, seconds):
+    def penalize(self, source, seconds, purpose="daily"):
         """A 429 or a Retry-After: nobody (any process) asks `source` for `seconds` seconds."""
-        spec = self._spec(source)
+        spec = self._spec(source, purpose)
         self.store.update(source, lambda st, now: (finish(st, now, spec, None, True, seconds), None), self.sleep)
 
     def _fresh(self, source, key, ttl):
         hit = self.store.cache_get(source, key)
         return hit[1] if hit is not None and hit[0] <= ttl else None
+
+    def confirm(self, source, key, fn):
+        """-> the value `fn()` returns (ONE request), for a confirm-only source. Queued and spaced like any other, never cached, never stored."""
+        self._spec(source, SRC.CONFIRM_PURPOSE)
+        with self.slot(source, key, SRC.CONFIRM_PURPOSE):
+            v = fn()
+            self.stats["confirmed"] = self.stats.get("confirmed", 0) + 1
+            return v
 
     def fetch(self, source, key, fn, ttl=None, force=None):
         """-> (value, from_cache). `fn()` makes ONE request and returns a JSON-able value; it runs inside the source's slot."""

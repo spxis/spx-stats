@@ -11,6 +11,9 @@ requests, one request at a time), how long a fetched answer is reused (`ttl`), w
             manual request (purpose "daily" or "manual"), at most `daily_cap` requests a day, a handful of endpoints. The admin tools show a
             "grey area" marker with the notes.
     red     the terms forbid it, or AGENTS.md section 3 bars it: never fetched, not even to test.
+    red-confirm  a red source John allowed to be READ to confirm a result other sources gave (2026-10-19; NHL APIs, MLB statsapi, stats.nba.com,
+            PWHL feed). Only purpose "confirm" (limiter.confirm), through the same limiter, and NEVER stored: no cache, no archive, no copied value,
+            only an outcome (agrees, disagrees, unavailable). Never selectable, never a default; the admin tools show a "confirm-only" marker.
 
     python3 -I scripts/daily/sources.py [--json]      print the registry (what the source picker will list)
 
@@ -21,6 +24,7 @@ import json, os, sys
 from urllib.parse import urlsplit
 
 GREY_PURPOSES = ("daily", "manual")
+CONFIRM_PURPOSE = "confirm"
 SEED = "John Morris, 2026-10-19 (ticket cmveuseuh0006kw069tlpou4d)"
 
 
@@ -44,6 +48,11 @@ def _green(id, name, reason, spacing, hosts, leagues=(), default=False, clause="
 def _grey(id, name, hosts, leagues=(), url_contains=(), notes=""):
     return _s(id, name, "grey", "No terms found; backup or cross-check only, once a day and on manual request.", spacing=5, hosts=hosts, leagues=leagues, daily_cap=20, url_contains=url_contains,
               notes=notes or "No terms of use found for automated collection. Tier set by John on 2026-10-19; the clause and an evidence link are to be added by the terms check.")
+
+
+def _red_confirm(id, name, reason, hosts=(), url_contains=(), evidence=None):
+    return _s(id, name, "red-confirm", reason, spacing=5, hosts=hosts, url_contains=url_contains, evidence=evidence, daily_cap=20, ttl=0,
+              notes=reason + " Confirm-only (John, 2026-10-19): read to confirm a result, never stored.")
 
 
 def _red(id, name, reason, hosts=(), url_contains=(), evidence=None):
@@ -78,13 +87,17 @@ SOURCES = {x["id"]: x for x in [
     _grey("ncaa_stats", "stats.ncaa.org", ("stats.ncaa.org",)),
     _grey("fangraphs", "FanGraphs", ("www.fangraphs.com", "fangraphs.com"), ("mlb",)),
     _grey("transfermarkt", "Transfermarkt", ("www.transfermarkt.com", "transfermarkt.com")),
+    # ---- red-confirm: read to confirm a result, never stored
+    _red_confirm("nhl_api", "NHL API (confirm-only)", "NHL.com's terms bar spidering, scraping and entering NHL content into a database.",
+                 ("api-web.nhle.com", "api.nhle.com", "statsapi.web.nhl.com")),
+    _red_confirm("mlb_statsapi", "MLB statsapi (confirm-only)", "MLB's notice bars automated use.", ("statsapi.mlb.com",), evidence="http://gdx.mlb.com/components/copyright.txt"),
+    _red_confirm("nba_stats", "stats.nba.com (confirm-only)", "NBA.com's terms forbid automated collection.", ("stats.nba.com",)),
+    _red_confirm("pwhl_hockeytech", "thepwhl.com and the PWHL HockeyTech feed (confirm-only)", "The PWHL's terms forbid it; any HockeyTech request for the PWHL is this source.",
+                 ("thepwhl.com", "www.thepwhl.com"), url_contains=("client_code=pwhl", "/pwhl/")),
     # ---- red: the terms forbid it
-    _red("nhl_api", "NHL API (any NHL endpoint)", "AGENTS.md section 3: no new requests to NHL endpoints, ever; NHL.com's terms bar spidering, scraping and entering NHL content into a database.",
-         ("api-web.nhle.com", "api.nhle.com", "statsapi.web.nhl.com", "nhl.com", "www.nhl.com")),
-    _red("pwhl_hockeytech", "thepwhl.com and the PWHL HockeyTech feed", "The PWHL's terms forbid it (John, 2026-10-19); any HockeyTech request for the PWHL is refused.",
-         ("thepwhl.com", "www.thepwhl.com"), url_contains=("client_code=pwhl", "/pwhl/")),
-    _red("mlb_statsapi", "MLB statsapi", "AGENTS.md section 3: not used for scores; MLB's notice bars automated use.", ("statsapi.mlb.com", "mlb.com", "www.mlb.com"), evidence="http://gdx.mlb.com/components/copyright.txt"),
-    _red("nba_com", "NBA.com, cdn.nba.com and stats.nba.com", "AGENTS.md section 3: NBA.com's terms forbid automated collection.", ("nba.com", "www.nba.com", "cdn.nba.com", "stats.nba.com")),
+    _red("nhl_com", "nhl.com (the website)", "AGENTS.md section 3: NHL.com's terms bar spidering, scraping and entering NHL content into a database.", ("nhl.com", "www.nhl.com")),
+    _red("mlb_com", "mlb.com (the website)", "AGENTS.md section 3: MLB's notice bars automated use.", ("mlb.com", "www.mlb.com"), evidence="http://gdx.mlb.com/components/copyright.txt"),
+    _red("nba_com", "NBA.com and cdn.nba.com", "AGENTS.md section 3: NBA.com's terms forbid automated collection.", ("nba.com", "www.nba.com", "cdn.nba.com")),
     _red("nfl_com", "NFL.com", "AGENTS.md section 3: NFL.com's terms forbid automated collection.", ("nfl.com", "www.nfl.com")),
     _red("cfl_ca", "cfl.ca (the website)", "AGENTS.md section 3: cfl.ca's terms forbid automated collection.", ("cfl.ca", "www.cfl.ca")),
     _red("espn", "ESPN", "AGENTS.md section 3: never use ESPN.", ("espn.com", "www.espn.com", "site.api.espn.com", "espncdn.com"), evidence="https://disneytermsofuse.com/"),
@@ -103,16 +116,18 @@ def validate(registry):
     bad, hosts = [], {}
     for id, s in registry.items():
         t = s["tier"]
-        if t not in ("green", "grey", "red"):
+        if t not in ("green", "grey", "red", "red-confirm"):
             bad.append("%s: unknown tier %r" % (id, t))
         if t == "green":
             tm = s.get("terms") or {}
             if not (tm.get("checked_by") and tm.get("checked_on") and tm.get("clause")):
                 bad.append("%s: green without terms.checked_by, checked_on and clause" % id)
-        if t in ("green", "grey") and s["spacing"] <= 0:
+        if t in ("green", "grey", "red-confirm") and s["spacing"] <= 0:
             bad.append("%s: %s without a spacing" % (id, t))
-        if t == "grey" and not (s.get("notes") and s.get("daily_cap")):
-            bad.append("%s: grey without notes and a daily cap" % id)
+        if t in ("grey", "red-confirm") and not (s.get("notes") and s.get("daily_cap")):
+            bad.append("%s: %s without notes and a daily cap" % (id, t))
+        if t == "red-confirm" and (s["spacing"] <= 0 or s["ttl"]):
+            bad.append("%s: red-confirm needs a spacing and no cache (ttl 0)" % id)
         if s["default"] and t != "green":
             bad.append("%s: only a green source can be a default" % id)
         if not s.get("reason"):
@@ -135,8 +150,20 @@ def require(id, registry=None, purpose="daily"):
         raise SourceRefused(id, "not in the registry of sources")
     if s["tier"] == "red":
         raise SourceRefused(id, "%s (red)" % s["reason"])
+    if s["tier"] == "red-confirm" and purpose != CONFIRM_PURPOSE:
+        raise SourceRefused(id, "%s (red, confirm-only: it may be read to confirm a result and nothing else, never fetched or stored for use)" % s["reason"])
+    if purpose == CONFIRM_PURPOSE and s["tier"] != "red-confirm":
+        raise SourceRefused(id, "not a confirm-only source")
     if s["tier"] == "grey" and purpose not in GREY_PURPOSES:
         raise SourceRefused(id, "grey area (no terms found): only the daily job and manual requests may use it, not %r" % purpose)
+    return s
+
+
+def assert_storable(id, registry=None):
+    """Raise SourceRefused for a confirm-only or red source: nothing from it may be cached, archived or loaded. Called by every persistence path."""
+    s = (registry or SOURCES).get(id)
+    if s is not None and s["tier"] in ("red", "red-confirm"):
+        raise SourceRefused(id, "confirm-only or forbidden: its answers are never stored")
     return s
 
 
@@ -145,7 +172,7 @@ def for_host(host, registry=None, url=""):
     host, low = (host or "").lower().rstrip("."), (url or "").lower()
     reg = (registry or SOURCES).values()
     for s in reg:
-        if s["tier"] == "red" and any(u in low for u in s["url_contains"]):
+        if s["tier"] in ("red", "red-confirm") and any(u in low for u in s["url_contains"]):
             return s
     best, blen = None, -1
     for s in reg:
@@ -168,10 +195,11 @@ def listing(registry=None):
     """What the source picker shows: every source with its tier, `selectable` (green or grey), `grey_area` (show the marker and the notes), the reason it is greyed out when red."""
     out = []
     for s in (registry or SOURCES).values():
-        ok = s["tier"] != "red"
+        ok = s["tier"] in ("green", "grey")
+        cf = s["tier"] == "red-confirm"
         out.append(dict(id=s["id"], name=s["name"], tier=s["tier"], selectable=ok, default=bool(s["default"] and s["tier"] == "green"), grey_area=s["tier"] == "grey",
                         reason=s["reason"], notes=s["notes"], evidence=s["evidence"], leagues=list(s["leagues"]), key_needed=s["key_needed"],
-                        spacing_seconds=s["spacing"] if ok else None, cache_seconds=s["ttl"] if ok else None, daily_cap=s["daily_cap"], terms=s["terms"]))
+                        confirm_only=cf, spacing_seconds=s["spacing"] if ok or cf else None, cache_seconds=s["ttl"] if ok else None, daily_cap=s["daily_cap"], terms=s["terms"]))
     return out
 
 

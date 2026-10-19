@@ -57,11 +57,18 @@ checks + 14 content batches of 10 pages); a run when nothing changed is 3 API re
 | nflverse `games.csv` (nflverse-data release `schedules`) | NFL second check | CC BY 4.0; credit "NFL data from nflverse (github.com/nflverse), CC BY 4.0." (`meta.source` code `nflverse`) |
 | balldontlie, free tier (`api.balldontlie.io/v1`, `/mlb/v1`, `/nfl/v1`, docs `docs.balldontlie.io`) | the NBA schedule and scores (second check beside the clubs' articles, and the only source for a season the articles do not carry yet); the MLB and NFL games as an independent second check | John's free account (teams and games endpoints only; never a paid endpoint, never a trial). Its terms allow storing and publishing the data (John, 2026-10-12). Credit "NBA schedule and scores from balldontlie.io". Provenance: `balldontlie@<sha256 of the archived file>`. See [balldontlie](#balldontlie-the-nba-schedule) and [MLB and NFL](#balldontlie-mlb-and-nfl-the-second-check) |
 
-**Never fetched, not even to test:** NHL API (`api-web.nhle.com`, `api.nhle.com`), MLB statsapi, NBA.com and
-`cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, Yahoo, ESPN, Sports Reference sites, newspapers and TV sites. Articles
-link to some of those (the "Recap" columns); the parsers drop external links and nothing follows them. The NHL API stays
-as the historic source behind `db/build/145_nhl_from_nhlapi.sql` (data already loaded stays, credited "NHL"); no new request
-may go to any NHL endpoint (AGENTS.md section 3), and the fetch scripts refuse to run. The daily job must not use it.
+**Never fetched, not even to test:** NBA.com and `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, Yahoo, ESPN, Sports Reference sites,
+newspapers and TV sites. Articles link to some of those (the "Recap" columns); the parsers drop external links and nothing follows them.
+
+**Confirm-only (red-confirm, John 2026-10-19; AGENTS.md section 3):** the NHL APIs, `statsapi.mlb.com`, `stats.nba.com` and the PWHL feed may be
+read to confirm a result other sources gave, and are never stored. `confirm_red.py` does it for the NHL: only when `DAILY_CONFIRM_RED=1`, only for
+NHL finals that are single-source or disputed, one request per day of games (at most `DAILY_CONFIRM_MAX`, default 5), through the shared limiter
+(`limiter.confirm`: queued and spaced, no cache read or write; the stores and `apply.py` refuse any answer of a confirm-only source). The answer is
+compared in memory and dropped; the only thing kept is an outcome row per game (our game id, agrees / disagrees / unavailable, status confirmed /
+disputed / not_found, source `nhl_api`, `checked_at`; no score, no `their_value`) appended to `<cache>/red-confirm.jsonl`. Loading those rows into
+`meta.verification` needs the `core.game_id` and is a step for the coordinating session. The NHL API stays the historic source behind
+`db/build/145_nhl_from_nhlapi.sql` (data already loaded stays, credited "NHL"); the fetch scripts that store data still refuse to run.
+Tests: `python3 -I scripts/daily/confirm_red_test.py` (stub HTTP, no request).
 
 ## Where each league's scores are (checked 2026-10-12)
 

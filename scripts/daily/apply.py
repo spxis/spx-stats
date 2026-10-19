@@ -18,7 +18,7 @@ import datetime, hashlib, json, os, re, subprocess, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path: sys.path.insert(0, HERE)
-import games as G, teams as T
+import games as G, sources as SRC, teams as T
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DS1 = os.path.join(HERE, "ds1.sh")
 MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql", "114_game_starts_at.sql")]
@@ -153,6 +153,7 @@ def plan_load(todo, held, pages_state, raw_dir, nfl, files=()):
             claims.append(("games.csv", nfl["sha256"], "nflverse", nfl["claims"]))
     for f in files:      # another source's season file (balldontlie's games.json): kept as fetched, one page row per distinct content
         if (f["source"], f["title"], f["sha256"]) in held: continue
+        SRC.assert_storable(f["source"])
         name = "%s/%s/%s.%s.%s" % (f["source"], f["day"], f.get("stem") or "games-%d" % f["season"], f["sha256"][:12], f["ext"])
         archive.append(dict(name=name, saved_on=f["day"], sha256=f["sha256"], data=f["data"]))
         pages.append(dict(source=f["source"], league=f["league"], season=f["season"], kind="file", title=f["title"], club=None, revision=f["sha256"],

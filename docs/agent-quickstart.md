@@ -89,9 +89,9 @@ From the repo root:
 
 ## Data rules
 
-- **NHL endpoints: no new requests, ever** (`api-web.nhle.com`, `api.nhle.com`, `statsapi.web.nhl.com`), not even to test.
-  [§3](../AGENTS.md#3-what-the-project-is)
-- **Never use Sports Reference or ESPN.** [§3](../AGENTS.md#3-what-the-project-is)
+- **Red sources (NHL APIs, MLB statsapi, stats.nba.com, PWHL feed) are confirm-only:** read to confirm a result, never stored (no archive,
+  no load, no copied value; only an agrees/disagrees/unavailable outcome). [§3](../AGENTS.md#3-what-the-project-is)
+- **Never use Sports Reference or ESPN** (not even confirm-only). [§3](../AGENTS.md#3-what-the-project-is)
 - **Provenance goes in `source_id`, `source_key` and `external_id`,** never in free-text notes.
   [§3](../AGENTS.md#3-what-the-project-is)
 - **Never collect member data or sensitive personal data.** [§3](../AGENTS.md#3-what-the-project-is)
