@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Home venues for club seasons that have none, from the "stadium" field of the club-season article's infobox (English Wikipedia, CC BY-SA 4.0).
 
+  from_infobox.py --refilter db/seed/home_venue.csv    re-apply the venue rules below to the rows already in the seed
   from_infobox.py OUT_DIR            writes OUT_DIR/home_venue_infobox.csv (rows for db/seed/home_venue.csv) and OUT_DIR/report.txt
                                      OUT_DIR also keeps title_qid.json, the answers of the one batched Wikipedia query that turns each venue article into its Wikidata id
 
@@ -49,6 +50,24 @@ where name ~ '^wikipedia-(nfl|afl|aafc)/[0-9]{4}/team/[0-9]{4}_.*_season[.]wikit
 NOT_THE_VENUE = {"Q7836037": "the article 'Traveling team' is a concept, not a ground", "Q975275": "'League Field' redirects to the team's article (a team item)",
                  "Q5337815": "'Edgerton Park' resolves to the New Haven park, not Rochester's", "Q1033335": "'Canisius College' is the university's item, not its field",
                  "Q5308065": "'Driving Park' is the Columbus neighbourhood's item, not the park"}
+# db/checks/063's words for a city or place, and teams and schools: such a Wikidata item is never a venue
+PLACE = re.compile(r"(^|[; ,])(city|town|village|municipality|borough|metropolis|megacity|hamlet|suburb|neighborhood|neighbourhood|county seat|settlement|census-designated place|unincorporated community|historic district|university|college|defunct american football team|american football team|disambiguation)([; ,]|$)|(city|municipality|town|borough) (in|of) |sports competition", re.I)
+VENUE_ITEMS = """
+select qid, coalesce(array_to_string(instance_of, '; '), ''), coalesce(opened_on::text, ''), coalesce(closed_on::text, '') from legacy_game_venue.venue
+union all select source_key, '', coalesce(opened_on::text, ''), coalesce(closed_on::text, '') from core.venue where source_key like 'Q%' and source_key not in (select qid from legacy_game_venue.venue);
+"""
+
+
+def judge(y, qid, title, items):
+    """(reason it cannot be used or None, the day the venue opened when that falls inside season y else None)."""
+    if qid in NOT_THE_VENUE: return NOT_THE_VENUE[qid], None
+    cls, opened, closed = items.get(qid, ("", "", ""))
+    if PLACE.search(cls): return f"its Wikidata item is a place or team, not a venue ({cls})", None
+    if closed and closed < f"{y}-06-01": return f"the item closed {closed}, before the season (a later ground of that name?)", None
+    if opened and opened > f"{y + 1}-01-01": return f"the item opened {opened}, after the season", None
+    return None, (opened if opened and f"{y}-01-01" < opened <= f"{y + 1}-01-01" else None)
+
+
 flat = lambda x: re.sub(r"[^a-z0-9]", "", x.lower())
 
 
@@ -94,31 +113,58 @@ def main(out):
         s = stadium(t)
         if not s or not s[1]: report.append(f"{lg} {y} {name}: infobox names no venue article ({(s[0][:40] if s else 'no field')!r})"); continue
         found.append((lg, y, tsid, name, f, s[1], len(s[1]) > 1))
+    items = {r[0]: (r[1], r[2], r[3]) for r in sql(VENUE_ITEMS)}
     q = qids({t for r in found for t in r[5][:1]}, os.path.join(out, "title_qid.json"))
     rows, grouped = [], {}
     for lg, y, tsid, name, f, links, many in sorted(found, key=lambda r: (r[0], r[4], r[1])):
         qid = q.get(links[0])
         if not qid: report.append(f"{lg} {y} {name}: venue article {links[0]!r} has no Wikidata item"); continue
-        if qid in NOT_THE_VENUE: report.append(f"{lg} {y} {name}: {links[0]!r} left out: {NOT_THE_VENUE[qid]}"); continue
-        grouped.setdefault((lg, f, name, qid, links[0]), []).append((y, many))
+        why, opened_in = judge(y, qid, links[0], items)
+        if why: report.append(f"{lg} {y} {name}: {links[0]!r} left out: {why}"); continue
+        grouped.setdefault((lg, f, name, qid, links[0]), []).append((y, many, opened_in))
     for (lg, f, name, qid, title), ys in sorted(grouped.items()):
         ys.sort()
         run = [ys[0]]
-        for y, many in ys[1:]:
-            if y == run[-1][0] + 1: run.append((y, many))
-            else: rows.append((lg, name, qid, title, run)); run = [(y, many)]
+        for y, many, op in ys[1:]:
+            if y == run[-1][0] + 1: run.append((y, many, op))
+            else: rows.append((lg, name, qid, title, run)); run = [(y, many, op)]
         rows.append((lg, name, qid, title, run))
     w = csv.writer(open(os.path.join(out, "home_venue_infobox.csv"), "w", encoding="utf-8", newline=""), lineterminator="\n")
     w.writerow(["league", "franchise", "qid", "from", "until", "source", "source_url", "note"])
     for lg, name, qid, title, run in rows:
         y0, y1 = run[0][0], run[-1][0]
-        note = f"Infobox stadium of the club-season article{'s' if y1 > y0 else ''} {y0}" + (f"-{y1}" if y1 > y0 else "") + f": {title}" + ("; the infobox names more than one venue, the first is used" if any(m for _, m in run) else "")
+        start = run[0][2] or f"{y0}-01-01"   # a venue that opened during its first season: from the day it opened
+        note = f"Infobox stadium of the club-season article{'s' if y1 > y0 else ''} {y0}" + (f"-{y1}" if y1 > y0 else "") + f": {title}" + ("; the infobox names more than one venue, the first is used" if any(r[1] for r in run) else "")
         club = name.replace(" ", "_")
-        w.writerow([lg, name, qid, f"{y0}-01-01", f"{y1 + 1}-01-01", "wikipedia", f"https://en.wikipedia.org/wiki/{y0}_{club}_season", note])
+        w.writerow([lg, name, qid, start, f"{y1 + 1}-01-01", "wikipedia", f"https://en.wikipedia.org/wiki/{y0}_{club}_season", note])
     open(os.path.join(out, "report.txt"), "w", encoding="utf-8").write("\n".join(report) + "\n")
     print(f"{len(gaps)} club seasons without a home venue; {len(found)} with a venue article; {len(rows)} seed rows; {len(report)} left out (report.txt)")
 
 
+def refilter(path):
+    """Apply the same rules to the rows this script already wrote into db/seed/home_venue.csv (note 'Infobox stadium ...'): drop a row whose venue is a place, team
+    or school, or whose dates cannot hold the season; start a row the day its venue opened when that falls inside its first season. Rewrites the file."""
+    items = {r[0]: (r[1], r[2], r[3]) for r in sql(VENUE_ITEMS)}
+    rows = list(csv.reader(open(path, encoding="utf-8")))
+    head, body, dropped = rows[0], rows[1:], []
+    out = [head]
+    for r in body:
+        d = dict(zip(head, r))
+        if not d["note"].startswith("Infobox stadium"): out.append(r); continue
+        y0, y1 = int(d["from"][:4]), int(d["until"][:4]) - 1
+        why = None; start = d["from"]
+        for y in range(y0, y1 + 1):
+            w, op = judge(y, d["qid"], "", items)
+            if w: why = f"{y}: {w}"; break
+            if y == y0 and op: start = op
+        if why: dropped.append(f"{d['league']} {d['franchise']} {d['from']}..{d['until']} {d['qid']} dropped: {why}"); continue
+        r[head.index("from")] = start; out.append(r)
+    csv.writer(open(path, "w", encoding="utf-8", newline=""), lineterminator="\n").writerows(out)
+    print(f"{len(body)} rows read, {len(dropped)} dropped")
+    print("\n".join(dropped))
+
+
 if __name__ == "__main__":
-    if len(sys.argv) != 2: sys.exit(__doc__)
-    main(os.path.expanduser(sys.argv[1]))
+    if len(sys.argv) == 3 and sys.argv[1] == "--refilter": refilter(sys.argv[2])
+    elif len(sys.argv) == 2: main(os.path.expanduser(sys.argv[1]))
+    else: sys.exit(__doc__)

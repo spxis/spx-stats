@@ -13,3 +13,8 @@ Q589481,"Olympic stadium is a generic item with no place (no P31, P131 or P17), 
 Q8842808,"Estadio Independencia is a Wikimedia disambiguation page (P31), linked from a match box where a stadium was meant"
 Q2090,"Nuremberg is a city (P31 big city), reached from the Wikipedia link of the Frankenstadion (1974 and 2006 World Cups); the stadium is Q152599 (db/seed/soccer_venue_fix.csv)"
 Q2937412,"Citrus Bowl is a sports competition (P31), the bowl game, linked from an MLS match box where the stadium was meant; the stadium is Camping World Stadium Q199359 (db/seed/soccer_venue_fix.csv)"
+Q5308065,"'Driving Park' is the Columbus neighbourhood's item (P31 neighborhood), not the park the Columbus Tigers played in"
+Q1033335,"'Canisius College': the university's item, not its field"
+Q975275,'League Field' redirects to the Canton Bulldogs article: a team item
+Q5337815,"'Edgerton Park' resolves to the New Haven historic district, not Rochester's park"
+Q7836037,"'Traveling team' is a concept, not a ground"

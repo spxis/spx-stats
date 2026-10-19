@@ -336,7 +336,7 @@ afl,Miami Dolphins,Q619512,1966-01-01,1970-01-01,wikipedia,https://en.wikipedia.
 afl,Boston Patriots,Q3339834,1960-01-01,1963-01-01,wikipedia,https://en.wikipedia.org/wiki/1960_Boston_Patriots_season,"Infobox stadium of the club-season articles 1960-1962: Nickerson Field; the infobox names more than one venue, the first is used"
 afl,Boston Patriots,Q49136,1963-01-01,1969-01-01,wikipedia,https://en.wikipedia.org/wiki/1963_Boston_Patriots_season,Infobox stadium of the club-season articles 1963-1968: Fenway Park
 afl,Boston Patriots,Q598070,1969-01-01,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1969_Boston_Patriots_season,Infobox stadium of the club-season article 1969: Alumni Stadium
-afl,New York Jets,Q1056326,1964-01-01,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1964_New_York_Jets_season,Infobox stadium of the club-season articles 1964-1969: Shea Stadium
+afl,New York Jets,Q1056326,1964-04-17,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1964_New_York_Jets_season,Infobox stadium of the club-season articles 1964-1969: Shea Stadium
 afl,New York Jets,Q1276360,1963-01-01,1964-01-01,wikipedia,https://en.wikipedia.org/wiki/1963_New_York_Jets_season,Infobox stadium of the club-season article 1963: Polo Grounds
 afl,New York Titans,Q1276360,1960-01-01,1963-01-01,wikipedia,https://en.wikipedia.org/wiki/1960_New_York_Titans_season,Infobox stadium of the club-season articles 1960-1962: Polo Grounds
 afl,Cincinnati Bengals,Q3342107,1968-01-01,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1968_Cincinnati_Bengals_season,Infobox stadium of the club-season articles 1968-1969: Nippert Stadium
@@ -349,21 +349,21 @@ afl,Denver Broncos,Q1934586,1960-01-01,1961-01-01,wikipedia,https://en.wikipedia
 afl,Denver Broncos,Q1934586,1962-01-01,1963-01-01,wikipedia,https://en.wikipedia.org/wiki/1962_Denver_Broncos_season,Infobox stadium of the club-season article 1962: Mile High Stadium
 afl,Denver Broncos,Q1934586,1968-01-01,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1968_Denver_Broncos_season,Infobox stadium of the club-season articles 1968-1969: Mile High Stadium
 afl,Oakland Raiders,Q1033076,1961-01-01,1962-01-01,wikipedia,https://en.wikipedia.org/wiki/1961_Oakland_Raiders_season,Infobox stadium of the club-season article 1961: Candlestick Park
-afl,Oakland Raiders,Q1147732,1966-01-01,1967-01-01,wikipedia,https://en.wikipedia.org/wiki/1966_Oakland_Raiders_season,Infobox stadium of the club-season article 1966: Oakland–Alameda County Coliseum
+afl,Oakland Raiders,Q1147732,1966-09-18,1967-01-01,wikipedia,https://en.wikipedia.org/wiki/1966_Oakland_Raiders_season,Infobox stadium of the club-season article 1966: Oakland–Alameda County Coliseum
 afl,Oakland Raiders,Q4263361,1960-01-01,1961-01-01,wikipedia,https://en.wikipedia.org/wiki/1960_Oakland_Raiders_season,"Infobox stadium of the club-season article 1960: Kezar Stadium; the infobox names more than one venue, the first is used"
 afl,Oakland Raiders,Q5490535,1962-01-01,1966-01-01,wikipedia,https://en.wikipedia.org/wiki/1962_Oakland_Raiders_season,Infobox stadium of the club-season articles 1962-1965: Frank Youell Field
 afl,Los Angeles Chargers,Q849784,1960-01-01,1961-01-01,wikipedia,https://en.wikipedia.org/wiki/1960_Los_Angeles_Chargers_season,Infobox stadium of the club-season article 1960: Los Angeles Memorial Coliseum
 afl,San Diego Chargers,Q4850213,1966-01-01,1967-01-01,wikipedia,https://en.wikipedia.org/wiki/1966_San_Diego_Chargers_season,Infobox stadium of the club-season article 1966: Balboa Stadium
-afl,San Diego Chargers,Q956072,1967-01-01,1968-01-01,wikipedia,https://en.wikipedia.org/wiki/1967_San_Diego_Chargers_season,Infobox stadium of the club-season article 1967: San Diego Stadium
-nfl,Buffalo Bills,Q1475645,1973-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1973_Buffalo_Bills_season,Infobox stadium of the club-season article 1973: Rich Stadium
+afl,San Diego Chargers,Q956072,1967-08-20,1968-01-01,wikipedia,https://en.wikipedia.org/wiki/1967_San_Diego_Chargers_season,Infobox stadium of the club-season article 1967: San Diego Stadium
+nfl,Buffalo Bills,Q1475645,1973-08-17,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1973_Buffalo_Bills_season,Infobox stadium of the club-season article 1973: Rich Stadium
 nfl,Buffalo Bills,Q7968482,1972-01-01,1973-01-01,wikipedia,https://en.wikipedia.org/wiki/1972_Buffalo_Bills_season,Infobox stadium of the club-season article 1972: War Memorial Stadium (Buffalo)
 nfl,Miami Dolphins,Q619512,1970-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Miami_Dolphins_season,Infobox stadium of the club-season articles 1970-1973: Miami Orange Bowl
 nfl,Boston Patriots,Q1587879,1970-01-01,1971-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Boston_Patriots_season,Infobox stadium of the club-season article 1970: Harvard Stadium
-nfl,New England Patriots,Q339850,1971-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1971_New_England_Patriots_season,Infobox stadium of the club-season articles 1971-1973: Schaefer Stadium
+nfl,New England Patriots,Q339850,1971-08-15,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1971_New_England_Patriots_season,Infobox stadium of the club-season articles 1971-1973: Schaefer Stadium
 nfl,New York Jets,Q1056326,1970-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_New_York_Jets_season,Infobox stadium of the club-season articles 1970-1973: Shea Stadium
-nfl,Cincinnati Bengals,Q153824,1970-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Cincinnati_Bengals_season,Infobox stadium of the club-season articles 1970-1973: Riverfront Stadium
+nfl,Cincinnati Bengals,Q153824,1970-06-30,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Cincinnati_Bengals_season,Infobox stadium of the club-season articles 1970-1973: Riverfront Stadium
 nfl,Pittsburgh Pirates,Q1963954,1933-01-01,1940-01-01,wikipedia,https://en.wikipedia.org/wiki/1933_Pittsburgh_Pirates_season,Infobox stadium of the club-season articles 1933-1939: Forbes Field
-nfl,Pittsburgh Steelers,Q1189339,1970-01-01,1971-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Pittsburgh_Steelers_season,Infobox stadium of the club-season article 1970: Three Rivers Stadium
+nfl,Pittsburgh Steelers,Q1189339,1970-07-16,1971-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Pittsburgh_Steelers_season,Infobox stadium of the club-season article 1970: Three Rivers Stadium
 nfl,Pittsburgh Steelers,Q1963954,1940-01-01,1943-01-01,wikipedia,https://en.wikipedia.org/wiki/1940_Pittsburgh_Steelers_season,Infobox stadium of the club-season articles 1940-1942: Forbes Field
 nfl,Pittsburgh Steelers,Q1963954,1945-01-01,1958-01-01,wikipedia,https://en.wikipedia.org/wiki/1945_Pittsburgh_Steelers_season,Infobox stadium of the club-season articles 1945-1957: Forbes Field
 nfl,Pittsburgh Steelers,Q1963954,1959-01-01,1964-01-01,wikipedia,https://en.wikipedia.org/wiki/1959_Pittsburgh_Steelers_season,"Infobox stadium of the club-season articles 1959-1963: Forbes Field; the infobox names more than one venue, the first is used"
@@ -371,15 +371,15 @@ nfl,Pittsburgh Steelers,Q3389408,1958-01-01,1959-01-01,wikipedia,https://en.wiki
 nfl,Pittsburgh Steelers,Q3389408,1964-01-01,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1964_Pittsburgh_Steelers_season,Infobox stadium of the club-season articles 1964-1969: Pitt Stadium
 nfl,Baltimore Ravens,Q2748739,1996-01-01,1997-01-01,wikipedia,https://en.wikipedia.org/wiki/1996_Baltimore_Ravens_season,Infobox stadium of the club-season article 1996: Memorial Stadium (Baltimore)
 nfl,Houston Oilers,Q1025406,1970-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Houston_Oilers_season,Infobox stadium of the club-season articles 1970-1973: Houston Astrodome
-nfl,Jacksonville Jaguars,Q635117,1995-01-01,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1995_Jacksonville_Jaguars_season,Infobox stadium of the club-season article 1995: Jacksonville Municipal Stadium
+nfl,Jacksonville Jaguars,Q635117,1995-08-18,1996-01-01,wikipedia,https://en.wikipedia.org/wiki/1995_Jacksonville_Jaguars_season,Infobox stadium of the club-season article 1995: Jacksonville Municipal Stadium
 nfl,Denver Broncos,Q1934586,1970-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Denver_Broncos_season,Infobox stadium of the club-season articles 1970-1973: Mile High Stadium
-nfl,Kansas City Chiefs,Q544553,1972-01-01,1973-01-01,wikipedia,https://en.wikipedia.org/wiki/1972_Kansas_City_Chiefs_season,Infobox stadium of the club-season article 1972: Arrowhead Stadium
+nfl,Kansas City Chiefs,Q544553,1972-08-12,1973-01-01,wikipedia,https://en.wikipedia.org/wiki/1972_Kansas_City_Chiefs_season,Infobox stadium of the club-season article 1972: Arrowhead Stadium
 nfl,Kansas City Chiefs,Q6936283,1971-01-01,1972-01-01,wikipedia,https://en.wikipedia.org/wiki/1971_Kansas_City_Chiefs_season,"Infobox stadium of the club-season article 1971: Municipal Stadium (Kansas City, Missouri)"
 nfl,Dallas Cowboys,Q1136764,1960-01-01,1972-01-01,wikipedia,https://en.wikipedia.org/wiki/1960_Dallas_Cowboys_season,"Infobox stadium of the club-season articles 1960-1971: Cotton Bowl (stadium); the infobox names more than one venue, the first is used"
 nfl,Dallas Cowboys,Q601596,1972-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1972_Dallas_Cowboys_season,Infobox stadium of the club-season articles 1972-1973: Texas Stadium
 nfl,New York Giants,Q1276360,1925-01-01,1956-01-01,wikipedia,https://en.wikipedia.org/wiki/1925_New_York_Giants_season,Infobox stadium of the club-season articles 1925-1955: Polo Grounds
 nfl,New York Giants,Q675214,1956-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1956_New_York_Giants_season,"Infobox stadium of the club-season articles 1956-1973: Yankee Stadium (1923); the infobox names more than one venue, the first is used"
-nfl,Philadelphia Eagles,Q1545870,1971-01-01,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1971_Philadelphia_Eagles_season,Infobox stadium of the club-season articles 1971-1973: Veterans Stadium
+nfl,Philadelphia Eagles,Q1545870,1971-04-10,1974-01-01,wikipedia,https://en.wikipedia.org/wiki/1971_Philadelphia_Eagles_season,Infobox stadium of the club-season articles 1971-1973: Veterans Stadium
 nfl,Philadelphia Eagles,Q2390739,1936-01-01,1940-01-01,wikipedia,https://en.wikipedia.org/wiki/1936_Philadelphia_Eagles_season,Infobox stadium of the club-season articles 1936-1939: Philadelphia Municipal Stadium
 nfl,Philadelphia Eagles,Q2390739,1941-01-01,1942-01-01,wikipedia,https://en.wikipedia.org/wiki/1941_Philadelphia_Eagles_season,Infobox stadium of the club-season article 1941: Philadelphia Municipal Stadium
 nfl,Philadelphia Eagles,Q4849117,1933-01-01,1936-01-01,wikipedia,https://en.wikipedia.org/wiki/1933_Philadelphia_Eagles_season,Infobox stadium of the club-season articles 1933-1935: Baker Bowl
@@ -391,7 +391,7 @@ nfl,Philadelphia Eagles,Q7496044,1944-01-01,1954-01-01,wikipedia,https://en.wiki
 nfl,Philadelphia Eagles,Q7496044,1955-01-01,1956-01-01,wikipedia,https://en.wikipedia.org/wiki/1955_Philadelphia_Eagles_season,Infobox stadium of the club-season article 1955: Shibe Park
 nfl,Boston Braves,Q11335096,1932-01-01,1933-01-01,wikipedia,https://en.wikipedia.org/wiki/1932_Boston_Braves_season,Infobox stadium of the club-season article 1932: Braves Field
 nfl,Boston Redskins,Q49136,1936-01-01,1937-01-01,wikipedia,https://en.wikipedia.org/wiki/1936_Boston_Redskins_season,Infobox stadium of the club-season article 1936: Fenway Park
-nfl,Washington Redskins,Q153312,1961-01-01,1962-01-01,wikipedia,https://en.wikipedia.org/wiki/1961_Washington_Redskins_season,Infobox stadium of the club-season article 1961: Robert F. Kennedy Memorial Stadium
+nfl,Washington Redskins,Q153312,1961-10-01,1962-01-01,wikipedia,https://en.wikipedia.org/wiki/1961_Washington_Redskins_season,Infobox stadium of the club-season article 1961: Robert F. Kennedy Memorial Stadium
 nfl,Washington Redskins,Q5608924,1960-01-01,1961-01-01,wikipedia,https://en.wikipedia.org/wiki/1960_Washington_Redskins_season,Infobox stadium of the club-season article 1960: Griffith Stadium
 nfl,Chicago Bears,Q1052807,1970-01-01,1971-01-01,wikipedia,https://en.wikipedia.org/wiki/1970_Chicago_Bears_season,Infobox stadium of the club-season article 1970: Wrigley Field
 nfl,Decatur Staleys,Q7597233,1920-01-01,1921-01-01,wikipedia,https://en.wikipedia.org/wiki/1920_Decatur_Staleys_season,Infobox stadium of the club-season article 1920: Staley Field
@@ -411,7 +411,7 @@ nfl,Portsmouth Spartans,Q7573906,1930-01-01,1934-01-01,wikipedia,https://en.wiki
 nfl,Green Bay Packers,Q4883953,1923-01-01,1925-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_Green_Bay_Packers_season,Infobox stadium of the club-season articles 1923-1924: Bellevue Park (stadium)
 nfl,Green Bay Packers,Q5123438,1925-01-01,1957-01-01,wikipedia,https://en.wikipedia.org/wiki/1925_Green_Bay_Packers_season,"Infobox stadium of the club-season articles 1925-1956: City Stadium (Green Bay); the infobox names more than one venue, the first is used"
 nfl,Green Bay Packers,Q5638587,1921-01-01,1923-01-01,wikipedia,https://en.wikipedia.org/wiki/1921_Green_Bay_Packers_season,Infobox stadium of the club-season articles 1921-1922: Hagemeister Park
-nfl,Green Bay Packers,Q860790,1957-01-01,1958-01-01,wikipedia,https://en.wikipedia.org/wiki/1957_Green_Bay_Packers_season,"Infobox stadium of the club-season article 1957: Lambeau Field; the infobox names more than one venue, the first is used"
+nfl,Green Bay Packers,Q860790,1957-09-29,1958-01-01,wikipedia,https://en.wikipedia.org/wiki/1957_Green_Bay_Packers_season,"Infobox stadium of the club-season article 1957: Lambeau Field; the infobox names more than one venue, the first is used"
 nfl,Atlanta Falcons,Q641243,1968-01-01,1970-01-01,wikipedia,https://en.wikipedia.org/wiki/1968_Atlanta_Falcons_season,Infobox stadium of the club-season articles 1968-1969: Atlanta Stadium
 nfl,Atlanta Falcons,Q641243,1971-01-01,1973-01-01,wikipedia,https://en.wikipedia.org/wiki/1971_Atlanta_Falcons_season,Infobox stadium of the club-season articles 1971-1972: Atlanta Stadium
 nfl,Atlanta Falcons,Q641243,1966-01-01,1968-01-01,wikipedia,https://en.wikipedia.org/wiki/1966_Atlanta_Falcons_season,Infobox stadium of the club-season articles 1966-1967: Atlanta–Fulton County Stadium
@@ -444,8 +444,6 @@ nfl,Detroit Panthers,Q1750255,1925-01-01,1927-01-01,wikipedia,https://en.wikiped
 nfl,St. Louis All-Stars,Q7579980,1923-01-01,1924-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_St._Louis_All-Stars_season,Infobox stadium of the club-season article 1923: Sportsman's Park
 nfl,Frankford Yellow Jackets,Q4849117,1931-01-01,1932-01-01,wikipedia,https://en.wikipedia.org/wiki/1931_Frankford_Yellow_Jackets_season,"Infobox stadium of the club-season article 1931: Baker Bowl; the infobox names more than one venue, the first is used"
 nfl,Frankford Yellow Jackets,Q5490762,1924-01-01,1931-01-01,wikipedia,https://en.wikipedia.org/wiki/1924_Frankford_Yellow_Jackets_season,Infobox stadium of the club-season articles 1924-1930: Frankford Stadium
-nfl,Buffalo All-Americans,Q7089106,1922-01-01,1923-01-01,wikipedia,https://en.wikipedia.org/wiki/1922_Buffalo_All-Americans_season,Infobox stadium of the club-season article 1922: Buffalo Baseball Park
-nfl,Buffalo All-Americans,Q7089106,1923-01-01,1924-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_Buffalo_All-Americans_season,"Infobox stadium of the club-season article 1923: Olympic Park (Buffalo); the infobox names more than one venue, the first is used"
 nfl,Buffalo Bisons,Q7079090,1925-01-01,1926-01-01,wikipedia,https://en.wikipedia.org/wiki/1925_Buffalo_Bisons_season,Infobox stadium of the club-season article 1925: Offermann Stadium
 nfl,Chicago Tigers,Q1052807,1920-01-01,1921-01-01,wikipedia,https://en.wikipedia.org/wiki/1920_Chicago_Tigers_season,Infobox stadium of the club-season article 1920: Cubs Park
 nfl,Providence Steam Roller,Q5198184,1931-01-01,1932-01-01,wikipedia,https://en.wikipedia.org/wiki/1931_Providence_Steam_Roller_season,Infobox stadium of the club-season article 1931: Cycledrome
@@ -486,7 +484,6 @@ nfl,Columbus Panhandles,Q48977446,1922-01-01,1923-01-01,wikipedia,https://en.wik
 nfl,Kenosha Maroons,Q6966782,1924-01-01,1925-01-01,wikipedia,https://en.wikipedia.org/wiki/1924_Kenosha_Maroons_season,Infobox stadium of the club-season article 1924: Nash Field
 nfl,Detroit Heralds,Q1750255,1920-01-01,1921-01-01,wikipedia,https://en.wikipedia.org/wiki/1920_Detroit_Heralds_season,"Infobox stadium of the club-season article 1920: Navin Field; the infobox names more than one venue, the first is used"
 nfl,Detroit Tigers,Q1750255,1921-01-01,1922-01-01,wikipedia,https://en.wikipedia.org/wiki/1921_Detroit_Tigers_season,Infobox stadium of the club-season article 1921: Navin Field
-nfl,Louisville Brecks,Q5333021,1921-01-01,1922-01-01,wikipedia,https://en.wikipedia.org/wiki/1921_Louisville_Brecks_season,Infobox stadium of the club-season article 1921: Eclipse Park
 nfl,Louisville Brecks,Q7138797,1923-01-01,1924-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_Louisville_Brecks_season,Infobox stadium of the club-season article 1923: Parkway Field
 nfl,Duluth Kelleys,Q4813750,1923-01-01,1926-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_Duluth_Kelleys_season,Infobox stadium of the club-season articles 1923-1925: Athletic Park (Duluth)
 nfl,Akron Pros,Q6508939,1920-01-01,1923-01-01,wikipedia,https://en.wikipedia.org/wiki/1920_Akron_Pros_season,Infobox stadium of the club-season articles 1920-1922: League Park (Akron)
@@ -496,5 +493,4 @@ nfl,Orange Tornadoes,Q6422447,1929-01-01,1930-01-01,wikipedia,https://en.wikiped
 nfl,Hartford Blues,Q6911670,1926-01-01,1927-01-01,wikipedia,https://en.wikipedia.org/wiki/1926_Hartford_Blues_season,"Infobox stadium of the club-season article 1926: Clarkin Field; the infobox names more than one venue, the first is used"
 nfl,Toledo Maroons,Q4793758,1923-01-01,1924-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_Toledo_Maroons_season,Infobox stadium of the club-season article 1923: Armory Park
 nfl,Toledo Maroons,Q7654094,1922-01-01,1923-01-01,wikipedia,https://en.wikipedia.org/wiki/1922_Toledo_Maroons_season,Infobox stadium of the club-season article 1922: Swayne Field
-nfl,Washington Senators,Q4744320,1921-01-01,1922-01-01,wikipedia,https://en.wikipedia.org/wiki/1921_Washington_Senators_season,"Infobox stadium of the club-season article 1921: American League Park; the infobox names more than one venue, the first is used"
 nfl,Cleveland Indians,Q870897,1923-01-01,1924-01-01,wikipedia,https://en.wikipedia.org/wiki/1923_Cleveland_Indians_season,Infobox stadium of the club-season article 1923: League Park
