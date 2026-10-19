@@ -1,6 +1,6 @@
 import { LG, leagueInfo, type LeagueCode } from "./leagues.ts";
 import { MLS_PATH, mlsSeasonPath } from "./mlsPath.ts";
-import { SOCCER_PATH, tournamentPath } from "./soccerPath.ts";
+import { SOCCER_PATH, tournamentPath, WORLDCUP_PATH } from "./soccerPath.ts";
 import { seasonPath } from "./slug.ts";
 
 /**
@@ -18,24 +18,26 @@ export interface LeagueFamily {
   members: readonly string[];
   /** A + after the short name: the family has, or can have, siblings. */
   plus: boolean;
+  /** The sport the family plays: its name in a sentence ("Other leagues in the hockey family"). */
+  sport: "hockey" | "basketball" | "baseball" | "football" | "soccer";
 }
 
 export const FAMILIES: readonly LeagueFamily[] = [
-  { id: "nhl", primary: "nhl", members: ["nhl", "pwhl", "nha", "pcha", "wchl", "wha"], plus: true },
-  { id: "nba", primary: "nba", members: ["nba", "wnba"], plus: true },
-  { id: "mlb", primary: "mlb", members: ["mlb"], plus: true },
-  { id: "nfl", primary: "nfl", members: ["nfl", "afl", "aafc"], plus: true },
-  { id: "cfl", primary: "cfl", members: ["cfl"], plus: false },
-  { id: "soccer", primary: "soccer", members: ["soccer", "nwsl", "mls"], plus: true },
+  { id: "nhl", primary: "nhl", members: ["nhl", "pwhl", "nha", "pcha", "wchl", "wha"], plus: true, sport: "hockey" },
+  { id: "nba", primary: "nba", members: ["nba", "wnba"], plus: true, sport: "basketball" },
+  { id: "mlb", primary: "mlb", members: ["mlb"], plus: true, sport: "baseball" },
+  { id: "nfl", primary: "nfl", members: ["nfl", "afl", "aafc"], plus: true, sport: "football" },
+  { id: "cfl", primary: "cfl", members: ["cfl"], plus: false, sport: "football" },
+  { id: "soccer", primary: "soccer", members: ["soccer", "nwsl", "mls"], plus: true, sport: "soccer" },
 ];
 
 export const GROW_KEY = "spxn-archive-grow";
 
 export const familyOf = (code: string): LeagueFamily | undefined => FAMILIES.find((f) => f.members.includes(code));
 
-/** Short name of a league or a virtual soccer code. `soccerWord` is the translated "Soccer". */
-export function codeLabel(code: string, soccerWord = "Soccer"): string {
-  if (code === "soccer") return soccerWord;
+/** Short name of a league or a virtual soccer code. The virtual `soccer` code is the FIFA competitions: `internationalWord` is the translated "International". */
+export function codeLabel(code: string, internationalWord = "International"): string {
+  if (code === "soccer") return internationalWord;
   if (code === "mls") return "MLS";
   return LG[code as LeagueCode] ?? code.toUpperCase();
 }
@@ -86,9 +88,9 @@ export function familyHref(family: LeagueFamily): string {
   return family.primary === "soccer" ? SOCCER_PATH : `/${family.primary}`;
 }
 
-/** The page of a family member (a league, World Cup, or MLS). */
+/** The page of a family member (a league, the World Cups, or MLS). */
 export function memberHref(code: string): string {
-  if (code === "soccer") return SOCCER_PATH;
+  if (code === "soccer") return WORLDCUP_PATH;
   if (code === "mls") return MLS_PATH;
   return `/${code}`;
 }
@@ -100,10 +102,10 @@ export function seasonHref(league: string, year: number): string {
   return seasonPath(league, year);
 }
 
-export function memberName(code: string, soccerWord = "Soccer"): string {
-  if (code === "soccer") return soccerWord;
+export function memberName(code: string, internationalWord = "International"): string {
+  if (code === "soccer") return internationalWord;
   if (code === "mls") return "MLS";
-  return leagueInfo(code)?.name ?? codeLabel(code, soccerWord);
+  return leagueInfo(code)?.name ?? codeLabel(code, internationalWord);
 }
 
 /** A season as the archive chart draws it (the home Heatmap's row). */

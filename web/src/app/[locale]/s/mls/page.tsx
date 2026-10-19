@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "@/components/Link";
+import { FamilyNav } from "@/components/FamilyNav";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
 import { SortTable } from "@/components/SortTable";
@@ -78,6 +79,7 @@ export default guard(async function MlsPage() {
       <section className="head fade">
         <span className="eyebrow">{say("nav.soccer")}</span>
         <h1>{say("mls.title")}</h1>
+        <FamilyNav code="mls" />
         <p className="lede">{say("mls.lede")}</p>
       </section>
       {seasons.length ? (

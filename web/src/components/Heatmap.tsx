@@ -71,6 +71,7 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
   const router = useRouter();
   const { say, fmt } = useSpeaker();
   const soccerWord = say("nav.soccer");
+  const internationalWord = say("nav.international");
   const [ref, W] = useChartWidth(1180, 300);
   const card = useHeatCard();
   const touched = useRef(false); // the last press on a square was a finger's: a first tap shows the card, a second opens the season
@@ -102,10 +103,10 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
 
   const nameOf = (id: string) => {
     const fam = familyOfRow.get(id);
-    return fam ? familyTitle(fam, soccerWord) : codeLabel(id, soccerWord);
+    return fam ? familyTitle(fam, soccerWord) : codeLabel(id, internationalWord);
   };
   const cardOf = (lg: string, s: HeatSeason) => ({
-    title: `${codeLabel(lg, soccerWord)} ${s.label}`,
+    title: `${codeLabel(lg, internationalWord)} ${s.label}`,
     lines: [
       s.games ? say("heatmap.share", { finals: fmt(s.finals), games: fmt(s.games) }) : s.champion ? say("noseason.awards") : say("noseason.league"),
       s.champion ? say("tip.champion", { team: s.champion }) : null,

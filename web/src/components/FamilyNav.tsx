@@ -1,25 +1,24 @@
 import Link from "@/components/Link";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { codeLabel, familyOf, familySiblings, familyTitle, memberHref } from "@/lib/leagueFamilies";
+import { codeLabel, familyOf, FAMILIES, memberHref, type FamilyId } from "@/lib/leagueFamilies";
 
 /**
  * The obvious way from a family page (NHL, NBA, …) to its siblings. Trail and "Other leagues" stay;
- * this sits in the heading so PWHL / NHA / WNBA are not buried.
+ * this sits in the heading so PWHL / NHA / WNBA are not buried. Every page of a family draws the chips in
+ * the family's own order and only lights the current league; the family's hub page (`family`, no `code`) lights none.
  */
-export async function FamilyNav({ code }: { code: string }) {
-  const family = familyOf(code);
-  const sibs = familySiblings(code);
-  if (!family || !sibs.length) return null;
+export async function FamilyNav({ code, family: id }: { code?: string; family?: FamilyId }) {
+  const family = code ? familyOf(code) : FAMILIES.find((f) => f.id === id);
+  if (!family || family.members.length < 2) return null;
   const { say } = await currentSpeaker();
-  const soccerWord = say("nav.soccer");
+  const international = say("nav.international");
   return (
     <nav className="familynav" aria-label={say("league.familyNav")}>
-      <span className="familynav-kicker">{say("league.familyNote", { family: familyTitle(family, soccerWord) })}</span>
+      <span className="familynav-kicker">{say("league.familyNote", { family: say(`league.sport.${family.sport}`) })}</span>
       <span className="familynav-row">
-        <span aria-current="page">{codeLabel(code, soccerWord)}</span>
-        {sibs.map((m) => (
-          <Link key={m} href={memberHref(m)}>{codeLabel(m, soccerWord)}</Link>
-        ))}
+        {family.members.map((m) => (m === code
+          ? <span key={m} aria-current="page">{codeLabel(m, international)}</span>
+          : <Link key={m} href={memberHref(m)}>{codeLabel(m, international)}</Link>))}
       </span>
     </nav>
   );

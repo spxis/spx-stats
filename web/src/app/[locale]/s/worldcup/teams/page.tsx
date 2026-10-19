@@ -51,7 +51,7 @@ export default guard(async function WorldCupTeamsPage() {
   return (
     <div className="soccer">
       <section className="head fade">
-        <span className="eyebrow">{say("nav.soccer")}</span>
+        <span className="eyebrow">{say("nav.international")}</span>
         <h1>{say("wc.teams.title")}</h1>
         <p className="lede">{say("wc.teams.lede")}</p>
         <p className="note"><Link href={WORLDCUP_PATH}>{say("wc.t.all")}</Link></p>

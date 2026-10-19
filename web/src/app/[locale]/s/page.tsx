@@ -73,7 +73,7 @@ export default guard(async function Home() {
   };
   const card = (code: string): HomeCardLine => {
     const info = leagueInfo(code);
-    const name = code === "soccer" ? say("soccer.homeName") : code === "mls" ? "MLS" : (info?.name ?? memberName(code, soccerWord));
+    const name = code === "soccer" ? say("soccer.homeName") : code === "mls" ? "MLS" : (info?.name ?? memberName(code, say("nav.international")));
     const short = code === "soccer" ? soccerWord : (info?.short ?? code.toUpperCase());
     const href = code === "soccer" ? SOCCER_PATH : memberHref(code);
     return lineOf(code, name, short, tint(code), linesFor(code), href);

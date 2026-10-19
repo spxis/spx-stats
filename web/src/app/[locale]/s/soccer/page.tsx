@@ -45,7 +45,7 @@ export default guard(async function SoccerPage() {
         <span className="eyebrow">{say("nav.soccer")}</span>
         <h1>{say("soccer.title")}</h1>
         <p className="lede">{say("soccer.lede")}</p>
-        <FamilyNav code="soccer" />
+        <FamilyNav family="soccer" />
       </section>
       {mls.length ? (
         <section className="section">

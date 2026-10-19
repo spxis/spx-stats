@@ -56,6 +56,16 @@ test("PARENT is unchanged: PWHL and WNBA stay menu leagues, NHA still hangs off 
   assert.equal(PARENT.cfl, undefined);
 });
 
+test("family chips: one fixed order, a sport name for the label, International for the FIFA competitions", () => {
+  assert.deepEqual(FAMILIES.map((f) => f.sport), ["hockey", "basketball", "baseball", "football", "football", "soccer"]);
+  assert.equal(codeLabel("soccer", "International"), "International");
+  assert.equal(codeLabel("soccer"), "International");
+  assert.equal(memberHref("soccer"), "/worldcup");
+  const nav = readFileSync(new URL("../src/components/FamilyNav.tsx", import.meta.url), "utf8");
+  assert.ok(nav.includes("family.members.map"), "FamilyNav draws every member in the family's own order");
+  assert.ok(!nav.includes("familySiblings"), "FamilyNav never puts the current league first");
+});
+
 test("labels: NHL+, Soccer+, CFL with no plus", () => {
   assert.equal(familyTitle(familyOf("nhl")!, "Soccer"), "NHL+");
   assert.equal(familyTitle(familyOf("nba")!), "NBA+");

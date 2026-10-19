@@ -133,9 +133,9 @@
   .card.familycard summary { cursor: pointer; font: 600 13px/1.2 var(--display); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
   .card.familycard .card.kid { margin-top: 8px; border-top-width: 3px; padding: 10px 12px; }
   .card.familycard .card.kid h3 { font-size: 22px; }
-  .crumbs { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; margin-block: 6px 10px; font: 600 14px/1.2 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+  .crumbs { position: absolute; top: 28px; left: 0; display: flex; gap: 8px; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
   .crumbs a { color: var(--muted); }
-  .crumbs [aria-current="page"] { color: var(--ink); }
+  .crumbs ~ .head > .eyebrow, .crumbs ~ * > .head > .eyebrow { padding-inline-start: 3.6em; }
   .aux { margin-left: auto; }
   .aux a { color: var(--muted); }
   .theme { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
@@ -248,7 +248,7 @@
   .usermenu-sec > .note { padding: 8px 14px 0; }
   .usermenu-lang { padding: 8px 14px; border-top: 1px solid var(--rule); font-size: 14px; }
 
-  .page { max-width: 1180px; margin-inline: auto; padding-block: 28px 40px; display: flex; flex-direction: column; gap: 32px; min-height: 60vh; }
+  .page { position: relative; max-width: 1180px; margin-inline: auto; padding-block: 28px 40px; display: flex; flex-direction: column; gap: 32px; min-height: 60vh; }
   /* A popover is drawn inside its section, and each section is its own stacking context (the fade-in animation), so the popover's z-index only orders it among
      that section's own parts: the sections after it would be painted over it. The page block that holds an open popover is lifted above its later siblings
      instead (a flex item takes a z-index without being positioned). Every popover class is listed here: add a new one to this rule. */

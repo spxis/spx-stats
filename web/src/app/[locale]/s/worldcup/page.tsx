@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "@/components/Link";
+import { FamilyNav } from "@/components/FamilyNav";
 import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerTeamName } from "@/components/SoccerTeamName";
 import { SortTable } from "@/components/SortTable";
@@ -62,8 +63,9 @@ export default guard(async function WorldCupPage() {
   return (
     <div className="soccer">
       <section className="head fade">
-        <span className="eyebrow">{say("nav.soccer")}</span>
+        <span className="eyebrow">{say("nav.international")}</span>
         <h1>{say("wc.title")}</h1>
+        <FamilyNav code="soccer" />
         <p className="lede">{say("wc.lede")}</p>
         <p className="note"><Link href={WORLDCUP_TEAMS_PATH}>{say("soccer.teamsLink")}</Link></p>
       </section>

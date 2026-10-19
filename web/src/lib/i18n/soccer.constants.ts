@@ -5,6 +5,7 @@
  */
 export const SOCCER_EN = {
   "nav.soccer": "Soccer",
+  "nav.international": "International",
   "count.tournaments.one": "{count} tournament",
   "count.tournaments.other": "{count} tournaments",
   "count.matches.one": "{count} match",
@@ -223,6 +224,7 @@ export const SOCCER_EN = {
 
 export const SOCCER_FR: Record<keyof typeof SOCCER_EN, string> = {
   "nav.soccer": "Soccer",
+  "nav.international": "International",
   "count.tournaments.one": "{count} tournoi",
   "count.tournaments.other": "{count} tournois",
   "count.matches.one": "{count} match",
@@ -435,6 +437,7 @@ export const SOCCER_FR: Record<keyof typeof SOCCER_EN, string> = {
 
 export const SOCCER_JA: Record<keyof typeof SOCCER_EN, string> = {
   "nav.soccer": "サッカー",
+  "nav.international": "国際大会",
   "count.tournaments.one": "{count}大会",
   "count.tournaments.other": "{count}大会",
   "count.matches.one": "{count}試合",
