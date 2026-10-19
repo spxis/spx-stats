@@ -20,7 +20,8 @@
 --
 -- Which record is kept: an SPX record where one exists, else the Wikidata record (the build keeps rewriting those from Wikidata), else
 -- the one with more data. The kept record fills its empty fields from the other. Everything that pointed at the old record is moved:
--- statistics, rosters, awards, career entries, external ids, captain and coach links. Each merge is logged in meta.data_issue
+-- every table with a foreign key to core.person (found in pg_constraint at run time), id arrays such as core.game_event.person_ids, external ids.
+-- Where the old record's row would clash with one the kept record has on a unique key, the kept record's row stays. Each merge is logged in meta.data_issue
 -- ('merge:...') and the old id goes to core.person_redirect (migration 061).
 begin;
 
@@ -241,34 +242,59 @@ select m.loser, m.kept, l.full_name, m.why from m join core.person l on l.person
 on conflict (old_person_id) do update set person_id = excluded.person_id, reason = excluded.reason;
 update core.person_redirect r set person_id = m.kept from m where r.person_id = m.loser;
 
-delete from core.player_season_stat l using m
- where l.person_id = m.loser and exists (select 1 from core.player_season_stat k
-        where k.person_id = m.kept and k.team_season_id = l.team_season_id and k.phase = l.phase and k.stat_group = l.stat_group and k.source_id = l.source_id);
-update core.player_season_stat s set person_id = m.kept from m where s.person_id = m.loser;
-
+-- A roster entry the kept record already has (same team season and role) is dropped; the rest of the rules below are generic.
 delete from core.roster_stint l using m
  where l.person_id = m.loser and exists (select 1 from core.roster_stint k where k.person_id = m.kept and k.team_season_id = l.team_season_id and k.role = l.role);
-update core.roster_stint s set person_id = m.kept from m where s.person_id = m.loser;
 
-update core.award_winner s set person_id = m.kept from m where s.person_id = m.loser;
-update core.person_career s set person_id = m.kept from m where s.person_id = m.loser;
-update core.team_season s set captain_person_id = m.kept from m where s.captain_person_id = m.loser;
-update core.team_season s set head_coach_person_id = m.kept from m where s.head_coach_person_id = m.loser;
-update core.draft_pick s set person_id = m.kept from m where s.person_id = m.loser;
-update core.game_lineup s set person_id = m.kept from m where s.person_id = m.loser;
-update core.game_official s set person_id = m.kept from m where s.person_id = m.loser;
-update core.injury_report s set person_id = m.kept from m where s.person_id = m.loser;
-update core.player_game_stat s set person_id = m.kept from m where s.person_id = m.loser;
-update core.transaction s set person_id = m.kept from m where s.person_id = m.loser;
+-- A name period that overlaps one the kept record has stays on the old record and goes with it (exclusion constraint, not a unique key).
 update core.person_name s set person_id = m.kept from m
  where s.person_id = m.loser and not exists (select 1 from core.person_name k where k.person_id = m.kept and k.valid_during && s.valid_during);
+
+-- Every other column that points at core.person is found in pg_constraint now, so a table added later is never missed (the person_jersey
+-- failure of 2026-10-18). Rule per table: where the loser's row would clash with a row the kept record already has on a unique key
+-- (primary key or unique index that includes the person column), the kept record's row stays and the loser's is dropped; every other
+-- row is moved to the kept record. core.person_redirect is done above, core.person_name just above.
+create temp table repoint_log (tbl text, col text, moved bigint, dropped bigint) on commit drop;
 do $$
-declare r record;
+declare r record; u record; cond text; moved bigint; dropped bigint; n bigint;
 begin
-  for r in select loser, kept from m loop
-    update core.game_event set person_ids = array_replace(person_ids, r.loser, r.kept) where person_ids @> array[r.loser];
+  for r in
+    select c.conrelid::regclass as tbl, c.conrelid as relid, a.attnum, a.attname as col
+    from pg_constraint c join pg_attribute a on a.attrelid = c.conrelid and a.attnum = c.conkey[1]
+    where c.contype = 'f' and c.confrelid = 'core.person'::regclass and cardinality(c.conkey) = 1
+      and c.conrelid not in ('core.person_redirect'::regclass, 'core.person_name'::regclass)
+    order by 1, 4
+  loop
+    dropped := 0;
+    for u in
+      select i.indexrelid, i.indkey::int2[] as keys from pg_index i
+      where i.indrelid = r.relid and i.indisunique and i.indpred is null and i.indexprs is null and r.attnum = any (i.indkey::int2[])
+    loop
+      select coalesce(string_agg(format('k.%1$I = l.%1$I', at.attname), ' and '), 'true') into cond
+      from unnest(u.keys) as kk(attnum) join pg_attribute at on at.attrelid = r.relid and at.attnum = kk.attnum
+      where kk.attnum <> r.attnum;
+      execute format('delete from %1$s l using m where l.%2$I = m.loser and exists (select 1 from %1$s k where k.%2$I = m.kept and %3$s)', r.tbl, r.col, cond);
+      get diagnostics n = row_count;
+      dropped := dropped + n;
+    end loop;
+    execute format('update %1$s s set %2$I = m.kept from m where s.%2$I = m.loser', r.tbl, r.col);
+    get diagnostics moved = row_count;
+    insert into repoint_log values (r.tbl::text, r.col, moved, dropped);
+  end loop;
+
+  -- id arrays (core.game_event.person_ids): no foreign key to find, so every bigint[] column named *person_ids in core; order is kept
+  for r in
+    select c.oid::regclass as tbl, a.attname as col from pg_attribute a join pg_class c on c.oid = a.attrelid
+    where c.relnamespace = 'core'::regnamespace and c.relkind = 'r' and a.attnum > 0 and not a.attisdropped
+      and a.attname like '%person\_ids' and a.atttypid = 'bigint[]'::regtype
+  loop
+    execute format('update %1$s s set %2$I = (select array_agg(coalesce(m.kept, x.v) order by x.ord) from unnest(s.%2$I) with ordinality as x(v, ord) left join m on m.loser = x.v)
+                    where s.%2$I && (select array_agg(loser) from m)', r.tbl, r.col);
+    get diagnostics moved = row_count;
+    insert into repoint_log values (r.tbl::text, r.col, moved, 0);
   end loop;
 end $$;
+select tbl, col, moved, dropped from repoint_log where moved > 0 or dropped > 0 order by tbl, col;
 update core.external_id s set entity_id = m.kept from m where s.entity_kind = 'person' and s.entity_id = m.loser;
 
 -- the kept record fills what it lacks from the old one
