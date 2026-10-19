@@ -27,7 +27,7 @@ where d.source_id = (select source_id from src) and d.issue = 'No result in SPX'
 delete from core.standing where source_id = (select source_id from src);
 delete from meta.verification where source_id = (select source_id from src);
 delete from meta.data_issue where source_id = (select source_id from src);
-delete from core.external_id where source_id = (select source_id from src);
+delete from core.external_id where source_id = (select source_id from src) and entity_kind <> 'person';
 
 -- The API's abbreviations -> franchise, by the year a season starts. A relocated
 -- team joins its current franchise (spx_team_id: SPX's number for it); a team no
