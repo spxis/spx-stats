@@ -26,14 +26,6 @@ delete from core.franchise_owner where source_id = (select source_id from meta.s
 delete from core.franchise_venue where source_id = (select source_id from meta.source where code = 'wikidata');
 delete from core.venue_feature where source_id = (select source_id from meta.source where code = 'wikidata');
 delete from core.venue_name where venue_id in (select venue_id from core.venue where source_id = (select source_id from meta.source where code = 'wikidata'));
-delete from core.venue v where v.source_id = (select source_id from meta.source where code = 'wikidata')
-  and not exists (select 1 from core.game g where g.venue_id = v.venue_id)
-  and not exists (select 1 from core.team_season t where t.home_venue_id = v.venue_id)
-  and not exists (select 1 from core.franchise_home_venue h where h.venue_id = v.venue_id)   -- steps 198 and 199 (rerun them after this one)
-  and not exists (select 1 from core.game_venue gv where gv.venue_id = v.venue_id)
-  and not exists (select 1 from core.soccer_match m where m.venue_id = v.venue_id)
-  and not exists (select 1 from core.venue_final_game f where f.venue_id = v.venue_id)
-  and not exists (select 1 from core.venue_game_season q where q.venue_id = v.venue_id);
 
 -- ---------------------------------------------------------------- match franchises to team items
 create temp table ident as
@@ -136,6 +128,9 @@ select p.*, p.address_city as city
 from legacy_franchise_info.place p
 where p.qid in (select place_qid from fv_trim);
 
+create temp table venue_new as
+select v.qid from venue_src v join ref.country rc on rc.country_code = v.address_country where v.city is not null;
+
 insert into core.venue (city, region, country_code, opened_on, closed_on, capacity, latitude, longitude, source_id, source_key,
                         time_zone, kind, address, postal_code, surface, roof, is_indoor, architect, cost_usd)
 select v.city, v.address_region, v.address_country,
@@ -157,6 +152,17 @@ on conflict (source_id, source_key) do update set
   closed_on = excluded.closed_on, capacity = excluded.capacity, latitude = excluded.latitude, longitude = excluded.longitude,
   time_zone = excluded.time_zone, kind = excluded.kind, address = excluded.address, postal_code = excluded.postal_code,
   surface = excluded.surface, roof = excluded.roof, is_indoor = excluded.is_indoor, architect = excluded.architect, cost_usd = excluded.cost_usd;
+
+-- A venue keeps its venue_id from run to run (the insert above updates it in place); one Wikidata no longer gives a home to is deleted when nothing points at it.
+delete from core.venue v where v.source_id = (select source_id from meta.source where code = 'wikidata')
+  and v.source_key not in (select qid from venue_new)
+  and not exists (select 1 from core.game g where g.venue_id = v.venue_id)
+  and not exists (select 1 from core.team_season t where t.home_venue_id = v.venue_id)
+  and not exists (select 1 from core.franchise_home_venue h where h.venue_id = v.venue_id)   -- steps 198 and 199 (rerun them after this one)
+  and not exists (select 1 from core.game_venue gv where gv.venue_id = v.venue_id)
+  and not exists (select 1 from core.soccer_match m where m.venue_id = v.venue_id)
+  and not exists (select 1 from core.venue_final_game f where f.venue_id = v.venue_id)
+  and not exists (select 1 from core.venue_game_season q where q.venue_id = v.venue_id);
 
 create temp table vmap as
 select venue_id, source_key as qid from core.venue where source_id = (select source_id from meta.source where code = 'wikidata');

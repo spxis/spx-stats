@@ -96,7 +96,6 @@ delete from core.franchise f using vm where vm.vma is not null and vm.vmi is not
 
 -- Take back what an earlier run wrote.
 delete from core.standing where source_id = (select source_id from src) and source_key like 'wph:%';
-delete from core.series where source_id = (select source_id from src) and source_key like 'wph:%';
 delete from meta.data_issue where source_id = (select source_id from src) and issue ~ '^(NHA|PCHA|WCHL|WHA)[: ]';
 delete from core.external_id where source_id = (select source_id from src) and entity_kind = 'game' and external_key like 'wph:%';
 -- (games are not deleted wholesale: a game keeps its id from run to run, see below)
@@ -323,17 +322,24 @@ left join am l on l.league = e.league and l.nm = lower(e.loser) and e.season bet
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'series', lg || ':' || season || ':' || round_name || ':' || winner, upper(lg) || ': club name not matched to a franchise', 'Series left out'
 from nse where wf is null or lf is null;
-insert into core.series (season_id, round_label, best_of, higher_seed_team_season_id, lower_seed_team_season_id, winner_team_season_id,
-                         higher_seed_wins, lower_seed_wins, source_id, source_key)
-select s.season_id, n.round_name || coalesce(' (total goals ' || n.winner_goals || '-' || n.loser_goals || ')', ''), null,
-       wts.team_season_id, lts.team_season_id, wts.team_season_id, n.winner_wins, n.loser_wins,
-       (select source_id from src), 'wph:' || n.lg || ':' || n.season || ':' || n.round_name || ':' || n.winner
+-- A rerun keeps the series_id of every series it adds again: one already there is updated in place, one no longer told is deleted.
+create temp table new_series as
+select s.season_id, n.round_name || coalesce(' (total goals ' || n.winner_goals || '-' || n.loser_goals || ')', '') as round_label,
+       wts.team_season_id as winner_ts, lts.team_season_id as loser_ts, n.winner_wins, n.loser_wins,
+       'wph:' || n.lg || ':' || n.season || ':' || n.round_name || ':' || n.winner as source_key
 from nse n join core.season s on s.league_code = n.lg and s.start_year = n.yr
 join core.team_season wts on wts.franchise_id = n.wf and wts.season_id = s.season_id
 join core.team_season lts on lts.franchise_id = n.lf and lts.season_id = s.season_id
-where n.wf is not null and n.lf is not null
-on conflict (source_id, source_key) do update set round_label = excluded.round_label, winner_team_season_id = excluded.winner_team_season_id,
-  higher_seed_wins = excluded.higher_seed_wins, lower_seed_wins = excluded.lower_seed_wins;
+where n.wf is not null and n.lf is not null;
+delete from core.series x where x.source_id = (select source_id from src) and x.source_key like 'wph:%'
+  and not exists (select 1 from new_series n where n.source_key = x.source_key);
+insert into core.series (season_id, round_label, best_of, higher_seed_team_season_id, lower_seed_team_season_id, winner_team_season_id,
+                         higher_seed_wins, lower_seed_wins, source_id, source_key)
+select season_id, round_label, null, winner_ts, loser_ts, winner_ts, winner_wins, loser_wins, (select source_id from src), source_key
+from new_series
+on conflict (source_id, source_key) do update set season_id = excluded.season_id, round_label = excluded.round_label, best_of = excluded.best_of,
+  higher_seed_team_season_id = excluded.higher_seed_team_season_id, lower_seed_team_season_id = excluded.lower_seed_team_season_id,
+  winner_team_season_id = excluded.winner_team_season_id, higher_seed_wins = excluded.higher_seed_wins, lower_seed_wins = excluded.lower_seed_wins;
 
 select lg, k, n from (
   select lg, 'seasons' k, count(*) n from seasons group by lg

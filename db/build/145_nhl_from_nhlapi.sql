@@ -27,7 +27,6 @@ where d.source_id = (select source_id from src) and d.issue = 'No result in SPX'
 delete from core.standing where source_id = (select source_id from src);
 delete from meta.verification where source_id = (select source_id from src);
 delete from meta.data_issue where source_id = (select source_id from src);
-delete from core.game where source_id = (select source_id from src);
 delete from core.external_id where source_id = (select source_id from src);
 
 -- The API's abbreviations -> franchise, by the year a season starts. A relocated
@@ -260,25 +259,41 @@ from spx_g s join core.game g using (game_id)
 where s.game_id not in (select game_id from matched) and g.phase in ('regular', 'playoffs') and s.status = 'final'
   and s.start_year in (select yr from ng);
 
-insert into core.game (season_id, phase, game_date, starts_at, home_team_season_id, away_team_season_id, is_neutral_site, status,
-                       home_score, away_score, went_to_overtime, decided_by_shootout, source_id, source_key)
-select s.season_id, n.phase, n.game_date, (n.row ->> 'startTimeUTC')::timestamptz, hts.team_season_id, ats.team_season_id,
-       coalesce((n.row ->> 'neutralSite')::boolean, false),
+-- The API's own games keep their game_id on a rerun (the site's game addresses and the daily job carry it): a game already there is updated in place,
+-- one the API no longer lists (or that SPX's game now takes over) is deleted, a new one is added. Child rows (game_league_id, game_venue, ...) stay.
+create temp table api_game as
+select s.season_id, n.phase, n.game_date, (n.row ->> 'startTimeUTC')::timestamptz as starts_at, hts.team_season_id as home_ts, ats.team_season_id as away_ts,
+       coalesce((n.row ->> 'neutralSite')::boolean, false) as is_neutral_site,
        case when n.home_score is not null and n.away_score is not null and n.game_state in ('FINAL', 'OFF') then 'final'
             when n.row ->> 'gameScheduleState' = 'PPD' then 'postponed'
             when n.row ->> 'gameScheduleState' = 'CNCL' then 'cancelled'
-            when n.game_state in ('LIVE', 'CRIT') then 'in_progress' else 'scheduled' end::core.game_status,
+            when n.game_state in ('LIVE', 'CRIT') then 'in_progress' else 'scheduled' end::core.game_status as status,
        n.home_score, n.away_score,
-       case when n.last_period_type in ('OT', 'SO') then true when n.last_period_type = 'REG' then false end,
-       case when n.last_period_type = 'SO' then true when n.last_period_type in ('OT', 'REG') then false end,
-       (select source_id from src), 'nhlapi:' || n.nhl_game_id
+       case when n.last_period_type in ('OT', 'SO') then true when n.last_period_type = 'REG' then false end as went_to_overtime,
+       case when n.last_period_type = 'SO' then true when n.last_period_type in ('OT', 'REG') then false end as decided_by_shootout,
+       'nhlapi:' || n.nhl_game_id as source_key
 from ng n join core.season s on s.league_code = 'nhl' and s.start_year = n.yr
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.season_id
 where n.nhl_game_id not in (select key from matched);
 -- A score without a final state (a game still on) is no result.
-update core.game set home_score = null, away_score = null
-where source_id = (select source_id from src) and status <> 'final' and (home_score is not null or away_score is not null);
+update api_game set home_score = null, away_score = null where status <> 'final';
+delete from core.game g where g.source_id = (select source_id from src) and not exists (select 1 from api_game a where a.source_key = g.source_key);
+update core.game g set season_id = a.season_id, phase = a.phase, game_date = a.game_date, starts_at = a.starts_at, home_team_season_id = a.home_ts,
+       away_team_season_id = a.away_ts, is_neutral_site = a.is_neutral_site, status = a.status, home_score = a.home_score, away_score = a.away_score,
+       went_to_overtime = a.went_to_overtime, decided_by_shootout = a.decided_by_shootout, updated_at = now()
+from api_game a
+where g.source_id = (select source_id from src) and g.source_key = a.source_key
+  and (g.season_id, g.phase, g.game_date, g.starts_at, g.home_team_season_id, g.away_team_season_id, g.is_neutral_site, g.status, g.home_score, g.away_score,
+       g.went_to_overtime, g.decided_by_shootout)
+  is distinct from (a.season_id, a.phase, a.game_date, a.starts_at, a.home_ts, a.away_ts, a.is_neutral_site, a.status, a.home_score, a.away_score,
+       a.went_to_overtime, a.decided_by_shootout);
+insert into core.game (season_id, phase, game_date, starts_at, home_team_season_id, away_team_season_id, is_neutral_site, status,
+                       home_score, away_score, went_to_overtime, decided_by_shootout, source_id, source_key)
+select season_id, phase, game_date, starts_at, home_ts, away_ts, is_neutral_site, status, home_score, away_score, went_to_overtime, decided_by_shootout,
+       (select source_id from src), source_key
+from api_game a
+where not exists (select 1 from core.game g where g.source_id = (select source_id from src) and g.source_key = a.source_key);
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', game_id, source_id, substring(source_key from 8) from core.game where source_id = (select source_id from src)
