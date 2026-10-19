@@ -1470,6 +1470,20 @@ export const PHRASES = {
   "about.contact": "Tell us by opening an issue on GitHub: {link}. The site's code is public there.",
   "about.contactLink": "github.com/spxis/spx-stats",
 
+  // releases (app/[locale]/s/releases)
+  "releases.eyebrow": "SPX Network",
+  "releases.title": "Releases",
+  "releases.metaDesc": "Every version of the SPXN site, newest first, with the feature it shipped and the day it went out.",
+  "releases.lede": "Every version of the site, newest first. Each one names what it added or fixed, in plain words, and links to the page where you can see it.",
+  "releases.see": "See it",
+  "releases.quiet": "No change you can see",
+  "releases.count": "{count} versions since 0.47.0",
+  "releases.note": "The data behind the site is released separately; the footer shows the latest data release next to the version.",
+  "releases.older": "Older versions ({count})",
+  "releases.olderTitle": "Older releases",
+  "releases.back": "Back to the newest releases",
+  "releases.english": "This list is written in English only.",
+
   // help fill Wikipedia (app/[locale]/s/help-wikipedia, components/WikiGapList.tsx)
   "wiki.eyebrow": "Wikipedia",
   "wiki.title": "Help fill Wikipedia",

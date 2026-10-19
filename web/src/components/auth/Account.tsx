@@ -73,10 +73,9 @@ export function FooterLanguage() {
   return user ? <span /> : <span className="anon"><LanguagePicker /></span>;
 }
 
-/** The version in the footer: a link to the admin Releases page for a signed-in admin, plain text for everyone else. */
+/** The version in the footer: a link to the public Releases page. */
 export function FooterVersion({ text }: { text: string }) {
-  const { user } = useAccount();
-  return user?.admin ? <Link href="/admin/data">{text}</Link> : <>{text}</>;
+  return <Link href="/releases">{text}</Link>;
 }
 
 /** A slim notice above the header for signed-in admins when a release waits, a drift fix is proposed or auto-approval is on Hold. */

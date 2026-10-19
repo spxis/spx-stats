@@ -415,7 +415,8 @@ generated the route types. That is not a bug in your change.
 
 **Release.** A release is a commit on `main` that is deployed. What you pass to `pnpm task done --version` is the short
 commit sha. The site version is `version` in `web/package.json` (semantic versioning, starting from 0.47.0); the site
-footer shows it with the short commit sha. There is no changelog file.
+footer shows it with the short commit sha and links to the public `/releases` page. That page's list is `web/src/lib/siteReleases.ts`:
+ add one row (version, bump date, short sha, plain-language title and text, English only) with every version bump; `pnpm test:siteversions` checks it.
 
 - **Major:** a breaking change to the site or its data contract.
 - **Minor:** each feature a reader sees, including a new league or a new source of data shown on the site.
