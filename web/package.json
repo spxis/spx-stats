@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.149.6",
+  "version": "0.150.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -31,6 +31,7 @@
     "test:localtime": "node --test scripts/localTime.test.ts",
     "test:times": "node --test scripts/startTime.test.ts",
     "test:playedlate": "node --test scripts/playedLate.test.ts",
+    "test:wikihelp": "node --test scripts/wikiHelp.test.ts",
     "test:links": "node --test scripts/officialLinks.test.ts",
     "test:ops": "node --test scripts/ops.test.ts",
     "test:runlog": "node --test scripts/runlog.test.ts",

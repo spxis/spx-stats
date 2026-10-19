@@ -158,6 +158,7 @@ export default guard(async function GamePage({ params }: Params) {
 
   const standing = (s: (typeof sides)[number]) => (s.st && s.st.w != null ? tally({ w: s.st.w, l: s.st.l ?? 0, t: s.st.t ?? 0, otl: s.st.otl ?? 0 }, true) : null);
   const stateNode = !final && g.status === "scheduled" ? <GameState text={state} status={g.status} startsAt={g.starts_at} gameDate={g.game_date} form="long" /> : state;
+  const stateLinked = !final && g.status === "scheduled" ? <GameState text={state} status={g.status} startsAt={g.starts_at} gameDate={g.game_date} form="long" help /> : state;
   const verdict = !final ? stateNode : winner == null ? say("gm.tied") : say("gm.won", { team: sides[winner].name });
   const gameNo = sg && series ? say("gm.gameN", { n: fmt(sg.n) }) : null;
   const seriesState = sg && series ? (() => {
@@ -258,7 +259,7 @@ export default guard(async function GamePage({ params }: Params) {
         <h2>{say("gm.factsHead")}</h2>
         <dl className="gfacts">
           <div><dt>{say("col.date")}</dt><dd><Link href={scoresPath(lg, g.game_date)} prefetch={false}>{date}</Link></dd></div>
-          <div><dt>{say("gm.state")}</dt><dd>{stateNode}</dd></div>
+          <div><dt>{say("gm.state")}</dt><dd>{stateLinked}</dd></div>
           <div><dt>{say("gm.competition")}</dt><dd>{playoffs && series ? <>{roundDated}{gameNo ? ` · ${gameNo}` : ""}{" · "}<Link href={seriesPath(paths, lg, y, series)} prefetch={false}>{say("gm.seeSeries")}</Link></> : competition}</dd></div>
           <div>
             <dt>{say("gm.venue")}</dt>

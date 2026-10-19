@@ -39,6 +39,7 @@ export default async function AboutPage() {
           }} />
         </p>
         <p><Credits say={say} use={["wikipedia"]} /></p>
+        <p><Rich text={say("about.wiki")} parts={{ link: <Link href="/help-wikipedia">{say("about.wikiLink")}</Link> }} /></p>
         <h2>{say("about.ownerTitle")}</h2>
         <p>{say("about.owner")}</p>
         <h2>{say("about.contactTitle")}</h2>

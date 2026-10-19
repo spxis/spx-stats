@@ -1,0 +1,18 @@
+/* The "Help fill Wikipedia" page: the how-to box and the list of games waiting for a score. Tokens come from globals.css. */
+.wkbox { border: 1px solid var(--rule); background: var(--panel); padding: 14px 16px; display: flex; flex-direction: column; gap: 8px; }
+.wkbox h2 { margin: 0; }
+.wkbox ol { list-style: decimal; margin: 0; padding-left: 1.3em; }
+.wkbox ol li + li { margin-top: 6px; }
+.wkgroups { display: flex; flex-direction: column; gap: 18px; }
+.wkleague h3 { display: flex; align-items: baseline; gap: 10px; margin: 0 0 8px; }
+.wklist { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 380px), 1fr)); gap: 12px; }
+.wkgame { border: 1px solid var(--rule); background: var(--panel); padding: 10px 12px; display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.wkhead { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; flex-wrap: wrap; }
+.wkdate { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); white-space: nowrap; }
+.wkline { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; min-width: 0; }
+.wklabel { font: 600 11px/1.3 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); flex: none; min-width: 7em; }
+.wkarticles { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.wkgame a { text-decoration: underline; text-underline-offset: 2px; }
+.wkcite { flex: 1 1 100%; font: 12px/1.4 var(--mono); background: var(--soft); padding: 6px 8px; overflow-wrap: anywhere; user-select: all; }
+.wkcopy { font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 7px 12px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+.wkcopy:hover { border-color: var(--accent); color: var(--accent-text); }
