@@ -66,6 +66,21 @@ log_deploy() { # outcome summary tickets-json checks-json problems-json dpl url
 say() { printf '%s\n' "$*"; }
 yes_no() { local a; printf '%s [y/N] ' "$1"; read -r a || a=n; [ "$a" = y ] || [ "$a" = Y ]; }
 kc() { command -v security >/dev/null 2>&1 && security find-generic-password -s "$1" -w 2>/dev/null; return 0; }
+# The deployment URL from what `vercel deploy` printed on stdout. Older CLIs print the URL as the last line; newer ones may print a JSON
+# block, whose last line is "}" (the ticket on 2026-10-19 read "deployed }"). So: a JSON document first (first https URL or *.vercel.app
+# host in it that is not a vercel.com page), else the last *.vercel.app URL in the text. Prints nothing when there is none.
+vercel_url() {
+  local out="$1" u=""
+  if printf '%s' "$out" | jq -e . >/dev/null 2>&1; then
+    u="$(printf '%s' "$out" | jq -r '[.. | strings | select(test("(^|//)[A-Za-z0-9-]+\\.vercel\\.app(/|$)"))] | first // empty' 2>/dev/null)"
+  fi
+  [ -n "$u" ] || u="$(printf '%s\n' "$out" | grep -oE '(https://)?[A-Za-z0-9-]+\.vercel\.app' | tail -1)"
+  u="$(printf '%s' "$u" | grep -oE '[A-Za-z0-9-]+\.vercel\.app' | head -1)"
+  [ -z "$u" ] || u="https://$u"
+  printf '%s' "$u"
+}
+# The dpl_ id in the same output, if it names one.
+vercel_dpl() { printf '%s\n' "$1" | grep -oE 'dpl_[A-Za-z0-9]+' | head -1; }
 
 TMPS=()
 # shellcheck disable=SC2329
@@ -316,12 +331,13 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
     D="$(mktemp -d)"; TMPS+=("$D")
     git -C "$REPO" archive "$SHA" | tar -x -C "$D"
     say "  deploying $SHORT (about a minute; nothing prints until the build is done)"
-    url=""
+    url="" dpl="" dout=""
     if (cd "$D" && $VERCEL link --yes --project spx-stats --scope "$SCOPE" >/dev/null 2>&1); then
-      url="$(cd "$D" && $VERCEL deploy --prod --yes --scope "$SCOPE" 2>/dev/null | tail -1)"
+      dout="$(cd "$D" && $VERCEL deploy --prod --yes --scope "$SCOPE" 2>/dev/null)"
+      url="$(vercel_url "$dout")"; dpl="$(vercel_dpl "$dout")"
     fi
     rm -rf "$D"
-    dpl="$($VERCEL inspect "$url" --scope "$SCOPE" 2>&1 | grep -oE 'dpl_[A-Za-z0-9]+' | head -1)"
+    [ -z "$url" ] || [ -n "$dpl" ] || dpl="$($VERCEL inspect "$url" --scope "$SCOPE" 2>&1 | grep -oE 'dpl_[A-Za-z0-9]+' | head -1)"
     dep="${dpl:-$url}"
     if [ -z "$url" ]; then
       log_deploy failed "deploy of $SHORT failed or printed no URL" "$(printf '%s\n' "${SITE_T[@]}" | jq -R . | jq -sc .)"

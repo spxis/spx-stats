@@ -29,7 +29,12 @@ cat > "$B/vercel" <<EOF
 #!/bin/sh
 echo "vercel \$*" >> "$LOG"
 case "\$1" in
-  deploy) echo "https://spx-stats-new.vercel.app" ;;
+  deploy)
+    case "\${STUB_DEPLOY:-}" in
+      json) printf '{\n  "status": "ok",\n  "deployment": {\n    "id": "dpl_JsonStub2",\n    "url": "spx-stats-json.vercel.app",\n    "inspectorUrl": "https://vercel.com/team/spx-stats/dpl_JsonStub2"\n  }\n}\n' ;;
+      noisy) printf 'Queued\nBuilding\nProduction: https://spx-stats-noisy.vercel.app [41s]\nhttps://spx-stats-noisy.vercel.app\n' ;;
+      *) echo "https://spx-stats-new.vercel.app" ;;
+    esac ;;
   inspect) echo "id dpl_StubDeploy1" ;;
 esac
 EOF
@@ -153,6 +158,18 @@ expect "hand-off moved to done/" "[ -f $SPX_HANDOFF_DIR/done/$T1.json ] && [ ! -
 expect "reply says deployed with version and deployment" "[ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ] && [ \$(jq -r '.history[-1].deployment' $SPX_HANDOFF_DIR/replies/$T1.json) = dpl_StubDeploy1 ]"
 expect "pages were checked with the header" "jq -e '.history[-1].checked | index(\"/nhl/2012 200\")' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
 expect "summary printed" "printf '%s' \"\$out\" | grep -q -- '---- summary'"
+
+echo "deploy.sh: vercel prints a JSON block (the last line is a closing brace)"
+reset; mk $T1 '.' site-ready
+out="$(STUB_DEPLOY=json $D 2>&1)"; rc=$?
+expect "exit 0" "[ $rc = 0 ]"
+expect "the url comes from the JSON, not the last line" "printf '%s' \"\$out\" | grep -q 'deployed https://spx-stats-json.vercel.app' && ! printf '%s' \"\$out\" | grep -qE 'deployed }|READY: }'"
+expect "sign-in check got the JSON url" "grep -q 'liveauth --new https://spx-stats-json.vercel.app' $LOG"
+expect "reply carries the dpl id from the JSON" "[ \$(jq -r '.history[-1].deployment' $SPX_HANDOFF_DIR/replies/$T1.json) = dpl_JsonStub2 ]"
+expect "no vercel inspect needed when the output names the id" "! grep -q '^vercel inspect' $LOG"
+reset; mk $T1 '.' site-ready
+out="$(STUB_DEPLOY=noisy $D 2>&1)"
+expect "progress lines before the url are ignored" "grep -q 'liveauth --new https://spx-stats-noisy.vercel.app' $LOG && [ \$(jq -r '.history[-1].deployment' $SPX_HANDOFF_DIR/replies/$T1.json) = dpl_StubDeploy1 ]"
 
 echo "deploy.sh: no bypass token"
 reset; mk $T1 '.' site-ready; unset SPX_VERCEL_BYPASS
