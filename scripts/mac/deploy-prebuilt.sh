@@ -155,6 +155,9 @@ say "linked and pulled project settings into $TMP"
 # The SportsLogos.Net marks (/team-logos/sl/..., migration 108) are not in git: write them from DS1's archive into web/public before the build, so they ship
 # as static files. Stops (nothing built) when a logo a brand row points at is missing from the archive or its sha256 does not match.
 hosted_logos_export "$TMP/web"
+# The site's own small copies of every logo (docs/logos-serving.md): rendered from what the API names, from a source cache, so a build makes no request once it is warm.
+# It never stops the deploy: without them the logos keep their hot links.
+hosted_logos_render "$TMP/web" "$LOCAL"
 
 # ---- 4. build against DS1 ----------------------------------------------------------------------------------------------------------
 STAGE="build"

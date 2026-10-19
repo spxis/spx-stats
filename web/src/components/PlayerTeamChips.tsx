@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "@/components/Link";
-import { createContext, useContext, useSyncExternalStore, type ReactNode } from "react";
+import { createContext, useContext, useState, useSyncExternalStore, type ReactNode } from "react";
+import { localLogo } from "@/lib/logoFiles";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { ChipTuple } from "@/lib/teamChips";
 import "./teamchips.css";
@@ -12,6 +13,14 @@ const never = () => () => {};
 /** Gives the chips under it the page's list of logo addresses (they are sent once, not on every row). */
 export function TeamLogoList({ logos, children }: { logos: readonly string[]; children: ReactNode }) {
   return <Logos value={logos}>{children}</Logos>;
+}
+
+/** One chip's logo: the site's own small copy when there is one, else the hot link (also when the copy fails to load). The chip is 20 px high. */
+function ChipLogo({ url, dim }: { url: string; dim: boolean | number }) {
+  const [copyFailed, setCopyFailed] = useState(false);
+  const copy = copyFailed ? null : localLogo(url, 20);
+  // eslint-disable-next-line @next/next/no-img-element -- already-small logos (see TeamLogo); the name and years are the link's tooltip, so a logo that fails to load still says which team it was
+  return <img className={dim ? "logo dim" : "logo"} src={copy?.src ?? url} srcSet={copy?.srcSet} alt="" loading="lazy" referrerPolicy="no-referrer" onError={copy ? () => setCopyFailed(true) : undefined} />;
 }
 
 /**
@@ -35,8 +44,7 @@ export function PlayerTeamChips({ shown, more }: {
       {shown.map(([href, logo, tip, dim, initials]) => (
         <Link key={href} className="tchip" href={href} prefetch={false} title={tip}>
           {logo >= 0 && logos[logo] ? (ready ? (
-            // eslint-disable-next-line @next/next/no-img-element -- remote, already-small logos (see TeamLogo); the name and years are the link's tooltip, so a logo that fails to load still says which team it was
-            <img className={dim ? "logo dim" : "logo"} src={logos[logo]} alt="" loading="lazy" referrerPolicy="no-referrer" />
+            <ChipLogo url={logos[logo]} dim={dim} />
           ) : null) : <span className="tinit" aria-hidden="true">{initials}</span>}
         </Link>
       ))}

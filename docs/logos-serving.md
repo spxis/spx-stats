@@ -61,7 +61,22 @@ hand-off. Because original bytes already sit in the library and the archive, no 
   about 80 KB each). The same treatment (cleaned, minified flags, immutable) would cut that by about 90 percent.
 - `/team-logos/sl/*` returns 404 on any checkout that has not run `export_hosted.py`; the dev server shows missing logos for 73 hosted marks.
 
+## Implemented (John said "get these done", 2026-10-19)
+
+- `scripts/logos/render_site.py` (Pillow with WebP; Mac venv `~/.cache/spx-stats/logo-venv`) reads every logo address from the PostgREST
+  (`team_brand`, `logo_fit`), takes the bytes from the local library's `render-src/` cache, the hosted SportsLogos.Net files or Wikimedia (1.5 s apart,
+  250 px thumbnail first), and writes `web/public/team-logos/<hash>-<tag>-<24|48|96>.webp` (a tier only where the source can fill it, never enlarged),
+  small safe SVGs (up to 3 KB) as they are, and `manifest.json`. All git-ignored. `deploy-prebuilt.sh` and `ds1-preview.sh` run it
+  (`hosted_logos_render`) after `hosted_logos_export`; a failure only warns and removes the manifest, so every logo keeps its hot link.
+- `<hash>` is FNV-1a of the logo key (`logoKey`, the same for every thumbnail size of a file), `<tag>` the first 6 hex of sha256(source bytes + render
+  version), so files are immutable. `next.config.ts` puts the manifest into `SPX_LOGO_FILES` (no database read) and sends the one-year immutable header.
+- `lib/logoFiles.ts` `localLogo()` gives `TeamLogo` and the player chips a 1x/2x `srcSet`; `onError` falls back to the hot link.
+- Tests: `pnpm test:logofiles`, `python3 -I scripts/logos/test_render_site.py`, `bash scripts/mac/test/hosted-logos-test.sh`.
+- A dry offline run on this Mac (library cache only) rendered 128 of 339 logos, 360 files, 0.9 MB; the rest need one online run (about 1.5 s per new
+  file, a few minutes). No bill, no new package, no data written.
+
 ## Untested
 
+The online render of all logos, and the effect in a real deploy (page weights above are estimates). 
 Image counts come from the server markup, not a browser run (lazy loading means a real visit loads fewer). The re-encode used Pillow
 at 40 px high from the existing 120 px PNGs; SVG sources were not rasterised by me. No Vercel build or deploy was done.

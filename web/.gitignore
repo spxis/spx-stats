@@ -11,3 +11,7 @@ next-env.d.ts
 
 # SportsLogos.Net logo files: written from DS1 at deploy time (scripts/logos/export_hosted.py), never committed
 /public/team-logos/sl/
+# the site's own small logo copies and their manifest: written by scripts/logos/render_site.py at deploy time, never committed
+/public/team-logos/*.webp
+/public/team-logos/*.svg
+/public/team-logos/manifest.json

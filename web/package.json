@@ -72,6 +72,7 @@
     "test:looks": "node --test scripts/seriesLooks.test.ts",
     "test:label": "node --test scripts/teamLabel.test.ts",
     "test:logofit": "node --test scripts/logoFit.test.ts",
+    "test:logofiles": "node --test scripts/logoFiles.test.ts",
     "test:eras": "node --test scripts/nameEras.test.ts",
     "test:teamboard": "node --test scripts/teamBoard.test.ts",
     "test:pager": "node --test scripts/pager.test.ts",

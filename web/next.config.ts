@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import type { NextConfig } from "next";
 import { hideInternalPaths, pageRewrites } from "./src/lib/routing.ts";
 
@@ -23,7 +24,18 @@ const csp = [
   ...(dev ? [] : ["upgrade-insecure-requests"]),
 ].join("; ");
 
+// The site's own small logo copies (scripts/logos/render_site.py writes public/team-logos/ and its manifest before a deploy build; lib/logoFiles.ts).
+// No manifest (a plain checkout, a remote build) means no copies and every logo is drawn from its own address, as before.
+const logoManifest = (() => {
+  try {
+    return readFileSync(new URL("./public/team-logos/manifest.json", import.meta.url), "utf8");
+  } catch {
+    return "";
+  }
+})();
+
 const nextConfig: NextConfig = {
+  env: { SPX_LOGO_FILES: logoManifest },
   // Lets a second build (e.g. against a stand-in API) sit beside the real one while testing.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
@@ -52,6 +64,8 @@ const nextConfig: NextConfig = {
     const noindex = { key: "X-Robots-Tag", value: "noindex, nofollow" };
     return [
       { source: "/(.*)", headers: security },
+      // The pre-rendered logo copies carry their content tag in the name, so they never change under it.
+      { source: "/team-logos/:file([0-9a-f]{8}-[0-9a-f]{6}(?:-[0-9]+)?\\.(?:webp|svg))", headers: [{ key: "Cache-Control", value: "public, max-age=31536000, immutable" }] },
       { source: "/:league/:year/game/:game", headers: [noindex] },
       { source: "/worldcup/:year/match/:match", headers: [noindex] },
       { source: "/mls/:year/match/:match", headers: [noindex] },

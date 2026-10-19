@@ -90,5 +90,30 @@ check "ds1-preview.sh sources the library" grep -q 'lib/hosted-logos.sh' "$pv"
 check "ds1-preview.sh exports the logos into the image source before compose build" bash -c "[ '$(lineof "$pv" 'hosted_logos_export "\$SRC/web"')' -lt '$(lineof "$pv" 'compose build --quiet site')' ]"
 check "ds1-preview.sh --update and --install both use prepare_src" bash -c "[ \$(grep -c 'prepare_src \"\${REF:-origin/main}\"' '$pv') = 2 ]"
 
+# 9. hosted_logos_render never stops a build: no usable Python, or a failed run, leaves no manifest and returns 0
+render() {
+  N=$((N + 1)); E="$ROOT/r$N"; mkdir -p "$E/web/public/team-logos"; echo '{"v":1,"files":{}}' > "$E/web/public/team-logos/manifest.json"
+  W="$E/web"
+  OUT=$(
+    export SPX_LOGO_PYTHON="$1" HOME="$E/home"
+    say() { echo "say: $*"; }
+    die() { echo "STOP: $*"; exit 1; }
+    . "$LIB"
+    hosted_logos_render "$W" http://127.0.0.1:9/ 2>&1
+  )
+  RC=$?
+}
+printf '#!/bin/bash\nexit 1\n' > "$ROOT/nopython"; chmod +x "$ROOT/nopython"
+render "$ROOT/nopython"
+check "no Pillow: the render is skipped with a warning and the build goes on" bash -c "test '$RC' = 0 && grep -q 'warning: no Python with Pillow' <<<'$OUT'" 
+check "no Pillow: a stale manifest is removed (logos keep their hot links)" bash -c "! test -e '$W/public/team-logos/manifest.json'"
+printf '#!/bin/bash\n[ "$1" = -c ] && exit 0\necho "stub render: $*"; exit 1\n' > "$ROOT/failpython"; chmod +x "$ROOT/failpython"
+render "$ROOT/failpython"
+check "a failed render warns and returns 0" bash -c "test '$RC' = 0 && grep -q 'the logo render stopped' <<<'$OUT'"
+check "a failed render leaves no manifest" bash -c "! test -e '$W/public/team-logos/manifest.json'"
+check "the render is given the web dir and the API address" grep -q -- "--web $W --rest http://127.0.0.1:9/" <<<"$OUT"
+check "deploy-prebuilt.sh renders the logo copies after exporting and before the build" bash -c "[ '$(lineof "$dp" '^hosted_logos_export')' -lt '$(lineof "$dp" '^hosted_logos_render')' ] && [ '$(lineof "$dp" '^hosted_logos_render')' -lt '$(lineof "$dp" 'vercel build --prod --yes')' ]"
+check "ds1-preview.sh renders the logo copies before compose build" bash -c "[ '$(lineof "$pv" 'hosted_logos_render "\$SRC/web"')' -lt '$(lineof "$pv" 'compose build --quiet site')' ]"
+
 echo "$PASS passed, $FAIL failed"
 [ "$FAIL" = 0 ]
