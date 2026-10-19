@@ -35,6 +35,10 @@ export function TeamLogo({ url, size = LOGO_SIZE, shape = "regular", dim = false
   const src = mark ?? url;
   const copy = copyFailed ? null : localLogo(src, size);
   const onError = () => (copy ? setCopyFailed(true) : mark ? setMarkFailed(true) : setFailed(true));
+  // An image that failed before this component was hydrated never reaches onError: look at it once it is in the page.
+  const settled = (el: HTMLImageElement | null) => {
+    if (el && el.complete && el.naturalWidth === 0 && el.currentSrc) onError();
+  };
   const vars = { "--s": `${size}px`, "--wmax": inline ? 1.8 : 2.4 } as CSSProperties;
   // A dark logo (fit tile "light") gets a light chip behind it on dark pages, where it would otherwise vanish beside the team's name.
   const chip = shape === "regular" && inline && chosen?.bg === "light";
@@ -44,12 +48,12 @@ export function TeamLogo({ url, size = LOGO_SIZE, shape = "regular", dim = false
     return (
       <span className={`${cls} fit`} title={title} style={tile ? { ...vars, background: tile } : vars}>
         {/* eslint-disable-next-line @next/next/no-img-element -- already-small logos; next/image would proxy a third party's trademarks */}
-        <img style={{ transform: `translate(${chosen.dx}%, ${chosen.dy}%) scale(${chosen.scale})` }} src={copy?.src ?? src} srcSet={copy?.srcSet} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={onError} />
+        <img style={{ transform: `translate(${chosen.dx}%, ${chosen.dy}%) scale(${chosen.scale})` }} src={copy?.src ?? src} srcSet={copy?.srcSet} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" ref={settled} onError={onError} />
       </span>
     );
   }
   return (
     // eslint-disable-next-line @next/next/no-img-element -- already-small logos; next/image would proxy a third party's trademarks
-    <img className={cls} title={title} style={vars} src={copy?.src ?? src} srcSet={copy?.srcSet} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={onError} />
+    <img className={cls} title={title} style={vars} src={copy?.src ?? src} srcSet={copy?.srcSet} alt="" width={size} height={size} loading="lazy" decoding="async" referrerPolicy="no-referrer" ref={settled} onError={onError} />
   );
 }

@@ -19,8 +19,12 @@ export function TeamLogoList({ logos, children }: { logos: readonly string[]; ch
 function ChipLogo({ url, dim }: { url: string; dim: boolean | number }) {
   const [copyFailed, setCopyFailed] = useState(false);
   const copy = copyFailed ? null : localLogo(url, 20);
+  // A copy that failed before hydration never reaches onError: look at the image once it is in the page.
+  const settled = (el: HTMLImageElement | null) => {
+    if (copy && el && el.complete && el.naturalWidth === 0 && el.currentSrc) setCopyFailed(true);
+  };
   // eslint-disable-next-line @next/next/no-img-element -- already-small logos (see TeamLogo); the name and years are the link's tooltip, so a logo that fails to load still says which team it was
-  return <img className={dim ? "logo dim" : "logo"} src={copy?.src ?? url} srcSet={copy?.srcSet} alt="" loading="lazy" referrerPolicy="no-referrer" onError={copy ? () => setCopyFailed(true) : undefined} />;
+  return <img className={dim ? "logo dim" : "logo"} src={copy?.src ?? url} srcSet={copy?.srcSet} alt="" loading="lazy" referrerPolicy="no-referrer" ref={settled} onError={copy ? () => setCopyFailed(true) : undefined} />;
 }
 
 /**
