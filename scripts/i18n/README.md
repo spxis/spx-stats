@@ -32,6 +32,7 @@ plain `urllib`, no `anthropic` SDK. Work files go to `~/Projects/backups/spx-sta
     batch.py status
     batch.py fetch                                                    # results.jsonl, matched on custom_id
     batch.py report                                                   # report.md and report.json
+    batch.py apply  [--lang fr,ja] [--write] [-v]                     # fix verdicts of phrases into the dictionaries (dry run unless --write)
     batch.py run --keychain                                           # check, build, submit, wait, fetch, report
 
 `build --lang fr,ja` reviews what exists: every phrase of `phrases.constants.ts` against `dictionaries/fr.constants.ts` and
@@ -39,5 +40,13 @@ plain `urllib`, no `anthropic` SDK. Work files go to `~/Projects/backups/spx-sta
 French city and metro names, and the national-team names in `web/src/lib/soccerNames.ts`. `--lang de,es` drafts from the English.
 Each item comes back as JSON: `verdict` (`ok`, `fix` or `doubt`), a literal English back-translation, a proposed fix and a one-line
 reason. `report` also checks placeholders itself. The report is a local file: it is not committed (public repository, no internal reviews).
+
+`apply` takes only verdict `fix` items of the phrase tables (never `doubt`, never a seed CSV, city or soccer-name item) and rewrites those lines of
+`web/src/lib/i18n/dictionaries/fr.constants.ts`, `ja.constants.ts` and the `*_FR` / `*_JA` blocks of the other `*.constants.ts` files in place, in the same
+format; English is never read or written. It skips an item whose proposed text equals the current one (`same`), whose placeholders differ from the English
+(`placeholders`), whose key is gone (`missing`), or whose line no longer holds the text the batch reviewed (`stale`: the text changed after the batch was built),
+and it keeps a no-break space before `:` `;` `?` `!` `»` wherever the current French text had one (the model returns a plain space). Run it as a dry run first,
+read the list, then `--write`; `python3 -m unittest scripts/i18n/test/test_apply.py` covers it, `pnpm test:i18n` checks keys and placeholders afterwards.
+Items added after a batch was built are not in it: build a new batch for them.
 
 Applying a fix is a separate, small commit to the dictionaries after John agrees; run the AGENTS.md section 6 checks first. Use `check` before the first batch of a new prompt: it is the only real-request validation of the shape.

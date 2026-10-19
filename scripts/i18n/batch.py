@@ -11,6 +11,7 @@ plain urllib (the `anthropic` SDK is not required, and is not installed on the M
     python3 scripts/i18n/batch.py status
     python3 scripts/i18n/batch.py fetch
     python3 scripts/i18n/batch.py report
+    python3 scripts/i18n/batch.py apply  [--write] [-v]   # fix verdicts of phrases into the FR and JA dictionaries
     python3 scripts/i18n/batch.py run          # build, submit, wait, fetch, report
 
 The API key is read from ANTHROPIC_API_KEY. Only with --keychain (or SPX_I18N_KEYCHAIN=1) is
@@ -506,8 +507,8 @@ def parse_rows(text: str):
 PH = re.compile(r"\{[A-Za-z0-9_.]+\}")
 
 
-def cmd_report(args) -> None:
-    d = pick_dir(args, "results.jsonl")
+def load_rows(d: Path) -> tuple[list[dict], Counter, Counter]:
+    """One record per reviewed item, from manifest.json and results.jsonl (matched on custom_id)."""
     manifest = json.loads((d / "manifest.json").read_text(encoding="utf-8"))
     results = {}
     for line in (d / "results.jsonl").read_text(encoding="utf-8").splitlines():
@@ -544,6 +545,12 @@ def cmd_report(args) -> None:
             if rec["fix"] and Counter(PH.findall(rec["fix"])) != want:
                 rec["placeholder_mismatch_fix"] = True
             rows_out.append(rec)
+    return rows_out, problems, usage
+
+
+def cmd_report(args) -> None:
+    d = pick_dir(args, "results.jsonl")
+    rows_out, problems, usage = load_rows(d)
     (d / "report.json").write_text(json.dumps(rows_out, ensure_ascii=False, indent=1), encoding="utf-8")
 
     lines = ["# Language batch report", "", f"Folder: {d}", ""]
@@ -588,6 +595,99 @@ def cmd_report(args) -> None:
     print(f"report: {path}")
 
 
+# ---------------------------------------------------------------- applying the fixes
+
+I18N_DIR = Path("web/src/lib/i18n")
+BLOCK = re.compile(r"^export const (\w+)\b[^=]*=\s*\{\s*$")
+ENTRY = re.compile(r'^(\s*)("(?:[^"\\]|\\.)+"): ("(?:[^"\\]|\\.)*"),\s*$')
+NBSP = "\u00a0"
+
+
+def keep_nbsp(cur: str, fix: str) -> str:
+    """The model returns a plain space before : ; ? ! and » where the current French text has a no-break space:
+    keep the no-break space for each of those marks the current text already writes that way."""
+    for mark in (":", ";", "?", "!", "\u00bb"):
+        if f"{NBSP}{mark}" in cur:
+            fix = fix.replace(f" {mark}", f"{NBSP}{mark}")
+    return fix
+
+
+def lang_blocks(root: Path):
+    """Yield (file, lines, [(index, lang, key, value)]) for every FR or JA dictionary entry under web/src/lib/i18n.
+    A block is an `export const NAME = {` whose NAME is FR, JA or ends in _FR or _JA; English is never read."""
+    for f in sorted((root / I18N_DIR).rglob("*.ts")):
+        lines = f.read_text(encoding="utf-8").split("\n")
+        entries, lang = [], None
+        for i, line in enumerate(lines):
+            m = BLOCK.match(line)
+            if m:
+                name = m.group(1)
+                lang = name[-2:].lower() if name[-2:] in ("FR", "JA") and (name == name[-2:] or name[-3] == "_") else None
+                continue
+            if lang and line.startswith("}"):
+                lang = None
+                continue
+            e = ENTRY.match(line) if lang else None
+            if e:
+                try:
+                    entries.append((i, lang, json.loads(e.group(2)), json.loads(e.group(3))))
+                except json.JSONDecodeError:
+                    pass
+        yield f, lines, entries
+
+
+def plan_apply(rows: list[dict], root: Path, langs=SITE_LANGS) -> tuple[dict, list[dict]]:
+    """Which phrase fixes can be applied. Returns ({file: lines}, decisions); a decision is
+    {lang, key, status, old, new} with status applied, same, placeholders, stale (the file no longer holds the text
+    the batch reviewed) or missing (no such key in that language's dictionary). Nothing is written here."""
+    fixes = {(r["lang"], r["key"]): r for r in rows if r["verdict"] == "fix" and r["src"] == "ph" and r["lang"] in langs}
+    decisions: dict = {}
+    files: dict = {}
+    for f, lines, entries in lang_blocks(root):
+        for i, lang, key, value in entries:
+            r = fixes.get((lang, key))
+            if r is None:
+                continue
+            d = decisions.setdefault((lang, key), {"lang": lang, "key": key, "status": "stale", "old": r["cur"], "new": None})
+            if value != r["cur"]:
+                continue
+            new = keep_nbsp(r["cur"], r["fix"]) if lang == "fr" else r["fix"]
+            d["new"] = new
+            if new == r["cur"]:
+                d["status"] = "same"
+            elif Counter(PH.findall(new)) != Counter(PH.findall(r["en"])):
+                d["status"] = "placeholders"
+            else:
+                d["status"] = "applied"
+                lines[i] = ENTRY.match(lines[i]).expand(r"\1\2: ") + json.dumps(new, ensure_ascii=False) + ","
+                files[f] = lines
+    for (lang, key), r in fixes.items():
+        decisions.setdefault((lang, key), {"lang": lang, "key": key, "status": "missing", "old": r["cur"], "new": None})
+    return files, sorted(decisions.values(), key=lambda d: (d["lang"], d["key"]))
+
+
+def cmd_apply(args) -> None:
+    """Apply the phrase fixes of a fetched batch to the FR and JA dictionaries (dry run unless --write)."""
+    d = pick_dir(args, "results.jsonl")
+    rows, _problems, _usage = load_rows(d)
+    langs = tuple(x for x in args.lang.split(",") if x)
+    files, decisions = plan_apply(rows, REPO, langs)
+    counts = Counter((x["lang"], x["status"]) for x in decisions)
+    for (lang, status), n in sorted(counts.items()):
+        print(f"{lang}: {status} {n}")
+    for x in decisions:
+        if x["status"] != "applied":
+            print(f"  not applied ({x['status']}): {x['lang']} {x['key']}")
+        elif args.verbose:
+            print(f"  {x['lang']} {x['key']}\n    - {x['old']}\n    + {x['new']}")
+    if not args.write:
+        print("dry run: nothing written (add --write to change the dictionaries).")
+        return
+    for f, lines in files.items():
+        f.write_text("\n".join(lines), encoding="utf-8")
+    print(f"written: {', '.join(str(f.relative_to(REPO)) for f in files)}")
+
+
 def cmd_run(args) -> None:
     key = need_key(args)
     os.environ["ANTHROPIC_API_KEY"] = key  # for the steps below, this process only
@@ -623,11 +723,15 @@ def main() -> None:
             p.add_argument("--exact", action="store_true", help="count user tokens with the API's free count_tokens endpoint (needs a key)")
 
     for name, fn, b in (("build", cmd_build, True), ("check", cmd_check, False), ("submit", cmd_submit, False),
-                        ("status", cmd_status, False), ("fetch", cmd_fetch, False), ("report", cmd_report, False), ("run", cmd_run, True)):
+                        ("status", cmd_status, False), ("fetch", cmd_fetch, False), ("report", cmd_report, False), ("apply", cmd_apply, False), ("run", cmd_run, True)):
         p = sub.add_parser(name)
         common(p, b)
         if name == "submit":
             p.add_argument("--again", action="store_true")
+        if name == "apply":
+            p.add_argument("--lang", default="fr,ja", help="languages to apply (fr, ja)")
+            p.add_argument("--write", action="store_true", help="change the dictionaries (default: a dry run)")
+            p.add_argument("--verbose", "-v", action="store_true", help="print every old and new text")
         p.set_defaults(fn=fn)
     args = ap.parse_args()
     if args.cmd == "build" or args.cmd == "run":
