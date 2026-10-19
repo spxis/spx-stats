@@ -22,6 +22,10 @@ create or replace function pg_temp.norm(t text) returns text language sql immuta
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;
 
 -- ---------------------------------------------------------------- remove what this step wrote
+-- An owner row keeps its id on a rerun: remembered by its values before the delete, given back on insert.
+create temp table old_owner as
+select franchise_id, owner_name, valid_during, share_note, min(franchise_owner_id) as franchise_owner_id
+from core.franchise_owner where source_id = (select source_id from meta.source where code = 'wikidata') group by 1, 2, 3, 4;
 delete from core.franchise_owner where source_id = (select source_id from meta.source where code = 'wikidata');
 delete from core.franchise_venue where source_id = (select source_id from meta.source where code = 'wikidata');
 delete from core.venue_feature where source_id = (select source_id from meta.source where code = 'wikidata');
@@ -210,17 +214,22 @@ from vmap vm join legacy_franchise_info.place p on p.qid = vm.qid
 where p.roof is not null or (p.surface is not null and p.surface !~ ';');
 
 -- ---------------------------------------------------------------- owners
-insert into core.franchise_owner (franchise_id, owner_name, valid_during, share_note, source_id)
+insert into core.franchise_owner (franchise_owner_id, franchise_id, owner_name, valid_during, share_note, source_id)
+overriding system value
+select coalesce(oo.franchise_owner_id, nextval(pg_get_serial_sequence('core.franchise_owner', 'franchise_owner_id'))), n.*
+from (
 select distinct c.franchise_id, o.owner_name,
-       daterange(o.starts_on, o.ends_on),
-       case when o.share is not null then round(o.share * 100, 1)::text || '% share' end,
-       (select source_id from meta.source where code = 'wikidata')
+       daterange(o.starts_on, o.ends_on) as valid_during,
+       case when o.share is not null then round(o.share * 100, 1)::text || '% share' end as share_note,
+       (select source_id from meta.source where code = 'wikidata') as source_id
 from cover c
 join legacy_franchise_info.team_owner o on o.qid = c.qid and o.rank <> 'deprecated'
 where o.owner_name is not null
   and (o.starts_on is not null or o.ends_on is not null)       -- an owner with no dates is left out: unbounded would claim years nobody gave
   and not isempty(daterange(o.starts_on, o.ends_on))
-  and (o.starts_on is null or o.ends_on is null or o.starts_on <= o.ends_on);
+  and (o.starts_on is null or o.ends_on is null or o.starts_on <= o.ends_on)) n
+left join old_owner oo on oo.franchise_id = n.franchise_id and oo.owner_name = n.owner_name and oo.valid_during = n.valid_during
+                      and oo.share_note is not distinct from n.share_note;
 
 -- ---------------------------------------------------------------- identity region
 create temp table id_region as

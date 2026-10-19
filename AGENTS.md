@@ -109,7 +109,7 @@ data repair. If you start a subagent, copy this section into its instructions (t
   own candidate set), never "everything not in my list". *Broken:* step 177 deleted 11,073 Wikidata ids other steps had added.
 - **A rerun keeps ids.** A `db/build` step that rewrites games, series, venues, franchises or awards updates rows in place (or remembers the id by `source_key` before the
   delete and gives it back on insert, as 146, 147, 150 and 140 do): the site's game addresses and production's unique keys carry those ids. `db/checks/093_row_id_drift.sql`
-  returns every row whose id differs from the first one remembered in `ingest.row_id_map` (migration 135, DS1 only; `db/build/221` adds new keys). *Broken:* a rerun of 145
+  returns every row whose id differs from the first one remembered in `ingest.row_id_map` (migrations 135 and 136, DS1 only; `db/build/221` adds new keys). Roster stints (177, 179, 181 nflverse, 184) and franchise owners (176) remember theirs before the delete the same way. *Broken:* a rerun of 145
   gave 57,726 games new ids, one of 154 renumbered the 50 `core.series` rows, one of 176 about 40 venues.
 - **Merging or deleting a row that others point at** (people, franchises, identities) means every table with a foreign key to it goes in
   the same release; `prepare`'s rehearsal finds the ones you forget.

@@ -28,6 +28,9 @@ drop table if exists pg_temp.seed_team;
 create temp table seed_team (code text, from_season int, to_season int, target text);
 \copy seed_team from 'db/seed/nflverse_roster_team.csv' with (format csv, header true)
 
+-- A stint keeps its id on a rerun: remembered by person and team season before the delete, given back on insert.
+create temp table old_stint on commit drop as
+select person_id, team_season_id, min(roster_stint_id) as roster_stint_id from core.roster_stint where source_id = (select source_id from nsrc) group by 1, 2;
 delete from core.roster_stint where source_id = (select source_id from nsrc);
 
 -- ---- 1. Roster rows with their team season ------------------------------------------------------------------------------------------
@@ -108,14 +111,19 @@ select 'person', pp.person_id, (select source_id from nsrc), pp.key from pp wher
 on conflict do nothing;
 
 -- ---- 3. Rosters ---------------------------------------------------------------------------------------------------------------------
-insert into core.roster_stint (person_id, team_season_id, role, position, jersey_number, weight_kg, status, source_id)
-select distinct on (pp.person_id, rp.team_season_id) pp.person_id, rp.team_season_id, 'player', rp.pos_code,
-       case when rp.jersey_number between 0 and 99 and (rp.jersey_number > 0 or rp.season >= 2023) then rp.jersey_number end,
-       case when rp.weight_lb between 80 and 600 then round(rp.weight_lb * 0.45359237)::smallint end,
-       nullif(rp.status, ''), (select source_id from nsrc)
+insert into core.roster_stint (roster_stint_id, person_id, team_season_id, role, position, jersey_number, weight_kg, status, source_id)
+overriding system value
+select coalesce(o.roster_stint_id, nextval(pg_get_serial_sequence('core.roster_stint', 'roster_stint_id'))), s.person_id, s.team_season_id, 'player', s.pos_code,
+       s.jersey_number, s.weight_kg, s.status, (select source_id from nsrc)
+from (
+select distinct on (pp.person_id, rp.team_season_id) pp.person_id, rp.team_season_id, rp.pos_code,
+       case when rp.jersey_number between 0 and 99 and (rp.jersey_number > 0 or rp.season >= 2023) then rp.jersey_number end as jersey_number,
+       case when rp.weight_lb between 80 and 600 then round(rp.weight_lb * 0.45359237)::smallint end as weight_kg,
+       nullif(rp.status, '') as status
 from rp join pp using (key)
 where not exists (select 1 from core.roster_stint o where o.person_id = pp.person_id and o.team_season_id = rp.team_season_id and o.role = 'player')
-order by pp.person_id, rp.team_season_id, rp.row_no desc;
+order by pp.person_id, rp.team_season_id, rp.row_no desc) s
+left join old_stint o on o.person_id = s.person_id and o.team_season_id = s.team_season_id;
 
 -- ---- 4. What could not be placed ----------------------------------------------------------------------------------------------------
 delete from meta.data_issue where source_id = (select source_id from nsrc) and entity_kind = 'roster_team' and entity_key like 'nflverse_rosters:%';

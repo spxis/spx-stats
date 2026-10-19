@@ -227,6 +227,9 @@ select pf.*, b.label as birth_place, b.lat as birth_lat, b.lon as birth_lon, b.c
 from pf left join place b on b.qid = pf.bp left join place d on d.qid = pf.dp;
 
 -- ---- 4. People: found by their Wikidata number, made when new ---------------------------------------------------------------------
+-- A stint keeps its id on a rerun: remembered by person and team season before the delete, given back on insert.
+create temp table old_stint on commit drop as
+select person_id, team_season_id, min(roster_stint_id) as roster_stint_id from core.roster_stint where source_id = (select source_id from src) group by 1, 2;
 delete from core.roster_stint where source_id = (select source_id from src);
 
 create temp table pp on commit drop as
@@ -267,12 +270,16 @@ create temp table wp_num on commit drop as
 select distinct on (qid, league_code, season, club) qid, league_code, season, pg_temp.key(club) as k, number::smallint as num
 from wp_ok where why is null and src = 'roster' and number ~ '^[0-9]{1,2}$' order by qid, league_code, season, club, ord;
 
-insert into core.roster_stint (person_id, team_season_id, role, jersey_number, source_id)
-select distinct on (pp.person_id, pick.team_season_id) pp.person_id, pick.team_season_id, 'player', n.num, (select source_id from src)
+insert into core.roster_stint (roster_stint_id, person_id, team_season_id, role, jersey_number, source_id)
+overriding system value
+select coalesce(o.roster_stint_id, nextval(pg_get_serial_sequence('core.roster_stint', 'roster_stint_id'))), s.person_id, s.team_season_id, 'player', s.num, (select source_id from src)
+from (
+select distinct on (pp.person_id, pick.team_season_id) pp.person_id, pick.team_season_id, n.num
 from pick join pp using (qid)
 left join wp_num n on n.qid = pick.qid and n.league_code = pick.league_code and n.season = pick.y and n.k = pick.k
 where not exists (select 1 from core.roster_stint r where r.person_id = pp.person_id and r.team_season_id = pick.team_season_id and r.role = 'player')
-order by pp.person_id, pick.team_season_id, (n.num is null);
+order by pp.person_id, pick.team_season_id, (n.num is null)) s
+left join old_stint o on o.person_id = s.person_id and o.team_season_id = s.team_season_id;
 
 -- A person an earlier run made that this run places nowhere (a source changed its mind) and who holds nothing else goes again, with the key.
 -- A person anything else points at is kept: the delete is tried per person and a foreign key that objects leaves them in place.

@@ -17,6 +17,12 @@ update meta.source set attribution = attribution || ' Head coaches, captains and
        notes = notes || ' Coaches and captains: infobox fields of the club-season articles, fetched through the MediaWiki API 2026-10-12.'
 where code = 'wikipedia' and attribution not like '%Head coaches, captains%';
 
+-- A stint keeps its id on a rerun: remembered by source, person, team season, role and captaincy (the nth by start date) before the delete, given back on insert.
+create temp table old_stint on commit drop as
+select roster_stint_id, source_id, person_id, team_season_id, role, captaincy,
+       row_number() over (partition by source_id, person_id, team_season_id, role, captaincy order by lower(valid_during) nulls first, roster_stint_id) as rn
+from core.roster_stint
+where (role = 'head_coach' or captaincy is not null) and source_id in (select retro from sid union select nfl from sid union select wiki from sid);
 delete from core.roster_stint where (role = 'head_coach' or captaincy is not null)
   and source_id in (select retro from sid union select nfl from sid union select wiki from sid);
 
@@ -132,17 +138,28 @@ select 'person', person_id, source_id, key from pp
 on conflict do nothing;
 
 -- ---- stints
-insert into core.roster_stint (person_id, team_season_id, role, valid_during, source_id)
-select pp.person_id, c.team_season_id, 'head_coach', case when c.first_on is not null then daterange(c.first_on, c.last_on, '[]') end, c.source_id
+insert into core.roster_stint (roster_stint_id, person_id, team_season_id, role, valid_during, source_id)
+overriding system value
+select coalesce(o.roster_stint_id, nextval(pg_get_serial_sequence('core.roster_stint', 'roster_stint_id'))), s.person_id, s.team_season_id, 'head_coach', s.valid_during, s.source_id
+from (
+select pp.person_id, c.team_season_id, case when c.first_on is not null then daterange(c.first_on, c.last_on, '[]') end as valid_during, c.source_id, c.first_on, c.n,
+       row_number() over (partition by c.source_id, pp.person_id, c.team_season_id order by c.first_on nulls first, c.n) as rn
 from coach_raw c join pp on pp.key = c.key and pp.source_id = c.source_id
-where c.field = 'coach'
-order by c.team_season_id, c.first_on nulls first, c.n;
+where c.field = 'coach') s
+left join old_stint o on o.source_id = s.source_id and o.person_id = s.person_id and o.team_season_id = s.team_season_id
+                     and o.role = 'head_coach' and o.captaincy is null and o.rn = s.rn
+order by s.team_season_id, s.first_on nulls first, s.n;
 
-insert into core.roster_stint (person_id, team_season_id, role, captaincy, source_id)
-select distinct on (pp.person_id, c.team_season_id, c.field) pp.person_id, c.team_season_id, 'player', case c.field when 'captain' then 'C' else 'A' end, c.source_id
+insert into core.roster_stint (roster_stint_id, person_id, team_season_id, role, captaincy, source_id)
+overriding system value
+select coalesce(o.roster_stint_id, nextval(pg_get_serial_sequence('core.roster_stint', 'roster_stint_id'))), s.person_id, s.team_season_id, 'player', s.captaincy, s.source_id
+from (
+select distinct on (pp.person_id, c.team_season_id, c.field) pp.person_id, c.team_season_id, case c.field when 'captain' then 'C' else 'A' end as captaincy, c.source_id
 from coach_raw c join pp on pp.key = c.key and pp.source_id = c.source_id
 where c.field in ('captain', 'alt_captain')
-order by pp.person_id, c.team_season_id, c.field, c.n;
+order by pp.person_id, c.team_season_id, c.field, c.n) s
+left join old_stint o on o.source_id = s.source_id and o.person_id = s.person_id and o.team_season_id = s.team_season_id
+                     and o.role = 'player' and o.captaincy = s.captaincy and o.rn = 1;
 
 select 'head_coach stints' as what, count(*) from core.roster_stint where role = 'head_coach'
 union all select 'captaincy stints', count(*) from core.roster_stint where captaincy is not null;

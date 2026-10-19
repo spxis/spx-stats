@@ -112,6 +112,9 @@ where w.person_id is not null;
 
 update core.award_winner set person_id = null
  where person_id in (select entity_id from core.external_id where entity_kind = 'person' and source_id = (select source_id from wd));
+-- A stint keeps its id on a rerun: remembered by person and team season before the delete, given back on insert.
+create temp table old_stint on commit drop as
+select person_id, team_season_id, min(roster_stint_id) as roster_stint_id from core.roster_stint where source_id = (select source_id from wd) group by 1, 2;
 delete from core.roster_stint where source_id = (select source_id from wd);
 
 create temp table pp on commit drop as
@@ -218,9 +221,11 @@ select distinct o.qid, o.team_qid, o.league_code, o.start_year, o.team_season_id
 from one o join lg using (qid, team_qid)
 where o.n = 1 and (lg.leagues = 1 or exists (select 1 from p54 q where q.qid = o.qid and q.team_qid = o.team_qid and q.sports is not null));
 
-insert into core.roster_stint (person_id, team_season_id, role, source_id)
-select distinct pp.person_id, pick.team_season_id, 'player', (select source_id from wd)
-from pick join pp using (qid);
+insert into core.roster_stint (roster_stint_id, person_id, team_season_id, role, source_id)
+overriding system value
+select coalesce(o.roster_stint_id, nextval(pg_get_serial_sequence('core.roster_stint', 'roster_stint_id'))), n.person_id, n.team_season_id, 'player', (select source_id from wd)
+from (select distinct pp.person_id, pick.team_season_id from pick join pp using (qid)) n
+left join old_stint o on o.person_id = n.person_id and o.team_season_id = n.team_season_id;
 
 select (select count(*) from core.person p join core.external_id x on x.entity_kind = 'person' and x.entity_id = p.person_id and x.source_id = (select source_id from wd)) as people,
        (select count(*) from core.person where birth_date is not null) as with_birth_date,

@@ -79,6 +79,7 @@ def fresh():
         psql(db, "\\i %s" % os.path.join(REPO, "db", "migrations", "053_score_update_requests.sql"))
         if db == DS1:
             psql(db, "\\i %s" % os.path.join(REPO, "db", "migrations", "135_row_id_map.sql"))
+            psql(db, "\\i %s" % os.path.join(REPO, "db", "migrations", "136_row_id_map_stint_owner.sql"))
             psql(db, "\\i %s" % os.path.join(REPO, "db", "build", "221_row_id_map.sql"))
     h = __import__("hashlib").sha256(SECRET.encode()).hexdigest()
     psql(PROD, "insert into meta.release_secret (secret_hash) values ('%s')" % h)
