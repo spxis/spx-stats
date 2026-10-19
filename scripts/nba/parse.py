@@ -11,7 +11,9 @@ from itertools import groupby
 
 MONTHS = {m: i + 1 for i, m in enumerate("january february march april may june july august september october november december".split())}
 MON_RE = r"(Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sep(?:t(?:ember)?)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\.?"
-DATE_RE = re.compile(r"^\W*" + MON_RE + r"\s+(\d{1,2})\b(?!\s*,\s*\d{4})", re.I)
+WEEKDAY = r"(?:(?:Mon|Tue|Wed|Thu|Fri|Sat|Sun)[a-z]*\.?,?\s+)?"   # "Fri. Oct. 31"
+DATE_RE = re.compile(r"^\W*" + WEEKDAY + MON_RE + r"\s+(\d{1,2})\b(?!\s*,\s*\d{4})", re.I)
+FULL_DATE_RE = re.compile(r"^\W*" + WEEKDAY + MON_RE + r"\s+(\d{1,2})\s*,\s*(\d{4})\b", re.I)   # "October 25, 1985": older articles write the year
 DASH = r"[–—\-]"
 SCORE_RE = re.compile(r"(?:\b([WL])\s*)?(\d{2,3})\s*" + DASH + r"\s*(\d{2,3})")
 WON = ("game-won", "#bfb", "#cfc", "#ccffcc", "#bbffbb", "#cfe", "#ccffc", "#bdb")
@@ -21,6 +23,7 @@ def clean(s):
     s = re.sub(r"<ref[^>]*?/>|<ref[^>]*>.*?</ref>", "", s, flags=re.S)
     s = re.sub(r"<br\s*/?>", " ", s)
     s = re.sub(r"<!--.*?-->", "", s, flags=re.S)
+    s = re.sub(r"</?(?:span|small|sup|b|i|center|font)\b[^>]*>", "", s, flags=re.I)   # colour spans round a cell's text
     return s.replace("'''", "").replace("''", "").lstrip("| ").strip()
 
 def link_of(cell):
@@ -30,15 +33,45 @@ def link_of(cell):
     plain = re.sub(r"\{\{[^}]*\}\}|'''|''", "", plain)
     return (m.group(1).strip() if m else None), plain.strip()
 
+ATTR_RE = re.compile(r"^\s*(?:style|class|align|bgcolor|colspan|rowspan|width|valign|scope|data-sort-value|nowrap)\b[^|]*=", re.I)
+
+def cell_text(part):
+    """A cell without its attributes: 'style="..." | content' -> 'content' (the first bar outside {{ }} and [[ ]] ends the attributes)."""
+    if not ATTR_RE.match(part): return part.strip()
+    depth = 0
+    for k, ch in enumerate(part):
+        if part.startswith(("{{", "[["), k): depth += 1
+        elif part.startswith(("}}", "]]"), k): depth -= 1
+        elif ch == "|" and depth <= 0: return part[k + 1:].strip()
+    return part.strip()
+
 def row_cells(lines):
     cells = []
     for ln in lines:
-        if cells and ln.startswith("|") and (cells[-1].count("{{") > cells[-1].count("}}") or cells[-1].count("[[") > cells[-1].count("]]")):
+        if cells and ln[:1] in "|!" and (cells[-1].count("{{") > cells[-1].count("}}") or cells[-1].count("[[") > cells[-1].count("]]")):
             cells[-1] += " " + ln.strip()
-        elif ln.startswith("|"):
-            for c in ln[1:].split("||"): cells.append(c.strip())
+        elif ln[:1] in ("|", "!") and ln:
+            for c in re.split(r"\|\||!!", ln[1:]): cells.append(cell_text(c))
         elif cells: cells[-1] += " " + ln.strip()
     return cells
+
+def is_me(cell, team):
+    """True when a table cell names the page's own club (the club's full name, city or nickname, or a link to its season article)."""
+    target, label = link_of(clean(cell))
+    if target:
+        m = re.match(r"^\d{4}[\u2013\-]\d{2,4} (.+) season$", target)
+        if m: return m.group(1) == team
+    t = re.sub(r"\s+", " ", label.replace("\u2013", "-").replace("\xa0", " ").strip(" .@")).lower()
+    city, nick = nick_city(team)
+    return bool(t) and t in (team.lower(), city.lower(), nick.lower()) and True
+
+def visitor_home_cols(cells):
+    """Column numbers (date, visitor, score, home, ot) when a header row reads Date | Visitor | Score | Home, else None (a header with another layout gives None too)."""
+    heads = [re.sub(r"[^a-z/ ]", "", clean(c).lower()).strip() for c in cells]
+    if "date" in heads and "visitor" in heads and "score" in heads and "home" in heads:
+        return dict(date=heads.index("date"), vis=heads.index("visitor"), score=heads.index("score"), home=heads.index("home"),
+                    ot=heads.index("ot") if "ot" in heads else None)
+    return None
 
 def year_for(season, month, phase):
     if phase == "playoffs" and season == 2019 and month >= 8: return season + 1
@@ -86,6 +119,7 @@ def parse_team_page(text, season, team):
     i, n = 0, len(lines)
     h2 = h3 = ""
     in_log = False
+    vcols = None
     while i < n:
         ln = lines[i]
         mh = re.match(r"^(={2,4})\s*(.*?)\s*\1\s*$", ln)
@@ -106,6 +140,10 @@ def parse_team_page(text, season, team):
             skip = bool(re.search(r"pre-season\s*=\s*(yes|y|1)", args))
             phase = "playoffs" if re.search(r"playoffs\s*=\s*(yes|y|1)", args) else "regular"
             rnd = None; i += 1; continue
+        ms = re.match(r"\{\{\s*Game log start\s*\|(.*)", ln, re.I)
+        if ms:   # the general log template: besides the score log, some articles carry starting-lineup and officials logs that hold no result
+            skip = bool(re.search(r"line-?up|official|referee|attendance|pre-?season", ms.group(1), re.I))
+            in_log = True; i += 1; continue
         ms = re.match(r"\{\{\s*NBA game log section\s*\|(.*)", ln)
         if ms:
             args = ms.group(1)
@@ -123,7 +161,9 @@ def parse_team_page(text, season, team):
                   and not re.match(r"^={2,4}", lines[j]):
                 blk.append(lines[j]); j += 1
             cells = row_cells(blk)
-            r = None if skip else parse_row(cells, attr, season, phase, rnd)
+            if any(re.search(r"\bdate\b", clean(c), re.I) for c in cells[:3]) and not date_in(cells[1] if len(cells) > 1 else ""):
+                vcols = visitor_home_cols(cells)   # a header row: remember the layout of the rows below it
+            r = None if skip else parse_row(cells, attr, season, phase, rnd, vcols, team)
             if r == "bad" and not skip and in_log: bad.append(" | ".join(cells)[:300])
             elif r and r != "bad": views.append(r)
             i = j; continue
@@ -160,15 +200,58 @@ def parse_team_page(text, season, team):
     for v in views: v["team"] = team
     return views, bad
 
-def parse_row(cells, attr, season, phase, rnd):
+def date_in(cell):
+    """(month, day, year or None) when the cell starts with a game date, else None. A year is kept only for the season's own calendar years."""
+    c = re.sub(r"\{\{\s*dow[ _]tooltip\s*\|\s*([^{}|]*?)\s*(?:\|[^{}]*)?\}\}", r"\1", cell, flags=re.I)   # {{dow tooltip|November 13, 1975}}
+    c = clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", c))
+    m = DATE_RE.match(c)
+    yr = None
+    if not m:
+        m = FULL_DATE_RE.match(c)
+        if not m: return None
+        yr = int(m.group(3))
+    key = m.group(1).lower()
+    return next(v for k, v in MONTHS.items() if k.startswith(key[:3])), int(m.group(2)), yr
+
+def parse_vh_row(cells, flag, season, phase, rnd, cols, team):
+    """A row of a 'Date | Visitor | Score | Home' table, the score visitor first: the page's club is on one side, which settles home or road."""
+    need = max(v for v in cols.values() if v is not None)
+    if len(cells) <= need: return None
+    dt = date_in(cells[cols["date"]])
+    if not dt: return None
+    mon, day, yr = dt
+    if yr is not None and yr not in (season, season + 1): return None
+    m = re.search(r"(\d{2,3})\s*" + DASH + r"\s*(\d{2,3})", clean(re.sub(r"\[https?://[^ \]]*\s*([^\]]*)\]", r"\1", cells[cols["score"]])))
+    if not m: return None
+    a, b = int(m.group(1)), int(m.group(2))
+    vis, home = cells[cols["vis"]], cells[cols["home"]]
+    if is_me(vis, team) and not is_me(home, team): loc, pf, pa, oc = "A", a, b, home
+    elif is_me(home, team) and not is_me(vis, team): loc, pf, pa, oc = "H", b, a, vis
+    else: return None
+    target, label = link_of(clean(oc))
+    ot = False
+    if cols["ot"] is not None:
+        o = clean(cells[cols["ot"]]).strip().lower()
+        ot = bool(o) and o not in ("na", "no", "n/a", "-", "\u2014", "\u2013", "none")
+    try:
+        d0 = datetime.date(yr if yr is not None else year_for(season, mon, phase), mon, day)
+    except ValueError:
+        return None
+    if phase == "playoffs" and d0.month in (10, 11, 12, 1, 2): phase, rnd = "regular", None
+    rec = next((x.group(1) + "-" + x.group(2) for c in reversed(cells) for x in [re.fullmatch(r"\W*(\d{1,2})\s*[\u2013\-]\s*(\d{1,2})\W*", clean(c))] if x), None)
+    num = intr(clean(cells[0])) if cols["date"] >= 1 and re.fullmatch(r"\W*\d{1,3}\W*", clean(cells[0])) else None
+    return dict(phase=phase, round=norm_round(rnd), num=num, date=d0, alt=None, shown=d0, opp_link=target, opp_text=label, loc=loc, pf=pf, pa=pa, ot=ot,
+                flag=flag, signed=True, rec=rec, tpl=False, src=" | ".join(cells)[:400])
+
+def parse_row(cells, attr, season, phase, rnd, cols=None, team=None):
     flag = flag_of(attr)
-    di = next((k for k, c in enumerate(cells[:4]) if DATE_RE.match(clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", c)))), None)
+    vh = parse_vh_row(cells, flag, season, phase, rnd, cols, team) if cols and team else None
+    if vh: return vh
+    di = next((k for k, c in enumerate(cells[:4]) if date_in(c)), None)
     if di is None or di + 2 >= len(cells):
         return None
-    dm = DATE_RE.match(clean(re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", cells[di])))
-    key = dm.group(1).lower()
-    mon = next(v for k, v in MONTHS.items() if k.startswith(key[:3]))
-    day = int(dm.group(2))
+    mon, day, yr = date_in(cells[di])
+    if yr is not None and yr not in (season, season + 1): return None   # not this season's calendar: a transaction or an award line
     if di >= 1 and re.search(r"[A-Za-z]{3}", clean(cells[0])) and not re.fullmatch(r"\W*(G\d+|\d+[A-Za-z]?)\W*", clean(cells[0])):
         return None   # a series-summary or award table, not a game log row ("Game 1 | June 7 | Orlando | 118-120 | Houston")
     oi = di + 1
@@ -203,7 +286,7 @@ def parse_row(cells, attr, season, phase, rnd):
     pf, pa, ot, dt, signed = sc
     rec = next((m.group(1) + "-" + m.group(2) for c in reversed(cells) for m in [re.fullmatch(r"\W*(\d{1,2})\s*[\u2013\-]\s*(\d{1,2})\W*", clean(c))] if m), None)
     try:
-        d0 = datetime.date(year_for(season, mon, phase), mon, day)
+        d0 = datetime.date(yr if yr is not None else year_for(season, mon, phase), mon, day)
     except ValueError:
         return "bad"
     if phase == "playoffs" and (d0.month in (10, 11, 12, 1, 2) and not (season == 2019 and d0 >= datetime.date(2020, 8, 1))):
