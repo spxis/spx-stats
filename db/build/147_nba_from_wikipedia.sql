@@ -171,6 +171,11 @@ create temp table nbafr as
 select franchise_id from core.franchise_league where league_code = 'nba'
 union select franchise_id from core.franchise where source_id = (select source_id from src) and source_key like 'nba:%';
 
+-- A rerun keeps the number of every identity it writes again (the team seasons and the release carry it): remembered by franchise and first day
+-- before the delete, given back on insert. (A franchise's identities never overlap, so franchise and first day are one identity.)
+create temp table old_identity_id as
+select i.franchise_id, lower(i.valid_during) as starts, i.franchise_identity_id from core.franchise_identity i
+where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nbafr);
 update core.team_season ts set franchise_identity_id = null
 where franchise_identity_id in (select franchise_identity_id from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nbafr));
 delete from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nbafr);
@@ -186,13 +191,16 @@ select i.*, case when i.last_yr >= (select y from last_season) and (select y fro
                  then null else make_date(i.last_yr + 1, 7, 1) end as end_on
 from isl i;
 -- Wikipedia fills the periods SPX's own identities leave uncovered, never overlapping them.
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
-select p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(p.nickname))), p.nickname, p.full_name,
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
+overriding system value
+select coalesce(o.franchise_identity_id, nextval(pg_get_serial_sequence('core.franchise_identity', 'franchise_identity_id'))),
+       p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(p.nickname))), p.nickname, p.full_name,
        case when p.full_name in ('Toronto Huskies', 'Toronto Raptors', 'Vancouver Grizzlies') then 'CA' else 'US' end, (select source_id from src)
 from (select i.franchise_id, i.full_name, i.nickname, u.rng
       from isl2 i
       cross join lateral unnest(datemultirange(daterange(make_date(i.first_yr, 7, 1), i.end_on)) -
             coalesce((select range_agg(x.valid_during) from core.franchise_identity x where x.franchise_id = i.franchise_id), '{}'::datemultirange)) as u(rng)) p
+left join old_identity_id o on o.franchise_id = p.franchise_id and o.starts = lower(p.rng)
 where not isempty(p.rng);
 insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
 select p.franchise_id, 'nba', p.rng, (select source_id from src)
