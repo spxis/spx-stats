@@ -2,7 +2,7 @@
 -- folded dates, identity region, home venues over time (core.venue with address,
 -- coordinates, capacity, time zone, kind, surface, roof; core.venue_name;
 -- core.venue_feature; core.franchise_venue) and owners over time.
--- Run after the franchises exist (step 100); rerunnable: its own rows are removed first.
+-- Run after the franchises exist (step 100); rerunnable: its own rows are removed first (a venue and an owner keep their ids).
 --
 -- A Wikidata team item is matched to a franchise of the same league when the
 -- item's label, official name or alias equals one of the franchise's identity names
@@ -20,6 +20,16 @@
 
 create or replace function pg_temp.norm(t text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;
+
+-- A venue keeps its venue_id from run to run: the id it has now, else the one ingest.row_id_map remembers for it (a rerun of a step that deleted the
+-- venue and added it again, here or in step 198, gave it a new one), else a new one. Needs migration 135 on the database.
+create or replace function pg_temp.venue_id_for(p_source smallint, p_key text) returns integer language sql as $$
+  select coalesce(
+    (select v.venue_id from core.venue v where v.source_id = p_source and v.source_key = p_key),
+    (select m.row_id::integer from ingest.row_id_map m
+      where m.tbl = 'core.venue' and m.natural_key = p_source::text || '/' || p_key
+        and not exists (select 1 from core.venue y where y.venue_id = m.row_id)),
+    nextval(pg_get_serial_sequence('core.venue', 'venue_id'))::integer) $$;
 
 -- ---------------------------------------------------------------- remove what this step wrote
 -- An owner row keeps its id on a rerun: remembered by its values before the delete, given back on insert.
@@ -135,9 +145,11 @@ where p.qid in (select place_qid from fv_trim);
 create temp table venue_new as
 select v.qid from venue_src v join ref.country rc on rc.country_code = v.address_country where v.city is not null;
 
-insert into core.venue (city, region, country_code, opened_on, closed_on, capacity, latitude, longitude, source_id, source_key,
+insert into core.venue (venue_id, city, region, country_code, opened_on, closed_on, capacity, latitude, longitude, source_id, source_key,
                         time_zone, kind, address, postal_code, surface, roof, is_indoor, architect, cost_usd)
-select v.city, v.address_region, v.address_country,
+overriding system value
+select pg_temp.venue_id_for((select source_id from meta.source where code = 'wikidata'), v.qid),
+       v.city, v.address_region, v.address_country,
        case when v.opened_prec >= 11 then v.opened_on end, case when v.closed_prec >= 11 then v.closed_on end,
        v.capacity, v.latitude, v.longitude, (select source_id from meta.source where code = 'wikidata'), v.qid,
        v.time_zone,
@@ -157,7 +169,10 @@ on conflict (source_id, source_key) do update set
   time_zone = excluded.time_zone, kind = excluded.kind, address = excluded.address, postal_code = excluded.postal_code,
   surface = excluded.surface, roof = excluded.roof, is_indoor = excluded.is_indoor, architect = excluded.architect, cost_usd = excluded.cost_usd;
 
--- A venue keeps its venue_id from run to run (the insert above updates it in place); one Wikidata no longer gives a home to is deleted when nothing points at it.
+-- A venue keeps its venue_id from run to run (the insert above updates it in place); one Wikidata no longer gives a home to is deleted when nothing
+-- points at it. Step 198 adds venues of its own (brand tables, the game venues) that are not in venue_new and may have nothing pointing at them yet:
+-- the id of each venue deleted here is written to ingest.row_id_map first (a key already there keeps its first id), so 198 gives it back.
+with gone as (
 delete from core.venue v where v.source_id = (select source_id from meta.source where code = 'wikidata')
   and v.source_key not in (select qid from venue_new)
   and not exists (select 1 from core.game g where g.venue_id = v.venue_id)
@@ -166,7 +181,11 @@ delete from core.venue v where v.source_id = (select source_id from meta.source 
   and not exists (select 1 from core.game_venue gv where gv.venue_id = v.venue_id)
   and not exists (select 1 from core.soccer_match m where m.venue_id = v.venue_id)
   and not exists (select 1 from core.venue_final_game f where f.venue_id = v.venue_id)
-  and not exists (select 1 from core.venue_game_season q where q.venue_id = v.venue_id);
+  and not exists (select 1 from core.venue_game_season q where q.venue_id = v.venue_id)
+returning v.source_id, v.source_key, v.venue_id)
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.venue', source_id::text || '/' || source_key, venue_id from gone
+on conflict (tbl, natural_key) do nothing;
 
 create temp table vmap as
 select venue_id, source_key as qid from core.venue where source_id = (select source_id from meta.source where code = 'wikidata');

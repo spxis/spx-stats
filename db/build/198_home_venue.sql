@@ -17,7 +17,8 @@
 -- A venue item that is a city (San Diego, Houston, Los Angeles, Miami: Wikidata's home venue for a few old teams) is not a venue: it is
 -- left out here, logged in meta.data_issue as 'home_venue_city', and the next source fills the days it would have covered.
 -- A venue Wikidata names that core.venue lacks (United Center, Meadowlands Arena ...: step 176 drops a venue with no city) is added to
--- core.venue from core.brand_venue (city, region, country, coordinates) or from legacy_game_venue.venue (scripts/game_venue/).
+-- core.venue from core.brand_venue (city, region, country, coordinates) or from legacy_game_venue.venue (scripts/game_venue/), with the venue_id it had
+-- before (ingest.row_id_map remembers it when step 176 deleted the venue): a rerun keeps every venue id.
 
 drop table if exists pg_temp.seed_home;
 create temp table seed_home (league text, franchise text, qid text, from_d date, until_d date, source text, source_url text, note text);
@@ -37,6 +38,16 @@ create temp table seed_city (wikidata_id text, city text, region text, country_c
 
 create or replace function pg_temp.norm(t text) returns text language sql immutable as $$
   select regexp_replace(translate(lower(t), 'éèêëáàâäóôöíîïúûüçñ', 'eeeeaaaaoooiiiuuucn'), '[^a-z0-9]', '', 'g') $$;
+
+-- A venue keeps its venue_id from run to run: the id it has now, else the one ingest.row_id_map remembers for it (a rerun of a step that deleted the
+-- venue and added it again, in step 176 or here, gave it a new one), else a new one. Needs migration 135 on the database.
+create or replace function pg_temp.venue_id_for(p_source smallint, p_key text) returns integer language sql as $$
+  select coalesce(
+    (select v.venue_id from core.venue v where v.source_id = p_source and v.source_key = p_key),
+    (select m.row_id::integer from ingest.row_id_map m
+      where m.tbl = 'core.venue' and m.natural_key = p_source::text || '/' || p_key
+        and not exists (select 1 from core.venue y where y.venue_id = m.row_id)),
+    nextval(pg_get_serial_sequence('core.venue', 'venue_id'))::integer) $$;
 
 delete from meta.data_issue where entity_kind in ('home_venue_city', 'home_venue_fix', 'home_venue_seed', 'home_venue_clipped');
 
@@ -74,8 +85,9 @@ where g.qid not in (select qid from notv);
 create temp table vpick as
 select distinct on (qid) * from vsrc order by qid, rank, (city is null), (latitude is null);
 
-insert into core.venue (city, region, country_code, opened_on, closed_on, capacity, latitude, longitude, source_id, source_key, kind, surface, roof, address, postal_code)
-select p.city, p.region, p.country_code, p.opened_on, p.closed_on, p.capacity, p.latitude, p.longitude, (select source_id from wd), p.qid, p.kind, p.surface, p.roof, p.address, p.postal_code
+insert into core.venue (venue_id, city, region, country_code, opened_on, closed_on, capacity, latitude, longitude, source_id, source_key, kind, surface, roof, address, postal_code)
+overriding system value
+select pg_temp.venue_id_for((select source_id from wd), p.qid), p.city, p.region, p.country_code, p.opened_on, p.closed_on, p.capacity, p.latitude, p.longitude, (select source_id from wd), p.qid, p.kind, p.surface, p.roof, p.address, p.postal_code
 from vpick p
 join ref.country rc on rc.country_code = p.country_code
 where p.city is not null
