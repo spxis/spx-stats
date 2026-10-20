@@ -106,6 +106,7 @@ Production is on the 500 MB plan (457 MB on 2026-10-18, and `prepare` refuses ab
 (free plan, 5 GB). `scripts/release/turso.py` holds the list (`TABLES`) and the code; `release.py` dispatches on it. **A table in that
 list is published to Turso and never to production; one release goes to one target** (a mix is refused at `prepare`, naming both
 sides). The flow is the same as for production: preview, `db/checks`, snapshot, apply, read-back that must equal DS1, rollback, drift.
+`scripts/mac/same-data.py` (the deploy gate of `deploy-prebuilt.sh`) reuses `turso.load_tables` and `turso.diff_table` to compare these tables DS1 against Turso instead of against production.
 
 | DS1 object | Turso table | Notes |
 |---|---|---|

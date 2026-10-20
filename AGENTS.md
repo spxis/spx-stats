@@ -470,6 +470,10 @@ production on 2026-10-14). One command from the repo root builds the pages from 
   published table by row count and the drift check's bucket hashes; the DS1 side of `PUBLISH_FILTER` is filtered) and **stops if not**: DS1 can be
   ahead (a release waiting for approval, scores loaded since the last release) or have a stale materialized view, and a build from it would publish
   rows John has not approved. `--force` continues when the data differs. A side that cannot be read (exit 2) always stops, `--force` included.
+  The tables of `TABLES` in `scripts/release/turso.py` (`meta.verification`, `meta.data_issue`, `core.external_id`, `core.batted_ball_player`,
+  `core.betting_line`, the derived `api` tables) are not on production, so they are compared DS1 against Turso (the release runner's own
+  `turso.diff_table`; Turso from `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` or `TURSO_READ_TOKEN`, else the keychain items `spx-stats TURSO_DATABASE_URL`
+  and `spx-stats TURSO_READ_TOKEN`), never counted as production differences; with no Turso credentials they are skipped with a printed `SKIPPED` line.
 - It then does what the fallback below does (clean `git archive`, `vercel link`), plus `vercel pull`, `vercel build --prod` with
   `SPX_REST_URL=http://127.0.0.1:7790/` and `vercel deploy --prebuilt --prod`, stops the container by name, makes one request to spxn.com, and prunes
   Vercel to the live deployment and one previous (plus the pinned `spx-stats-1p836thn0`, one `vercel remove --safe` per URL).

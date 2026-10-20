@@ -9,7 +9,16 @@ scripts/sync/compare.py) by row count and the drift check's bucket hashes. The D
 filtered the same way a release compares it. DS1 is the PG* environment (or SPX_DS1_HOST); production is the Supabase
 Management API with SUPABASE_ACCESS_TOKEN or the keychain item 'spx-stats SUPABASE_ACCESS_TOKEN' (read here, never printed).
 
-    --tables --ds1-dsn --prod-dsn   the table check only, both sides Postgres (the tests). No network, no keychain.
+    --tables --ds1-dsn --prod-dsn [--turso-url URL]
+                                    the table check only, both sides Postgres (the tests). No network, no keychain. The Turso tables are
+                                    compared with the libSQL server at URL (a test server) or, without it, skipped with a note.
+
+The tables in scripts/release/turso.py (TABLES: meta.verification, meta.data_issue, core.external_id, core.batted_ball_player,
+core.betting_line and the derived api tables) are not on production: releases publish them to Turso. They are compared DS1 against Turso
+with the same code the release runner uses (turso.diff_table), never against production. Turso comes from TURSO_DATABASE_URL and
+TURSO_AUTH_TOKEN (or TURSO_READ_TOKEN), else the keychain items 'spx-stats TURSO_DATABASE_URL' and 'spx-stats TURSO_READ_TOKEN' (the ones
+deploy-prebuilt.sh gives the build; read here, never printed). With no Turso credentials these tables are skipped with a printed note and are
+not counted as differences; credentials that fail to read are exit 2.
 
 Exit code 0 the same, 1 different (one line per table), 2 one side could not be read.
 """
@@ -19,6 +28,7 @@ import os
 import subprocess
 import sys
 import time
+import types
 import urllib.error
 import urllib.request
 
@@ -55,6 +65,14 @@ def _compare():
     return mod
 
 
+def _turso_module():
+    path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "release", "turso.py")
+    spec = importlib.util.spec_from_file_location("spx_release_turso", path)
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
 def _n(n):
     return format(int(n), ",")
 
@@ -67,13 +85,37 @@ def _count(side, name, compare):
     return side.run("select count(*) as n from %s" % src)[0]["n"]
 
 
-def table_report(ds1, prod):
-    """Compare every published table. Returns (exit code, lines). Reuses compare.py: catalog, Table, count_rows, bucket_pass."""
+def turso_report(ds1, turso_side, names, tmod):
+    """DS1 against Turso for the tables of turso.TABLES, with the release runner's own comparison. Returns (differences, lines).
+    A Turso read that fails raises TursoError (the caller exits 2)."""
+    ctx = types.SimpleNamespace(ds1=ds1, turso=turso_side, turso_url=None)
+    lines, bad = [], 0
+    tabs = tmod.load_tables(ctx, names)
+    for name in names:
+        t, blockers, _ = tabs[name]
+        if t is None or blockers:
+            lines.append("same-data: %s: DS1 vs Turso: %s" % (name, "; ".join(blockers) or "cannot be compared"))
+            bad += 1
+            continue
+        d = tmod.diff_table(ctx, t)
+        if d["only1"] or d["only2"] or d["differ"]:
+            lines.append("same-data: %s: DS1 %s / Turso %s (only in DS1 %d, only in Turso %d, different %d)"
+                         % (name, _n(d["ds1"]), _n(d["prod"]), len(d["only1"]), len(d["only2"]), len(d["differ"])))
+            bad += 1
+    return bad, lines
+
+
+def table_report(ds1, prod, turso_side=None):
+    """Compare every published table. Returns (exit code, lines). Reuses compare.py: catalog, Table, count_rows, bucket_pass.
+    The tables of turso.TABLES are never compared with production: with turso_side they go DS1 against Turso, without it they are
+    skipped with a note and do not count."""
     compare = _compare()
+    tmod = _turso_module()
     started = time.monotonic()
     c1, c2 = compare.catalog(ds1), compare.catalog(prod)
     lines, bad = [], 0
-    names = sorted(set(c1) | set(c2))
+    tnames = sorted(tmod.TABLES)
+    names = sorted((set(c1) | set(c2)) - set(tnames))
     for name in names:
         if name not in c1 or name not in c2:
             n1 = _count(ds1, name, compare) if name in c1 else None
@@ -94,17 +136,37 @@ def table_report(ds1, prod):
             extra = " (rows differ)" if rows_differ and n1 == n2 else ""
             lines.append("same-data: %s: DS1 %s / production %s%s" % (name, _n(n1), _n(n2), extra))
             bad += 1
+    total = len(names)
+    if tnames and turso_side is None:
+        lines.append("same-data: SKIPPED %d Turso tables (no Turso credentials: TURSO_DATABASE_URL and TURSO_READ_TOKEN or keychain), "
+                     "not compared and not counted: %s" % (len(tnames), ", ".join(tnames)))
+    elif tnames:
+        tbad, tlines = turso_report(ds1, turso_side, tnames, tmod)
+        bad += tbad
+        lines += tlines
+        total += len(tnames)
+        if not tbad:
+            lines.append("same-data: %d Turso tables equal DS1" % len(tnames))
     took = time.monotonic() - started
     if bad:
-        lines.append("same-data: %d published tables, %d differ (%.0fs)" % (len(names), bad, took))
+        lines.append("same-data: %d published tables, %d differ (%.0fs)" % (total, bad, took))
     else:
-        lines.append("same-data: %d published tables, all equal (%.0fs)" % (len(names), took))
+        lines.append("same-data: %d published tables, all equal (%.0fs)" % (total, took))
     return (1 if bad else 0), lines
 
 
 def _keychain(service):
     r = subprocess.run(["security", "find-generic-password", "-s", service, "-w"], capture_output=True, text=True)
     return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def _live_turso():
+    """The Turso side from the environment or the keychain, or None when there are no credentials. Never printed."""
+    url = os.environ.get("TURSO_DATABASE_URL") or _keychain("spx-stats TURSO_DATABASE_URL")
+    token = os.environ.get("TURSO_AUTH_TOKEN") or os.environ.get("TURSO_READ_TOKEN") or _keychain("spx-stats TURSO_READ_TOKEN")
+    if not url or not token:
+        return None
+    return _turso_module().TursoSide(url, token)
 
 
 def _live_sides():
@@ -120,14 +182,14 @@ def _live_sides():
     token = os.environ.get("SUPABASE_ACCESS_TOKEN") or _keychain("spx-stats SUPABASE_ACCESS_TOKEN")
     if not token or not os.environ.get("PGPASSWORD"):
         raise RuntimeError("DS1 password or production token is missing")
-    return compare.PsqlSide("DS1"), compare.ApiSide(compare.PROJECT_REF, token)
+    return compare.PsqlSide("DS1"), compare.ApiSide(compare.PROJECT_REF, token), _live_turso()
 
 
 def _tables_from_args(argv):
     dsn = {}
     args = argv[2:]
     while args:
-        if args[0] in ("--ds1-dsn", "--prod-dsn") and len(args) > 1:
+        if args[0] in ("--ds1-dsn", "--prod-dsn", "--turso-url") and len(args) > 1:
             dsn[args[0]] = args[1]
             args = args[2:]
         else:
@@ -138,7 +200,8 @@ def _tables_from_args(argv):
         return 2
     compare = _compare()
     try:
-        code, lines = table_report(compare.PsqlSide("DS1", dsn["--ds1-dsn"]), compare.PsqlSide("production", dsn["--prod-dsn"], source=False))
+        turso = _turso_module().TursoSide(dsn["--turso-url"]) if "--turso-url" in dsn else None
+        code, lines = table_report(compare.PsqlSide("DS1", dsn["--ds1-dsn"]), compare.PsqlSide("production", dsn["--prod-dsn"], source=False), turso)
     except Exception as e:  # noqa: BLE001
         print("same-data: could not compare published tables: %s" % e)
         return 2
