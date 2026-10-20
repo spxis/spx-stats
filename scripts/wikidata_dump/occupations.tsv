@@ -1,0 +1,1227 @@
+# Sport occupations for scripts/wikidata_dump/filter.py (P106). Built by occupations.py from Wikidata (CC0): subclasses (P279*) of Q2066131 athlete, Q41583 coach, Q202648 referee, Q15986539 sports official.
+# use = 0: kept out of matching and out of the output (sex or gender, ethnicity, not a sport, metaclass). Rebuild with occupations.py.
+qid	label	roots	use	why
+Q26278	Herbstmeister	Q2066131	1	
+Q39396	Fallschirmjäger (Bundeswehr)	Q2066131	1	
+Q41583	coach	Q41583	1	
+Q105269	Grandmaster	Q2066131	1	
+Q172964	goalkeeper	Q2066131	1	
+Q174493	runner	Q2066131	1	
+Q179789	goalkeeper	Q2066131	1	
+Q193592	midfielder	Q2066131	1	
+Q201330	goalkeeper	Q2066131	1	
+Q202648	referee	Q15986539,Q202648	1	
+Q209897	pinch hitter	Q2066131	1	
+Q210826	Thoroughbred	Q2066131	1	
+Q223291	association football assistant referee	Q15986539,Q202648	1	
+Q247298	pinch runner	Q2066131	1	
+Q252628	strongwoman	Q2066131	1	
+Q268258	centre-back	Q2066131	1	
+Q293769		Q41583	1	
+Q303540		Q2066131	1	
+Q316008	Germany national football team manager	Q41583	1	
+Q322974	Aboriginal tracker	Q2066131	1	
+Q336286	defender	Q2066131	1	
+Q340894	8	Q2066131	1	
+Q378622	racing driver	Q2066131	1	
+Q379497	smokejumper	Q2066131	1	
+Q379533	player-coach	Q41583	1	
+Q388513	Thai boxer	Q2066131	1	
+Q466640	horse trainer	Q41583	1	
+Q467024	Standardbred	Q2066131	1	
+Q468354	FIFA World Cup referee	Q15986539,Q202648	1	
+Q476246	sailor	Q2066131	1	
+Q490253	professional golfer	Q2066131	1	
+Q500097	dogsled musher	Q2066131	1	
+Q533097	cycling sprinter	Q2066131	1	
+Q539274	randonneuring	Q2066131	1	
+Q549322	bullfighter	Q2066131	1	
+Q584540	captain	Q2066131	1	
+Q628099	association football coach	Q41583	1	
+Q632099	flandrien	Q2066131	1	
+Q650309	puncher	Q2066131	1	
+Q659776	Periodonikes	Q2066131	1	
+Q671382	chess prodigy	Q2066131	1	
+Q680271	chess master	Q2066131	1	
+Q715772	captain	Q2066131	1	
+Q716711	American football official	Q15986539,Q202648	1	
+Q721051	professional wrestling referee	Q15986539,Q202648	1	
+Q721834	manager	Q2066131	1	
+Q749387	paratrooper	Q2066131	1	
+Q749437	pay driver	Q2066131	1	
+Q762121	personal trainer	Q41583	1	
+Q767703	breakdancer	Q2066131	1	
+Q772148	starting pitcher	Q2066131	1	
+Q782181	Sentinel	Q2066131	1	
+Q810927	batter	Q2066131	1	
+Q819677	mountain guide	Q2066131	1	
+Q838476	sporting director	Q41583	1	
+Q846750	jockey	Q2066131	1	
+Q852061	champion	Q2066131	1	
+Q859528	association football referee	Q15986539,Q202648	1	
+Q865935	baseball coach	Q41583	1	
+Q871529	switch-hitter	Q2066131	1	
+Q904289	stopper	Q2066131	1	
+Q907647	gyōji	Q15986539,Q202648	1	
+Q913532	charro	Q2066131	1	
+Q930701	gamemaster	Q15986539,Q202648	1	
+Q937857	association football player	Q2066131	1	
+Q969772	Free agent	Q2066131	1	
+Q978854	grandmaster	Q2066131	1	
+Q979247	captain	Q2066131	1	
+Q997419	closer	Q2066131	1	
+Q1008767	Germany men's national handball team coach	Q41583	0	sensitive
+Q1048902	pitcher	Q2066131	1	
+Q1050571	catcher	Q2066131	1	
+Q1050607	caretaker manager	Q41583	1	
+Q1058307	vampire hunter	Q2066131	0	not sport
+Q1060160	lineman	Q2066131	1	
+Q1067277	yokozuna	Q2066131	1	
+Q1068064	Chaqui	Q2066131	1	
+Q1137295	frogman	Q2066131	1	
+Q1186921	baseball manager	Q41583	1	
+Q1198553	relief pitcher	Q2066131	1	
+Q1201458	playmaker	Q2066131	1	
+Q1203797	bicycle courier	Q2066131	0	not sport
+Q1205102	German sports national champion	Q2066131	1	
+Q1229836		Q2066131	1	
+Q1237356	Domestique	Q2066131	1	
+Q1260222	Sardar	Q2066131	0	not sport
+Q1302317	handball referee	Q15986539,Q202648	1	
+Q1317534	goaltender	Q2066131	1	
+Q1323929	triastes	Q2066131	1	
+Q1326154	first baseman	Q2066131	1	
+Q1333357	Balearic slinger	Q2066131	1	
+Q1365214	dragonslayer	Q2066131	0	not sport
+Q1368170	third baseman	Q2066131	1	
+Q1385518	extreme sports athlete	Q2066131	1	
+Q1423744	komusubi	Q2066131	1	
+Q1424116	maegashira	Q2066131	1	
+Q1428496		Q2066131	1	
+Q1452492	French Trotter	Q2066131	1	
+Q1452497		Q2066131	1	
+Q1453373	free agent	Q2066131	1	
+Q1454494	fourth official	Q15986539	1	
+Q1478408	association football national coach	Q41583	1	
+Q1489923	sweeper	Q2066131	1	
+Q1497460	goalscorer	Q2066131	1	
+Q1507724		Q41583	1	
+Q1508239	promyshlennik	Q2066131	1	
+Q1509851	Coldblood trotter	Q2066131	1	
+Q1519593	fencing master	Q2066131	1	
+Q1549466	grandmaster for chess compositions	Q2066131	1	
+Q1552832	budoka	Q2066131	1	
+Q1577970	ama	Q2066131	1	
+Q1586069	boatsteerer	Q2066131	1	
+Q1608515	lanista	Q41583	1	
+Q1614023	Herrenfahrer	Q2066131	1	
+Q1668940	Shimpan	Q15986539,Q202648	1	
+Q1690874	coxswain	Q2066131	1	
+Q1714828	hunter	Q2066131	0	not sport
+Q1723340		Q15986539	1	
+Q1752130	uke	Q2066131	1	
+Q1757103	ice hockey official	Q15986539,Q202648	1	
+Q1773301	Dungeon Master	Q15986539,Q202648	0	not sport
+Q1773766		Q2066131	1	
+Q1785736		Q15986539	1	
+Q1852228	strongman	Q2066131	1	
+Q1856798	baseball umpire	Q15986539,Q202648	1	
+Q1866686	diver	Q2066131	1	
+Q1890607		Q2066131	1	
+Q1897960	trotting horse	Q2066131	1	
+Q1937166	sekiwake	Q2066131	1	
+Q1969425	national team coach	Q41583	1	
+Q1989225	cricket captain	Q2066131	1	
+Q2017602	pearl hunting	Q2066131	1	
+Q2045507	offensive coordinator	Q41583	1	
+Q2063307	super grandmaster	Q2066131	1	
+Q2066131	athlete	Q2066131	1	
+Q2106721	chess coach	Q41583	1	
+Q2125610	cyclist	Q2066131	1	
+Q2143894	cricket umpire	Q15986539,Q202648	1	
+Q2166602	ōzeki	Q2066131	1	
+Q2169760		Q2066131	1	
+Q2178349		Q2066131	1	
+Q2182752	basketball official	Q15986539,Q202648	1	
+Q2191547	picador	Q2066131	1	
+Q2229544	chess arbiter	Q15986539,Q202648	1	
+Q2261272	Master of the Hunt	Q2066131	1	
+Q2305269	all-rounder	Q2066131	1	
+Q2309784	sport cyclist	Q2066131	1	
+Q2312865	military athlete	Q2066131	1	
+Q2324660	state amateur	Q2066131	1	
+Q2327312	city hunter	Q2066131	1	
+Q2328847	trainee	Q2066131	1	
+Q2376278	rejoneador	Q2066131	1	
+Q2380088	climbing specialist	Q2066131	1	
+Q2385879	sidecar passenger	Q2066131	1	
+Q2403288		Q15986539,Q202648	1	
+Q2412523	matador	Q2066131	1	
+Q2436590		Q15986539,Q202648	1	
+Q2442470	racehorse	Q2066131	1	
+Q2445218	goalkeeper coach	Q41583	1	
+Q2451094	beater	Q2066131	1	
+Q2465611	co-driver	Q2066131	1	
+Q2540672	pacemaker	Q2066131,Q41583	1	
+Q2568073	traceur	Q2066131	1	
+Q2570377	auriga	Q2066131	1	
+Q2662494	Fifth Official	Q15986539,Q202648	1	
+Q2665822	skip	Q2066131	1	
+Q2668083	timariot	Q2066131	1	
+Q2727289	rikishi	Q2066131	1	
+Q2730732	equestrian	Q2066131	1	
+Q2737671	banderillero	Q2066131	1	
+Q2749653	forcado	Q2066131	1	
+Q2859165	hydronaut	Q2066131	1	
+Q2859663	ice hockey referee	Q15986539,Q202648	1	
+Q2859666		Q15986539,Q202648	1	
+Q2859667	boxing referee	Q15986539,Q202648	1	
+Q2859671	rugby union match official	Q15986539,Q202648	1	
+Q2859684	International Arbiter	Q15986539,Q202648	1	
+Q2873068	AQPS	Q2066131	1	
+Q2918606	Undisputed Champion	Q2066131	1	
+Q2948691	world champion	Q2066131	1	
+Q2962932	Nangchen horse	Q2066131	1	
+Q3014296	motorcycle racer	Q2066131	1	
+Q3020534	ski teacher	Q2066131,Q41583	1	
+Q3101194	sekitori	Q2066131	1	
+Q3114868	water carrier	Q2066131	1	
+Q3186699	Go professional	Q2066131	1	
+Q3246315	head coach	Q41583	1	
+Q3303290	MMORPG game master	Q15986539,Q202648	1	
+Q3320976	diving instructor	Q2066131	1	
+Q3349533	offensive lineman	Q2066131	1	
+Q3351492	third umpire	Q15986539,Q202648	1	
+Q3388309	medical joker	Q2066131	1	
+Q3392533		Q2066131	1	
+Q3392540	scientific diver	Q2066131	1	
+Q3392544	military diver	Q2066131	1	
+Q3392545	clearance diver	Q2066131	1	
+Q3419806	raseteur	Q2066131	1	
+Q3494356	left-handed specialist	Q2066131	1	
+Q3502546	tennis umpire	Q15986539,Q202648	1	
+Q3540808	Italian Trotter	Q2066131	1	
+Q3542364	Turners	Q2066131	1	
+Q3577354	retractor	Q2066131	1	
+Q3621342	field hockey umpire	Q15986539,Q202648	1	
+Q3621345	volleyball referee	Q15986539,Q202648	1	
+Q3665646	basketball player	Q2066131	1	
+Q3715390	harness racer	Q2066131	1	
+Q3753218	Recorte	Q2066131	1	
+Q3759615	Generation of phenomena	Q2066131	1	
+Q3883921	occupational diver	Q2066131	1	
+Q3892689	handball sports player	Q2066131	1	
+Q3897311	rouleur	Q2066131	1	
+Q3909057	goalkeeper	Q2066131	1	
+Q3925491		Q2066131	1	
+Q3935766	penalty specialist	Q2066131	1	
+Q3951423	rock climber	Q2066131	1	
+Q3981532	Tattico	Q2066131	1	
+Q4009406	sprinter	Q2066131	1	
+Q4084691	Bereiter	Q41583	1	
+Q4144610	alpine skier	Q2066131	1	
+Q4270517	skier	Q2066131	1	
+Q4333889	Olympic champion	Q2066131	1	
+Q4439155	long-distance runner	Q2066131	1	
+Q4661673	private rider	Q2066131	1	
+Q4672950	ace	Q2066131	1	
+Q4696968	aikidoka	Q2066131	1	
+Q4771850	dōshu	Q2066131	1	
+Q4951095	bowler	Q2066131	1	
+Q4959392	breakaway specialist	Q2066131	1	
+Q5030708	Canadian Armed Forces Divers	Q2066131	1	
+Q5036504	captain	Q2066131	1	
+Q5130040	Clay Trotting Horses	Q2066131	1	
+Q5137571	basketball coach	Q41583	1	
+Q5137576	ice hockey coach	Q41583	1	
+Q5171647	cornerman	Q41583	1	
+Q5245791	Deaf climbers	Q2066131	1	
+Q5251470	defensive coordinator	Q41583	1	
+Q5288284	dog show judge	Q15986539	1	
+Q5360816	eligible receiver	Q2066131	1	
+Q5463279	flyball pitcher	Q2066131	1	
+Q5465303	competitive eater	Q2066131	1	
+Q5476290	fourth umpire	Q15986539,Q202648	1	
+Q5575207	goalkeeper	Q2066131	1	
+Q5575226	goaltender	Q2066131	1	
+Q5608437	Greyhound jockey	Q2066131	1	
+Q5610177	grommet	Q2066131	1	
+Q5610990	groundball pitcher	Q2066131	1	
+Q5705105	libero goalkeeper	Q2066131	1	
+Q5869995	Commissioner of the National Football League	Q15986539	1	
+Q5969982		Q2066131	1	
+Q6008848	central midfielder	Q2066131	1	
+Q6054853		Q2066131	1	
+Q6060450	skydiver	Q2066131	1	
+Q6157423	Urinatores	Q2066131	1	
+Q6533680	Letterman	Q2066131	1	
+Q6665249	judoka	Q2066131	1	
+Q6673520	long reliever	Q2066131	1	
+Q6785976	Matagi	Q2066131	1	
+Q6787298	Mathlete	Q2066131	1	
+Q6841695	middle reliever	Q2066131	1	
+Q6885897	mnemonist	Q2066131	1	
+Q6895928	molecatcher	Q2066131	1	
+Q6950853		Q2066131	1	
+Q6982705	navy diver	Q2066131	1	
+Q7079487	official	Q15986539,Q202648	1	
+Q7092294	One-Test wonder	Q2066131	1	
+Q7102601	Original masters of taekwondo	Q2066131	1	
+Q7234596	potable water diver	Q2066131	1	
+Q7272510	Quintuple Champion	Q2066131	1	
+Q7307098	futsal referee	Q15986539,Q202648	1	
+Q7316299	restricted free agent	Q2066131	1	
+Q7353388	robot jockey	Q2066131	1	
+Q7378323	rugby league match official	Q15986539,Q202648	1	
+Q7445438	Tachimochi	Q2066131	1	
+Q7456137	Session wrestler	Q2066131	1	
+Q7456982	setup pitcher	Q2066131	1	
+Q7623230	strength and conditioning coach	Q41583	1	
+Q7623231	strength athlete	Q2066131	1	
+Q7627813	student athlete	Q2066131	1	
+Q7659073	switch pitcher	Q2066131	1	
+Q7805499	time trialist	Q2066131	1	
+Q7831495	track and field official	Q15986539,Q202648	1	
+Q7881754	Australian rules football umpire	Q15986539,Q202648	1	
+Q7890816	United States Navy Diver	Q2066131	1	
+Q7974325	waterist	Q2066131	1	
+Q8025128	wing half	Q2066131	1	
+Q8030007	wolfers	Q2066131	1	
+Q8193458	left on base	Q2066131	1	
+Q8563456	professional fitness coach	Q41583	1	
+Q9017214	karateka	Q2066131	1	
+Q9149093	mountaineer	Q2066131	1	
+Q9292301	himalayist	Q2066131	1	
+Q9337868	single sculler	Q2066131	1	
+Q9394993	ice skater	Q2066131	1	
+Q10290970	world chess champion	Q2066131	1	
+Q10349745	racing automobile driver	Q2066131	1	
+Q10385084	Spanish paratrooper	Q2066131	0	not sport
+Q10495597	Finnish Champion	Q2066131	1	
+Q10502291		Q2066131	1	
+Q10535700	floorball referee	Q15986539,Q202648	1	
+Q10585746		Q2066131	1	
+Q10593311		Q15986539,Q202648	1	
+Q10658390	rescue diver	Q2066131	1	
+Q10833314	tennis player	Q2066131	1	
+Q10833319	martial arts teacher	Q2066131	1	
+Q10841764	Formula One driver	Q2066131	1	
+Q10842936	rally driver	Q2066131	1	
+Q10843263	field hockey player	Q2066131	1	
+Q10843402	swimmer	Q2066131	1	
+Q10866633	speed skater	Q2066131	1	
+Q10871364	baseball player	Q2066131	1	
+Q10873124	chess player	Q2066131	1	
+Q10889302	disabled sportsperson	Q2066131	1	
+Q10899181	Japanese swordmaster	Q2066131	1	
+Q11105296	Formula One World Champion	Q2066131	1	
+Q11124885	martial artist	Q2066131	1	
+Q11244693	STONED	Q2066131	0	not sport
+Q11261021		Q2066131	1	
+Q11282323	Idol wrestler	Q2066131	1	
+Q11284865		Q2066131	1	
+Q11292782	Olympic athletics competitor	Q2066131	1	
+Q11293355	Auto Racer	Q2066131	1	
+Q11296761	kickboxer	Q2066131	1	
+Q11303721	golfer	Q2066131	1	
+Q11333808	free agent in Nippon Professional Baseball	Q2066131	1	
+Q11336304	professional baseball umpire	Q15986539,Q202648	1	
+Q11336312	professional baseball player	Q2066131	1	
+Q11337345		Q2066131	1	
+Q11338576	boxer	Q2066131	1	
+Q11368759		Q2066131	1	
+Q11371804		Q41583	1	
+Q11397897	swordfighter	Q2066131	1	
+Q11397975		Q15986539,Q202648	1	
+Q11446468	Female jockey	Q2066131	0	sensitive
+Q11446504	female Go player	Q2066131	0	sensitive
+Q11481253	naturalised sports competitor	Q2066131	1	
+Q11481823		Q2066131	1	
+Q11482903	Heisei Four Go Players	Q2066131	1	
+Q11513337	athletics competitor	Q2066131	1	
+Q11598230	tate-gyōji	Q15986539,Q202648	1	
+Q11598573	keirin cyclist	Q2066131	1	
+Q11607585	mixed martial arts fighter	Q2066131	1	
+Q11630234		Q2066131	1	
+Q11637482		Q15986539,Q202648	1	
+Q11668202	ekishi	Q41583	1	
+Q11703711	assistant coach	Q41583	1	
+Q11712888		Q2066131	1	
+Q11774891	ice hockey player	Q2066131	1	
+Q11872044	trial jumper	Q2066131	1	
+Q11880004	warmblood trotter	Q2066131	1	
+Q11880349	floorball goalkeeper	Q2066131	1	
+Q11901782		Q2066131	1	
+Q11939963	pancratiast	Q2066131	1	
+Q11992132	Norwegian champion	Q2066131	1	
+Q12001292		Q2066131	1	
+Q12039558	Go player	Q2066131	1	
+Q12158541	Judge of the All-Union category	Q15986539,Q202648	1	
+Q12299841	cricketer	Q2066131	1	
+Q12310715	European champion	Q2066131	1	
+Q12311053	fanger	Q2066131	1	
+Q12327806	motocross rider	Q2066131	1	
+Q12340540	water skier	Q2066131	1	
+Q12369333	amateur wrestler	Q2066131	1	
+Q12456639	charioteer	Q2066131	1	
+Q12470043	Champ Car driver	Q2066131	1	
+Q12532544		Q2066131	1	
+Q12604258	Griffin	Q2066131	0	not sport
+Q12803959	runner	Q2066131	1	
+Q12839983	wrestler	Q2066131	1	
+Q12840545	handball player	Q2066131	1	
+Q13141064	badminton player	Q2066131	1	
+Q13218361	polo player	Q2066131	1	
+Q13219424	tennis coach	Q41583	1	
+Q13219587	figure skater	Q2066131	1	
+Q13365201	handball coach	Q41583	1	
+Q13381376	weightlifter	Q2066131	1	
+Q13381428	long jumper	Q2066131	1	
+Q13381458	dressage rider	Q2066131	1	
+Q13381572	artistic gymnast	Q2066131	1	
+Q13381689	discus thrower	Q2066131	1	
+Q13381753	middle-distance runner	Q2066131	1	
+Q13381863	fencer	Q2066131	1	
+Q13382122	high jumper	Q2066131	1	
+Q13382191	water polo referee	Q15986539,Q202648	1	
+Q13382355	archer	Q2066131	1	
+Q13382460	marathon runner	Q2066131	1	
+Q13382487	windsurfer	Q2066131	1	
+Q13382519	table tennis player	Q2066131	1	
+Q13382533	taekwondo athlete	Q2066131	1	
+Q13382566	canoeist	Q2066131	1	
+Q13382576	rower	Q2066131	1	
+Q13382603	ski jumper	Q2066131	1	
+Q13382605	Nordic combined skier	Q2066131	1	
+Q13382608	cross-country skier	Q2066131	1	
+Q13382981	luger	Q2066131	1	
+Q13383011	bobsledder	Q2066131	1	
+Q13388442	skeleton racer	Q2066131	1	
+Q13388586	softball player	Q2066131	1	
+Q13414980	Australian rules football player	Q2066131	1	
+Q13415036	rugby player	Q2066131	1	
+Q13464374	tug of war competitor	Q2066131	1	
+Q13464497	pole vaulter	Q2066131	1	
+Q13474373	professional wrestler	Q2066131	1	
+Q13561328	surfer	Q2066131	1	
+Q13581129	orienteer	Q2066131	1	
+Q13724897	hurdler	Q2066131	1	
+Q13848274	triple jumper	Q2066131	1	
+Q13854733	steeplechase runner	Q2066131	1	
+Q13856320	hammer thrower	Q2066131	1	
+Q14009165	trapper	Q2066131	0	not sport
+Q14089670	rugby union player	Q2066131	1	
+Q14128148	gridiron football player	Q2066131	1	
+Q14253874		Q15986539,Q202648	1	
+Q14373094	rugby league player	Q2066131	1	
+Q14514934		Q15986539,Q202648	1	
+Q14605941	combined track and field event athlete	Q2066131	1	
+Q15041977	rugby union coach	Q41583	1	
+Q15117302	volleyball player	Q2066131	1	
+Q15117395	track cyclist	Q2066131	1	
+Q15117415	cyclo-cross cyclist	Q2066131	1	
+Q15306067	triathlete	Q2066131	1	
+Q15709642	snowboarder	Q2066131	1	
+Q15840574		Q2066131	1	
+Q15916915	chess official	Q15986539	1	
+Q15972912	modern pentathlete	Q2066131	1	
+Q15982795	bodybuilder	Q2066131	1	
+Q15986539	sports official	Q15986539	1	
+Q16004431	competitive diver	Q2066131	1	
+Q16004432	platform diver	Q2066131	1	
+Q16004471	kayaker	Q2066131	1	
+Q16014296	springboard diver	Q2066131	1	
+Q16029547	biathlete	Q2066131	1	
+Q16113692	Croatian trotter	Q2066131	1	
+Q16278103	squash player	Q2066131	1	
+Q16303386	grappler	Q2066131	1	
+Q16501245	wide midfielder	Q2066131	1	
+Q16549481	classic specialist	Q2066131	1	
+Q16670474		Q2066131	1	
+Q16681303	Spanish Trotter	Q2066131	1	
+Q16687571		Q2066131	1	
+Q16866989	slinger	Q2066131	1	
+Q16947675	gymnast	Q2066131	1	
+Q17279652	basketball assistant coach	Q41583	1	
+Q17318006	freediver	Q2066131	1	
+Q17351861	Gaelic football player	Q2066131	1	
+Q17361147	ice dancer	Q2066131	1	
+Q17361156	beach volleyball player	Q2066131	1	
+Q17362882	bodyboarder	Q2066131	1	
+Q17405793	racewalker	Q2066131	1	
+Q17413056	defensive lineman	Q2066131	1	
+Q17486376	sport shooter	Q2066131	1	
+Q17502714	skateboarder	Q2066131	1	
+Q17504942	scuba diver	Q2066131	1	
+Q17516936	curler	Q2066131	1	
+Q17519504	kitesurfer	Q2066131	1	
+Q17524364	water polo player	Q2066131	1	
+Q17611899	racquetball player	Q2066131	1	
+Q17619498	netballer	Q2066131	1	
+Q17682262	lacrosse player	Q2066131	1	
+Q18052877	association football assistant coach	Q41583	1	
+Q18088626		Q15986539	1	
+Q18199024	hurler	Q2066131	1	
+Q18200514	short-track speed skater	Q2066131	1	
+Q18390478	Youth ice hockey coach	Q41583	1	
+Q18437198	bridge player	Q2066131	1	
+Q18510502	javelin thrower	Q2066131	1	
+Q18534714	shot putter	Q2066131	1	
+Q18574233	darts player	Q2066131	1	
+Q18617021	freestyle skier	Q2066131	1	
+Q18664049	ski-orienteer	Q2066131	1	
+Q18667447	pesäpallo player	Q2066131	1	
+Q18691898	defensive midfielder	Q2066131	1	
+Q18697160	golf ball diver	Q2066131	1	
+Q18702210	bandy player	Q2066131	1	
+Q18706712	ice cross downhill racer	Q2066131	1	
+Q18715859	synchronized swimmer	Q2066131	1	
+Q18814798	wheelchair tennis player	Q2066131	1	
+Q18920523	ringette player	Q2066131	1	
+Q19204627	American football player	Q2066131	1	
+Q19746576	player of Basque pelota	Q2066131	1	
+Q19799599	mountain biker	Q2066131	1	
+Q19801627	ski mountaineer	Q2066131	1	
+Q19827218	ultramarathon runner	Q2066131	1	
+Q19827985	track and field coach	Q41583	1	
+Q19841381	Canadian football player	Q2066131	1	
+Q19960661	biathlon coach	Q41583	1	
+Q20089909	manager of VfL Wolfsburg	Q41583	1	
+Q20150172	caver	Q2066131	1	
+Q20190513	free agent	Q2066131	1	
+Q20522910	first board	Q2066131	1	
+Q20683322	Himalayan mountaineer	Q2066131	1	
+Q20730773	swimming coach	Q41583	1	
+Q20730881	volleyball coach	Q41583	1	
+Q20740414	BASE jumper	Q2066131	1	
+Q20751891	Brazilian jiu-jitsu practitioner	Q2066131	1	
+Q20900796	rink hockey player	Q2066131	1	
+Q20965770	winter sports practitioner	Q2066131	1	
+Q20994440	FIFA referee	Q15986539,Q202648	1	
+Q21011245	stage race specialist	Q2066131	1	
+Q21057452	beach soccer player	Q2066131	1	
+Q21081635	ocean rower	Q2066131	1	
+Q21121588	rowing coach	Q41583	1	
+Q21141381	decathlete	Q2066131	1	
+Q21141393	heptathlete	Q2066131	1	
+Q21141408	pentathlete	Q2066131	1	
+Q21193707	Dragon Slayer	Q2066131	1	
+Q21423578	Frisian handball player	Q2066131	1	
+Q21517059	rodeo rider	Q2066131	1	
+Q21578283	rowing administrator	Q15986539	1	
+Q21617887	chess boxer	Q2066131	1	
+Q22009216	Ban-ei Race Horse	Q2066131	1	
+Q22122536	boxing trainer	Q41583	1	
+Q22269196	professional boxer	Q2066131	1	
+Q22570303	grinder	Q2066131	1	
+Q22695781	sport fisher	Q2066131	1	
+Q22704540	spearfisher	Q2066131	1	
+Q22916339	summer biathlete	Q2066131	1	
+Q23067916	Valencian pilota player	Q2066131	1	
+Q23308797	wakeboarder	Q2066131	1	
+Q23452173	pétanque player	Q2066131	1	
+Q23719050	boccia player	Q2066131	1	
+Q23754399	korfball player	Q2066131	1	
+Q23765993	ski jumping coach	Q41583	1	
+Q23831192	tracker	Q2066131	1	
+Q23845879	powerlifter	Q2066131	1	
+Q23868946	floorball player	Q2066131	1	
+Q23892384	trampoline gymnast	Q2066131	1	
+Q23905275	Pythian games winner	Q2066131	1	
+Q23905276	Isthmian games victor	Q2066131	1	
+Q23905277	Nemean games victor	Q2066131	1	
+Q23905927	Olympic champion	Q2066131	1	
+Q23906217	Olympic victor, stadion	Q2066131	1	
+Q23906220	Olympic victor, diaulos	Q2066131	1	
+Q23906224	Olympic victor, dolichos	Q2066131	1	
+Q23906225	Olympic victor, wrestling (pale)	Q2066131	1	
+Q23906226	Olympic victor, pentathlon	Q2066131	1	
+Q23906228	Olympic victor, boxing (pygmachia)	Q2066131	1	
+Q23906229	Olympic victor, tethrippon (4-horse chariot)	Q2066131	1	
+Q23906230	Olympic victor, pankration	Q2066131	1	
+Q23906232	Olympic victor, keles	Q2066131	1	
+Q23906233	Olympic victor, stadion (boys)	Q2066131	0	sensitive
+Q23906237	Olympic victor, wrestling (boys)	Q2066131	0	sensitive
+Q23906239	Olympic victor, pentathlon (boys)	Q2066131	0	sensitive
+Q23906240	Olympic victor in boys boxing	Q2066131	0	sensitive
+Q23906243	Olympic victor, hoplitodromos	Q2066131	1	
+Q23906248	Olympic victor, mule-cart race	Q2066131	1	
+Q23906251	Olympic victor, kalpe	Q2066131	1	
+Q23906254	Olympic victor, synoris (two-horse chariot)	Q2066131	1	
+Q23906263	Olympic victor, trumpeter	Q2066131	1	
+Q23906266	Olympic victor, herald contest	Q2066131	1	
+Q23906282	Olympic victor, tethrippon for foals	Q2066131	1	
+Q23906291	Olympic victor, synoris (foals)	Q2066131	1	
+Q23906293	Olympic victor, foals race	Q2066131	1	
+Q23927336	sambo fighter	Q2066131	1	
+Q24033993	karate coach	Q41583	1	
+Q24037210	rhythmic gymnast	Q2066131	1	
+Q24056680	karate referee	Q15986539,Q202648	1	
+Q24068711	Olympic victor, pankration (boys)	Q2066131	0	sensitive
+Q24238692	croquet player	Q2066131	1	
+Q24259627	motorcycle trials rider	Q2066131	1	
+Q24292656	horse tamer	Q41583	1	
+Q24525604	Quality control coach	Q41583	1	
+Q24573123	oină player	Q2066131	1	
+Q24797688	show jumper	Q2066131	1	
+Q24952726	special teams coordinator	Q41583	1	
+Q25038739	walkathoner	Q2066131	1	
+Q25348407	marquee player	Q2066131	1	
+Q25388792		Q2066131	1	
+Q25439032	Paralympic athlete	Q2066131	1	
+Q25535632	sponge diver	Q2066131	1	
+Q25866077	skeleton trainer	Q41583	1	
+Q25906446	Umpire	Q15986539,Q202648	1	
+Q26111624	paraglider pilot	Q2066131	1	
+Q26156291	floorball coach	Q41583	1	
+Q26219487	cross country runner	Q2066131	1	
+Q26233091	real tennis player	Q2066131	1	
+Q26237722	rugby sevens player	Q2066131	1	
+Q26326102	Swiss wrestler	Q2066131	1	
+Q26384038	event rider	Q2066131	1	
+Q26481809	sports executive	Q15986539	1	
+Q26709099	speed skating trainer	Q41583	1	
+Q26831398	acrobatic gymnast	Q2066131	1	
+Q26869174	grass skiing competitor	Q2066131	1	
+Q26876991	inline speed skater	Q2066131	1	
+Q27062049	aizkolari	Q2066131	1	
+Q27062349	harri-jasotzaile	Q2066131	1	
+Q27062494	segalari	Q2066131	1	
+Q27503001	professional athlete	Q2066131	1	
+Q27532776	rowing umpire	Q15986539,Q202648	1	
+Q27621374	bear hunter	Q2066131	1	
+Q27949283	sealer	Q2066131	1	
+Q28001428	falconer	Q2066131	1	
+Q28054240	hand-pelota player	Q2066131	1	
+Q28143257	badminton coach	Q41583	1	
+Q28164897	jujutsuka	Q2066131	1	
+Q28195050	Hovjägmästare	Q2066131	1	
+Q28406836	video assistant referee	Q15986539,Q202648	1	
+Q28466165	whaler	Q2066131	1	
+Q28659301	Sinchis	Q2066131	1	
+Q28681386	natural track luger	Q2066131	1	
+Q28684129	soccer referee assist system	Q15986539,Q202648	1	
+Q28836794	wheelchair curler	Q2066131	1	
+Q28870526	fistball player	Q2066131	1	
+Q28971125	cheerleader	Q2066131	1	
+Q29466935	disc golfer	Q2066131	1	
+Q29474561	camogie player	Q2066131	1	
+Q29579227	bowls player	Q2066131	1	
+Q29639271		Q2066131	1	
+Q29817148	badminton executive and administrator	Q15986539	1	
+Q29840095	capoeira practitioner	Q2066131	1	
+Q30070907		Q2066131	1	
+Q30175498		Q2066131	1	
+Q30176225	correspondence chess player	Q2066131	1	
+Q30339659	motorsports competitor	Q2066131	1	
+Q30525637	beach tennis player	Q2066131	1	
+Q31192572	male rower	Q2066131	0	sensitive
+Q31889310		Q2066131	1	
+Q33135515	boules player	Q2066131	1	
+Q35122846	Authorised Neutral Athletes	Q2066131	1	
+Q38079409	shinty player	Q2066131	1	
+Q38088701	association football match official	Q15986539	1	
+Q38276597		Q2066131	1	
+Q38370550	military patrol (sport) runner	Q2066131	1	
+Q40871491	hapkido practitioner	Q2066131	1	
+Q41696723	recreational diver	Q2066131	1	
+Q41898139	slackliner	Q2066131	1	
+Q42331263	American football coach	Q41583	1	
+Q42331265	gymnastics coach	Q41583	1	
+Q42362934	riding coach	Q41583	1	
+Q42377933	Grand Huntsman of Brabant	Q2066131	1	
+Q43548373	speedcuber	Q2066131	1	
+Q43633947	first overall draft pick	Q2066131	1	
+Q43644099	draftee	Q2066131	1	
+Q45322469	wheelchair basketball player	Q2066131	1	
+Q47004511	canoe polo player	Q2066131	1	
+Q47484668	bandy coach	Q41583	1	
+Q47530495	tennis official	Q15986539,Q202648	1	
+Q47530502	chair umpire	Q15986539,Q202648	1	
+Q47530512	line umpire	Q15986539,Q202648	1	
+Q47530515	chief umpire	Q15986539,Q202648	1	
+Q47530518	referee	Q15986539,Q202648	1	
+Q47531778	net umpire	Q15986539,Q202648	1	
+Q48608604	alpine skiing coach	Q41583	1	
+Q48673045	professional tennis player	Q2066131	1	
+Q48676230	registered player	Q2066131	1	
+Q48744240	Chinese Go player	Q2066131	1	
+Q48971442	position coach	Q41583	1	
+Q48995125	amateur tennis player	Q2066131	1	
+Q49904510	player of jeu de paume	Q2066131	1	
+Q50214236	Australian rules football coach	Q41583	1	
+Q50259293	inline skater	Q2066131	1	
+Q50654094	futsal coach	Q41583	1	
+Q51093963	sport pilot	Q2066131	1	
+Q51126824	kabaddi coach	Q41583	1	
+Q51208995	speed skier	Q2066131	1	
+Q51536424	wheelchair racer	Q2066131	1	
+Q51536572	club thrower	Q2066131	1	
+Q51751308	curling coach	Q41583	1	
+Q52008305	mixed martial arts referee	Q15986539,Q202648	1	
+Q52161273	single skater	Q2066131	1	
+Q52217314	road cyclist	Q2066131	1	
+Q53645345	duathlete	Q2066131	1	
+Q54161541	Belgian Trotter	Q2066131	1	
+Q54256589		Q2066131	1	
+Q55296227	baseball player-manager	Q2066131,Q41583	1	
+Q55383113	cave diver	Q2066131	1	
+Q55383242	technical diver	Q2066131	1	
+Q55410403	Luge trainer	Q41583	1	
+Q55441806	rally raid automobile driver	Q2066131	1	
+Q55594106	rallycross driver	Q2066131	1	
+Q55670148	Technical Delegate	Q15986539	1	
+Q55709220	alternate	Q15986539	1	
+Q55808081	werewolf hunter	Q2066131	1	
+Q55968837	zombie hunter	Q2066131	1	
+Q55971808	monster hunter	Q2066131	1	
+Q55986349	enduro rider	Q2066131	1	
+Q56117770	rugby union executive	Q15986539	1	
+Q56164819	radiosportsperson	Q2066131	1	
+Q56232598	paintball player	Q2066131	1	
+Q56300000		Q2066131	1	
+Q56303296	Ljutomer Trotter	Q2066131	1	
+Q56308040	Danish trotter	Q2066131	1	
+Q56315941	ship's diver	Q2066131	1	
+Q56318547	Romanian Trotter	Q2066131	1	
+Q56433160	truck racing driver	Q2066131	1	
+Q56612894	association floorball manager	Q41583	1	
+Q56677347	arm wrestler	Q2066131	1	
+Q56746433	catch trainer	Q41583	1	
+Q56827013	dragon boat racer	Q2066131	1	
+Q56860975	coach (Basque pelota)	Q41583	1	
+Q56882269	figure skating judge	Q15986539	1	
+Q56884274	technical controller	Q15986539,Q202648	1	
+Q56884382	technical specialist	Q15986539,Q202648	1	
+Q56885102	Para ice hockey player	Q2066131	1	
+Q57199189	figure skating coach	Q41583	1	
+Q57749966	beach handball player	Q2066131	1	
+Q57750025	beach handball trainer	Q41583	1	
+Q58239056	striking coach	Q41583	1	
+Q58546307	roller derby player	Q2066131	1	
+Q58795262	demon hunter	Q2066131	1	
+Q58823986	jetski racer	Q2066131	1	
+Q58825429	Olympic competitor	Q2066131	1	
+Q58826204	Olympic medalist	Q2066131	1	
+Q58851768	telemarker	Q2066131	1	
+Q59239421	rugby league coach	Q41583	1	
+Q59384208		Q2066131	1	
+Q59510975	assistant technical specialist	Q15986539,Q202648	1	
+Q59511358	data operator	Q15986539,Q202648	1	
+Q59602173	cross-country skiing coach	Q41583	1	
+Q59667158	triathlon coach	Q41583	1	
+Q59685588	bobsledder coach	Q41583	1	
+Q59716278	padel player	Q2066131	1	
+Q59917804	mountain rescuer	Q2066131	1	
+Q60629008	Nordic racewalker	Q2066131	1	
+Q60646581	novillero	Q2066131	1	
+Q60753111	Abaga	Q2066131	1	
+Q60967673	Who's Who	Q2066131	1	
+Q60983289		Q2066131	1	
+Q61043082	aircraft racer	Q2066131	1	
+Q61278580	roller skater	Q2066131	1	
+Q61650479	goalkeeper	Q2066131	1	
+Q61707268	Gaelic handball player	Q2066131	1	
+Q61783220	handball executive	Q15986539	1	
+Q61983776	youth team coach	Q41583	1	
+Q62056296	powerchair footballer	Q2066131	1	
+Q62056314	wheelchair rugby player	Q2066131	1	
+Q62056361	wheelchair sports dancer	Q2066131	1	
+Q62056380	wheelchair athletics competitor	Q2066131	1	
+Q62056391	wheelchair fencer	Q2066131	1	
+Q62627163	pedestrian	Q2066131	1	
+Q62707170		Q15986539	1	
+Q63065786	rugby sevens coach	Q41583	1	
+Q63076925	artistic roller skater	Q2066131	1	
+Q63095188	pugilist	Q2066131	1	
+Q63243629	speedway rider	Q2066131	1	
+Q63349579	handball national coach	Q41583	1	
+Q63915541	dodgeball player	Q2066131	1	
+Q64011604	motorboat racer	Q2066131	1	
+Q64851604	rugby league referee	Q15986539,Q202648	1	
+Q64855107	skating coach	Q41583	1	
+Q65209533		Q2066131	1	
+Q65233763	ice hockey executive	Q15986539	1	
+Q65240292		Q2066131	1	
+Q65430085	Armenian athletes in the ancient Olympic Games	Q2066131	1	
+Q65697958	inline hockey player	Q2066131	1	
+Q65924683	wushu practitioner	Q2066131	1	
+Q65954523	Surfer playboy	Q2066131	1	
+Q66496492	rugby league administrator	Q15986539	1	
+Q66759460	English billiards player	Q2066131	1	
+Q66839062	savateur	Q2066131	1	
+Q67020237	freestyle motocross rider	Q2066131	1	
+Q67164844	sports dancer	Q2066131	1	
+Q67202689	nine-pin bowler	Q2066131	1	
+Q67204083	cricket coach	Q41583	1	
+Q69272749		Q41583	1	
+Q69995518	GM-less	Q15986539,Q202648	1	
+Q71026536	conditional trainer	Q41583	1	
+Q71550599	crossbowman	Q2066131	1	
+Q71690966	bandy referee	Q15986539,Q202648	1	
+Q72166732	indoor rower	Q2066131	1	
+Q72168361	coastal rower	Q2066131	1	
+Q73510801	rink hockey coach	Q41583	1	
+Q77020847	korfball referee	Q15986539,Q202648	1	
+Q78063080	rinkball player	Q2066131	1	
+Q78070424	subordinate	Q2066131	1	
+Q83169285	skyrunner	Q2066131	1	
+Q84562094	cyclo-cross national coach	Q41583	1	
+Q86135347	climber	Q2066131	1	
+Q86629158	field hockey coach	Q41583	1	
+Q86662903	Lethwei fighter	Q2066131	1	
+Q87252988	kyūdōka	Q2066131	1	
+Q87254054	sōjutsuka	Q2066131	1	
+Q87254201	taidōka	Q2066131	1	
+Q88070800	Secretary General of FIBA	Q41583	1	
+Q88107866	judo coach	Q41583	1	
+Q88109996	archery biathlete	Q2066131	1	
+Q88191276	foil fencer	Q2066131	1	
+Q88191417	western rider	Q2066131	1	
+Q88191594	Para cyclist	Q2066131	1	
+Q88200618	equestrian vaulter	Q2066131	1	
+Q88203001	rackets player	Q2066131	1	
+Q88207871	épée fencer	Q2066131	1	
+Q88209013	ice stock player	Q2066131	1	
+Q88211956	monoskibob player	Q2066131	1	
+Q88214483	canoe coach	Q41583	1	
+Q88214543	golf coach	Q41583	1	
+Q88214604	touring car racer	Q2066131	1	
+Q88284558		Q41583	1	
+Q88479569	Masters cycling	Q2066131	1	
+Q88998466	technical delegate	Q15986539	1	
+Q90173132	full-back	Q2066131	1	
+Q90326494	attacking midfielder	Q2066131	1	
+Q90479996	water polo coach	Q41583	1	
+Q90496069	Para swimmer	Q2066131	1	
+Q90904817		Q2066131	1	
+Q93591280	parachute engineer	Q2066131	1	
+Q95697764	cricket administrator	Q15986539	1	
+Q96244884	big game hunter	Q2066131	1	
+Q96376968	edge rusher	Q2066131	1	
+Q96656001	Paralympic medalist	Q2066131	1	
+Q96864583	pencak silat athlete	Q2066131	1	
+Q97286263	FIDE Arbiter	Q15986539,Q202648	1	
+Q97319426		Q2066131	1	
+Q97348004		Q41583	1	
+Q97348277		Q41583	1	
+Q97487735	aerobic gymnast	Q2066131	1	
+Q97610399	football tennis player	Q2066131	1	
+Q98073294	ice sport practitioner	Q2066131	1	
+Q98406729	Formula Two driver	Q2066131	1	
+Q98557224	Mallakhamb coach	Q41583	1	
+Q98636346	table tennis coach	Q41583	1	
+Q98703899		Q2066131	1	
+Q98713221	minigolf player	Q2066131	1	
+Q98768940	wrestling coach	Q41583	1	
+Q100550234	vert skater	Q2066131	1	
+Q101046010		Q2066131	1	
+Q101204362	ultimate player	Q2066131	1	
+Q101500235	land sailor	Q2066131	1	
+Q101542154	League of Legends player	Q2066131	1	
+Q101584206	pesäpallo manager	Q41583	1	
+Q101584226	pesäpallo umpire	Q15986539,Q202648	1	
+Q102068136	quadrathlon athlete	Q2066131	1	
+Q104071849	cheerleading coach	Q41583	1	
+Q104071967	summiter	Q2066131	0	not sport
+Q104218947		Q2066131	1	
+Q104530408		Q41583	1	
+Q104531751	Trotter-type Finnhorse	Q2066131	1	
+Q104548415		Q2066131	1	
+Q104737963		Q2066131	1	
+Q104764845	Cleaners	Q2066131	0	not sport
+Q105236846	scooter rider	Q2066131	1	
+Q105361751	dirtbag climber	Q2066131	1	
+Q105411957	ball hockey player	Q2066131	1	
+Q105621122	artistic cyclist	Q2066131	1	
+Q105623439		Q15986539,Q202648	1	
+Q105696682	masters swimmer	Q2066131	1	
+Q105748930	Formula Three driver	Q2066131	1	
+Q105954840	sailing coach	Q41583	1	
+Q106037358	male athlete	Q2066131	0	sensitive
+Q106037372	female athlete	Q2066131	0	sensitive
+Q106239277		Q2066131	1	
+Q106270820	Baltic Trotter	Q2066131	1	
+Q106560844	lacrosse coach	Q41583	1	
+Q106587023	American football national coach	Q41583	1	
+Q106647433	cross triathlete	Q2066131	1	
+Q106807887	snocross racer	Q2066131	1	
+Q106857893	freerunner	Q2066131	1	
+Q106901236	motorcycle development rider	Q2066131	1	
+Q107070290	team manager	Q15986539	1	
+Q107209275	synchronized skating coach	Q41583	1	
+Q107213256	wing-back	Q2066131	1	
+Q107288518	Renju player	Q2066131	1	
+Q107392205	snow volleyball player	Q2066131	1	
+Q107407458		Q2066131	1	
+Q107506477		Q2066131	1	
+Q107568781	snowmobile racer	Q2066131	1	
+Q107639979	sepak takraw player	Q2066131	1	
+Q107690317	competition climber	Q2066131	1	
+Q107747791	speed climber	Q2066131	1	
+Q107789510	freestyler footballer	Q2066131	1	
+Q107883088	winter swimmer	Q2066131	1	
+Q107921181	elite athlete	Q2066131	1	
+Q107932010	long-distance swimmer	Q2066131	1	
+Q107991434	team manager	Q15986539	1	
+Q108032642	dirt track rider	Q2066131	1	
+Q108111441	kickboxing trainer	Q41583	1	
+Q108113346	association football players who play in this competition	Q2066131	0	metaclass
+Q108116154	kettlebell lifter	Q2066131	1	
+Q108124869	fencing coach	Q41583	1	
+Q108132002	weightlifting coach	Q41583	1	
+Q108147149	FIDE flag player	Q2066131	1	
+Q108181013	cycling coach	Q41583	1	
+Q108218815	water polo official	Q15986539	1	
+Q108283930	president of Real Madrid CF	Q15986539	0	not sport
+Q108320165		Q2066131	1	
+Q108353052	ice polo player	Q2066131	1	
+Q108482633	handcyclist	Q2066131	1	
+Q108486512	Para sport shooter	Q2066131	1	
+Q108603213	Mexican American athletes	Q2066131	0	sensitive
+Q108764079	b-boy	Q2066131	1	
+Q108806370	all-terrain vehicle rider	Q2066131	1	
+Q108854556		Q41583	1	
+Q108886510	BMX rider	Q2066131	1	
+Q108887236	collegiate wrestler	Q2066131	1	
+Q109358584	climbing YouTuber	Q2066131	0	not sport
+Q109443465	harness racehorse trainer	Q41583	1	
+Q109678900	Grand Prix motorcycle rider	Q2066131	1	
+Q109678945	endurance motorcycle rider	Q2066131	1	
+Q109679107	Superstock motorcycle rider	Q2066131	1	
+Q109719129	male bodybuilder	Q2066131	0	sensitive
+Q109927927	foreign players in sports leagues	Q2066131	0	metaclass
+Q110592092		Q2066131	1	
+Q110751065	Full contact fighter	Q2066131	1	
+Q110857403	underwater photographer	Q2066131	0	not sport
+Q111017922	ice climber	Q2066131	1	
+Q111036008	songbird sporter	Q2066131	0	not sport
+Q111045023	college athlete	Q2066131	1	
+Q111304048	quadballer	Q2066131	1	
+Q111338316	President of Real Zaragoza	Q15986539	0	not sport
+Q111398691	speed skating administrator	Q15986539	1	
+Q111398695	Olympic administrator	Q15986539	1	
+Q111427270	flight controller	Q2066131	0	not sport
+Q111427356	athlete	Q2066131	1	
+Q111427424	wing trimmer	Q2066131	0	not sport
+Q111429667	tactician	Q2066131	1	
+Q111655684	twirler	Q2066131	1	
+Q111661786	softball coach	Q41583	1	
+Q111729053	trail runner	Q2066131	1	
+Q112037047	skibobber	Q2066131	1	
+Q112073188	mogul skier	Q2066131	1	
+Q112117897	horse racing coach	Q41583	1	
+Q112118895	open water swimmer	Q2066131	1	
+Q112122383		Q2066131	1	
+Q112130421		Q2066131	1	
+Q112167764	Para triathlete	Q2066131	1	
+Q112206577	endurance runner	Q2066131	1	
+Q112225649	devil hunter	Q2066131	0	not sport
+Q112225700	cyclotourist	Q2066131	1	
+Q112515016	goalball player	Q2066131	1	
+Q112632134	footgolfer	Q2066131	1	
+Q113020040	turning gamemaster	Q15986539,Q202648	0	not sport
+Q113172866		Q2066131	1	
+Q113374274		Q2066131	1	
+Q113486069	Neutral banner	Q2066131	0	not sport
+Q113510240	para Nordic skier	Q2066131	1	
+Q113510260	Nordic skier	Q2066131	1	
+Q113621721		Q2066131	1	
+Q113686041	bob pilot	Q2066131	1	
+Q113686258	bobsled pusher	Q2066131	1	
+Q113884443	retired racehorse	Q2066131	1	
+Q113987275	ski jumping judge	Q15986539,Q202648	1	
+Q113995668	mountaineering instructor	Q2066131	1	
+Q113996602	mountain bike trier	Q2066131	1	
+Q114050879	mountain runner	Q2066131	1	
+Q114221078		Q41583	1	
+Q114239325	mountain bike orienteer	Q2066131	1	
+Q114358123	right midfielder	Q2066131	1	
+Q114358125	left midfielder	Q2066131	1	
+Q114389591	Para athletics coach	Q41583	1	
+Q114414171	Para athlete	Q2066131	1	
+Q114971769		Q2066131	1	
+Q115042469	Coach of a German National Team	Q41583	1	
+Q115376577	mermaid	Q2066131	0	not sport
+Q115379459		Q2066131	1	
+Q115751468	MotoGP World Champion	Q2066131	1	
+Q115757492	Jonckheere Arrow	Q41583	1	
+Q115801725		Q41583	1	
+Q115945848		Q2066131	1	
+Q116057450	pallapugno player	Q2066131	1	
+Q116085838		Q2066131	1	
+Q116137289	chasseur de Prinkères	Q2066131	0	not sport
+Q116143301	goaltending coach	Q41583	1	
+Q116175001	bench press competitor	Q2066131	1	
+Q116193105	hand-to-hand fighter	Q2066131	1	
+Q116236668	motoball player	Q2066131	1	
+Q116445694		Q2066131	1	
+Q116447959	bow hunter	Q2066131	0	not sport
+Q116480061	pairs skater	Q2066131	1	
+Q116748732	snooker referee	Q15986539,Q202648	1	
+Q116885137	huntsman	Q2066131	0	not sport
+Q116973139	esports coach	Q41583	1	
+Q117084683	winter triathlete	Q2066131	1	
+Q117134067	xiangqi player	Q2066131	1	
+Q117157204	diving coach	Q41583	1	
+Q117157313	in-line hockey coach	Q41583	1	
+Q117273509	samba referee	Q15986539,Q202648	1	
+Q117321337	football player	Q2066131	1	
+Q117360769		Q2066131	1	
+Q117383481	cheese roller	Q2066131	0	not sport
+Q117393863	minkey player	Q2066131	1	
+Q117450953	riverboarder	Q2066131	1	
+Q117459552	futins player	Q2066131	1	
+Q117463046		Q2066131	1	
+Q117463084	gateball player	Q2066131	1	
+Q117471360	esports manager	Q15986539	1	
+Q117479407	aerial skier	Q2066131	1	
+Q117536057	sabre fencer	Q2066131	1	
+Q117661307	tour skater	Q2066131	1	
+Q117667098	military skier	Q2066131	1	
+Q117816752	kosen judoka	Q2066131	1	
+Q117893555	flag football player	Q2066131	1	
+Q118236882	surf teacher	Q2066131	1	
+Q119410189	international footballer	Q2066131	1	
+Q119722599	stilt walker	Q2066131	1	
+Q119723070	échasseur	Q2066131	1	
+Q119841888	additional assistant referee	Q15986539,Q202648	1	
+Q119846724	kayak instructor	Q2066131	1	
+Q120194712		Q41583	1	
+Q120214421		Q15986539,Q202648	1	
+Q120267017	500cc World Champion	Q2066131	1	
+Q120669861	African champion	Q2066131	1	
+Q120669871	Asian champion	Q2066131	1	
+Q120669872	Oceanian champion	Q2066131	1	
+Q120669873	Pan American champion	Q2066131	1	
+Q120669892	national champion	Q2066131	1	
+Q120670017	South American champion	Q2066131	1	
+Q120670030	Commonwealth Games champion	Q2066131	1	
+Q120670044	Asian Games champion	Q2066131	1	
+Q120670054	African Games champion	Q2066131	1	
+Q120670059	Pan American Games champion	Q2066131	1	
+Q120670068	South East Asian Games champion	Q2066131	1	
+Q120670077	World Games champion	Q2066131	1	
+Q120670085	East Asian Games champion	Q2066131	1	
+Q120670092	South American Games champion	Q2066131	1	
+Q120734569	president of Duhok SC	Q15986539	0	not sport
+Q120758340	freak fighter	Q2066131	1	
+Q120768059	iceboarder	Q2066131	1	
+Q120786905	World University Games champion	Q2066131	1	
+Q120965510	Paralympic champion	Q2066131	1	
+Q120965546	Island Games champion	Q2066131	1	
+Q120965613	West Asian Games champion	Q2066131	1	
+Q120965932	South Asian Games champion	Q2066131	1	
+Q120965960	Central American and Caribbean Games champion	Q2066131	1	
+Q120965987	European Games champion	Q2066131	1	
+Q120966008	Islamic Solidarity Games champion	Q2066131	1	
+Q120966022	Mediterranean Games champion	Q2066131	1	
+Q120966049	Maccabiah Games champion	Q2066131	1	
+Q121064825	surface-supplied diver	Q2066131	1	
+Q121072169	lukkari	Q2066131	0	not sport
+Q121411224	dressage trainer	Q41583	1	
+Q121435812	Formula Four driver	Q2066131	1	
+Q121518410	Para canoeist	Q2066131	1	
+Q122147617	wrestling referee	Q15986539,Q202648	1	
+Q122307681	fictional dragonslayer	Q2066131	0	not sport
+Q122416280	rafter	Q2066131	1	
+Q122421900	Mestre	Q2066131	0	not sport
+Q123000958	paralympic cyclist	Q2066131	1	
+Q123197930	association football executive	Q15986539	1	
+Q123364288	field hockey goalkeeper	Q2066131	1	
+Q123412692	baseball5 player	Q2066131	1	
+Q123439741	Taimanin ninja	Q2066131	0	not sport
+Q123521155	pararescueman	Q2066131	0	not sport
+Q123573929	Seven-a-side footballer	Q2066131	1	
+Q123608810	mountain guide of the Pyrenees	Q2066131	1	
+Q123940002		Q2066131	1	
+Q123941397	ice sailor	Q2066131	1	
+Q124020978	roller athlete	Q2066131	1	
+Q124355618	right-back	Q2066131	1	
+Q124367315	indoor hockey player	Q2066131	1	
+Q124427715	indoor hockey coach	Q41583	1	
+Q124516127	para table tennis player	Q2066131	1	
+Q124613008	goalkeeper	Q2066131	1	
+Q124621019	Neutral Independent Athletes	Q2066131	1	
+Q124650007	left back	Q2066131	1	
+Q124719432		Q41583	1	
+Q124733322	skiing reporter	Q2066131	0	not sport
+Q124767737	boxing executive	Q15986539	1	
+Q124808286	tchoukball player	Q2066131	1	
+Q124869330	rink bandy player	Q2066131	1	
+Q125045641	lacrosse official	Q15986539,Q202648	1	
+Q125086743	lacrosse head official	Q15986539,Q202648	1	
+Q125086872	lacrosse chief bench official	Q15986539,Q202648	1	
+Q125197908	parachuting animals	Q2066131	0	not sport
+Q125220060	summer sports practitioner	Q2066131	1	
+Q125257557	lacrosse official 1	Q15986539,Q202648	1	
+Q125257621	lacrosse official 2	Q15986539,Q202648	1	
+Q125359515	female bullfighter	Q2066131	0	sensitive
+Q125381826	Tomás Porra	Q2066131	0	not sport
+Q125458811	association football coach(es) coaching this club	Q41583	0	metaclass
+Q125884224	boulderer	Q2066131	1	
+Q125927079	lacrosse bench manager	Q15986539,Q202648	1	
+Q125966756	competition organizer	Q15986539	1	
+Q126122179	lacrosse reserve official	Q15986539,Q202648	1	
+Q126368047	president of Real Oviedo	Q15986539	0	not sport
+Q126597813	steeplechaser	Q2066131	1	
+Q126888411		Q41583	1	
+Q127273239		Q2066131	1	
+Q128080694	Para judoka	Q2066131	1	
+Q128081094	Para archer	Q2066131	1	
+Q128081833	Para powerlifter	Q2066131	1	
+Q128286428	pickleball player	Q2066131	1	
+Q128599092	fencer coach	Q41583	1	
+Q129326719	WikiTrainer	Q41583	0	not sport
+Q130211137	guide runner	Q2066131	1	
+Q130266720	president of Deportivo de A Coruña	Q15986539	0	not sport
+Q130303078		Q2066131	1	
+Q130320878	international referee	Q15986539,Q202648	1	
+Q130341078	player of longue paume	Q2066131	1	
+Q130360038	IIHF referee	Q15986539,Q202648	1	
+Q130382134	Left field umpire	Q15986539,Q202648	1	
+Q130382137	Right field umpire	Q15986539,Q202648	1	
+Q130385912	datchball player	Q2066131	1	
+Q130482100	soft tennis player	Q2066131	1	
+Q130502039	Para biathlete	Q2066131	1	
+Q130502105	Para cross-country skier	Q2066131	1	
+Q130743202	superbike rider	Q2066131	1	
+Q130747356	Supersport motorcycle rider	Q2066131	1	
+Q131285881	water slalom racer	Q2066131	1	
+Q131358137	standup paddleboarder	Q2066131	1	
+Q131370768	wingfoiler	Q2066131	1	
+Q131392259	dødser	Q2066131	1	
+Q131405219	German Trotter	Q2066131	1	
+Q131460158	lacrosse onfield official	Q15986539,Q202648	1	
+Q131460198	lacrosse official in chief	Q15986539,Q202648	1	
+Q131460209	lacrosse deputy official in chief	Q15986539,Q202648	1	
+Q131460228	lacrosse officials educator	Q15986539,Q202648	1	
+Q131460237	lacrosse officials administrator	Q15986539,Q202648	1	
+Q131545491	female lacrosse players	Q2066131	0	sensitive
+Q131572821	amateur sportsman	Q2066131	0	sensitive
+Q131717390	rally raid rider	Q2066131	1	
+Q131762609	Segovian pilota player	Q2066131	1	
+Q131897753	skills coach	Q41583	1	
+Q131930103	para taekwondo athlete	Q2066131	1	
+Q131931452	Masoud karim vand	Q41583	0	not sport
+Q131937977		Q2066131	1	
+Q132041876	Para alpine skier	Q2066131	1	
+Q132099413	iaidoka	Q2066131	1	
+Q132130320	Para equestrian	Q2066131	1	
+Q132142313	ice dancer coach	Q41583	1	
+Q133047010	free climber	Q2066131	1	
+Q133444541	tchoukball coach	Q41583	1	
+Q133809659	Senegalese wrestler	Q2066131	1	
+Q133825146	Grand Slam Track Racer	Q2066131	1	
+Q133825155	Grand Slam Track Challenger	Q2066131	1	
+Q133843539	sportsperson who coaches this club or team	Q41583	0	metaclass
+Q133894857	trainer of the German national dressage team	Q41583	1	
+Q133901084	Para snowboarder	Q2066131	1	
+Q134391337	water polo players who play in this club	Q2066131	0	metaclass
+Q134516878	ski flyer	Q2066131	1	
+Q134619078	sitting volleyball player	Q2066131	1	
+Q134619351	standing volleyball player	Q2066131	1	
+Q134619568	para badminton player	Q2066131	1	
+Q134621039	President of Real Betis	Q15986539	0	not sport
+Q134898144		Q2066131	1	
+Q135106620	animal athlete	Q2066131	1	
+Q135212827	captain	Q2066131	1	
+Q135229493	world medalist	Q2066131	1	
+Q135229494	continental medalist	Q2066131	1	
+Q135229497	national medalist	Q2066131	1	
+Q135412793	freestyle wrestler	Q2066131	1	
+Q135581993	goalkeeper	Q2066131	1	
+Q135645949	fox hunter	Q2066131	0	not sport
+Q135650818	college basketball player	Q2066131	1	
+Q135827020	FIBA referee	Q15986539,Q202648	1	
+Q135928095	endurance athlete	Q2066131	1	
+Q136036684	Single-handed sailor	Q2066131	1	
+Q136039236	lacrosse officials deputy educator	Q15986539,Q202648	1	
+Q136039250	lacrosse chair of officiating	Q15986539,Q202648	1	
+Q136141361	wheel gymnastics athlete	Q2066131	1	
+Q136160008		Q2066131	1	
+Q136373506	German roll hockey champion	Q2066131	1	
+Q136447362	Icefall Doctors	Q2066131	0	not sport
+Q136648913	coach-analyst	Q41583	1	
+Q136648962	association football team sports scientist	Q41583	1	
+Q136649133	association football senior coach	Q41583	1	
+Q136658540	coaching staff member	Q41583	1	
+Q136659823	association football head coach	Q41583	1	
+Q136661790	fitness trainer	Q41583	1	
+Q136661834	senior coach	Q41583	1	
+Q136681857	EuroLeague referee	Q15986539,Q202648	1	
+Q136681873	Liga ACB referee	Q15986539,Q202648	1	
+Q136682171	FIBA 3x3 referee	Q15986539,Q202648	1	
+Q136682911	NBA referee	Q15986539,Q202648	1	
+Q136724360	regional medalist	Q2066131	1	
+Q136724415	international medalist	Q2066131	1	
+Q137157950	Ekiden runner	Q2066131	1	
+Q137381776		Q2066131	1	
+Q137455560	Japanese divers in Russia	Q2066131	0	not sport
+Q137485977	top sportsman	Q2066131	0	sensitive
+Q137670632	supermoto rider	Q2066131	1	
+Q137685666		Q2066131	1	
+Q137753092	strapless kitesurfer	Q2066131	1	
+Q137754550	snow-kiter	Q2066131	1	
+Q137757151	speedpuzzler	Q2066131	1	
+Q137764843	winner of a music competition	Q2066131	0	not sport
+Q137821802		Q2066131	1	
+Q137920229	team captain	Q2066131	1	
+Q137920246	game captain	Q2066131	1	
+Q138140534	roundnet player	Q2066131	1	
+Q138153460		Q2066131	1	
+Q138153462		Q2066131	1	
+Q138153464		Q2066131	1	
+Q138153466		Q2066131	1	
+Q138392128	martial arts referee	Q15986539,Q202648	1	
+Q138752862	starting judge	Q15986539	1	
+Q138809365	four square player	Q2066131	1	
+Q138838021	starter	Q2066131	1	
+Q139301532	shortstop	Q2066131	1	
+Q139329885	third baseman	Q2066131	1	
+Q139329950	catcher	Q2066131	1	
+Q139545880	Dieudonne Munezero	Q2066131	0	not sport
+Q139564118	motorcycle road racer	Q2066131	1	
+Q139854277	professional hunter	Q2066131	0	not sport
+Q139921794	endurance sports coach	Q41583	1	
+Q139948721	MotoSurf rider	Q2066131	1	
+Q140008234	orienteering coach	Q41583	1	
+Q140043249		Q15986539	1	
+Q140074825		Q2066131	1	
+Q140090778	wakesurfer	Q2066131	1	
+Q140090792	freeride skier	Q2066131	1	
+Q140291511	Canadian football coach	Q41583	1	
+Q140322569	archery coach	Q41583	1	
+Q140322826	exercise gymnast	Q2066131	1	
+Q140392096	freestyle windsurfer	Q2066131	1	
+Q140392119	slalom windsurfer	Q2066131	1	
+Q140393021	freestyle kiteboarder	Q2066131	1	
+Q140404663	rooftopper	Q2066131	1	
+Q140674884		Q2066131	1	
+Q140690042	snowboard cross rider	Q2066131	1	
+Q140812792	paralympic wrestler	Q2066131	1	
+Q141106622	kart racing driver	Q2066131	1	
+Q141108130	ultra-triathlete	Q2066131	1	
+Q141108986	sambo coach	Q41583	1	
+Q141113420	powerlifting coach	Q41583	1	
+Q141113441		Q41583	1	
+Q141114422		Q41583	1	
+Q141123680		Q41583	1	
+Q141127522		Q2066131	1	
+Q141141894		Q2066131	1	
+Q141148116		Q2066131	1	
+Q141152386	golf administrator	Q15986539	1	
+Q141192267	head coach	Q41583	1	
+Q141340181	underwater orienteer	Q2066131	1	
+Q141468754	Para rower	Q2066131	1	
+Q141473844		Q41583	1	
+Q141623165		Q2066131	1	
+Q141629395		Q2066131	1	
+Q141640500	ultra-cyclist	Q2066131	1	
+Q141671233	backline coach	Q41583	1	
+Q141671284	forwards coach	Q41583	1	
+Q141671423	scrum coach	Q41583	1	
+Q141671828	attack coach	Q41583	1	
+Q141671848	defence coach	Q41583	1	
+Q141679226	line-out  coach	Q41583	1	
+Q141679302	kicking coach	Q41583	1	
