@@ -28,8 +28,8 @@ Utah Royals,nwsl,2024,9999,new:UTAH,US,,short form of the revival
 Racing Louisville FC,nwsl,2021,9999,new:LOUISVILLE,US,,
 Racing Louisville,nwsl,2021,9999,new:LOUISVILLE,US,,short form
 Kansas City Current,nwsl,2021,9999,new:KCCURRENT,US,,not FC Kansas City
-Kansas City NWSL,nwsl,2021,2021,new:KCCURRENT,US,,placeholder name of the 2021 season
-Kansas City,nwsl,2021,2021,new:KCCURRENT,US,,short form of the 2021 placeholder name
+Kansas City NWSL,nwsl,2021,2021,new:KCCURRENT,US,Kansas City NWSL,placeholder name of the 2021 season
+Kansas City,nwsl,2021,2021,new:KCCURRENT,US,Kansas City NWSL,short form of the 2021 placeholder name
 Angel City FC,nwsl,2022,9999,new:ANGELCITY,US,,
 Angel City,nwsl,2022,9999,new:ANGELCITY,US,,short form
 San Diego Wave FC,nwsl,2022,9999,new:SANDIEGO,US,,

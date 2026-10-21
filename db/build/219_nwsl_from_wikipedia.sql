@@ -129,7 +129,7 @@ from nst where franchise_id is null;
 delete from nst where franchise_id is null;
 
 create temp table nts as
-select t.season yr, t.team_name, t.log_games, m.franchise_id from wts t
+select t.season yr, coalesce(m.display, t.team_name) as team_name, t.log_games, m.franchise_id from wts t
 join am m on m.nm = lower(t.team_name) and t.season between m.y0 and m.y1
 where t.season in (select yr from seasons);
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
@@ -175,6 +175,7 @@ select distinct on (yr, franchise_id) yr, franchise_id, team_name as full_name,
          when team_name ~* '^bay' then 'Bay'
          when team_name ~* 'racing' then 'Racing'
          when team_name ~* 'kansas city' and team_name ~* '^fc' then 'Kansas City'
+         when team_name ~* ' nwsl$' then 'NWSL'
          when team_name ~* 'legacy' then 'Legacy'
          when team_name ~* 'summit' then 'Summit'
          else regexp_replace(team_name, '^.* ', '')
