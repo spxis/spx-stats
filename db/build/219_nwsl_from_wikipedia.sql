@@ -85,6 +85,36 @@ insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resoluti
 select (select source_id from src), 'game', key, format('NWSL: club name not matched to a franchise: %s / %s in %s', away_team, home_team, yr), 'Game left out'
 from ng where home_f is null or away_f is null;
 delete from ng where home_f is null or away_f is null or home_f = away_f;
+
+-- A game whose key changed (a club spelled another way, a corrected date) keeps its id. A stored game that no new key matches is paired with a new
+-- key of the same season, phase and two clubs (either side home): first the one on the same date, then, when both sides hold the same number of such
+-- games, in date order within 14 days. Anything left over is a game the articles no longer log (deleted below) or a new one (inserted below).
+create temp table old_g as
+select g.game_id, g.game_date, s.start_year yr, g.phase, hts.franchise_id hf, ats.franchise_id af
+from core.game g join core.season s using (season_id)
+join core.team_season hts on hts.team_season_id = g.home_team_season_id
+join core.team_season ats on ats.team_season_id = g.away_team_season_id
+where g.source_id = (select source_id from src) and s.league_code = 'nwsl' and g.source_key like 'wpnwsl:%'
+  and not exists (select 1 from ng n where n.key = g.source_key);
+create temp table new_g as
+select n.key, n.game_date, n.yr, n.phase, n.home_f hf, n.away_f af from ng n
+where not exists (select 1 from core.game g where g.source_id = (select source_id from src) and g.source_key = n.key);
+create temp table rekey as
+select o.game_id, n.key
+from (select o.*, count(*) over (partition by yr, phase, least(hf, af), greatest(hf, af), game_date) c from old_g o) o
+join (select n.*, count(*) over (partition by yr, phase, least(hf, af), greatest(hf, af), game_date) c from new_g n) n
+  on (n.yr, n.phase, least(n.hf, n.af), greatest(n.hf, n.af), n.game_date) = (o.yr, o.phase, least(o.hf, o.af), greatest(o.hf, o.af), o.game_date)
+where o.c = 1 and n.c = 1;
+insert into rekey
+select o.game_id, n.key
+from (select o.*, row_number() over w rn, count(*) over p c from old_g o where game_id not in (select game_id from rekey)
+      window p as (partition by yr, phase, least(hf, af), greatest(hf, af)), w as (p order by game_date, game_id)) o
+join (select n.*, row_number() over w rn, count(*) over p c from new_g n where key not in (select key from rekey)
+      window p as (partition by yr, phase, least(hf, af), greatest(hf, af)), w as (p order by game_date, key)) n
+  on (n.yr, n.phase, least(n.hf, n.af), greatest(n.hf, n.af), n.rn, n.c) = (o.yr, o.phase, least(o.hf, o.af), greatest(o.hf, o.af), o.rn, o.c)
+ and abs(n.game_date - o.game_date) <= 14;
+update core.game g set source_key = r.key from rekey r where g.game_id = r.game_id;
+
 delete from core.game g using core.season s
 where g.source_id = (select source_id from src) and s.season_id = g.season_id and s.league_code = 'nwsl'
   and g.source_key like 'wpnwsl:%' and not exists (select 1 from ng n where n.key = g.source_key);
