@@ -119,6 +119,8 @@ class T(unittest.TestCase):
         self.assertEqual(P.champion_of("|champion = [[Gotham FC]]\n"), "Gotham FC")
         self.assertEqual(P.champion_of("|winners = [[Portland Thorns FC]]\n"), "Portland Thorns FC")
         self.assertEqual(P.champion_of("|winners = [[Gotham FC]] (2nd title)\n"), "Gotham FC")
+        self.assertEqual(P.champion_of("| winners                    = {{nowrap|[[Western New York Flash]]}}\n"), "Western New York Flash")
+        self.assertIsNone(P.champion_of("| winners = Canceled<ref name=\"roster_rules\" />\n"))
 
     def test_skip_concacaf_and_challenge_cup(self):
         text = """

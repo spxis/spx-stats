@@ -234,10 +234,12 @@ def champion_of(text):
         m = re.search(r"^\s*\|\s*finals_champ\s*=\s*(.+)$", text, re.I | re.M)
     if not m: return None
     t = m.group(1).strip()
+    t = re.sub(r"\{\{\s*nowrap\s*\|([^{}]*)\}\}", r"\1", t, flags=re.I)
     t = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", t)
     t = re.sub(r"\{\{[^}]*\}\}|<[^>]*>|'''|''", "", t)
     t = re.sub(r"\s*\([^)]*\)\s*$", "", t)
     t = re.sub(r"\s+", " ", t).strip(" |")
+    if re.fullmatch(r"cancell?ed|not awarded|none", t, re.I): return None
     return t or None
 
 
