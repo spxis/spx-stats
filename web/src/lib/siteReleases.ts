@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.157.0", date: "2026-10-21",
+    title: "Front office and coaching playoffs",
+    text: "A person's page now lists the jobs beyond playing and head coaching: general manager, president and assistant coach, with the club and seasons. A head coach's table gains his playoff record and series. These parts appear once the data behind them is loaded." },
   { version: "0.156.0", date: "2026-10-21", href: "/pcha/team/vancouver-maroons",
     title: "Pre-NHL clubs and the Paterson Cup",
     text: "A club that played in several leagues lists its seasons in each on its own page, every name it wore, and every Stanley Cup series it played up to 1926, with the games of each final. The PCHA, NHA and WHA champions get their own cups: the Paterson Cup, the O'Brien Cup and the Avco World Trophy." },

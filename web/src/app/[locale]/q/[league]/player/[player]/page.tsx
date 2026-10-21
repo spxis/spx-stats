@@ -30,7 +30,7 @@ import { getPersonRetired } from "@/lib/retiredNumbers";
 import { PlayerRetired } from "@/components/PlayerRetired";
 import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
 import { trophyPath } from "@/lib/awardTrophy";
-import { COACH_AWARDS, getPersonCoaching } from "@/lib/personCoaching";
+import { COACH_AWARDS, getPersonCoaching, getPersonStaff } from "@/lib/personCoaching";
 import { recordText } from "@/lib/record";
 import { buildBoard } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
@@ -120,13 +120,13 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
   const { d, home } = at;
   const { say, locale, dt, fmt } = await currentSpeaker();
-  const [brands, summary, record, retired, coaching, allStar] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id), getPersonCoaching(d.person.person_id), orElse(getPersonAllStar(d.person.person_id), [] as PersonAllStar[])]);
+  const [brands, summary, record, retired, coaching, staff, allStar] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id), getPersonCoaching(d.person.person_id), getPersonStaff(d.person.person_id), orElse(getPersonAllStar(d.person.person_id), [] as PersonAllStar[])]);
   const { person: p, teams } = d;
   const coachCodes = coaching.length ? COACH_AWARDS : new Set<string>();
   const awards = d.awards.filter((a) => !coachCodes.has(a.award_code));
   const coachAwards = d.awards.filter((a) => coachCodes.has(a.award_code));
   const played = Boolean(p.seasons_played || teams.length || record.seasonTeams.length || record.stats.length);
-  const multi = played && coaching.length > 0;
+  const multi = [played, coaching.length > 0, staff.length > 0].filter(Boolean).length > 1;
   const lgs = (p.leagues ?? []).filter(isLeague);
   const paths = await getPaths();
   const homePin: Pin | null = p.birth_lat != null && p.birth_lon != null
@@ -219,8 +219,20 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
     { key: "league", label: say("col.league"), get: (c) => leagueName(c.league) },
     { key: "seasons", label: say("col.seasons"), num: true, get: (c) => c.seasons },
     { key: "record", label: say("col.record"), num: true, get: (c) => (c.sole ? c.rec.w / Math.max(1, c.rec.w + c.rec.l + c.rec.t + c.rec.otl) : null), cell: (c) => (c.sole ? `${recordText(c.rec)}${c.sole < c.seasons ? "*" : ""}` : "") },
+    ...(coaching.some((c) => c.playoffs) ? [
+      { key: "playoffs", label: say("col.playoffs"), num: true, get: (c: (typeof coaching)[number]) => (c.playoffs ? c.playoffs.w / Math.max(1, c.playoffs.games) : null), cell: (c: (typeof coaching)[number]) => (c.playoffs ? recordText(c.playoffs) : "") },
+      { key: "series", label: say("col.series"), num: true, get: (c: (typeof coaching)[number]) => (c.playoffs ? c.playoffs.seriesW / Math.max(1, c.playoffs.seriesW + c.playoffs.seriesL) : null), cell: (c: (typeof coaching)[number]) => (c.playoffs && c.playoffs.seriesW + c.playoffs.seriesL ? `${c.playoffs.seriesW}–${c.playoffs.seriesL}` : "") },
+    ] : []),
     { key: "titles", label: say("col.titles"), num: true, get: (c) => c.titles.length, cell: (c) => c.titles.map((y) => seasonLabel(c.league, y)).join(", ") },
   ], (c) => `${c.league}|${c.franchise}|${c.from}`);
+  const staffTable = tableOf(staff, [
+    { key: "from", label: say("col.from"), num: true, get: (c) => c.from, cell: (c) => <Link href={seasonPath(c.league, c.from)} prefetch={false}>{seasonLabel(c.league, c.from)}</Link> },
+    { key: "to", label: say("col.to"), num: true, get: (c) => c.to, cell: (c) => (c.to === c.from ? "" : <Link href={seasonPath(c.league, c.to)} prefetch={false}>{seasonLabel(c.league, c.to)}</Link>) },
+    { key: "team", label: say("col.team"), cls: "team", get: (c) => c.team, cell: (c) => <TeamLabel lg={c.league} f={c.franchise} name={c.team || say("team.fallback", { id: c.franchise })} logo={logoFor(brands, c.franchise, c.to)} /> },
+    { key: "league", label: say("col.league"), get: (c) => leagueName(c.league) },
+    { key: "role", label: say("col.role"), get: (c) => c.role, cell: (c) => (c.role === "general_manager" ? say("staff.generalManager") : c.role === "president" ? say("staff.president") : (c.position ?? say("staff.assistantCoach"))) },
+    { key: "seasons", label: say("col.seasons"), num: true, get: (c) => c.seasons },
+  ], (c) => `${c.league}|${c.franchise}|${c.role}|${c.position ?? ""}|${c.from}`);
   const coachTitles = coaching.reduce((n, c) => n + c.titles.length, 0);
   const coachSeasons = coaching.reduce((n, c) => n + c.seasons, 0);
   const coachClubs = new Set(coaching.map((c) => `${c.league}|${c.franchise}`)).size;
@@ -236,18 +248,19 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           team={(r) => teams.filter((t) => t.league === r.league && t.franchise_id === r.franchise_id).sort((a, b) => b.to_year - a.to_year)[0]?.team || say("team.fallback", { id: r.franchise_id ?? 0 })}
           href={(r) => `${paths.team(r.league, r.franchise_id ?? 0)}#retired`}
         />
-        <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say(played ? "player.eyebrow" : "player.roleCoach")}</span>
+        <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say(played ? "player.eyebrow" : coaching.length || !staff.length ? "player.roleCoach" : "player.roleStaff")}</span>
         <h1>{p.name}</h1>
         {p.birth_date ? <p className="lede">{p.death_date ? say("player.lifespan", { from: yr(p.birth_date), to: yr(p.death_date) }) : say("player.bornYear", { year: yr(p.birth_date) })}</p> : null}
       </section>
       {facts.length ? <dl className="pfacts">{facts}</dl> : <p className="note">{say("player.noBio")}</p>}
       {multi ? (
         <nav className="rolechips" aria-label={say("player.roles")}>
-          <a href="#playing">{say("player.rolePlayer")}</a>
-          <a href="#coaching">{say("player.roleCoach")}</a>
+          {played ? <a href="#playing">{say("player.rolePlayer")}</a> : null}
+          {coaching.length ? <a href="#coaching">{say("player.roleCoach")}</a> : null}
+          {staff.length ? <a href="#staff">{say("player.roleStaff")}</a> : null}
         </nav>
       ) : null}
-      {multi ? <h2 id="playing" className="rolehead">{say("player.playingCareer")}</h2> : null}
+      {multi && played ? <h2 id="playing" className="rolehead">{say("player.playingCareer")}</h2> : null}
       <PlayerTitles titles={titles} />
       <CupsProvider markup={cupsFor(titles.map((t) => t.league))}>
         {board ? <PlayerBoard data={board} /> : null}
@@ -282,13 +295,20 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
             {coachAwards.length ? <Fact label={say("coach.factAwards")}>{fmt(coachAwards.length)}</Fact> : null}
           </dl>
           <div className="tablebox"><SortTable {...coachTable} param="sort_coach" def="from.asc" /></div>
-          <p className="note">{say("coach.note")}{partial ? ` ${say("coach.noteShared")}` : ""}</p>
+          <p className="note">{say("coach.note")}{partial ? ` ${say("coach.noteShared")}` : ""}{coaching.some((c) => c.playoffs) ? ` ${say("coach.notePlayoffs")}` : ""}</p>
           {coachAwards.length ? (
             <>
               <h3>{say("coach.awards")}</h3>
               <div className="tablebox"><SortTable {...coachAwardTable} param="sort_coachawards" def="season.desc" /></div>
             </>
           ) : null}
+        </section>
+      ) : null}
+      {staff.length ? (
+        <section className="section" id="staff">
+          <h2 className={multi ? "rolehead" : undefined}>{say("player.staffCareer")}</h2>
+          <div className="tablebox"><SortTable {...staffTable} param="sort_staff" def="from.asc" /></div>
+          <p className="note">{say("staff.note")}</p>
         </section>
       ) : null}
       {book.key()}
