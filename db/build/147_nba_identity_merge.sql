@@ -1,7 +1,7 @@
 -- SPX's NBA identities cover only the days SPX has games, and step 147 fills the days either side as separate identities, so each club's
 -- unbroken run under one name was three rows (the Heat began on 2012-04-27). This joins every touching run of NBA identities that agree
--- on name, city, nickname, country, abbreviation and region into the row with the lowest franchise_identity_id (SPX's), repoints the
--- team seasons, drops the others and joins the touching NBA memberships the same way. Also repairs a database built before it, in place.
+-- on full name, country and abbreviation (SPX and Wikipedia spell the city, nickname and region differently) into the row with the lowest
+-- franchise_identity_id (SPX's, which keeps its own spellings), repoints the team seasons, drops the others and joins the touching NBA memberships the same way. Also repairs a database built before it, in place.
 -- Rerunnable; runs after 147_nba_from_wikipedia.sql (and before 179, which sets the abbreviations).
 create temp table nba_fr as select distinct franchise_id from core.franchise_league where league_code = 'nba';
 
@@ -11,9 +11,8 @@ select franchise_identity_id, franchise_id, valid_during,
 from (
   select i.franchise_identity_id, i.franchise_id, i.valid_during,
          coalesce(lag(upper(i.valid_during)) over w is distinct from lower(i.valid_during)
-                  or (lag(i.full_name, 1) over w, lag(i.location, 1) over w, lag(i.nickname, 1) over w, lag(i.country_code, 1) over w,
-                      lag(i.abbreviation, 1) over w, lag(i.region, 1) over w)
-                     is distinct from (i.full_name, i.location, i.nickname, i.country_code, i.abbreviation, i.region), true) as new_run
+                  or (lag(i.full_name) over w, lag(i.country_code) over w, lag(i.abbreviation) over w)
+                     is distinct from (i.full_name, i.country_code, i.abbreviation), true) as new_run
   from core.franchise_identity i
   where i.franchise_id in (select franchise_id from nba_fr)
   window w as (partition by i.franchise_id order by lower(i.valid_during), i.franchise_identity_id)
