@@ -8,7 +8,10 @@ import { TROPHY_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/bowl";
 import { TROPHY_CANADIAN_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/canadian-bowl";
 import { TROPHY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/cup";
 import { TROPHY_FOOTBALL } from "@johnmorrisdotca/dougu-sports/trophy/football";
+import { TROPHY_AVCO_WORLD_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/avco-world-trophy";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
+import { TROPHY_OBRIEN_CUP } from "@johnmorrisdotca/dougu-sports/trophy/obrien-cup";
+import { TROPHY_PATERSON_CUP } from "@johnmorrisdotca/dougu-sports/trophy/paterson-cup";
 import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-ball";
 import { TROPHY_SOCCER_GLOBE } from "@johnmorrisdotca/dougu-sports/trophy/soccer-globe";
 import { MEDAL_BRONZE } from "@johnmorrisdotca/dougu-sports/medal/bronze";
@@ -29,10 +32,10 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   cfl: [TROPHY_CANADIAN_BOWL, "Grey Cup"],
   afl: [TROPHY_FOOTBALL, "AFL Championship"],
   aafc: [TROPHY_FOOTBALL, "AAFC Championship"],
-  nha: [TROPHY_HOCKEY_CUP, "O'Brien Cup"],
-  pcha: [TROPHY_HOCKEY_CUP, "PCHA Championship"],
+  nha: [TROPHY_OBRIEN_CUP, "O'Brien Cup"],
+  pcha: [TROPHY_PATERSON_CUP, "Paterson Cup"],
   wchl: [TROPHY_HOCKEY_CUP, "WCHL Championship"],
-  wha: [TROPHY_HOCKEY_CUP, "Avco World Trophy"],
+  wha: [TROPHY_AVCO_WORLD_TROPHY, "Avco World Trophy"],
   worldcup: [TROPHY_SOCCER_GLOBE, "World Cup"],
   wwc: [TROPHY_SOCCER_GLOBE, "World Cup"],
   mls: [TROPHY_SOCCER_BALL, "MLS Cup"],
@@ -75,7 +78,7 @@ export function bannerCupSvg(league: string): string {
 }
 
 /** The leagues whose trophy has its own drawing in the package, so a large cup is drawn in metal for them; the others keep the line cup. */
-const FULL_DRAWING = new Set(["nhl", "nba", "mlb", "nfl", "cfl"]);
+const FULL_DRAWING = new Set(["nhl", "nba", "mlb", "nfl", "cfl", "nha", "pcha", "wha"]);
 
 /** A cup for a large place beside a count: the full metal drawing (titled with the trophy's name) for a league that has one, else the line cup. */
 export function bigCupSvg(league: string): string {

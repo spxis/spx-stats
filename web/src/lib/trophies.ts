@@ -3,9 +3,10 @@
 import type { PhraseKey } from "./i18n/phrases.constants.ts";
 import { SUPER_BOWL_SINCE } from "./leagues.ts";
 
-/** The phrase that names a league's trophy (shown beside it and as its label); the five leagues only. */
+/** The phrase that names a league's trophy (shown beside it and as its label): the leagues whose cup has a drawing of its own in the package. */
 export const TROPHY_NAME = {
   nhl: "trophy.name.nhl", pwhl: "trophy.name.pwhl", nba: "trophy.name.nba", wnba: "trophy.name.wnba", mlb: "trophy.name.mlb", nfl: "trophy.name.nfl", cfl: "trophy.name.cfl", nwsl: "trophy.name.nwsl",
+  nha: "trophy.name.nha", pcha: "trophy.name.pcha", wha: "trophy.name.wha",
 } as const satisfies Record<string, PhraseKey>;
 
 /**

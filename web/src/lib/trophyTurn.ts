@@ -17,6 +17,9 @@ export const TROPHY_EMBLEM_LOADERS = {
   mlb: () => import("@johnmorrisdotca/dougu-sports/trophy/baseball").then((m) => m.TROPHY_BASEBALL),
   nfl: () => import("@johnmorrisdotca/dougu-sports/trophy/football").then((m) => m.TROPHY_FOOTBALL),
   cfl: () => import("@johnmorrisdotca/dougu-sports/trophy/canadian-bowl").then((m) => m.TROPHY_CANADIAN_BOWL),
+  nha: () => import("@johnmorrisdotca/dougu-sports/trophy/obrien-cup").then((m) => m.TROPHY_OBRIEN_CUP),
+  pcha: () => import("@johnmorrisdotca/dougu-sports/trophy/paterson-cup").then((m) => m.TROPHY_PATERSON_CUP),
+  wha: () => import("@johnmorrisdotca/dougu-sports/trophy/avco-world-trophy").then((m) => m.TROPHY_AVCO_WORLD_TROPHY),
 } as const;
 
 export type TurnLeague = keyof typeof TROPHY_EMBLEM_LOADERS;

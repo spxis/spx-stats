@@ -7,7 +7,7 @@ import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 
 /** Run in web/: pnpm test:trophies (it needs the react-server condition, as lib/cups.ts is server-only). */
 test("every league has a titled cup drawn by the package, in line style, and an unknown league gets the NHL's", () => {
-  for (const [lg, name] of [["nhl", "Stanley Cup"], ["pwhl", "Walter Cup"], ["nba", "Larry O'Brien Trophy"], ["wnba", "WNBA Championship"], ["nwsl", "NWSL Championship"], ["cfl", "Grey Cup"], ["worldcup", "World Cup"], ["mls", "MLS Cup"]]) {
+  for (const [lg, name] of [["nhl", "Stanley Cup"], ["pwhl", "Walter Cup"], ["nba", "Larry O'Brien Trophy"], ["wnba", "WNBA Championship"], ["nwsl", "NWSL Championship"], ["cfl", "Grey Cup"], ["worldcup", "World Cup"], ["mls", "MLS Cup"], ["pcha", "Paterson Cup"], ["nha", "O'Brien Cup"], ["wha", "Avco World Trophy"]]) {
     assert.match(cupSvg(lg), new RegExp(`<title>${name}</title>`));
   }
   assert.equal(cupSvg("unknown"), cupSvg("nhl"));
@@ -16,12 +16,12 @@ test("every league has a titled cup drawn by the package, in line style, and an 
 });
 
 test("a big cup is the full metal drawing for the leagues that have one, and the line cup for the rest", () => {
-  for (const [lg, name] of [["nhl", "Stanley Cup"], ["nba", "Larry O'Brien Trophy"], ["mlb", "Commissioner's Trophy"], ["nfl", "Vince Lombardi Trophy"], ["cfl", "Grey Cup"]]) {
+  for (const [lg, name] of [["nhl", "Stanley Cup"], ["nba", "Larry O'Brien Trophy"], ["mlb", "Commissioner's Trophy"], ["nfl", "Vince Lombardi Trophy"], ["cfl", "Grey Cup"], ["pcha", "Paterson Cup"], ["nha", "O'Brien Cup"], ["wha", "Avco World Trophy"]]) {
     assert.match(bigCupSvg(lg), new RegExp(`<title>${name}</title>`));
     assert.doesNotMatch(bigCupSvg(lg), /currentColor/);
     assert.doesNotMatch(bigCupSvg(lg), / width="64"/);
   }
-  for (const lg of ["wnba", "pwhl", "nwsl", "wha", "unknown"]) assert.equal(bigCupSvg(lg), cupSvg(lg), lg);
+  for (const lg of ["wnba", "pwhl", "nwsl", "wchl", "unknown"]) assert.equal(bigCupSvg(lg), cupSvg(lg), lg);
 });
 
 test("places 1 to 3 have a titled medal in metal, and no other place has one", () => {
@@ -55,4 +55,12 @@ test("the banner still the server sends is the first frame the browser draws whe
   const turner = bindTurn(el, TROPHY_HOCKEY_CUP, { style: "metal", size: 64, title: false, pitch: TROPHY_TILT });
   assert.equal(el.innerHTML.replace(' width="64" height="64"', ""), bannerCupSvg("nhl"));
   turner.destroy();
+});
+
+test("the PCHA, NHA and WHA champions are drawn with their own cups, not the Stanley Cup's", () => {
+  for (const lg of ["pcha", "nha", "wha"]) {
+    assert.notEqual(cupSvg(lg), cupSvg("nhl"), lg);
+    assert.notEqual(bannerCupSvg(lg), bannerCupSvg("nhl"), lg);
+    assert.notEqual(bigCupSvg(lg), bigCupSvg("nhl"), lg);
+  }
 });
