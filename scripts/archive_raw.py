@@ -13,8 +13,9 @@ for root, _, files in sorted(os.walk(raw)):
         path = os.path.join(root, f)
         rel = os.path.relpath(path, raw)
         b = open(path, "rb").read()
+        name = f"{prefix}/{day}/{rel}".replace("'", "''")
         sql = (f"insert into legacy_files.raw_archive (name, saved_on, sha256, data) values "
-               f"('{prefix}/{day}/{rel}', '{day}', '{hashlib.sha256(b).hexdigest()}', decode('{b.hex()}', 'hex')) "
+               f"('{name}', '{day}', '{hashlib.sha256(b).hexdigest()}', decode('{b.hex()}', 'hex')) "
                f"on conflict (name) do update set saved_on = excluded.saved_on, sha256 = excluded.sha256, data = excluded.data;")
         if out:
             out.write(sql + "\n")
