@@ -133,14 +133,25 @@ select distinct on (yr, franchise_id) yr, franchise_id, abbrev, loc as location,
 from nm0 order by yr, franchise_id, n desc, abbrev;
 create temp table fr as select distinct franchise_id from nm;
 
+-- An identity keeps its franchise_identity_id on a rerun: the id of each one deleted here goes to ingest.row_id_map (a key already there keeps its first id)
+-- and ingest.identity_id_for (migration 146) gives it back to the identity with the same franchise and first day. Step 154 folds the Maroons (VMA) into the
+-- Millionaires (VMI), so VMA's identities are remembered under VMI's franchise id.
+create temp table fr_canon as
+select f.franchise_id, coalesce(case when f.source_key = 'VMA' then (select v.franchise_id from core.franchise v where v.source_id = f.source_id and v.source_key = 'VMI') end, f.franchise_id) as canon
+from core.franchise f where f.franchise_id in (select franchise_id from fr);
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', c.canon || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i join fr_canon c using (franchise_id)
+on conflict (tbl, natural_key) do nothing;
 update core.team_season set franchise_identity_id = null where franchise_id in (select franchise_id from fr);
 delete from core.franchise_identity where franchise_id in (select franchise_id from fr);
 delete from core.franchise_league where league_code = 'nhl' and franchise_id in (select franchise_id from fr);
 -- Consecutive seasons under one name are one identity; a team's last identity
 -- stays open only while it still plays.
 create temp table last_season as select max(yr) y from nm;
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
-select franchise_id,
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
+overriding system value
+select ingest.identity_id_for((select c.canon from fr_canon c where c.franchise_id = y.franchise_id), make_date(first_yr, 7, 1)), franchise_id,
        daterange(make_date(first_yr, 7, 1), case when next_yr is not null then make_date(next_yr, 7, 1)
                                                   when last_yr < (select y from last_season) - 1 then make_date(last_yr + 1, 7, 1) end),
        location, nickname, full_name, abbreviation,

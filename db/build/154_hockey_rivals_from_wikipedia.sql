@@ -186,6 +186,12 @@ from nts x join am m on m.league = x.lg and m.nm = lower(x.team_name) and x.yr b
 order by x.yr, x.franchise_id, x.team_name;
 create temp table hockfr as
 select franchise_id from am union select franchise_id from core.franchise_league where league_code in ('nha', 'pcha', 'wchl', 'wha');
+-- An identity keeps its franchise_identity_id on a rerun: the id of each one deleted below goes to ingest.row_id_map (a key already there keeps its first id)
+-- and ingest.identity_id_for (migration 146) gives it back to the identity with the same franchise and first day.
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', i.franchise_id || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from hockfr)
+on conflict (tbl, natural_key) do nothing;
 update core.team_season ts set franchise_identity_id = null
 where franchise_identity_id in (select franchise_identity_id from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from hockfr));
 delete from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from hockfr);
@@ -195,8 +201,9 @@ create temp table isl as
 select franchise_id, full_name, min(country) country, min(yr) first_yr, max(yr) last_yr
 from (select nm.*, yr - row_number() over (partition by franchise_id, full_name order by yr) as island from nm) x
 group by franchise_id, full_name, island;
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
-select p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(split_part(p.full_name, ' ', array_length(string_to_array(p.full_name, ' '), 1))))),
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(p.franchise_id, lower(p.rng)), p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(split_part(p.full_name, ' ', array_length(string_to_array(p.full_name, ' '), 1))))),
        split_part(p.full_name, ' ', array_length(string_to_array(p.full_name, ' '), 1)), p.full_name, p.country, (select source_id from src)
 from (select i.franchise_id, i.full_name, i.country, u.rng
       from isl i

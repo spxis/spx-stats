@@ -148,6 +148,12 @@ create temp table wnbafr as
 select franchise_id from core.franchise_league where league_code = 'wnba'
 union select franchise_id from core.franchise where source_id = (select source_id from src) and source_key like 'wnba:%';
 
+-- An identity keeps its franchise_identity_id on a rerun: the id of each one deleted below goes to ingest.row_id_map (a key already there keeps its first id)
+-- and ingest.identity_id_for (migration 146) gives it back to the identity with the same franchise and first day.
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', i.franchise_id || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from wnbafr)
+on conflict (tbl, natural_key) do nothing;
 update core.team_season ts set franchise_identity_id = null
 where franchise_identity_id in (select franchise_identity_id from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from wnbafr));
 delete from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from wnbafr);
@@ -162,8 +168,9 @@ create temp table isl2 as
 select i.*, case when i.last_yr >= (select y from last_season) and (select y from last_season) = (select max(start_year) from core.season where league_code = 'wnba')
                  then null else make_date(i.last_yr + 1, 3, 1) end as end_on
 from isl i;
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
-select p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(p.nickname))), p.nickname, p.full_name,
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(p.franchise_id, lower(p.rng)), p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(p.nickname))), p.nickname, p.full_name,
        coalesce((select a.country from am a where a.franchise_id = p.franchise_id and p.full_name = a.club limit 1), 'US'),
        (select source_id from src)
 from (select i.franchise_id, i.full_name, i.nickname, u.rng

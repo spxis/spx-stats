@@ -37,11 +37,17 @@ union all
 select fr.franchise_id, y, t.full_name, t.location, t.nickname, t.team
 from legacy_nflverse.team t join fr on fr.code = t.team cross join generate_series(1999, 2001) y
 where t.season = 2002;
+-- An identity keeps its franchise_identity_id on a rerun (see 140): remembered in ingest.row_id_map before the delete, given back on insert.
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', i.franchise_id || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i where i.franchise_id in (select franchise_id from fr)
+on conflict (tbl, natural_key) do nothing;
 update core.team_season set franchise_identity_id = null where franchise_id in (select franchise_id from fr);
 delete from core.franchise_identity where franchise_id in (select franchise_id from fr);
 delete from core.franchise_league where franchise_id in (select franchise_id from fr);
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
-select franchise_id, daterange(make_date(first_season, 3, 1), case when next_season is null then null else make_date(next_season, 3, 1) end),
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(franchise_id, make_date(first_season, 3, 1)), franchise_id, daterange(make_date(first_season, 3, 1), case when next_season is null then null else make_date(next_season, 3, 1) end),
        coalesce(location, full_name), coalesce(nickname, full_name), full_name, team, 'US', (select source_id from src)
 from (select franchise_id, full_name, location, nickname, team, min(season) first_season,
              lead(min(season)) over (partition by franchise_id order by min(season)) next_season,

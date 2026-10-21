@@ -203,6 +203,12 @@ from nts order by yr, franchise_id, team_name;
 create temp table nflfr as
 select franchise_id from core.franchise_league where league_code in ('nfl', 'afl', 'aafc')
 union select franchise_id from am;
+-- An identity keeps its franchise_identity_id on a rerun: the id of each one deleted below goes to ingest.row_id_map (a key already there keeps its first id)
+-- and ingest.identity_id_for (migration 146) gives it back to the identity with the same franchise and first day.
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', i.franchise_id || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nflfr)
+on conflict (tbl, natural_key) do nothing;
 update core.team_season ts set franchise_identity_id = null
 where franchise_identity_id in (select franchise_identity_id from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nflfr));
 delete from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in (select franchise_id from nflfr);
@@ -214,8 +220,9 @@ from (select nm.*, yr - row_number() over (partition by franchise_id, full_name 
 group by franchise_id, full_name, island;
 -- Wikipedia fills the periods nflverse's (and SPX's) own identities leave uncovered, never overlapping them. Seasons start on 1 March, as in 150.
 -- A club that skipped a season (a gap of a year or more between two runs under one name) keeps one identity per run.
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
-select p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(split_part(p.full_name, ' ', array_length(string_to_array(p.full_name, ' '), 1))))),
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(p.franchise_id, lower(p.rng)), p.franchise_id, p.rng, btrim(left(p.full_name, length(p.full_name) - length(split_part(p.full_name, ' ', array_length(string_to_array(p.full_name, ' '), 1))))),
        split_part(p.full_name, ' ', array_length(string_to_array(p.full_name, ' '), 1)), p.full_name, 'US', (select source_id from src)
 from (select i.franchise_id, i.full_name, u.rng
       from isl i

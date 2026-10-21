@@ -57,12 +57,19 @@ insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'franchise', franchise_id, (select source_id from src), 'franchise:' || retro from fr;
 
 -- Names over time replace SPX's provisional names for every MLB franchise. Retrosheet's nickname '(none)' (the 1882-84 Allegheny Club) is an empty nickname.
+-- An identity keeps its franchise_identity_id on a rerun: the id of each one deleted here goes to ingest.row_id_map (a key already there keeps its first id)
+-- and ingest.identity_id_for (migration 146) gives it back to the identity with the same franchise and first day.
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', i.franchise_id || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i where i.franchise_id in (select franchise_id from fr)
+on conflict (tbl, natural_key) do nothing;
 update core.team_season ts set franchise_identity_id = null where franchise_id in (select franchise_id from fr);
 delete from core.franchise_identity where franchise_id in (select franchise_id from fr);
 delete from core.franchise_league where franchise_id in (select franchise_id from fr);
 
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
-select franchise_id, daterange(first_game, next_first), city, coalesce(nullif(nickname, '(none)'), ''), concat_ws(' ', city, nullif(nickname, '(none)')), team_id,
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(franchise_id, first_game), franchise_id, daterange(first_game, next_first), city, coalesce(nullif(nickname, '(none)'), ''), concat_ws(' ', city, nullif(nickname, '(none)')), team_id,
        case when city in ('Montreal', 'Toronto') then 'CA' else 'US' end, (select source_id from src)
 from (
   select fr.franchise_id, c.team_id, c.city, c.nickname, min(c.first_game) as first_game,
@@ -73,8 +80,9 @@ from (
            (select count(*) from legacy_retrosheet.current_name c2 where c2.franchise_id = c.franchise_id and c2.first_game <= c.first_game
               and (c2.city, c2.nickname) is distinct from (c.city, c.nickname))
 ) x;
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
-select distinct on (fr.franchise_id) fr.franchise_id, daterange(make_date(t.first_year, 1, 1), make_date(t.last_year + 1, 1, 1)),
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(fr.franchise_id, make_date(t.first_year, 1, 1)), fr.franchise_id, daterange(make_date(t.first_year, 1, 1), make_date(t.last_year + 1, 1, 1)),
        t.city, coalesce(nullif(t.nickname, '(none)'), ''), concat_ws(' ', t.city, nullif(t.nickname, '(none)')), t.team_id, 'US', (select source_id from src)
 from defunct d join fr on fr.retro = d.team_id join legacy_retrosheet.team t on t.team_id = d.team_id
 order by fr.franchise_id, t.first_year;

@@ -146,6 +146,14 @@ select franchise_id, team_name, covered, min(yr) first_yr, max(yr) last_yr from 
         from nmc window w as (partition by franchise_id order by yr)) x) y
 group by franchise_id, team_name, covered, grp;
 
+-- An identity keeps its franchise_identity_id on a rerun: the id of each one deleted below goes to ingest.row_id_map (a key already there keeps its first id)
+-- and ingest.identity_id_for (migration 146) gives it back to the identity with the same franchise and first day.
+insert into ingest.row_id_map (tbl, natural_key, row_id)
+select 'core.franchise_identity', i.franchise_id || '/' || coalesce(lower(i.valid_during)::text, ''), i.franchise_identity_id
+from core.franchise_identity i where i.source_id = (select source_id from src) and i.franchise_id in
+  (select franchise_id from core.franchise where source_id = (select source_id from src) or franchise_id in (select franchise_id from nm))
+  and i.franchise_id in (select franchise_id from core.franchise_league where league_code = 'cfl')
+on conflict (tbl, natural_key) do nothing;
 update core.team_season set franchise_identity_id = null
 where franchise_id in (select franchise_id from nm) and franchise_identity_id in
   (select franchise_identity_id from core.franchise_identity where source_id = (select source_id from src));
@@ -154,8 +162,9 @@ delete from core.franchise_identity where source_id = (select source_id from src
   (select franchise_id from core.franchise where source_id = (select source_id from src) or franchise_id in (select franchise_id from nm))
   and franchise_id in (select franchise_id from core.franchise_league where league_code = 'cfl');
 
-insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
-select r.franchise_id,
+insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
+overriding system value
+select ingest.identity_id_for(r.franchise_id, make_date(r.first_yr, 1, 1)), r.franchise_id,
        daterange(make_date(r.first_yr, 1, 1),
                  case when nx.first_yr is not null then make_date(nx.first_yr, 1, 1)
                       when r.last_yr >= (select y from last_season) then null
