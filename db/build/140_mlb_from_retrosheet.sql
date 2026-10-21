@@ -124,9 +124,41 @@ join core.team_season h on h.team_season_id = g.home_team_season_id join core.te
 where s.league_code = 'mlb' and g.source_id <> (select source_id from src) and g.status <> 'cancelled';
 create temp table rg_n as
 select rg.*, row_number() over (partition by game_date, home_f, away_f order by game_number) as n from rg where home_f is not null and away_f is not null;
+-- First the games with the same score, then what is left in order, so a doubleheader whose games SPX lists in another order still pairs right.
 create temp table matched as
 select r.key, r.home_score r_h, r.visitor_score r_a, s.game_id, s.status, s.home_score, s.away_score
-from rg_n r join spx_g s on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.n = r.n;
+from (select rg_n.*, row_number() over (partition by game_date, home_f, away_f, home_score, visitor_score order by game_number) k from rg_n) r
+join (select spx_g.*, row_number() over (partition by game_date, home_f, away_f, home_score, away_score order by n) k from spx_g where status = 'final') s
+  on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.home_score = r.home_score and s.away_score = r.visitor_score and s.k = r.k;
+insert into matched
+select r.key, r.home_score, r.visitor_score, s.game_id, s.status, s.home_score, s.away_score
+from (select rg_n.*, row_number() over (partition by game_date, home_f, away_f order by game_number) k from rg_n
+      where key not in (select key from matched)) r
+join (select spx_g.*, row_number() over (partition by game_date, home_f, away_f order by n) k from spx_g
+      where game_id not in (select game_id from matched)) s
+  on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.k = r.k;
+
+-- A game SPX dates differently from Retrosheet (suspended or postponed, then played on a later day: SPX dates it by the day it was completed or
+-- rescheduled, Retrosheet by the day it began). Same two clubs, same season and phase, same final score, neither side matched above, nearest dates in both
+-- directions: one game. SPX's row, id and date are kept. db/build/140_mlb_resumed_games.sql repairs a database built before this.
+create temp table late as
+with c as (
+  select r.key, r.game_date rd, r.home_score r_h, r.visitor_score r_a, r.completion, s.game_id, s.game_date sd, s.status, s.home_score, s.away_score
+  from rg_n r join spx_g s on s.home_f = r.home_f and s.away_f = r.away_f and s.phase = r.phase and s.status = 'final'
+   and s.home_score = r.home_score and s.away_score = r.visitor_score and extract(year from s.game_date) = r.yr
+  where r.phase <> 'all_star' and r.key not in (select key from matched) and s.game_id not in (select game_id from matched)
+), ranked as (
+  select c.*, row_number() over (partition by key order by abs(sd - rd), game_id) rk_r,
+         row_number() over (partition by game_id order by abs(sd - rd), key) rk_s from c
+)
+select * from ranked where rk_r = 1 and rk_s = 1;
+insert into matched select key, r_h, r_a, game_id, status, home_score, away_score from late;
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from src), 'game', (select source_key from core.game where game_id = l.game_id),
+       format('Retrosheet dates this game %s, SPX %s', l.rd, l.sd), 'Same teams and score: one game; kept SPX''s row and date'
+from late l;
+update core.game g set notes = format('Suspended on %s; completed on %s', l.rd, to_date(split_part(l.completion, ',', 1), 'YYYYMMDD'))
+from late l where g.game_id = l.game_id and g.notes is null and split_part(l.completion, ',', 1) ~ '^[0-9]{8}$';
 
 -- A result SPX never entered: filled from Retrosheet.
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
@@ -169,6 +201,7 @@ insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', m.game_id, (select source_id from src), substring(m.key from 7) from matched m;
 
 select 'matched', count(*) from matched
+union all select 'dated differently', count(*) from late
 union all select 'filled', count(*) from matched where status <> 'final'
 union all select 'confirmed', count(*) from matched where status = 'final' and home_score = r_h and away_score = r_a
 union all select 'disputed', count(*) from matched where status = 'final' and (home_score <> r_h or away_score <> r_a)
