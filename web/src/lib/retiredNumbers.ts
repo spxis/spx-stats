@@ -18,8 +18,10 @@ const retiredSchema = z.object({
 });
 export type RetiredNumber = z.infer<typeof retiredSchema>;
 
+const playedSchema = z.object({ person_id: z.number() });
+
 /**
- * Retired numbers for a franchise, plus league-wide retirements of that league.
+ * Retired numbers for a franchise, plus the league-wide retirements of players who played for it.
  * Empty when the view is missing (migration 130 not on that database) or there are none.
  * A transient failure still throws so a kept page keeps its last good copy.
  */
@@ -30,8 +32,10 @@ export const getRetiredNumbers = cache(async (lg: string, f: number): Promise<Re
       `or=(franchise_id.eq.${f},and(league.eq.${lg},franchise_id.is.null))&select=*&order=jersey_number,name`,
       retiredSchema,
     );
+    const wide = list.flatMap((r) => (r.franchise_id == null && r.person_id != null ? [r.person_id] : []));
+    const played = new Set(wide.length ? (await readRows("person_teams", `person_id=in.(${wide.join(",")})&franchise_id=eq.${f}&league=eq.${lg}&select=person_id`, playedSchema)).map((p) => p.person_id) : []);
     return list
-      .filter((r) => r.league === lg && (r.franchise_id === f || r.franchise_id == null))
+      .filter((r) => r.league === lg && (r.franchise_id === f || (r.franchise_id == null && r.person_id != null && played.has(r.person_id))))
       .sort((a, b) => (a.retired_on ? 0 : 1) - (b.retired_on ? 0 : 1) || (a.retired_on ?? "").localeCompare(b.retired_on ?? "") || a.jersey_number - b.jersey_number);
   } catch (e) {
     if (e instanceof ApiError && e.status != null && e.status >= 400 && e.status < 500) return [];
