@@ -3,18 +3,21 @@ import { isLocale } from "@/lib/locale";
 import { type BracketPart, seasonBracketFile } from "@/lib/seasonBracket";
 import { getTournamentMatches, tournamentOfYear } from "@/lib/soccer";
 import { soccerBracketFile } from "@/lib/soccerKnockoutDraw";
+import { getAllStar } from "@/lib/allStar";
+import { allStarBracketFile, bracketEventOf } from "@/lib/allStarBracket";
 
 // A playoff or knockout bracket as a file, which the page loads when the drawing comes into view instead of carrying it in its HTML (components/KnockoutFile.tsx):
 //   /bracket-svg/nba-2023.wide.en.svg   a season's whole bracket (leagues nhl, nba, mlb, nfl, cfl; parts wide and phone; lib/seasonBracket.ts draws it)
 //   /bracket-svg/nba-2023.inwide.en.svg its play-in (parts inwide and inphone)
 //   /bracket-svg/soccer-2022.wide.en.svg  a World Cup's knockout (parts wide and phone; lib/soccerKnockoutDraw.ts)
+//   /bracket-svg/allstar-nhl-2024.wide.en.svg  an All-Star tournament's knockout (leagues nhl and nba; lib/allStarBracket.ts)
 // Written in the reader's language with Taisen's own stylesheet (theme auto), complete by itself. Drawn on its first request, then kept like the page is (a day); the reads
 // are the page's own, which the data cache holds. No query is read; a name that is no bracket is a 404.
 export const revalidate = 86400;
 export const dynamicParams = true;
 export const generateStaticParams = () => [];
 
-const FILE = /^(nhl|nba|mlb|nfl|cfl|soccer)-(\d{4})\.(wide|phone|inwide|inphone)\.(en|fr|ja)\.svg$/;
+const FILE = /^(nhl|nba|mlb|nfl|cfl|soccer|allstar-nhl|allstar-nba)-(\d{4})\.(wide|phone|inwide|inphone)\.(en|fr|ja)\.svg$/;
 const missing = () => new Response("Not found\n", { status: 404, headers: { "Content-Type": "text/plain; charset=utf-8" } });
 
 export async function GET(_req: Request, { params }: { params: Promise<{ file: string }> }) {
@@ -28,6 +31,12 @@ export async function GET(_req: Request, { params }: { params: Promise<{ file: s
     if (!t) return missing();
     const knockout = (await getTournamentMatches(t.tournament_id)).filter((x) => x.stage_order >= 4);
     svg = soccerBracketFile(knockout, speaker(locale), part);
+  } else if (kind.startsWith("allstar-")) {
+    if (part !== "wide" && part !== "phone") return missing();
+    const lg = kind.slice(8);
+    const data = await getAllStar(lg);
+    const games = bracketEventOf(data.events, data.games, Number(year));
+    svg = games ? allStarBracketFile(games, speaker(locale), part) : null;
   } else svg = await seasonBracketFile(kind, Number(year), locale, part as BracketPart);
   if (!svg) return missing();
   return new Response(svg, {

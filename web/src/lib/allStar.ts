@@ -1,6 +1,14 @@
 import "server-only";
 import type { z } from "zod";
+import { cache } from "react";
 import { ApiError, rows as readRows } from "./api/client";
+import { franchiseNameSchema } from "./api/schemas";
+import { officialAbbr } from "./abbr";
+import { brandFor, logoFor } from "./brand";
+import type { TeamBrandRow } from "./api/types";
+import { clubMatcher } from "./allStarClubs";
+import { getAbbrs, getBrands } from "./data";
+import { seasonUnder } from "./nameEras";
 import {
   allStarEventSchema, allStarGameSchema, allStarMvpSchema, allStarSelectionSchema, personRows,
   type AllStarLeague, type AllStarSelection, type PersonAllStar,
@@ -50,3 +58,40 @@ export async function getPersonAllStar(personId: number): Promise<PersonAllStar[
   ]);
   return personRows(sel, mvp);
 }
+
+/** The clubs of one league for the All-Star pages: the club a line of text names in a season, and the logo it wore that season. */
+export interface Clubs {
+  /** The franchise a roster or MVP line names in the season `year` (a season is named by its first year), or null when the text fits no club or several. */
+  match(text: string | null | undefined, year: number | null): number | null;
+  /** The logo a franchise wore that season; null where none is held. */
+  logo(f: number | null | undefined, year: number | null): string | null;
+  /** The brand era (colours) a franchise had that season, for the colours of its side; null where none is held. */
+  brand(f: number | null | undefined, year: number | null): TeamBrandRow | null;
+}
+
+/**
+ * The reads that tell a club from a line of text: the franchise names with the days each applied (one read for the league, not one per season), the abbreviations and the
+ * brand eras (both kept a day and shared with every other page). A failed read leaves the names plain and the logos out.
+ */
+export const getClubs = cache(async (league: string): Promise<Clubs> => {
+  const lgq = /^[a-z]{2,8}$/.test(league) ? league : "none";
+  const [names, brands, abbrs] = await Promise.all([
+    readRows("franchise_names", `league=eq.${lgq}&select=*&order=franchise_id,name_from`, franchiseNameSchema).catch(() => []),
+    getBrands().catch(() => ({})),
+    getAbbrs(lgq).catch(() => ({})),
+  ]);
+  const byYear = new Map<number, ReturnType<typeof clubMatcher>>();
+  const matcher = (year: number) => {
+    let m = byYear.get(year);
+    if (!m) {
+      m = clubMatcher(names.filter((n) => seasonUnder({ from: n.name_from, to: n.name_to }, year)).map((n) => ({ franchise_id: n.franchise_id, team: n.name, abbr: officialAbbr(abbrs, n.franchise_id, year) })));
+      byYear.set(year, m);
+    }
+    return m;
+  };
+  return {
+    match: (text, year) => (year == null ? null : matcher(year)(text)),
+    logo: (f, year) => (year == null ? logoFor(brands, f) : logoFor(brands, f, year)),
+    brand: (f, year) => brandFor(brands, f, year ?? undefined),
+  };
+});

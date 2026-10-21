@@ -5,7 +5,7 @@ import { trophiesPath, trophyPath } from "@/lib/awardTrophy";
 import { getSummary, getTeamIndex, getTeamSeasonIndex } from "@/lib/data";
 import { ALL_LEAGUES, SITE_URL } from "@/lib/leagues";
 import { getAllStar } from "@/lib/allStar";
-import { allStarPath } from "@/lib/allStarView";
+import { allStarPath, decadeOf, decadePath } from "@/lib/allStarView";
 import { getPaths } from "@/lib/teamSlugs";
 import { getTrophyList } from "@/lib/trophyData";
 import { getVenueSlugs } from "@/lib/venueData";
@@ -66,7 +66,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const worldUrls = countryData.status === "fulfilled" && countryData.value ? [...new Set(countryData.value.map((r) => r.league))].map((l) => ({ url: url(`/${l}/world`), lastModified })) : [];
   // An All-Star Game list for each league that has one, and a page for each year it was played (the data release brings them; none while the views are missing).
   const allStarUrls = allStar.status === "fulfilled"
-    ? allStar.value.filter((x) => x.events.length).flatMap((x) => [allStarPath(x.league), ...[...new Set(x.events.map((e) => e.year))].map((y) => allStarPath(x.league, y))]).map((p) => ({ url: url(p), lastModified }))
+    ? allStar.value.filter((x) => x.events.length).flatMap((x) => [allStarPath(x.league), ...[...new Set(x.events.map((e) => decadeOf(e.year)))].map((d) => decadePath(x.league, d)), ...[...new Set(x.events.map((e) => e.year))].map((y) => allStarPath(x.league, y))]).map((p) => ({ url: url(p), lastModified }))
     : [];
   return [
     { url: url("/"), lastModified },

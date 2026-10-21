@@ -39,7 +39,7 @@ import { ageOn, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { getPlayerPaths, homeLeague } from "@/lib/playerLinks";
-import { getPersonAllStar } from "@/lib/allStar";
+import { getAllStar, getClubs, getPersonAllStar } from "@/lib/allStar";
 import { allStarPath, type PersonAllStar } from "@/lib/allStarView";
 import { orElse } from "@/lib/api/soften";
 import { playersNamed } from "@/lib/playerIndex";
@@ -122,6 +122,11 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   const { say, locale, dt, fmt } = await currentSpeaker();
   const [brands, summary, record, retired, coaching, staff, allStar] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id), getPersonCoaching(d.person.person_id), getPersonStaff(d.person.person_id), orElse(getPersonAllStar(d.person.person_id), [] as PersonAllStar[])]);
   const { person: p, teams } = d;
+  // The clubs of the All-Star lines: which club a line names depends on the league and the season of the game.
+  const asLeagues = [...new Set(allStar.map((r) => r.league))];
+  const [asClubs, asData] = await Promise.all([Promise.all(asLeagues.map((l) => getClubs(l))), Promise.all(asLeagues.map((l) => orElse(getAllStar(l), { events: [], games: [], mvps: [] })))]);
+  const asClub = (r: PersonAllStar) => asClubs[asLeagues.indexOf(r.league)];
+  const asSeason = (r: PersonAllStar) => asData[asLeagues.indexOf(r.league)].events.find((e) => e.year === r.year && e.event_no === r.event_no)?.season_year ?? null;
   const coachCodes = coaching.length ? COACH_AWARDS : new Set<string>();
   const awards = d.awards.filter((a) => !coachCodes.has(a.award_code));
   const coachAwards = d.awards.filter((a) => coachCodes.has(a.award_code));
@@ -208,8 +213,14 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
       key: "as", label: say("allstar.col.role"), get: (r) => (r.mvp ? 0 : 1),
       cell: (r) => (r.mvp ? say(r.role || r.side ? "allstar.player.pickedMvp" : "allstar.player.mvp") : r.role ? say("allstar.player.as", { role: roleWord(say, r.role) ?? "", side: r.side ?? "" }) : r.side ?? say("allstar.player.picked")),
     },
-    { key: "pos", label: say("allstar.col.pos"), get: (r) => r.position, cell: (r) => r.position ?? "" },
-    { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => r.team ?? "" },
+    { key: "pos", label: say("allstar.col.pos"), get: (r) => r.position, cell: (r) => book.list(r.position ? r.position.split("/") : null, null, [r.league]) },
+    {
+      key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
+      cell: (r) => {
+        const season = asSeason(r), f = asClub(r).match(r.team, season);
+        return f != null ? <TeamLabel lg={r.league} f={f} name={r.team} logo={asClub(r).logo(f, season)} year={season ?? undefined} /> : r.team ?? "";
+      },
+    },
   ], (r) => `${r.league}|${r.year}|${r.event_no}`);
 
   const coachTable = tableOf(coaching, [

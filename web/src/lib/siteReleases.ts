@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.158.0", date: "2026-10-21", href: "/nhl/all-star/2024",
+    title: "All-Star Games drawn as games",
+    text: "An All-Star Game is shown like a final: two sides as a banner with the score and the winner marked, the host club and the Most Valuable Player with their logos, and a tournament as a bracket. A season page puts the game beside the champion, the league's list is a card for each year, and the players picked are a table for each side." },
   { version: "0.157.0", date: "2026-10-21",
     title: "Front office and coaching playoffs",
     text: "A person's page now lists the jobs beyond playing and head coaching: general manager, president and assistant coach, with the club and seasons. A head coach's table gains his playoff record and series. These parts appear once the data behind them is loaded." },

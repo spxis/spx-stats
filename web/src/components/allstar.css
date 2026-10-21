@@ -1,16 +1,77 @@
-/* The All-Star Game pages: the result lines, the Most Valuable Player, the card of a season page and the players picked for each side. Tokens come from globals.css. */
-.asgame { display: block; }
-.asscore { font-weight: 600; }
-.aslead { margin: 0 0 14px; line-height: 1.55; }
-.aslead > div { display: block; }
-.ascard .aslead:last-child { margin-bottom: 0; }
+/* The All-Star Game pages: the scoreboards, the banner on a season page beside the champion's, the cards of a league's list, the games of a series and the players picked
+   for each side. Tokens come from globals.css; the sides' colours arrive as --ba/--bb/--ca/--cb on the element round a banner (components/AllStar.tsx `looksStyle`). */
 .asmvp { white-space: nowrap; }
-.asroster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px 28px; }
+.asmvpclub { white-space: nowrap; }
+.asbanner .asmvp, .ascardx .asmvp { white-space: normal; }
+.asmvpclub .logo, .ashost .logo, .asteam .logo { vertical-align: middle; margin-right: 6px; }
+.aslab { font: 600 12px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); margin-right: 6px; }
+.asline { line-height: 1.5; }
+
+/* the mark of a side that is no club: letters on its colour */
+.ascrest { display: inline-grid; place-items: center; flex: none; width: var(--s, 32px); height: var(--s, 32px); border-radius: 50%; background: var(--h, #5d6874); color: #fff; font: 700 calc(var(--s, 32px) * .36)/1 var(--display); letter-spacing: .02em; vertical-align: middle; margin-right: 6px; box-shadow: inset 0 0 0 2px rgb(255 255 255 / .28); }
+.ascrest > span { transform: translateY(.02em); }
+.asname { font-weight: 600; }
+
+/* the scoreboard: a row a side, the winner's number in the accent colour */
+.asboard { display: grid; gap: 4px; }
+.asrow { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; font: 700 22px/1.15 var(--display); text-transform: uppercase; letter-spacing: .02em; }
+.asteam { display: flex; align-items: center; min-width: 0; gap: 0; }
+.asteam a { color: inherit; }
+.asrow .asn { font-variant-numeric: tabular-nums; font-size: 1.45em; line-height: 1; min-width: 1.2em; text-align: right; color: var(--muted); }
+.asrow.win .asn { color: var(--accent-text); }
+.asrow.lost { opacity: .8; }
+.asrow .asname, .asrow .asteam a { overflow-wrap: anywhere; }
+
+/* the banner: shares a row with the champion's */
+.bannerrow { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 0; align-items: stretch; }
+.bannerrow + .gsurf { margin-top: 1rem; }
+.bannerrow.solo { grid-template-columns: minmax(0, 1fr); }
+.bannerrow > .banner { margin: 0; height: 100%; }
+@media (max-width: 860px) { .bannerrow { grid-template-columns: minmax(0, 1fr); } }
+.asbanner .bbody { align-content: center; }
+.asbanner .cup a { color: inherit; text-decoration: none; }
+.asbanner .cup a:hover { text-decoration: underline; }
+.asbanner .aswho { grid-column: 1 / -1; display: grid; gap: 8px; }
+.asbanner .asnote { color: var(--muted); font-size: 14px; }
+.asbanner .how.asline { color: inherit; font-size: 15px; }
+.asbanner .how.asline .note { color: var(--muted); }
+.asbanner .asopen { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; }
+.asfig { color: var(--accent); width: clamp(56px, 11vw, 76px); }
+.asstar { display: block; width: 100%; height: auto; }
+
+/* the cards of a league's list */
+.ascards { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); gap: 12px; }
+.ascardx { display: grid; align-content: start; gap: 8px; padding: 12px 14px; background: var(--panel); border: 1px solid var(--rule); border-left: 5px solid var(--accent); min-width: 0; }
+.ascardx.off { border-left-color: var(--rule); align-self: start; }
+.ascardx header { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
+.ascardx .asyear { font: 700 26px/1 var(--display); text-decoration: none; color: inherit; }
+.ascardx .asyear:hover { color: var(--accent-text); }
+.ascardx p { margin: 0; }
+.ascardx .asrow { font-size: 17px; }
+.ascardx .askick { font-size: 13px; }
+.ascardx .asline { font-size: 14px; }
+
+/* a game as a strip (a series' games, a round robin) */
+.asstrips { display: grid; gap: 8px; margin: 12px 0; }
+.asstrip { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr); align-items: center; gap: 4px 14px; padding: 10px 14px; background: var(--panel); border: 1px solid var(--rule); }
+.asstrip .asstage { grid-column: 1 / -1; font: 600 12px/1 var(--display); letter-spacing: .1em; text-transform: uppercase; color: var(--muted); }
+.asstrip .asteam { font-weight: 600; }
+.asstrip .asteam.r { justify-content: flex-start; flex-direction: row-reverse; text-align: right; }
+.asstrip .asteam.r .logo, .asstrip .asteam.r .ascrest { margin: 0 0 0 6px; }
+.asstrip .asteam.win { font-weight: 800; }
+.asstrip .asmid { display: flex; gap: 8px; align-items: baseline; font: 700 24px/1 var(--display); font-variant-numeric: tabular-nums; color: var(--muted); }
+.asstrip .asmid b.win { color: var(--accent-text); }
+.asstrip .asby { grid-column: 1 / -1; text-align: center; }
+@media (max-width: 560px) { .asstrip { grid-template-columns: minmax(0, 1fr) auto; } .asstrip .asteam.r { grid-column: 1; justify-content: flex-start; flex-direction: row; text-align: left; } .asstrip .asteam.r .logo, .asstrip .asteam.r .ascrest { margin: 0 6px 0 0; } .asstrip .asmid { grid-row: 2 / span 2; grid-column: 2; flex-direction: column; align-items: flex-end; gap: 2px; } }
+
+/* the event page */
+.asevent .showdown { margin: 0 0 16px; }
+.asbracket { margin: 12px 0 18px; }
+.asroster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 12px 28px; align-items: start; }
 .asside h3 { margin: 0 0 6px; }
-.asside h4 { margin: 14px 0 4px; font: 600 13px/1.2 var(--display); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
-.asside ul { list-style: none; margin: 0; padding: 0; }
-.asside li { padding: 4px 0; border-bottom: 1px solid var(--rule); }
-.asside li .pos { display: inline-block; min-width: 2.6em; margin-right: 6px; font: 500 12px/1 var(--mono); color: var(--muted); }
+.asside h3 .note { font: 500 13px/1 var(--mono); margin-left: 8px; }
+.asside .tablebox { max-height: none; }
 .asyears { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 14px; }
 .asyears a { font: 500 13px/1 var(--mono); padding: 6px 7px; background: var(--panel); border: 1px solid var(--rule); text-decoration: none; }
 .asyears a[aria-current="page"], .asyears a:hover { border-color: var(--ink); }
+@media (max-width: 560px) { .asside td, .asside th { padding-inline: 6px; white-space: normal; } .asside td .logo { margin-right: 4px; } }

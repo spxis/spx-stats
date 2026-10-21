@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { buildSeries, seriesTies, type PlayoffGame } from "../src/lib/series.ts";
-import { gameOrder, inOrder, isHomeFirst, leftRight, placeOf, SIDE_RULE, seriesOrder } from "../src/lib/sides.ts";
+import { gameOrder, inOrder, neutralOrder, isHomeFirst, leftRight, placeOf, SIDE_RULE, seriesOrder } from "../src/lib/sides.ts";
 
 /** Run in web/: pnpm test:sides (the one rule for which team is on the left; AGENTS.md section 9). */
 
@@ -94,4 +94,14 @@ test("under the winner rule the winner would be on the left", () => {
   const s = buildSeries("nhl", 2026, sevenGames, 1, { bestOf: 7 })!;
   assert.deepEqual(seriesOrder(s, "winner"), [0, 1], "Series.sides lists the winner first");
   assert.deepEqual(leftRight("V", "H", { winner: "home", rule: "winner" }), { left: "H", right: "V", swapped: true });
+});
+
+test("a game with no home side (an All-Star Game): the western side on the left, the eastern on the right, any other pair by name", () => {
+  assert.deepEqual(neutralOrder("East", "West"), [1, 0]);
+  assert.deepEqual(neutralOrder("West", "East"), [0, 1]);
+  assert.deepEqual(neutralOrder("Eastern Conference", "Western Conference"), [1, 0]);
+  assert.deepEqual(neutralOrder("National League", "American League"), [1, 0], "American before National");
+  assert.deepEqual(neutralOrder("NFC", "AFC"), [1, 0]);
+  assert.deepEqual(neutralOrder("Team McDavid", "Team Matthews"), [1, 0], "any other pair by name");
+  assert.deepEqual(neutralOrder("West", "Team LeBron"), [0, 1], "a made-up team is neither west nor east");
 });

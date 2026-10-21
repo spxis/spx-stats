@@ -66,3 +66,17 @@ export function leftRight<T>(away: T, home: T, opts: { winner?: "away" | "home" 
   const [left, right] = inOrder(order, [away, home]);
   return { left, right, swapped: order[0] === 1 };
 }
+
+/** What a pair of side names says about which is on the left of a game with no home side: West, then everything else, then East (the order of bracketLayout's halves). */
+const neutralRank = (name: string): number => (/west/i.test(name) ? 0 : /east/i.test(name) ? 2 : 1);
+
+/**
+ * The order of the two sides of a game that has no home side (an All-Star Game between East and West, the American and the National League): the western side on the left,
+ * the eastern on the right, any other pair by name (American before National, AFC before NFC, Team A before Team B), the same order the halves of a bracket read in. A game with
+ * a host club on one side goes through `gameOrder` instead (the host is the home side). The order never depends on who won or on the order a list prints the sides in.
+ */
+export function neutralOrder(a: string, b: string): Order {
+  const d = neutralRank(a) - neutralRank(b);
+  if (d) return d < 0 ? AS_IS : SWAPPED;
+  return a.localeCompare(b, "en", { sensitivity: "base" }) <= 0 ? AS_IS : SWAPPED;
+}
