@@ -9,6 +9,7 @@ import type { Pin } from "@/components/mapDraw";
 import { Flag } from "@/components/Flag";
 import { Rich } from "@/components/i18n/Rich";
 import { SortTable } from "@/components/SortTable";
+import { eventName, roleWord } from "@/components/AllStar";
 import { TeamLabel } from "@/components/TeamLabel";
 import { logoFor } from "@/lib/brand";
 import { countryAt } from "@/lib/country";
@@ -38,6 +39,9 @@ import { ageOn, countryName, inches } from "@/lib/people-format";
 import { tableOf } from "@/lib/sort";
 import "@/components/people.css";
 import { getPlayerPaths, homeLeague } from "@/lib/playerLinks";
+import { getPersonAllStar } from "@/lib/allStar";
+import { allStarPath, type PersonAllStar } from "@/lib/allStarView";
+import { orElse } from "@/lib/api/soften";
 import { playersNamed } from "@/lib/playerIndex";
 import { playerIdOf, playerPath } from "@/lib/playerPath";
 import { seasonPath, withQuery } from "@/lib/slug";
@@ -116,7 +120,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   if (at.path !== at.here) permanentRedirect(withQuery(at.path, sp));
   const { d, home } = at;
   const { say, locale, dt, fmt } = await currentSpeaker();
-  const [brands, summary, record, retired, coaching] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id), getPersonCoaching(d.person.person_id)]);
+  const [brands, summary, record, retired, coaching, allStar] = await Promise.all([getBrands(), getSummary(), getPlayerRecord(d.person.person_id), getPersonRetired(d.person.person_id), getPersonCoaching(d.person.person_id), orElse(getPersonAllStar(d.person.person_id), [] as PersonAllStar[])]);
   const { person: p, teams } = d;
   const coachCodes = coaching.length ? COACH_AWARDS : new Set<string>();
   const awards = d.awards.filter((a) => !coachCodes.has(a.award_code));
@@ -197,6 +201,17 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
     { key: "league", label: say("col.league"), get: (t) => leagueName(t.league) },
   ], (t) => `${t.league}|${t.franchise_id}|${t.from_year}`);
 
+  const allStarTable = tableOf<PersonAllStar>(allStar, [
+    { key: "year", label: say("allstar.col.year"), num: true, get: (r) => r.year + r.event_no / 10, cell: (r) => r.year },
+    { key: "game", label: say("allstar.col.game"), cls: "team", get: (r) => `${leagueName(r.league)} ${r.year}`, cell: (r) => <Link href={allStarPath(r.league, r.year)} prefetch={false}>{eventName(say, r.league, leagueName(r.league), r.year)}</Link> },
+    {
+      key: "as", label: say("allstar.col.role"), get: (r) => (r.mvp ? 0 : 1),
+      cell: (r) => (r.mvp ? say(r.role || r.side ? "allstar.player.pickedMvp" : "allstar.player.mvp") : r.role ? say("allstar.player.as", { role: roleWord(say, r.role) ?? "", side: r.side ?? "" }) : r.side ?? say("allstar.player.picked")),
+    },
+    { key: "pos", label: say("allstar.col.pos"), get: (r) => r.position, cell: (r) => r.position ?? "" },
+    { key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => r.team ?? "" },
+  ], (r) => `${r.league}|${r.year}|${r.event_no}`);
+
   const coachTable = tableOf(coaching, [
     { key: "from", label: say("col.from"), num: true, get: (c) => c.from, cell: (c) => <Link href={seasonPath(c.league, c.from)} prefetch={false}>{seasonLabel(c.league, c.from)}</Link> },
     { key: "to", label: say("col.to"), num: true, get: (c) => c.to, cell: (c) => (c.to === c.from ? "" : <Link href={seasonPath(c.league, c.to)} prefetch={false}>{seasonLabel(c.league, c.to)}</Link>) },
@@ -242,6 +257,13 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
         <section className="section">
           <h2>{say("player.awards")}</h2>
           <div className="tablebox"><SortTable {...awardTable} param="sort_awards" def="season.desc" /></div>
+        </section>
+      ) : null}
+      {allStar.length ? (
+        <section className="section">
+          <h2>{say("allstar.player.title")}</h2>
+          <div className="tablebox"><SortTable {...allStarTable} param="sort_allstar" def="year.desc" /></div>
+          <p className="note">{say("allstar.player.note")}</p>
         </section>
       ) : null}
       {teams.length ? (

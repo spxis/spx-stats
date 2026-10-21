@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.155.0", date: "2026-10-20", href: "/nhl/all-star",
+    title: "All-Star Games",
+    text: "Every NHL, NBA, MLB, Pro Bowl, CFL and WNBA All-Star Game on record, from English Wikipedia: where and when, the result, the Most Valuable Player and the players picked. Each league has a list, each year a page, each season page its game, and a player's page his games." },
   { version: "0.154.0", date: "2026-10-19", href: "/trophies",
     title: "Trophies",
     text: "Every award now has its own page: what it honours, when it was first given and every winner by season, with who won it most and its longest runs. Each league has a trophies page, and /trophies ranks the most decorated people and clubs across all leagues. Award names on player, team and season pages open the trophy." },

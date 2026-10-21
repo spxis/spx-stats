@@ -16,6 +16,9 @@ import { withCoverage } from "@/lib/coverage";
 import { trophiesPath, CHAMPIONSHIP_CODE, trophyPath } from "@/lib/awardTrophy";
 import { logoFor } from "@/lib/brand";
 import { championRow } from "@/lib/champions";
+import { getAllStar } from "@/lib/allStar";
+import { orElse } from "@/lib/api/soften";
+import { allStarPath } from "@/lib/allStarView";
 import { getCupTitles } from "@/lib/cupData";
 import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -54,7 +57,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
   if (!isLeague(lg)) notFound();
   const info = leagueInfo(lg)!;
   const { say, plural } = await currentSpeaker();
-  const [s, brands] = await Promise.all([getSummary(), getBrands()]);
+  const [s, brands, allStarGames] = await Promise.all([getSummary(), getBrands(), orElse(getAllStar(lg).then((d) => d.events.length), 0)]);
   const list = withCoverage(s.seasons).filter((x) => x.league === lg).sort((a, b) => a.year - b.year);
   const withGames = list.filter((x) => x.games > 0);
   const champs = list.filter((x) => x.champion);
@@ -87,6 +90,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           <Link href={`/${lg}/scores`}>{say("nav.scores")}</Link>
           <Link href={`/${lg}/all-time`}>{say("allTime.title")}</Link>
           <Link href={`/${lg}/alignment`}>{say("align.title")}</Link>
+          {allStarGames ? <Link href={allStarPath(lg)}>{say("allstar.leagueLink")}</Link> : null}
           <Link href={trophiesPath(lg)}>{say("trophies.title")}</Link>
           {info.closed ? null : <Link href={`/${lg}/world`}>{say("country.mapList")}</Link>}
         </nav>

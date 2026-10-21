@@ -22,7 +22,7 @@ export const QUERY_KEYS = [
   "sort", "sort_alignment", "sort_awards", "sort_clubs", "sort_coach", "sort_coachawards", "sort_games", "sort_meet", "sort_members", "sort_men", "sort_names", "sort_past", "sort_players", "sort_roster", "sort_scorers", "sort_seasons", "sort_series", "sort_teams", "sort_venues", "sort_women",
   "phase", "team", "teams", "month", "day", "week", "date", "all", "season", "view", "loc", "result", "conf", "div", "group",
   "map", "mapteam", "stat", "pos", "nat", "list", "active",
-  "sort_countries", "sort_firsts", "sort_leagues", "sort_rank", "sort_stack",
+  "sort_allstar", "sort_countries", "sort_firsts", "sort_leagues", "sort_rank", "sort_stack",
   "q", "league", "status", "page", "from", "to", "after", "offset", "letter", "letter_by",
 ] as const;
 

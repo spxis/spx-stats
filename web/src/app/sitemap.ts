@@ -4,6 +4,8 @@ import { getLeagueCounts } from "@/lib/countryData";
 import { trophiesPath, trophyPath } from "@/lib/awardTrophy";
 import { getSummary, getTeamIndex, getTeamSeasonIndex } from "@/lib/data";
 import { ALL_LEAGUES, SITE_URL } from "@/lib/leagues";
+import { getAllStar } from "@/lib/allStar";
+import { allStarPath } from "@/lib/allStarView";
 import { getPaths } from "@/lib/teamSlugs";
 import { getTrophyList } from "@/lib/trophyData";
 import { getVenueSlugs } from "@/lib/venueData";
@@ -23,7 +25,7 @@ const url = (path: string) => `${SITE_URL}${path}`;
 
 // The sitemap is built at deploy time, so a failed read of the archive leaves that part out instead of failing the build.
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams, countryData, mlsSeasons, mlsClubs, matchPairs, trophyList] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams(), getLeagueCounts(), getMlsSeasons(), getMlsClubs(), getMatchPairs(), getTrophyList()]);
+  const [summary, teams, teamSeasons, paths, cityData, venues, soccer, soccerTeams, countryData, mlsSeasons, mlsClubs, matchPairs, trophyList, allStar] = await Promise.allSettled([getSummary(), getTeamIndex(), getTeamSeasonIndex(), getPaths(), getCityData(), getVenueSlugs(), getTournaments(), getSoccerTeams(), getLeagueCounts(), getMlsSeasons(), getMlsClubs(), getMatchPairs(), getTrophyList(), Promise.all(ALL_LEAGUES.map(async (l) => ({ league: l.code, events: (await getAllStar(l.code)).events })))]);
   const seasons = summary.status === "fulfilled" ? summary.value.seasons : [];
   const lastModified = summary.status === "fulfilled" ? new Date(summary.value.totals.refreshed_at) : new Date();
   const held = new Set(seasons.filter((s) => s.games > 0).map((s) => `${s.league}|${s.year}`));
@@ -62,6 +64,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   // A country page exists for each country with a player on record (migration 068's views; none while they are missing).
   const countryUrls = countryData.status === "fulfilled" && countryData.value ? [...new Set(countryData.value.map((r) => r.country).filter((c) => c !== "ZZ"))].sort().map((c) => ({ url: url(`/country/${c}`), lastModified })) : [];
   const worldUrls = countryData.status === "fulfilled" && countryData.value ? [...new Set(countryData.value.map((r) => r.league))].map((l) => ({ url: url(`/${l}/world`), lastModified })) : [];
+  // An All-Star Game list for each league that has one, and a page for each year it was played (the data release brings them; none while the views are missing).
+  const allStarUrls = allStar.status === "fulfilled"
+    ? allStar.value.filter((x) => x.events.length).flatMap((x) => [allStarPath(x.league), ...[...new Set(x.events.map((e) => e.year))].map((y) => allStarPath(x.league, y))]).map((p) => ({ url: url(p), lastModified }))
+    : [];
   return [
     { url: url("/"), lastModified },
     ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
@@ -77,6 +83,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...soccerUrls,
     ...mlsUrls,
     ...trophyUrls,
+    ...allStarUrls,
     ...countryUrls,
     ...worldUrls,
     ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/countries", "/players", "/terms", "/privacy","/sources", "/quality", "/logos", "/help-wikipedia", "/releases", "/releases/older"].map((p) => ({ url: url(p), lastModified })),

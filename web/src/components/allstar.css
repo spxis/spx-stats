@@ -1,0 +1,16 @@
+/* The All-Star Game pages: the result lines, the Most Valuable Player, the card of a season page and the players picked for each side. Tokens come from globals.css. */
+.asgame { display: block; }
+.asscore { font-weight: 600; }
+.aslead { margin: 0 0 14px; line-height: 1.55; }
+.aslead > div { display: block; }
+.ascard .aslead:last-child { margin-bottom: 0; }
+.asmvp { white-space: nowrap; }
+.asroster { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); gap: 8px 28px; }
+.asside h3 { margin: 0 0 6px; }
+.asside h4 { margin: 14px 0 4px; font: 600 13px/1.2 var(--display); letter-spacing: .05em; text-transform: uppercase; color: var(--muted); }
+.asside ul { list-style: none; margin: 0; padding: 0; }
+.asside li { padding: 4px 0; border-bottom: 1px solid var(--rule); }
+.asside li .pos { display: inline-block; min-width: 2.6em; margin-right: 6px; font: 500 12px/1 var(--mono); color: var(--muted); }
+.asyears { display: flex; flex-wrap: wrap; gap: 4px; margin: 0 0 14px; }
+.asyears a { font: 500 13px/1 var(--mono); padding: 6px 7px; background: var(--panel); border: 1px solid var(--rule); text-decoration: none; }
+.asyears a[aria-current="page"], .asyears a:hover { border-color: var(--ink); }

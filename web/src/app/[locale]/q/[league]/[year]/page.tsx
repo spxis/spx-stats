@@ -6,6 +6,7 @@ import { ChampionNote } from "@/components/ChampionNote";
 import { ChampionSurface } from "@/components/ChampionSurface";
 import { SeasonPath } from "@/components/SeasonPath";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
+import { AllStarCard } from "@/components/AllStar";
 import { SeasonBar } from "@/components/SeasonBar";
 import { LeagueSeasonNav } from "@/components/SeasonNav";
 import { SeasonOutage } from "@/components/SeasonOutage";
@@ -47,6 +48,9 @@ import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
 import { scoresPath } from "@/lib/scores";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPlayerPaths } from "@/lib/playerLinks";
+import { getAllStar } from "@/lib/allStar";
+import { orElse } from "@/lib/api/soften";
+import { eventsOfSeason } from "@/lib/allStarView";
 import { franchiseOfName, getPaths } from "@/lib/teamSlugs";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { clubPins } from "@/lib/venueMap";
@@ -85,7 +89,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const sp = await searchParams;
   if (!ys.canonical) permanentRedirect(withQuery(seasonPath(lg, y), sp));
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
-  const [d, brands, abbrs, summary, notes, paths, player, outageYears, notAwarded] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg), getTitleNotAwarded(lg, y)]);
+  const [d, brands, abbrs, summary, notes, paths, player, outageYears, notAwarded, allStar] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg), getTitleNotAwarded(lg, y), orElse(getAllStar(lg), { events: [], games: [], mvps: [] })]);
   const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
   const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
   // The picker also offers the years the league sat out, so a reader can open them.
@@ -257,6 +261,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <ChampionSurface lg={lg} year={y} champion={champF} />
         </>
       ) : notAwarded ? <NotAwarded row={notAwarded} /> : null}
+      <AllStarCard lg={lg} short={LG[lg]} events={eventsOfSeason(allStar.events, y)} games={allStar.games} mvps={allStar.mvps} say={say} dt={dt} player={player} />
       {d.games.length ? <SeasonWeek lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} complete={complete} /> : null}
       {st.length ? (
         <section className="section">
