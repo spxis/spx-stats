@@ -60,6 +60,9 @@ insert into core.award (league_code, code, name, kind, description, first_season
   ('wchl', 'wchl_championship', 'WCHL Championship', 'championship', 'The WCHL''s (the WHL''s in 1925-26) playoff championship (1921-22 to 1925-26).', 1921, (select source_id from src)),
   ('wha', 'wha_championship', 'Avco World Trophy', 'championship', 'The WHA''s championship trophy (1972-73 to 1978-79).', 1972, (select source_id from src))
 on conflict (code) do nothing;
+-- The PCHA champion got the Paterson Cup (from 1912): the award is named after it, as the NHA's is after the O'Brien Cup and the WHA's after the Avco World Trophy.
+update core.award set name = 'Paterson Cup', description = 'The PCHA''s championship trophy, the Paterson Cup (1911-12 to 1923-24): the regular-season leader, or the winner of the playoff the league held.'
+where code = 'pcha_championship' and name <> 'Paterson Cup';
 
 -- English Wikipedia's Vancouver Maroons are the Millionaires renamed: one franchise (the NHL API made two, VMI and VMA).
 create temp table vm as
