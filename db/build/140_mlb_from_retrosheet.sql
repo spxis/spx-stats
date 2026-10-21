@@ -56,13 +56,13 @@ select d.team_id, '1871-01-01', '9999-12-31', fr.franchise_id from defunct d joi
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'franchise', franchise_id, (select source_id from src), 'franchise:' || retro from fr;
 
--- Names over time replace SPX's provisional names for every MLB franchise.
+-- Names over time replace SPX's provisional names for every MLB franchise. Retrosheet's nickname '(none)' (the 1882-84 Allegheny Club) is an empty nickname.
 update core.team_season ts set franchise_identity_id = null where franchise_id in (select franchise_id from fr);
 delete from core.franchise_identity where franchise_id in (select franchise_id from fr);
 delete from core.franchise_league where franchise_id in (select franchise_id from fr);
 
 insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
-select franchise_id, daterange(first_game, next_first), city, nickname, city || ' ' || nickname, team_id,
+select franchise_id, daterange(first_game, next_first), city, coalesce(nullif(nickname, '(none)'), ''), concat_ws(' ', city, nullif(nickname, '(none)')), team_id,
        case when city in ('Montreal', 'Toronto') then 'CA' else 'US' end, (select source_id from src)
 from (
   select fr.franchise_id, c.team_id, c.city, c.nickname, min(c.first_game) as first_game,
@@ -75,7 +75,7 @@ from (
 ) x;
 insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
 select distinct on (fr.franchise_id) fr.franchise_id, daterange(make_date(t.first_year, 1, 1), make_date(t.last_year + 1, 1, 1)),
-       t.city, t.nickname, t.city || ' ' || t.nickname, t.team_id, 'US', (select source_id from src)
+       t.city, coalesce(nullif(t.nickname, '(none)'), ''), concat_ws(' ', t.city, nullif(t.nickname, '(none)')), t.team_id, 'US', (select source_id from src)
 from defunct d join fr on fr.retro = d.team_id join legacy_retrosheet.team t on t.team_id = d.team_id
 order by fr.franchise_id, t.first_year;
 
