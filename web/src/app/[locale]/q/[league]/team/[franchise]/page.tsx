@@ -8,6 +8,8 @@ import { SortTable } from "@/components/SortTable";
 import { StandingsTable } from "@/components/StandingsTable";
 import { TeamAlignment } from "@/components/TeamAlignment";
 import { TeamAwards } from "@/components/TeamAwards";
+import { TeamCup } from "@/components/TeamCup";
+import { TeamOtherSeasons } from "@/components/TeamOtherSeasons";
 import { RetiredBanners } from "@/components/RetiredBanners";
 import { TitleBanners } from "@/components/TitleBanners";
 import { FranchiseCountries } from "@/components/FranchiseCountries";
@@ -34,10 +36,10 @@ import { countryAt } from "@/lib/country";
 import { placeFor } from "@/lib/venue";
 import { titleHolders, titleStreak } from "@/lib/champions";
 import { getOutageYears } from "@/lib/outageData";
-import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings } from "@/lib/data";
+import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings, type TeamData } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG, PARENT, RELATED_LEAGUES, seasonLabel, type LeagueCode } from "@/lib/leagues";
+import { isLeague, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague, type LeagueCode } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
 import { seasonPath } from "@/lib/slug";
@@ -46,6 +48,8 @@ import { TeamSwitch } from "@/components/TeamSwitch";
 import { getClubCity } from "@/lib/cityData";
 import { cupTitlesOf } from "@/lib/cup";
 import { getCupTitles } from "@/lib/cupData";
+import { getCupHistory } from "@/lib/cupHistory";
+import { cupAppearances } from "@/lib/cupRows";
 import "@/components/city.css";
 import { mapRestPath } from "@/lib/mapView";
 import { getVenuePlaces, placeKey } from "@/lib/venuePlace";
@@ -157,7 +161,13 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const { withGames, idle, bare, tableRows } = await franchiseSeasonRows(lg, f, t, rows, summary.seasons, say);
   const { lines: standLinesAll, flags: standFlags } = standLines(f, tableRows, won, idle, bare, withGames, brands, abbrs, rows);
   // Each name with the seasons played under it and its logo (the club's current one, drawn dimmed, where we hold none for those years).
-  const eras = nameEras(names.map((n) => n.span ?? n), [...new Set([...rows.map((r) => r.year), ...bare.keys()])], brands, f).map((e, i) => ({ ...e, from: names[i].from, to: names[i].to }));
+  // The seasons the club played in the other leagues of its family count for its names too, so a name worn in one league only still shows its seasons.
+  const others = (await Promise.all((RELATED_LEAGUES[lg] ?? []).map(async (o) => {
+    const [ot, orows] = await Promise.all([getTeam(o, f).catch(() => null), getTeamStandings(o, f).catch(() => [] as StandingRow[])]);
+    // (seasons with a record only: a club that met the NHL's in a Stanley Cup final has bare NHL seasons for it, and was no NHL club)
+    return ot && orows.length ? { lg: o, seasons: orows.length, t: ot, rows: orows } : null;
+  }))).filter((x): x is { lg: LeagueCode; seasons: number; t: TeamData; rows: StandingRow[] } => x !== null);
+  const eras = nameEras(names.map((n) => n.span ?? n), [...new Set([...rows.map((r) => r.year), ...bare.keys(), ...others.flatMap((o) => o.rows.map((r) => r.year))])], brands, f).map((e, i) => ({ ...e, from: names[i].from, to: names[i].to }));
   const nameTable = tableOf(eras, [
     {
       key: "name", label: say("col.name"), cls: "team", get: (n) => n.name,
@@ -216,14 +226,18 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
   const country = countryAt(place?.latitude, place?.longitude);
   const city = await getClubCity(lg, f);
   const titlesPart = nTitles ? say("team.titlesSuffix", { titles: plural("count.championships", nTitles) }) : "";
-  // A rival league's clubs are today's franchises (the AFL's and the AAFC's, now NFL clubs): each league's page points to the same club's seasons in the others.
-  const others = (await Promise.all((RELATED_LEAGUES[lg] ?? []).map(async (o) => {
-    const ot = await getTeam(o, f).catch(() => null);
-    // (seasons with results only: a club that met the NHL's in a Stanley Cup final has bare NHL seasons for it, and was no NHL club)
-    return ot && ot.seasons.length ? { lg: o, seasons: ot.seasons.length } : null;
-  }))).filter((x): x is { lg: LeagueCode; seasons: number } => x !== null);
-  const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", t.seasons.length), titles: titlesPart })
-    : t.seasons.length ? say("team.ledeBare", { seasons: plural("count.seasons", t.seasons.length), bare: plural("count.seasons", bare.size), titles: titlesPart })
+  // A rival league's clubs are today's franchises (the AFL's and the AAFC's, now NFL clubs): each league's page points to the same club's seasons in the others (`others`, above).
+  const cupList = topLeague(lg) === "nhl" ? await getCupHistory().then((h) => cupAppearances(f, h.series, h.finals, h.games)) : [];
+  // A Cup played in the spring of a year belongs to the season that began the year before: the club's page for it, in whichever league it played that season (one with a record first).
+  const family = [{ lg, t, rows }, ...others];
+  const cupSeasonHref = (year: number) => {
+    const found = family.find((x) => x.rows.some((r) => r.year === year - 1)) ?? family.find((x) => x.t.unrecorded.some((u) => u[0] === year - 1));
+    return found ? paths.teamSeason(found.lg, f, year - 1) : null;
+  };
+  // (a season with published standings and no games, the WCHL's, has a record row but none in t.seasons, which is worked out from the games)
+  const recorded = new Set([...t.seasons.map((x) => x[0]), ...rows.map((r) => r.year)]).size;
+  const ledeText = !bare.size ? say("team.lede", { seasons: plural("count.seasons", recorded), titles: titlesPart })
+    : recorded ? say("team.ledeBare", { seasons: plural("count.seasons", recorded), bare: plural("count.seasons", bare.size), titles: titlesPart })
       : say("team.ledeBareOnly", { seasons: plural("count.seasons", bare.size), titles: titlesPart });
   return (
     <CupsProvider markup={cupsFor(won.size ? [lg] : [])}>
@@ -296,6 +310,10 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           <div className="tablebox"><StandingsTable lg={lg} f={f} teamPath={at.path} head={standLinesAll.slice(0, STAND_HEAD)} total={standLinesAll.length} flags={standFlags} /></div>
         </section>
       ) : null}
+      {others.map((o) => (
+        <TeamOtherSeasons key={o.lg} league={o.lg} f={f} rows={o.rows} titles={new Set(o.t.titles)} brands={brands} href={(y) => paths.teamSeason(o.lg, f, y)} />
+      ))}
+      {cupList.length ? <TeamCup appearances={cupList} seasonHref={cupSeasonHref} /> : null}
       <TeamAwards lg={lg} f={f} teamPath={at.path} />
       <TeamAlignment lg={lg} f={f} />
       {names.length ? (

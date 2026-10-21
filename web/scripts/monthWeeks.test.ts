@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { defaultWeek, monthWeeks, parseSelection, resolveSelection, type GameTuple } from "../src/lib/season.ts";
+import { defaultWeek, monthRun, monthWeeks, parseSelection, resolveSelection, type GameTuple } from "../src/lib/season.ts";
 
 /** Run in web/: pnpm test:weeks */
 const game = (date: string, id: number): GameTuple => [date, 1, 2, 3, 2, "r", "f", "spx", 0, null, id];
@@ -41,4 +41,14 @@ test("a chosen week, or all, is kept; a week that is not in the month is dropped
   assert.equal(resolveSelection(games, { ...base, week: "2000-04-10" }).week, "", "no games that week");
   assert.equal(resolveSelection(games, { ...base, month: "2000-05", week: "2000-04-03" }).week, "", "another month's week");
   assert.equal(resolveSelection([], base).shownWeek, "");
+});
+
+test("the months of a season run unbroken from the first game to the last, an empty month among them", () => {
+  assert.deepEqual(monthRun(["2019-10", "2020-03", "2020-08"]), ["2019-10", "2019-11", "2019-12", "2020-01", "2020-02", "2020-03", "2020-04", "2020-05", "2020-06", "2020-07", "2020-08"]);
+  assert.deepEqual(monthRun(["1915-03"]), ["1915-03"]);
+  assert.deepEqual(monthRun([]), []);
+  const r = resolveSelection([game("2000-04-02", 1), game("2000-06-02", 2)], { phase: "r", team: "", month: "2000-05", day: "" });
+  assert.deepEqual(r.months, ["2000-04", "2000-05", "2000-06"]);
+  assert.equal(r.month, "2000-05", "the empty month asked for is kept");
+  assert.deepEqual(r.weeks, []);
 });

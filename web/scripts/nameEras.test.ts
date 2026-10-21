@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { groupBrands } from "../src/lib/brand.ts";
-import { dayOf, eraLogo, nameEras, seasonUnder } from "../src/lib/nameEras.ts";
+import { dayOf, eraLogo, mergeSpans, nameEras, seasonUnder } from "../src/lib/nameEras.ts";
 import type { TeamBrandRow } from "../src/lib/api/types.ts";
 
 /** Run in web/: pnpm test:eras */
@@ -65,4 +65,20 @@ test("a name no season falls in counts zero but takes the logo of the years it c
   const out = nameEras([{ name: "Short", from: "1992-01-01", to: "1996-01-01" }], [1980, 2005], b, 1);
   assert.equal(out[0].seasons, 0);
   assert.equal(out[0].logo, "mid.svg");
+});
+
+test("spans of one name that touch or repeat become one, and a different name stays apart", () => {
+  const spans = [
+    { name: "Vancouver Maroons", from: "1922-07-01", to: "1924-07-01" },
+    { name: "Vancouver Millionaires", from: "1917-07-01", to: "1920-07-01" },
+    { name: "Vancouver Millionaires", from: "1911-07-01", to: "1917-07-01" },
+    { name: "Vancouver Millionaires", from: "1920-07-01", to: "1922-07-01" },
+    { name: "Vancouver Maroons", from: "1922-07-01", to: "1924-07-01" },
+    { name: "Vancouver Maroons", from: "1924-07-01", to: null },
+  ];
+  assert.deepEqual(mergeSpans(spans), [
+    { name: "Vancouver Millionaires", from: "1911-07-01", to: "1922-07-01" },
+    { name: "Vancouver Maroons", from: "1922-07-01", to: null },
+  ]);
+  assert.deepEqual(mergeSpans([{ name: "A", from: "1900", to: "1950" }, { name: "B", from: "1950", to: null }, { name: "A", from: "1960", to: null }]).map((n) => n.name), ["A", "B", "A"]);
 });

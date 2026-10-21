@@ -80,10 +80,10 @@ test("the AAFC's last game of a season is the AAFC Championship; it was played a
 
 test("a club's page points to its seasons in the related leagues: the NFL club to the AFL and the AAFC, theirs back to the NFL", () => {
   assert.deepEqual(RELATED_LEAGUES.nfl, ["afl", "aafc"]);
-  assert.deepEqual(RELATED_LEAGUES.aafc, ["nfl"]);
-  assert.deepEqual(RELATED_LEAGUES.afl, ["nfl"]);
+  assert.deepEqual(RELATED_LEAGUES.aafc, ["nfl", "afl"]);
+  assert.deepEqual(RELATED_LEAGUES.afl, ["nfl", "aafc"]);
   assert.deepEqual(RELATED_LEAGUES.nhl, ["nha", "pcha", "wchl", "wha"]);
-  assert.deepEqual(RELATED_LEAGUES.wha, ["nhl"]);
+  assert.deepEqual(RELATED_LEAGUES.wha, ["nhl", "nha", "pcha", "wchl"]);
   assert.equal(RELATED_LEAGUES.mlb, undefined);
 });
 

@@ -51,10 +51,11 @@ export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "
  */
 export const SUPER_BOWL_SINCE = 1970;
 
-/** The leagues a franchise can have seasons in besides the page's own: a club's page points to its seasons there (the AAFC's Browns, the AFL's Oilers). */
+/** The leagues a franchise can have seasons in besides the page's own: a club's page points to its seasons there (the AAFC's Browns, the AFL's Oilers, the Maroons in the NHL, PCHA and WCHL). */
 export const RELATED_LEAGUES: Partial<Record<LeagueCode, readonly LeagueCode[]>> = Object.fromEntries(
   ALL_LEAGUES.flatMap((l) => {
-    const rel = [...(CHILDREN[l.code] ?? []), ...(PARENT[l.code] ? [PARENT[l.code]!] : [])];
+    const parent = PARENT[l.code];
+    const rel = [...(CHILDREN[l.code] ?? []), ...(parent ? [parent, ...(CHILDREN[parent] ?? []).filter((k) => k !== l.code)] : [])];
     return rel.length ? [[l.code, rel] as const] : [];
   }),
 );

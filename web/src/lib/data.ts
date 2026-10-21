@@ -11,6 +11,7 @@ import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, T
 import { tursoConfigured, tursoQuality, tursoTotals } from "./turso/aggregates";
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
+import { mergeSpans } from "./nameEras";
 import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons";
 import { isSpx } from "./leagues";
 import { logoFitSchema, type LogoFit } from "./logoFit";
@@ -148,12 +149,13 @@ export interface TeamData {
 
 export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | null> => {
   const q = `league=eq.${lg}&franchise_id=eq.${f}`;
+  // Every name the franchise wore in any league, so a club of a rival league (the PCHA's Millionaires, the NHL's Maroons) lists them all.
   const [ts, names] = await Promise.all([
     teamSeasonRows(`${q}&select=*&order=year`, teamSeasonSchema),
-    rows("franchise_names", `${q}&select=*&order=name_from`, franchiseNameSchema),
+    rows("franchise_names", `franchise_id=eq.${f}&select=*&order=name_from`, franchiseNameSchema),
   ]);
-  if (!ts.length && !names.length) return null;
-  const t: TeamData = { f, names: names.map((n) => ({ name: n.name, from: n.name_from, to: n.name_to })), seasons: [], titles: [], unrecorded: [] };
+  if (!ts.length && !names.some((n) => n.league === lg)) return null;
+  const t: TeamData = { f, names: mergeSpans(names.map((n) => ({ name: n.name, from: n.name_from, to: n.name_to }))), seasons: [], titles: [], unrecorded: [] };
   let last: string | null = null;
   for (const s of ts) {
     if (s.w != null) t.seasons.push([s.year, s.w, s.l, s.t, s.otl]);

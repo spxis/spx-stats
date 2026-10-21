@@ -6,6 +6,9 @@ import { ChampionNote } from "@/components/ChampionNote";
 import { ChampionSurface } from "@/components/ChampionSurface";
 import { SeasonPath } from "@/components/SeasonPath";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
+import { TeamCup } from "@/components/TeamCup";
+import { getCupHistory } from "@/lib/cupHistory";
+import { championFinal } from "@/lib/cupRows";
 import { AllStarCard } from "@/components/AllStar";
 import { SeasonBar } from "@/components/SeasonBar";
 import { LeagueSeasonNav } from "@/components/SeasonNav";
@@ -140,6 +143,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const champ = champs.find((x) => x.franchise_id != null) ?? champs[0];
   const champF = champ ? champ.franchise_id ?? await franchiseOfName(lg, champ.winner) : null;
   const awards = d.awards.filter((x) => x.kind !== "championship");
+  // The champion of a rival hockey league met the champion of another for the Stanley Cup the spring after the season began; the NHL's own finals are in its playoffs.
+  const cupFinal = (lg === "nha" || lg === "pcha" || lg === "wchl") && champF != null ? await getCupHistory().then((h) => championFinal(champF, y, h.finals, h.series, h.games)) : null;
   // The table as it stood after a day's games (?date=), when that day is before the season's last game day.
   const days = [...new Set(d.games.filter((g) => g[5] === "r" && g[6] === "f").map((g) => g[0]))].sort();
   const dateWanted = dateSchema.parse(sp.date);
@@ -236,7 +241,9 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           ? <p><NoSeason /></p>
           : regular.length === 0 && !complete
             ? <p className="lede">{say("season.noSchedule")}</p>
-            : (
+            : regular.length === 0 && pub
+              ? <p className="lede">{say("season.tableOnly")}</p>
+              : (
               <p className="lede">
                 {say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}
                 {startDay ? ` ${say("season.starts", { date: dt.full(atUtc(startDay)) })}` : ""}
@@ -283,6 +290,9 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
         </section>
       ) : null}
       <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />
+      {cupFinal && champ ? (
+        <TeamCup appearances={[cupFinal]} seasonHref={() => null} heading={say("season.cupTitle")} note={say("season.cupNote", { team: champ.winner ?? "", league: LG[lg] })} />
+      ) : null}
       <SeasonPath lg={lg} year={y} seasonPath={seasonPath(lg, y)} />
       {awards.length ? (
         <section className="section">

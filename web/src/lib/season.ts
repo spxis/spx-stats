@@ -92,6 +92,19 @@ export function defaultWeek(weeks: readonly MonthWeek[], month: string, today: s
   return weeks[0];
 }
 
+/** The months from the first to the last given (YYYY-MM, sorted), the ones between with no games included: a break in the schedule is a month to open, not a jump. */
+export function monthRun(have: readonly string[]): string[] {
+  if (have.length < 2) return [...have];
+  const out: string[] = [];
+  let [y, m] = have[0].split("-").map(Number);
+  const last = have[have.length - 1];
+  for (let ym = have[0]; ym <= last && out.length < 600; ym = `${y}-${String(m).padStart(2, "0")}`) {
+    out.push(ym);
+    if (++m > 12) { m = 1; y++; }
+  }
+  return out;
+}
+
 /** Settles a requested selection against the games it can show: the month falls back to the last one with games. `today` (YYYY-MM-DD, "" when unknown) picks the opening week of a month under way. */
 export function resolveSelection(games: GameTuple[], want: Selection, today = "") {
   const sel = filterGames(games, want.phase, want.team);
@@ -100,7 +113,7 @@ export function resolveSelection(games: GameTuple[], want: Selection, today = ""
     const list = byDay.get(g[0]);
     if (list) list.push(g); else byDay.set(g[0], [g]);
   }
-  const months = [...new Set(sel.map((g) => ymOf(g[0])))].sort();
+  const months = monthRun([...new Set(sel.map((g) => ymOf(g[0])))].sort());
   let { month, day } = want;
   if (months.length && !months.includes(month)) { month = months[months.length - 1]; day = ""; }
   if (day && !byDay.has(day)) day = "";

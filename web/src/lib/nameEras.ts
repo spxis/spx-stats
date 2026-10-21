@@ -22,6 +22,20 @@ export const dayOf = (d: string | null | undefined): string | null => {
   return /^\d{4}$/.test(d) ? `${d}-01-01` : d.slice(0, 10);
 };
 
+/** Spans of one name that touch or overlap become one, oldest first: a club that two leagues (or a split identity) list twice shows each name once. */
+export function mergeSpans<T extends NameSpan>(spans: readonly T[]): T[] {
+  const sorted = [...spans].sort((a, b) => (dayOf(a.from) ?? "").localeCompare(dayOf(b.from) ?? "") || (dayOf(a.to) ?? "9999").localeCompare(dayOf(b.to) ?? "9999"));
+  const out: T[] = [];
+  for (const s of sorted) {
+    const last = out.at(-1);
+    if (last && last.name === s.name && (last.to == null || (dayOf(s.from) ?? "") <= dayOf(last.to)!)) {
+      const to = last.to == null || s.to == null ? null : dayOf(s.to)! > dayOf(last.to)! ? s.to : last.to;
+      out[out.length - 1] = { ...last, to };
+    } else out.push(s);
+  }
+  return out;
+}
+
 /**
  * Whether a season belongs to a name. A season is dated by the day its play is under way (the end of September: every league here
  * is playing by then, and the clubs rename in the off-season), which is then compared with the name's days, so a name that began

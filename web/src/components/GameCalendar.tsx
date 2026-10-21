@@ -219,6 +219,7 @@ export function GameCalendar({ lg, abbrs, year, teams, byDay, months, month, day
               {day ? <button type="button" className="linkish" onClick={() => onDay("")}>{say("cal.showMonth")}</button> : null}
             </p>
             {note ? <p className="note">{note}</p> : null}
+            {!day && !n ? <p className="note">{say("cal.emptyMonth", { month: dt.monthYear(first) })}</p> : null}
             <div className="glist">
               {listed.map(([date, list]) => (
                 <section className="gday" key={date}>

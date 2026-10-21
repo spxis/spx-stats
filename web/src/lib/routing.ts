@@ -23,6 +23,7 @@ export const QUERY_KEYS = [
   "phase", "team", "teams", "month", "day", "week", "date", "all", "season", "view", "loc", "result", "conf", "div", "group",
   "map", "mapteam", "stat", "pos", "nat", "list", "active",
   "sort_allstar", "sort_countries", "sort_firsts", "sort_leagues", "sort_rank", "sort_stack",
+  "sort_cup", "sort_nhl", "sort_nha", "sort_pcha", "sort_wchl", "sort_wha", "sort_nfl", "sort_afl", "sort_aafc",
   "q", "league", "status", "page", "from", "to", "after", "offset", "letter", "letter_by",
 ] as const;
 

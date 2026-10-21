@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.156.0", date: "2026-10-21", href: "/pcha/team/vancouver-maroons",
+    title: "Pre-NHL clubs and the Paterson Cup",
+    text: "A club that played in several leagues lists its seasons in each on its own page, every name it wore, and every Stanley Cup series it played up to 1926, with the games of each final. The PCHA, NHA and WHA champions get their own cups: the Paterson Cup, the O'Brien Cup and the Avco World Trophy." },
   { version: "0.155.0", date: "2026-10-20", href: "/nhl/all-star",
     title: "All-Star Games",
     text: "Every NHL, NBA, MLB, Pro Bowl, CFL and WNBA All-Star Game on record, from English Wikipedia: where and when, the result, the Most Valuable Player and the players picked. Each league has a list, each year a page, each season page its game, and a player's page his games." },
