@@ -511,7 +511,7 @@ the temporary copy as shown (or with `--cwd` pointing at it), never from the wor
 it). Never edit permission settings yourself.
 
 Add `forceNew: "1"` if Vercel reuses an earlier deployment of the same commit. The project is `nextjs`, root
-directory `web`, Node 22.x. The call itself is **untested** (past deployments and the project settings were read and
+directory `web`, Node 24.x. The call itself is **untested** (past deployments and the project settings were read and
 match). If the permission check refuses it, stop and report the exact call to the coordinating session.
 
 **Confirm READY.** The build takes a minute or two. Do not poll in a loop; look a few times:

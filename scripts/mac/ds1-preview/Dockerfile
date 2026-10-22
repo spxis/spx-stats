@@ -1,7 +1,7 @@
 # The always-on DS1 preview site (scripts/mac/ds1-preview.sh --install / --update). Build context: a clean `git archive` of the repository.
 # Builds for linux/amd64 and linux/arm64 alike (no native image deps beyond what pnpm installs). Holds source and dependencies only: the pages
 # are built when the container starts (site-entry.sh), because `next build` reads the data and the data is behind the compose network.
-FROM node:22-bookworm-slim
+FROM node:24-bookworm-slim
 
 ARG SPX_SHA=unknown
 ARG SPX_REVALIDATE=300
