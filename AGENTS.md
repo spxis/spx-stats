@@ -53,7 +53,7 @@ end. **manual** = a person or the coordinating session has to do it.
   and a cloud session pushes its new data to DS1 before its container is discarded.
 - **Machines are named by role, never by model, host name or address** (the repository is public): **machine1** is the main
   desktop Mac (on the home LAN all day), **machine2** is the laptop Mac, **nas1** is the always-on NAS that hosts the source
-  database (written DS1 in code, docs and keychain item names), **nas2** is a second NAS with no spx database (never touch it).
+  database (written DS1 in code, docs and keychain item names), **nas2** is a second, smaller NAS on the home LAN: from 2026-10-21 (John) it holds DS1's nightly backups and a read-only production mirror (what production serves, for builds, troubleshooting, release dry runs and disaster recovery); the live site stays on Supabase, DS1 stays the only place data is written, and only the coordinating session sets up or changes anything on nas2.
   What each role really is (addresses, host names, the NAS login, folders) is in ONE private file outside the repository,
   `~/.config/spx-stats/hosts.env`, created by `zsh scripts/mac/spx-credentials.sh hosts` ([section 4](#4-cold-start)). Never write
   a real address, host name, model name or login into a file, a commit, a ticket or a comment: `bash scripts/check_private_hosts.sh` fails on it.
