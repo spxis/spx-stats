@@ -3,12 +3,13 @@ import { LocalTime, Stamped } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import type { PluralBase, Speaker } from "@/lib/i18n/i18n";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
-import { age, exportVerdict, harvesterTone, minutesBetween, pauseControl, queuedOf, series, syncRows } from "@/lib/ops/rules";
-import { isFailed, type Backup, type Daily, type Failed, type HistoryPoint, type OpsRequest, type Releases, type Sync, type Watchdog, type Harvester } from "@/lib/ops/schema";
+import { age, exportVerdict, harvesterTone, lastScoreRequest, leagueTone, minutesBetween, pauseControl, queuedOf, scoreBlock, series, syncRows } from "@/lib/ops/rules";
+import { isFailed, type Backup, type Daily, type Failed, type HistoryPoint, type OpsRequest, type Releases, type ScoreRequest, type Scores, type Sync, type Watchdog, type Harvester } from "@/lib/ops/schema";
 import { mark } from "@/lib/localTime";
 import { bytesLabel } from "@/lib/releases/rules";
 import { parseSort, type SortColumn } from "@/lib/sort";
 import { RequestButton } from "../data/RequestButton";
+import { LeagueButton } from "./LeagueButton";
 import { OpsButton } from "./OpsButton";
 import { Spark } from "./Spark";
 
@@ -214,6 +215,94 @@ export function DailySection({ s, d, at }: { s: Speaker; d: Section<Daily>; at: 
       <p className="note">
         {d.release ? sayT(s, "ops.daily.release", { number: d.release.number ?? "?", status: d.release.status ?? "?", time: time(d.release.at) }) : s.say("ops.daily.noRelease")}
       </p>
+    </Heading>
+  );
+}
+
+// ---------------------------------------------------------------------------------------------------- scores by league
+
+/**
+ * The daily scores job, one row a league: the last good load, the games that were played and have no score, the last run's outcome in the job's
+ * own words, and "Update now". Drawn from the snapshot (nothing here reads DS1) and the last scores requests (api.ops_dashboard); the flags that
+ * make the row red are the ones the runner raises the admin alerts from, so this table and the banner always agree.
+ */
+export function ScoresSection({ s, sc, at, requests, now, query }: { s: Speaker; sc: Section<Scores> | undefined; at: string; requests: ScoreRequest[]; now: string; query: Query }) {
+  if (sc === undefined) return <Heading s={s} id="ops-scores" title="ops.scores.title"><p className="note">{s.say("ops.scores.noSection")}</p></Heading>;
+  if (isFailed(sc)) return <Heading s={s} id="ops-scores" title="ops.scores.title"><Unreadable s={s} section={sc} /></Heading>;
+  const clock = Date.parse(now);
+  const stamp = (iso: string | null | undefined) => mark(iso);   // the day and the time: a league's last good load can be a day old
+  const cols: SortColumn[] = [
+    { key: "league", label: s.say("ops.scores.col.league") },
+    { key: "status", label: s.say("ops.scores.col.status") },
+    { key: "good", label: s.say("ops.scores.col.lastGood") },
+    { key: "waiting", label: s.say("ops.scores.col.waiting"), num: true },
+    { key: "run", label: s.say("ops.scores.col.lastRun") },
+    { key: "update", label: s.say("ops.scores.col.update") },
+  ];
+  const open = requests.find((r) => r.status === "queued" || r.status === "running");
+  return (
+    <Heading s={s} id="ops-scores" title="ops.scores.title">
+      <p className="note">{s.say("ops.scores.intro")}</p>
+      <p className="note">{s.say("ops.scores.limits", { stale: sc.limits.stale, overdue: sc.limits.overdue, noRun: sc.limits.no_run })}</p>
+      {sc.no_run ? <p className="dr-alert" role="alert">{s.say("ops.scores.noRun", { hours: sc.quiet_hours ?? 0 })}</p> : null}
+      {sc.running ? <p className="note">{s.say("ops.scores.running")}</p> : null}
+      {open ? <p className="note"><Stamped text={s.say("ops.scores.open", { league: open.league ? open.league.toUpperCase() : s.say("ops.scores.allLeagues"), who: open.requested_by, time: stamp(open.requested_at) })} /></p> : null}
+      <div className="scroll">
+        <SortTable
+          columns={cols} param="sort_scores" def="status.asc,league.asc" initial={parseSort(query.sort_scores, keysOf(cols), "status.asc,league.asc")} label={s.say("ops.scores.title")}
+          rows={sc.leagues.map((l) => {
+            const request = lastScoreRequest(requests, l.league);
+            const flagged = l.flags.length > 0;
+            const noGood = l.ok_at === null;
+            return {
+              id: l.league,
+              className: flagged ? "ops-diff" : undefined,
+              sort: { league: l.league, status: flagged ? 0 : l.outcome === "ok" ? 2 : 1, good: l.ok_at, waiting: l.waiting, run: l.at, update: null },
+              cells: {
+                league: <strong>{l.league.toUpperCase()}</strong>,
+                status: (
+                  <>
+                    <span className={`tk-badge ${leagueTone(l)}`}>{phrase(s, `ops.scores.outcome.${l.outcome}`)}</span>
+                    {l.flags.includes("stale") ? <p className="ops-flag">{l.stale_hours === null ? s.say("ops.scores.flag.staleNever") : s.say("ops.scores.flag.stale", { hours: l.stale_hours })}</p> : null}
+                    {l.flags.includes("overdue") ? <p className="ops-flag">{s.say("ops.scores.flag.overdue", { games: s.plural("count.games", l.overdue), hours: sc.limits.overdue })}</p> : null}
+                  </>
+                ),
+                good: noGood ? <span className="note">{s.say("ops.scores.noGood")}</span> : (
+                  <>
+                    <Stamped text={s.say("ops.scores.goodAt", { time: stamp(l.ok_at), ago: before(s, l.ok_at, at) })} />
+                    {l.changed_at ? <p className="note"><Stamped text={s.say("ops.scores.changedAt", { time: stamp(l.changed_at) })} /></p> : null}
+                  </>
+                ),
+                waiting: l.waiting === 0 ? dash : (
+                  <>
+                    <span>{s.fmt(l.waiting)}</span>
+                    {l.oldest ? <p className="note"><Stamped text={s.say("ops.scores.oldest", { time: stamp(l.oldest) })} /></p> : null}
+                    {l.sample.map(([date, away, home]) => <p className="note" key={`${date}${away}${home}`}>{s.say("ops.scores.game", { date, away, home })}</p>)}
+                  </>
+                ),
+                run: l.at === null ? <span className="note">{s.say("ops.scores.noRunYet")}</span> : (
+                  <>
+                    <Stamped text={s.say("ops.scores.lastRun", { time: stamp(l.at), ago: before(s, l.at, at) })} />
+                    {l.reason ? <p>{l.reason}</p> : null}
+                    {l.clubs_skipped.length > 0 ? <p className="note">{s.say("ops.scores.leftOut", { clubs: l.clubs_skipped.join(", ") })}</p> : null}
+                  </>
+                ),
+                update: (
+                  <>
+                    <LeagueButton league={l.league} blocked={scoreBlock(requests, l.league, clock)} />
+                    {request ? (
+                      <p className="note">
+                        <Stamped text={s.say("ops.scores.request", { who: request.requested_by, time: stamp(request.requested_at), status: phrase(s, `ops.status.${request.status}`) })} />
+                        {request.summary ? ` ${request.summary}` : ""}
+                      </p>
+                    ) : null}
+                  </>
+                ),
+              },
+            };
+          })}
+        />
+      </div>
     </Heading>
   );
 }

@@ -4,8 +4,8 @@ import { PHRASES } from "../src/lib/i18n/phrases.constants.ts";
 import { FR } from "../src/lib/i18n/dictionaries/fr.constants.ts";
 import { JA } from "../src/lib/i18n/dictionaries/ja.constants.ts";
 import { placeholders as placeholdersIn } from "./i18n-sheet.ts";
-import { age, asOf, clock, exportVerdict, harvesterTone, issues, minutesBetween, pauseControl, queuedOf, requestBlock, series, sparkline, syncRows } from "../src/lib/ops/rules.ts";
-import { dashboard, isFailed, snapshot, type Dashboard } from "../src/lib/ops/schema.ts";
+import { age, asOf, clock, exportVerdict, harvesterTone, issues, lastScoreRequest, leagueTone, minutesBetween, openScoreRequest, pauseControl, queuedOf, requestBlock, scoreBlock, series, sparkline, syncRows } from "../src/lib/ops/rules.ts";
+import { dashboard, isFailed, SCORE_LEAGUES, snapshot, type Dashboard } from "../src/lib/ops/schema.ts";
 
 /** Run in web/: pnpm test:ops */
 
@@ -23,6 +23,12 @@ const payload = () => ({
     today: { requests: 400, bytes: 5_000_000, archived: 90 }, hour: { requests: 180, bytes: 2_000_000, archived: 40 }, last_error: null, archive_rows: 1234,
   },
   daily: { last: { id: 3, outcome: "ok", started_at: ago(240), finished_at: ago(235), counts: { games: 12 } }, ok_7d: 6, failed_7d: 0, release: { number: "2026.10.15-2", status: "done", at: ago(230) } },
+  scores: {
+    limits: { stale: 6, overdue: 12, no_run: 20 }, last_run: { id: 3, outcome: "ok", started_at: ago(245) }, running: false, quiet_hours: 4, no_run: false,
+    leagues: ["nhl", "nba", "mlb", "nfl", "cfl"].map((league) => ({
+      league, outcome: "ok", reason: null, at: ago(235), ok_at: ago(235), changed_at: ago(235), games_skipped: 0, clubs_skipped: [], waiting: 0, overdue: 0, oldest: null, sample: [], stale_hours: 3, flags: [],
+    })) as Array<Record<string, unknown>>,
+  },
   watchdog: { enabled: true, known: true, last_probe_at: ago(0.5), last_ok_at: ago(0.5), last_probe_ok: true, streak: 0, last_error: null, open: null, last_incident: null },
   releases: { pending: 0, approved: 0, running: 0, last_done: { number: "2026.10.15-2", title: "Daily scores", kind: "daily_scores", at: ago(220) }, last_failed: null, drift_checked_at: ago(600), nightly_drift_day: "2026-10-15", runner: { sha: "abc1234", ref: "origin/main" } },
   sync: { tables: [["core.game", 1000, 1000, 0], ["core.person", 50, 49, 1], ["meta.source", 9, 9, 0]], differs: 1, count: 3, checked_at: ago(600), oldest_checked_at: ago(601) },
@@ -186,11 +192,14 @@ test("why a request would be refused, matching migration 104", () => {
 const english = PHRASES as Readonly<Record<string, string>>;
 const dictionaries: Record<string, Readonly<Record<string, string | undefined>>> = { French: FR, Japanese: JA };
 const opsKeys = Object.keys(english).filter((k) => k.startsWith("ops.") || /^confirm\.ops/.test(k));
+/** Added in English only (AGENTS.md section 9: French and Japanese come from scripts/i18n/batch.py); the page shows the English until they land. */
+const awaitingBatch = (k: string) => /^(ops\.scores\.|ops\.msg\.league\.|ops\.issue\.scores|confirm\.opsLeague\.)/.test(k);
 
 test("every ops phrase is in English, French and Japanese with the same {placeholders}", () => {
   assert.ok(opsKeys.length > 120, `only ${opsKeys.length} ops phrases found`);
   for (const k of opsKeys) {
     for (const [name, dictionary] of Object.entries(dictionaries)) {
+      if (awaitingBatch(k) && !dictionary[k]) continue;
       assert.ok(dictionary[k], `${name} lacks ${k}`);
       assert.deepEqual(placeholdersIn(dictionary[k] as string).sort(), placeholdersIn(english[k] as string).sort(), `${name} ${k}`);
     }
@@ -209,9 +218,16 @@ test("every issue the rules can raise has a phrase, and the variables it passes 
     dash((p) => { p.harvester.state = "stale"; p.backup.export = null as never; p.sync.checked_at = null as never; p.daily.last = null as never; p.watchdog.enabled = false; }),
     dash((p) => { p.harvester.state = "stopped"; p.backup.export = { error: "x" } as never; }),
     dash((p) => { p.harvester.state = "never"; }),
+    dash((p) => {
+      const l = p.scores.leagues;
+      l[1] = { ...l[1], outcome: "failed", reason: "a check failed", ok_at: ago(2000), stale_hours: 33, flags: ["stale"] };
+      l[2] = { ...l[2], outcome: "failed", reason: "a check failed", ok_at: null, stale_hours: null, flags: ["stale"] };
+      l[0] = { ...l[0], waiting: 7, overdue: 3, oldest: ago(1500), flags: ["overdue"] };
+      p.scores.no_run = true; p.scores.quiet_hours = 25;
+    }),
   ];
   for (const d of everything) for (const i of issues(d)) raised.set(i.key, new Set(Object.keys(i.vars)));
-  assert.ok(raised.size >= 18, `only ${raised.size} issue kinds raised in this test`);
+  assert.ok(raised.size >= 22, `only ${raised.size} issue kinds raised in this test`);
   for (const [key, vars] of raised) {
     const text = english[`ops.issue.${key}`];
     assert.ok(text, `no phrase ops.issue.${key}`);
@@ -221,4 +237,102 @@ test("every issue the rules can raise has a phrase, and the variables it passes 
 
 test("the confirmation dialogs of the three controls exist", () => {
   for (const k of ["opsSnapshot", "opsPause", "opsResume"]) for (const part of ["title", "body", "action"]) assert.ok(english[`confirm.${k}.${part}`], `${k} ${part}`);
+});
+
+
+// ---------------------------------------------------------------------------------------------------- scores by league
+
+const stamp = (league: string, over: Record<string, unknown> = {}) => ({
+  league, outcome: "ok", reason: null, at: ago(60), ok_at: ago(60), changed_at: ago(60), games_skipped: 0, clubs_skipped: [], waiting: 0, overdue: 0, oldest: null, sample: [], stale_hours: 1, flags: [], ...over,
+});
+
+test("the scores section parses, is optional for older snapshots, and a section that failed stays a section", () => {
+  assert.equal(snapshot.safeParse(payload()).success, true);
+  const d = dash();
+  assert.ok(d.latest && d.latest.payload.scores && !isFailed(d.latest.payload.scores));
+  assert.equal(d.latest.payload.scores.leagues.length, 5);
+  const old = payload() as Record<string, unknown>;
+  delete old.scores;
+  assert.equal(snapshot.safeParse(old).success, true, "a snapshot from before the scores section is still a snapshot");
+  const broken = dash((p) => { (p as Record<string, unknown>).scores = { error: "relation ingest.daily_run does not exist" }; });
+  assert.ok(broken.latest && broken.latest.payload.scores && isFailed(broken.latest.payload.scores));
+  assert.ok(keys(broken).includes("sectionFailed") && !keys(broken).some((k) => k.startsWith("scores")));
+  assert.equal(dashboard.parse({ latest: null, history: [], requests: [], server_now: AT }).score_requests.length, 0, "no scores requests before migration 150");
+});
+
+test("the table's league list is the job's", () => {
+  assert.deepEqual([...SCORE_LEAGUES], ["nhl", "nba", "mlb", "nfl", "cfl"]);
+});
+
+test("a healthy day raises no scores issue; a stale league, an overdue league and a silent job each do, with the numbers the phrase fills", () => {
+  assert.deepEqual(keys(dash()).filter((k) => k.startsWith("scores")), []);
+  const bad = dash((p) => {
+    const l = p.scores.leagues;
+    l[1] = stamp("nba", { outcome: "failed", reason: "a check failed", ok_at: ago(2000), stale_hours: 33, flags: ["stale"] });
+    l[2] = stamp("mlb", { outcome: "failed", reason: "x", ok_at: null, stale_hours: null, flags: ["stale"] });
+    l[0] = stamp("nhl", { waiting: 7, overdue: 3, flags: ["overdue"] });
+    p.scores.no_run = true; p.scores.quiet_hours = 25;
+  });
+  const found = issues(bad).filter((i) => i.key.startsWith("scores"));
+  const byKey = (k: string) => found.filter((i) => i.key === k);
+  assert.deepEqual(byKey("scoresStale").map((i) => i.vars), [{ league: "NBA", hours: 33 }]);
+  assert.deepEqual(byKey("scoresStaleNever").map((i) => i.vars), [{ league: "MLB" }]);
+  assert.deepEqual(byKey("scoresOverdue").map((i) => i.vars), [{ league: "NHL", count: 3, hours: 12 }]);
+  assert.deepEqual(byKey("scoresNoRun").map((i) => i.vars), [{ hours: 25 }]);
+  assert.equal(byKey("scoresOverdue")[0].level, "warn");
+  assert.ok(["scoresStale", "scoresStaleNever", "scoresNoRun"].every((k) => byKey(k)[0].level === "bad"));
+  // worst first: the bad ones come before the warning
+  const order = issues(bad).map((i) => i.level);
+  assert.deepEqual(order, [...order].sort((a, b) => ({ bad: 0, warn: 1, info: 2 }[a] - { bad: 0, warn: 1, info: 2 }[b])));
+});
+
+test("every scores issue and every phrase the scores section and its button use exist in English", () => {
+  for (const k of ["scoresStale", "scoresStaleNever", "scoresOverdue", "scoresNoRun"]) assert.ok(english[`ops.issue.${k}`], k);
+  const keysUsed = [
+    "title", "intro", "limits", "noSection", "noRun", "running", "open", "allLeagues", "col.league", "col.status", "col.lastGood", "col.waiting", "col.lastRun", "col.update",
+    "outcome.ok", "outcome.warning", "outcome.failed", "outcome.skipped", "outcome.unknown", "flag.stale", "flag.staleNever", "flag.overdue", "noGood", "goodAt", "changedAt",
+    "oldest", "game", "noRunYet", "lastRun", "leftOut", "request", "update",
+  ];
+  for (const k of keysUsed) assert.ok(english[`ops.scores.${k}`], `ops.scores.${k}`);
+  for (const k of ["requested", "open", "recent", "noMigration"]) assert.ok(english[`ops.msg.league.${k}`], k);
+  for (const part of ["title", "body", "action"]) assert.ok(english[`confirm.opsLeague.${part}`], part);
+  assert.deepEqual(placeholdersIn(english["ops.scores.flag.overdue"]).sort(), ["games", "hours"]);
+  assert.deepEqual(placeholdersIn(english["ops.scores.update"]), ["league"]);
+  assert.ok(placeholdersIn(english["confirm.opsLeague.title"]).every((p) => ["title", "number", "echo"].includes(p)), "the dialog fills title, number and echo");
+  assert.ok(placeholdersIn(english["confirm.opsLeague.body"]).every((p) => ["title", "number", "echo"].includes(p)));
+  // an old French or Japanese entry that does exist must keep the English placeholders
+  for (const k of Object.keys(english).filter((x) => /^(ops\.scores\.|ops\.msg\.league\.|ops\.issue\.scores|confirm\.opsLeague\.)/.test(x))) {
+    for (const [name, dictionary] of Object.entries(dictionaries)) if (dictionary[k]) assert.deepEqual(placeholdersIn(dictionary[k] as string).sort(), placeholdersIn(english[k] as string).sort(), `${name} ${k}`);
+  }
+});
+
+test("the badge of a league: red when failed or stale, amber for a warning, a skip or games without a score, green when fine", () => {
+  const l = (over: Record<string, unknown>) => dash((p) => { p.scores.leagues[0] = stamp("nhl", over); }).latest!.payload.scores as never as { leagues: Parameters<typeof leagueTone>[0][] };
+  const tone = (over: Record<string, unknown>) => leagueTone(l(over).leagues[0]);
+  assert.equal(tone({}), "done");
+  assert.equal(tone({ outcome: "failed" }), "stale");
+  assert.equal(tone({ flags: ["stale"] }), "stale");
+  assert.equal(tone({ outcome: "warning" }), "live");
+  assert.equal(tone({ outcome: "skipped" }), "live");
+  assert.equal(tone({ flags: ["overdue"] }), "live");
+  assert.equal(tone({ outcome: "unknown", at: null, ok_at: null }), "");
+});
+
+const req = (id: number, league: string | null, status: string, finishedMinutesAgo: number | null = null) => ({
+  id, league, requested_by: "john@example.test", requested_at: ago((finishedMinutesAgo ?? 0) + 1), status, started_at: null, finished_at: finishedMinutesAgo === null ? null : ago(finishedMinutesAgo), summary: null, release_number: null,
+});
+const scoreRequests = (...r: ReturnType<typeof req>[]) => dashboard.parse({ latest: null, history: [], requests: [], score_requests: r, server_now: AT }).score_requests;
+
+test("Update now is switched off while any scores request is open, or the last one for that league ended under ten minutes ago", () => {
+  const now = Date.parse(AT);
+  assert.equal(scoreBlock([], "nhl", now), null);
+  assert.equal(scoreBlock(scoreRequests(req(3, "nba", "queued")), "nhl", now), "open", "one request at a time, whatever the league");
+  assert.equal(scoreBlock(scoreRequests(req(3, null, "running")), "nhl", now), "open");
+  assert.equal(scoreBlock(scoreRequests(req(3, "nhl", "done", 3)), "nhl", now), "recent");
+  assert.equal(scoreBlock(scoreRequests(req(3, "nhl", "done", 3)), "nba", now), null, "another league is free");
+  assert.equal(scoreBlock(scoreRequests(req(3, "nhl", "done", 11)), "nhl", now), null);
+  assert.equal(scoreBlock(scoreRequests(req(3, "nhl", "failed", 5), req(2, "nhl", "done", 500)), "nhl", now), "recent");
+  assert.equal(openScoreRequest(scoreRequests(req(4, null, "queued"), req(3, "nhl", "done", 50)))?.id, 4);
+  assert.equal(lastScoreRequest(scoreRequests(req(4, "nba", "done", 5), req(3, "nhl", "done", 50)), "nhl")?.id, 3, "the newest request that named the league");
+  assert.equal(lastScoreRequest(scoreRequests(req(3, null, "done", 50)), "nhl"), null, "an all-leagues request is not a league's own");
 });

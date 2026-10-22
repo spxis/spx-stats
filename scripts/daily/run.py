@@ -287,6 +287,8 @@ def run(a, result):
     if writing and a.no_ds1: sys.exit("--apply / --rehearse write to DS1: drop --no-ds1")
     today = datetime.date.today()
     leagues = [x for x in a.league.split(",") if x]
+    unknown = [x for x in leagues if x not in LEAGUES]
+    if unknown or not leagues: sys.exit("--league takes some of %s (got %r)" % (",".join(LEAGUES), a.league))
     a.bdl_leagues = [] if a.no_balldontlie else ["nba", "mlb", "nfl"]
     seasons = {lg: season_now(lg, today) for lg in leagues}
     for s in a.season:

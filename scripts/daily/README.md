@@ -18,7 +18,8 @@ Docker on the NAS ([Stage 3](#stage-3-the-docker-job-on-the-nas), `daily/README.
     scripts/daily/run.py --dry-run --no-ds1 --json /tmp/games.json
     scripts/daily/run.py --rehearse                  # stage 2 as a rehearsal: one DS1 transaction that ends in ROLLBACK, with the checks
     scripts/daily/run.py --apply                     # stage 2: the same rehearsal first, then archive + load + report, commit (DS1 only)
-    scripts/daily/run.py --apply --league nhl,nfl    # only some leagues (the others' rows are left alone)
+    scripts/daily/run.py --apply --league nhl,nfl    # only some leagues (the others' rows are left alone; an unknown league stops the run).
+                                                     # "Update now" on /admin/ops runs one league this way, from the release runner
 
 Python 3 stdlib only, plus `psql`. DS1 is reached through `ds1.sh`: it finds the host with `ds1_host` from
 `scripts/mac/spx-checks.sh` (hosts-file name `ds1`, home LAN, then the VPN: the addresses are in the private host mapping) and reads the password from the keychain

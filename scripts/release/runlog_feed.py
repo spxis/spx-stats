@@ -3,6 +3,7 @@
 a failed log write never fails a release, a probe or a snapshot.
 
   note(job, kind, outcome, summary, ...)          one entry
+  alert(key, "raise"|"resolve", scope, message)   one alert, no entry
   beat(state, key, job, summary, every)           one "ok" entry at most every `every` seconds (a watchdog that probes every minute logs hourly)
   feed_raw_export(ds1_json, state)                the rows the Dropbox export left in ingest.raw_export_run since the last tick -> entries + alert
 """
@@ -31,6 +32,18 @@ def note(job, kind, outcome, summary, counts=None, detail=None, links=None, acto
             else:
                 runlog.alert_resolve(key)
         return ok
+    except Exception:
+        return False
+
+
+def alert(key, what, scope=None, message="", severity="error", job="daily-scores"):
+    """Raise or resolve one alert (what: "raise" | "resolve") without a run log entry. Never raises. -> True when it was written."""
+    if runlog is None:
+        return False
+    try:
+        if what == "raise":
+            return bool(runlog.alert_raise(key, job, scope, message, severity))
+        return bool(runlog.alert_resolve(key))
     except Exception:
         return False
 

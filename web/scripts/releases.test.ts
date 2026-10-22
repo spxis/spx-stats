@@ -50,6 +50,14 @@ test("the cooldown of a drift check does not block a scores request, but an open
   assert.match(requestBlock([open], NOW, 10, "drift") ?? "", /#8 is queued/);
 });
 
+test("a request for one league does not start the all-leagues cooldown, and the other way round the all-leagues one does (migration 150)", () => {
+  const nhl = { id: 9, kind: "scores", league: "nhl", status: "done", requested_at: "2026-10-13T11:55:00Z", finished_at: "2026-10-13T11:56:00Z" };
+  assert.equal(requestBlock([nhl], NOW, 10, "scores"), null);
+  const all = { id: 10, kind: "scores", league: null, status: "done", requested_at: "2026-10-13T11:55:00Z", finished_at: "2026-10-13T11:56:00Z" };
+  assert.match(plainMarks(requestBlock([all], NOW, 10, "scores") ?? ""), /ask again at 12:06 UTC/);
+  assert.match(requestBlock([{ ...nhl, status: "running", finished_at: null }], NOW, 10, "scores") ?? "", /#9 is running/, "an open league request blocks the all-leagues one");
+});
+
 test("the API health line: no outage, one that is over, one still going", () => {
   const e = { failing_since: "2026-10-14T07:00:00+00:00", detected_at: "2026-10-14T07:04:00+00:00", probes_failed: 90, reload_at: "2026-10-14T07:04:00+00:00", restart_at: "2026-10-14T07:09:00+00:00", recovered_at: null, last_error: "HTTP 503 PGRST002" };
   assert.equal(healthLine([]).kind, "none");

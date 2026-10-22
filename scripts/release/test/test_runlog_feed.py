@@ -79,5 +79,30 @@ W.feed("failed", "The public API has been failing", alert="raise")
 W.feed("ok", "The public API answers again.", alert="resolve")
 check(q("select outcome from run_log where job = 'watchdog' order by id") == [["failed"], ["ok"]] and q("select state from alert where key = 'watchdog:api'") == [["resolved"]], "watchdog: incident and recovery")
 
+# scores alerts (ops.py send_score_alerts): an alert with no run log entry, raised, raised again, resolved
+import ops as O  # noqa: E402
+entries = q("select count(*) from run_log")[0][0]
+check(F.alert("scores-stale:nba", "raise", "nba", "NBA scores have had no good load for 33 hours.", "error") is True, "alert: a raise is written")
+check(q("select job, scope, severity, state, repeats from alert where key = 'scores-stale:nba'") == [["daily-scores", "nba", "error", "open", "1"]], "alert: job, league, severity, open")
+F.alert("scores-overdue:nhl", "raise", "nhl", "NHL: 3 game(s) started more than 12 hours ago and still have no score.", "warning")
+check(q("select severity from alert where key = 'scores-overdue:nhl'") == [["warning"]], "alert: the overdue one is a warning")
+check(q("select count(*) from run_log")[0][0] == entries, "alert: no run log entry is made")
+F.alert("scores-stale:nba", "raise", "nba", "NBA scores have had no good load for 57 hours.", "error")
+check(q("select repeats, message from alert where key = 'scores-stale:nba'") == [["2", "NBA scores have had no good load for 57 hours."]], "alert: raised again keeps one row and counts the repeat")
+F.alert("scores-stale:nba", "resolve")
+check(q("select state from alert where key = 'scores-stale:nba'") == [["resolved"]], "alert: resolved")
+# end to end from a snapshot: the tick's alert step writes what the scores section calls for, once
+import datetime  # noqa: E402
+now_dt = datetime.datetime(2026, 10, 15, 14, 0, tzinfo=datetime.timezone.utc)
+raw = {"last_run": {"run_id": 5, "started_at": "2026-10-15T13:30:00Z", "finished_at": "2026-10-15T13:35:00Z", "outcome": "failed", "error": None, "has_results": True}, "running": False,
+       "leagues": {"nba": {"last": {"run_id": 5, "at": "2026-10-15T13:35:00Z", "res": {"outcome": "failed", "reason": "a check failed: 30 NBA team seasons without an identity"}}, "ok_at": "2026-10-14T05:00:00Z",
+                           "waiting": {"n": 0, "overdue": 0, "oldest": None}, "sample": []}}}
+snap = {"scores": O.shape_scores(raw, now_dt, {"stale": 6.0, "overdue": 12.0, "no_run": 20.0})}
+st = O.send_score_alerts({}, snap, 1000.0)
+check(st["score_alerts"] == {"scores-stale:nba": 1000.0} and q("select state, message from alert where key = 'scores-stale:nba'")[0][0] == "open", "tick step: a stale league raises its alert in the log")
+snap_ok = {"scores": O.shape_scores({"last_run": raw["last_run"], "running": False, "leagues": {"nba": {"last": {"run_id": 5, "at": "2026-10-15T13:35:00Z", "res": {"outcome": "ok"}}, "ok_at": "2026-10-15T13:35:00Z", "waiting": {}, "sample": []}}}, now_dt, {"stale": 6.0, "overdue": 12.0, "no_run": 20.0})}
+st = O.send_score_alerts(st, snap_ok, 1900.0)
+check(st["score_alerts"] == {} and q("select state from alert where key = 'scores-stale:nba'") == [["resolved"]], "tick step: a good load resolves it in the log")
+
 print("FAILED: %d" % len(FAILS) if FAILS else "runlog_feed: all passed")
 sys.exit(1 if FAILS else 0)

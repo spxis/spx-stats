@@ -35,6 +35,10 @@ of the release prepared for an admin's **Request scores update** (below).
   checkout and the `PG*` settings it already has, prepares a `daily_scores` release and approves it as `request:<admin>` if the policy
   passes and Hold is off. It needs nothing new in `release-runner.env`; the job's downloads are kept in `data/daily/`. The first request
   fetches every Wikipedia page (about 17 requests); later ones only what changed.
+- **Update now** on a league of `/admin/ops` (migration 150) is the same request with a league: the run is `run.py --apply --league <league>`.
+  The ops tick also raises the admin alerts `scores-stale:<league>`, `scores-overdue:<league>` and `scores-no-run` from the snapshot it already
+  builds (thresholds `SCORES_STALE_HOURS` 6, `SCORES_OVERDUE_HOURS` 12, `SCORES_NO_RUN_HOURS` 20; optional env, nothing new is required).
+  Both are in `scripts/release`, so **the runner must be rebuilt at the commit that has them** (`RELEASE_REF`, then Build) and migration 150 applied first.
 - A requested run holds the shared DS1 lock (`scripts/release/daily_lock.py`) and waits while the daily job's heartbeat shows a run in
   progress. While it runs (a few minutes at most; `RELEASE_DAILY_TIMEOUT`, 2400 s) the runner does nothing else.
 - **Site refresh.** After each committed release the runner makes one `POST` to the site's `/api/revalidate` so the changed pages rebuild now.

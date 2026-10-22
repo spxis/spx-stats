@@ -11,7 +11,7 @@ import type { Dashboard } from "@/lib/ops/schema";
 import { ReleaseError } from "@/lib/releases/client";
 import { OpsButton } from "./OpsButton";
 import { OpsRefresh } from "./OpsRefresh";
-import { agoText, BackupSection, DailySection, HarvesterSection, ReleasesSection, RequestsSection, SyncSection, WatchdogSection } from "./sections";
+import { agoText, BackupSection, DailySection, HarvesterSection, ReleasesSection, RequestsSection, ScoresSection, SyncSection, WatchdogSection } from "./sections";
 
 /**
  * Ops: a very internal view of the DS1 side for admins. Production (Vercel) cannot reach DS1 and must not, so this page only reads what the
@@ -67,10 +67,11 @@ export default async function AdminOpsPage({ searchParams }: { searchParams: Pro
             <h2 id="ops-issues">{s.say("ops.issues.title")}</h2>
             {found.length === 0 ? <p className="note">{s.say("ops.issues.none")}</p> : (
               <ul className={found.some((i) => i.level === "bad") ? "dr-alert" : "note"} role={found.some((i) => i.level === "bad") ? "alert" : "status"}>
-                {found.map((i) => <li key={i.key}>{s.say(`ops.issue.${i.key}` as PhraseKey, i.vars)}</li>)}
+                {found.map((i, n) => <li key={`${i.key}-${n}`}>{s.say(`ops.issue.${i.key}` as PhraseKey, i.vars)}</li>)}
               </ul>
             )}
           </section>
+          <ScoresSection s={s} sc={latest.payload.scores} at={latest.payload.at} requests={data.score_requests} now={data.server_now} query={query} />
           <div className="ops-grid">
             <HarvesterSection s={s} h={latest.payload.harvester} at={latest.payload.at} history={data.history} requests={data.requests} query={query} />
             <BackupSection s={s} b={latest.payload.backup} at={latest.payload.at} />

@@ -27,6 +27,20 @@ export async function opsDashboard(): Promise<Dashboard> {
   return parsed.data;
 }
 
+/**
+ * "Update now" on one league (migration 150, api.request_league_update): one queued scores request that names the league. The runner runs the
+ * daily scores job for that league alone, under the same lock and the same auto-approval policy as an all-leagues request. Throws when the
+ * database refuses it (one open request at a time, about ten minutes between requests for one league, or migration 150 is not on production).
+ */
+export async function requestLeagueUpdate(actor: string, league: string): Promise<void> {
+  try {
+    await rpc("request_league_update", { p_secret: secret(), p_actor: actor, p_league: league });
+  } catch (error) {
+    if (error instanceof ReleaseError && /migration 045/.test(error.message)) throw new OpsError("Production does not have the per-league update yet (migration 150).");
+    throw error;
+  }
+}
+
 /** Queue one request for the runner. Throws when the database refuses it (one waiting per kind, a minute or two between, 20 an hour). */
 export async function requestOps(actor: string, kind: RequestKind): Promise<void> {
   await call("request_ops", { p_actor: actor, p_kind: kind });

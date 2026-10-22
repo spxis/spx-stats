@@ -77,8 +77,29 @@ RAW_BACKUP = {"archive_rows": 500, "archive_bytes": 9_000_000,
 RAW_WD_STATE = {"streak": 0, "last_probe_at": NOW.timestamp() - 30, "last_ok_at": NOW.timestamp() - 30, "last_probe_ok": True, "last_error": None}
 
 
+def raw_scores(**over):
+    """What Q_SCORES answers on a healthy day: every league's newest result is good, nothing waits. `over` replaces a league's raw part (lg=dict)
+    or a top-level key (last_run, running)."""
+    def lg(run_id=5, outcome="ok", reason=None, ok_min=60, **extra):
+        res = {"outcome": outcome, "reason": reason, "games_skipped": 0, "clubs_skipped": [], "committed": True, "games_changed": 2}
+        res.update(extra)
+        return {"last": {"run_id": run_id, "at": ts(ok_min), "res": res}, "ok_at": ts(ok_min) if outcome in ("ok", "warning") else None, "changed_at": ts(ok_min),
+                "waiting": {"n": 0, "overdue": 0, "oldest": None}, "sample": []}
+    r = {"last_run": {"run_id": 5, "started_at": ts(65), "finished_at": ts(60), "outcome": "ok", "error": None, "has_results": True}, "running": False,
+         "leagues": {x: lg() for x in O.SCORE_LEAGUES}}
+    for k, v in over.items():
+        if k in O.SCORE_LEAGUES:
+            r["leagues"][k] = v
+        else:
+            r[k] = v
+    return r
+
+
+THR = {"stale": 6.0, "overdue": 12.0, "no_run": 20.0}
+
+
 def parts(**over):
-    p = {"harvester": raw_harvester(), "daily": RAW_DAILY, "releases": RAW_RELEASES, "sync": RAW_SYNC, "backup": RAW_BACKUP,
+    p = {"harvester": raw_harvester(), "daily": RAW_DAILY, "releases": RAW_RELEASES, "sync": RAW_SYNC, "backup": RAW_BACKUP, "scores": raw_scores(),
          "watchdog": {"state": RAW_WD_STATE, "events": [], "enabled": True}}
     p.update(over)
     return p
@@ -86,7 +107,7 @@ def parts(**over):
 
 def test_shapes():
     s = O.build_snapshot(parts(), RUNNER, NOW)
-    check("snapshot: has every section and the time", set(s) == {"v", "at", "harvester", "daily", "watchdog", "releases", "sync", "backup"} and s["at"] == "2026-10-15T14:00:00Z", s.keys())
+    check("snapshot: has every section and the time", set(s) == {"v", "at", "harvester", "daily", "scores", "watchdog", "releases", "sync", "backup"} and s["at"] == "2026-10-15T14:00:00Z", s.keys())
     h = s["harvester"]
     check("harvester: running with a fresh heartbeat", h["state"] == "running" and h["run"]["id"] == 7, h)
     check("harvester: queue by kind and state, totals", h["queue"]["wp_team_season"] == {"queued": 120, "done": 30} and h["queued_total"] == 920, h)
@@ -193,7 +214,8 @@ def test_tick_with_stand_ins():
         queue[:] = [q for q in queue if q["id"] != rid]
 
     def go(state, now, force=False, cfg=CFG, **kw):
-        return O.tick(cfg, state, now, ds1, force=force, collect_fn=kw.get("collect_fn", collect), write_fn=kw.get("write_fn", write), queued_fn=queued, mark_fn=mark)
+        return O.tick(cfg, state, now, ds1, force=force, collect_fn=kw.get("collect_fn", collect), write_fn=kw.get("write_fn", write), queued_fn=queued, mark_fn=mark,
+                      alert_fn=kw.get("alert_fn", lambda *a: True))
 
     st, out = go({}, 1000.0)
     check("tick: the first tick writes a snapshot", out["snapshot"] == "written" and len(calls["write"]) == 1 and calls["queued"] == 1, out)
@@ -240,6 +262,127 @@ def test_tick_with_stand_ins():
         raise RuntimeError("HTTP 400")
     s5, o5 = O.tick(CFG, {}, 7.0, ds1, collect_fn=collect, write_fn=write, queued_fn=broken_queue, mark_fn=mark)
     check("tick: production without migration 104 does not stop the snapshot attempt", "requests_err" in s5 and o5["snapshot"] in ("written", "unchanged"), (s5, o5))
+
+
+def lg_raw(run_id=5, outcome="ok", reason=None, ok_min=60, waiting=0, overdue=0, oldest=None, sample=(), ok_at="auto", **extra):
+    """One league's raw part (what Q_SCORES answers for it), the newest result being `outcome` of run `run_id`, `ok_min` minutes before NOW."""
+    res = {"outcome": outcome, "reason": reason, "games_skipped": 0, "clubs_skipped": [], "committed": outcome in ("ok", "warning"), "games_changed": 2}
+    res.update(extra)
+    good = ts(ok_min) if ok_at == "auto" and outcome in ("ok", "warning") else (ts(ok_at) if isinstance(ok_at, int) else None)
+    return {"last": {"run_id": run_id, "at": ts(ok_min), "res": res}, "ok_at": good, "changed_at": good,
+            "waiting": {"n": waiting, "overdue": overdue, "oldest": oldest}, "sample": [list(x) for x in sample]}
+
+
+def scores_of(**over):
+    return O.shape_scores(raw_scores(**over), NOW, THR)
+
+
+def league(sc, lg):
+    return next(x for x in sc["leagues"] if x["league"] == lg)
+
+
+def test_scores():
+    sc = O.shape_scores(raw_scores(), NOW, THR)
+    check("scores: five leagues in the job's order, all healthy, no flags", [x["league"] for x in sc["leagues"]] == ["nhl", "nba", "mlb", "nfl", "cfl"]
+          and all(x["outcome"] == "ok" and x["flags"] == [] for x in sc["leagues"]) and sc["no_run"] is False and sc["quiet_hours"] == 1, sc)
+    check("scores: the limits travel with the snapshot", sc["limits"] == {"stale": 6.0, "overdue": 12.0, "no_run": 20.0})
+    # the incident: one league failed every run since the evening, the others saved
+    bad = lg_raw(run_id=5, outcome="failed", reason="a check failed: 30 NBA team seasons without an identity", ok_min=10, ok_at=2000)
+    sc = scores_of(nba=bad)
+    nba = league(sc, "nba")
+    check("scores: a league that failed says so in the job's words, with its last good load", nba["outcome"] == "failed" and "identity" in nba["reason"] and nba["ok_at"] == O.iso(NOW - datetime.timedelta(minutes=2000)), nba)
+    check("scores: failed with no good load for over 6 hours is stale", "stale" in nba["flags"] and nba["stale_hours"] == 33, nba)
+    check("scores: the others are untouched", all(x["flags"] == [] for x in sc["leagues"] if x["league"] != "nba"))
+    sc = scores_of(nba=lg_raw(run_id=5, outcome="failed", reason="x", ok_min=10, ok_at=200))
+    check("scores: failed but a good load 3 hours ago is not stale yet", league(sc, "nba")["flags"] == [], league(sc, "nba"))
+    sc = scores_of(nba=lg_raw(run_id=5, outcome="failed", reason="x", ok_min=10, ok_at=None))
+    check("scores: failed and never good in 30 days is stale", league(sc, "nba")["flags"] == ["stale"] and league(sc, "nba")["stale_hours"] is None)
+    sc = scores_of(cfl=lg_raw(run_id=5, outcome="skipped", reason="pages missing: 2027 Toronto Argonauts season", ok_min=900, ok_at=900))
+    check("scores: skipped with nothing waiting (out of season) raises nothing", league(sc, "cfl")["flags"] == [], league(sc, "cfl"))
+    sc = scores_of(cfl=lg_raw(run_id=5, outcome="skipped", reason="pages missing: x", ok_min=900, ok_at=900, waiting=2, overdue=0))
+    check("scores: skipped with games waiting is stale", "stale" in league(sc, "cfl")["flags"], league(sc, "cfl"))
+    sc = scores_of(mlb=lg_raw(outcome="warning", reason="left out: 1 club(s) (X), 0 game(s)", clubs_skipped=["X"], games_skipped=3))
+    check("scores: a warning is a good load that left something out", league(sc, "mlb")["outcome"] == "warning" and league(sc, "mlb")["flags"] == [] and league(sc, "mlb")["clubs_skipped"] == ["X"]
+          and league(sc, "mlb")["games_skipped"] == 3)
+    sample = [("2026-10-20", "Boston Bruins", "Toronto Maple Leafs"), ("2026-10-20", "A", "B"), ("2026-10-21", "C", "D"), ("2026-10-21", "E", "F")]
+    sc = scores_of(nhl=lg_raw(waiting=7, overdue=3, oldest=ts(1500), sample=sample))
+    nhl = league(sc, "nhl")
+    check("scores: games played with no score for over 12 hours flag overdue, oldest first, three examples", nhl["flags"] == ["overdue"] and nhl["waiting"] == 7 and nhl["overdue"] == 3
+          and len(nhl["sample"]) == 3 and nhl["sample"][0] == ["2026-10-20", "Boston Bruins", "Toronto Maple Leafs"] and nhl["oldest"] == iso_min(1500), nhl)
+    sc = scores_of(nhl=lg_raw(waiting=7, overdue=0, oldest=ts(300)))
+    check("scores: games waiting for under 12 hours only show, they do not flag", league(sc, "nhl")["flags"] == [] and league(sc, "nhl")["waiting"] == 7)
+    # a whole run that stopped: no per-league results at all
+    crashed = {"run_id": 6, "started_at": ts(30), "finished_at": ts(29), "outcome": "failed", "error": "RuntimeError: DS1 gone", "has_results": False}
+    sc = scores_of(last_run=crashed, **{x: lg_raw(run_id=5, ok_min=500) for x in O.SCORE_LEAGUES})
+    check("scores: a run that stopped as a whole is every league's last attempt", all(x["outcome"] == "failed" and "whole run stopped: RuntimeError: DS1 gone" in x["reason"] for x in sc["leagues"]), sc["leagues"][0])
+    check("scores: ... and flags them once the last good load is over 6 hours old", all("stale" in x["flags"] for x in sc["leagues"]) and league(sc, "nhl")["stale_hours"] == 8)
+    sc = scores_of(last_run=dict(crashed, run_id=4), **{x: lg_raw(run_id=5, ok_min=500) for x in O.SCORE_LEAGUES})
+    check("scores: a stopped run older than the league's own result does not count", all(x["outcome"] == "ok" for x in sc["leagues"]))
+    partial = {"run_id": 7, "started_at": ts(20), "finished_at": ts(19), "outcome": "failed", "error": None, "has_results": True}
+    sc = scores_of(last_run=partial, nba=lg_raw(run_id=7, outcome="failed", reason="a check failed", ok_min=19, ok_at=2000))
+    check("scores: a run limited to one league that failed blames that league only", [x["league"] for x in sc["leagues"] if x["outcome"] == "failed"] == ["nba"])
+    check("scores: no run recorded at all is not an alarm, just unknown", O.shape_scores({"last_run": None, "running": False, "leagues": {}}, NOW, THR)["leagues"][0]["outcome"] == "unknown"
+          and O.shape_scores({"last_run": None, "running": False, "leagues": {}}, NOW, THR)["no_run"] is False)
+    sc = scores_of(last_run={"run_id": 5, "started_at": ts(21 * 60), "finished_at": ts(21 * 60 - 5), "outcome": "ok", "error": None, "has_results": True})
+    check("scores: no run has started for over 20 hours", sc["no_run"] is True and sc["quiet_hours"] == 21, sc["quiet_hours"])
+    check("scores: ... unless one is running now", scores_of(last_run={"run_id": 5, "started_at": ts(21 * 60), "finished_at": ts(21 * 60 - 5), "outcome": "ok", "error": None, "has_results": True}, running=True)["no_run"] is False)
+    # sizes and cleanliness
+    fat = scores_of(nba=lg_raw(outcome="failed", reason="a " * 400 + "\x00", ok_min=10, ok_at=None, clubs_skipped=["club %d" % i for i in range(30)]))
+    check("scores: the reason is cut, controls removed, clubs capped at six", len(league(fat, "nba")["reason"]) <= 240 and "\x00" not in league(fat, "nba")["reason"] and len(league(fat, "nba")["clubs_skipped"]) == 6)
+    check("scores: the whole section is a few KB", len(json.dumps(scores_of(**{x: lg_raw(waiting=5, overdue=5, sample=sample) for x in O.SCORE_LEAGUES}))) < 6000)
+    check("scores: a section that cannot be read is an error section, the others stay", O.build_snapshot(parts(scores={"error": "relation ingest.daily_run does not exist"}), RUNNER, NOW)["scores"] == {"error": "relation ingest.daily_run does not exist"}
+          and "error" not in O.build_snapshot(parts(scores={"error": "x"}), RUNNER, NOW)["harvester"])
+    a = O.build_snapshot(parts(), RUNNER, NOW)
+    b = O.build_snapshot(parts(), RUNNER, NOW + datetime.timedelta(minutes=14))
+    check("scores: a quiet quarter hour does not change the snapshot's hash", O.payload_hash(a) == O.payload_hash(b))
+
+
+def test_score_alerts():
+    sc = scores_of(nba=lg_raw(run_id=5, outcome="failed", reason="a check failed: 30 NBA team seasons without an identity", ok_min=10, ok_at=2000),
+                   nhl=lg_raw(waiting=7, overdue=3, oldest=ts(1500), sample=[("2026-10-20", "Boston Bruins", "Toronto Maple Leafs")]))
+    want = O.score_alert_wants(sc)
+    check("alerts: a failing stale league, an overdue league", sorted(want) == ["scores-overdue:nhl", "scores-stale:nba"], sorted(want))
+    scope, msg, sev = want["scores-stale:nba"]
+    check("alerts: the stale one is an error that names the league, the hours and the reason", scope == "nba" and sev == "error" and msg.startswith("NBA scores have had no good load for 33 hours") and "identity" in msg, msg)
+    scope, msg, sev = want["scores-overdue:nhl"]
+    check("alerts: the overdue one is a warning that names the games and the oldest", sev == "warning" and "3 game(s)" in msg and "12 hours" in msg and "Boston Bruins at Toronto Maple Leafs" in msg, msg)
+    cfl_none = scores_of(last_run={"run_id": 5, "started_at": ts(25 * 60), "finished_at": ts(25 * 60 - 5), "outcome": "ok", "error": None, "has_results": True})
+    w2 = O.score_alert_wants(cfl_none)
+    check("alerts: the job that stopped running is one error alert", list(w2) == ["scores-no-run"] and "25 hours" in w2["scores-no-run"][1] and w2["scores-no-run"][2] == "error", w2)
+    check("alerts: a healthy day wants none", O.score_alert_wants(scores_of()) == {})
+    check("alerts: an unreadable section wants none and resolves none", O.score_alert_wants({"error": "x"}) == {} and O.score_alert_plan({"error": "x"}, {"scores-stale:nba": 1.0}, 99.0) == [])
+    plan = O.score_alert_plan(sc, {}, 1000.0)
+    check("plan: a new problem is raised", sorted((k, w) for k, w, *_ in plan) == [("scores-overdue:nhl", "raise"), ("scores-stale:nba", "raise")], plan)
+    plan = O.score_alert_plan(sc, {"scores-stale:nba": 1000.0, "scores-overdue:nhl": 1000.0}, 1000.0 + 15 * 60)
+    check("plan: one already raised is not raised again every snapshot", plan == [], plan)
+    plan = O.score_alert_plan(sc, {"scores-stale:nba": 1000.0, "scores-overdue:nhl": 1000.0}, 1000.0 + 24 * 3600)
+    check("plan: it is raised again after a day, so a dismissed alert comes back", sorted(k for k, w, *_ in plan if w == "raise") == ["scores-overdue:nhl", "scores-stale:nba"], plan)
+    plan = O.score_alert_plan(scores_of(), {"scores-stale:nba": 1000.0, "scores-no-run": 1000.0}, 2000.0)
+    check("plan: what cleared is resolved", sorted((k, w) for k, w, *_ in plan) == [("scores-no-run", "resolve"), ("scores-stale:nba", "resolve")], plan)
+
+    # the tick: alerts are sent from the snapshot it collected, once, and remembered in the state
+    sent = []
+    ds1 = FakeDs1()
+    snap = O.build_snapshot(parts(scores=raw_scores(nba=lg_raw(run_id=5, outcome="failed", reason="a check failed", ok_min=10, ok_at=2000))), RUNNER, NOW)
+    kw = dict(collect_fn=lambda: snap, write_fn=lambda d, p: 1, queued_fn=lambda: [], mark_fn=lambda *a: None, alert_fn=lambda *a: sent.append(a))
+    st, out = O.tick(CFG, {}, 1000.0, ds1, **kw)
+    check("tick: the first snapshot with a stale league raises its alert once", [a[:2] for a in sent] == [("scores-stale:nba", "raise")] and st["score_alerts"] == {"scores-stale:nba": 1000.0}, (sent, st))
+    st, out = O.tick(CFG, st, 1000.0 + 900, ds1, **kw)
+    check("tick: the next snapshot (15 minutes later) raises nothing more", len(sent) == 1, sent)
+    healthy = O.build_snapshot(parts(), RUNNER, NOW)
+    kw["collect_fn"] = lambda: healthy
+    st, out = O.tick(CFG, st, 1000.0 + 1800, ds1, **kw)
+    check("tick: when the league is fine again the alert is resolved and forgotten", [a[:2] for a in sent] == [("scores-stale:nba", "raise"), ("scores-stale:nba", "resolve")] and st["score_alerts"] == {}, (sent, st))
+
+    def boom(*a):
+        raise RuntimeError("turso down")
+    kw["collect_fn"] = lambda: snap
+    kw["alert_fn"] = boom
+    st2, out2 = O.tick(CFG, {}, 5000.0, ds1, **kw)
+    check("tick: a failing alert write never fails the tick", out2["snapshot"] == "written", out2)
+
+    import runlog_feed as RF
+    check("runlog_feed.alert never raises and says False when nothing is configured", RF.alert("scores-stale:nba", "raise", "nba", "x") in (True, False) and RF.alert("k", "resolve") in (True, False))
 
 
 # ---------------------------------------------------------------------------------------------------- part 2: real SQL
@@ -297,11 +440,12 @@ def test_database():
     server = None
     try:
         mig = lambda n: os.path.join(REPO, "db", "migrations", n)
-        psql(ds1db, "create schema meta; create schema api; create schema ingest;")
-        for f in ("045_data_releases.sql", "047_auto_approval.sql", "048_ingest_daily_run.sql", "090_api_health_event.sql", "095_harvest_queue.sql", "105_ops_raw_export.sql"):
+        psql(ds1db, "create schema meta; create schema api; create schema ingest; create schema extensions;")
+        for f in ("045_data_releases.sql", "047_auto_approval.sql", "048_ingest_daily_run.sql", "090_api_health_event.sql", "095_harvest_queue.sql", "105_ops_raw_export.sql", "001_core_schema.sql"):
             psql_file(ds1db, mig(f))
+        psql(ds1db, "create function api.team_name(integer) returns text language sql as $$ select 'Team ' || $1 $$")
         psql(proddb, "create schema meta; create schema api;")
-        for f in ("045_data_releases.sql", "104_ops_status.sql"):
+        for f in ("045_data_releases.sql", "053_score_update_requests.sql", "104_ops_status.sql", "150_score_request_league.sql"):
             psql_file(proddb, mig(f))
         psql_file(proddb, mig("104_ops_status.sql"))     # rerunnable
         check("migrations 104 and 105 apply and run twice", True)
@@ -397,6 +541,53 @@ def test_database():
         check("collector: backup", snap["backup"]["archive_rows"] == 2 and snap["backup"]["archive_bytes"] == 3 and snap["backup"]["export"]["outcome"] == "ok" and snap["backup"]["last_ok_at"], snap["backup"])
         check("collector: watchdog", snap["watchdog"]["known"] and snap["watchdog"]["open"]["probes_failed"] == 6 and snap["watchdog"]["last_probe_ok"] is True, snap["watchdog"])
 
+        # ---- the scores section against real rows: the heartbeat's per-league results and games that started and have no score
+        psql(ds1db, "delete from ingest.daily_run")
+        lr1 = {x: {"outcome": "ok", "reason": None, "games_changed": 3 if x == "nhl" else 0, "committed": True, "games_skipped": 0, "clubs_skipped": []} for x in O.SCORE_LEAGUES}
+        lr2 = {"nhl": {"outcome": "ok", "games_changed": 0, "committed": True, "games_skipped": 0, "clubs_skipped": []},
+               "nba": {"outcome": "failed", "reason": "a check failed: 30 NBA team seasons without an identity", "games_skipped": 0, "clubs_skipped": []},
+               "mlb": {"outcome": "warning", "reason": "left out: 1 club(s) (Oakland), 0 game(s)", "games_changed": 1, "committed": True, "games_skipped": 0, "clubs_skipped": ["Oakland"]},
+               "nfl": {"outcome": "ok", "games_changed": 0, "committed": True, "games_skipped": 0, "clubs_skipped": []},
+               "cfl": {"outcome": "skipped", "reason": "pages missing: 2027 Toronto Argonauts season", "games_skipped": 0, "clubs_skipped": []}}
+        psql(ds1db, "insert into ingest.daily_run (started_at, finished_at, outcome, summary) values "
+                    "(now() - interval '30 hours', now() - interval '30 hours' + interval '5 minutes', 'ok', '%s'::jsonb), "
+                    "(now() - interval '2 hours', now() - interval '2 hours' + interval '5 minutes', 'failed', '%s'::jsonb), "
+                    "(now() - interval '1 minute', null, 'running', '{}'::jsonb)" % (json.dumps({"league_results": lr1}), json.dumps({"league_results": lr2, "exit_code": 1})))
+        psql(ds1db, "set session_replication_role = replica; "
+                    "insert into core.season (league_code, start_year, end_year, label) values ('nhl', 2026, 2027, 'a'), ('nba', 2026, 2027, 'b'), ('mlb', 2026, 2026, 'c'), ('wnba', 2026, 2026, 'd'); "
+                    "insert into core.game (season_id, phase, game_date, starts_at, home_team_season_id, away_team_season_id, status, home_score, away_score, source_id, source_key) "
+                    "select s.season_id, v.phase::core.season_phase, current_date - v.days, case when v.hours is null then null else now() - v.hours * interval '1 hour' end, v.h, v.a, v.st::core.game_status, v.hs, v.as_, 1, v.k "
+                    "from (values ('nhl', 'regular', 2, 30, 1, 2, 'scheduled', null::int, null::int, 'g1'), ('nhl', 'regular', 1, 6, 3, 4, 'scheduled', null, null, 'g2'), "
+                    "('nhl', 'regular', 0, 2, 5, 6, 'scheduled', null, null, 'g3'), ('nhl', 'regular', 2, 30, 7, 8, 'final', 3, 1, 'g4'), "
+                    "('nhl', 'regular', 2, 30, 9, 10, 'postponed', null, null, 'g5'), ('nhl', 'preseason', 2, 30, 11, 12, 'scheduled', null, null, 'g6'), "
+                    "('nhl', 'regular', 3, null, 13, 14, 'scheduled', null, null, 'g7'), ('wnba', 'regular', 2, 30, 15, 16, 'scheduled', null, null, 'g8'), "
+                    "('nhl', 'regular', 40, 960, 17, 18, 'scheduled', null, null, 'g9')) as v(l, phase, days, hours, h, a, st, hs, as_, k) join core.season s on s.league_code = v.l")
+        cfg_sc = O.Config({"WATCHDOG_STATE": "/nonexistent", "RELEASE_REPO": "/nonexistent", "OPS_LAST_DRIFT": "/nonexistent"})
+        snap_sc = O.snapshot_now(cfg_sc, ds1)
+        sc = snap_sc["scores"]
+        check("scores SQL: the section reads without an error", "error" not in sc, sc)
+        by = {x["league"]: x for x in sc["leagues"]} if "leagues" in sc else {}
+        check("scores SQL: the last run is the newest finished one, the one still running is not", sc["last_run"]["outcome"] == "failed" and sc["running"] is True and sc["quiet_hours"] == 0, sc.get("last_run"))
+        check("scores SQL: NBA failed in the last run, with the job's words, and its last good load is the run 30 hours ago",
+              by["nba"]["outcome"] == "failed" and "identity" in by["nba"]["reason"] and by["nba"]["stale_hours"] == 29 and by["nba"]["flags"] == ["stale"], by.get("nba"))
+        check("scores SQL: MLB saved but left a club out", by["mlb"]["outcome"] == "warning" and by["mlb"]["clubs_skipped"] == ["Oakland"] and by["mlb"]["flags"] == [], by.get("mlb"))
+        check("scores SQL: CFL was skipped with nothing waiting: no flag", by["cfl"]["outcome"] == "skipped" and by["cfl"]["flags"] == [] and by["cfl"]["waiting"] == 0, by.get("cfl"))
+        check("scores SQL: NHL has three games played with no score (30 h, 6 h, and a dated one), two of them over 12 hours, the final, the postponed one, the preseason one, the old one and WNBA left out",
+              by["nhl"]["waiting"] == 3 and by["nhl"]["overdue"] == 2 and by["nhl"]["flags"] == ["overdue"], by.get("nhl"))
+        check("scores SQL: the examples are the oldest games first (a game with no start time counts from the end of its date), with the team names",
+              len(by["nhl"]["sample"]) == 3 and by["nhl"]["sample"][0] == [str(datetime.date.today() - datetime.timedelta(days=3)), "Team 14", "Team 13"] and by["nhl"]["sample"][1][1:] == ["Team 2", "Team 1"], by["nhl"]["sample"])
+        check("scores SQL: the last time games changed is the run that changed some (30 hours ago for NHL, 2 hours ago for MLB)",
+              by["nhl"]["changed_at"] and by["mlb"]["changed_at"] and by["nhl"]["changed_at"] < by["mlb"]["changed_at"], (by["nhl"]["changed_at"], by["mlb"]["changed_at"]))
+        check("scores SQL: the other leagues' good load is the last run", by["nfl"]["ok_at"] > by["nba"]["ok_at"], (by["nfl"]["ok_at"], by["nba"]["ok_at"]))
+        got = []
+        O.send_score_alerts({}, snap_sc, 1000.0, lambda *a: got.append(a))
+        check("scores SQL: the alerts that follow are NBA stale and NHL overdue", sorted(a[:2] for a in got) == [("scores-overdue:nhl", "raise"), ("scores-stale:nba", "raise")], got)
+        psql(ds1db, "drop table ingest.daily_run cascade")
+        broken = O.snapshot_now(cfg_sc, ds1)
+        check("scores SQL: without the heartbeat table the section is an error and the rest is fine", "error" in broken["scores"] and "error" not in broken["sync"], broken["scores"])
+        psql_file(ds1db, mig("048_ingest_daily_run.sql"))
+        psql(ds1db, "delete from core.game; delete from core.season")
+
         # a missing optional table costs one field, not the snapshot
         psql(ds1db, "drop table ingest.raw_export_run")
         snap2 = O.build_snapshot(O.collect(cfg_real, ds1), RUNNER, NOW)
@@ -466,6 +657,8 @@ def main():
     test_errors_and_size()
     test_hash_and_timer()
     test_tick_with_stand_ins()
+    test_scores()
+    test_score_alerts()
     test_database()
     print()
     if FAILED:

@@ -104,6 +104,7 @@ const scoreRequest = z.object({
   release_number: z.string().nullable(),
   release_status: z.string().nullish(),
   kind: z.enum(["scores", "drift"]).default("scores"),
+  league: z.string().nullable().default(null),   // migration 150: the league a scores request was limited to
 });
 
 const dashboard = z.object({

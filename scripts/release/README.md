@@ -230,6 +230,14 @@ Outcomes written on the request: `done` (release approved, or prepared and waiti
 nothing new), `failed` (the job exited non-zero or timed out after `RELEASE_DAILY_TIMEOUT` seconds, default 2400; or the release could not be
 prepared). A request left `running` by a runner that stopped is marked `failed`.
 
+**One league (migration 150).** `/admin/ops` has a "Scores by league" table with **Update now** on each row. It calls `api.request_league_update`
+(`api.queue_request` with a league), which adds the same kind of row with `league` set (`nhl`, `nba`, `mlb`, `nfl` or `cfl`; the check is a
+pattern, the runner knows the list: `DAILY_LEAGUES` in `release.py`, the same as `run.py`'s `LEAGUES` and `ops.py`'s `SCORE_LEAGUES`, which
+`test_league_request.py` compares). The runner runs `run.py --apply --league <league>` under the same lock, with the same open-release check and the
+same approval policy; a league it does not know ends the request as `failed` without running anything. Still one open request at a time (whatever
+the league), and about 10 minutes after the last request for the same league. The request's `summary` and run log entry name the league. The
+read of `league` is `to_jsonb(q) ->> 'league'`, so a runner rebuilt before the migration is applied still works (it sees no league).
+
 Drift request: the runner runs the drift check right away (same code as the nightly one), writes `meta.sync_status`, proposes the fix
 release if tables differ, and writes a summary (`Checked N tables: ...`).
 
@@ -240,6 +248,25 @@ does, only the heartbeat check above protects a requested run from a scheduled r
 close that, run its command through the lock: in `daily/entry.sh` `run_once`, replace `python3 -I "$RUN" "${args[@]}" ...` with
 `python3 -I "$DIR/scripts/release/daily_lock.py" --wait 3600 -- python3 -I "$RUN" "${args[@]}" ...` (it needs the same `PG*` variables the
 job already has; exit 75 means the lock stayed taken).
+
+## Scores by league: the snapshot section and the admin alerts (scripts/release/ops.py)
+
+`ops.py` adds a `scores` section to the status snapshot it already pushes every 15 minutes (one more small query on DS1, no new production
+call, no new timer): for each league of the daily job, its newest result from the heartbeat (`ingest.daily_run.summary.league_results`: outcome,
+the job's own reason, clubs and games left out), the last good load (newest run with `ok` or `warning`), when games last changed, and the games
+that were played and have no score (`core.game` `scheduled` or `in_progress`, regular season or playoffs, started more than `SCORES_WAIT_HOURS` (4)
+ago, within 30 days; the oldest three are named). A run that stopped as a whole (no per-league results) counts as every league's last attempt.
+Two flags come out of it, and the page and the alerts both read them, so the table and the banner cannot disagree:
+
+- `stale`: the league's last attempt failed (or was skipped while games wait) and it has had no good load for `SCORES_STALE_HOURS` (6; never in
+  30 days counts). A league that is simply out of season (skipped, nothing waiting) is not stale.
+- `overdue`: a game that started more than `SCORES_OVERDUE_HOURS` (12) ago still has no score.
+
+The same snapshot tick raises and resolves admin alerts through the run log (`scripts/runlog`; the banner is on every admin page):
+`scores-stale:<league>` (error), `scores-overdue:<league>` (warning) and `scores-no-run` (error: no run has started for `SCORES_NO_RUN_HOURS`,
+20; the job runs at 03:00 and 10:00 Toronto time). Each is raised when it starts, again every 24 hours while it lasts (so one an admin dismissed
+comes back) and resolved when it clears; the state is in the ops state file. They add to the job's own `daily:<league>` alerts, which only fire
+when a run ends. This needs the runner rebuilt at the commit that has this change (`RELEASE_REF`), and migration 150 on DS1 and production first.
 
 ## Sync status after every release
 

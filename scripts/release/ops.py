@@ -17,12 +17,18 @@ copies its incidents (AGENTS.md section 8). One tick does at most two Management
      meta.ops_status_put when it differs from the last one written, or when the last write is OPS_HEARTBEAT_EVERY (3600) old, so the page
      can tell a quiet system from a dead runner. A request that asked for a snapshot forces one. Production keeps the newest 96 rows.
 
-The snapshot is a small jsonb (a few KB, never over about 24 KB): harvester, daily scores job, watchdog, releases, DS1 versus
+The snapshot is a small jsonb (a few KB, never over about 24 KB): harvester, daily scores job, scores by league (last good load,
+games played with no score, the last run's reason; the admin alerts below come from it), watchdog, releases, DS1 versus
 production row counts (the latest drift comparison, meta.sync_status) and the Dropbox backup. A section that cannot be read says
 {"error": ...} and the others still go out. State lives in OPS_STATE (default /data/ops.json).
 
+Scores alerts (scripts/runlog, shown on every admin page): from each snapshot, with no extra read, a league raises `scores-stale:<league>`
+when its last run failed and it has had no good load for SCORES_STALE_HOURS (6), `scores-overdue:<league>` when a game that started more than
+SCORES_OVERDUE_HOURS (12) ago still has no score, and the job raises `scores-no-run` when no run has started for SCORES_NO_RUN_HOURS (20; the job
+runs twice a day). Each is raised once when it starts (again after 24 hours while it lasts, so a dismissed alert comes back) and resolved when it clears.
+
 Environment: OPS_SNAPSHOT=0 switches the whole thing off (no snapshot, no requests), SUPABASE_ACCESS_TOKEN (production), PG* (DS1),
-OPS_SNAPSHOT_EVERY, OPS_HEARTBEAT_EVERY, OPS_INTERVAL, OPS_STATE, WATCHDOG_STATE (read for the watchdog section), RELEASE_REF,
+OPS_SNAPSHOT_EVERY, OPS_HEARTBEAT_EVERY, OPS_INTERVAL, OPS_STATE, SCORES_STALE_HOURS, SCORES_OVERDUE_HOURS, SCORES_NO_RUN_HOURS, SCORES_WAIT_HOURS, WATCHDOG_STATE (read for the watchdog section), RELEASE_REF,
 RELEASE_REPO. Standard library only. Exit code 0 unless --print or --now could not do their one job.
 """
 import datetime
@@ -43,6 +49,9 @@ SNAPSHOT_VERSION = 1
 MAX_PAYLOAD_BYTES = 24000                # the table's check allows 32000
 STALE_BEAT_SECS = 900                    # a running harvester whose heartbeat is older than this is stuck or dead
 REQUEST_KINDS = ("snapshot", "harvest_pause", "harvest_resume")
+# The leagues the daily scores job loads (scripts/daily/run.py LEAGUES; test_ops.py checks they are the same). WNBA, NWSL, PWHL and MLS are bulk loads, not in it.
+SCORE_LEAGUES = ("nhl", "nba", "mlb", "nfl", "cfl")
+ALERT_AGAIN_SECS = 24 * 3600             # an alert that lasts is raised again this often, so one an admin dismissed comes back
 # What changes on its own every time and must not make a snapshot look new.
 VOLATILE = (("at",), ("harvester", "last_beat_at"), ("watchdog", "last_probe_at"))
 
@@ -66,6 +75,10 @@ class Config:
         self.wd = W.Config(e)             # token, project reference and Management API address
         self.token = self.wd.token
         self.psql_timeout = int(e.get("OPS_PSQL_TIMEOUT", "60"))
+        self.scores_stale = float(e.get("SCORES_STALE_HOURS", "6"))        # a failing league with no good load for this long
+        self.scores_overdue = float(e.get("SCORES_OVERDUE_HOURS", "12"))   # a game started this long ago and still without a score
+        self.scores_no_run = float(e.get("SCORES_NO_RUN_HOURS", "20"))     # the job itself has not started a run for this long
+        self.scores_wait = float(e.get("SCORES_WAIT_HOURS", "4"))          # a game is "played" this long after it started
 
 
 # ---------------------------------------------------------------------------------------------------- small pure helpers
@@ -179,6 +192,101 @@ def shape_daily(raw):
     }
 
 
+def hours_between(a, b):
+    """Hours from datetime a to datetime b, or None when either is missing."""
+    return None if a is None or b is None else (b - a).total_seconds() / 3600.0
+
+
+def league_attempt(l, latest):
+    """What the league's most recent attempt came to: (outcome, reason, when). `l` is the league's raw part, `latest` the newest finished run of the
+    job. A run that stopped as a whole (no per-league results at all) is the attempt of every league that has no result from it; a run limited
+    to another league (an "Update now") is not."""
+    last = l.get("last")
+    if latest and latest.get("outcome") == "failed" and not latest.get("has_results") and (not last or num(last.get("run_id")) < num(latest.get("run_id"))):
+        err = clean(latest.get("error"), 200)
+        return "failed", "the whole run stopped" + (": " + err if err else " before this league was saved"), iso_of(latest.get("finished_at") or latest.get("started_at"))
+    if not last:
+        return "unknown", None, None
+    res = last.get("res") or {}
+    return (res.get("outcome") or "unknown"), clean(res.get("reason"), 240), iso_of(last.get("at"))
+
+
+def shape_scores(raw, now, thr):
+    """The daily scores job league by league: the last good load, the games played with no score, the last run's outcome and reason in the job's own
+    words, and the flags the admin alerts come from. `now` is the snapshot's time, `thr` the hour limits (stale, overdue, no_run).
+    flags: "stale" = the last attempt failed (or was skipped with games waiting) and there has been no good load for `stale` hours;
+    "overdue" = a game that started more than `overdue` hours ago still has no score. Top level "no_run" = no run has started for `no_run` hours.
+    The ages are whole hours, so an unchanged situation gives an unchanged snapshot (it is written when it differs, or hourly)."""
+    latest = raw.get("last_run")
+    leagues = []
+    for lg in SCORE_LEAGUES:
+        l = (raw.get("leagues") or {}).get(lg) or {}
+        outcome, reason, at = league_attempt(l, latest)
+        res = ((l.get("last") or {}).get("res")) or {}
+        w = l.get("waiting") or {}
+        waiting, overdue = num(w.get("n")), num(w.get("overdue"))
+        ok_at = parse_ts(l.get("ok_at"))
+        since_ok = hours_between(ok_at, now)
+        flags = []
+        if (outcome == "failed" or (outcome == "skipped" and waiting > 0)) and (since_ok is None or since_ok > thr["stale"]):
+            flags.append("stale")
+        if overdue > 0:
+            flags.append("overdue")
+        leagues.append({
+            "league": lg, "outcome": outcome, "reason": reason, "at": at, "ok_at": iso(ok_at), "changed_at": iso_of(l.get("changed_at")),
+            "games_skipped": num(res.get("games_skipped")), "clubs_skipped": [clean(c, 60) for c in (res.get("clubs_skipped") or [])[:6]],
+            "waiting": waiting, "overdue": overdue, "oldest": iso_of(w.get("oldest")),
+            "sample": [[clean(x, 12), clean(y, 60), clean(z, 60)] for x, y, z in (l.get("sample") or [])[:3]],
+            "stale_hours": None if since_ok is None else int(since_ok), "flags": flags,
+        })
+    last_started = parse_ts(raw.get("last_started_at") or (latest or {}).get("started_at"))      # the newest run of any kind, one still running too
+    quiet = hours_between(last_started, now)
+    return {
+        "limits": {"stale": thr["stale"], "overdue": thr["overdue"], "no_run": thr["no_run"]},
+        "last_run": ({"id": latest.get("run_id"), "outcome": latest.get("outcome"), "started_at": iso(last_started)} if latest else None),
+        "running": bool(raw.get("running")),
+        "quiet_hours": None if quiet is None else int(quiet),
+        "no_run": quiet is not None and quiet > thr["no_run"] and not raw.get("running"),
+        "leagues": leagues,
+    }
+
+
+def score_alert_wants(scores):
+    """{alert key: (scope, message, severity)} for what the scores section says is wrong right now."""
+    want = {}
+    if not isinstance(scores, dict) or "error" in scores:
+        return want
+    if scores.get("no_run"):
+        want["scores-no-run"] = (None, "The daily scores job has not started a run for %d hours (it should run twice a day)." % int(scores.get("quiet_hours") or 0), "error")
+    for l in scores.get("leagues") or []:
+        lg, name = l["league"], l["league"].upper()
+        if "stale" in l["flags"]:
+            since = ("%d hours" % int(l["stale_hours"])) if l.get("stale_hours") is not None else "the last 30 days"
+            want["scores-stale:" + lg] = (lg, "%s scores have had no good load for %s. Last run: %s." % (name, since, l.get("reason") or l.get("outcome")), "error")
+        if "overdue" in l["flags"]:
+            first = l["sample"][0] if l.get("sample") else None
+            where = " Oldest: %s, %s at %s." % (first[0], first[1], first[2]) if first else ""
+            want["scores-overdue:" + lg] = (lg, "%s: %d game(s) started more than %d hours ago and still have no score.%s" % (name, l["overdue"], int(scores["limits"]["overdue"]), where), "warning")
+    return want
+
+
+def score_alert_plan(scores, raised, now):
+    """What to tell the run log: [(key, "raise" | "resolve", scope, message, severity)]. `raised` is {key: when it was last raised} (the caller's
+    state). A new problem is raised at once; one that lasts is raised again every ALERT_AGAIN_SECS (an alert an admin dismissed comes back);
+    one that cleared is resolved. A snapshot whose scores section could not be read changes nothing."""
+    if not isinstance(scores, dict) or "error" in scores:
+        return []
+    want = score_alert_wants(scores)
+    plan = []
+    for key, (scope, message, severity) in want.items():
+        if key not in raised or now - raised[key] >= ALERT_AGAIN_SECS:
+            plan.append((key, "raise", scope, message, severity))
+    for key in raised:
+        if key not in want:
+            plan.append((key, "resolve", None, None, None))
+    return plan
+
+
 def shape_releases(raw, runner):
     c = raw.get("counts") or {}
     done, failed = raw.get("last_done"), raw.get("last_failed")
@@ -244,13 +352,15 @@ def shape_watchdog(state, events, enabled):
     }
 
 
-def build_snapshot(parts, runner, now):
+def build_snapshot(parts, runner, now, thresholds=None):
     """parts: the raw answer (or {"error": ...}) of each collector. Returns the payload that goes to production."""
+    thr = thresholds or {"stale": 6.0, "overdue": 12.0, "no_run": 20.0}
     return {
         "v": SNAPSHOT_VERSION,
         "at": iso(now),
         "harvester": section(shape_harvester, parts.get("harvester")),
         "daily": section(shape_daily, parts.get("daily")),
+        "scores": section(shape_scores, parts.get("scores"), now, thr),
         "watchdog": section(lambda p: shape_watchdog(p["state"], p["events"], p["enabled"]), parts.get("watchdog")),
         "releases": section(shape_releases, parts.get("releases"), runner),
         "sync": section(shape_sync, parts.get("sync")),
@@ -333,6 +443,36 @@ Q_DAILY = """select jsonb_build_object(
   'failed_7d', (select count(*) from ingest.daily_run where outcome = 'failed' and started_at > now() - interval '7 days'),
   'release', (select to_jsonb(x) from (select number, status, created_at from meta.data_release where kind = 'daily_scores' order by id desc limit 1) x))"""
 
+def q_scores(cfg):
+    """The per-league scores read from DS1: each league's newest result in the heartbeat (ingest.daily_run.summary.league_results), the newest good
+    one, the newest that changed games, and the games played with no score. One small query over 30 days of runs and 30 days of games."""
+    arr = "array[%s]" % ",".join("'%s'" % lg for lg in SCORE_LEAGUES)
+    return """with lg as (select unnest(%(arr)s::text[]) as league),
+runs as (select run_id, started_at, finished_at, outcome, summary from ingest.daily_run where started_at > now() - interval '30 days'),
+open_games as (
+  select s.league_code as league, g.game_date, g.away_team_season_id, g.home_team_season_id, coalesce(g.starts_at, (g.game_date + 1)::timestamptz) as since
+  from core.game g join core.season s using (season_id)
+  where s.league_code = any(%(arr)s) and g.status in ('scheduled', 'in_progress') and g.phase in ('regular', 'playoffs')
+    and g.game_date between current_date - 30 and current_date)
+select jsonb_build_object(
+  'last_run', (select to_jsonb(r) from (select run_id, started_at, finished_at, outcome, summary ->> 'error' as error, (summary -> 'league_results') is not null as has_results
+                                        from runs where outcome <> 'running' order by started_at desc limit 1) r),
+  'last_started_at', (select max(started_at) from runs),
+  'running', exists (select 1 from runs where outcome = 'running' and started_at > now() - interval '30 minutes'),
+  'leagues', (select jsonb_object_agg(l.league, jsonb_build_object(
+      'last', (select jsonb_build_object('run_id', r.run_id, 'at', coalesce(r.finished_at, r.started_at), 'res', r.summary -> 'league_results' -> l.league)
+               from runs r where (r.summary -> 'league_results') ? l.league and r.outcome <> 'running' order by r.started_at desc limit 1),
+      'ok_at', (select max(coalesce(r.finished_at, r.started_at)) from runs r where r.summary -> 'league_results' -> l.league ->> 'outcome' in ('ok', 'warning')),
+      'changed_at', (select max(coalesce(r.finished_at, r.started_at)) from runs r where coalesce(nullif(r.summary -> 'league_results' -> l.league ->> 'games_changed', ''), '0')::int > 0),
+      'waiting', (select jsonb_build_object('n', count(*) filter (where since < now() - interval '%(wait)s hours'),
+                                            'overdue', count(*) filter (where since < now() - interval '%(over)s hours'),
+                                            'oldest', min(since) filter (where since < now() - interval '%(wait)s hours'))
+                  from open_games g where g.league = l.league),
+      'sample', (select coalesce(jsonb_agg(jsonb_build_array(x.game_date, api.team_name(x.away_team_season_id), api.team_name(x.home_team_season_id)) order by x.since), '[]'::jsonb)
+                 from (select * from open_games g where g.league = l.league and g.since < now() - interval '%(wait)s hours' order by g.since limit 3) x)))
+    from lg l))""" % {"arr": arr, "wait": float(cfg.scores_wait), "over": float(cfg.scores_overdue)}
+
+
 Q_RELEASES = """select jsonb_build_object(
   'counts', (select coalesce(jsonb_object_agg(status, n), '{}'::jsonb) from (select status, count(*) n from meta.data_release where status in ('pending', 'approved', 'running') group by 1) q),
   'last_done', (select to_jsonb(x) from (select number, title, kind, finished_at from meta.data_release where status = 'done' order by id desc limit 1) x),
@@ -385,6 +525,7 @@ def collect(cfg, ds1):
     parts = {
         "harvester": guarded(lambda: ds1.json(Q_HARVESTER)),
         "daily": guarded(lambda: ds1.json(Q_DAILY)),
+        "scores": guarded(lambda: ds1.json(q_scores(cfg))),
         "releases": guarded(lambda: ds1.json(Q_RELEASES)),
         "sync": guarded(lambda: ds1.json(Q_SYNC)),
     }
@@ -410,7 +551,7 @@ def collect(cfg, ds1):
 
 def snapshot_now(cfg, ds1, now=None):
     now = now or datetime.datetime.now(datetime.timezone.utc)
-    return fit(build_snapshot(collect(cfg, ds1), runner_info(cfg), now))
+    return fit(build_snapshot(collect(cfg, ds1), runner_info(cfg), now, {"stale": cfg.scores_stale, "overdue": cfg.scores_overdue, "no_run": cfg.scores_no_run}))
 
 
 # ---------------------------------------------------------------------------------------------------- production
@@ -482,7 +623,34 @@ def save_state(path, state):
         log("could not save the state: %s" % e)
 
 
-def tick(cfg, state, now, ds1, force=False, collect_fn=None, write_fn=None, queued_fn=None, mark_fn=None):
+def send_score_alerts(state, payload, now, alert_fn=None):
+    """Raise and resolve the scores alerts the snapshot's scores section calls for (score_alert_plan) and remember when each was raised in the
+    state. A failed log write never reaches the tick. -> the new state."""
+    try:
+        if alert_fn is None:
+            import runlog_feed as RF
+            alert_fn = RF.alert
+        raised = dict(state.get("score_alerts") or {})
+        plan = score_alert_plan(payload.get("scores"), raised, now)
+        for key, what, scope, message, severity in plan:
+            try:
+                alert_fn(key, what, scope, message, severity)
+            except Exception:  # noqa: BLE001
+                pass
+            if what == "raise":
+                raised[key] = now
+                log("alert %s raised: %s" % (key, clean(message, 160)))
+            else:
+                raised.pop(key, None)
+                log("alert %s resolved" % key)
+        if plan:
+            state = dict(state, score_alerts=raised)
+    except Exception as e:  # noqa: BLE001
+        log("could not send the scores alerts: %s" % clean(e, 120))
+    return state
+
+
+def tick(cfg, state, now, ds1, force=False, collect_fn=None, write_fn=None, queued_fn=None, mark_fn=None, alert_fn=None):
     """One minute of work. Returns (new state, what happened: {"requests": [...], "snapshot": "written|unchanged|not due|failed|no token"}).
     The *_fn arguments stand in for production and DS1 in tests."""
     collect_fn = collect_fn or (lambda: snapshot_now(cfg, ds1, datetime.datetime.fromtimestamp(now, datetime.timezone.utc)))
@@ -507,6 +675,7 @@ def tick(cfg, state, now, ds1, force=False, collect_fn=None, write_fn=None, queu
     if snapshot_due(state, now, cfg, force):
         state["last_try"] = now
         payload = collect_fn()
+        state = send_score_alerts(state, payload, now, alert_fn)
         digest = payload_hash(payload)
         if not cfg.token:
             out["snapshot"] = "no token"

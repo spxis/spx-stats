@@ -1,4 +1,4 @@
-import type { Backup, Dashboard, Harvester, HistoryPoint, OpsRequest, RequestKind, Snapshot, Sync } from "./schema.ts";
+import type { Backup, Dashboard, Harvester, HistoryPoint, OpsRequest, RequestKind, ScoreLeague, ScoreRequest, Snapshot, Sync } from "./schema.ts";
 import { isFailed } from "./schema.ts";
 
 /**
@@ -125,6 +125,7 @@ export type IssueKey =
   | "backupNever" | "backupProblems" | "backupStale" | "backupMissingTable" | "backupBehind"
   | "syncDiffers" | "syncStale" | "syncNever"
   | "dailyFailed" | "dailyStale" | "dailyNever"
+  | "scoresStale" | "scoresStaleNever" | "scoresOverdue" | "scoresNoRun"
   | "watchdogOpen" | "watchdogSilent" | "watchdogOff"
   | "releasesWaiting";
 
@@ -148,7 +149,7 @@ export function issues(d: Dashboard): Issue[] {
   const a = asOf(d.latest.taken_at, d.server_now);
   if (a.stale) push("snapshotStale", "bad", { minutes: a.minutes ?? 0 });
   const at = s.at;
-  const failed = (["harvester", "daily", "watchdog", "releases", "sync", "backup"] as const).filter((k) => isFailed(s[k]));
+  const failed = (["harvester", "daily", "scores", "watchdog", "releases", "sync", "backup"] as const).filter((k) => s[k] !== undefined && isFailed(s[k]));
   if (failed.length) push("sectionFailed", "warn", { sections: failed.join(", ") });
 
   const h = s.harvester;
@@ -190,6 +191,19 @@ export function issues(d: Dashboard): Issue[] {
       if (j.last.outcome === "failed") push("dailyFailed", "bad");
       const since = hoursSince(j.last.started_at, at);
       if (since !== null && since > DAILY_STALE_HOURS) push("dailyStale", "warn", { hours: Math.floor(since) });
+    }
+  }
+
+  const sc = s.scores;
+  if (sc && !isFailed(sc)) {
+    if (sc.no_run) push("scoresNoRun", "bad", { hours: sc.quiet_hours ?? 0 });
+    for (const l of sc.leagues) {
+      const league = l.league.toUpperCase();
+      if (l.flags.includes("stale")) {
+        if (l.stale_hours === null) push("scoresStaleNever", "bad", { league });
+        else push("scoresStale", "bad", { league, hours: l.stale_hours });
+      }
+      if (l.flags.includes("overdue")) push("scoresOverdue", "warn", { league, count: l.overdue, hours: sc.limits.overdue });
     }
   }
 
@@ -238,4 +252,37 @@ export function requestBlock(requests: OpsRequest[], kind: RequestKind, now: num
   if (requests.some((r) => r.kind === kind && r.status === "queued")) return "waiting";
   const last = Math.max(0, ...requests.filter((r) => r.kind === kind).map((r) => ms(r.finished_at ?? r.requested_at) ?? 0));
   return last > 0 && now - last < REQUEST_GAP_MINUTES[kind] * 60_000 ? "recent" : null;
+}
+
+// ---------------------------------------------------------------------------------------------------- scores by league
+
+/** Minutes the database wants between two scores requests for the same league (migration 150; 053 for every league). */
+export const SCORE_REQUEST_GAP_MINUTES = 10;
+
+/** The scores request that has not ended (queued for the runner, or running), or null. The database allows one at a time, whatever the league. */
+export function openScoreRequest(requests: ScoreRequest[]): ScoreRequest | null {
+  return requests.find((r) => r.status === "queued" || r.status === "running") ?? null;
+}
+
+/** The newest request that named this league (the requests arrive newest first), or null. */
+export function lastScoreRequest(requests: ScoreRequest[], league: string): ScoreRequest | null {
+  return requests.find((r) => r.league === league) ?? null;
+}
+
+/**
+ * Why "Update now" for a league would be refused right now, from the requests the page holds: another request is open ("open"), or the last
+ * request for the same league ended less than ten minutes ago ("recent"). Null when nothing says no (the database has the last word).
+ */
+export function scoreBlock(requests: ScoreRequest[], league: string, now: number): "open" | "recent" | null {
+  if (openScoreRequest(requests)) return "open";
+  const last = lastScoreRequest(requests, league);
+  const t = last ? ms(last.finished_at ?? last.requested_at) : null;
+  return t !== null && now - t < SCORE_REQUEST_GAP_MINUTES * 60_000 ? "recent" : null;
+}
+
+/** The badge colour of a league: red when it failed or is flagged stale, amber for a warning, a skip or games without a score, green when it is fine. */
+export function leagueTone(l: ScoreLeague): Tone {
+  if (l.flags.includes("stale") || l.outcome === "failed") return "stale";
+  if (l.flags.includes("overdue") || l.outcome === "warning" || l.outcome === "skipped") return "live";
+  return l.outcome === "ok" ? "done" : "";
 }

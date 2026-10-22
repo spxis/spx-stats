@@ -33,6 +33,7 @@ export const CONFIRM_KINDS = {
   opsSnapshot: { danger: false },
   opsPause: { danger: false },
   opsResume: { danger: false },
+  opsLeague: { danger: false },
   ticket: { danger: false, echo: "title" },
 } as const satisfies Record<string, { danger: boolean; echo?: string }>;
 

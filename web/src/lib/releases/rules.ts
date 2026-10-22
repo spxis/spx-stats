@@ -98,7 +98,7 @@ export function parseTab(param: string | string[] | undefined, remembered?: stri
 
 export const REQUEST_COOLDOWN_MINUTES = 10;
 
-type RequestLike = { id: number; status: string; requested_at: string; finished_at: string | null; kind?: string };
+type RequestLike = { id: number; status: string; requested_at: string; finished_at: string | null; kind?: string; league?: string | null };
 
 /**
  * Why a new request of this kind (scores or drift) cannot be made now, or null when it can: one open request at a time
@@ -107,7 +107,8 @@ type RequestLike = { id: number; status: string; requested_at: string; finished_
 export function requestBlock(requests: RequestLike[], now: number = Date.now(), cooldownMinutes: number = REQUEST_COOLDOWN_MINUTES, kind: string = "scores"): string | null {
   const open = requests.find((r) => r.status === "queued" || r.status === "running");
   if (open) return `Request #${open.id} is ${open.status}. Wait for it to finish.`;
-  const last = Math.max(0, ...requests.filter((r) => (r.kind ?? "scores") === kind).map((r) => Date.parse(r.finished_at ?? r.requested_at)).filter((t) => !Number.isNaN(t)));
+  // the all-leagues request has its own cooldown: one for a single league (migration 150) does not count against it
+  const last = Math.max(0, ...requests.filter((r) => (r.kind ?? "scores") === kind && (r.league ?? null) === null).map((r) => Date.parse(r.finished_at ?? r.requested_at)).filter((t) => !Number.isNaN(t)));
   const until = last + cooldownMinutes * 60_000;
   return last > 0 && until > now ? `The last request ended recently. You can ask again at ${mark(new Date(until).toISOString(), "clock")}.` : null;
 }

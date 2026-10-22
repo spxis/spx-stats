@@ -6,9 +6,9 @@ import { requireAdminWrite } from "@/lib/auth/user";
 import { isConfirmed } from "@/lib/confirm";
 import { speaker } from "@/lib/i18n/i18n";
 import { effectiveLocale, LOCALE_COOKIE_NAME } from "@/lib/locale";
-import { opsDashboard, requestOps } from "@/lib/ops/client";
-import { requestBlock } from "@/lib/ops/rules";
-import { REQUEST_KINDS, type RequestKind } from "@/lib/ops/schema";
+import { opsDashboard, requestLeagueUpdate, requestOps } from "@/lib/ops/client";
+import { requestBlock, scoreBlock } from "@/lib/ops/rules";
+import { REQUEST_KINDS, SCORE_LEAGUES, type RequestKind } from "@/lib/ops/schema";
 
 export type OpsState = { ok: boolean; message: string } | null;
 
@@ -43,4 +43,38 @@ export async function opsRequest(_previous: OpsState, form: FormData): Promise<O
     return { ok: false, message: say("ops.msg.refused") };
   }
   return { ok: true, message: say("ops.msg.requested") };
+}
+
+const isLeague = (v: unknown): v is string => typeof v === "string" && (SCORE_LEAGUES as readonly string[]).includes(v);
+
+/**
+ * "Update now" on one league's row: one scores request that names the league, for the runner (it runs the daily scores job for that league
+ * alone, under the shared lock, and approves the release it prepares only if the automatic checks pass and the Hold switch is off). Same
+ * checks as every admin action: admin, Origin, confirmation; the league must be one the job loads. The database function adds one row (one
+ * open request at a time, about ten minutes between requests for one league); when it refuses, the reason is worked out again from the
+ * current requests so the message is specific. Answers in the reader's language.
+ */
+export async function scoresLeagueRequest(_previous: OpsState, form: FormData): Promise<OpsState> {
+  const user = await requireAdminWrite();
+  const incoming = await headers();
+  const { say } = speaker(effectiveLocale((await cookies()).get(LOCALE_COOKIE_NAME)?.value ?? null, incoming.get("accept-language")));
+  if (!sameOrigin(incoming)) return { ok: false, message: say("ops.msg.origin") };
+  if (!isConfirmed(form)) return { ok: false, message: say("ops.msg.notConfirmed") };
+  const league = form.get("league");
+  if (!isLeague(league)) return { ok: false, message: say("ops.msg.invalid") };
+  try {
+    await requestLeagueUpdate(user.email, league);
+  } catch (error) {
+    if (error instanceof Error && /migration 150/.test(error.message)) return { ok: false, message: say("ops.msg.league.noMigration") };
+    try {
+      const data = await opsDashboard();
+      const why = scoreBlock(data.score_requests, league, Date.parse(data.server_now));
+      if (why === "open") return { ok: false, message: say("ops.msg.league.open") };
+      if (why === "recent") return { ok: false, message: say("ops.msg.league.recent") };
+    } catch {
+      return { ok: false, message: say("ops.msg.unanswered") };
+    }
+    return { ok: false, message: say("ops.msg.refused") };
+  }
+  return { ok: true, message: say("ops.msg.league.requested", { league: league.toUpperCase() }) };
 }

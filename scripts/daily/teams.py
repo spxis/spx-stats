@@ -85,7 +85,11 @@ def load_rosters(leagues, cache_path=None):
         rows = ds1_csv(sql)
         if cache_path:
             os.makedirs(os.path.dirname(os.path.abspath(cache_path)), exist_ok=True)
-            with open(cache_path, "w", encoding="utf-8") as f: json.dump(rows, f, ensure_ascii=False)
+            kept = []       # a run limited to some leagues (run.py --league) must not drop the others' clubs from the cache
+            try:
+                with open(cache_path, encoding="utf-8") as f: kept = [r for r in json.load(f) if r.get("league_code") not in leagues]
+            except (OSError, ValueError): pass
+            with open(cache_path, "w", encoding="utf-8") as f: json.dump(kept + rows, f, ensure_ascii=False)
         src = "DS1"
     except RuntimeError:
         if not cache_path or not os.path.exists(cache_path): raise
