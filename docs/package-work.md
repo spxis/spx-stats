@@ -12,8 +12,8 @@ agent can then be short: who you are, the ticket ids, and "follow docs/package-w
     python3 -I scripts/handoff/coord.py inbox --as <you>
     python3 -I scripts/handoff/handoff.py replies
 
-Board: `cd ~/Projects/spx-stats/web && pnpm task`. Claim with `pnpm task claim <id> "<actor>"` (actors are machine or person
-names: "Mac Studio", "MacBook", "John Morris"; never an AI name). Read the ticket's full detail before starting. Never run
+Board: `cd ~/Projects/spx-stats/web && pnpm task`. Claim with `pnpm task claim <id> "<actor>"` (the actor is the machine's
+board name from the private START-HERE file, or "John Morris"; never an AI name). Read the ticket's full detail before starting. Never run
 `pnpm task done`: the coordinating session closes tickets.
 
 ## One agent per repo
