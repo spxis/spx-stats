@@ -4,6 +4,7 @@ The historical record of the NHL, NBA, MLB, NFL and CFL, browsable at https://sp
 ("SPXN · SPX Network"). The owner is John Morris. Read this whole file before working.
 
 Short on time? Read [docs/agent-quickstart.md](docs/agent-quickstart.md) and [docs/web-map.md](docs/web-map.md) first, then the sections you need.
+Working in one of John's npm packages (dougu, kyogijo, meigen, senshu, taisen, hata...)? Read [docs/package-work.md](docs/package-work.md) too.
 
 This is one of exactly two places that hold agent instructions:
 
