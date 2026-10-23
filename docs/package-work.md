@@ -38,6 +38,25 @@ meigen 7400-7499); check `lsof -iTCP:<port> -sTCP:LISTEN` first, stop only your 
 - Japanese: whatever you write, give the English beside it in your report and hand-off; have it reviewed when you can.
 - One feature per release, with a demo link, so John can check it before the next piece of the same package.
 
+## Quality bar (John has rejected work for each of these)
+
+Tests passing is not enough: John judges by looking. Before any push that changes what a person sees:
+
+- **Match a named reference.** Every picture is compared with something real: John's reference photos for the ticket, or the
+  package's own best existing piece (dougu's Stanley Cup, senshu's turning jerseys, kyogijo's real venues). If a drawing would
+  not pass next to that reference, it is not done. Where no real reference exists, keep the existing generic piece rather than
+  inventing one (an honest plain cup beats a made-up trophy).
+- **Build on the package's existing method.** A new garment uses the jersey 3D pipeline; a new trophy uses the lathe/emblem
+  pipeline; a new venue uses the venue and context pipeline. Never a new flat cut-out beside a 3D family.
+- **Look, then fix, in a loop.** Render it, screenshot it (Playwright), view the screenshot next to the reference, fix what
+  looks wrong, repeat. Put the final side-by-side screenshots (desk and phone, light and dark) in the hand-off.
+- **No browser-default controls in a demo.** Every button, checkbox, radio and select uses the demo's shared style (same font,
+  height of at least 48 px, radius and colours as the pill buttons, a clear chosen state, light and dark, wraps on a phone). A
+  label is shown once ("Outline", not "Outline / Outline"). Add an e2e check that fails on any visible control left in the
+  browser's default style (kyogijo `e2e/controls.demo.mjs` is the pattern).
+- **Real proportions and detail, never cartoon.** Soft shading and folds where cloth is drawn, crisp edges, true ratios (a puck
+  is 3:1, a floor slab has thickness), nothing that reads as a blob.
+
 ## Checks, push, release
 
 1. All green locally before every push: `pnpm check`, `pnpm test:readme`, the demo e2e (in kyogijo: `pnpm test:demo`).
