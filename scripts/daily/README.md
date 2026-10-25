@@ -241,6 +241,10 @@ against 181 games in core): the 7 extra games were games core holds that the clu
 league page); they are now counted as off-page games, and any club still unexplained is left out alone. Tests: `run.py --self-test`
 (one club, one league, all leagues pass, all fail, one game, one page) and `bash scripts/daily/test/clubcheck-test.sh` (scratch Postgres in Docker).
 
+Checks that read rows of every league (a daily team season without an identity, a staged game that is not a game) live in `leaguecheck.sql` and look only at
+the league being applied (2026-10-21: NBA team seasons without an identity failed the check for every league). `bash scripts/daily/test/leaguecheck-test.sh`
+breaks one league's rows and requires the others to pass.
+
 ## The ingest API (migrations 044 and 046)
 
 Decision (John, 2026-10-12): history stays bulk; **daily and later live scores go through a narrow API**, not through table privileges

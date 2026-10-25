@@ -66,19 +66,7 @@ select 'a game belongs to the season of both its team seasons', count(*) = 0, co
 from core.game g join core.team_season h on h.team_season_id = g.home_team_season_id join core.team_season a on a.team_season_id = g.away_team_season_id
 where g.source_id = (select source_id from src) and (h.season_id <> g.season_id or a.season_id <> g.season_id or h.franchise_id = a.franchise_id)
   and g.season_id in (select x.season_id from core.season x where x.league_code in (select league from scope));
-insert into _checks
-select 'every result and cancelled game staged is a game', count(*) = 0, count(*) || ' missing' || coalesce(': ' || string_agg(c.source_key, '; '), '')
-from (select s.source_key from sg s where s.act in ('result', 'cancel')
-        and not exists (select 1 from core.game g where g.source_key = s.source_key and g.source_id = (select source_id from src))
-        and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = s.source_key)) c;
-insert into _checks
-select 'every staged scheduled game of a new season is a game', count(*) = 0, count(*) || ' missing'
-from sg s where s.act = 'schedule' and (s.league, s.season) in (select league, season from owned_season)
-  and not exists (select 1 from core.game g where g.source_key = s.source_key and g.source_id = (select source_id from src))
-  and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = s.source_key);
-insert into _checks
-select 'team seasons made here carry the club''s name', count(*) = 0, count(*) || ' without an identity'
-from core.team_season where source_id = (select source_id from src) and franchise_identity_id is null;
+\i :leaguecheck
 insert into _checks
 select 'raw archive holds each page as downloaded (sha256 of the bytes)', count(*) = 0, count(*) || ' of ' || (select count(*) from legacy_wikipedia_daily.page where league in (select league from scope)) || ' differ or are missing'
 from legacy_wikipedia_daily.page p left join legacy_files.raw_archive a on a.name = p.archive_name

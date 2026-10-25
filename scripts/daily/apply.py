@@ -26,6 +26,7 @@ BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
 CLUBCHECK = os.path.join(HERE, "clubcheck.sql")
+LEAGUECHECK = os.path.join(HERE, "leaguecheck.sql")
 
 
 def lit(s):
@@ -222,7 +223,7 @@ def main_script(workdir, with_archive, commit, league="", skip=()):
     bld = os.path.join(workdir, "build.sql")
     open(bld, "w").write(strip_txn(BUILD))
     rep = os.path.join(workdir, "report.sql")
-    s = ["\\set ON_ERROR_STOP on", "\\set commit " + ("true" if commit else "false"), "\\set league " + lit(league), "\\set clubcheck " + CLUBCHECK,
+    s = ["\\set ON_ERROR_STOP on", "\\set commit " + ("true" if commit else "false"), "\\set league " + lit(league), "\\set clubcheck " + CLUBCHECK, "\\set leaguecheck " + LEAGUECHECK,
          "begin;", "set client_min_messages = warning;",
          "create temp table _skip (club text not null);"] + ["insert into _skip values (%s);" % lit(c) for c in skip] + [
          "create temp table _snap (snap text, what text, league text, k text, n bigint);",
