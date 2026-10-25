@@ -3,6 +3,7 @@ raw/
 __pycache__/
 .claude/*
 !.claude/settings.json
+!.claude/skills/
 runner/release-runner.env
 runner/data/
 release-snapshots/

@@ -7,6 +7,9 @@ Read next: [web-map.md](web-map.md) (where the code lives).
 
 ## Start
 
+- **Project skills** (`.claude/skills/`, short routines that link the sections below): `spx-builder` (every task), `spx-wikipedia-load`,
+  `spx-build-step-ids`, `spx-site-page`, `spx-source-tiers`, `spx-league-family`. Read the one that matches your ticket.
+
 - **Identify yourself.** Every report, hand-off and message to John starts with your name and your ticket
   (`<name>, ticket <id> (title)`). A subagent writes `subagent of <name>`. [§1](../AGENTS.md#1-rules-in-one-breath)
 - **Check the board first.** `cd web && pnpm task` lists the work queue. It lives on Sumilabu, not in GitHub Issues.
