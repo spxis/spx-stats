@@ -83,7 +83,7 @@ create unique index on mass(qid);
 
 -- P413 is mapped only when the person has a league from existing player history,
 -- through the established Wikidata aliases. No name or league is inferred.
-create temp table person_league on commit drop as
+create temp table person_league_all on commit drop as
 select distinct t.person_id,s.league_code from target t
 join core.roster_stint r on r.person_id=t.person_id join core.team_season ts using(team_season_id)
 join core.season s using(season_id)
@@ -94,6 +94,12 @@ join core.season s using(season_id)
 union
 select distinct t.person_id,s.league_code from target t
 join core.award_winner aw on aw.person_id=t.person_id join core.season s using(season_id);
+-- A rival or predecessor league reads the position list of its parent (the site does the same).
+create temp table person_league on commit drop as
+select distinct person_id,
+       case league_code when 'nha' then 'nhl' when 'pcha' then 'nhl' when 'wchl' then 'nhl' when 'wha' then 'nhl'
+                        when 'afl' then 'nfl' when 'aafc' then 'nfl' else league_code end league_code
+from person_league_all;
 create index on person_league(person_id,league_code);
 create temp table position_fact on commit drop as
 with mapped_claims as (

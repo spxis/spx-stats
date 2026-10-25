@@ -164,6 +164,13 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'nhl', 'winger', 1, 'LW'),
   ('wikidata', 'nhl', 'winger', 2, 'RW'),
   ('wikidata', 'nhl', 'forward', 1, 'F'),
+  -- Wikidata ice hockey position items: Q2583758 centre, Q2827965 winger, Q2304909 defenceman, Q1317534 goaltender, Q543457 forward
+  ('wikidata', 'nhl', 'q2583758', 1, 'C'),
+  ('wikidata', 'nhl', 'q2827965', 1, 'LW'),
+  ('wikidata', 'nhl', 'q2827965', 2, 'RW'),
+  ('wikidata', 'nhl', 'q2304909', 1, 'D'),
+  ('wikidata', 'nhl', 'q1317534', 1, 'G'),
+  ('wikidata', 'nhl', 'q543457', 1, 'F'),
   ('wikipedia', 'nhl', 'c', 1, 'C'),
   ('wikipedia', 'nhl', 'centre', 1, 'C'),
   ('wikipedia', 'nhl', 'center', 1, 'C'),
