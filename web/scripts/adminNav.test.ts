@@ -18,6 +18,7 @@ test("every admin address belongs to a section and tab of the shell", () => {
   assert.deepEqual(at("/admin/data?tab=nonsense"), { section: "data", tab: "pending" });
   assert.deepEqual(at("/admin/runs"), { section: "data", tab: "runs" });
   assert.deepEqual(at("/admin/runs/abc123"), { section: "data", tab: "runs" });
+  assert.deepEqual(at("/admin/sources"), { section: "data", tab: "sources" });
   assert.deepEqual(at("/admin/people"), { section: "people", tab: "search" });
   assert.deepEqual(at("/admin/people/review"), { section: "people", tab: "review" });
   assert.deepEqual(at("/admin/logos"), { section: "people", tab: "logos" });

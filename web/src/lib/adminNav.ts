@@ -34,6 +34,7 @@ export const ADMIN_SECTIONS: AdminSection[] = [
       { key: "drift", href: "/admin/data?tab=drift", label: "adminNav.drift", count: "drift" },
       { key: "settings", href: "/admin/data?tab=settings", label: "adminNav.settings" },
       { key: "runs", href: "/admin/runs", label: "adminNav.runs", count: "alerts" },
+      { key: "sources", href: "/admin/sources", label: "adminNav.sources" },
     ],
   },
   {
@@ -77,6 +78,7 @@ export function adminPlace(pathname: string, params: { get(name: string): string
     return { section: "data", tab: tab === "history" || tab === "drift" || tab === "settings" ? tab : "pending" };
   }
   if (under(path, "/admin/runs")) return { section: "data", tab: "runs" };
+  if (under(path, "/admin/sources")) return { section: "data", tab: "sources" };
   if (under(path, "/admin/people/review")) return { section: "people", tab: "review" };
   if (under(path, "/admin/people")) return { section: "people", tab: "search" };
   if (under(path, "/admin/logos")) return { section: "people", tab: "logos" };

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GreyMarker } from "@/components/GreyMarker";
 import { LocalTime } from "@/components/LocalTime";
+import { greySourcesIn } from "@/lib/adminSources";
 import { requireAdmin } from "@/lib/auth/user";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Speaker } from "@/lib/i18n/i18n";
@@ -114,7 +116,7 @@ function Timeline({ s, rows }: { s: Speaker; rows: Run[] }) {
               <tr key={r.uid}>
                 <td><Link href={`/admin/runs/${r.uid}`}><LocalTime iso={r.started_at} /></Link></td>
                 <td>{say(s, `runs.kind.${r.kind}`) === `runs.kind.${r.kind}` ? r.kind : say(s, `runs.kind.${r.kind}`)}</td>
-                <td>{r.job}{r.scope ? <span className="note"> · {r.scope}</span> : null}</td>
+                <td>{r.job}{r.scope ? <span className="note"> · {r.scope}</span> : null}{greySourcesIn([r.job, r.scope]).length ? <> <GreyMarker s={s} /></> : null}</td>
                 <td><Badge s={s} outcome={r.outcome} /></td>
                 <td>{r.summary ?? ""}{counts ? <><br /><span className="note">{counts}</span></> : null}</td>
                 <td>{secs === null ? <span className="note">–</span> : s.say("runs.seconds", { n: secs })}</td>

@@ -234,6 +234,8 @@
   .tk-badge.run-ok { color: var(--ok); }
   .tk-badge.run-warn { color: var(--warn); }
   .tk-badge.run-bad { color: var(--bad); }
+  .tk-badge.grey-area { color: var(--warn); border-color: var(--warn); }
+  .src-note { margin: 4px 0 0; }
   .profile { gap: 18px; }
   .profile-img { border-radius: 50%; }
   .profile dl { display: grid; grid-template-columns: max-content 1fr; gap: 8px 20px; margin: 0; }

@@ -45,9 +45,9 @@ def _green(id, name, reason, spacing, hosts, leagues=(), default=False, clause="
     return _s(id, name, "green", reason, spacing=spacing, hosts=hosts, leagues=leagues, default=default, terms=dict(checked_by=by, checked_on=on, clause=clause), **kw)
 
 
-def _grey(id, name, hosts, leagues=(), url_contains=(), notes=""):
+def _grey(id, name, hosts, leagues=(), url_contains=(), notes="", evidence=None):
     return _s(id, name, "grey", "No terms found; backup or cross-check only, once a day and on manual request.", spacing=5, hosts=hosts, leagues=leagues, daily_cap=20, url_contains=url_contains,
-              notes=notes or "No terms of use found for automated collection. Tier set by John on 2026-10-19; the clause and an evidence link are to be added by the terms check.")
+              notes=notes or "No terms of use found for automated collection. Tier set by John on 2026-10-19; the clause and an evidence link are to be added by the terms check.", evidence=evidence)
 
 
 def _red_confirm(id, name, reason, hosts=(), url_contains=(), evidence=None, leagues=(), spacing=5):
@@ -80,13 +80,19 @@ SOURCES = {x["id"]: x for x in [
     _green("cfbd", "CollegeFootballData.com", "Free API with a key.", 1, ("api.collegefootballdata.com",), clause="Seeded green by John 2026-10-19; a key is needed.", key_needed=True, evidence="https://collegefootballdata.com/"),
     _green("odds_api", "The Odds API", "Free tier with a key.", 1, ("api.the-odds-api.com",), clause="Seeded green by John 2026-10-19; a key is needed.", key_needed=True, evidence="https://the-odds-api.com/terms-and-conditions.html"),
     # ---- grey: no terms found
-    _grey("wnba_stats", "stats.wnba.com", ("stats.wnba.com",), ("wnba",)),
+    _grey("wnba_stats", "stats.wnba.com", ("stats.wnba.com",), ("wnba",),
+          notes="Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the WNBA Terms of Use (wnba.com) section 9 says the NBA Statistics may not be used in connection with any website, product or service that features a database. John to decide whether this makes it red; no request is sent until he does.",
+          evidence="https://www.wnba.com/terms-of-use"),
     _grey("hockeytech", "HockeyTech feeds (lscluster.hockeytech.com), leagues other than the PWHL", ("lscluster.hockeytech.com",), ("ahl", "echl"),
           url_contains=(), notes="Grey for leagues other than the PWHL only; any request naming the PWHL is red (pwhl_hockeytech). No terms found for the others. Tier set by John on 2026-10-19."),
-    _grey("cfl_api", "api.cfl.ca", ("api.cfl.ca",), ("cfl",)),
+    _grey("cfl_api", "api.cfl.ca", ("api.cfl.ca",), ("cfl",),
+          notes="Tier set by John on 2026-10-19 (no terms found). Check 2026-10-25: the host does not answer (its DNS name points at a CloudFront name with no address); the CFL's API has needed a key issued by the CFL. The cfl.ca website terms forbid automated collection (cfl_ca is red). No parser until John has a working key and endpoint."),
     _grey("ncaa_stats", "stats.ncaa.org", ("stats.ncaa.org",)),
-    _grey("fangraphs", "FanGraphs", ("www.fangraphs.com", "fangraphs.com"), ("mlb",)),
-    _grey("transfermarkt", "Transfermarkt", ("www.transfermarkt.com", "transfermarkt.com")),
+    _grey("fangraphs", "FanGraphs", ("www.fangraphs.com", "fangraphs.com"), ("mlb",),
+          notes="Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the Terms of Service section 17 says not to access the Service by any means other than the interface FanGraphs provides, and section 8 bars reusing the site's contents. John to decide whether this makes it red; no request is sent until he does.",
+          evidence="https://www.fangraphs.com/about/terms-of-service"),
+    _grey("transfermarkt", "Transfermarkt", ("www.transfermarkt.com", "transfermarkt.com"),
+          notes="Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the terms page could not be read by the checking tool (fetch blocked); a person must read them before any request is sent."),
     # ---- red-confirm: read to confirm a result, never stored
     _red_confirm("nhl_api", "NHL API (confirm-only)", "NHL.com's terms bar spidering, scraping and entering NHL content into a database.",
                  ("api-web.nhle.com", "api.nhle.com", "statsapi.web.nhl.com")),

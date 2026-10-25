@@ -209,6 +209,13 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   game id), never the red source's numbers. Wikipedia, Wikidata and SPX stay the source of record. Data already loaded (`legacy_nhlapi`
   and anything built from it, such as game venue names) stays, credited "NHL"; never delete it. The fetch scripts that store data still
   refuse to run (`scripts/nhlapi/fetch.py`, `scripts/players/nhl_fetch.py`, `scripts/team_stats/fetch.py --source nhl`).
+- **Source tiers** (registry `scripts/daily/sources.py`, John 2026-10-19; list at `/admin/sources`): **green** = terms allow storing (clause, date and who
+  checked recorded); **grey** = no terms found, a backup or cross-check to Wikipedia only, fetched by the daily job or a manual request, a handful of
+  endpoints, `daily_cap` requests a day, polite User-Agent, shared limiter; **red-confirm** and **red** as above. Not sure: grey with notes, never green.
+  Only John's yes makes a source green. Every grey source, and every row only a grey source holds, shows the "grey area" marker with the notes in the admin tools
+  (sources list, run log) and is listed by `db/review/grey_only_rows.sql` / `api.grey_only_rows` to be replaced by legal data over time (a green source confirms
+  a row and it leaves the list). A terms check that finds a clause barring databases or automated access moves the source to red-confirm or red by John's call:
+  no request until he decides. Each grey or green source has one fetcher and parser in `scripts/grey/` and its own `legacy_<source>` schema (DS1 only), raw archived first.
 - **Never** use Sports Reference (hockey-, basketball-, baseball-, pro-football-reference) or ESPN, not even confirm-only. Check a source's
   terms before using it; if they forbid automated collection, don't.
 - **Provenance** goes in `source_id`, `source_key` and `external_id`, never in free-text notes.

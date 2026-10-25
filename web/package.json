@@ -38,6 +38,7 @@
     "test:links": "node --test scripts/officialLinks.test.ts",
     "test:ops": "node --test scripts/ops.test.ts",
     "test:adminnav": "node --test scripts/adminNav.test.ts",
+    "test:sources": "node --test scripts/adminSources.test.ts",
     "test:runlog": "node --test scripts/runlog.test.ts",
     "test:teamlinks": "node --test scripts/teamSeasonLinks.test.ts",
     "test:resturl": "node --test scripts/restUrl.test.ts",

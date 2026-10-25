@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { GreyMarker } from "@/components/GreyMarker";
 import { LocalTime } from "@/components/LocalTime";
+import { greySourcesIn } from "@/lib/adminSources";
 import { requireAdmin } from "@/lib/auth/user";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
@@ -49,6 +51,7 @@ export default async function RunDetail({ params }: { params: Promise<{ uid: str
   const detail = parseJson(run.detail);
   const links = parseJson(run.links) as Record<string, unknown> | null;
   const secs = durationSeconds(run.started_at, run.finished_at);
+  const grey = greySourcesIn([run.job, run.scope, ...items.map((i) => i.name)]);
   const release = links && typeof links.release === "string" && /^[0-9.\-]+$/.test(links.release) ? links.release : null;
   return (
     <>
@@ -56,6 +59,12 @@ export default async function RunDetail({ params }: { params: Promise<{ uid: str
         <h1>{s.say("runs.detail.title", { job: run.job })}</h1>
         <p><Link href="/admin/runs">{s.say("runs.detail.back")}</Link></p>
         <p><span className={`tk-badge run-${tone(run.outcome)}`}>{run.outcome}</span> {run.summary ?? ""}</p>
+        {grey.length ? (
+          <>
+            <p><GreyMarker s={s} /> {say("runs.greyArea", { names: grey.map((g) => g.name).join(", ") })}</p>
+            {grey.map((g) => <p key={g.id} className="note">{g.name}: {g.notes}{g.evidence ? <> <a href={g.evidence} rel="noreferrer noopener" target="_blank">{say("asrc.evidence")}</a></> : null}</p>)}
+          </>
+        ) : null}
       </section>
       <section className="section ops-section" aria-labelledby="run-facts">
         <h2 id="run-facts">{s.say("runs.detail.facts")}</h2>
@@ -82,7 +91,7 @@ export default async function RunDetail({ params }: { params: Promise<{ uid: str
                 const c = countsLine(parseJson(i.counts));
                 return (
                   <tr key={i.seq} className={i.outcome === "failed" ? "ops-diff" : undefined}>
-                    <td>{i.name}</td>
+                    <td>{i.name}{greySourcesIn([i.name]).length ? <> <GreyMarker s={s} /></> : null}</td>
                     <td>{i.outcome ? <span className={`tk-badge run-${tone(i.outcome)}`}>{i.outcome}</span> : null}</td>
                     <td>
                       {i.summary ?? ""}{c ? <><br /><span className="note">{c}</span></> : null}
