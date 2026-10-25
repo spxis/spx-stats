@@ -1,0 +1,5 @@
+{"SiteKit": {"Parameters": {"feed": "modulekit", "view": "schedule"}, "Schedule": [
+ {"id": "1026001", "game_id": "1026001", "season_id": "68", "date_played": "2024-10-12", "home_team": "1", "visiting_team": "2", "home_team_city": "Toronto", "home_team_nickname": "Marlies", "visiting_team_city": "Rochester", "visiting_team_nickname": "Americans", "home_goal_count": "3", "visiting_goal_count": "2", "game_status": "Final OT", "overtime": "1", "shootout": "0", "venue_name": "Coca-Cola Coliseum"},
+ {"id": "1026002", "game_id": "1026002", "season_id": "68", "date_played": "2024-10-13", "home_team_name": "Syracuse Crunch", "visiting_team_name": "Utica Comets", "home_goal_count": "0", "visiting_goal_count": "0", "game_status": "7:00 pm EDT", "overtime": "0", "shootout": "0", "venue_name": ""},
+ {"id": "1026003", "season_id": "68", "date_played": "", "home_team_name": "Broken", "visiting_team_name": "Row"}
+]}}

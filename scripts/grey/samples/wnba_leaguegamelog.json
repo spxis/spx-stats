@@ -1,0 +1,9 @@
+{"resource": "leaguegamelog", "parameters": {"LeagueID": "10"}, "resultSets": [{"name": "LeagueGameLog",
+ "headers": ["SEASON_ID", "TEAM_ID", "TEAM_ABBREVIATION", "TEAM_NAME", "GAME_ID", "GAME_DATE", "MATCHUP", "WL", "MIN", "PTS"],
+ "rowSet": [
+  ["22024", 1, "NYL", "New York Liberty", "1022400001", "2024-05-14", "NYL vs. WAS", "W", 200, 82],
+  ["22024", 2, "WAS", "Washington Mystics", "1022400001", "2024-05-14", "WAS @ NYL", "L", 200, 80],
+  ["22024", 3, "LVA", "Las Vegas Aces", "1022400002", "2024-05-15", "LVA @ SEA", "L", 200, 70],
+  ["22024", 4, "SEA", "Seattle Storm", "1022400002", "2024-05-15", "SEA vs. LVA", "W", 200, null],
+  ["22024", 5, "CHI", "Chicago Sky", "1022400003", "2024-05-16", "CHI vs. IND", "W", 200, 90]
+ ]}]}

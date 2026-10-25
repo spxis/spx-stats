@@ -1,0 +1,5 @@
+[
+ {"id": 401635433, "season": 2024, "week": 1, "season_type": "regular", "start_date": "2024-08-31T17:00:00.000Z", "completed": true, "neutral_site": false, "conference_game": true, "attendance": 52000, "venue_id": 3920, "venue": "Example Stadium", "home_id": 228, "home_team": "Clemson", "home_conference": "ACC", "home_points": 66, "away_id": 2005, "away_team": "Ball State", "away_conference": "Mid-American", "away_points": 20},
+ {"id": 401635434, "season": 2024, "week": 1, "seasonType": "regular", "startDate": "2024-08-31T23:30:00.000Z", "completed": false, "neutralSite": true, "conferenceGame": false, "venueId": 1, "venue": "O'Brien Field", "homeId": 1, "homeTeam": "Home U", "homeConference": null, "homePoints": null, "awayId": 2, "awayTeam": "Away State", "awayConference": null, "awayPoints": null},
+ {"season": 2024, "week": 2, "home_team": "No Id", "away_team": "Nobody"}
+]
