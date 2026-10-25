@@ -187,7 +187,13 @@ select franchise_id, full_name, nickname, min(yr) first_yr, max(yr) last_yr
 from (select nm.*, yr - row_number() over (partition by franchise_id, full_name order by yr) as island from nm) x
 group by franchise_id, full_name, nickname, island;
 create temp table isl2 as
-select i.*, case when i.last_yr >= (select y from last_season) and (select y from last_season) = (select max(start_year) from core.season where league_code = 'nba')
+-- A club that played the last season Wikipedia gave stays open-ended while it still plays: a later season in core (the daily job's) with team seasons
+-- is the proof, so Wikipedia running a season behind core must not close the 30 current clubs.
+select i.*, case when i.last_yr >= (select y from last_season)
+                  and (not exists (select 1 from core.team_season t join core.season s using (season_id) where s.league_code = 'nba' and s.start_year > i.last_yr)
+                       or exists (select 1 from core.team_season t join core.season s using (season_id)
+                                  where t.franchise_id = i.franchise_id and s.league_code = 'nba'
+                                    and s.start_year = (select max(s2.start_year) from core.team_season t2 join core.season s2 using (season_id) where s2.league_code = 'nba')))
                  then null else make_date(i.last_yr + 1, 7, 1) end as end_on
 from isl i;
 -- Wikipedia fills the periods SPX's own identities leave uncovered, never overlapping them.

@@ -7,7 +7,7 @@
 set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
-STEP="$REPO/db/build/147_nba_from_wikipedia.sql"
+STEP="${STEP:-$REPO/db/build/147_nba_from_wikipedia.sql}"
 NAME="${SCRATCH_NAME:-spx-scratch-nbaident}"
 PORT="${SCRATCH_PORT:-7741}"
 lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 && { echo "port $PORT is busy"; exit 1; }
@@ -50,16 +50,17 @@ insert into core.franchise_league values (1, 'nba', daterange('1946-07-01', '200
 insert into core.team_season (franchise_id, season_id) select f, s from (values (1), (2), (3)) a(f), generate_series(1, 27) s where not (f = 1 and s > 4);
 SQL
 
-# one run of the step's identity and league SQL, with the inputs it builds earlier as temp tables ($1 = rename franchise 3 from 2015: yes|no)
+# one run of the step's identity and league SQL, with the inputs it builds earlier as temp tables ($1 = rename franchise 3 from 2015: yes|no;
+# $2 = the last season Wikipedia gave, default 2026)
 run_step() {
   {
     cat <<SQL
 create temp table src as select 2::smallint as source_id;
 create temp table nm as
-  select y yr, 1 franchise_id, 'New Club' full_name, 'Club' nickname from generate_series(2004, 2026) y
-  union all select y, 2, case when y < 2010 then 'Alpha Birds' else 'Beta Birds' end, case when y < 2010 then 'Birds' else 'Birds' end from generate_series(2000, 2026) y
+  select y yr, 1 franchise_id, 'New Club' full_name, 'Club' nickname from generate_series(2004, ${2:-2026}) y
+  union all select y, 2, case when y < 2010 then 'Alpha Birds' else 'Beta Birds' end, case when y < 2010 then 'Birds' else 'Birds' end from generate_series(2000, ${2:-2026}) y
   union all select y, 3, case when '$1' = 'yes' and y >= 2015 then 'Gamma Bears' else 'Gamma Bulls' end,
-                         case when '$1' = 'yes' and y >= 2015 then 'Bears' else 'Bulls' end from generate_series(2000, 2026) y;
+                         case when '$1' = 'yes' and y >= 2015 then 'Bears' else 'Bulls' end from generate_series(2000, ${2:-2026}) y;
 create temp table fr as select distinct franchise_id from nm;
 $FRAGMENT
 $RELINK
@@ -91,6 +92,38 @@ OLD3="$(echo "$A" | grep '^3:2000-07-01' | sed 's/.*=//')"; NEW3="$(echo "$C" | 
 P2015="$(echo "$C" | grep '^3:2015-07-01' | sed 's/.*=//')"
 [ -n "$P2015" ] && ! echo "$A" | grep -q "=$P2015\$" && ok "a new period gets a new id (never one already used)" || bad "new period id: $P2015"
 [ "$(echo "$A" | grep -v '^3:' )" = "$(echo "$C" | grep -v '^3:')" ] && ok "the other franchises keep their ids" || bad "other franchises changed"
+
+open_n() { psql_ -c "select (select count(*) from core.franchise_identity where source_id = 2 and upper_inf(valid_during)) || '/' || (select count(*) from core.franchise_league where source_id = 2 and upper_inf(valid_during))"; }
+[ "$(open_n)" = "3/3" ] && ok "the current clubs' last identity and membership are open-ended" || bad "open-ended rows: $(open_n)"
+
+# Wikipedia a season behind core (the daily job already made 2026-27): a club with a team season there is still current and stays open;
+# one with none there has stopped playing and closes at the end of the last season Wikipedia gave
+run_step no 2025
+[ "$(open_n)" = "2/2" ] && ok "Wikipedia a season behind core: clubs in the newest season stay open-ended" || bad "behind core: $(open_n)"
+psql_ -c "delete from core.team_season where franchise_id = 3 and season_id = 27" >/dev/null
+run_step no 2025
+[ "$(psql_ -c "select upper(valid_during) from core.franchise_identity where franchise_id = 3 order by lower(valid_during) desc limit 1")" = "2026-07-01" ] && ok "a club absent from the newest season is closed" || bad "folded club: $(ids | grep '^3:')"
+[ "$(psql_ -c "select count(*) from core.franchise_identity where franchise_id = 2 and upper_inf(valid_during)")" = 1 ] && ok "the others stay open" || bad "others closed"
+
+# 147_nba_identity_merge joins touching runs and keeps the open end: split franchise 2's current identity and membership in two, run it
+run_step no
+psql_ -o /dev/null <<'SQL'
+update core.franchise_identity set valid_during = daterange(lower(valid_during), date '2018-07-01') where franchise_id = 2 and upper_inf(valid_during);
+insert into core.franchise_identity (franchise_id, valid_during, location, nickname, full_name, country_code, source_id)
+  select franchise_id, daterange(date '2018-07-01', null), location, nickname, full_name, country_code, source_id from core.franchise_identity
+  where franchise_id = 2 and upper(valid_during) = date '2018-07-01';
+update core.franchise_league set valid_during = daterange(lower(valid_during), date '2018-07-01') where franchise_id = 2 and league_code = 'nba' and upper_inf(valid_during);
+insert into core.franchise_league select franchise_id, league_code, daterange(date '2018-07-01', null), source_id from core.franchise_league
+  where franchise_id = 2 and upper(valid_during) = date '2018-07-01';
+SQL
+psql_ -o /dev/null < "$REPO/db/build/147_nba_identity_merge.sql"
+[ "$(psql_ -c "select count(*) from core.franchise_league where upper_inf(valid_during)")" = 3 ] && [ "$(psql_ -c "select count(*) from core.franchise_identity where franchise_id = 2 and full_name like 'Beta%'")" = 1 ] && ok "the identity merge keeps the open end" || bad "merge: $(leagues | tr "\n" " ")"
+
+# db/checks/098: a club in the newest season whose identity or membership ends before today is a row
+check_rows() { psql_ -c "$(grep -v '^--' "$REPO/db/checks/098_current_club_open_ended.sql" | sed "s/'nhl', 'nba'/'nba'/")" | wc -l | tr -d ' '; }
+[ "$(check_rows)" = 0 ] && ok "check 098: no row while the current clubs are open-ended" || bad "check 098 on a good state"
+psql_ -c "update core.franchise_identity set valid_during = daterange(lower(valid_during), date '2026-07-01') where franchise_id = 2 and upper_inf(valid_during)" >/dev/null
+[ "$(check_rows)" = 1 ] && ok "check 098: a current club closed at the end of the last season is a row" || bad "check 098 on a closed club"
 
 echo
 echo "passed $pass, failed $fail"
