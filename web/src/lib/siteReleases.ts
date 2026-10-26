@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.161.1", date: "2026-10-26", needsReview: true,
+    title: "Security update to the web framework",
+    text: "The site now runs on the patched release of its web framework, which closes several security problems. Pages look and work as before." },
   { version: "0.161.0", date: "2026-10-26", href: "/nhl/player/wayne-gretzky-1866",
     title: "Compare two players",
     text: "A player's page now has a Compare button. Choose a league, position and era, or type a name, and the two players are set side by side: career, totals and per-game rates, best season and standing against the league, with the better figure marked. The address keeps the player chosen, so it can be shared." },
