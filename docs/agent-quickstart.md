@@ -20,6 +20,8 @@ Read next: [web-map.md](web-map.md) (where the code lives).
   [§1](../AGENTS.md#1-rules-in-one-breath) the coordinating session deploys and closes tickets.
 - **Session start:** read the `[spx-check]` lines from the hook and report any `MISSING` with its one fix.
   [§4](../AGENTS.md#4-cold-start)
+- **Agent model:** Haiku by default; Sonnet only for large code or data work; run 1 or 2 agents at a time (John, 2026-10-26).
+  [§2](../AGENTS.md#2-talking-to-john)
 
 ## Coordination
 

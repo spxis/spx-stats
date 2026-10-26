@@ -35,6 +35,7 @@ and [docs/agent-quickstart.md](../../../docs/agent-quickstart.md). This skill is
 - Ports: this project owns 7700-7799 only. Check with `lsof -iTCP:<port> -sTCP:LISTEN`. Dev server 7701 or a worktree port 7702-7749.
   Scratch Postgres in 7740-7749, removed by name. Stop only your own server by PID, never `pkill`.
 - Next.js writes `web/AGENTS.md` and may edit `tsconfig.json` on `next dev`. Delete it and revert the edit before commit. Never commit either.
+- Agent model: Haiku by default; Sonnet only for large code or data work; run 1 or 2 agents at a time (John, 2026-10-26). [§2](../../../AGENTS.md#2-talking-to-john)
 - Minimal diffs: no formatter noise on lines you did not touch. Minimal comments: no ticket ids or PR numbers in code.
 - Names: check a table, view or function name is free in `db/migrations` and on DS1 (read-only) before creating it.
 

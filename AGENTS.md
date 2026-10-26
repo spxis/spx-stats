@@ -179,7 +179,7 @@ John reads on his phone with little attention to spare, and the phone cannot cha
   before handing them over and say what is untested.
 - He is at machine1 (Terminal) most of the time with the VPN off, because it breaks his Dropbox sync. Do not
   make him turn it on there: DS1 is still reachable from it over the home LAN. machine2 runs with the VPN on and Dropbox still syncs; there DS1 is reached directly.
-- He wants features published as they are finished, and work done by Sonnet agents.
+- He wants features published as they are finished. Agents default to Haiku (docs, proposals, research, small fixes, single-file changes, skills); Sonnet only for large code or data work (new loaders, id-keeping build steps, multi-file site features); run 1 or 2 agents at a time (John, 2026-10-26: three Sonnet agents used half of a 5-hour usage window in 30 minutes).
 - When a command works, add it to the private file so the next session does not ask again.
 - **Check before you tell.** Before saying something is pending, waiting on John, not done or broken, check the live state
   (the board, `meta.data_release`, production or DS1, git). Other sessions and John act in parallel, so your picture goes stale.
