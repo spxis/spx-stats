@@ -3,6 +3,17 @@ import type { PersonAwardRow } from "./api/people";
 import { brandFor, logoFor, teamTone, type BrandMap } from "./brand";
 import { clubInfoKey, bucketOf, GROUPS, packRef, type BoardData, type ClubInfo, type RefRow, type SeasonInfo, type StatRow } from "./playerBoard";
 import { getStatRefs, type PlayerRecord } from "./people";
+import type { PersonTeamRow } from "./api/people";
+import type { SeasonSummaryRow } from "./api/types";
+
+/** A title: a season in a run of seasons with a franchise in which that franchise was the league champion, or a club-season the statistics file marks as champion. Newest first. */
+export function careerTitles(teams: readonly PersonTeamRow[], record: PlayerRecord, seasons: readonly Pick<SeasonSummaryRow, "league" | "year" | "champion_franchise">[]): { league: string; year: number; team: string | null }[] {
+  const champ = new Map(seasons.filter((s) => s.champion_franchise != null).map((s) => [`${s.league}|${s.year}`, s.champion_franchise]));
+  const titles: { league: string; year: number; team: string | null }[] = [];
+  for (const t of teams) for (let y = t.from_year; y <= t.to_year; y++) if (champ.get(`${t.league}|${y}`) === t.franchise_id) titles.push({ league: t.league, year: y, team: t.team });
+  for (const s of record.seasonTeams) if (s.team_champion && !titles.some((t) => t.league === s.league && t.year === s.year)) titles.push({ league: s.league, year: s.year, team: s.team });
+  return titles.sort((a, b) => b.year - a.year);
+}
 
 /**
  * Everything the player's board draws from, in the small shape the browser gets: the stat rows (clubs of a season kept apart), the club-seasons,

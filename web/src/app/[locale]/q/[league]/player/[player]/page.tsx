@@ -24,6 +24,7 @@ import { PlayerResume } from "@/components/PlayerResume";
 import { PlayerTitles } from "@/components/PlayerTitles";
 import { positionBook } from "@/components/PositionKey";
 import { PlayerBoard } from "@/components/PlayerBoard";
+import { PlayerCompare } from "@/components/PlayerCompare";
 import { CupsProvider } from "@/components/TrophyIcon";
 import { cupsFor } from "@/lib/cups";
 import { getPersonRetired } from "@/lib/retiredNumbers";
@@ -32,7 +33,7 @@ import { getPerson, getPlayerRecord, getRedirect } from "@/lib/people";
 import { trophyPath } from "@/lib/awardTrophy";
 import { COACH_AWARDS, getPersonCoaching, getPersonStaff } from "@/lib/personCoaching";
 import { recordText } from "@/lib/record";
-import { buildBoard } from "@/lib/playerBoardData";
+import { buildBoard, careerTitles } from "@/lib/playerBoardData";
 import { getPositions } from "@/lib/positionData";
 import { positionCodes, positionNames } from "@/lib/positions";
 import { ageOn, countryName, inches } from "@/lib/people-format";
@@ -149,13 +150,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   const longDate = (s: string) => dt.ymd(atUtc(s));
   const leagueName = (l: string) => (isLeague(l) ? LG[l] : l);
 
-  // A title: a season in a run of seasons with a franchise in which that franchise was the league champion.
-  const champ = new Map(summary.seasons.filter((s) => s.champion_franchise != null).map((s) => [`${s.league}|${s.year}`, s.champion_franchise]));
-  const titles: { league: string; year: number; team: string | null }[] = [];
-  for (const t of teams) for (let y = t.from_year; y <= t.to_year; y++) if (champ.get(`${t.league}|${y}`) === t.franchise_id) titles.push({ league: t.league, year: y, team: t.team });
-  // Seasons known from statistics rather than rosters carry the title on the club-season itself.
-  for (const s of record.seasonTeams) if (s.team_champion && !titles.some((t) => t.league === s.league && t.year === s.year)) titles.push({ league: s.league, year: s.year, team: s.team });
-  titles.sort((a, b) => b.year - a.year);
+  const titles = careerTitles(teams, record, summary.seasons);
   const seasonsHeld = new Set(summary.seasons.map((s) => `${s.league}|${s.year}`));
   const board = await buildBoard({ name: p.name, position: p.position, record, brands, titles, awards, held: seasonsHeld });
 
@@ -262,6 +257,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
         <span className="eyebrow">{lgs.length ? lgs.map((l) => LG[l]).join(" · ") : say(played ? "player.eyebrow" : coaching.length || !staff.length ? "player.roleCoach" : "player.roleStaff")}</span>
         <h1>{p.name}</h1>
         {p.birth_date ? <p className="lede">{p.death_date ? say("player.lifespan", { from: yr(p.birth_date), to: yr(p.death_date) }) : say("player.bornYear", { year: yr(p.birth_date) })}</p> : null}
+        {board ? <PlayerCompare id={p.person_id} /> : null}
       </section>
       {facts.length ? <dl className="pfacts">{facts}</dl> : <p className="note">{say("player.noBio")}</p>}
       {multi ? (

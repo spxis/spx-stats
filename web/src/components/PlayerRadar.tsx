@@ -12,7 +12,7 @@ import type { BoardView } from "./playerView";
 const H = 300;
 
 /** A label on at most two lines, broken at a space near 14 characters. */
-function lines(text: string): string[] {
+export function lines(text: string): string[] {
   if (text.length <= 14 || !text.includes(" ")) return [text];
   const words = text.split(" "), out: string[] = [""];
   for (const w of words) {

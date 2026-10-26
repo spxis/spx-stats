@@ -1,0 +1,60 @@
+/* The player page's Compare window: two players side by side. Tokens come from globals.css; .mapdlg and .dlghead are the shared dialog. */
+.pcmp { width: min(980px, 96vw); overflow-y: auto; overscroll-behavior: contain; }
+.pcmp .dlghead h2 { font: 600 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .05em; margin: 0; }
+.pcmp-heads { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 24px; border-block: 1px solid var(--rule); padding-block: 12px; }
+.pcmp-head { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; }
+.pcmp-head h3 { margin: 0; font: 600 24px/1.1 var(--display); text-transform: uppercase; letter-spacing: .03em; overflow-wrap: anywhere; }
+.pcmp-head .note { margin: 0; }
+.pcmp-head .linkish { border: 0; background: none; padding: 0; font: inherit; color: var(--accent-text); cursor: pointer; text-decoration: underline; text-underline-offset: 3px; }
+.pcmp-choose h3 { font-size: 18px; }
+.pcmp-choose { width: 100%; }
+
+.pcmp-picker { display: flex; flex-direction: column; gap: 8px; width: 100%; min-width: 0; }
+.pcmp-menus { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.pcmp-menus label { display: flex; flex-direction: column; gap: 2px; min-width: 0; font: 600 12px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+.pcmp-picker select, .pcmp-picker input { box-sizing: border-box; width: 100%; min-height: var(--control-h); font: 15px/1.2 var(--body); padding: 0 8px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); text-transform: none; letter-spacing: 0; }
+.pcmp-picker select:disabled { color: var(--muted); }
+.pcmp-picker .note { margin: 0; }
+.pcmp-results { list-style: none; margin: 0; padding: 0; border: 1px solid var(--rule); background: var(--panel); max-height: 260px; overflow-y: auto; }
+.pcmp-results li + li { border-top: 1px solid var(--rule); }
+.pcmp-results button { display: flex; flex-direction: column; align-items: flex-start; gap: 1px; width: 100%; min-height: 44px; padding: 6px 10px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.pcmp-results button:hover, .pcmp-results button:focus-visible { background: var(--soft); }
+.pcmp-results span { font-size: 13px; color: var(--muted); }
+
+.pcmp-body { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; min-width: 0; }
+.pcmp-controls { display: flex; flex-wrap: wrap; gap: 8px 16px; }
+.pcmp .seg button + button { border-left: 1px solid var(--rule); }
+.pcmp-table { width: 100%; border-collapse: collapse; table-layout: fixed; }
+.pcmp-table th { position: static; white-space: normal; background: none; }
+.pcmp-table tbody th { border-bottom: 0; }
+.pcmp-table thead th { font: 600 16px/1.2 var(--display); text-transform: uppercase; letter-spacing: .04em; text-align: left; padding: 6px 8px; overflow-wrap: anywhere; }
+.pcmp-table tbody th[scope="row"] { font-weight: 600; text-align: left; color: var(--muted); font-size: 14px; width: 28%; }
+.pcmp-table th[scope="row"], .pcmp-table td { padding: 6px 8px; border-top: 1px solid var(--rule); vertical-align: top; overflow-wrap: anywhere; font-variant-numeric: tabular-nums; }
+.pcmp-table .pcmp-group th { padding-top: 14px; color: var(--ink); border-top: 2px solid var(--rule); font: 600 14px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; text-align: left; }
+.pcmp-sub th[scope="row"] { padding-left: 20px; font-weight: 400; }
+.pcmp-sub td { color: var(--muted); }
+.pcmp-win { font-weight: 700; color: var(--ink); background: color-mix(in srgb, var(--accent) 14%, transparent); box-shadow: inset 3px 0 0 var(--accent); }
+.pcmp-sub .pcmp-win { color: var(--ink); }
+
+.pcmp-radar { margin: 0; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.pcmp-radar svg { width: 100%; max-width: 440px; height: auto; }
+.pcmp-radar .ring { fill: none; stroke: var(--rule); stroke-width: 1; }
+.pcmp-radar .spoke { stroke: var(--rule); stroke-width: 1; }
+.pcmp-radar .shape-a { fill: color-mix(in srgb, var(--accent) 28%, transparent); stroke: var(--accent); stroke-width: 2.4; stroke-linejoin: round; }
+.pcmp-radar .shape-b { fill: none; stroke: var(--ink); stroke-width: 2.4; stroke-dasharray: 6 4; stroke-linejoin: round; }
+.pcmp-radar .axlab { fill: var(--ink); font: 12px var(--body); }
+.pcmp-key { display: flex; flex-wrap: wrap; justify-content: center; gap: 4px 18px; font-size: 14px; }
+.pcmp-key span::before { content: ""; display: inline-block; width: 22px; height: 0; margin-right: 6px; vertical-align: middle; border-top: 3px solid var(--accent); }
+.pcmp-key .kb::before { border-top: 3px dashed var(--ink); }
+
+@media (max-width: 600px) {
+  .pcmp { padding: 12px; }
+  .pcmp-heads { grid-template-columns: minmax(0, 1fr); }
+  .pcmp-head h3 { font-size: 20px; }
+  .pcmp-menus { grid-template-columns: minmax(0, 1fr); }
+  .pcmp-table th { position: static; white-space: normal; background: none; }
+.pcmp-table tbody th { border-bottom: 0; }
+.pcmp-table thead th { font-size: 14px; }
+  .pcmp-table tbody th[scope="row"] { width: 34%; font-size: 12px; letter-spacing: .04em; }
+  .pcmp-table th[scope="row"], .pcmp-table td { padding: 6px 4px; font-size: 14px; }
+}

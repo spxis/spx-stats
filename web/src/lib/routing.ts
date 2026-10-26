@@ -24,12 +24,12 @@ export const QUERY_KEYS = [
   "map", "mapteam", "stat", "pos", "nat", "list", "active",
   "sort_allstar", "sort_countries", "sort_firsts", "sort_leagues", "sort_rank", "sort_stack",
   "sort_cup", "sort_nhl", "sort_nha", "sort_pcha", "sort_wchl", "sort_wha", "sort_nfl", "sort_afl", "sort_aafc",
-  "q", "league", "status", "page", "from", "to", "after", "offset", "letter", "letter_by",
+  "q", "league", "status", "page", "from", "to", "after", "offset", "letter", "letter_by", "vs",
 ] as const;
 
-/** Query keys a player page reads in the browser (components/PlayerBoard.tsx: the seasons shown, the phase and the clubs), so on a player page they
+/** Query keys a player page reads in the browser (components/PlayerBoard.tsx: the seasons shown, the phase and the clubs; components/PlayerCompare.tsx: the player compared with), so on a player page they
     do not ask for a copy drawn per request: the one static page serves them all. Everywhere else they are read on the server as before. */
-export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season"] as const;
+export const PLAYER_CLIENT_KEYS = ["from", "to", "phase", "teams", "season", "vs"] as const;
 
 /** The keys of PLAYER_CLIENT_KEYS a city page also reads in the browser (components/CityBoard.tsx: the years its clubs, timeline and titles count); the city page's other keys still ask the server. */
 export const CITY_CLIENT_KEYS = ["from", "to"] as const;

@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.161.0", date: "2026-10-26", href: "/nhl/player/wayne-gretzky-1866",
+    title: "Compare two players",
+    text: "A player's page now has a Compare button. Choose a league, position and era, or type a name, and the two players are set side by side: career, totals and per-game rates, best season and standing against the league, with the better figure marked. The address keeps the player chosen, so it can be shared." },
   { version: "0.160.0", date: "2026-10-26", href: "/soccer/premier-league",
     title: "The big European football leagues",
     text: "Soccer gains the Premier League, La Liga, the Bundesliga, Serie A and Ligue 1. A league page lists every season with its champion; a season page has the final table, the clubs promoted and relegated, and the results as a grid; a club page follows the club through the divisions. These pages appear once their data is published." },
