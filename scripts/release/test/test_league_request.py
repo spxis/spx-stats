@@ -85,6 +85,7 @@ def main():
         psql(PROD, "update meta.score_update_request set status = 'done', finished_at = now() - interval '1 hour'")
         psql_file(PROD, mig("150_score_request_league.sql"))
         psql_file(PROD, mig("150_score_request_league.sql"))
+        psql_file(PROD, mig("156_live_refresh_request.sql"))
         check("migration 150 applies twice", True)
 
         def ask(league="nhl", actor="john@example.test", secret=SECRET):

@@ -423,3 +423,19 @@ Tests: `python3 -I scripts/daily/limiter_test.py [--ds1 "<scratch dsn>"]` (also 
 - Retention: settled, or 7 days. `live.py stale` lists rows older than 2 days that nobody settled; `live.py sweep` deletes the old ones.
 - Needs `TURSO_DATABASE_URL` and `TURSO_RUNLOG_TOKEN` (a token that can write). Tests: `python3 -I scripts/daily/live_test.py [--turso http://127.0.0.1:<port>]`.
 - Cost: one pipeline request per 100 games per run; at most a few dozen rows written per click or daily run (Turso Free: 10 M rows written and 500 M read a month, 5 GB).
+
+### Admin refresh (`--live-only`)
+
+An admin's "Refresh" (a game, a day's list, a league, the main five, all sports; migration 156) is one `meta.score_update_request` row. The release runner
+(`release.py request_pass`, once a minute, live requests before the slow path) runs:
+
+    run.py --dry-run --live-only --live-request <id> --by <who> --scope <scope> [--game <core game id> | --league <l> [--day YYYY-MM-DD]] [--sources wikipedia,balldontlie,nflverse]
+
+- Reads DS1 (a select for the games and the clubs playing), fetches through the shared limiter, writes Turso only (`live_score` and `live_request`, the
+  progress row the page reads: who pressed it, status, one outcome per asked game). Never writes DS1, never prepares a release.
+- `--day` and `--game` fetch only the season articles of the clubs playing (a game: two pages; a day: two per game), and balldontlie from that day on.
+- `--sources` must be some of `run.py LIVE_SOURCES`; each goes through `sources.require` with purpose `manual`, so a red or confirm-only source (or an unknown
+  one) stops the run before anything is fetched. Wikipedia unticked: no Wikipedia request at all. The confirm-only checks are not run by a refresh.
+- A scoped slow-path request (`kind scores` with a scope, from the data page) runs this refresh first, then the daily job as before.
+- Last lines printed: `Requests this run: ...` and `live request: <done|nothing|failed>: <summary>` (copied onto the request row and the run log).
+- Tests: `python3 -I scripts/daily/live_request_test.py` (also part of `--self-test`), `scripts/release/test/test_live_request.py` (scratch Postgres), `pnpm test:livereq`.

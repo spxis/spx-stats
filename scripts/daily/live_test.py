@@ -213,9 +213,51 @@ def test_publish():
     check(src.count("http") < 12 and "api-web.nhle" not in src and "espn" not in src.lower(), "live.py names no source host")
 
 
+def test_request():
+    day = D(2026, 10, 24)
+    mk = lambda a, h, sa, sh, src: claim(src, (a, h), {a: sa, h: sh}, h, day)
+    games = build([mk(BOS, TOR, 2, 3, "wp:A"), mk(OTT, MTL, 1, 4, "wp:A")])
+    core = {"nhl": [core_row(10), core_row(11, hf=4, af=3)]}
+    notes = []
+    rows, settled, skipped = L.plan({"nhl": games}, {"nhl": ROSTER}, core, [], day, day, now=NOW, only_ids={10}, notes=notes)
+    check([r["game_id"] for r in rows] == [10] and not skipped, "request: one game asked for, the other game of the day is not touched")
+    notes = []
+    L.plan({"nhl": games}, {"nhl": ROSTER}, {"nhl": [core_row(10, "final", 3, 2), core_row(11, hf=4, af=3)]}, [], day, day, now=NOW, notes=notes)
+    check(notes == [dict(game_id=10, reason="core.game already holds the final result")], "request: the reason a game was left out is kept per game id")
+    items = L.items_for([10, 11, 12], {10: ("updated", "in progress result written"), 11: ("failed", "boom")}, [dict(game_id=12, reason="no allowed source has a result")])
+    check([i[:2] for i in items] == [[11, "failed"], [10, "updated"], [12, "skipped"]], "request: failures first, then what changed, then what was left out")
+    check(L.items_for([99], {}, [])[0][1:] == ["skipped", "no chosen source gave a result for this game"], "request: a game no source gave is listed with that reason")
+    check(len(L.items_for(list(range(500)), {}, [])) == L.ITEM_MAX, "request: the progress row lists at most %d games" % L.ITEM_MAX)
+    sql = []
+    def csv(q): sql.append(q); return [dict(league_code="nhl", start_year="2026", game_id="10", game_date="2026-10-24", hf="1", af="2"),
+                                      dict(league_code="nhl", start_year="2026", game_id="11", game_date="2026-10-24", hf="4", af="3")]
+    got = L.locate(day="2026-10-24", leagues=["nhl", "nba"], ds1_csv=csv)
+    check(got["nhl"]["ids"] == [10, 11] and got["nhl"]["fids"] == {1, 2, 3, 4} and got["nhl"]["season"] == 2026, "locate: the games of a day, the clubs that play and the season")
+    check(sql[0].lstrip().lower().startswith("select") and "g.game_date = '2026-10-24'" in sql[0] and "'nhl','nba'" in sql[0], "locate: one read-only select")
+    L.locate(game_id=10, ds1_csv=csv)
+    check("g.game_id = 10" in sql[1], "locate: one game by its id")
+    try: L.locate(day="2026-10-24' or 1=1 --", leagues=["nhl"], ds1_csv=csv); check(False, "locate: a bad day is refused")
+    except ValueError: pass
+    L.locate(day="2026-10-24", leagues=["nhl'; drop table x; --"], ds1_csv=csv)
+    check("drop" not in sql[-1], "locate: a league that is not plain letters never reaches the query")
+    t = SqliteTurso()
+    check(L.request_start(t, dict(id=7, by="john@example.test", scope="day", league="nhl", day="2026-10-24", game=None, sources=["wikipedia"]), NOW), "request: the progress row starts")
+    r = t.rows("select status, requested_by, scope, sources from live_request where id = 7")[0]
+    check((r["status"], r["requested_by"], r["scope"], r["sources"]) == ("running", "john@example.test", "day", "wikipedia"), "request: it says who pressed it and what for")
+    check(L.request_finish(t, 7, "done", "2 game(s) asked", [[10, "updated", "x"]], NOW), "request: and ends")
+    r = t.rows("select status, finished_at, items from live_request where id = 7")[0]
+    check(r["status"] == "done" and json.loads(r["items"]) == [[10, "updated", "x"]], "request: the outcome per game is kept")
+    L.request_start(t, dict(id=7, by="a", scope="game", game=10, sources=[]), NOW)
+    check(t.rows("select status, items from live_request where id = 7")[0]["items"] is None, "request: a repeated id starts over")
+    check(L.request_finish(object(), 7, "done", "x") is False, "request: a failing Turso never raises")
+    t.run([("update live_request set started_at = ? where id = 7", ["2026-10-01T00:00:00Z"])])
+    L.sweep(t, now=NOW)
+    check(not t.rows("select 1 from live_request"), "retention: a request row older than 7 days goes with the live rows")
+
+
 def run_unit():
     del FAILS[:]
-    test_tally(); test_no_red_score(); test_plan(); test_publish()
+    test_tally(); test_no_red_score(); test_plan(); test_publish(); test_request()
     writer_tests(SqliteTurso, "sqlite: ")
     return list(FAILS)
 

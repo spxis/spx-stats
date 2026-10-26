@@ -728,6 +728,10 @@ EXCLUSIVE lock for the whole rebuild. So:
      "Check now" (Drift) writes one row in `meta.score_update_request`; the runner's once-a-minute run does the work. A scores request
      runs `scripts/daily/run.py --apply` on DS1 under the shared lock (`scripts/release/daily_lock.py`) and approves the release it
      prepares as `request:<admin>` only if the auto-approval policy passes and Hold is off. Never write to that table by hand.
+     The same table carries an admin's **Refresh** of the unofficial live scores (migration 156; buttons on every scoreboard and the scope/sources choices of
+     the same dialog): `scope` game, day, league, main5 or all, plus the ticked `sources` (only green or grey sources with a score parser; a confirm-only or
+     forbidden one is greyed out in the dialog and refused by the site and again by the runner). `kind live` runs `run.py --live-only` on the runner
+     (DS1 read-only, Turso only, shared limiter, no release); a scoped `scores` request runs it first and then the usual job. One run log entry per click, with who pressed it.
    - **`/admin/ops`** (migrations 104 on production, 105 on DS1; `runner/README.md`, "Ops snapshot and controls"): the DS1 side on one admin page. Vercel
      cannot reach DS1, so `scripts/release/ops.py` (runner container, `OPS_SNAPSHOT=0` switches it off) pushes one small status snapshot to
      `meta.ops_status` every 15 minutes (only when it changed, else hourly; ring of 96) and the page reads the latest through `api.ops_dashboard`.

@@ -642,9 +642,15 @@ def test_live():
     for f in live_test.run_unit(): FAILS.append("live scores: " + f)
 
 
+def test_live_request():
+    import live_request_test
+    for f in live_request_test.run_unit(): FAILS.append("live request: " + f)
+
+
 def run():
     test_limiter()
     test_live()
+    test_live_request()
     test_confirm_red()
     test_confirm_sites()
     test_runlog_hook()

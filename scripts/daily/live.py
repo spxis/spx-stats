@@ -48,6 +48,8 @@ SCHEMA = [
     "n_sources integer not null, n_agree integer not null, confirm_agree integer not null default 0, confirm_differ integer not null default 0, "
     "sources text not null, sig text not null, fetched_at text not null, updated_at text not null)",
     "create index if not exists live_score_day on live_score (league, game_date)",
+    "create table if not exists live_request (id integer primary key, requested_by text not null, scope text not null, league text, game_day text, game_id integer, "
+    "sources text, status text not null, started_at text not null, finished_at text, summary text, items text)",
 ]
 
 UPSERT = (
@@ -244,15 +246,15 @@ def write(t, rows):
 
 
 def sweep(t, settled=(), now=None, keep_days=KEEP_DAYS):
-    """Delete rows core has settled and rows older than `keep_days`. -> (settled deleted, old deleted)."""
+    """Delete rows core has settled and rows older than `keep_days` (and the admin requests that old). -> (settled deleted, old deleted)."""
     cutoff = now_iso((now or datetime.datetime.now(datetime.timezone.utc)) - datetime.timedelta(days=keep_days))
-    stmts = [("delete from live_score where updated_at < ?", [cutoff])]
+    stmts = [("delete from live_score where updated_at < ?", [cutoff]), ("delete from live_request where started_at < ?", [cutoff])]
     ids = sorted({int(x) for x in settled})
     for i in range(0, len(ids), CHUNK):
         stmts.append(("delete from live_score where game_id in (%s)" % ",".join(str(x) for x in ids[i:i + CHUNK]), []))
     res = t.run(stmts)
     n = lambda x: x[1].get("affected_row_count", 0) if x[0] else 0
-    return sum(n(x) for x in res[1:]), n(res[0])
+    return sum(n(x) for x in res[2:]), n(res[0])
 
 
 def stale(t, now=None):
@@ -282,8 +284,10 @@ def core_games(leagues_seasons, since, ds1_csv=None):
     return out
 
 
-def plan(all_games, rosters, core, confirm_rows, since, until, purpose="daily", fetched=None, now=None):
-    """Games of the run -> (rows to write, settled game ids, skipped [(label, reason)]). Pure: `core` is core_games()'s answer."""
+def plan(all_games, rosters, core, confirm_rows, since, until, purpose="daily", fetched=None, now=None, only_ids=None, notes=None):
+    """Games of the run -> (rows to write, settled game ids, skipped [(label, reason)]). Pure: `core` is core_games()'s answer.
+    `only_ids` limits the run to those core game ids (an admin's one-game refresh); `notes`, when a list, collects one dict(game_id, reason) for every
+    asked-about game that was left out, so the request can say why."""
     import compare
     rows, settled, skipped = [], [], []
     for lg, games in all_games.items():
@@ -296,17 +300,22 @@ def plan(all_games, rosters, core, confirm_rows, since, until, purpose="daily", 
             skipped.append((lg, "could not be matched with core.game: %s" % str(e)[:100])); continue
         for g, d in pairs:
             tag = "%s %s %s" % (lg.upper(), g["date"], " v ".join(g["teams"]))
+
+            def skip(reason, d=d, tag=tag):
+                skipped.append((tag, reason))
+                if notes is not None and d is not None: notes.append(dict(game_id=d["id"], reason=reason))
             try:
                 if d is None: skipped.append((tag, "not in core.game")); continue
+                if only_ids is not None and d["id"] not in only_ids: continue
                 t = tally(g["claims"], fid_of, d["hf"], d["af"], purpose, fetched, now)
-                if t is None: skipped.append((tag, "no allowed source has a result")); continue
+                if t is None: skip("no allowed source has a result"); continue
                 if d["status"] == "final":
                     if (t["home_score"], t["away_score"]) == (d["hs"], d["as_"]): settled.append(d["id"])
-                    skipped.append((tag, "core.game already holds the final result")); continue
+                    skip("core.game already holds the final result"); continue
                 ag, df = confirm_counts(confirm_rows, g["source_key"])
                 rows.append(make_row(d["id"], lg, d["date"].isoformat(), t, ag, df, now))
             except Exception as e:      # one game that cannot be read costs that game only
-                skipped.append((tag, "%s: %s" % (type(e).__name__, str(e)[:120])))
+                skip("%s: %s" % (type(e).__name__, str(e)[:120]))
     return rows, settled, skipped
 
 
@@ -319,8 +328,9 @@ def fetched_from_state(state):
     return f
 
 
-def publish(all_games, rosters, seasons, confirm_rows, state=None, purpose="daily", turso=None, core=None, since=None, until=None, today=None, log=print):
-    """Called by run.py with --live. -> a summary dict for the run log. Never raises: a failure here must not fail the daily job."""
+def publish(all_games, rosters, seasons, confirm_rows, state=None, purpose="daily", turso=None, core=None, since=None, until=None, today=None, log=print, only_ids=None, asked=None):
+    """Called by run.py with --live. -> a summary dict for the run log. Never raises: a failure here must not fail the daily job.
+    `asked` (an admin's request) is the list of core game ids the request is about; the summary then carries `items`, one outcome per asked game."""
     today = today or datetime.date.today()
     since, until = since or today - datetime.timedelta(days=3), until or today + datetime.timedelta(days=1)
     try:
@@ -330,7 +340,8 @@ def publish(all_games, rosters, seasons, confirm_rows, state=None, purpose="dail
     except Exception as e:
         log("live scores: not published: %s" % str(e)[:200])
         return dict(published=False, reason=str(e)[:200])
-    rows, settled, skipped = plan(all_games, rosters, core, confirm_rows or [], since, until, purpose, fetched_from_state(state or {}))
+    notes = []
+    rows, settled, skipped = plan(all_games, rosters, core, confirm_rows or [], since, until, purpose, fetched_from_state(state or {}), only_ids=only_ids, notes=notes)
     results = write(t, rows) if rows else {}
     gone = (0, 0)
     try:
@@ -344,7 +355,69 @@ def publish(all_games, rosters, seasons, confirm_rows, state=None, purpose="dail
         len(rows), summary["updated"], summary["unchanged"], summary["held"], summary["failed"], len(skipped), gone[0], gone[1], t.requests))
     for gid, (o, why) in results.items():
         if o in ("held", "failed"): log("     game %s %s: %s" % (gid, o, why))
+    if asked is not None:
+        summary["items"] = items_for(asked, results, notes)
     return summary
+
+
+# ---------------------------------------------------------------------------------------------------- an admin's request
+
+ITEM_MAX = 120      # games listed on a request's progress row
+OUTCOMES = ("updated", "unchanged", "held", "failed", "skipped")
+
+
+def items_for(asked, results, notes):
+    """One entry per asked-about game: [game_id, outcome, reason]. Written results first, then the reasons a game was left out, then the games no source gave."""
+    why = {}
+    for x in notes: why.setdefault(x["game_id"], x["reason"])
+    out = []
+    for gid in asked:
+        if gid in results: o, r = results[gid]
+        else: o, r = "skipped", why.get(gid, "no chosen source gave a result for this game")
+        out.append([int(gid), o, str(r)[:100]])
+    order = {"failed": 0, "held": 1, "updated": 2, "unchanged": 3, "skipped": 4}
+    return sorted(out, key=lambda x: (order.get(x[1], 9), x[0]))[:ITEM_MAX]
+
+
+def locate(game_id=None, day=None, leagues=(), ds1_csv=None):
+    """Where an admin's request points, from DS1 (a read-only select): {league: dict(season, ids [core game ids], fids {franchise ids of the clubs playing})}.
+    One game by its core game id, or every game of `leagues` on `day` (YYYY-MM-DD)."""
+    import teams as T
+    ds1_csv = ds1_csv or T.ds1_csv
+    if game_id is not None: cond = "g.game_id = %d" % int(game_id)
+    else:
+        datetime.date.fromisoformat(day)
+        cond = "g.game_date = '%s' and s.league_code in (%s)" % (day, ",".join("'%s'" % x for x in leagues if x.isalnum()))
+    rows = ds1_csv(
+        "select s.league_code, s.start_year, g.game_id, g.game_date, hts.franchise_id hf, ats.franchise_id af from core.game g join core.season s using (season_id) "
+        "join core.team_season hts on hts.team_season_id = g.home_team_season_id join core.team_season ats on ats.team_season_id = g.away_team_season_id where " + cond)
+    out = {}
+    for r in rows:
+        x = out.setdefault(r["league_code"], dict(season=int(r["start_year"]), ids=[], fids=set(), date=r["game_date"]))
+        x["ids"].append(int(r["game_id"])); x["fids"] |= {int(r["hf"]), int(r["af"])}
+    return out
+
+
+def request_start(t, req, now=None):
+    """The progress row of an admin request, 'running'. req: dict(id, by, scope, league, day, game, sources). -> True when written. Never raises."""
+    try:
+        ensure(t)
+        ok, res = t.run([("insert into live_request (id, requested_by, scope, league, game_day, game_id, sources, status, started_at) values (?,?,?,?,?,?,?,'running',?) "
+                          "on conflict(id) do update set status = 'running', started_at = excluded.started_at, finished_at = null, summary = null, items = null",
+                          [int(req["id"]), str(req["by"])[:80], req["scope"], req.get("league"), req.get("day"), req.get("game"), ",".join(req.get("sources") or []) or None, now_iso(now)])])[0]
+        return ok
+    except Exception:
+        return False
+
+
+def request_finish(t, req_id, status, summary, items=None, now=None):
+    """The end of an admin request: status done | failed | nothing, a one-line summary, and the per-game outcomes. Never raises."""
+    try:
+        ok, _ = t.run([("update live_request set status = ?, finished_at = ?, summary = ?, items = ? where id = ?",
+                        [status, now_iso(now), str(summary)[:400], json.dumps(items, separators=(",", ":")) if items is not None else None, int(req_id)])])[0]
+        return ok
+    except Exception:
+        return False
 
 
 def main(argv):

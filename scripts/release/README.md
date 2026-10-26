@@ -238,6 +238,15 @@ same approval policy; a league it does not know ends the request as `failed` wit
 the league), and about 10 minutes after the last request for the same league. The request's `summary` and run log entry name the league. The
 read of `league` is `to_jsonb(q) ->> 'league'`, so a runner rebuilt before the migration is applied still works (it sees no league).
 
+**Refresh of the live scores (migration 156).** The admin buttons on a scoreboard and the scores update dialog on `/admin/data` call `api.request_live`, which
+adds a row with `scope` (`game`, `day`, `league`, `main5`, `all`), `game_id` or `game_day` and `league`, and `sources` (the ids ticked). `kind = 'live'` is a
+refresh of Turso's live layer alone: the runner runs `run.py --dry-run --live-only --live-request <id> --by <who> --scope <scope> ...` (read-only on DS1, no
+DS1 lock, no release) and copies its last line onto the request. Live requests are served before the slow path in each pass, have their own "one open request"
+(so a refresh never waits for a long scores job to be asked for), and need about 30 seconds between two requests for the same target. `kind = 'scores'` with a
+scope (a league, the main five, all sports; never a game or a day) runs the same refresh first and then the usual slow path, with the 10 minute rule. The runner
+checks the league against `DAILY_LEAGUES` and each source against `LIVE_SOURCES` (the same as `run.py`'s, compared by `test_live_request.py`) before it runs
+anything, so a forged row naming a confirm-only or forbidden source fails without a request. One run log entry per request: who pressed it, scope, sources, outcome.
+
 Drift request: the runner runs the drift check right away (same code as the nightly one), writes `meta.sync_status`, proposes the fix
 release if tables differ, and writes a summary (`Checked N tables: ...`).
 

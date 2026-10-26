@@ -28,6 +28,7 @@ import balldontlie as B, bdlsports as S, confirm_red as CR, confirm_sites as CS,
 
 CACHE = os.path.expanduser(os.environ.get("SPX_DAILY_CACHE", "~/Library/Caches/spx-stats-daily"))
 LEAGUES = ["nhl", "nba", "mlb", "nfl", "cfl"]
+LIVE_SOURCES = ("wikipedia", "balldontlie", "nflverse")      # the sources that give a score today (an admin's refresh may tick some of them)
 TITLE_ALIAS = {("mlb", "Sacramento Athletics"): "Athletics"}   # Wikipedia's article name, where it differs from the club's full name
 NFLVERSE_URL = "https://github.com/nflverse/nflverse-data/releases/download/schedules/games.csv"
 UA = W.UA
@@ -185,6 +186,13 @@ def main():
     ap.add_argument("--offline", action="store_true", help="parse the cached pages only; no request at all")
     ap.add_argument("--force-fetch", action="store_true", help="ignore the minute-old answers of the shared cache (every request still waits its turn in the limiter's queue); also SPX_FORCE_FETCH=1")
     ap.add_argument("--live", action="store_true", help="also publish the provisional results to the live score layer in Turso (live.py; also DAILY_LIVE=1); never DS1 or production")
+    ap.add_argument("--live-only", action="store_true", help="an admin's refresh: fetch, build the games and publish the live rows, then stop (read-only on DS1; implies --live; not with --apply)")
+    ap.add_argument("--day", help="with --live-only: only the games of this day (YYYY-MM-DD) of --league, and only the clubs playing that day are fetched")
+    ap.add_argument("--game", type=int, help="with --live-only: one core game id; only its two clubs are fetched")
+    ap.add_argument("--sources", help="with --live-only: the score sources to read, from %s (default: all)" % ",".join(LIVE_SOURCES))
+    ap.add_argument("--live-request", type=int, help="the admin request id: its progress and result are written to Turso's live_request")
+    ap.add_argument("--by", default="", help="who pressed the button (with --live-request)")
+    ap.add_argument("--scope", default="", help="the request's scope (with --live-request): game, day, league, main5 or all")
     ap.add_argument("--no-ds1", action="store_true", help="skip the DS1 comparison (rosters then come from the cache)")
     ap.add_argument("--since", help="report DS1 games on or after this date that Wikipedia lacks (default: 7 days ago)")
     ap.add_argument("--json", help="write the games to this file")
@@ -192,6 +200,11 @@ def main():
     a = ap.parse_args()
     if a.self_test:
         import selftest; return selftest.run()
+    if a.live_only:
+        if a.apply or a.rehearse: sys.exit("--live-only never writes DS1: drop --apply / --rehearse")
+        a.live = True
+    elif a.day or a.game or a.sources or a.live_request: sys.exit("--day, --game, --sources and --live-request go with --live-only")
+    if a.live_request: return request_run(a)
     if not a.apply: return run(a, {})
     # --apply leaves a heartbeat row on DS1 (ingest.daily_run): 'running' now, 'ok' or 'failed' at the end
     import heartbeat, runlog_hook
@@ -206,6 +219,36 @@ def main():
         raise
     heartbeat.finish(hb, "ok" if rc == 0 else "failed", dict(result, exit_code=rc))
     runlog_hook.report(rl, result, rc)
+    return rc
+
+
+def request_run(a):
+    """--live-only for an admin's request: the progress row in Turso is 'running' now and holds the outcome per game at the end. The last line printed,
+    `live request: <status>: <summary>`, is what the release runner copies onto the request row and into the run log."""
+    import live
+    try: t = live.Turso()
+    except Exception as e:
+        t = None; print("live request: no progress row (%s)" % str(e)[:100])
+    req = dict(id=a.live_request, by=a.by or "admin", scope=a.scope or "league", league=a.league if a.day else None, day=a.day, game=a.game,
+               sources=[x for x in (a.sources or "").split(",") if x])
+    if t: live.request_start(t, req)
+    result = {}
+    try:
+        rc = run(a, result)
+    except BaseException as e:
+        msg = ("%s: %s" % (type(e).__name__, e))[:300]
+        if t: live.request_finish(t, a.live_request, "failed", msg)
+        print("live request: failed: " + msg)
+        raise
+    lv = result.get("live") or {}
+    if lv.get("published") is False: status, text = "failed", "Nothing was published: %s" % lv.get("reason", "the live layer was not written")
+    elif not lv.get("items"): status, text = "nothing", result.get("nothing") or "No game of this request could be matched with a result."
+    else:
+        c = collections.Counter(o for _, o, _ in lv["items"])
+        text = "%d game(s) asked: %s." % (len(lv["items"]), ", ".join("%d %s" % (c[k], k) for k in live.OUTCOMES if c[k]))
+        status = "done"
+    if t: live.request_finish(t, a.live_request, status, text, lv.get("items"))
+    print("live request: %s: %s" % (status, text))
     return rc
 
 
@@ -290,11 +333,32 @@ def run(a, result):
     leagues = [x for x in a.league.split(",") if x]
     unknown = [x for x in leagues if x not in LEAGUES]
     if unknown or not leagues: sys.exit("--league takes some of %s (got %r)" % (",".join(LEAGUES), a.league))
-    a.bdl_leagues = [] if a.no_balldontlie else ["nba", "mlb", "nfl"]
+    use = set(LIVE_SOURCES)
+    if a.sources:
+        use = {x for x in a.sources.split(",") if x}
+        if not use or use - set(LIVE_SOURCES): sys.exit("--sources takes some of %s (got %r)" % (",".join(LIVE_SOURCES), a.sources))
+        for x in sorted(use):
+            try: SRC.require(x, None, "manual")
+            except SRC.SourceRefused as e: sys.exit(str(e))
+    scope, asked = None, None
+    if a.day or a.game:
+        if bool(a.day) == bool(a.game): sys.exit("give --day (with --league) or --game, not both")
+        import live
+        try: scope = live.locate(a.game, a.day, leagues)
+        except (RuntimeError, ValueError) as e: sys.exit("could not find the games: %s" % e)
+        if not scope:
+            result.update(nothing="DS1 holds no game for this request.", live=dict(published=True, games=0, items=[]))
+            print("DS1 holds no game for this request; nothing to refresh"); return 0
+        leagues = [lg for lg in leagues if lg in scope]
+        asked = sorted(i for x in scope.values() for i in x["ids"])
+    a.bdl_leagues = [] if a.no_balldontlie or "balldontlie" not in use else ["nba", "mlb", "nfl"]
     seasons = {lg: season_now(lg, today) for lg in leagues}
     for s in a.season:
         lg, y = s.split("="); seasons[lg] = int(y)
+    if scope:
+        for lg, x in scope.items(): seasons[lg] = x["season"]
     since = datetime.date.fromisoformat(a.since) if a.since else today - datetime.timedelta(days=7)
+    if scope: since = min(datetime.date.fromisoformat(x["date"]) for x in scope.values())
     state = W.load_state(a.state)
     rosters, rsrc = T.load_rosters(leagues, os.path.join(os.path.dirname(a.state), "rosters.json"))
     print("run %s | clubs from %s | state %s" % (datetime.datetime.now().strftime("%Y-%m-%d %H:%M"), rsrc, a.state))
@@ -303,6 +367,11 @@ def run(a, result):
     client = W.Client(force=True if a.force_fetch else None)
     all_games, report, extra_req, league_claims, bdl_req = {}, {}, 0, {}, {}
     plans = {lg: plan(lg, seasons[lg], rosters[lg]) for lg in leagues}
+    if scope:        # only the clubs playing: their season articles and (MLB) the postseason page
+        for lg in leagues:
+            playing = {c["name"] for c in rosters[lg].clubs if c["fid"] in scope[lg]["fids"]}
+            plans[lg] = [p for p in plans[lg] if p["kind"] == "league" or p["team"] in playing]
+    if "wikipedia" not in use: plans = {lg: [] for lg in leagues}
     every = [p for lg in leagues for p in plans[lg]]
     changed_all, missing_all, _ = refresh(client, state, every, a.raw_dir, a.offline)     # one revisions pass for all leagues
     W.save_state(a.state, state)
@@ -314,7 +383,7 @@ def run(a, result):
         changed, missing = [t for t in changed_all if t in titles], [t for t in missing_all if t in titles]
         claims, bad, nparsed = parse_pages(lg, y, pages, roster, a.raw_dir, state)
         second = []
-        if lg == "nfl":
+        if lg == "nfl" and "nflverse" in use:
             c2, b2, n = nflverse_claims(y, roster, state, a.raw_dir, a.offline); claims += c2; bad += b2; extra_req += n; second.append("nflverse (%d claims)" % len(c2))
         if lg in ("nba", "mlb", "nfl") and lg in a.bdl_leagues:      # balldontlie, free tier: NBA (balldontlie.py), MLB and NFL (bdlsports.py)
             try:
@@ -336,7 +405,7 @@ def run(a, result):
     W.save_state(a.state, state)
     built = [lg for lg in leagues if lg not in league_errors]
     confirm_rows = []
-    if CR.enabled() and not a.offline:
+    if CR.enabled() and not a.offline and not a.live_only:
         rows = []
         if "nhl" in all_games:
             rows, summary = CR.confirm(all_games["nhl"])
@@ -359,7 +428,12 @@ def run(a, result):
     if (a.live or os.environ.get("DAILY_LIVE") == "1") and not a.offline:
         import live
         print("\n== Live score layer (Turso only) ==")
-        result.update(live=live.publish(all_games, rosters, seasons, confirm_rows, state, "daily" if a.apply else "manual"))
+        kw = dict(since=since, until=max(datetime.date.fromisoformat(x["date"]) for x in scope.values()), only_ids=set(asked), asked=asked) if scope else {}
+        result.update(live=live.publish(all_games, rosters, seasons, confirm_rows, state, "daily" if a.apply else "manual", **kw))
+        if a.live_only:
+            print("Requests this run: Wikipedia API %d | other %d (balldontlie %s)" % (client.requests, extra_req, ", ".join("%s %d" % (k.upper(), n) for k, n in bdl_req.items()) or "none"))
+            result.update(wikipedia_requests=client.requests, other_requests=extra_req)
+            return 0
     print("\n== Wikipedia pages ==")
     for lg in built:
         r = report[lg]

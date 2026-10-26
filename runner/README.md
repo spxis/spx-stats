@@ -39,6 +39,11 @@ of the release prepared for an admin's **Request scores update** (below).
   The ops tick also raises the admin alerts `scores-stale:<league>`, `scores-overdue:<league>` and `scores-no-run` from the snapshot it already
   builds (thresholds `SCORES_STALE_HOURS` 6, `SCORES_OVERDUE_HOURS` 12, `SCORES_NO_RUN_HOURS` 20; optional env, nothing new is required).
   Both are in `scripts/release`, so **the runner must be rebuilt at the commit that has them** (`RELEASE_REF`, then Build) and migration 150 applied first.
+- **Refresh** buttons on the scoreboards and the scope/sources choices of the scores update dialog (migration 156) run `scripts/daily/run.py --live-only` for
+  one request (read-only on DS1, Turso only, through the shared limiter). It writes with the Turso settings the container already has
+  (`TURSO_DATABASE_URL`, and `TURSO_RUNLOG_TOKEN` or else `TURSO_AUTH_TOKEN`, a token that can write). balldontlie is read only when
+  `BALLDONTLIE_API_KEY` is set in `release-runner.env` (optional; without it that source is skipped and the item says so, as for a requested scores run). `scripts/daily` and `scripts/release` changed: **rebuild the runner at the
+  commit that has them** (`RELEASE_REF`, then Build) and apply migration 156 first (DS1, then production).
 - A requested run holds the shared DS1 lock (`scripts/release/daily_lock.py`) and waits while the daily job's heartbeat shows a run in
   progress. While it runs (a few minutes at most; `RELEASE_DAILY_TIMEOUT`, 2400 s) the runner does nothing else.
 - **Site refresh.** After each committed release the runner makes one `POST` to the site's `/api/revalidate` so the changed pages rebuild now.
