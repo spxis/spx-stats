@@ -91,6 +91,10 @@ test("an address with a query the pages read is drawn for the request; one with 
   assert.equal(route({ path: "/mls/2019" }), "/en/s/mls/2019");
   assert.equal(route({ path: "/mls/2019", query: { sort_games: "date.desc" } }), "/en/q/mls/2019");
   assert.equal(route({ path: "/mls/team/la-galaxy", query: { sort_past: "year.asc" } }), "/en/q/mls/team/la-galaxy");
+  assert.equal(route({ path: "/soccer/premier-league" }), "/en/s/soccer/premier-league");
+  assert.equal(route({ path: "/soccer/premier-league/2005-06" }), "/en/s/soccer/premier-league/2005-06");
+  assert.equal(route({ path: "/soccer/premier-league/2005-06", query: { sort_teams: "pos.desc" } }), "/en/q/soccer/premier-league/2005-06");
+  assert.equal(route({ path: "/soccer/club/arsenal", query: { sort_past: "year.asc" }, cookie: "spxn-locale=fr" }), "/fr/q/soccer/club/arsenal");
   assert.equal(route({ path: "/nhl/2012-13", query: { utm_source: "x", fbclid: "y" } }), "/en/s/nhl/2012-13");
   assert.equal(route({ path: "/nhl/2012-13", query: { _rsc: "abc" } }), "/en/s/nhl/2012-13");
   for (const key of QUERY_KEYS) assert.match(route({ path: "/nhl/2012-13/leaders", query: { [key]: "1" } }), /^\/en\/q\//, key);
@@ -141,7 +145,7 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.equal(route({ path: "/wp-login.php" }), "/en/q/wp-login.php");
   assert.equal(route({ path: "/xx/yy/zz", cookie: "spxn-locale=fr" }), "/fr/q/xx/yy/zz");
   assert.equal(route({ path: "/about/more" }), "/en/q/about/more");
-  assert.deepEqual([...PAGE_ROOTS], ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "players", "teams", "city", "venue", "worldcup", "mls", "country", "releases"]);
+  assert.deepEqual([...PAGE_ROOTS], ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "players", "teams", "city", "venue", "worldcup", "mls", "soccer", "country", "releases"]);
   assert.equal(route({ path: "/releases" }), "/en/s/releases");
   assert.equal(route({ path: "/releases/older" }), "/en/s/releases/older");
   assert.equal(route({ path: "/releases/older", query: { sort: "x" } }), "/en/q/releases/older");

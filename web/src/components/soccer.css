@@ -67,4 +67,11 @@
   .sc-road-table summary { cursor: pointer; }
   .sc-road-table .tablebox { margin-top: .5rem; }
   .sc-road-table th { padding: 8px 10px; }
+  /* European league season page: the results grid (home club on the row, away club on the column), and the move marks beside a club in a table. */
+  .eu-grid { border-collapse: collapse; font-size: 12px; }
+  .eu-grid th, .eu-grid td { padding: 3px 5px; text-align: center; white-space: nowrap; }
+  .eu-grid th.rowhead { text-align: left; }
+  .eu-grid td.self { background: var(--line, rgba(128, 128, 128, .18)); }
+  .eu-move-promoted { color: var(--ok, #1a7f37); font-weight: 600; }
+  .eu-move-relegated { color: var(--bad, #b42318); font-weight: 600; }
 }

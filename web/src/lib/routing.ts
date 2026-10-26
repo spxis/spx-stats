@@ -39,7 +39,7 @@ export const CITY_CLIENT_KEYS = ["from", "to"] as const;
 export const ALWAYS_STATIC = ["about", "cities", "teams", "logos", "privacy", "quality", "sources", "help-wikipedia", "releases", "terms", "venues", "countries", "trophies", "soccer", "worldcup", "mls", ...LEAGUE_CODES] as const;
 
 /** The first path segments that start pages with more in their address: anything else is not a page (a typo, a scanner) and is answered, unkept, with the 404. */
-export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city", "venue", "worldcup", "mls", "country", "releases"] as const;
+export const PAGE_ROOTS = [...LEAGUE_CODES, "players", "teams", "city", "venue", "worldcup", "mls", "soccer", "country", "releases"] as const;
 
 type Cond = { type: "header" | "cookie" | "query"; key: string; value?: string };
 

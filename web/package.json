@@ -91,6 +91,7 @@
     "test:player": "node --test scripts/player.test.ts",
     "test:soccer": "node --test scripts/soccer.test.ts scripts/soccerStrip.test.ts",
     "test:mls": "node --test scripts/mls.test.ts",
+    "test:europe": "node --test scripts/europe.test.ts",
     "test:bracket": "node --test scripts/bracket.test.ts",
     "test:bracketgroups": "node --test scripts/bracketGroups.test.ts",
     "test:standingsgroups": "node --test scripts/standingsGroups.test.ts",

@@ -7,6 +7,8 @@ import { Figures } from "@/components/ui";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
+import { getEuropeTops } from "@/lib/europe";
+import { europeLeaguePath, seasonLabel } from "@/lib/europePath";
 import { getMlsSeasons } from "@/lib/mls";
 import { getTournaments, type Tournament } from "@/lib/soccer";
 import { MLS_PATH } from "@/lib/mlsPath";
@@ -23,7 +25,7 @@ export const generateMetadata = guardMeta(async (): Promise<Metadata> => {
 /** The soccer landing page: the World Cup is the first competition. With no soccer data published yet it says so and links nowhere that would be empty. */
 export default guard(async function SoccerPage() {
   const { say, plural } = await currentSpeaker();
-  const [all, mls] = await Promise.all([getTournaments(), getMlsSeasons().catch(() => [])]);
+  const [all, mls, europe] = await Promise.all([getTournaments(), getMlsSeasons().catch(() => []), getEuropeTops()]);
   const lastCup = mls.filter((s) => s.champion).at(-1);
   const men = all.filter((t) => t.league === "wc");
   const women = all.filter((t) => t.league === "wwc");
@@ -47,15 +49,22 @@ export default guard(async function SoccerPage() {
         <p className="lede">{say("soccer.lede")}</p>
         <FamilyNav family="soccer" />
       </section>
-      {mls.length ? (
+      {mls.length || europe.length ? (
         <section className="section">
           <h2>{say("soccer.leagues")}</h2>
           <div className="cards">
-            <Link className="card" href={MLS_PATH} style={{ "--lg": "var(--soccer)" } as React.CSSProperties}>
+            {europe.map((e) => (
+              <Link key={e.code} className="card" href={europeLeaguePath(e.code)} style={{ "--lg": "var(--soccer)" } as React.CSSProperties}>
+                <h3>{e.name}</h3>
+                <span className="span">{say("europe.card.span", { from: seasonLabel(e.first), to: seasonLabel(e.last), seasons: plural("count.seasons", e.seasons) })}</span>
+                {e.champion && e.championYear != null ? <span className="note">{say("europe.card.latest", { champion: e.champion })}</span> : null}
+              </Link>
+            ))}
+            {mls.length ? <Link className="card" href={MLS_PATH} style={{ "--lg": "var(--soccer)" } as React.CSSProperties}>
               <h3>{say("mls.title")}</h3>
               <span className="span">{say("soccer.span", { from: mls[0].year, to: mls.at(-1)!.year, tournaments: plural("count.seasons", mls.length) })}</span>
               {lastCup ? <span className="note">{say("soccer.latest", { year: lastCup.year, champion: lastCup.champion ?? "" })}</span> : null}
-            </Link>
+            </Link> : null}
           </div>
         </section>
       ) : null}
@@ -84,7 +93,7 @@ export default guard(async function SoccerPage() {
             </ul>
           </section>
         </>
-      ) : mls.length ? null : (
+      ) : mls.length || europe.length ? null : (
         <section className="section"><p className="note">{say("soccer.none")}</p></section>
       )}
       <section className="section"><SoccerCredit say={say} /></section>
