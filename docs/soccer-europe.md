@@ -71,6 +71,25 @@ Same shape as MLS, so the existing soccer API and page code carry over; migratio
 - `db/build/220_soccer_europe_spx.sql`: the SPX seasons above, rerunnable, ids kept (tested: a second run leaves every id, slug and row identical).
 - Migration 140 (`legacy_spx_extras.efl_result`) and `scripts/spx_extras/efl.py`: the loader for the EFL capture. **Not to be run before John decides about ESPN-origin files.**
 
+## Built since (ticket "European soccer: fill from openfootball and Wikipedia", 2026-10-26)
+
+- **openfootball (CC0)**: `scripts/openfootball_eu/` (fetch, parser tested against every file's own match count, loader into `legacy_openfootball`), build step
+  `db/build/227_soccer_europe_openfootball.sql`. Read: England 1992-93 on (Premier League; the lower four divisions from 1998-99, the National League 2015-16 on), Germany
+  2010-11 on (three divisions), Spain 2012-13 and Italy 2013-14 on (two each), France 2014-15 on (two): 108,093 matches in 255 files. The archive folder `england/archive/1990s`
+  gives the Premier League back to 1992-93. A spelling of a club is one row of `db/seed/soccer_club_eu.csv`; the divisions, their names by period and a `matches` flag are
+  `db/seed/soccer_league_eu.csv`.
+- **Only the five top divisions have their matches built** (32,373 rows, about 18 MB on production); every division gets its seasons and clubs, so promotion and relegation
+  read across the pyramid. Production was 395 MB of 500 MB on 2026-10-26 and a match row costs about 0.55 KB with its indexes (all divisions: 108,000 rows, 58 MB), so the
+  lower divisions stay in `legacy_openfootball`; flip a division's `matches` flag to 1 and rerun 227 when there is room.
+- **SPX wins**: a fixture SPX holds (same season, home and away club, whatever its date) is not added again; openfootball writes `meta.verification` (confirmed / disputed /
+  not_found) and a `meta.data_issue` for a disagreement or a different date. SPX clubs keep their rows and ids and take the seed's name.
+- **English Wikipedia**: `scripts/wikipedia_eu/` (fetch of 378 season articles of the five top divisions, table parser, loader into `legacy_wikipedia_europe`), build step
+  `db/build/228_soccer_europe_wikipedia.sql`: final league tables (`core.soccer_group_standing`), champions and top four, Wikidata ids of 314 clubs, seasons before openfootball's
+  files as tournaments with a table and no matches, and a `meta.data_issue` wherever Wikipedia's table and the matches differ or a table's points are not 3/2 per win + draws.
+  Not read yet: the second and lower divisions' articles (so a club relegated before 1998 shows no move), results cross-tables, scorers, awards, Scotland and the Netherlands.
+- **Site**: `/soccer` lists the five leagues; `/soccer/premier-league`, `/soccer/premier-league/2005-06` (table, promotion and relegation, results grid, play-offs) and
+  `/soccer/club/arsenal`; the soccer chips gain the five leagues. Migration 155 adds `api.soccer_league_seasons` and `api.soccer_clubs`. Each section draws nothing while its data is missing.
+
 ## Phases
 
 1. **This load** (SPX, 2004-06): the model is live with 11 partial seasons. Recommended: do not release it to production yet; a release would publish tables nothing reads, and 11 half-empty
