@@ -70,3 +70,10 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 
 .noday { display: flex; flex-direction: column; gap: 8px; padding: 16px; border: 1px dashed var(--rule); }
 .nearest { margin: 0; padding-left: 18px; display: flex; flex-direction: column; gap: 4px; }
+.sstate.live { color: var(--ink); }
+.badge.unofficial { text-transform: uppercase; letter-spacing: .06em; }
+.live-src { font-size: 12px; color: var(--muted); }
+.live-src summary { cursor: pointer; list-style: none; text-decoration: underline dotted; text-underline-offset: 2px; }
+.live-src summary::-webkit-details-marker { display: none; }
+.live-src ul { margin: 4px 0 0; padding: 0; list-style: none; }
+.live-src li { padding: 1px 0; }

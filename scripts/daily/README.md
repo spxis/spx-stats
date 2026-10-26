@@ -410,3 +410,16 @@ Red is never fetched, grey only by the once-a-day job and manual requests (never
 `limiter.py` is the one token bucket, queue and 60 s cache for every request (Wikipedia, balldontlie, nflverse go through it): state in DS1 `ingest.source_limiter` / `ingest.source_cache`
 for `--apply` and `--rehearse` runs (the scheduled job and the runner are separate containers), a lock file for read-only runs. `--force-fetch` skips the cache and still queues.
 Tests: `python3 -I scripts/daily/limiter_test.py [--ds1 "<scratch dsn>"]` (also part of `run.py --self-test`).
+
+## Live score layer (Turso only)
+
+`live.py` keeps provisional results in Turso's `live_score` (one row per `core.game`), so a scoreboard can show a played game's score with an
+"Unofficial" badge before the careful path (DS1, a release) settles it. Off by default: `run.py --live` (an admin's on-demand request) or
+`DAILY_LIVE=1` (the daily job). It makes no source request of its own: the fetching is run.py's, through the limiter; `live.py` only writes Turso.
+
+- Scores come only from green or grey sources (`sources.require`, `assert_storable`). Confirm-only outcomes add two counts, never a score.
+- `n_agree` of `n_sources` is the biggest group of equal scores; a tie is `disputed` and no score is picked; `ready` means all agree and no outside check differs.
+- Forward only (scheduled < in_progress < final), one SQL statement; a final row is never changed. Games `core.game` holds as final are not written and their row is deleted.
+- Retention: settled, or 7 days. `live.py stale` lists rows older than 2 days that nobody settled; `live.py sweep` deletes the old ones.
+- Needs `TURSO_DATABASE_URL` and `TURSO_RUNLOG_TOKEN` (a token that can write). Tests: `python3 -I scripts/daily/live_test.py [--turso http://127.0.0.1:<port>]`.
+- Cost: one pipeline request per 100 games per run; at most a few dozen rows written per click or daily run (Turso Free: 10 M rows written and 500 M read a month, 5 GB).

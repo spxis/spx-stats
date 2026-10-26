@@ -637,8 +637,14 @@ def test_confirm_sites():
     for f in confirm_sites_test.run_unit(): FAILS.append("confirm-sites: " + f)
 
 
+def test_live():
+    import live_test
+    for f in live_test.run_unit(): FAILS.append("live scores: " + f)
+
+
 def run():
     test_limiter()
+    test_live()
     test_confirm_red()
     test_confirm_sites()
     test_runlog_hook()

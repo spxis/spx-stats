@@ -45,6 +45,8 @@ export interface TursoOptions {
   tables: readonly string[];
   /** Never cached: for the admin pages, which are drawn per request. */
   live?: boolean;
+  /** Seconds the answer is kept, instead of a day (the live score layer asks for 30). */
+  revalidate?: number;
 }
 
 /** The rows of one SELECT, each as {column: value}. Throws ApiError (transient when Turso could not answer) so the page shows its "Couldn't load" note. */
@@ -62,7 +64,7 @@ export async function tursoQuery(sql: string, args: readonly Arg[], opts: TursoO
           method: "POST",
           headers: { "content-type": "application/json", ...(env("TURSO_AUTH_TOKEN") ? { authorization: `Bearer ${env("TURSO_AUTH_TOKEN")}` } : {}) },
           body,
-          ...(opts.live ? { cache: "no-store" as const } : { cache: "force-cache" as const, next: { revalidate: attempt ? RETRY_REVALIDATE : REVALIDATE, tags } }),
+          ...(opts.live ? { cache: "no-store" as const } : { cache: "force-cache" as const, next: { revalidate: attempt ? RETRY_REVALIDATE : (opts.revalidate ?? REVALIDATE), tags } }),
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
       const res = opts.live ? await send() : await queuedAtBuild(`turso|${sql}|${JSON.stringify(args)}`, send);

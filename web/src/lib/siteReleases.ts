@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.159.0", date: "2026-10-26", href: "/nhl/scores",
+    title: "Unofficial scores on the scoreboard",
+    text: "A game that was played but is not settled in the archive yet can show the result the sources have already given, with an Unofficial badge and how many sources agree. Where the sources disagree, no score is picked. The result is replaced by the archive's own once it is settled." },
   { version: "0.158.0", date: "2026-10-21", href: "/nhl/all-star/2024",
     title: "All-Star Games drawn as games",
     text: "An All-Star Game is shown like a final: two sides as a banner with the score and the winner marked, the host club and the Most Valuable Player with their logos, and a tournament as a bracket. A season page puts the game beside the champion, the league's list is a card for each year, and the players picked are a table for each side." },

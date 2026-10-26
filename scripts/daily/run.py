@@ -184,6 +184,7 @@ def main():
     ap.add_argument("--no-balldontlie", action="store_true", help="do not read balldontlie (NBA, MLB, NFL) this run")
     ap.add_argument("--offline", action="store_true", help="parse the cached pages only; no request at all")
     ap.add_argument("--force-fetch", action="store_true", help="ignore the minute-old answers of the shared cache (every request still waits its turn in the limiter's queue); also SPX_FORCE_FETCH=1")
+    ap.add_argument("--live", action="store_true", help="also publish the provisional results to the live score layer in Turso (live.py; also DAILY_LIVE=1); never DS1 or production")
     ap.add_argument("--no-ds1", action="store_true", help="skip the DS1 comparison (rosters then come from the cache)")
     ap.add_argument("--since", help="report DS1 games on or after this date that Wikipedia lacks (default: 7 days ago)")
     ap.add_argument("--json", help="write the games to this file")
@@ -334,6 +335,7 @@ def run(a, result):
         print("%s FAILED while reading its sources; the other leagues go on: %s" % (lg.upper(), league_errors[lg]))
     W.save_state(a.state, state)
     built = [lg for lg in leagues if lg not in league_errors]
+    confirm_rows = []
     if CR.enabled() and not a.offline:
         rows = []
         if "nhl" in all_games:
@@ -347,12 +349,17 @@ def run(a, result):
             for src, summ in site_summary.items(): print("%-13s %s" % (src, ", ".join("%s %s" % (k.replace("_", " "), v) for k, v in summ.items())))
             result.update(confirm_sites=site_summary)
         rows += site_rows
+        confirm_rows = rows
         if rows:
             comb = CS.combine(rows)
             early = sum(1 for c in comb.values() if c["early"])
             print("confirm-only sources agree on %d of %d games asked about (two or more agree, none disagrees)" % (early, len(comb)))
             result.update(confirm_early=early, confirm_asked=len(comb))
             if writing: CR.save(rows, CACHE)
+    if (a.live or os.environ.get("DAILY_LIVE") == "1") and not a.offline:
+        import live
+        print("\n== Live score layer (Turso only) ==")
+        result.update(live=live.publish(all_games, rosters, seasons, confirm_rows, state, "daily" if a.apply else "manual"))
     print("\n== Wikipedia pages ==")
     for lg in built:
         r = report[lg]
