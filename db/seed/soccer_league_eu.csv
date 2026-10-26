@@ -1,0 +1,22 @@
+league_code,system_key,country_code,tier,from_year,to_year,name,short_name,matches
+premier_league,england,GB,1,1992,9999,Premier League,Premier League,1
+efl_championship,england,GB,2,1992,2003,Football League First Division,First Division,0
+efl_championship,england,GB,2,2004,2015,Football League Championship,Championship,0
+efl_championship,england,GB,2,2016,9999,EFL Championship,Championship,0
+efl_league_one,england,GB,3,1992,2003,Football League Second Division,Second Division,0
+efl_league_one,england,GB,3,2004,2015,Football League One,League One,0
+efl_league_one,england,GB,3,2016,9999,EFL League One,League One,0
+efl_league_two,england,GB,4,1992,2003,Football League Third Division,Third Division,0
+efl_league_two,england,GB,4,2004,2015,Football League Two,League Two,0
+efl_league_two,england,GB,4,2016,9999,EFL League Two,League Two,0
+national_league,england,GB,5,1992,2014,Football Conference,Conference,0
+national_league,england,GB,5,2015,9999,National League,National League,0
+bundesliga,germany,DE,1,1963,9999,Bundesliga,Bundesliga,1
+bundesliga_2,germany,DE,2,1974,9999,2. Bundesliga,2. Bundesliga,0
+liga_3,germany,DE,3,2008,9999,3. Liga,3. Liga,0
+la_liga,spain,ES,1,1929,9999,La Liga,La Liga,1
+segunda_division,spain,ES,2,1929,9999,Segunda División,Segunda División,0
+serie_a,italy,IT,1,1929,9999,Serie A,Serie A,1
+serie_b,italy,IT,2,1929,9999,Serie B,Serie B,0
+ligue_1,france,FR,1,1932,9999,Ligue 1,Ligue 1,1
+ligue_2,france,FR,2,1932,9999,Ligue 2,Ligue 2,0
