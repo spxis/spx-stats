@@ -21,6 +21,8 @@ import type { HealthEvent } from "./rules";
  */
 export class ReleaseError extends Error {
   name = "ReleaseError";
+  /** The database function's own message when it refused (a PostgREST error body), for the cases that need to say why. */
+  detail?: string;
 }
 
 const TIMEOUT_MS = 10_000;
@@ -46,7 +48,9 @@ export async function rpc(fn: string, body: Record<string, unknown>, options: { 
   }
   if (!res.ok) {
     if (res.status === 404) throw new ReleaseError("Production does not have the release functions yet (migration 045).");
-    throw new ReleaseError(res.status === 400 || res.status === 403 ? "The database refused the request." : `The database answered ${res.status}.`);
+    const refused = new ReleaseError(res.status === 400 || res.status === 403 ? "The database refused the request." : `The database answered ${res.status}.`);
+    refused.detail = await res.json().then((b: { message?: unknown }) => (typeof b.message === "string" ? b.message.slice(0, 200) : undefined), () => undefined);
+    throw refused;
   }
   return res.json();
 }
@@ -103,8 +107,12 @@ const scoreRequest = z.object({
   summary: z.string().nullable(),
   release_number: z.string().nullable(),
   release_status: z.string().nullish(),
-  kind: z.enum(["scores", "drift"]).default("scores"),
+  kind: z.enum(["scores", "drift", "live"]).default("scores"),   // live: migration 156, an admin's refresh of the live score layer
   league: z.string().nullable().default(null),   // migration 150: the league a scores request was limited to
+  scope: z.string().nullish(),                   // migration 156: game, day, league, main5 or all
+  game_day: z.string().nullish(),
+  game_id: z.number().nullish(),
+  sources: z.array(z.string()).nullish(),
 });
 
 const dashboard = z.object({
@@ -159,6 +167,18 @@ export async function resumeAutoApprovals(actor: string): Promise<void> {
 /** Queue one scores update request (migration 053). Throws when one is open already or the last one ended less than about 10 minutes ago. */
 export async function requestScoreUpdate(actor: string): Promise<void> {
   await rpc("request_score_update", { p_secret: secret(), p_actor: actor });
+}
+
+/**
+ * Queue one scoped or live request (migration 156, api.request_live): one row, nothing else. `settle` false is a refresh of the live score layer alone;
+ * true is the scores update (daily job and release) for a whole league, the main five or all sports, preceded by the same refresh. Returns the request id.
+ * Throws ReleaseError, with `detail` set to the database's reason, when it refuses (a request already open, too soon after the last).
+ */
+export async function requestLive(actor: string, req: { scope: string; league: string | null; day: string | null; game: number | null; sources: string[]; settle: boolean }): Promise<number> {
+  const out = await rpc("request_live", { p_secret: secret(), p_actor: actor, p_scope: req.scope, p_league: req.league, p_day: req.day, p_game_id: req.game, p_sources: req.sources, p_settle: req.settle });
+  const id = (out as { id?: unknown } | null)?.id;
+  if (typeof id !== "number") throw new ReleaseError("The database did not say which request was made.");
+  return id;
 }
 
 /** Queue one drift check ("Check now"): compare every table again. Same rules as the scores request: one open request, about 10 minutes apart. */

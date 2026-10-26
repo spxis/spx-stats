@@ -6,6 +6,7 @@ import { ConfirmSummary } from "@/components/ConfirmSummary";
 import { LocalTime, Stamped } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
+import { describeRow } from "@/lib/liveRequest";
 import { ReleaseError, apiHealth, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
 import { TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, type Tab } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
@@ -218,7 +219,7 @@ function requestRow(q: ScoreRequest): SortRow {
     sort: { id: q.id, what: q.kind, who: q.requested_by, asked: q.requested_at, status: q.status, summary: q.summary ?? "", release: q.release_number ?? "" },
     cells: {
       id: String(q.id),
-      what: q.kind === "drift" ? "drift check" : q.league ? `scores update (${q.league.toUpperCase()})` : "scores update",
+      what: q.kind === "drift" ? "drift check" : q.kind === "live" ? `live refresh (${describeRow(q)})` : q.scope || q.league ? `scores update (${describeRow(q)})` : "scores update",
       who: q.requested_by,
       asked: when(q.requested_at),
       status: <span className={`tk-badge ${tone(q.status)}`}>{q.status === "nothing" ? "nothing new" : q.status}</span>,
@@ -377,6 +378,8 @@ function SettingsTab({ data, query, paused }: { data: Dashboard; query: Query; p
           Your click counts as the approval, with no 10 minute wait, but the auto-approval checks and the Hold switch above still apply: anything
           that fails them waits for you under Pending. One request at a time, about {data.request_cooldown_minutes} minutes apart.
           Wikipedia often updates hours after games end, so a request may find nothing new.
+          The dialog asks how much to update (a sport, the main five, today&apos;s games, one game) and which sources to read; a refresh of a single game or
+          a day&apos;s list is also on every scoreboard, for admins only.
           One league at a time, with each league&apos;s last good load and the games still without a score: <Link href="/admin/ops#ops-scores">Ops, scores by league</Link>.
         </p>
         <RequestButton blocked={blocked} />

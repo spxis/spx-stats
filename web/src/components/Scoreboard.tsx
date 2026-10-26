@@ -15,6 +15,7 @@ import { stripDates } from "@/lib/weekStrip";
 import { AccentStyle } from "./AccentStyle";
 import { OfficialLinks } from "./OfficialLinks";
 import { PendingState } from "./GameState";
+import { LiveAdminBar, LiveGameRefresh } from "./LiveAdmin";
 import { LiveProvider, LiveScore, LiveState } from "./LiveScores";
 import { DayStrip } from "./DayStrip";
 import { ScoresBar } from "./ScoresBar";
@@ -30,7 +31,7 @@ const PHASE_TAG: Record<string, "phase.playoffs" | "phase.preseason" | "phase.al
   playoffs: "phase.playoffs", preseason: "phase.preseason", all_star: "phase.allStar",
 };
 
-function Game({ lg, g, brands, abbrs, say, upcoming }: { lg: LeagueCode; g: GameRow; brands: Brands; abbrs: AbbrMap; say: Say; upcoming: boolean }) {
+function Game({ lg, g, brands, abbrs, say, upcoming, day }: { lg: LeagueCode; g: GameRow; brands: Brands; abbrs: AbbrMap; say: Say; upcoming: boolean; day: string }) {
   const final = g.status === "final" && g.home_score != null && g.away_score != null;
   const away = final && g.away_score! > g.home_score!, home = final && g.home_score! > g.away_score!;
   const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
@@ -62,6 +63,7 @@ function Game({ lg, g, brands, abbrs, say, upcoming }: { lg: LeagueCode; g: Game
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}
         {g.checked === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠ " + say("game.disputed")}</span> : null}
         <Link href={page} prefetch={false} className="viewgame" title={title}>{say("gm.viewGame")}</Link>
+        {final ? null : <LiveGameRefresh id={g.game_id} lg={lg} day={day} />}
         <OfficialLinks league={lg} date={g.game_date} away={officialAbbr(abbrs, g.away_f, g.year)} home={officialAbbr(abbrs, g.home_f, g.year)} awayName={g.away} homeName={g.home} year={g.year} phase={g.phase} nhlId={g.nhl_id} nflWeek={g.nfl_week} retroBox={g.retro_box} status={g.status} startsAt={g.starts_at} box={say("scores.box")} notes={say("scores.notes")} day={say("scores.dayScores")} />
       </div>
     </li>
@@ -105,13 +107,14 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
         <p className="lede">{dt.full(at)}{say("sentence.sep")}{plural("count.games", games.length)}</p>
         <ScoresBar lg={lg} day={day} year={year} seasons={years} days={days} min={first} max={last}
           prev={day > first ? prev : ""} next={day < last ? next : ""} prevText={dt.monthDayShort(atUtc(prev))} nextText={dt.monthDayShort(atUtc(next))} />
+        <LiveAdminBar lg={lg} day={day} games={games.length} />
       </section>
       <DayStrip aria={say("scores.daysAria")} current={day} jump={{ back: scoresPath(lg, weekBack), forward: scoresPath(lg, weekForward) }} days={strip} />
       <section className="section">
         {games.length ? (
           <LiveProvider lg={lg} day={day} ids={liveCandidates(games)}>
             <ul className="scoreboard">
-              {games.map((g) => <Game key={g.game_id} lg={lg} g={g} brands={brands} abbrs={abbrs} say={say} upcoming={upcoming} />)}
+              {games.map((g) => <Game key={g.game_id} lg={lg} g={g} brands={brands} abbrs={abbrs} say={say} upcoming={upcoming} day={day} />)}
             </ul>
           </LiveProvider>
         ) : (

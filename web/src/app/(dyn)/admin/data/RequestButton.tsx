@@ -4,6 +4,7 @@ import { useActionState } from "react";
 import { ConfirmAction } from "@/components/ConfirmAction";
 import { Stamped } from "@/components/LocalTime";
 import { requestDrift, requestUpdate, type DecideState } from "./actions";
+import { ScopePicker } from "./ScopePicker";
 
 /**
  * "Request scores update" (Settings) or "Check now" (Drift): queues one request for the runner, after a confirmation. Disabled,
@@ -13,7 +14,7 @@ export function RequestButton({ kind = "scores", blocked }: { kind?: "scores" | 
   const [state, action, pending] = useActionState<DecideState, FormData>(kind === "drift" ? requestDrift : requestUpdate, null);
   return (
     <form action={action} className="dr-actions">
-      <ConfirmAction kind={kind} className="signin-btn" disabled={pending || blocked !== null || state?.ok === true}>
+      <ConfirmAction kind={kind} className="signin-btn" disabled={pending || blocked !== null || state?.ok === true} details={kind === "scores" ? <ScopePicker /> : undefined}>
         {pending ? "Working…" : kind === "drift" ? "Check now" : "Request scores update"}
       </ConfirmAction>
       {blocked ? <p className="note"><Stamped text={blocked} /></p> : null}

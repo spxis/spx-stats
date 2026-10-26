@@ -190,6 +190,12 @@
   .cf-actions .signin-btn { min-height: 44px; flex: 1 1 140px; align-self: auto; }
   .cf-actions .cf-cancel { background: var(--panel); color: var(--ink); }
   .cf-actions .cf-danger { background: var(--bad); border-color: var(--bad); color: var(--paper); }
+  .src-pick { display: flex; flex-direction: column; gap: 6px; margin: 0; padding: 8px 10px; border: 1px solid var(--rule); min-width: 0; }
+  .src-pick legend { font: 600 13px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); padding: 0 4px; }
+  .src-pick label { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 6px; }
+  .src-pick .src-off { color: var(--muted); }
+  .src-greyed ul { margin: 6px 0 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 6px; max-height: 30dvh; overflow: auto; }
+  .src-greyed summary { cursor: pointer; }
   .dr-tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0; padding: 0 0 4px; border-bottom: 2px solid var(--ink); }
   .dr-tabs a { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 14px; font: 600 15px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; text-decoration: none; color: var(--muted); border: 1px solid var(--rule); background: var(--panel); }
   .dr-tabs a[aria-current="page"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }

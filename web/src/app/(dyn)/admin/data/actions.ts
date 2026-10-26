@@ -5,7 +5,10 @@ import { headers } from "next/headers";
 import { sameOrigin } from "@/lib/auth/origin";
 import { NOT_CONFIRMED, isConfirmed } from "@/lib/confirm";
 import { requireAdminWrite } from "@/lib/auth/user";
-import { decideRelease, holdRelease, pauseAutoApprovals, releaseDashboard, releaseStatus, requestDriftCheck, requestScoreUpdate, resumeAutoApprovals } from "@/lib/releases/client";
+import { ReleaseError, decideRelease, holdRelease, pauseAutoApprovals, releaseDashboard, releaseStatus, requestDriftCheck, requestLive, requestScoreUpdate, resumeAutoApprovals } from "@/lib/releases/client";
+import { refusalText } from "@/lib/liveAdmin";
+import { parseLiveRequest, rawFromForm } from "@/lib/liveRequest";
+import { todayUtc } from "@/lib/scores";
 import { alreadyDecided, requestBlock } from "@/lib/releases/rules";
 
 export type DecideState = { ok: boolean; message: string } | null;
@@ -118,6 +121,18 @@ export async function requestUpdate(_previous: DecideState, form: FormData): Pro
   const user = await requireAdminWrite();
   if (!sameOrigin(await headers())) return { ok: false, message: "Request refused: it did not come from this site." };
   if (!isConfirmed(form)) return { ok: false, message: NOT_CONFIRMED };
+  const raw = rawFromForm(form, todayUtc());
+  if (raw !== null) {
+    const parsed = parseLiveRequest(raw, todayUtc());
+    if (!parsed.ok) return { ok: false, message: parsed.error };
+    try {
+      await requestLive(user.email, parsed.value);
+    } catch (e) {
+      return { ok: false, message: e instanceof ReleaseError && e.detail !== undefined ? refusalText(e.detail) : "The database refused the request. Reload the page and try again." };
+    }
+    updateTag("admin-bar");
+    return { ok: true, message: parsed.value.settle ? "Requested. The runner updates the unofficial scores, then the scores update; it picks it up within a minute. Reload to see the status." : "Requested. The runner updates the unofficial scores within a minute or two; reload to see the status." };
+  }
   try {
     await requestScoreUpdate(user.email);
   } catch {

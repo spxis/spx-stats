@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.161.2", date: "2026-10-26", needsReview: true,
+    title: "Admin refresh of the unofficial scores",
+    text: "Signed-in admins can refresh the unofficial scores of one game, a day's list, the main five or all sports from a scoreboard, choosing which allowed sources to read, and the scores update on the data page now asks how much to update. Visitors see no change." },
   { version: "0.161.1", date: "2026-10-26", needsReview: true,
     title: "Security update to the web framework",
     text: "The site now runs on the patched release of its web framework, which closes several security problems. Pages look and work as before." },

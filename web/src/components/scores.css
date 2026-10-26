@@ -77,3 +77,13 @@ a.dayarrow:hover { border-color: var(--accent); color: var(--accent-text); }
 .live-src summary::-webkit-details-marker { display: none; }
 .live-src ul { margin: 4px 0 0; padding: 0; list-style: none; }
 .live-src li { padding: 1px 0; }
+
+.live-admin { margin-top: 12px; padding: 12px; border: 1px dashed var(--rule); display: flex; flex-direction: column; gap: 8px; }
+.live-admin .note { margin: 0; }
+.live-job { display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border: 1px solid var(--rule); background: var(--panel); }
+.live-job p { margin: 0; }
+.live-items { margin: 6px 0 0; padding-left: 18px; font-size: 12px; max-height: 30dvh; overflow: auto; }
+.live-close { align-self: flex-start; min-height: 36px; }
+.live-refresh { font: inherit; font-size: 12px; padding: 1px 6px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
+.live-refresh:disabled { opacity: .5; cursor: default; }
+.live-chip { font-size: 11px; padding: 0 6px; border: 1px solid var(--rule); color: var(--muted); }
