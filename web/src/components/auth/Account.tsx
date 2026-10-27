@@ -40,9 +40,11 @@ export function AccountProvider({ enabled, initial, children }: { enabled: boole
     if (!hasHint()) return;
     let live = true;
     fetch("/api/me", { cache: "no-store", credentials: "same-origin" })
-      .then((res) => (res.ok ? (res.json() as Promise<Account>) : NOBODY))
+      // A refused or failed answer (a 429 from the firewall, a 5xx) says nothing about who is signed in: the hint stays and the next page
+      // asks again. Clearing it here left a signed-in reader with the signed-out header for good, and its Sign in link only led back.
+      .then((res) => (res.ok ? (res.json() as Promise<Account>) : null))
       .then((found) => {
-        if (!live) return;
+        if (!live || found === null) return;
         setHint(found.user !== null);
         setAccount(found.user ? found : NOBODY);
       })

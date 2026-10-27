@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
+import { HINT_COOKIE, HINT_SECONDS } from "@/lib/auth/hint";
 import { decideGate } from "@/lib/invite/gate";
 import { CLOSED_HEADERS, REFUSAL_HEADERS, siteClosed } from "@/lib/invite/rules";
 import { sessionOfRequest } from "@/lib/invite/session";
@@ -38,6 +39,22 @@ function pageDestination(request: NextRequest): NextResponse {
   return NextResponse.rewrite(url);
 }
 
+/** next-auth's session cookie, by its two names (Secure on https), each possibly cut into numbered chunks. */
+const SESSION_COOKIES = ["__Secure-next-auth.session-token", "next-auth.session-token"];
+
+/**
+ * A browser that carries a session but has lost the "ask" hint (lib/auth/hint.ts) draws the signed-out header on every kept page, and its Sign in
+ * link only leads back to where it was (/login sends a signed-in reader on). Give the hint back with the response. It is only a hint: /api/me
+ * answers from the real session, and clears it when that session is gone.
+ */
+function withHint(request: NextRequest, res: NextResponse): NextResponse {
+  const session = request.cookies.getAll().some((c) => SESSION_COOKIES.some((name) => c.name === name || c.name.startsWith(`${name}.`)));
+  if (session && request.cookies.get(HINT_COOKIE)?.value !== "1") {
+    res.cookies.set(HINT_COOKIE, "1", { path: "/", maxAge: HINT_SECONDS, sameSite: "lax", secure: request.nextUrl.protocol === "https:" });
+  }
+  return res;
+}
+
 function withHeaders(res: NextResponse, headers: Record<string, string>): NextResponse {
   for (const [name, value] of Object.entries(headers)) res.headers.set(name, value);
   return res;
@@ -69,10 +86,10 @@ async function gate(request: NextRequest): Promise<NextResponse | null> {
 }
 
 export async function proxy(request: NextRequest) {
-  if (!siteClosed(process.env)) return pageDestination(request);
+  if (!siteClosed(process.env)) return withHint(request, pageDestination(request));
   const stopped = await gate(request);
   if (stopped) return stopped;
-  return withHeaders(pageDestination(request), CLOSED_HEADERS);
+  return withHint(request, withHeaders(pageDestination(request), CLOSED_HEADERS));
 }
 
 export const config = {

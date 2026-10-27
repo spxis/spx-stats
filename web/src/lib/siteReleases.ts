@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.162.1", date: "2026-10-27",
+    title: "Signed-in readers stay signed in",
+    text: "A signed-in reader could see the Sign in link instead of their account menu, and clicking it did nothing. The header now finds the reader again, and a refused answer from the server no longer signs the header out." },
   { version: "0.162.0", date: "2026-10-26", href: "/aa",
     title: "The baseball family: NA, AA, UA, PL and FL",
     text: "The National Association, American Association, Union Association, Players' League and Federal League are now leagues of their own under MLB, with their own seasons, standings and champions. A club that moved between leagues is one franchise; MLB's records count only MLB seasons." },

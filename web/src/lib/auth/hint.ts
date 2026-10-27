@@ -10,7 +10,7 @@
 export const HINT_COOKIE = "spxn-in";
 export const PROBED_KEY = "spxn-probed";
 /** A session lasts seven days (lib/auth/config.ts); so does the hint. */
-const HINT_SECONDS = 60 * 60 * 24 * 7;
+export const HINT_SECONDS = 60 * 60 * 24 * 7;
 
 /** Runs in the head before the first paint: marks <html> so the signed-out controls are hidden for a browser that will turn out to be signed in. */
 export const HINT_SCRIPT = `try{if(/(?:^|; )${HINT_COOKIE}=1/.test(document.cookie))document.documentElement.setAttribute('data-in','')}catch(e){}`;
