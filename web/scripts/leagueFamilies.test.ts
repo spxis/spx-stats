@@ -34,6 +34,8 @@ const s = (league: string, year: number, extra: Partial<HeatSeasonLike> = {}): H
 test("families fold hockey, basketball and soccer; NFL and CFL stay apart", () => {
   assert.deepEqual(FAMILIES.map((f) => f.id), ["nhl", "nba", "mlb", "nfl", "cfl", "soccer"]);
   assert.deepEqual(familyOf("nhl")?.members, ["nhl", "pwhl", "nha", "pcha", "wchl", "wha"]);
+  assert.deepEqual(familyOf("mlb")?.members, ["mlb", "na", "aa", "ua", "pl", "fl"]);
+  assert.equal(familyOf("aa")?.id, "mlb");
   assert.deepEqual(familyOf("pwhl")?.id, "nhl");
   assert.deepEqual(familyOf("wnba")?.id, "nba");
   assert.deepEqual(familyOf("nwsl")?.id, "soccer");

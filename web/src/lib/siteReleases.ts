@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.162.0", date: "2026-10-26", href: "/aa",
+    title: "The baseball family: NA, AA, UA, PL and FL",
+    text: "The National Association, American Association, Union Association, Players' League and Federal League are now leagues of their own under MLB, with their own seasons, standings and champions. A club that moved between leagues is one franchise; MLB's records count only MLB seasons." },
   { version: "0.161.2", date: "2026-10-26", needsReview: true,
     title: "Admin refresh of the unofficial scores",
     text: "Signed-in admins can refresh the unofficial scores of one game, a day's list, the main five or all sports from a scoreboard, choosing which allowed sources to read, and the scores update on the data page now asks how much to update. Visitors see no change." },

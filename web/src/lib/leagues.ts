@@ -1,4 +1,4 @@
-export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha"] as const;
+export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "na", "aa", "ua", "pl", "fl"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
 /**
@@ -21,10 +21,15 @@ export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; close
   { code: "pcha", name: "Pacific Coast Hockey Association", short: "PCHA", closed: true },
   { code: "wchl", name: "Western Canada Hockey League", short: "WCHL", closed: true },
   { code: "wha", name: "World Hockey Association", short: "WHA", closed: true },
+  { code: "na", name: "National Association of Professional Base Ball Players", short: "NA", closed: true },
+  { code: "aa", name: "American Association", short: "AA", closed: true },
+  { code: "ua", name: "Union Association", short: "UA", closed: true },
+  { code: "pl", name: "Players' League", short: "PL", closed: true },
+  { code: "fl", name: "Federal League", short: "FL", closed: true },
 ];
 
 /** The league a rival or predecessor league belongs under. One place: the menu, the parent's "Other leagues" section and the trail all read it. */
-export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl" };
+export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl", na: "mlb", aa: "mlb", ua: "mlb", pl: "mlb", fl: "mlb" };
 
 /** The leagues of the menu and of every league picker: the ones with no parent. */
 export const LEAGUES = ALL_LEAGUES.filter((l) => !(l.code in PARENT));
@@ -42,7 +47,7 @@ export const topLeague = (code: string): string => PARENT[code as LeagueCode] ??
 
 export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA", na: "NA", aa: "AA", ua: "UA", pl: "PL", fl: "FL" };
 
 /**
  * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the

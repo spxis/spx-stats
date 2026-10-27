@@ -88,6 +88,7 @@ export const PHRASES = {
   "nav.leagues": "Leagues",
   "nav.crumbs": "You are here",
   "league.otherLeagues": "Other leagues",
+  "league.naNote": "Major League Baseball does not recognise the National Association as a major league. Its seasons are kept apart from MLB's and never count in its records.",
   "league.otherNote": "Leagues that played alongside or before the {league}. Their records are kept apart and never count in the {league}'s own.",
   "league.familyNav": "Related leagues",
   "league.familyNote": "Other leagues in the {family} family.",

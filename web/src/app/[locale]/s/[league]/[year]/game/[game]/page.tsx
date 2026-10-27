@@ -26,7 +26,7 @@ import { pairPath } from "@/lib/h2h";
 import { getPairHistory } from "@/lib/h2hData";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { RESULT_KEY } from "@/lib/i18n/keys";
-import { isLeague, LG, seasonLabel, type LeagueCode } from "@/lib/leagues";
+import { isLeague, LG, seasonLabel, topLeague, type LeagueCode } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
@@ -123,7 +123,7 @@ export default guard(async function GamePage({ params }: Params) {
   const otl = countsOtl(lg, y);
   const season = seasonLabel(lg, y);
   const date = dt.full(atUtc(g.game_date));
-  const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
+  const extra = say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot");
   const state = final ? (g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")) : g.status === "scheduled" ? say("scores.scheduled") : say("scores.noResult");
   const winner: 0 | 1 | null = final && g.away_score! !== g.home_score! ? (g.away_score! > g.home_score! ? 0 : 1) : null;
 
@@ -329,7 +329,7 @@ export default guard(async function GamePage({ params }: Params) {
           {head.gp ? (
             <p className="gh2h">
               <b style={{ color: "var(--ca)" }}>{nickname(A.name)}</b> {fmt(head.a)}–{fmt(head.b)}{head.t ? `–${fmt(head.t)}` : ""} <b style={{ color: "var(--cb)" }}>{nickname(H.name)}</b>
-              {" · "}{say("gm.h2hGames", { count: fmt(head.gp), af: fmt(head.af), bf: fmt(head.bf), unit: say(lg === "nhl" ? "gm.unitNhl" : lg === "mlb" ? "gm.unitMlb" : "gm.unitOther") })}
+              {" · "}{say("gm.h2hGames", { count: fmt(head.gp), af: fmt(head.af), bf: fmt(head.bf), unit: say(lg === "nhl" ? "gm.unitNhl" : topLeague(lg) === "mlb" ? "gm.unitMlb" : "gm.unitOther") })}
             </p>
           ) : <p className="note">{say("gm.h2hNone")}</p>}
           {thisSeason.length > 1 ? (

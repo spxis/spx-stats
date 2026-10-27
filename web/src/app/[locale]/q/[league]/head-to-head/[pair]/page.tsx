@@ -30,7 +30,7 @@ import { groupPath, GROUP_IDS } from "@/lib/h2hGroup";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
-import { isLeague, LG, seasonLabel, seasonSeg } from "@/lib/leagues";
+import { isLeague, LG, seasonLabel, seasonSeg, topLeague } from "@/lib/leagues";
 import { share } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
@@ -45,7 +45,7 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 
 // Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/head-to-head/[pair] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
-const UNIT = { nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals" } as const satisfies Record<string, PhraseKey>;
+const UNIT = { nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals", na: "unit.runs", aa: "unit.runs", ua: "unit.runs", pl: "unit.runs", fl: "unit.runs" } as const satisfies Record<string, PhraseKey>;
 /** A long history is listed from the newest game; the rest is one click away (?list=all). */
 const LIST_LIMIT = 200;
 
@@ -271,7 +271,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
       <Link className="h2hfact" href={dayHref(g)} prefetch={false} style={{ "--tc": tc } as React.CSSProperties} title={say("h2h.gameTitle")}>
         <span className="k">{say(key)}</span>
         <b>{win == null ? say("h2h.tie") : <><TeamLogo url={logoFor(d.brands, win === 0 ? a : b, g.year)} />{win === 0 ? na : nb}</>} {hi}–{lo}</b>
-        <span className="sub">{dt.ymd(atUtc(g.date))}{g.ph === "playoffs" ? ` · ${say("phase.playoffs")}` : ""}{g.ot ? ` · ${say(lg === "mlb" ? "col.extras" : "col.ot")}` : ""}</span>
+        <span className="sub">{dt.ymd(atUtc(g.date))}{g.ph === "playoffs" ? ` · ${say("phase.playoffs")}` : ""}{g.ot ? ` · ${say(topLeague(lg) === "mlb" ? "col.extras" : "col.ot")}` : ""}</span>
       </Link>
     );
   };
@@ -311,7 +311,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
     ? runByGame(picked).map((p) => ({
       x: p.n, y: p.diff,
       title: say("h2h.tip.game", { n: fmt(p.n), date: dt.monthDayShort(atUtc(p.g.date)) }),
-      lines: [say("h2h.tip.score", { a: na, as: p.g.a, b: nb, bs: p.g.b }) + (p.g.ot ? ` ${say(lg === "mlb" ? "col.extras" : "col.ot")}` : ""), leadLine(p.diff)],
+      lines: [say("h2h.tip.score", { a: na, as: p.g.a, b: nb, bs: p.g.b }) + (p.g.ot ? ` ${say(topLeague(lg) === "mlb" ? "col.extras" : "col.ot")}` : ""), leadLine(p.diff)],
     }))
     : runBySeason(bySeason(inLoc, lg)).map((p) => ({
       x: p.year, y: p.diff,
@@ -357,7 +357,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   const ordered = [...inResult].reverse();
   const cut = year == null && !q.list && ordered.length > LIST_LIMIT;
   const listed = cut ? ordered.slice(0, LIST_LIMIT) : ordered;
-  const extra = say(lg === "mlb" ? "col.extras" : "col.ot");
+  const extra = say(topLeague(lg) === "mlb" ? "col.extras" : "col.ot");
   const gameTable = tableOf(listed, [
     { key: "season", label: say("col.season"), cls: "seasoncell", get: (g: H2hGame) => g.year, cell: (g: H2hGame) => <Link href={paths.teamSeason(lg, a, g.year)} prefetch={false} title={say("h2h.seasonTitle", { team: name[0], season: seasonLabel(lg, g.year) })}>{seasonLabel(lg, g.year)}</Link> },
     {

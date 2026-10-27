@@ -86,6 +86,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
         <h1>{info.name}</h1>
         <FamilyNav code={lg} />
         <p className="lede">{say("league.lede", { seasons: plural("count.seasons", list.filter((x) => !leagueSat(x)).length), withGames: withGames.length, champions: plural("count.champions", champs.length) })}</p>
+        {lg === "na" ? <p className="note">{say("league.naNote")}</p> : null}
         <nav className="quicklinks">
           <Link href={`/${lg}/scores`}>{say("nav.scores")}</Link>
           <Link href={`/${lg}/all-time`}>{say("allTime.title")}</Link>

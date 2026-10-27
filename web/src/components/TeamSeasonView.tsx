@@ -6,7 +6,7 @@ import { abbrFor, officialAbbr, type AbbrMap } from "@/lib/abbr";
 import { atUtc, localToday } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";
 import { RESULT_KEY } from "@/lib/i18n/keys";
-import { srcName } from "@/lib/leagues";
+import { srcName, topLeague } from "@/lib/leagues";
 import type { Loc } from "@/lib/loc";
 import { recordParts, type RecordPart } from "@/lib/record";
 import { matchesResult, resultOptions, type ResultFilter } from "@/lib/resultFilter";
@@ -104,7 +104,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
   }, [phase, loc, result, filterMonth, day]);
 
   const set = (patch: Partial<Selection>) => setWant({ ...want, ...patch });
-  const extra = say(lg === "mlb" ? "col.extras" : "col.ot");
+  const extra = say(topLeague(lg) === "mlb" ? "col.extras" : "col.ot");
 
   const numbers = useMemo(() => new Map(playedInOrder(locRows).map((g, i) => [g.id, i + 1])), [locRows]);
 
@@ -140,7 +140,7 @@ export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: te
       key: "res", label: say(lg === "nhl" ? "col.wlt" : "col.result"), get: (g) => g.res || null,
       cell: (g) => (g.res ? <span className={g.res === "W" ? "ok" : g.res === "T" ? undefined : "bad"}>{say(RESULT_KEY[g.res])}</span> : <span className="note"><GameState text={say(g.tuple[6] === "s" ? "game.scheduled" : "game.noResult")} status={g.status} startsAt={g.startsAt} gameDate={g.date} /></span>),
     },
-    { key: "ot", label: extra, title: say(lg === "mlb" ? "col.extrasTitle" : "col.otTitle"), get: (g) => (g.ot ? 1 : 0), cell: (g) => (g.ot ? extra : "") },
+    { key: "ot", label: extra, title: say(topLeague(lg) === "mlb" ? "col.extrasTitle" : "col.otTitle"), get: (g) => (g.ot ? 1 : 0), cell: (g) => (g.ot ? extra : "") },
     { key: "rec", label: say("col.record"), num: true, title: say("col.recordTitle"), get: (g) => g.recPct, cell: (g) => g.rec },
     {
       key: "src", label: say("col.source"), get: (g) => srcName(say, g.src),

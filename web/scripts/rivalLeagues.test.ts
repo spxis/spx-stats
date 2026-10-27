@@ -38,8 +38,8 @@ test("the AAFC is a league the site knows, a closed one, with single-year season
 
 test("a rival league is no league of the menu: it hangs off its parent, in one place", () => {
   assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl"]);
-  assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl" });
-  assert.deepEqual(CHILDREN, { nhl: ["nha", "pcha", "wchl", "wha"], nfl: ["afl", "aafc"] });
+  assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl", na: "mlb", aa: "mlb", ua: "mlb", pl: "mlb", fl: "mlb" });
+  assert.deepEqual(CHILDREN, { nhl: ["nha", "pcha", "wchl", "wha"], mlb: ["na", "aa", "ua", "pl", "fl"], nfl: ["afl", "aafc"] });
   assert.equal(topLeague("afl"), "nfl");
   assert.equal(topLeague("aafc"), "nfl");
   assert.equal(topLeague("nhl"), "nhl");
@@ -84,7 +84,9 @@ test("a club's page points to its seasons in the related leagues: the NFL club t
   assert.deepEqual(RELATED_LEAGUES.afl, ["nfl", "aafc"]);
   assert.deepEqual(RELATED_LEAGUES.nhl, ["nha", "pcha", "wchl", "wha"]);
   assert.deepEqual(RELATED_LEAGUES.wha, ["nhl", "nha", "pcha", "wchl"]);
-  assert.equal(RELATED_LEAGUES.mlb, undefined);
+  assert.deepEqual(RELATED_LEAGUES.mlb, ["na", "aa", "ua", "pl", "fl"]);
+  assert.deepEqual(RELATED_LEAGUES.aa, ["mlb", "na", "ua", "pl", "fl"]);
+  assert.equal(RELATED_LEAGUES.cfl, undefined);
 });
 
 test("the parent league's page lists each rival league with its years, seasons and champions; a league without one lists nothing", () => {

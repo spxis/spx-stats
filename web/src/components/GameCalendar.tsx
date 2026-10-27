@@ -17,6 +17,7 @@ import { TeamLogo } from "./TeamLogo";
 import { Badge } from "./ui";
 import "./team.css";
 import "./game.css";
+import { topLeague } from "@/lib/leagues";
 
 /** How many games of the list the server draws; the rest are added when the page is live. */
 const FIRST_GAMES = 16;
@@ -29,7 +30,7 @@ export function GameRow({ lg, g, teams, year, abbrs }: { lg: string; g: GameTupl
   const aw = fin && (as ?? 0) > (hs ?? 0), hw = fin && (hs ?? 0) > (as ?? 0);
   const nm = (id: number) => teams.get(id)?.name || "—";
   const ab = (id: number) => abbrFor(abbrs, teams.get(id)?.f, year, teams.get(id)?.name);
-  const text = fin ? `${as}–${hs}${ot ? " " + say(lg === "mlb" ? "game.extras" : "game.ot") : ""}` : <GameState text={say(st === "s" ? "game.scheduled" : "game.noResult")} status={st} gameDate={g[0]} />;
+  const text = fin ? `${as}–${hs}${ot ? " " + say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot") : ""}` : <GameState text={say(st === "s" ? "game.scheduled" : "game.noResult")} status={st} gameDate={g[0]} />;
   return (
     <div className="game">
       <span>
@@ -70,7 +71,7 @@ function GameLine({ lg, g, teams, year, abbrs }: { lg: string; g: GameTuple; tea
       </span>
       <span className={"ghome" + (fin && (hs ?? 0) > (as ?? 0) ? " won" : "")}><TeamLabel lg={lg} f={teams.get(h)?.f} name={nm(h)} year={year} abbr={ab(h)} logo={teams.get(h)?.logo} /></span>
       <span className="gmeta">
-        {fin && ot ? <span className="got">{say(lg === "mlb" ? "game.extras" : "game.ot")}</span> : null}
+        {fin && ot ? <span className="got">{say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot")}</span> : null}
         <Badge src={src} />
         {v === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓"}</span> : null}
         {v === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠"}</span> : null}

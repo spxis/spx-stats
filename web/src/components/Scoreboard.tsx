@@ -7,7 +7,7 @@ import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { atUtc } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { LG, type LeagueCode } from "@/lib/leagues";
+import { LG, topLeague, type LeagueCode } from "@/lib/leagues";
 import { addDay, scoresPath, todayUtc } from "@/lib/scores";
 import { liveCandidates } from "@/lib/liveScores";
 import { loadScores } from "@/lib/scoresData";
@@ -34,7 +34,7 @@ const PHASE_TAG: Record<string, "phase.playoffs" | "phase.preseason" | "phase.al
 function Game({ lg, g, brands, abbrs, say, upcoming, day }: { lg: LeagueCode; g: GameRow; brands: Brands; abbrs: AbbrMap; say: Say; upcoming: boolean; day: string }) {
   const final = g.status === "final" && g.home_score != null && g.away_score != null;
   const away = final && g.away_score! > g.home_score!, home = final && g.home_score! > g.away_score!;
-  const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
+  const extra = say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot");
   const page = gamePath(lg, g.year, g.game_id, g.away, g.home);
   const title = say("gm.viewGameTitle", { away: g.away ?? "—", home: g.home ?? "—" });
   const side = (which: "away" | "home", f: number | null, name: string | null, score: number | null, won: boolean) => (

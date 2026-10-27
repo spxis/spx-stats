@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { atUtc } from "@/lib/format";
 import { gamePath } from "@/lib/gamePath";
 import { RESULT_KEY } from "@/lib/i18n/keys";
-import { seasonLabel } from "@/lib/leagues";
+import { seasonLabel, topLeague } from "@/lib/leagues";
 import {
   HEAT_ROWS, buildHeat, clipHeatGames, heatHover, heatPack, heatRecord, heatSeasons,
   type GameTone, type HeatCell, type HeatGame,
@@ -82,7 +82,7 @@ export function ResultHeat({ lg, games, compact = false, lock, fill = true }: Re
     const h = heatHover(c.game);
     const title = dt.full(atUtc(h.date));
     const res = h.res ? say(RESULT_KEY[h.res]) : say("rheat.legend.pending");
-    const score = h.score ? `${h.score}${h.ot ? ` ${say(lg === "mlb" ? "game.extras" : "game.ot")}` : ""}` : "·";
+    const score = h.score ? `${h.score}${h.ot ? ` ${say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot")}` : ""}` : "·";
     const opp = h.opp || "—";
     return { title, lines: [say(h.home ? "rheat.card.vs" : "rheat.card.at", { opp }), score, res] };
   };

@@ -3,6 +3,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { atUtc } from "@/lib/format";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { getStaff, type StaffMember } from "@/lib/roster";
+import { topLeague } from "@/lib/leagues";
 
 /** The season's head coaches (managers in MLB), captains and alternate captains, when the archive has them; nothing otherwise. */
 export async function TeamStaff({ lg, teamSeasonId }: { lg: string; teamSeasonId: number }) {
@@ -13,7 +14,7 @@ export async function TeamStaff({ lg, teamSeasonId }: { lg: string; teamSeasonId
   const of = (role: StaffMember["role"]) => staff.filter((s) => s.role === role);
   const coaches = of("head_coach"), captains = of("captain"), alts = of("alternate_captain");
   const parts: [string, StaffMember[]][] = [
-    [say(lg === "mlb" ? (coaches.length > 1 ? "staff.managers" : "staff.manager") : coaches.length > 1 ? "staff.headCoaches" : "staff.headCoach"), coaches],
+    [say(topLeague(lg) === "mlb" ? (coaches.length > 1 ? "staff.managers" : "staff.manager") : coaches.length > 1 ? "staff.headCoaches" : "staff.headCoach"), coaches],
     [say(captains.length > 1 ? "staff.captains" : "staff.captain"), captains],
     [say("staff.altCaptains"), alts],
   ];

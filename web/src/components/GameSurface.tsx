@@ -5,7 +5,7 @@ import { atUtc } from "@/lib/format";
 import { drawGameOnce, groundOf, homeVenueIn, neutralSite, parkFits, parkOf, sportOf, type GameDrawing, type HomeVenue } from "@/lib/gameSurface";
 import { getGameVenue } from "@/lib/gameVenue";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { LG, seasonLabel } from "@/lib/leagues";
+import { LG, seasonLabel, topLeague } from "@/lib/leagues";
 import { leftRight } from "@/lib/sides";
 import { seriesLooks } from "@/lib/seriesLooks";
 import { getVenueFacts, getVenueNames, nameIn } from "@/lib/venueName";
@@ -84,7 +84,7 @@ export async function GameSurface({ lg, year, game, competition, brands, abbrs, 
   // The drawing's left and right sides (lib/sides.ts); kyogijo is told the left team as its `away` and the right team as its `home`.
   const { left, right } = leftRight(game.away, game.home, { leftOf: leftF != null ? (t) => t.f === leftF : undefined, sport });
   const [la, lb] = seriesLooks(lg, brandFor(brands, left.f, year), brandFor(brands, right.f, year));
-  const extra = say(lg === "mlb" ? "game.extras" : "game.ot");
+  const extra = say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot");
   const status = game.overtime ? say("scores.finalExtra", { extra }) : say("scores.final");
   const side = (s: DrawnGame["home"], look: typeof la): GameDrawing["home"] => ({
     name: s.name, abbr: abbrFor(abbrs, s.f, year, s.name), score: s.score, color: look.block, ink: look.on, logo: logoFor(brands, s.f, year),
