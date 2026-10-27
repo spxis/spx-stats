@@ -151,6 +151,13 @@ update core.team_season ts set franchise_identity_id = (
   order by upper(i.valid_during) desc nulls first limit 1)
 where ts.franchise_identity_id is null and ts.franchise_id in (select keep_id from ghost) and ts.team_season_id in (select team_season_id from tsl);
 
+-- 3b. Award winners placed on the National Association's MLB seasons (step 167's pennants, loaded before this repair) follow their team season
+-- to its own league's season, ids kept; step 167 then settles them.
+update core.award_winner w set season_id = ts.season_id
+from core.team_season ts, core.season s
+where w.team_season_id = ts.team_season_id and w.season_id = s.season_id
+  and s.league_code = 'mlb' and s.start_year between 1871 and 1875 and ts.season_id <> w.season_id;
+
 -- 4. The National Association's MLB seasons are empty now. The derived venue tables are rebuilt by step 209.
 delete from core.venue_game_season where season_id in (select season_id from core.season where league_code = 'mlb' and start_year between 1871 and 1875);
 delete from core.venue_final_game where season_id in (select season_id from core.season where league_code = 'mlb' and start_year between 1871 and 1875);
