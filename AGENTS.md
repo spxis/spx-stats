@@ -610,6 +610,13 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   is in neither league's games (so none is counted twice). The champions come from the league article's table (a season's infobox may name the regular-season winner), not from the games (165 skips these leagues).
   Step 154 merges the NHL API's two franchises for the Millionaires and Maroons (VMI, VMA): run it again after any rerun of 145. A rival league has a parent (`PARENT` in `web/src/lib/leagues.ts`):
   no menu entry of its own, the parent's page lists it under "Other leagues", its pages carry the trail "NHL > PCHA > 1919-20", addresses `/pcha/...`.
+- **MLB's rival and predecessor leagues** (the National Association 1871-75, the American Association 1882-91, the Union Association 1884, the Players' League 1890, the Federal League 1914-15;
+  `na`, `aa`, `ua`, `pl`, `fl`; John, 2026-10-26, `docs/baseball-family.md`) come from the Retrosheet game logs, which carry each game's league. `db/build/139` adds the leagues (parent `mlb`), `db/build/140`
+  puts every game and team season in the season of its own league and gives each franchise one `core.franchise_league` row per league, never counted in MLB's records. The National Association is
+  not recognised by MLB as a major league (a note on its pages). A club that played on is one franchise across leagues: `db/seed/baseball_club.csv` folds a second Retrosheet team id into the first
+  (the Cardinals' AA years are logged as SL4 beside SLN, then Louisville, Washington, the Cleveland Spiders, the Boston Reds, Baltimore) and gives BR4 from 1890 its own club (the Brooklyn Gladiators,
+  not the Dodgers). The pennant of a league of its own is its championship (`mlb_pennant_na` ... `mlb_pennant_fl`, step 167); the World's Championship Series 1884-90 stay in MLB's season.
+  A database built before this is split in place by `db/build/pending/baseball_family_repair.sql` (every id stays), then 140 is rerun; `db/checks/102` watches it.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.

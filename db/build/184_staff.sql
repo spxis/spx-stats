@@ -40,7 +40,7 @@ select y, c, min(ts) as ts from (
   union all
   select s.start_year, cn.team_id, ts.team_season_id
   from legacy_retrosheet.current_name cn join fr on fr.code = cn.franchise_id
-  join core.season s on s.league_code = 'mlb' and s.start_year between extract(year from cn.first_game)::int and extract(year from coalesce(cn.last_game, '9999-01-01'))::int
+  join core.season s on s.league_code in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl') and s.start_year between extract(year from cn.first_game)::int and extract(year from coalesce(cn.last_game, '9999-01-01'))::int
   join core.team_season ts on ts.season_id = s.season_id and ts.franchise_id = fr.franchise_id
   where not exists (select 1 from retro_ts r where r.y = s.start_year and r.c = cn.team_id)) z
 group by y, c;

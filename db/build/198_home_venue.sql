@@ -141,7 +141,7 @@ from seed_venue_dates d where v.source_id = (select source_id from wd) and v.sou
 -- ---------------------------------------------------------------- which franchise each seed row is
 create temp table fn as
 select fl.league_code, i.franchise_id, i.full_name, i.valid_during
-from core.franchise_identity i join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id);
+from core.franchise_identity i join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id);
 create temp table sh as
 select s.*, daterange(s.from_d, s.until_d) as rng,
        (select min(fn.franchise_id) from fn where fn.league_code = s.league and fn.full_name = s.franchise and fn.valid_during && daterange(s.from_d, s.until_d)) as franchise_id,

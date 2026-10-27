@@ -1,6 +1,7 @@
 # The baseball family: proposal
 
-Ticket cmvf25bw10002l8066p4gigqr. Status: proposal, waiting on John's decisions (section 5). Nothing is built yet.
+Ticket cmvf25bw10002l8066p4gigqr. Status: built for the five 19th and early 20th century leagues (section 6). The Negro leagues (section 4) are not built.
+John decided on 2026-10-26: all of 1 to 4 as recommended in section 5, and decision 5 as recommended but not in this run.
 Facts below were read on 2026-10-25 from production's public `api`/`core` tables and from the Retrosheet files already archived in Dropbox
 (`raw/retrosheet/2026-10-10`). DS1 may differ a little.
 
@@ -106,3 +107,17 @@ If the answer to 1, 2, 3 and 4 is "recommended", the build is: migration (new le
 league-aware, `db/seed/baseball_club.csv`, one repair file for DS1, `db/checks` for "no team season of a rival league in `mlb`" and "game
 league equals season league", a test on scratch that a second run changes 0 ids (`db/checks/093`), then the site changes. The tied-series ticket
 (`api.season_summary` champion pick, 1885 and 1890) touches the same view: do it first or together.
+
+## 6. As built
+
+- `db/build/139_baseball_leagues.sql` (the leagues and their names), `db/build/140_mlb_from_retrosheet.sql` (league-aware, fold-aware), `db/seed/baseball_club.csv` (the folds), `db/build/167` (the pennants are the
+  championships of their own leagues), `db/build/pending/baseball_family_repair.sql` (the one-time move on DS1, every id kept), `db/checks/102_baseball_family.sql`. Steps 155, 175 (three files), 176, 178, 179, 181, 184, 185,
+  198, 199 and 222 and checks 062 and 092 know the five leagues; the family rule of 175 and the home-venue steps give a rival-league club its MLB name too.
+- **Found while building (not in the proposal): Retrosheet's names file gives the id BR4 to the Dodgers' 1888-89 years, but the game logs use BR4 for the Brooklyn Gladiators of the 1890 American Association.** Step 140 filed
+  those 100 games under the Dodgers, so the Dodgers' 1890 team season held 129 National League and 100 American Association games. The Gladiators are now a franchise of their own (`BR4`, seed row with a year).
+- The National League pennant is MLB's champion in 1882, 1883 and 1891 as well now (MLB's season holds the National League alone; the American Association has its own champion).
+- Records of continuing clubs count only their MLB seasons (decision 2): the Cardinals, Reds, Dodgers and Pirates lose their AA years from the MLB headline, the Braves and Cubs their NA years; each league's page and the
+  club's "other leagues" table show them.
+- Also folded, found by `db/checks/102` (same club name, one league's last year the next league's first): the St. Louis Maroons (UA 1884, NL 1885-86), the Hartford Dark Blues, the Philadelphia Athletics, the St. Louis Brown Stockings
+  and the New York Mutuals (each NA, then NL 1876), and Baltimore's first American Association season (`BL5`, a team id the names file does not list). Two NA clubs called Washington Nationals (1872, 1873) are left as two.
+- A World's Championship Series winner that played in the American Association keeps its row in MLB's season and points at its team season in the AA's season (step 167).

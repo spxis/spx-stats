@@ -148,7 +148,8 @@ insert into ev0
 select distinct 'mlb', r.y, ts.franchise_id, 'retrosheet', 2, r.lg, null, null
 from rl r
 left join core.external_id e on e.entity_kind = 'franchise' and e.source_id = (select source_id from src where code = 'retrosheet') and e.external_key = 'franchise:' || r.team
-join ts on ts.lg = 'mlb' and ts.y = r.y and (ts.abbr = r.team or ts.franchise_id = e.entity_id);
+join ts on ts.lg = 'mlb' and ts.y = r.y and (ts.abbr = r.team or ts.franchise_id = e.entity_id)
+where r.lg not in ('NA', 'AA', 'UA', 'PL', 'FL');   -- (a league of its own, na, aa, ua, pl, fl, has no conferences)
 
 -- 3. Wikipedia standings templates. A team named by a template is found by its full name, else by its nickname
 -- (the last words of the name) among that season's clubs of the league.

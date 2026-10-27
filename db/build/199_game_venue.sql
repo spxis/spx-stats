@@ -71,7 +71,7 @@ create temp table gm as
 select g.game_id, g.game_date, g.is_neutral_site as neutral, s.league_code as lg, s.start_year, hts.franchise_id as home_f, ats.franchise_id as away_f
 from core.game g join core.season s using (season_id)
 join core.team_season hts on hts.team_season_id = g.home_team_season_id join core.team_season ats on ats.team_season_id = g.away_team_season_id
-where g.venue_id is null and s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl');
+where g.venue_id is null and s.league_code in ('nhl', 'nba', 'mlb', 'na', 'aa', 'ua', 'pl', 'fl', 'nfl', 'cfl');
 create unique index on gm (game_id);
 
 create temp table hi0 as   -- the home club's venue that day by the chain 198 built, when that venue stood on that day (30 days of slack)
@@ -83,7 +83,7 @@ create unique index on hi0 (game_id);
 -- ---------------------------------------------------------------- events
 create temp table fn as
 select fl.league_code, i.franchise_id, i.full_name, i.valid_during
-from core.franchise_identity i join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id);
+from core.franchise_identity i join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id);
 create temp table ev as
 select e.*, a.franchise_id as fa, b.franchise_id as fb, v.venue_id,
        row_number() over () as eid

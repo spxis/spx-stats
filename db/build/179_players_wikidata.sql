@@ -163,7 +163,7 @@ select distinct league_code, qid, null, club, pg_temp.key(club), season, 'wikipe
 create temp table fname on commit drop as
 select i.franchise_id, i.franchise_identity_id, pg_temp.key(i.full_name) as k, fl.league_code,
        (upper(i.valid_during) is null or upper(i.valid_during) = (select max(upper(i2.valid_during)) from core.franchise_identity i2 where i2.franchise_id = i.franchise_id)) as latest
-from core.franchise_identity i join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id);
+from core.franchise_identity i join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id);
 create index on fname (league_code, k);
 
 -- one row per slot and team season (a franchise whose name appears in two of its identities counts once, at its best fit)

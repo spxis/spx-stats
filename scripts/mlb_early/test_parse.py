@@ -76,12 +76,12 @@ class Parse(unittest.TestCase):
         self.assertEqual(na, {1871: "Philadelphia Athletics", 1872: "Boston Red Stockings"})
         self.assertTrue(all(r[7] == "true" for r in rows if r[2] == "NA"))
 
-    def test_csv_carries_the_core_name(self):
+    def test_csv_leaves_the_core_name_empty_where_core_uses_the_article_name(self):
         d = self.raw(champ1886="[[1886 St. Louis Browns season|St. Louis Browns]]", ru1886="[[1886 Chicago White Stockings season|Chicago White Stockings]]", champ1885="", ru1885="")
         out = os.path.join(d, "o.csv")
         P.main(d, out)
         rec = [r for r in csv.DictReader(open(out, encoding="utf-8")) if r["year"] == "1886" and r["role"] == "series"][0]
-        self.assertEqual(rec["core_club"], "St. Louis Cardinals")
+        self.assertEqual(rec["core_club"], "")
 
 if __name__ == "__main__":
     unittest.main()

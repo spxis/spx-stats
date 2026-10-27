@@ -9,19 +9,18 @@ Columns: year, role, league, event, club, opponent, score, counts_as_champion, n
   role 'series'   one row per postseason series (the World's Championship Series 1884-92 and its 1885 and 1890 ties, the Temple Cup 1894-97, the
                   Chronicle-Telegraph Cup 1900); club = the winner, opponent = the other side, score as printed; a tie has club "A / B".
   counts_as_champion  'true' on the one row that names the season's champion, 'false' elsewhere. The rule (db/seed README in the build step):
-                  a series winner where a series was played; else the pennant winner where only one major league played (NA 1871-75, NL 1876-81,
-                  1893, 1898, 1899); no single champion where two co-equal leagues did not meet (1882, 1883, 1891, 1901, 1902).
+                  a series winner where a series was played; else the pennant winner where MLB's season holds one league (NA 1871-75, NL 1876-83,
+                  1891, 1893, 1898, 1899: the American Association is a league of its own); no single champion where the American and
+                  National Leagues did not meet (1901, 1902).
 Sources: the infobox of "<year> Major League Baseball season" (conference champions, finals) and "List of pre-World Series baseball champions"
 (1871-75 National Association champions, series scores). English Wikipedia, CC BY-SA 4.0.
 """
 import csv, io, os, re, sys
 
 # a club the season article names one way and core another (core.franchise_identity of that season)
-CORE_NAME = {(1885, "St. Louis Browns"): "St. Louis Cardinals", (1886, "St. Louis Browns"): "St. Louis Cardinals",
-             (1887, "St. Louis Browns"): "St. Louis Cardinals", (1888, "St. Louis Browns"): "St. Louis Cardinals",
-             (1901, "Chicago White Stockings"): "Chicago White Sox"}
+CORE_NAME = {(1901, "Chicago White Stockings"): "Chicago White Sox"}
 LEAGUE_OK = {"NA", "NL", "AA", "UA", "PL", "AL", "FL"}
-SOLE_MAJOR_YEARS = set(range(1871, 1882)) | {1893, 1898, 1899}
+SOLE_MAJOR_YEARS = set(range(1871, 1884)) | {1891, 1893, 1898, 1899}
 
 
 def link_club(s):

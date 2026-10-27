@@ -36,7 +36,7 @@ with ident as (
          i.valid_during = last_value(i.valid_during) over w as is_last,
          pg_temp.norm(i.full_name) = last_value(pg_temp.norm(i.full_name)) over w as is_last_name
   from core.franchise_identity i
-  join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id)
+  join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id)
   window w as (partition by i.franchise_id order by lower(i.valid_during) nulls first
                rows between unbounded preceding and unbounded following)
 ), colours as (
@@ -154,7 +154,7 @@ insert into core.franchise_brand (franchise_id, valid_during, home_venue, latitu
 select i.franchise_id, r.rng, v.label, v.latitude, v.longitude, (select source_id from meta.source where code = 'wikipedia'), h.qid
 from seed_home h
 join (select distinct i.franchise_id, fl.league_code, i.full_name, i.valid_during
-      from core.franchise_identity i join core.franchise_league fl using (franchise_id)) i
+      from core.franchise_identity i join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id)) i
   on i.league_code = h.league and pg_temp.norm(i.full_name) = pg_temp.norm(h.franchise)
 cross join lateral (select daterange(h.from_d, h.until_d) * i.valid_during as rng) r
 join lateral (select p.label, p.latitude, p.longitude from legacy_franchise_info.place p where p.qid = h.qid and p.latitude is not null
@@ -175,7 +175,7 @@ with ident as (
   select i.franchise_id fid, fl.league_code, pg_temp.norm(i.full_name) n, pg_temp.norm(i.nickname) nk,
          upper(i.valid_during) is null as is_current, i.valid_during vd
   from core.franchise_identity i
-  join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id)
+  join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id)
 ), entry as (
   select w.*, pg_temp.norm(team_name) n_key, pg_temp.norm(resolved_name) n_res,
          case when start_year is not null
@@ -263,7 +263,7 @@ select (select source_id from meta.source where code = 'wikidata'), 'team_home_v
        'The home venues of that club item are not given to this identity.'
 from legacy_team_brand.team t
 join core.franchise_identity i on pg_temp.norm(i.full_name) = pg_temp.norm(t.label)
-join (select distinct franchise_id, league_code from core.franchise_league) fl on fl.franchise_id = i.franchise_id and fl.league_code = t.league_code
+join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl on fl.franchise_id = i.franchise_id and fl.league_code = t.league_code
 where (t.inception is not null or t.dissolved is not null)
   and exists (select 1 from legacy_team_brand.team_place p where p.qid = t.qid and p.kind = 'home_venue' and coalesce(p.rank, '') <> 'deprecated')
   and not daterange(date_trunc('year', t.inception)::date, (date_trunc('year', t.dissolved) + interval '1 year')::date) && i.valid_during;

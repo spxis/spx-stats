@@ -20,7 +20,7 @@ where s.basis = 'published' and g.n > s.gp and g.last_game > p.as_of and (se.gam
 union all
 select 'games played not w+l+t+otl', s.league, s.year, s.team_id
 from api.standings s
-where s.league <> 'mlb' and s.gp <> coalesce(s.w, 0) + coalesce(s.l, 0) + coalesce(s.t, 0) + coalesce(s.otl, 0)
+where s.league not in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl') and s.gp <> coalesce(s.w, 0) + coalesce(s.l, 0) + coalesce(s.t, 0) + coalesce(s.otl, 0)
 union all
 select 'standing_index differs from standings', s.league, s.year, s.team_id
 from api.standings s

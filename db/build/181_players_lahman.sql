@@ -33,7 +33,7 @@ create temp table lteam on commit drop as
 select t.yearid::int as y, t.teamid, coalesce(
          (select min(r.ts) from retro_ts r where r.y = t.yearid::int and r.c = t.teamidretro),
          (select min(ts.team_season_id) from legacy_retrosheet.current_name cn join fr on fr.code = cn.franchise_id
-            join core.season s on s.league_code = 'mlb' and s.start_year = t.yearid::int
+            join core.season s on s.league_code in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl') and s.start_year = t.yearid::int
             join core.team_season ts on ts.season_id = s.season_id and ts.franchise_id = fr.franchise_id
            where cn.team_id = t.teamidretro and t.yearid::int between extract(year from cn.first_game)::int
                                                               and extract(year from coalesce(cn.last_game, '9999-01-01'))::int)) as team_season_id

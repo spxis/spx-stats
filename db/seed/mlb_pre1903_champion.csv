@@ -10,25 +10,25 @@ year,role,league,event,club,opponent,score,counts_as_champion,note,source_url,co
 1879,pennant,NL,National League pennant,Providence Grays,,,true,,https://en.wikipedia.org/wiki/1879_Major_League_Baseball_season,
 1880,pennant,NL,National League pennant,Chicago White Stockings,,,true,,https://en.wikipedia.org/wiki/1880_Major_League_Baseball_season,
 1881,pennant,NL,National League pennant,Chicago White Stockings,,,true,,https://en.wikipedia.org/wiki/1881_Major_League_Baseball_season,
-1882,pennant,NL,National League pennant,Chicago White Stockings,,,false,,https://en.wikipedia.org/wiki/1882_Major_League_Baseball_season,
+1882,pennant,NL,National League pennant,Chicago White Stockings,,,true,,https://en.wikipedia.org/wiki/1882_Major_League_Baseball_season,
 1882,pennant,AA,American Association pennant,Cincinnati Red Stockings,,,false,,https://en.wikipedia.org/wiki/1882_Major_League_Baseball_season,
-1883,pennant,NL,National League pennant,Boston Beaneaters,,,false,,https://en.wikipedia.org/wiki/1883_Major_League_Baseball_season,
+1883,pennant,NL,National League pennant,Boston Beaneaters,,,true,,https://en.wikipedia.org/wiki/1883_Major_League_Baseball_season,
 1883,pennant,AA,American Association pennant,Philadelphia Athletics,,,false,,https://en.wikipedia.org/wiki/1883_Major_League_Baseball_season,
 1884,pennant,NL,National League pennant,Providence Grays,,,false,,https://en.wikipedia.org/wiki/1884_Major_League_Baseball_season,
 1884,pennant,AA,American Association pennant,New York Metropolitans,,,false,,https://en.wikipedia.org/wiki/1884_Major_League_Baseball_season,
 1884,pennant,UA,Union Association pennant,St. Louis Maroons,,,false,,https://en.wikipedia.org/wiki/1884_Major_League_Baseball_season,
 1884,series,,World's Championship Series,Providence Grays,New York Metropolitans,3–0,true,,https://en.wikipedia.org/wiki/1884_Major_League_Baseball_season,
 1885,pennant,NL,National League pennant,Chicago White Stockings,,,false,,https://en.wikipedia.org/wiki/1885_Major_League_Baseball_season,
-1885,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1885_Major_League_Baseball_season,St. Louis Cardinals
-1885,series,,World's Championship Series,St. Louis Browns / Chicago White Stockings,,3–3–(1)*,true,The series ended in a tie.,https://en.wikipedia.org/wiki/1885_Major_League_Baseball_season,St. Louis Cardinals / Chicago White Stockings
+1885,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1885_Major_League_Baseball_season,
+1885,series,,World's Championship Series,St. Louis Browns / Chicago White Stockings,,3–3–(1)*,true,The series ended in a tie.,https://en.wikipedia.org/wiki/1885_Major_League_Baseball_season,
 1886,pennant,NL,National League pennant,Chicago White Stockings,,,false,,https://en.wikipedia.org/wiki/1886_Major_League_Baseball_season,
-1886,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1886_Major_League_Baseball_season,St. Louis Cardinals
-1886,series,,World's Championship Series,St. Louis Browns,Chicago White Stockings,4–2,true,,https://en.wikipedia.org/wiki/1886_Major_League_Baseball_season,St. Louis Cardinals
+1886,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1886_Major_League_Baseball_season,
+1886,series,,World's Championship Series,St. Louis Browns,Chicago White Stockings,4–2,true,,https://en.wikipedia.org/wiki/1886_Major_League_Baseball_season,
 1887,pennant,NL,National League pennant,Detroit Wolverines,,,false,,https://en.wikipedia.org/wiki/1887_Major_League_Baseball_season,
-1887,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1887_Major_League_Baseball_season,St. Louis Cardinals
+1887,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1887_Major_League_Baseball_season,
 1887,series,,World's Championship Series,Detroit Wolverines,St. Louis Browns,10–5,true,,https://en.wikipedia.org/wiki/1887_Major_League_Baseball_season,
 1888,pennant,NL,National League pennant,New York Giants,,,false,,https://en.wikipedia.org/wiki/1888_Major_League_Baseball_season,
-1888,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1888_Major_League_Baseball_season,St. Louis Cardinals
+1888,pennant,AA,American Association pennant,St. Louis Browns,,,false,,https://en.wikipedia.org/wiki/1888_Major_League_Baseball_season,
 1888,series,,World's Championship Series,New York Giants,St. Louis Browns,6–4,true,,https://en.wikipedia.org/wiki/1888_Major_League_Baseball_season,
 1889,pennant,NL,National League pennant,New York Giants,,,false,,https://en.wikipedia.org/wiki/1889_Major_League_Baseball_season,
 1889,pennant,AA,American Association pennant,Brooklyn Bridegrooms,,,false,,https://en.wikipedia.org/wiki/1889_Major_League_Baseball_season,
@@ -37,7 +37,7 @@ year,role,league,event,club,opponent,score,counts_as_champion,note,source_url,co
 1890,pennant,AA,American Association pennant,Louisville Colonels,,,false,,https://en.wikipedia.org/wiki/1890_Major_League_Baseball_season,
 1890,pennant,PL,Players' League pennant,Boston Reds,,,false,,https://en.wikipedia.org/wiki/1890_Major_League_Baseball_season,
 1890,series,,World's Championship Series,Brooklyn Bridegrooms / Louisville Colonels,,3–3–(1)*,true,The series ended in a tie.,https://en.wikipedia.org/wiki/1890_Major_League_Baseball_season,
-1891,pennant,NL,National League pennant,Boston Beaneaters,,,false,,https://en.wikipedia.org/wiki/1891_Major_League_Baseball_season,
+1891,pennant,NL,National League pennant,Boston Beaneaters,,,true,,https://en.wikipedia.org/wiki/1891_Major_League_Baseball_season,
 1891,pennant,AA,American Association pennant,Boston Reds,,,false,,https://en.wikipedia.org/wiki/1891_Major_League_Baseball_season,
 1892,pennant,NL,National League pennant,Boston Beaneaters,,,false,,https://en.wikipedia.org/wiki/1892_Major_League_Baseball_season,
 1892,series,,World's Championship Series,Boston Beaneaters,Cleveland Spiders,5–0–(1)*,true,Played between the winners of the two halves of the National League's split season.,https://en.wikipedia.org/wiki/1892_Major_League_Baseball_season,

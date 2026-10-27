@@ -26,17 +26,17 @@ from (select p.*, case g.phase when 'regular' then 0 when 'playoffs' then 1 else
 create temp table dupe as
 select r.* from ranked r
 where r.n > 1 and r.rn > 1
-  and (r.league_code <> 'mlb' or r.status <> 'final');   -- MLB: two finals the same day are a doubleheader
+  and (r.league_code not in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl') or r.status <> 'final');   -- baseball: two finals the same day are a doubleheader
 
 -- A stale schedule entry: a game with no result on a day either team has a
 -- final game against someone else (a schedule SPX changed and never cleared).
--- Leagues other than MLB play once a day.
+-- Leagues other than baseball (MLB and its family) play once a day.
 insert into dupe (game_id, season_id, league_code, game_date, status, home_score, away_score, starts_at, source_key, f1, f2, phase_rank, rn, n, keep_id)
 select p.game_id, p.season_id, p.league_code, p.game_date, p.status, p.home_score, p.away_score, p.starts_at, p.source_key, p.f1, p.f2, 0, 2, 2, k.game_id
 from pair p
 join lateral (select q.game_id from pair q where q.league_code = p.league_code and q.game_date = p.game_date and q.status = 'final'
               and q.game_id <> p.game_id and (p.f1 in (q.f1, q.f2) or p.f2 in (q.f1, q.f2)) order by q.game_id limit 1) k on true
-where p.status <> 'final' and p.league_code <> 'mlb' and p.game_date < current_date
+where p.status <> 'final' and p.league_code not in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl') and p.game_date < current_date
   and p.game_id not in (select game_id from dupe);
 
 -- Two finals with different scores are not a duplicate anyone can settle here: flag, keep both.

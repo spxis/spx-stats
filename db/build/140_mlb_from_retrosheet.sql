@@ -2,7 +2,11 @@
 -- 1871, and every game. Where the SPX database holds a season (2002-2011),
 -- SPX stays the base: Retrosheet fills a result SPX never entered, confirms a
 -- result that agrees (meta.verification) and flags one that does not. Every
--- other season comes from Retrosheet alone. Runs after 100-130, before 155.
+-- other season comes from Retrosheet alone. Runs after 100-130 and 139, before 155.
+-- A game belongs to the season of its own league: the National Association (na, 1871-75), the American Association (aa), the Union Association (ua),
+-- the Players' League (pl) and the Federal League (fl) are leagues of their own under MLB (step 139); every other game, the American and National
+-- Leagues, is mlb. A club that played on is one franchise across leagues: db/seed/baseball_club.csv folds the second Retrosheet team id of a club into
+-- the first (Retrosheet logs the Cardinals' American Association years as SL4 and their National League years as SLN).
 -- Retrosheet's notice: "The information used here was obtained free of charge
 -- from and is copyrighted by Retrosheet. Interested parties may contact
 -- Retrosheet at www.retrosheet.org."
@@ -14,6 +18,21 @@ values ('retrosheet', 'Retrosheet game logs', 'dataset', 'Free for any use, with
         'https://www.retrosheet.org/gamelogs/', '1871-05-04', 'Major-league game logs, regular season and postseason, and the franchise name history.')
 on conflict (code) do nothing;
 create temp table src as select source_id from meta.source where code = 'retrosheet';
+
+create temp table club_seed (team_id text primary key, into_team_id text, from_year integer, note text);
+\copy club_seed from 'db/seed/baseball_club.csv' with (format csv, header true)
+create temp table fold as select team_id, into_team_id, note from club_seed where into_team_id is not null;   -- an id that is the club of another id
+create temp table own as select team_id, from_year from club_seed where into_team_id is null;   -- an id a club of its own uses from that year
+do $$
+begin
+  -- A folded id with a franchise of its own means db/build/pending/baseball_family_repair.sql has not been applied: this step would delete its team seasons.
+  if exists (select 1 from core.franchise f where f.source_id = (select source_id from src) and f.source_key in (select team_id from fold)) then
+    raise exception 'franchise of a folded Retrosheet team id still exists: apply db/build/pending/baseball_family_repair.sql first';
+  end if;
+  if exists (select 1 from fold f where f.into_team_id in (select team_id from fold) or f.into_team_id in (select team_id from own)) then
+    raise exception 'db/seed/baseball_club.csv folds into an id that is itself folded';
+  end if;
+end $$;
 
 delete from meta.verification where source_id = (select source_id from src);
 delete from meta.data_issue where source_id = (select source_id from src);
@@ -36,7 +55,8 @@ from rmap r join core.external_id e on e.entity_kind = 'franchise' and e.externa
 -- Teams no current franchise descends from: a franchise each.
 create temp table defunct as
 select distinct t.team_id from (select home team_id from legacy_retrosheet.game_log union select visitor from legacy_retrosheet.game_log) t
-where t.team_id not in (select team_id from legacy_retrosheet.current_name);
+where (t.team_id not in (select team_id from legacy_retrosheet.current_name) and t.team_id not in (select team_id from fold))
+   or t.team_id in (select team_id from own);
 -- A club's franchise and team seasons keep their ids on a rerun; only a club that is no longer defunct is removed.
 delete from core.team_season where franchise_id in (select franchise_id from core.franchise where source_id = (select source_id from src)
                                                      and source_key not in (select team_id from defunct));
@@ -45,13 +65,19 @@ insert into core.franchise (sport_code, source_id, source_key)
 select 'baseball', (select source_id from src), d.team_id from defunct d
 where not exists (select 1 from core.franchise f where f.source_id = (select source_id from src) and f.source_key = d.team_id);
 insert into fr select f.source_key, f.franchise_id from core.franchise f where f.source_id = (select source_id from src);
+-- A folded id is the franchise of the id it folds into: a current club's franchise (named by its Retrosheet franchise code) or a defunct club's own.
+insert into fr
+select f.team_id, t.franchise_id from fold f
+join fr t on t.retro = coalesce((select c.franchise_id from legacy_retrosheet.current_name c where c.team_id = f.into_team_id limit 1), f.into_team_id);
 
 -- Which franchise each Retrosheet team id was, by date.
 create temp table team_era as
 select c.team_id, c.first_game, coalesce(c.last_game, '9999-12-31'::date) as last_game, fr.franchise_id
 from legacy_retrosheet.current_name c join fr on fr.retro = c.franchise_id
 union all
-select d.team_id, '1871-01-01', '9999-12-31', fr.franchise_id from defunct d join fr on fr.retro = d.team_id;
+select d.team_id, coalesce((select make_date(o.from_year, 1, 1) from own o where o.team_id = d.team_id), '1871-01-01'), '9999-12-31', fr.franchise_id from defunct d join fr on fr.retro = d.team_id
+union all
+select f.team_id, '1871-01-01', '9999-12-31', fr.franchise_id from fold f join fr on fr.retro = f.team_id;
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'franchise', franchise_id, (select source_id from src), 'franchise:' || retro from fr;
@@ -69,7 +95,7 @@ delete from core.franchise_league where franchise_id in (select franchise_id fro
 
 insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
 overriding system value
-select ingest.identity_id_for(franchise_id, first_game), franchise_id, daterange(first_game, next_first), city, coalesce(nullif(nickname, '(none)'), ''), concat_ws(' ', city, nullif(nickname, '(none)')), team_id,
+select ingest.identity_id_for(franchise_id::integer, first_game), franchise_id, daterange(first_game, next_first), city, coalesce(nullif(nickname, '(none)'), ''), concat_ws(' ', city, nullif(nickname, '(none)')), team_id,
        case when city in ('Montreal', 'Toronto') then 'CA' else 'US' end, (select source_id from src)
 from (
   select fr.franchise_id, c.team_id, c.city, c.nickname, min(c.first_game) as first_game,
@@ -82,15 +108,16 @@ from (
 ) x;
 insert into core.franchise_identity (franchise_identity_id, franchise_id, valid_during, location, nickname, full_name, abbreviation, country_code, source_id)
 overriding system value
-select ingest.identity_id_for(fr.franchise_id, make_date(t.first_year, 1, 1)), fr.franchise_id, daterange(make_date(t.first_year, 1, 1), make_date(t.last_year + 1, 1, 1)),
-       t.city, coalesce(nullif(t.nickname, '(none)'), ''), concat_ws(' ', t.city, nullif(t.nickname, '(none)')), t.team_id, 'US', (select source_id from src)
-from defunct d join fr on fr.retro = d.team_id join legacy_retrosheet.team t on t.team_id = d.team_id
-order by fr.franchise_id, t.first_year;
-
-insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
-select franchise_id, 'mlb', daterange(min(lower(valid_during)), case when bool_or(upper_inf(valid_during)) then null else max(upper(valid_during)) end),
-       (select source_id from src)
-from core.franchise_identity where franchise_id in (select franchise_id from fr) group by franchise_id;
+select ingest.identity_id_for(x.franchise_id::integer, make_date(x.first_year, 1, 1)), x.franchise_id, daterange(make_date(x.first_year, 1, 1), make_date(x.last_year + 1, 1, 1)),
+       x.city, coalesce(nullif(x.nickname, '(none)'), ''), concat_ws(' ', x.city, nullif(x.nickname, '(none)')), x.team_id, 'US', (select source_id from src)
+from (
+  select fr.franchise_id, t.city, t.nickname, min(t.first_year) as first_year, max(t.last_year) as last_year, (array_agg(t.team_id order by t.first_year))[1] as team_id
+  from (select team_id from defunct
+        union select f.team_id from fold f where f.into_team_id not in (select team_id from legacy_retrosheet.current_name)) d
+  join fr on fr.retro = d.team_id join legacy_retrosheet.team t on t.team_id = d.team_id
+  group by fr.franchise_id, t.city, t.nickname
+) x
+order by x.franchise_id, x.first_year;
 
 -- Every Retrosheet game, with its franchises: a team id belongs to one franchise,
 -- and the dates only settle a tie (game logs carry BR3 for 1888-89, the names file BR4).
@@ -98,6 +125,7 @@ create temp table rg as
 select g.*, extract(year from g.game_date)::smallint as yr,
        (select te.franchise_id from team_era te where te.team_id = g.home order by (g.game_date between te.first_game and te.last_game) desc, abs(g.game_date - te.first_game) limit 1) as home_f,
        (select te.franchise_id from team_era te where te.team_id = g.visitor order by (g.game_date between te.first_game and te.last_game) desc, abs(g.game_date - te.first_game) limit 1) as away_f,
+       case when g.home_league in ('NA', 'AA', 'UA', 'PL', 'FL') then lower(g.home_league) else 'mlb' end as lg,
        case g.game_type when 'regular' then 'regular' when 'tiebreaker' then 'regular' when 'allstar' then 'all_star' else 'playoffs' end::core.season_phase as phase,
        'retro:' || to_char(g.game_date, 'YYYYMMDD') || ':' || g.home || ':' || g.visitor || ':' || g.game_number || ':' || g.game_type as key
 from legacy_retrosheet.game_log g;
@@ -107,13 +135,31 @@ select (select source_id from src), 'game', key, 'Team id not matched to a franc
 from rg where home_f is null or away_f is null;
 
 insert into core.season (league_code, start_year, end_year, label, games_per_team, source_id)
-select 'mlb', yr, yr, yr::text, null, (select source_id from src) from rg group by yr
+select lg, yr, yr, yr::text, null, (select source_id from src) from rg group by lg, yr
 on conflict (league_code, start_year) do nothing;
+
+-- A franchise belongs to the league its games were logged under, from the first year it played there (no two leagues overlap). The first league starts
+-- where the franchise's first name does; a club still playing has no end.
+insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
+select s.franchise_id, s.lg,
+       daterange(case when s.n = 1 then fi.first_lo else make_date(s.y0, 1, 1) end,
+                 case when s.next_y0 is not null then make_date(s.next_y0, 1, 1) else fi.last_hi end),
+       (select source_id from src)
+from (select q.franchise_id, q.lg, q.y0, row_number() over w as n, lead(q.y0) over w as next_y0
+      from (select f as franchise_id, lg, min(yr) as y0
+            from (select home_f f, lg, yr from rg where phase <> 'all_star' union all select away_f, lg, yr from rg where phase <> 'all_star') z
+            where f is not null group by f, lg) q
+      window w as (partition by q.franchise_id order by q.y0)) s
+join (select franchise_id, min(lower(valid_during)) as first_lo, case when bool_or(upper_inf(valid_during)) then null else max(upper(valid_during)) end as last_hi
+      from core.franchise_identity where franchise_id in (select franchise_id from fr) group by franchise_id) fi using (franchise_id);
+insert into core.franchise_league (franchise_id, league_code, valid_during, source_id)
+select franchise_id, 'mlb', daterange(min(lower(valid_during)), case when bool_or(upper_inf(valid_during)) then null else max(upper(valid_during)) end), (select source_id from src)
+from core.franchise_identity where franchise_id in (select franchise_id from fr) and franchise_id not in (select franchise_id from core.franchise_league) group by franchise_id;
 
 insert into core.team_season (franchise_id, season_id, source_id)
 select distinct f, s.season_id, (select source_id from src)
-from (select yr, home_f f from rg where phase <> 'all_star' union select yr, away_f from rg where phase <> 'all_star') x
-join core.season s on s.league_code = 'mlb' and s.start_year = x.yr where f is not null
+from (select yr, lg, home_f f from rg where phase <> 'all_star' union select yr, lg, away_f from rg where phase <> 'all_star') x
+join core.season s on s.league_code = x.lg and s.start_year = x.yr where f is not null
 on conflict (franchise_id, season_id) do nothing;
 
 update core.team_season ts set franchise_identity_id = (
@@ -197,7 +243,7 @@ select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'
                               case when r.completion is not null then 'Completed later: ' || r.completion end), ''),
        (select source_id from src), r.key
 from rg_n r
-join core.season s on s.league_code = 'mlb' and s.start_year = r.yr
+join core.season s on s.league_code = r.lg and s.start_year = r.yr
 join core.team_season hts on hts.franchise_id = r.home_f and hts.season_id = s.season_id
 join core.team_season ats on ats.franchise_id = r.away_f and ats.season_id = s.season_id
 left join old_game_id o on o.source_key = r.key
@@ -214,5 +260,7 @@ union all select 'filled', count(*) from matched where status <> 'final'
 union all select 'confirmed', count(*) from matched where status = 'final' and home_score = r_h and away_score = r_a
 union all select 'disputed', count(*) from matched where status = 'final' and (home_score <> r_h or away_score <> r_a)
 union all select 'added', count(*) from core.game where source_id = (select source_id from src)
-union all select 'unmatched team', count(*) from rg where home_f is null or away_f is null;
+union all select 'unmatched team', count(*) from rg where home_f is null or away_f is null
+union all select 'games in ' || s.league_code, count(*) from core.game g join core.season s using (season_id)
+  where g.source_id = (select source_id from src) and s.league_code in ('na', 'aa', 'ua', 'pl', 'fl') group by s.league_code;
 commit;

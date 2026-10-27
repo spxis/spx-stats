@@ -48,7 +48,7 @@ select i.franchise_id, fl.league_code, i.franchise_identity_id, i.location, i.co
        row_number() over w = 1 as is_first,
        lead(i.valid_during) over w is null as is_last
 from core.franchise_identity i
-join (select distinct franchise_id, league_code from core.franchise_league) fl using (franchise_id)
+join (select franchise_id, league_code from core.franchise_league union select franchise_id, 'mlb' from core.franchise_league where league_code in ('na', 'aa', 'ua', 'pl', 'fl')) fl using (franchise_id)
 window w as (partition by i.franchise_id order by lower(i.valid_during) nulls first);
 
 create temp table team_names as

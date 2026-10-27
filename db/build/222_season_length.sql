@@ -26,7 +26,7 @@ group by g.season_id, t.team_season_id;
 create temp table whole as
 select c.season_id
 from club_games c
-join core.season s on s.season_id = c.season_id and s.league_code in ('mlb', 'nfl')
+join core.season s on s.season_id = c.season_id and s.league_code in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl', 'nfl')
 group by c.season_id
 having count(*) >= 2 and min(c.n) >= 0.9 * max(c.n)
    and not exists (select 1 from core.game g where g.season_id = c.season_id and g.phase = 'regular' and g.status in ('scheduled', 'in_progress', 'suspended') and g.game_date >= current_date - 14);
@@ -45,5 +45,5 @@ where s.season_id = d.season_id and (s.regular_starts_on is null or s.regular_en
 select s.league_code, count(*) as seasons,
        count(*) filter (where s.games_per_team is null) as no_games_per_team,
        count(*) filter (where s.regular_ends_on is null) as no_regular_end
-from core.season s where s.league_code in ('mlb', 'nfl') group by s.league_code order by 1;
+from core.season s where s.league_code in ('mlb', 'na', 'aa', 'ua', 'pl', 'fl', 'nfl') group by s.league_code order by 1;
 commit;

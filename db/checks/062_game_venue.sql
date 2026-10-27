@@ -8,7 +8,7 @@ left join core.game_venue gv on gv.game_id = g.game_id
 left join core.team_season ts on ts.team_season_id = g.home_team_season_id
 left join core.franchise_home_venue h on h.franchise_id = ts.franchise_id and h.valid_during @> g.game_date and gv.game_id is null
 join core.venue v on v.venue_id = case when gv.game_id is not null then gv.venue_id else h.venue_id end
-where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl')
+where s.league_code in ('nhl', 'nba', 'mlb', 'na', 'aa', 'ua', 'pl', 'fl', 'nfl', 'cfl')
   and ((v.opened_on is not null and g.game_date < v.opened_on - 30) or (v.closed_on is not null and g.game_date > v.closed_on + 30))
 group by 1, 2, 3
 union all

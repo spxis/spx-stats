@@ -1,7 +1,7 @@
 -- Logos for the name eras Wikidata gave none (or a non-free one): Wikimedia Commons files read by the sweep (public domain or other free
 -- licences, legacy_team_brand.commons_logo, migration 108) and SportsLogos.Net marks (legacy_sportslogos.logo, shown small under fair use,
 -- served from our own file). Which file goes to which name era is db/seed/logo_extra.csv, checked by hand:
---   league       any league the club belonged to (nhl, nba, mlb, nfl, cfl, or a rival or predecessor league: afl, aafc, nha, pcha, wchl, wha) or that
+--   league       any league the club belonged to (nhl, nba, mlb, nfl, cfl, or a rival or predecessor league: afl, aafc, nha, pcha, wchl, wha, na, aa, ua, pl, fl) or that
 --                league's parent (afl is also nfl, pcha is also nhl: the PARENT map of web/src/lib/leagues.ts, copied below), so a club that
 --                moved from the AFL to the NFL answers to both; 'other' only for a club with no league row at all
 --   team         the identity's full name, as core.franchise_identity.full_name has it
@@ -45,7 +45,8 @@ where url is null or url = '' or page is null having count(*) > 0;
 -- Every league name a seed row may use for a franchise: the leagues it has a row for, each one's parent, or 'other' when it has none.
 -- Keep the parents in step with PARENT in web/src/lib/leagues.ts.
 create temp table league_parent (league text primary key, parent text not null);
-insert into league_parent values ('afl', 'nfl'), ('aafc', 'nfl'), ('nha', 'nhl'), ('pcha', 'nhl'), ('wchl', 'nhl'), ('wha', 'nhl');
+insert into league_parent values ('afl', 'nfl'), ('aafc', 'nfl'), ('nha', 'nhl'), ('pcha', 'nhl'), ('wchl', 'nhl'), ('wha', 'nhl'),
+  ('na', 'mlb'), ('aa', 'mlb'), ('ua', 'mlb'), ('pl', 'mlb'), ('fl', 'mlb');
 create temp table franchise_league_name as
 select franchise_id, league_code as league from core.franchise_league
 union select fl.franchise_id, p.parent from core.franchise_league fl join league_parent p on p.league = fl.league_code
