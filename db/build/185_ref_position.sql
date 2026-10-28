@@ -5,6 +5,7 @@
 --  * NHL: C, LW, RW, F, D, G (F, forward: a source that says only "forward" does not say which of C, LW and RW). NBA: PG, SG, SF, PF, C, and G, F, G-F, F-C where SPX's rosters use them. MLB: P, C, 1B, 2B, 3B, SS, LF, CF, RF,
 --    DH, and OF, IF (a source that only says outfielder or infielder) and TWP (two-way player). NFL and CFL: the standard football codes
 --    SPX's lookup holds (the CFL also SB, slotback).
+--  * LN (lineman) is the group of offensive and defensive linemen for a source that does not say which (John, 2026-10-28), LS the long snapper; both in the NFL and the CFL. The code is not L, which the older words map to LW.
 --  * Starting pitchers, relief pitchers and closers are all P. A raw value that is two positions ("rf/lf", "Forward/center") maps to both,
 --    in order. An unsided "winger" is both LW and RW (two rows, in that order). A raw value that fits no list
 --    ("utility player", SPX's "U4") has no row here: the build step logs it in meta.data_issue and leaves the position empty. Nothing is guessed.
@@ -42,6 +43,8 @@ insert into ref.position_code (code) values
   ('KR'),
   ('LB'),
   ('LF'),
+  ('LN'),
+  ('LS'),
   ('LW'),
   ('NT'),
   ('OF'),
@@ -115,6 +118,9 @@ insert into ref.position (league_code, code, sort, grp, name_en, name_fr, name_j
   ('nfl', 'P', 19, 'special', 'Punter', 'Dégageur', 'パンター'),
   ('nfl', 'KR', 20, 'special', 'Kick returner', 'Retourneur de bottés', 'キックリターナー'),
   ('nfl', 'PR', 21, 'special', 'Punt returner', 'Retourneur de dégagements', 'パントリターナー'),
+  -- LN and LS: English only until the batch names arrive (scripts/i18n/batch.py run --keychain --only positions drafts them); the site shows the English meanwhile.
+  ('nfl', 'LN', 22, 'line', 'Lineman', 'Lineman', 'Lineman'),
+  ('nfl', 'LS', 23, 'special', 'Long snapper', 'Long snapper', 'Long snapper'),
   ('cfl', 'QB', 1, 'offense', 'Quarterback', 'Quart-arrière', 'クォーターバック'),
   ('cfl', 'RB', 2, 'offense', 'Running back', 'Porteur de ballon', 'ランニングバック'),
   ('cfl', 'FB', 3, 'offense', 'Fullback', 'Arrière', 'フルバック'),
@@ -136,7 +142,9 @@ insert into ref.position (league_code, code, sort, grp, name_en, name_fr, name_j
   ('cfl', 'P', 19, 'special', 'Punter', 'Dégageur', 'パンター'),
   ('cfl', 'KR', 20, 'special', 'Kick returner', 'Retourneur de bottés', 'キックリターナー'),
   ('cfl', 'PR', 21, 'special', 'Punt returner', 'Retourneur de dégagements', 'パントリターナー'),
-  ('cfl', 'SB', 22, 'offense', 'Slotback', 'Slotback', 'スロットバック')
+  ('cfl', 'SB', 22, 'offense', 'Slotback', 'Slotback', 'スロットバック'),
+  ('cfl', 'LN', 23, 'line', 'Lineman', 'Lineman', 'Lineman'),
+  ('cfl', 'LS', 24, 'special', 'Long snapper', 'Long snapper', 'Long snapper')
 on conflict (league_code, code) do update set sort = excluded.sort, grp = excluded.grp, name_en = excluded.name_en, name_fr = excluded.name_fr, name_ja = excluded.name_ja;
 
 insert into ref.position_alias (source_code, league_code, raw_value, ord, code) values
@@ -398,6 +406,10 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'cfl', 'outside linebacker', 1, 'LB'),
   ('wikidata', 'cfl', 'inside linebacker', 1, 'LB'),
   ('wikidata', 'cfl', 'slotback', 1, 'SB'),
+  ('wikidata', 'cfl', 'lineman', 1, 'LN'),
+  ('wikidata', 'cfl', 'q1060160', 1, 'LN'),
+  ('wikidata', 'cfl', 'long snapper', 1, 'LS'),
+  ('wikidata', 'cfl', 'q530348', 1, 'LS'),
   ('wikidata', 'nfl', 'guard', 1, 'G'),
   ('wikidata', 'nfl', 'offensive guard', 1, 'G'),
   ('wikidata', 'nfl', 'offensive lineman', 1, 'OL'),
@@ -407,6 +419,12 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikidata', 'nfl', 'middle linebacker', 1, 'LB'),
   ('wikidata', 'nfl', 'outside linebacker', 1, 'LB'),
   ('wikidata', 'nfl', 'inside linebacker', 1, 'LB'),
+  -- Wikidata Q1060160: lineman, the group of offensive and defensive linemen (John, 2026-10-28: the group code LN is fine); https://www.wikidata.org/wiki/Q1060160
+  ('wikidata', 'nfl', 'lineman', 1, 'LN'),
+  ('wikidata', 'nfl', 'q1060160', 1, 'LN'),
+  -- Wikidata Q530348: long snapper; https://www.wikidata.org/wiki/Q530348
+  ('wikidata', 'nfl', 'long snapper', 1, 'LS'),
+  ('wikidata', 'nfl', 'q530348', 1, 'LS'),
   ('wikipedia', 'nfl', 'quarterback', 1, 'QB'),
   ('wikipedia', 'nfl', 'running back', 1, 'RB'),
   ('wikipedia', 'nfl', 'halfback', 1, 'RB'),
@@ -499,7 +517,7 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('wikipedia', 'cfl', 'guard', 1, 'G'),
   ('wikipedia', 'cfl', 'sb', 1, 'SB'),
   ('wikipedia', 'cfl', 'slotback', 1, 'SB'),
-  -- nflverse rosters (db/build/181_players_nflverse.sql): its position and depth-chart position codes. 'ls' (long snapper) has no code in the list: it is logged, not guessed.
+  -- nflverse rosters (db/build/181_players_nflverse.sql): its position and depth-chart position codes.
   ('nflverse', 'nfl', 'qb', 1, 'QB'),
   ('nflverse', 'nfl', 'rb', 1, 'RB'),
   ('nflverse', 'nfl', 'fb', 1, 'FB'),
@@ -529,7 +547,8 @@ insert into ref.position_alias (source_code, league_code, raw_value, ord, code) 
   ('nflverse', 'nfl', 'mlb', 1, 'LB'),
   ('nflverse', 'nfl', 'ss', 1, 'S'),
   ('nflverse', 'nfl', 'fs', 1, 'S'),
-  ('nflverse', 'nfl', 'saf', 1, 'S');
+  ('nflverse', 'nfl', 'saf', 1, 'S'),
+  ('nflverse', 'nfl', 'ls', 1, 'LS');
 
 
 select (select count(*) from ref.position_code) as codes, (select count(*) from ref.position) as positions,

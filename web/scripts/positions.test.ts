@@ -35,6 +35,19 @@ test("an older word becomes its code, so old addresses keep working", () => {
   assert.equal(positionCode("R"), "RW");
 });
 
+test("the football group and special codes LN and LS are codes, and their words map to them (L stays the older word for LW)", () => {
+  assert.equal(positionCode("LN"), "LN");
+  assert.equal(positionCode("ls"), "LS");
+  assert.equal(positionCode("Lineman"), "LN");
+  assert.equal(positionCode("long snapper"), "LS");
+  assert.equal(positionCode("L"), "LW");
+  assert.equal(positionsShort(["LN", "LS"], "LN"), "LN/LS");
+  const fb = [row("nfl", "LN", "Lineman", "Lineman", "Lineman"), row("cfl", "LS", "Long snapper", "Long snapper", "Long snapper")];
+  assert.equal(positionNames(["LN"], "nfl", fb, "en"), "Lineman");
+  assert.equal(positionNames(["LS"], "cfl", fb, "ja"), "Long snapper");
+  assert.equal(resolveLeague("LS", ["cfl"], fb), "cfl");
+});
+
 test("text that is neither a code nor a known word is not a code", () => {
   assert.equal(positionCode("winger"), null);
   assert.equal(positionCode(""), null);
@@ -163,7 +176,8 @@ test("scan: no position list is joined by hand, only with the one separator", ()
 });
 
 test("scan: a position column draws PositionCode (through the page's position book), not a bare string", () => {
-  const cols = lines.filter((l) => /\bkey:\s*"(pos|position)"/.test(l.text) && /get:/.test(l.text));
+  // europe.col.pos is a club's place in a league table, not a player's position
+  const cols = lines.filter((l) => /\bkey:\s*"(pos|position)"/.test(l.text) && /get:/.test(l.text) && !/europe\.col\.pos/.test(l.text));
   assert.ok(cols.length >= 3, "the players list, the roster and the World Cup player page have one each");
   assert.deepEqual(show(cols.filter((l) => !/cell:[^\n]*book\.(list|code)\(/.test(l.text))), []);
 });

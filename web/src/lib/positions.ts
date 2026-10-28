@@ -27,7 +27,7 @@ const WORDS: Record<string, string> = {
   "point guard": "PG", "shooting guard": "SG", "small forward": "SF", "power forward": "PF", forward: "F",
   quarterback: "QB", "running back": "RB", halfback: "RB", fullback: "FB", "wide receiver": "WR", "tight end": "TE", tackle: "T",
   "offensive tackle": "T", linebacker: "LB", "defensive end": "DE", "defensive tackle": "DT", "defensive lineman": "DL", "defensive back": "DB",
-  cornerback: "CB", safety: "S", placekicker: "K", kicker: "K", slotback: "SB",
+  cornerback: "CB", safety: "S", placekicker: "K", kicker: "K", slotback: "SB", lineman: "LN", "long snapper": "LS",
 };
 
 /**

@@ -177,6 +177,14 @@ COUNTRY_EN = {
 }
 
 
+# Position names that ref.position (db/build/185_ref_position.sql) does not hold in French and Japanese yet: drafted with `--only positions`.
+# The key is context for the model, not text. Add a row here when a new code is added to the seed, run the batch, copy the results into the seed.
+POSITION_DRAFTS = [
+    ("position:nfl+cfl:LN (football: the group of offensive and defensive linemen, like OL and DL together)", "Lineman"),
+    ("position:nfl+cfl:LS (football special teams: the player who snaps the ball to the punter or holder)", "Long snapper"),
+]
+
+
 def read_csv(rel: str) -> list[dict]:
     with open(REPO / rel, newline="", encoding="utf-8") as fh:
         return list(csv.DictReader(fh))
@@ -202,6 +210,11 @@ def collect(langs: list[str], only: set[str]) -> tuple[list[dict], dict]:
                         info["untranslated"][lang] += 1  # falls back to English on the site
                     continue
                 items.append({"src": "ph", "lang": lang, "key": key, "en": src, "cur": cur})
+
+    if "positions" in only:
+        for lang in langs:
+            for key, en in POSITION_DRAFTS:
+                items.append({"src": "pos", "lang": lang, "key": key, "en": en, "cur": None})
 
     if "seeds" in only:
         seeds = [
@@ -718,7 +731,7 @@ def main() -> None:
         p.add_argument("--cap", type=float, default=None, help=f"spend cap in USD on the worst-case estimate (default {DEFAULT_CAP})")
         if build:
             p.add_argument("--lang", default="fr,ja", help="comma list from fr,ja,de,es (fr and ja are reviewed; de and es are drafted)")
-            p.add_argument("--only", default="phrases,seeds", help="phrases, seeds or both")
+            p.add_argument("--only", default="phrases,seeds", help="phrases, seeds, positions (drafts the names in POSITION_DRAFTS) or a comma list")
             p.add_argument("--limit", type=int, default=0, help="only the first N items (a test)")
             p.add_argument("--exact", action="store_true", help="count user tokens with the API's free count_tokens endpoint (needs a key)")
 
