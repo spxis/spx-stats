@@ -1,0 +1,17 @@
+scope,league_code,year,game_date,spx_home_id,spx_away_id,evidence
+season,premier_league,2004,,,,SPX lists the visiting club first: in 179 of the 179 matches whose score the Wikipedia results table settles and in 196 of 199 against openfootball; the other 3 match neither source (dates 7 to 116 days off)
+season,efl_championship,2004,,,,"SPX lists the visiting club first in 112 of 113 matches against openfootball (same date, goals per club equal); the other one matches no fixture (date 133 days off). Same SPX import as the Premier League 2004-05"
+season,efl_league_one,2004,,,,"SPX lists the visiting club first in 44 of 46 matches against openfootball (same date, goals per club equal); the other 2 match no fixture (dates 66 and 75 days off). Same SPX import as the Premier League 2004-05"
+match,premier_league,2005,2006-02-08,1078,1073,"Charlton Athletic 2-0 Liverpool: openfootball same date, Wikipedia results table cell Charlton v Liverpool"
+match,premier_league,2005,2006-03-15,1077,1078,"Liverpool 5-1 Fulham: openfootball same date, Wikipedia results table cell Liverpool v Fulham"
+match,premier_league,2005,2006-03-29,1109,1080,"Manchester United 1-0 West Ham United: openfootball same date, Wikipedia results table cell Manchester United v West Ham United"
+match,premier_league,2005,2006-04-04,1072,1070,"Birmingham City 1-0 Bolton Wanderers: openfootball same date, Wikipedia results table cell Birmingham City v Bolton Wanderers"
+match,premier_league,2005,2006-04-12,1068,1084,"Portsmouth 1-1 Arsenal: openfootball same date; Wikipedia gives Arsenal 4-0 Portsmouth as the other leg, so the draw is Portsmouth at home"
+match,premier_league,2005,2006-05-04,1068,1079,"Manchester City 1-3 Arsenal: openfootball same date, Wikipedia results table cell Manchester City v Arsenal"
+other,premier_league,2004,2004-11-30,1074,1077,"Chelsea v Fulham 2-1: openfootball has both league fixtures of the two clubs on other dates (2004-11-13 and the return); a cup tie filed under the league season"
+other,premier_league,2004,2004-12-01,1078,1086,"Liverpool v Tottenham Hotspur 1-1: openfootball has the league fixtures on other dates (2004-08-14 and the return); a cup tie filed under the league season"
+other,premier_league,2004,2004-12-01,1068,1080,"Arsenal v Manchester United 0-1: openfootball has the league fixtures on other dates (2004-10-24 and the return); a cup tie filed under the league season"
+other,premier_league,2004,2005-04-16,1071,1068,"Blackburn Rovers v Arsenal 0-3: openfootball has the league fixtures on other dates (2004-08-25 and 2005-03-19); a cup tie filed under the league season"
+other,premier_league,2004,2005-04-17,1080,1082,"Manchester United v Newcastle United 4-1: openfootball has the league fixtures on other dates (2004-11-14 and 2005-04-24); a cup tie filed under the league season"
+other,premier_league,2004,2005-04-27,1078,1074,"Liverpool v Chelsea 0-0: openfootball has the league fixtures on 2004-10-03 and 2005-01-01; a European cup tie filed under the league season"
+other,premier_league,2004,2005-05-03,1074,1078,"Chelsea v Liverpool 0-1: openfootball has the league fixtures on 2004-10-03 and 2005-01-01; a European cup tie filed under the league season"

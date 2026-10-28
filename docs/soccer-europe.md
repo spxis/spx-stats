@@ -81,8 +81,16 @@ Same shape as MLS, so the existing soccer API and page code carry over; migratio
 - **Only the five top divisions have their matches built** (32,373 rows, about 18 MB on production); every division gets its seasons and clubs, so promotion and relegation
   read across the pyramid. Production was 395 MB of 500 MB on 2026-10-26 and a match row costs about 0.55 KB with its indexes (all divisions: 108,000 rows, 58 MB), so the
   lower divisions stay in `legacy_openfootball`; flip a division's `matches` flag to 1 and rerun 227 when there is room.
-- **SPX wins**: a fixture SPX holds (same season, home and away club, whatever its date) is not added again; openfootball writes `meta.verification` (confirmed / disputed /
-  not_found) and a `meta.data_issue` for a disagreement or a different date. SPX clubs keep their rows and ids and take the seed's name.
+- **SPX wins**: a fixture SPX holds (same season, the same two clubs with either at home, dates at most 3 days apart) is not added again, even when SPX has the sides the other
+  way round; each openfootball fixture is paired with one SPX match, nearest date first. openfootball writes `meta.verification` (field `score`, goals compared club by club:
+  confirmed / disputed / not_found; field `home_away` when the sides differ) and a `meta.data_issue` for a score difference or a different date; sides that differ are their own
+  finding (`soccer_match_side`), never a score dispute. SPX clubs keep their rows and ids and take the seed's name.
+- **SPX home and away**: SPX lists the visiting club first for the whole of the English 2004-05 seasons (Premier League, Championship, League One) and for six Premier League matches
+  of 2005-06; this was found on 2026-10-28 when step 227 built a second copy of 120 fixtures. It is SPX's own data (step 220 copies `home_team_id` as it is), proved by openfootball (same
+  date, goals per club equal) and by the results tables of the Wikipedia season articles (179 of 179 settled matches of the Premier League 2004-05 reversed). `db/seed/soccer_spx_reversed.csv`
+  names them (scope `season`, `match`) and the cup and European ties SPX filed under the league season (scope `other`, left out); step 220 swaps the sides before keying the matches and
+  re-orients rows an earlier run stored the SPX way **in place** (`match_id` kept, `source_key`, sides and goals change). Unchecked: the Scottish Premiership 2004-05 (105 matches), for which
+  no second source is loaded, is probably reversed too. `db/checks/103` returns any pair of clubs meeting twice on one day with the sides reversed (baseline 0).
 - **English Wikipedia**: `scripts/wikipedia_eu/` (fetch of 378 season articles of the five top divisions, table parser, loader into `legacy_wikipedia_europe`), build step
   `db/build/228_soccer_europe_wikipedia.sql`: final league tables (`core.soccer_group_standing`), champions and top four, Wikidata ids of 314 clubs, seasons before openfootball's
   files as tournaments with a table and no matches, and a `meta.data_issue` wherever Wikipedia's table and the matches differ or a table's points are not 3/2 per win + draws.

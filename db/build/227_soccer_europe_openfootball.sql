@@ -9,14 +9,19 @@
 --   matches   core.soccer_match.source_key = eu-<yyyymmdd>-<home team_id>-<away team_id>, only for the divisions whose `matches` flag is 1 in
 --             soccer_league_eu.csv (production is on the 500 MB plan: a match row is about 0.7 KB with its indexes, so lower divisions stay raw in
 --             legacy_openfootball until there is room; flip the flag to 1 and rerun to build one)
--- SPX wins where it holds a value (step 220): a fixture SPX already has (same season, home club and away club, regular season) is not added again whatever
--- its date; openfootball writes meta.verification (confirmed / disputed / not_found) for it, a disagreement is a meta.data_issue, and the SPX row stays.
+-- SPX wins where it holds a value (step 220): a fixture SPX already has is never built again. Same season, regular season, the same two clubs with either at
+-- home, dates at most 3 days apart (SPX files some cup ties and play-off games of the same clubs under the league season, months from the league fixture:
+-- those are not the league match, so openfootball's own fixture is built beside them and step 220 leaves them out, db/seed/soccer_spx_reversed.csv).
+-- Each openfootball fixture is paired with at most one SPX match, nearest date first (a club pair plays twice a season). openfootball writes
+-- meta.verification (confirmed / disputed / not_found, field 'score', the goals compared club by club) for it, a disagreement is a meta.data_issue, and
+-- the SPX row stays. Which club is at home is judged on its own (field 'home_away', data_issue kind soccer_match_side), never as a score dispute: step 220
+-- swaps the SPX seasons known to list the visitor first, so a difference left here is a new finding. Only openfootball's own copies are deleted.
 -- A season is complete (core.soccer_tournament.complete) when its regular-season matches number clubs * (clubs - 1). Promotion play-offs are stage_key
 -- playoff / semi / final, attached to the division whose file lists them, and never make a club a member of that division.
 -- Does not touch core.game, core.team_season, core.franchise or any venue table. A name with no row in the club seed stops the step with the names listed.
 begin;
 
-drop table if exists ofb_src, ofb_alias_raw, ofb_alias, ofb_lgrow, ofb_lg, ofb_unmapped, ofb_m0, ofb_club, ofb_season, ofb_member, ofb_m, ofb_spx, ofb_ins, ofb_cnt;
+drop table if exists ofb_src, ofb_alias_raw, ofb_alias, ofb_lgrow, ofb_lg, ofb_unmapped, ofb_m0, ofb_club, ofb_season, ofb_member, ofb_m, ofb_cand, ofb_pick, ofb_spx, ofb_ins, ofb_cnt;
 
 insert into meta.source (code, name, kind, licence, attribution, url, covers_from, covers_to, retrieved_on, notes) values
  ('openfootball_europe', 'openfootball: English, German, Spanish, Italian and French club leagues', 'dataset', 'CC0 1.0',
@@ -185,13 +190,35 @@ join ofb_club h on h.system_key = m.system_key and h.club = m.hclub
 join ofb_club a on a.system_key = m.system_key and a.club = m.aclub
 order by k, m.tier, m.seq;
 
--- the fixtures SPX already holds (step 220): same season, same home and away club, regular season
-create temp table ofb_spx as
-select o.k as ofb_key, x.match_id, x.source_key as spx_key, x.match_date as spx_date, x.home_goals as spx_hg, x.away_goals as spx_ag,
-       o.match_date as ofb_date, o.score1 as ofb_hg, o.score2 as ofb_ag, o.system_key, o.tid
+-- the fixtures SPX already holds (step 220): same season, same two clubs, either side at home, regular season, dates at most 3 days apart (SPX files
+-- some cup ties and play-off games of the same clubs under the league season, months from the league fixture; those are not the league match). Every SPX match
+-- is a candidate for every openfootball fixture of its two clubs in the season (a pair plays twice); the cost is the days between the dates, plus one when
+-- the sides differ.
+create temp table ofb_cand as
+select x.match_id, o.k as ofb_key, abs(o.match_date - x.match_date) + case when o.hid = x.home_team_id then 0 else 1 end as cost
 from ofb_m o
-join core.soccer_match x on x.tournament_id = o.tid and x.home_team_id = o.hid and x.away_team_id = o.aid
-where o.stage_key = 'regular' and x.source_id = (select spx from ofb_src);
+join core.soccer_match x on x.tournament_id = o.tid and x.stage_key = 'regular' and x.source_id = (select spx from ofb_src)
+ and ((x.home_team_id = o.hid and x.away_team_id = o.aid) or (x.home_team_id = o.aid and x.away_team_id = o.hid))
+where o.stage_key = 'regular' and abs(o.match_date - x.match_date) <= 3;
+-- one to one, the cheapest pairs first (a pair plays twice a season, so the choice is tiny); a match or a fixture already taken is skipped
+create temp table ofb_pick (match_id bigint primary key, ofb_key text not null unique);
+do $$
+declare r record;
+begin
+  for r in select match_id, ofb_key from ofb_cand order by cost, match_id, ofb_key loop
+    insert into ofb_pick values (r.match_id, r.ofb_key) on conflict do nothing;
+  end loop;
+end $$;
+create temp table ofb_spx as
+select o.k as ofb_key, x.match_id, x.source_key as spx_key, x.match_date as spx_date, x.home_team_id as spx_h, x.away_team_id as spx_a,
+       x.home_goals as spx_hg, x.away_goals as spx_ag,
+       o.match_date as ofb_date, o.hid as ofb_h, o.aid as ofb_a, o.score1 as ofb_s1, o.score2 as ofb_s2, o.system_key, o.tid,
+       (o.hid = x.home_team_id) as same_side,
+       case when o.hid = x.home_team_id then o.score1 else o.score2 end as ofb_hg,   -- goals of the club SPX has at home
+       case when o.hid = x.home_team_id then o.score2 else o.score1 end as ofb_ag
+from ofb_pick p
+join ofb_m o on o.k = p.ofb_key
+join core.soccer_match x on x.match_id = p.match_id;
 
 create temp table ofb_ins as
 select o.* from ofb_m o
@@ -246,13 +273,18 @@ where t.source_id = (select ofb from ofb_src) and t.source_key like 'eu:%'
 -- ---------------------------------------------------------------- the check against SPX, and what the sources say about themselves
 
 delete from meta.verification where source_id = (select ofb from ofb_src);
+-- the score, club by club (which side is at home is a separate finding below)
 insert into meta.verification (entity_kind, entity_id, field, status, source_id, evidence_url, their_value)
 select 'soccer_match', s.match_id, 'score',
        case when s.spx_hg = s.ofb_hg and s.spx_ag = s.ofb_ag then 'confirmed' else 'disputed' end::meta.verification_status, (select ofb from ofb_src),
        'https://github.com/openfootball/' || case s.system_key when 'england' then 'england' when 'germany' then 'deutschland' when 'spain' then 'espana'
                                                                 when 'italy' then 'italy' else 'europe' end,
-       s.ofb_hg || '-' || s.ofb_ag
+       s.ofb_s1 || '-' || s.ofb_s2
 from ofb_spx s;
+-- which club is at home: only a difference is written
+insert into meta.verification (entity_kind, entity_id, field, status, source_id, evidence_url, their_value)
+select 'soccer_match', s.match_id, 'home_away', 'disputed'::meta.verification_status, (select ofb from ofb_src), null, s.ofb_h
+from ofb_spx s where not s.same_side;
 -- an SPX match in a season openfootball covers, with no counterpart there
 insert into meta.verification (entity_kind, entity_id, field, status, source_id, evidence_url, their_value)
 select 'soccer_match', m.match_id, 'score', 'not_found'::meta.verification_status, (select ofb from ofb_src), null, null
@@ -264,9 +296,19 @@ where m.source_id = (select spx from ofb_src) and m.stage_key = 'regular'
 delete from meta.data_issue where source_id = (select ofb from ofb_src);
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select ofb from ofb_src), 'soccer_match', s.spx_key,
-       'SPX has ' || s.spx_hg || '-' || s.spx_ag || ' (' || s.spx_date || ') but openfootball has ' || s.ofb_hg || '-' || s.ofb_ag || ' (' || s.ofb_date || ')',
+       'SPX has ' || sh.name || ' ' || s.spx_hg || '-' || s.spx_ag || ' ' || sa.name || ' (' || s.spx_date || ') but openfootball has '
+         || case when s.same_side then s.ofb_hg || '-' || s.ofb_ag else s.ofb_ag || '-' || s.ofb_hg end || ' for the same sides' ||
+         ' (' || s.ofb_date || ')',
        'kept the SPX result'
-from ofb_spx s where s.spx_hg <> s.ofb_hg or s.spx_ag <> s.ofb_ag;
+from ofb_spx s join core.soccer_team sh on sh.team_id = s.spx_h join core.soccer_team sa on sa.team_id = s.spx_a
+where s.spx_hg <> s.ofb_hg or s.spx_ag <> s.ofb_ag;
+-- the same fixture with the clubs' sides the other way round: its own kind of finding, never a score dispute
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select ofb from ofb_src), 'soccer_match_side', s.spx_key,
+       'SPX has ' || sh.name || ' at home against ' || sa.name || ' (' || s.spx_date || '); openfootball has ' || sa.name || ' at home (' || s.ofb_date || ')',
+       'kept the SPX sides'
+from ofb_spx s join core.soccer_team sh on sh.team_id = s.spx_h join core.soccer_team sa on sa.team_id = s.spx_a
+where not s.same_side;
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select ofb from ofb_src), 'soccer_match', s.spx_key, 'SPX dates the match ' || s.spx_date || ' where openfootball says ' || s.ofb_date, 'kept the SPX date'
 from ofb_spx s where s.spx_date <> s.ofb_date;
@@ -289,7 +331,7 @@ join ofb_season s on s.tid = d.tid group by s.tid;
 
 commit;
 
-select 'soccer europe openfootball', format('%s clubs (%s new), %s seasons, %s members, %s matches built, %s SPX matches checked (%s disputed)',
+select 'soccer europe openfootball', format('%s clubs (%s new), %s seasons, %s members, %s matches built, %s SPX matches checked (%s score disputes, %s with the sides the other way round)',
   (select count(*) from ofb_club), (select count(*) from ofb_club where have_id is null),
   (select count(*) from ofb_season), (select count(*) from ofb_member), (select count(*) from ofb_ins), (select count(*) from ofb_spx),
-  (select count(*) from ofb_spx where spx_hg <> ofb_hg or spx_ag <> ofb_ag));
+  (select count(*) from ofb_spx where spx_hg <> ofb_hg or spx_ag <> ofb_ag), (select count(*) from ofb_spx where not same_side));

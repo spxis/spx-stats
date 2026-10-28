@@ -11,9 +11,14 @@
 -- soccer_match row (the table needs a score). The cups (UEFA Cup, World Cup 2006) are left to their own sources.
 -- SPX wins where it holds a value: a later source (openfootball, Wikipedia) fills the other matches and checks these; it never replaces an SPX score
 -- (meta.verification soccer_match, a disagreement a meta.data_issue). Does not touch core.game, core.team_season, core.franchise or any venue table.
+-- Home and away: SPX lists the visiting club first for the whole of the English 2004-05 seasons and for six Premier League matches of 2005-06 (checked
+-- against openfootball and the results tables of the Wikipedia season articles). db/seed/soccer_spx_reversed.csv names them (run from the repo root);
+-- the step swaps home and away (and the goals) for those fixtures BEFORE it keys them, and re-orients rows an earlier run stored the SPX way in place:
+-- the match_id stays, only source_key, home_team_id, away_team_id, home_goals and away_goals change. An openfootball copy of the same fixture under the
+-- new key (built by an older step 227) is removed first; step 227 owns openfootball rows and builds none for a fixture SPX holds.
 begin;
 
-drop table if exists es_league, es_game0, es_dup, es_cnt, es_core, es_game1, es_game, es_season, es_club;
+drop table if exists es_league, es_flip, es_other, es_game0, es_dup, es_cnt, es_core, es_game1, es_game, es_season, es_club;
 
 insert into ref.sport (sport_code, name) values ('soccer', 'Soccer') on conflict (sport_code) do nothing;
 
@@ -36,6 +41,18 @@ insert into es_league values
   (27, 'ligue_1',              'france',      'FR', 1, 'Ligue 1',               'Ligue 1'),
   (28, 'eredivisie',           'netherlands', 'NL', 1, 'Eredivisie',            'Eredivisie');
 
+-- db/seed/soccer_spx_reversed.csv. scope season: SPX lists the visiting club first for every fixture of the league season. scope match: the same for one
+-- fixture (date and SPX club ids as SPX has them). scope other: a fixture SPX files under the league season that is not a league match (a cup or European tie).
+create temp table es_flip (scope text, league_code text, year int, game_date date, spx_home_id int, spx_away_id int, evidence text);
+\copy es_flip from 'db/seed/soccer_spx_reversed.csv' with (format csv, header true)
+do $$
+begin
+  if exists (select 1 from es_flip where scope not in ('season', 'match', 'other') or league_code is null or year is null
+                or (scope in ('match', 'other') and (game_date is null or spx_home_id is null or spx_away_id is null))) then
+    raise exception 'db/seed/soccer_spx_reversed.csv: a row has a bad scope or is missing a field';
+  end if;
+end $$;
+
 -- every SPX fixture of those leagues: the league is the season's own league (the game's league column when it has no season)
 create temp table es_game0 as
 select g.game_id, g.game_date::date as d, g.home_team_id, g.away_team_id, l.league_code, l.name as league_name,
@@ -55,6 +72,19 @@ where g.sport_id = 29 and g.game_date is not null and not coalesce(g.game_cancel
 create temp table es_dup as
 select distinct on (d, home_team_id, away_team_id) *
 from es_game0 order by d, home_team_id, away_team_id, (hg is null), game_id;
+
+-- put the reversed fixtures the right way round; raw_home / raw_away keep SPX's own sides (the key an earlier run stored them under)
+alter table es_dup add column raw_home int, add column raw_away int, add column flipped boolean not null default false;
+update es_dup set raw_home = home_team_id, raw_away = away_team_id;
+-- cup and European ties SPX filed under a league season: left out (counted in meta.data_issue below)
+create temp table es_other as
+select g.*, f.evidence from es_dup g join es_flip f on f.scope = 'other' and f.league_code = g.league_code and f.year = g.year and f.game_date = g.d
+                                                  and f.spx_home_id = g.raw_home and f.spx_away_id = g.raw_away;
+delete from es_dup g using es_other o where o.game_id = g.game_id;
+update es_dup g set home_team_id = g.away_team_id, away_team_id = g.home_team_id, hg = g.ag, ag = g.hg, flipped = true
+where exists (select 1 from es_flip f where f.league_code = g.league_code and f.year = g.year and f.scope = 'season')
+   or exists (select 1 from es_flip f where f.scope = 'match' and f.league_code = g.league_code and f.year = g.year and f.game_date = g.d
+                and f.spx_home_id = g.raw_home and f.spx_away_id = g.raw_away);
 
 -- SPX filed friendlies and cross-league fixtures under a league's season. The clubs of a league season are the ones with at least half
 -- the median number of fixtures there; a fixture between any other pair is left out (and counted in meta.data_issue).
@@ -150,6 +180,33 @@ on conflict (tournament_id, team_id) do update set team_name = excluded.team_nam
 
 -- ---------------------------------------------------------------- matches
 
+-- fixtures an earlier run stored the SPX way round: swap them in place (match_id kept). A copy of the fixture under the new key that another source
+-- built (openfootball, step 227, before it knew the swap) is removed first; it carries no goals, lineups or cards.
+create temp table es_reo as
+select m.match_id, g.league_code || g.year as tid,
+       'eu-' || to_char(g.d, 'YYYYMMDD') || '-' || rh.team_id || '-' || ra.team_id as old_key,
+       'eu-' || to_char(g.d, 'YYYYMMDD') || '-' || nh.team_id || '-' || na.team_id as new_key,
+       nh.team_id as new_home, na.team_id as new_away, g.hg as new_hg, g.ag as new_ag
+from es_game g
+join es_club rh on rh.spx_id = g.raw_home join es_club ra on ra.spx_id = g.raw_away
+join es_club nh on nh.spx_id = g.home_team_id join es_club na on na.spx_id = g.away_team_id
+join core.soccer_match m on m.source_key = 'eu-' || to_char(g.d, 'YYYYMMDD') || '-' || rh.team_id || '-' || ra.team_id
+                        and m.source_id = (select source_id from meta.source where code = 'spx_database')
+where g.flipped and g.hg is not null;
+delete from core.soccer_match z
+using es_reo r
+where z.source_key = r.new_key and z.match_id <> r.match_id
+  and z.source_id = (select source_id from meta.source where code = 'openfootball_europe');
+do $$
+begin
+  if exists (select 1 from es_reo r join core.soccer_match z on z.source_key = r.new_key and z.match_id <> r.match_id) then
+    raise exception 'a reversed SPX fixture would take a source_key another source holds: %',
+      (select string_agg(r.new_key, ', ') from es_reo r join core.soccer_match z on z.source_key = r.new_key and z.match_id <> r.match_id);
+  end if;
+end $$;
+update core.soccer_match m set source_key = r.new_key, home_team_id = r.new_home, away_team_id = r.new_away, home_goals = r.new_hg, away_goals = r.new_ag
+from es_reo r where m.match_id = r.match_id;
+
 insert into core.soccer_match (source_key, tournament_id, stage_key, stage_order, match_date, home_team_id, away_team_id,
                                home_goals, away_goals, winner_team_id, source_id)
 select 'eu-' || to_char(g.d, 'YYYYMMDD') || '-' || h.team_id || '-' || a.team_id,
@@ -224,6 +281,31 @@ select (select source_id from meta.source where code = 'spx_database'), 'soccer_
          (select 1 from es_game0 group by d, home_team_id, away_team_id) z)),
        'One row kept, the one with a score'
 where (select count(*) from es_game0) > (select count(*) from (select 1 from es_game0 group by d, home_team_id, away_team_id) z);
+
+-- fixtures SPX lists with home and away the wrong way round, put right above (db/seed/soccer_spx_reversed.csv)
+delete from meta.data_issue where source_id = (select source_id from meta.source where code = 'spx_database') and entity_kind = 'soccer_match_side';
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'spx_database'), 'soccer_match_side', f.league_code || f.year,
+       format('SPX lists the visiting club first in this whole season (%s matches kept)', (select count(*) from es_game g where g.flipped and g.hg is not null and g.league_code = f.league_code and g.year = f.year)),
+       'Home and away swapped (match ids kept); ' || f.evidence
+from es_flip f where f.scope = 'season' and exists (select 1 from es_season s where s.league_code = f.league_code and s.year = f.year);
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'spx_database'), 'soccer_match_side',
+       'eu-' || to_char(g.d, 'YYYYMMDD') || '-' || h.team_id || '-' || a.team_id,
+       'SPX lists the visiting club first in this match (' || g.d || ')', 'Home and away swapped (match id kept); ' || f.evidence
+from es_game g join es_club h on h.spx_id = g.home_team_id join es_club a on a.spx_id = g.away_team_id
+join es_flip f on f.scope = 'match' and f.league_code = g.league_code and f.year = g.year and f.game_date = g.d and f.spx_home_id = g.raw_home and f.spx_away_id = g.raw_away
+where g.flipped and g.hg is not null;
+
+-- fixtures that are not league matches (db/seed/soccer_spx_reversed.csv, scope other): no match row, a note instead
+delete from meta.data_issue where source_id = (select source_id from meta.source where code = 'spx_database') and entity_kind = 'soccer_match_other';
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from meta.source where code = 'spx_database'), 'soccer_match_other', 'spx-game-' || o.game_id,
+       format('SPX files a match of %s on %s (%s v %s, %s-%s) under the league season; it is not a league match',
+              o.league_code || o.year, o.d, (select team_name from legacy_spx.tbl_teams where team_id = o.raw_home),
+              (select team_name from legacy_spx.tbl_teams where team_id = o.raw_away), o.hg, o.ag),
+       'Left out. ' || o.evidence
+from es_other o;
 
 -- a club in two leagues of one season would be a mis-filed fixture
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
