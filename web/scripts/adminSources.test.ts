@@ -13,7 +13,7 @@ test("the snapshot agrees with the registry and the db/build step", () => {
 
 test("every grey source carries notes, a daily cap and a spacing; the grey list is John's", () => {
   const grey = SOURCE_REGISTRY.filter(isGrey);
-  assert.deepEqual(grey.map((s) => s.id).sort(), ["cfl_api", "fangraphs", "hockeytech", "ncaa_stats", "transfermarkt", "wnba_stats"]);
+  assert.deepEqual(grey.map((s) => s.id).sort(), ["cfl_api", "fangraphs", "hockeytech", "ncaa_stats", "transfermarkt"]);
   for (const s of grey) {
     assert.ok(s.notes.length > 20, s.id);
     assert.ok(s.dailyCap && s.spacingSeconds, s.id);
@@ -28,7 +28,7 @@ test("the list shows green first, then grey, then confirm-only, then red", () =>
 
 test("a run names a grey source by id, by id with a suffix or by host; green and red sources never light the marker", () => {
   const ids = (t: Array<string | null>) => greySourcesIn(t).map((s) => s.id).sort();
-  assert.deepEqual(ids(["grey-fetch", "wnba_stats"]), ["wnba_stats"]);
+  assert.deepEqual(ids(["grey-fetch", "fangraphs"]), ["fangraphs"]);
   assert.deepEqual(ids(["ncaa_stats:2025"]), ["ncaa_stats"]);
   assert.deepEqual(ids(["fetched https://stats.ncaa.org/contests/1/box_score"]), ["ncaa_stats"]);
   assert.deepEqual(ids(["wikipedia", "nhl_api", "daily-scores", null]), []);

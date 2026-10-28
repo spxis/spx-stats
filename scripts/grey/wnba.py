@@ -1,14 +1,16 @@
 #!/usr/bin/env python3
-"""stats.wnba.com (grey, ON HOLD): the parser for the league game log into legacy_wnba_stats.game. There is no live fetch yet.
+"""stats.wnba.com (RED-CONFIRM, John 2026-10-28): a read-only reader of the league game log. It stores nothing.
 
-    python3 -I scripts/grey/wnba.py parse <saved leaguegamelog.json> --fetched-on 2026-10-25 [--out load.sql]
-    python3 -I scripts/grey/wnba.py fetch ...        refuses while the source is in common.HOLDS
+    python3 -I scripts/grey/wnba.py parse <saved leaguegamelog.json>   counts games and unparsed rows, prints no value, writes nothing
+    python3 -I scripts/grey/wnba.py fetch ...                          refuses: this source is confirm-only
 
-Why on hold: John's research of 2026-10-19 found no terms for stats.wnba.com, but the WNBA Terms of Use (wnba.com/terms-of-use, section 9) say the NBA Statistics may
-not be used in connection with any website, product or service that features a database, which is the clause that made stats.nba.com confirm-only. John decides whether
-the source is red; until then no request is sent (common.Fetcher refuses). The parser works on a file John or a person saves, and is tested on a sample shaped like
-the NBA stats API's league game log (resultSets[].headers / rowSet, one row per team per game), which stats.wnba.com shares; the shape is from memory, so
-the first real file is checked by hand. Every game appears twice (once per team): the row whose MATCHUP reads "A vs. B" is the home team's.
+The WNBA Terms of Use (wnba.com/terms-of-use, section 9) bar using NBA Statistics in connection with any website, product or service that features a database, the
+clause that made stats.nba.com confirm-only. John moved the source from grey to red-confirm on 2026-10-28 (scripts/daily/sources.py): it may be READ, only through the
+shared limiter with purpose "confirm" (scripts/daily/limiter.py), to check a result other sources gave, and NEVER stored: no raw archive, no Dropbox copy, no legacy_* load,
+no core row, no copied value; the only thing kept is an outcome (agrees, disagrees, unavailable). So this file has no load SQL and no fetch. parse_gamelog reads the shape of
+the NBA stats API's league game log (resultSets[].headers / rowSet, one row per team per game; from memory, checked on the first real answer) and returns the games in memory for
+a confirm check. Every game appears twice (once per team): the row whose MATCHUP reads "A vs. B" is the home team's. The empty table legacy_wnba_stats.game (migration 154) stays
+unused; nothing may write it.
 """
 import json, os, sys
 
@@ -18,7 +20,6 @@ import common as C
 
 SOURCE = "wnba_stats"
 URL = "https://stats.wnba.com/stats/leaguegamelog"
-COLS = ("game_id", "season_id", "game_date", "home_abbr", "home_name", "away_abbr", "away_name", "home_pts", "away_pts", "fetched_on", "source_key")
 
 
 def parse_gamelog(body, fetched_on):
@@ -54,25 +55,17 @@ def parse_gamelog(body, fetched_on):
     return rows, unparsed
 
 
-def load_sql(rows, fetched_on):
-    head = "-- legacy_wnba_stats.game, saved %s (scripts/grey/wnba.py). Rerunnable: a game replaces itself by id. DS1 only. Grey area, on hold.\nbegin;\n" % fetched_on
-    return head + C.inserts("legacy_wnba_stats.game", COLS, rows, ("game_id",)) + "commit;\n"
-
-
 def main(argv):
     if not argv or argv[0] not in ("fetch", "parse"):
         print(__doc__)
         return 2
-    opt = lambda name, default=None: argv[argv.index(name) + 1] if name in argv else default
     if argv[0] == "fetch":
         try:
             C.Fetcher(SOURCE, "manual").check(URL)
         except C.SRC.SourceRefused as e:
             raise SystemExit(str(e))
-        raise SystemExit("no live fetch is written for this source yet")
-    rows, bad = parse_gamelog(open(os.path.expanduser(argv[1]), "rb").read(), opt("--fetched-on", C.today()))
-    if opt("--out"):
-        open(os.path.expanduser(opt("--out")), "w", encoding="utf-8").write(load_sql(rows, opt("--fetched-on", C.today())))
+        raise SystemExit("stats.wnba.com is confirm-only: it is read only by a confirm check through scripts/daily/limiter.py, never stored")
+    rows, bad = parse_gamelog(open(os.path.expanduser(argv[1]), "rb").read(), C.today())
     print("%d games, %d unparsed" % (len(rows), len(bad)))
     for b in bad:
         print("unparsed:", b["reason"], b["item"])

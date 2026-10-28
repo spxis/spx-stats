@@ -85,8 +85,12 @@ def test_wnba():
 
 def test_gate():
     f, asked = fetcher("wnba_stats", "manual", [(200, b"{}")])
-    refused(lambda: f.get("https://stats.wnba.com/stats/leaguegamelog?LeagueID=10"), C.Held, "wnba_stats while on hold")
-    check(asked == [], "gate: a held source sends nothing")
+    refused(lambda: f.get("https://stats.wnba.com/stats/leaguegamelog?LeagueID=10"), SRC.SourceRefused, "wnba_stats (red-confirm) for a manual fetch")
+    f, asked = fetcher("wnba_stats", "daily", [(200, b"{}")])
+    refused(lambda: f.get("https://stats.wnba.com/stats/leaguegamelog?LeagueID=10"), SRC.SourceRefused, "wnba_stats (red-confirm) for the daily job")
+    check(asked == [], "gate: a confirm-only source sends nothing from a fetcher")
+    check(SRC.get("wnba_stats")["tier"] == "red-confirm" and "wnba_stats" not in C.HOLDS, "gate: wnba_stats is red-confirm, not a held grey source")
+    check(not hasattr(wnba, "load_sql"), "gate: the wnba reader has no load SQL (confirm-only, never stored)")
     for src in ("fangraphs", "transfermarkt"):
         check(src in C.HOLDS, "gate: %s is on hold" % src)
     f, asked = fetcher("hockeytech", "manual", [(200, b"{}")])
@@ -138,7 +142,7 @@ def test_raw():
 
 
 def test_registry():
-    check(all(SRC.get(s) and SRC.get(s)["tier"] in ("green", "grey") for s in ("cfbd", "hockeytech", "wnba_stats")), "registry: each fetcher's source is green or grey")
+    check(all(SRC.get(s) and SRC.get(s)["tier"] in ("green", "grey") for s in ("cfbd", "hockeytech")), "registry: each storing fetcher's source is green or grey")
     check(set(C.HOLDS) <= set(SRC.SOURCES), "registry: every held source exists")
 
 
@@ -148,7 +152,7 @@ def run():
     if FAILS:
         print("FAILED:\n  " + "\n  ".join(FAILS))
         return 1
-    print("grey fetchers test ok: cfbd, hockeytech and wnba parsers on samples, the load SQL, the hold, the PWHL refusal, the daily cap, 403 and retry, the raw copy")
+    print("grey fetchers test ok: cfbd and hockeytech parsers on samples, the wnba reader (confirm-only, no load SQL), the load SQL, the hold, the PWHL refusal, the daily cap, 403 and retry, the raw copy")
     return 0
 
 

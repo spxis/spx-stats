@@ -170,23 +170,6 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "checkedOn": "2026-10-19"
   },
   {
-    "id": "wnba_stats",
-    "name": "stats.wnba.com",
-    "tier": "grey",
-    "selectable": true,
-    "default": false,
-    "reason": "No terms found; backup or cross-check only, once a day and on manual request.",
-    "notes": "Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the WNBA Terms of Use (wnba.com) section 9 says the NBA Statistics may not be used in connection with any website, product or service that features a database. John to decide whether this makes it red; no request is sent until he does.",
-    "leagues": [
-      "wnba"
-    ],
-    "spacing": 5.0,
-    "keyNeeded": false,
-    "confirmOnly": false,
-    "evidence": "https://www.wnba.com/terms-of-use",
-    "checkedOn": null
-  },
-  {
     "id": "hockeytech",
     "name": "HockeyTech feeds (lscluster.hockeytech.com), leagues other than the PWHL",
     "tier": "grey",
@@ -311,6 +294,23 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "keyNeeded": false,
     "confirmOnly": true,
     "evidence": null,
+    "checkedOn": null
+  },
+  {
+    "id": "wnba_stats",
+    "name": "stats.wnba.com (confirm-only)",
+    "tier": "red-confirm",
+    "selectable": false,
+    "default": false,
+    "reason": "The WNBA Terms of Use (wnba.com, section 9) bar using NBA Statistics in connection with any website, product or service that features a database, the same clause as stats.nba.com. Was grey until John moved it on 2026-10-28.",
+    "notes": "The WNBA Terms of Use (wnba.com, section 9) bar using NBA Statistics in connection with any website, product or service that features a database, the same clause as stats.nba.com. Was grey until John moved it on 2026-10-28. Confirm-only (John, 2026-10-28): read to confirm a result, never stored.",
+    "leagues": [
+      "wnba"
+    ],
+    "spacing": 5.0,
+    "keyNeeded": false,
+    "confirmOnly": true,
+    "evidence": "https://www.wnba.com/terms-of-use",
     "checkedOn": null
   },
   {

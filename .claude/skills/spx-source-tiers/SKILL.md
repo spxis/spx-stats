@@ -21,7 +21,7 @@ Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is) (source tiers, 
 - Green today (examples): English Wikipedia (CC BY-SA 4.0, credit), Wikidata (CC0), nflverse (CC BY 4.0, credit line), Retrosheet
   (credit notice), Lahman, OpenStreetMap (ODbL, kept only in `legacy_osm` and `core.brand_venue_osm`), balldontlie (free tier, credit).
 - **Red-confirm** (John, 2026-10-19): the NHL APIs (`api-web.nhle.com`, `api.nhle.com`, `statsapi.web.nhl.com`), `statsapi.mlb.com`,
-  `stats.nba.com`, the PWHL HockeyTech feed, the public scoreboards of Yahoo Sports and USA TODAY (NHL, NBA, MLB, NFL).
+  `stats.nba.com`, `stats.wnba.com` (John, 2026-10-28), the PWHL HockeyTech feed, the public scoreboards of Yahoo Sports and USA TODAY (NHL, NBA, MLB, NFL).
 - **Banned, never**: ESPN (`espn.com`, `site.api.espn.com`) and Sports Reference (`hockey-`, `basketball-`, `baseball-`,
   `pro-football-reference`, `fbref`). Not even confirm-only.
 - Not sure? Make it grey with notes, not green. Only John's yes makes it green (ask him: `NEED FROM YOU:` with the one choice).

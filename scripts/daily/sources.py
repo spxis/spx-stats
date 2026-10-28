@@ -12,7 +12,7 @@ requests, one request at a time), how long a fetched answer is reused (`ttl`), w
             "grey area" marker with the notes.
     red     the terms forbid it, or AGENTS.md section 3 bars it: never fetched, not even to test.
     red-confirm  a red source John allowed to be READ to confirm a result other sources gave (2026-10-19; NHL APIs, MLB statsapi, stats.nba.com,
-            PWHL feed, Yahoo Sports and USA TODAY scoreboards). Only purpose "confirm" (limiter.confirm), through the same limiter, and NEVER stored: no cache, no archive, no copied value,
+            PWHL feed, stats.wnba.com, Yahoo Sports and USA TODAY scoreboards). Only purpose "confirm" (limiter.confirm), through the same limiter, and NEVER stored: no cache, no archive, no copied value,
             only an outcome (agrees, disagrees, unavailable). Never selectable, never a default; the admin tools show a "confirm-only" marker.
 
     python3 -I scripts/daily/sources.py [--json]      print the registry (what the source picker will list)
@@ -51,9 +51,9 @@ def _grey(id, name, hosts, leagues=(), url_contains=(), notes="", evidence=None)
               notes=notes or "No terms of use found for automated collection. Tier set by John on 2026-10-19; the clause and an evidence link are to be added by the terms check.", evidence=evidence)
 
 
-def _red_confirm(id, name, reason, hosts=(), url_contains=(), evidence=None, leagues=(), spacing=5):
+def _red_confirm(id, name, reason, hosts=(), url_contains=(), evidence=None, leagues=(), spacing=5, on="2026-10-19"):
     return _s(id, name, "red-confirm", reason, spacing=spacing, hosts=hosts, leagues=leagues, url_contains=url_contains, evidence=evidence, daily_cap=20, ttl=0,
-              notes=reason + " Confirm-only (John, 2026-10-19): read to confirm a result, never stored.")
+              notes=reason + " Confirm-only (John, %s): read to confirm a result, never stored." % on)
 
 
 def _red(id, name, reason, hosts=(), url_contains=(), evidence=None):
@@ -81,9 +81,6 @@ SOURCES = {x["id"]: x for x in [
     _green("cfbd", "CollegeFootballData.com", "Free API with a key.", 1, ("api.collegefootballdata.com",), clause="Seeded green by John 2026-10-19; a key is needed.", key_needed=True, evidence="https://collegefootballdata.com/"),
     _green("odds_api", "The Odds API", "Free tier with a key.", 1, ("api.the-odds-api.com",), clause="Seeded green by John 2026-10-19; a key is needed.", key_needed=True, evidence="https://the-odds-api.com/terms-and-conditions.html"),
     # ---- grey: no terms found
-    _grey("wnba_stats", "stats.wnba.com", ("stats.wnba.com",), ("wnba",),
-          notes="Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the WNBA Terms of Use (wnba.com) section 9 says the NBA Statistics may not be used in connection with any website, product or service that features a database. John to decide whether this makes it red; no request is sent until he does.",
-          evidence="https://www.wnba.com/terms-of-use"),
     _grey("hockeytech", "HockeyTech feeds (lscluster.hockeytech.com), leagues other than the PWHL", ("lscluster.hockeytech.com",), ("ahl", "echl"),
           url_contains=(), notes="Grey for leagues other than the PWHL only; any request naming the PWHL is red (pwhl_hockeytech). No terms found for the others. Tier set by John on 2026-10-19."),
     _grey("cfl_api", "api.cfl.ca", ("api.cfl.ca",), ("cfl",),
@@ -99,6 +96,9 @@ SOURCES = {x["id"]: x for x in [
                  ("api-web.nhle.com", "api.nhle.com", "statsapi.web.nhl.com")),
     _red_confirm("mlb_statsapi", "MLB statsapi (confirm-only)", "MLB's notice bars automated use.", ("statsapi.mlb.com",), evidence="http://gdx.mlb.com/components/copyright.txt"),
     _red_confirm("nba_stats", "stats.nba.com (confirm-only)", "NBA.com's terms forbid automated collection.", ("stats.nba.com",)),
+    _red_confirm("wnba_stats", "stats.wnba.com (confirm-only)",
+                 "The WNBA Terms of Use (wnba.com, section 9) bar using NBA Statistics in connection with any website, product or service that features a database, the same clause as stats.nba.com. Was grey until John moved it on 2026-10-28.",
+                 ("stats.wnba.com",), evidence="https://www.wnba.com/terms-of-use", leagues=("wnba",), on="2026-10-28"),
     _red_confirm("pwhl_hockeytech", "thepwhl.com and the PWHL HockeyTech feed (confirm-only)", "The PWHL's terms forbid it; any HockeyTech request for the PWHL is this source.",
                  ("thepwhl.com", "www.thepwhl.com"), url_contains=("client_code=pwhl", "/pwhl/")),
     _red_confirm("yahoo_sports", "Yahoo Sports scoreboards (confirm-only)",

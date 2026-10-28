@@ -22,7 +22,6 @@ CTX = ssl.create_default_context(cafile=_ca) if _ca and os.path.exists(_ca) else
 
 # Sources whose own terms (read 2026-10-25) may bar what we would do; the fetcher refuses until John decides and this entry is removed.
 HOLDS = {
-    "wnba_stats": "The WNBA Terms of Use (section 9) bar using NBA Statistics in a service that features a database. John decides whether it is red.",
     "fangraphs": "The FanGraphs Terms of Service (section 17) bar access other than through their own interface. John decides whether it is red.",
     "transfermarkt": "Its terms were not read yet. A person reads them and John decides before any request.",
 }

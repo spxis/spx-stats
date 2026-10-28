@@ -17,7 +17,7 @@ What a run does (see README.md):
   5. compare with DS1's core.game and print the summary. A dry run writes nothing; --apply writes to DS1 (never production).
 
 Forbidden sources (never fetched, even to test): NBA.com / cdn.nba.com, NFL.com, cfl.ca, ESPN, Sports Reference, newspapers
-and TV sites. NHL API, MLB statsapi, stats.nba.com, the PWHL feed, Yahoo Sports and USA TODAY are confirm-only (confirm_red.py, confirm_sites.py,
+and TV sites. NHL API, MLB statsapi, stats.nba.com, stats.wnba.com, the PWHL feed, Yahoo Sports and USA TODAY are confirm-only (confirm_red.py, confirm_sites.py,
 DAILY_CONFIRM_RED=1): read to confirm, never stored.
 """
 import argparse, collections, csv, datetime, hashlib, io, json, os, re, sys, time, urllib.error, urllib.request

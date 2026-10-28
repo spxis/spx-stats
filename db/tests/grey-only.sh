@@ -34,33 +34,33 @@ create table core.person (person_id bigint primary key, source_id smallint, full
 create table core.venue (venue_id int primary key, source_id smallint, city text, opened_on date);
 create table core.franchise (franchise_id int primary key, source_id smallint, founded_on date);
 grant usage on schema api to anon;
-insert into meta.source (code) values ('wikipedia'), ('wikipedia_daily'), ('wnba_stats'), ('fangraphs'), ('spx_database');
+insert into meta.source (code) values ('wikipedia'), ('wikipedia_daily'), ('transfermarkt'), ('fangraphs'), ('spx_database');
 SQL
 psql_ -o /dev/null < "$REPO/db/migrations/153_source_tier.sql"
 psql_ -o /dev/null < "$REPO/db/build/225_source_tier.sql"
 
 tier() { psql_ -c "select tier from meta.source where code = '$1'"; }
-eq "225 sets grey on a grey source" "$(tier wnba_stats)" grey
+eq "225 sets grey on a grey source" "$(tier transfermarkt)" grey
 eq "225 sets green on wikipedia" "$(tier wikipedia)" green
 eq "225 reaches the other wikipedia code" "$(tier wikipedia_daily)" green
 eq "225 leaves an unclassified source null" "$(tier spx_database)" ""
-eq "225 writes the evidence link" "$(psql_ -c "select evidence_url from meta.source where code = 'wnba_stats'")" "https://www.wnba.com/terms-of-use"
+eq "225 writes the evidence link" "$(psql_ -c "select evidence_url from meta.source where code = 'fangraphs'")" "https://www.fangraphs.com/about/terms-of-service"
 
 eq "the view is empty while no grey data is loaded" "$(psql_ -c 'select count(*) from api.grey_only_rows')" 0
 
 psql_ -o /dev/null <<'SQL'
--- wnba_stats (id 3) holds games 1-4 and a person; fangraphs (id 4) holds game 5; wikipedia (id 1) holds game 6
+-- transfermarkt (id 3) holds games 1-4 and a person; fangraphs (id 4) holds game 5; wikipedia (id 1) holds game 6
 insert into core.game values (1, 3, 'a', '2025-05-01'), (2, 3, 'b', '2025-05-02'), (3, 3, 'c', '2025-05-03'), (4, 3, 'd', '2025-05-04'), (5, 4, 'e', '2025-05-05'), (6, 1, 'f', '2025-05-06');
 insert into core.person values (10, 3, 'A Player', null);
 -- game 1 confirmed by wikipedia (counts no more); game 2 "confirmed" only by another grey source (still counts); game 3 disputed by wikipedia (counts); game 4 confirmed by a person-kind line of the same id (other kind: counts)
 insert into meta.verification values ('game', 1, 'confirmed', 1), ('game', 2, 'confirmed', 4), ('game', 3, 'disputed', 1), ('person', 4, 'confirmed', 1);
 SQL
 view="$(psql_ -F, -c 'select source, entity_kind, n_rows from api.grey_only_rows order by 1, 2')"
-eq "grey-only rows per source and kind" "$view" $'fangraphs,game,1\nwnba_stats,game,3\nwnba_stats,person,1'
+eq "grey-only rows per source and kind" "$view" $'fangraphs,game,1\ntransfermarkt,game,3\ntransfermarkt,person,1'
 review="$(grep -v '^--' "$REPO/db/review/grey_only_rows.sql")"
-eq "the review query lists the same rows" "$(psql_ -F, -c "$review" | cut -d, -f1,2,3 | tr '\n' ' ')" "fangraphs,game,5 wnba_stats,game,2 wnba_stats,game,3 wnba_stats,game,4 wnba_stats,person,10 "
+eq "the review query lists the same rows" "$(psql_ -F, -c "$review" | cut -d, -f1,2,3 | tr '\n' ' ')" "fangraphs,game,5 transfermarkt,game,2 transfermarkt,game,3 transfermarkt,game,4 transfermarkt,person,10 "
 psql_ -o /dev/null -c "insert into meta.verification values ('game', 3, 'confirmed', 1)"
-eq "a confirmation from a green source takes the row off the list" "$(psql_ -c "select n_rows from api.grey_only_rows where source = 'wnba_stats' and entity_kind = 'game'")" 2
+eq "a confirmation from a green source takes the row off the list" "$(psql_ -c "select n_rows from api.grey_only_rows where source = 'transfermarkt' and entity_kind = 'game'")" 2
 eq "anon can read the view" "$(psql_ -c "set role anon; select count(*) from api.grey_only_rows")" "$(psql_ -c "select count(*) from api.grey_only_rows")"
 
 before="$(psql_ -c "select md5(string_agg(code || coalesce(tier, '') || coalesce(terms_note, '') || coalesce(evidence_url, ''), '|' order by code)) from meta.source")"
@@ -69,16 +69,17 @@ eq "a rerun of 225 changes nothing" "$(psql_ -c "select md5(string_agg(code || c
 psql_ -o /dev/null < "$REPO/db/migrations/153_source_tier.sql"
 ok "a rerun of 153 runs clean"
 
-# scripts/grey: migration 154 and the load files of the three parsers, applied twice (a rerun replaces each game by its key and adds none)
+# scripts/grey: migration 154 and the load files of the two parsers that store (wnba_stats is red-confirm and has none), applied twice (a rerun replaces each game by its key and adds none)
 S="$(mktemp -d)"
 python3 -I "$REPO/scripts/grey/cfbd.py" parse "$REPO/scripts/grey/samples/cfbd_games.json" --year 2024 --fetched-on 2026-10-25 --out "$S/cfbd.sql" >/dev/null
 python3 -I "$REPO/scripts/grey/hockeytech.py" parse "$REPO/scripts/grey/samples/hockeytech_schedule.json" --client ahl --fetched-on 2026-10-25 --out "$S/ht.sql" >/dev/null
-python3 -I "$REPO/scripts/grey/wnba.py" parse "$REPO/scripts/grey/samples/wnba_leaguegamelog.json" --fetched-on 2026-10-25 --out "$S/wnba.sql" >/dev/null
 psql_ -o /dev/null < "$REPO/db/migrations/154_legacy_grey_sources.sql"
 psql_ -o /dev/null < "$REPO/db/migrations/154_legacy_grey_sources.sql"
-for f in cfbd ht wnba cfbd ht wnba; do psql_ -o /dev/null < "$S/$f.sql"; done
-eq "154: the three sources have a tier" "$(psql_ -c "select string_agg(code || '=' || tier, ',' order by code) from meta.source where code in ('cfbd', 'hockeytech', 'wnba_stats')")" "cfbd=green,hockeytech=grey,wnba_stats=grey"
-eq "load: games after two runs" "$(psql_ -c "select (select count(*) from legacy_cfbd.game) || ',' || (select count(*) from legacy_hockeytech.game) || ',' || (select count(*) from legacy_wnba_stats.game)")" "2,2,1"
+for f in cfbd ht cfbd ht; do psql_ -o /dev/null < "$S/$f.sql"; done
+eq "154: the two loaded sources have a tier" "$(psql_ -c "select string_agg(code || '=' || tier, ',' order by code) from meta.source where code in ('cfbd', 'hockeytech')")" "cfbd=green,hockeytech=grey"
+psql_ -o /dev/null < "$REPO/db/build/225_source_tier.sql"
+eq "225 moves wnba_stats to red-confirm, with the evidence link" "$(psql_ -c "select tier || ',' || evidence_url from meta.source where code = 'wnba_stats'")" "red-confirm,https://www.wnba.com/terms-of-use"
+eq "load: games after two runs" "$(psql_ -c "select (select count(*) from legacy_cfbd.game) || ',' || (select count(*) from legacy_hockeytech.game) || ',' || (select count(*) from legacy_wnba_stats.game)")" "2,2,0"
 eq "load: a quoted venue survives" "$(psql_ -c "select venue from legacy_cfbd.game where game_id is not null and venue like 'O%'")" "O'Brien Field"
 rm -rf "$S"
 

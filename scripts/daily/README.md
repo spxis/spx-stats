@@ -61,7 +61,7 @@ checks + 14 content batches of 10 pages); a run when nothing changed is 3 API re
 **Never fetched, not even to test:** NBA.com and `cdn.nba.com`, NFL.com, `cfl.ca` / `api.cfl.ca`, ESPN, Sports Reference sites,
 newspapers and TV sites. Articles link to some of those (the "Recap" columns); the parsers drop external links and nothing follows them.
 
-**Confirm-only (red-confirm, John 2026-10-19; AGENTS.md section 3):** the NHL APIs, `statsapi.mlb.com`, `stats.nba.com` and the PWHL feed may be
+**Confirm-only (red-confirm, John 2026-10-19; AGENTS.md section 3):** the NHL APIs, `statsapi.mlb.com`, `stats.nba.com`, `stats.wnba.com` (John, 2026-10-28) and the PWHL feed may be
 read to confirm a result other sources gave, and are never stored. `confirm_red.py` does it for the NHL: only when `DAILY_CONFIRM_RED=1`, only for
 NHL finals that are single-source or disputed, one request per day of games (at most `DAILY_CONFIRM_MAX`, default 5), through the shared limiter
 (`limiter.confirm`: queued and spaced, no cache read or write; the stores and `apply.py` refuse any answer of a confirm-only source). The answer is
