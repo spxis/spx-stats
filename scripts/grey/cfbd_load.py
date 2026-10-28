@@ -234,6 +234,46 @@ def p_boxscore(data, day, season=None):
     return rows, bad
 
 
+def p_lines(data, day):
+    rows, bad = [], []
+    for g in data:
+        gid, y = C.to_int(g.get("id")), C.to_int(g.get("season"))
+        if gid is None or y is None:
+            bad.append(g)
+            continue
+        for l in g.get("lines") or []:
+            if not l.get("provider"):
+                bad.append(l)
+                continue
+            rows.append(dict(game_id=gid, provider=l["provider"], season=y, spread=l.get("spread"), formatted_spread=l.get("formattedSpread"), spread_open=l.get("spreadOpen"),
+                             over_under=l.get("overUnder"), over_under_open=l.get("overUnderOpen"), home_moneyline=l.get("homeMoneyline"), away_moneyline=l.get("awayMoneyline"),
+                             fetched_on=day, source_key="cfbd:line:%d:%s" % (gid, l["provider"])))
+    return rows, bad
+
+
+def p_talent(data, day):
+    rows, bad = [], []
+    for x in data:
+        y = C.to_int(x.get("year"))
+        if y is None or not x.get("team"):
+            bad.append(x)
+            continue
+        rows.append(dict(season=y, team=x["team"], talent=x.get("talent"), fetched_on=day, source_key="cfbd:talent:%d:%s" % (y, x["team"])))
+    return rows, bad
+
+
+def p_srs(data, day):
+    rows, bad = [], []
+    for x in data:
+        y = C.to_int(x.get("year"))
+        if y is None or not x.get("team"):
+            bad.append(x)
+            continue
+        rows.append(dict(season=y, team=x["team"], conference=x.get("conference"), division=x.get("division"), rating=x.get("rating"), ranking=C.to_int(x.get("ranking")),
+                         fetched_on=day, source_key="cfbd:srs:%d:%s" % (y, x["team"])))
+    return rows, bad
+
+
 # table -> (raw folder, parser, columns, key columns, season column or None)
 T_GAME = ("game", "games", p_game, cfbd.COLS, ("game_id",), "season")
 T_CONF = ("conference", "conferences", p_conference, ("conference_id", "name", "short_name", "abbreviation", "classification", "member_count", "fetched_on", "source_key"), ("conference_id",), None)
@@ -262,7 +302,11 @@ T_PSTAT = ("player_season_stat", "stats_player_season", p_pstat, ("season", "pla
                                                                    "source_key"), ("season", "player_id", "team", "category", "stat_type"), "season")
 T_BOX = ("team_game_stat", "games_teams", p_boxscore, ("season", "game_id", "team_id", "team", "conference", "home_away", "points", "category", "stat", "fetched_on", "source_key"),
          ("game_id", "team_id", "category"), "season")
-ORDER = [T_CONF, T_VENUE, T_TEAM, T_AFF, T_COACH, T_COACHSEASON, T_GAME, T_RECORD, T_POLL, T_DRAFT, T_TEAMSTAT, T_ROSTER, T_PSTAT, T_BOX]
+T_LINE = ("betting_line", "lines", p_lines, ("game_id", "provider", "season", "spread", "formatted_spread", "spread_open", "over_under", "over_under_open", "home_moneyline",
+                                              "away_moneyline", "fetched_on", "source_key"), ("game_id", "provider"), "season")
+T_TALENT = ("team_talent", "talent", p_talent, ("season", "team", "talent", "fetched_on", "source_key"), ("season", "team"), "season")
+T_SRS = ("team_srs", "ratings_srs", p_srs, ("season", "team", "conference", "division", "rating", "ranking", "fetched_on", "source_key"), ("season", "team"), "season")
+ORDER = [T_CONF, T_VENUE, T_TEAM, T_AFF, T_COACH, T_COACHSEASON, T_GAME, T_RECORD, T_POLL, T_DRAFT, T_TEAMSTAT, T_ROSTER, T_PSTAT, T_BOX, T_LINE, T_TALENT, T_SRS]
 
 
 # ---------------------------------------------------------------------- COPY text
@@ -324,7 +368,7 @@ def parse_table(day_dir, spec, day):
 
 def dedupe(rows):
     """-> (rows, identical repeats dropped, conflicts). The API repeats some items (a poll row four times, a game that two weekly requests both return); a repeat that
-    differs from the first is a conflict: the first is kept and the count is reported."""
+    differs from the first is a conflict: the row with fewer nulls is kept (the first on a tie) and the count is reported."""
     seen, out, same, conflict = {}, [], 0, 0
     for r in rows:
         k = r["source_key"]
@@ -333,6 +377,9 @@ def dedupe(rows):
                 same += 1
             else:
                 conflict += 1
+                nulls = lambda x: sum(v is None for v in x.values())
+                if nulls(r) < nulls(seen[k]):
+                    out[out.index(seen[k])] = seen[k] = r
             continue
         seen[k] = r
         out.append(r)

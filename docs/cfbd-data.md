@@ -4,9 +4,9 @@ Tickets cmveusfgn0008kw06569ggz2p (college football) and cmveusf6k0007kw06f34fcd
 calendar month, resetting 2026-11-01). Nothing here is built into `core`, loaded to DS1 or published; the section "Model" is a proposal that updates
 [college-football.md](college-football.md).
 
-## 1. What was fetched (865 of the 1,000 requests; 135 left unused)
+## 1. What was fetched (950 of the 1,000 requests; 50 kept spare)
 
-Raw answers, byte for byte: `~/Projects/backups/spx-stats/raw/cfbd/2026-10-28/<endpoint>/<params>.json` (864 files, 535 MB with the log), `fetched.json` (url, sha256, bytes, time) and the
+Raw answers, byte for byte: `~/Projects/backups/spx-stats/raw/cfbd/2026-10-28/<endpoint>/<params>.json` (948 files, 548 MB with the log), `fetched.json` (url, sha256, bytes, time) and the
 request log `~/Projects/backups/spx-stats/raw/cfbd/request-log.tsv` (its header holds the plan). The key never appears in a file, URL or log.
 
 | Endpoint | Requests | Answer |
@@ -22,6 +22,9 @@ request log `~/Projects/backups/spx-stats/raw/cfbd/request-log.tsv` (its header 
 | `/coaches?minYear=1869&maxYear=2026` | 1 | **all history in one answer**: 1,816 head coaches, 12,564 coach seasons (1886 to 2026) with record, ranks, SRS |
 | `/draft/picks` (no year) | 1 | **all history in one answer**: 13,080 NFL draft picks 1967 to 2026 with the college team |
 | `/teams`, `/conferences`, `/venues` | 3 | 1,933 teams (1,251 historical ones with no classification), 256 conferences, 852 venues |
+| `/lines?year=Y` | 15 (2010 to 2025; 2013 is the first year with lines) | betting lines by game and provider, 2013 to 2025: 38,325 lines. 2010 and 2012 hold none (probes) |
+| `/talent?year=Y` | 11 (2015 to 2025) | the 247Sports Team Talent Composite, one number per team and year: 2,275 rows. It is 247Sports's figure (derived from recruiting rankings); no player-level recruiting data was fetched |
+| `/ratings/srs?year=Y` | 58 (1968 to 2025) | Simple Rating System by team and season: 7,510 rows. 1967 was requested but its answer was dropped by the fetcher's old stop rule (the count had reached the 50 kept spare) and not re-fetched |
 | `/info` | 1 | the key's allowance (free, not counted by the server) |
 
 The server counts calls itself (header `x-calllimit-remaining`); the fetcher stops 50 below its own limit as well as at 950 used in the month.
@@ -48,7 +51,7 @@ The server counts calls itself (header `x-calllimit-remaining`); the fetcher sto
 ## 3. Tables (`legacy_cfbd`, DS1 only; migrations 154 and 157)
 
 `game` (extended: classification, line scores, Elo, win probability, excitement, notes, playoff as jsonb), `team`, `venue`, `conference`, `conference_affiliation`, `coach`, `coach_season`, `team_record`,
-`poll_rank`, `draft_pick`, `team_season_stat`, `roster_player`, `player_season_stat`, `team_game_stat` (box scores, one row per team, game and category). Provenance in `source_key`
+`poll_rank`, `draft_pick`, `team_season_stat`, `roster_player`, `player_season_stat`, `team_game_stat` (box scores, one row per team, game and category), `betting_line`, `team_talent`, `team_srs`. Provenance in `source_key`
 (`cfbd:<kind>:<ids>`). Expected counts (the loader writes `expected-counts.tsv`; a second run changes nothing; checked on a scratch Postgres with the real answers):
 
 | Table | Rows | Table | Rows |
@@ -60,8 +63,10 @@ The server counts calls itself (header `x-calllimit-remaining`); the fetcher sto
 | `conference_affiliation` | 3,604 | `roster_player` | 371,961 |
 | `coach` | 1,816 | `player_season_stat` | 1,424,558 |
 | `coach_season` | 12,564 | `team_game_stat` | 1,181,592 |
+| `betting_line` | 38,325 | `team_talent` | 2,275 |
+| `team_srs` | 7,510 (3 repeats with a missing conference resolved to the complete row) | | |
 
-Load files: `python3 -I scripts/grey/cfbd_load.py <raw day dir> --out-dir <dir>` writes 37 files (about 430 MB of COPY text, split on season boundaries at 150,000 rows). They are not for git.
+Load files: `python3 -I scripts/grey/cfbd_load.py <raw day dir> --out-dir <dir>` writes 40 files (about 430 MB of COPY text, split on season boundaries at 150,000 rows). They are not for git.
 Each one is one transaction (temp table, COPY, delete of the seasons it carries, insert), applied with `ds1-apply.sh --force` (the files live outside `db/`).
 
 ## 4. Model (proposal; updates college-football.md)
@@ -85,9 +90,16 @@ Each one is one transaction (temp table, COPY, delete of the seasons it carries,
 
 ## 5. Terms and credit
 
-The registry row `cfbd` (scripts/daily/sources.py) is green with the clause "Seeded green by John 2026-10-19; a key is needed" and migration 154's licence text says "no bulk redistribution". John's
-note of 2026-10-28 is that CFBD's terms permit commercial use. The registry clause and `checked_on` should be updated by the coordinating session to say so (not changed here: the registry also feeds
-`web/src/lib/liveSources.ts` and `meta.source`). Credit line: "College football data from CollegeFootballData.com" wherever the data shows. Creating extra keys is barred by CFBD's terms and was not done.
+Read 2026-10-28 at https://collegefootballdata.com/terms (Terms of Use, effective 2026-08-12) and https://collegefootballdata.com/key. The registry row `cfbd` (scripts/daily/sources.py) now carries them: green,
+checked 2026-10-28 by machine1, spacing 1.5 s.
+- Section 3: "Commercial use is permitted." and "Your subscription tier determines your API usage quota, not whether you may use the API commercially." CFBD and the basketball API share one quota pool;
+  the free tier is 1,000 requests a calendar month (the key page itself states no number; `/info` returns it).
+- Section 4 (permitted uses): free or paid products, private storage and normalising of responses, displaying reasonable portions of factual data, historical analysis, a private archive after access ends.
+- Section 5 (prohibited): selling or publishing API data as a standalone dataset or bulk download, a raw feed or database mirror, giving customers direct access to stored raw responses, exposing the key in client
+  code, presenting the data as official data of the NCAA, a conference or a school, and "multiple accounts, alias accounts, disposable email services" to evade quotas (so no second key, ever).
+- So "no bulk redistribution" was right and stays in the notes: the legacy_cfbd tables and raw answers are DS1/Dropbox only and never a download; pages may show facts from them.
+- Section 6: attribution "appreciated but not required"; suggested wording "Data provided by CollegeFootballData.com". We credit it anyway.
+- Migration 154's schema comment still says "no bulk redistribution" and a credit line that differs from the suggested one; it is applied history and is not edited. Treat this section as the current statement.
 
 ## 6. Re-running
 

@@ -85,9 +85,10 @@ def test_cfbd_fetch():
     cl2 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: (429, {}, b""))
     refused(lambda: cl2.get("records", {"year": 2023}), cfbd_fetch.Stop, "a 429 answer")
     cl3 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: (200, {"X-CallLimit-Remaining": "50"}, b"[]"))
-    refused(lambda: cl3.get("records", {"year": 2022}), cfbd_fetch.Stop, "the spare calls reached")
+    check(cl3.get("records", {"year": 2022}) is not None, "cfbd fetch: the request that brings the count to the spare is kept")
+    refused(lambda: cl3.get("records", {"year": 2021}), cfbd_fetch.Stop, "the spare calls reached")
     cl4 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: (403, {}, b""))
-    refused(lambda: cl4.get("records", {"year": 2021}), C.Blocked, "a 403 answer")
+    refused(lambda: cl4.get("records", {"year": 2019}), C.Blocked, "a 403 answer")
     old = cfbd_fetch.MONTH_STOP
     cfbd_fetch.MONTH_STOP = 0
     sent = []

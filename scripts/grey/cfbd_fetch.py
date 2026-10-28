@@ -82,6 +82,7 @@ def log_request(endpoint, params, status, nbytes, hdr):
 class Client:
     def __init__(self, limiter=None, sleep=time.sleep, network=None):
         self.key = None
+        self.left = None
         self.last = 0.0
         self.sleep = sleep
         self.network = network or C._urlopen  # replaceable for tests
@@ -90,6 +91,8 @@ class Client:
 
     def _open(self, req):
         """The one place a request leaves the machine: budget check, spacing, the call, the log line, the 429 stop."""
+        if self.left is not None and self.left <= SPARE:
+            raise Stop("the API reports %d calls left this month: the %d kept spare are not touched" % (self.left, SPARE))
         if used_this_month() >= MONTH_STOP:
             raise Stop("%d requests used this month: the budget is spent" % used_this_month())
         wait = self.last + GAP - time.time()
@@ -101,8 +104,8 @@ class Client:
         if status == 429:
             raise Stop("429 from the API: stopped for the day")
         left = {k.lower(): v for k, v in hdr.items()}.get("x-calllimit-remaining", "")
-        if left.isdigit() and int(left) <= SPARE:
-            raise Stop("the API reports %s calls left this month: the %d kept spare are not touched" % (left, SPARE))
+        if left.isdigit():
+            self.left = int(left)  # the answer of this request is kept; the next request checks it
         return status, hdr, body
 
     def get(self, endpoint, params):
@@ -165,6 +168,9 @@ def boxscore_post_requests():
 
 
 PLANS = {
+    "lines": lambda: [("lines", {"year": y}) for y in range(LAST_YEAR, 2011, -1)],
+    "talent": lambda: [("talent", {"year": y}) for y in range(LAST_YEAR, 2014, -1)],
+    "srs": lambda: [("ratings/srs", {"year": y}) for y in range(LAST_YEAR, FIRST_YEAR - 1, -1)],
     "boxscores": boxscore_requests,
     "boxscores_post": boxscore_post_requests,
     "teamstats_fcs": lambda: _y("stats/season", 2004, LAST_YEAR, classification="fcs"),

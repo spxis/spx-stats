@@ -78,7 +78,11 @@ SOURCES = {x["id"]: x for x in [
     _green("lahman", "Lahman baseball database", "Open licence.", 5, ("sabr.org", "www.seanlahman.com"), ("mlb",), clause="Lahman (AGENTS.md section 3).", evidence="https://sabr.org/lahman-database/"),
     _green("osm", "OpenStreetMap (Overpass API)", "ODbL 1.0, credit '(c) OpenStreetMap contributors'; kept only in legacy_osm and core.brand_venue_osm.", 5,
            ("overpass-api.de", "www.openstreetmap.org"), clause="ODbL 1.0 (AGENTS.md section 3).", evidence="https://www.openstreetmap.org/copyright"),
-    _green("cfbd", "CollegeFootballData.com", "Free API with a key.", 1, ("api.collegefootballdata.com",), clause="Seeded green by John 2026-10-19; a key is needed.", key_needed=True, evidence="https://collegefootballdata.com/"),
+    _green("cfbd", "CollegeFootballData.com", "Free API key (1,000 requests a calendar month); commercial use permitted; data may be shown but not published as a standalone dataset or bulk download.", 1.5,
+           ("api.collegefootballdata.com",), key_needed=True, by="machine1", on="2026-10-28",
+           clause="Terms of Use (effective 2026-08-12), section 3: \"Commercial use is permitted.\" Section 4 allows private storage of responses and displaying reasonable portions of factual data; section 5 bars selling or publishing API data as a standalone dataset or bulk download, a raw feed or database mirror, and using multiple accounts or keys to evade quotas. Attribution is appreciated, not required (\"Data provided by CollegeFootballData.com\").",
+           notes="One free key (never create a second); 1,000 requests a calendar month, shared with the basketball API. Fetch through scripts/grey/cfbd_fetch.py (monthly budget and request log). Never expose the raw responses or the legacy_cfbd tables as a download.",
+           evidence="https://collegefootballdata.com/terms"),
     _green("odds_api", "The Odds API", "Free tier with a key.", 1, ("api.the-odds-api.com",), clause="Seeded green by John 2026-10-19; a key is needed.", key_needed=True, evidence="https://the-odds-api.com/terms-and-conditions.html"),
     # ---- grey: no terms found
     _grey("hockeytech", "HockeyTech feeds (lscluster.hockeytech.com), leagues other than the PWHL", ("lscluster.hockeytech.com",), ("ahl", "echl"),

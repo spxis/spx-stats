@@ -34,7 +34,7 @@ cat "$OUT/report.txt" | sed 's/^/       /'
 # like ds1-apply.sh: the transaction is the runner's, so the file's own begin and commit lines are dropped
 apply() { for f in "$OUT"/[0-9]*.sql; do sed -E '/^[[:space:]]*(begin|commit)[[:space:]]*;[[:space:]]*$/Id' "$f" | psql_ -1 -o /dev/null || return 1; done; }
 apply && ok "every load file applies" || bad "a load file failed"
-counts() { for t in conference venue team conference_affiliation coach coach_season game team_record poll_rank draft_pick team_season_stat roster_player player_season_stat team_game_stat; do
+counts() { for t in conference venue team conference_affiliation coach coach_season game team_record poll_rank draft_pick team_season_stat roster_player player_season_stat team_game_stat betting_line team_talent team_srs; do
   printf '%s=%s ' "$t" "$(psql_ -c "select count(*) from legacy_cfbd.$t")"; done; }
 first="$(counts)"
 echo "       $first"
@@ -60,6 +60,10 @@ if [ "$RAW" = "$REPO/scripts/grey/samples/cfbd_raw" ]; then
   eq "string stat kept as text" "$(psql_ -c "select stat from legacy_cfbd.player_season_stat where stat_type = 'PCT'")" "0.66"
   eq "box score stat text" "$(psql_ -c "select stat from legacy_cfbd.team_game_stat where team_id = 100 and category = 'completionAttempts'")" "15-24"
   eq "box score null stat" "$(psql_ -c "select stat is null from legacy_cfbd.team_game_stat where team_id = 101 and category = 'possessionTime'")" "t"
+  eq "betting lines: two providers, none for a game without lines" "$(psql_ -c "select count(*) from legacy_cfbd.betting_line")" "2"
+  eq "line open is null" "$(psql_ -c "select spread_open is null from legacy_cfbd.betting_line where provider = 'Example Book'")" "t"
+  eq "talent" "$(psql_ -c "select talent from legacy_cfbd.team_talent where team = 'Old Tech'")" "500.25"
+  eq "srs rank" "$(psql_ -c "select ranking from legacy_cfbd.team_srs where team = 'Old Tech'")" "2"
   eq "season replaced, not doubled" "$(psql_ -c "select count(*) from legacy_cfbd.game where season = 2023")" "2"
 fi
 echo "cfbd-load: $pass ok, $fail failed"

@@ -254,4 +254,42 @@ create table if not exists legacy_cfbd.team_game_stat (
 );
 create index if not exists team_game_stat_season_idx on legacy_cfbd.team_game_stat (season);
 
+create table if not exists legacy_cfbd.betting_line (
+  game_id        bigint not null,
+  provider       text not null,
+  season         smallint not null,
+  spread         real,
+  formatted_spread text,
+  spread_open    real,
+  over_under     real,
+  over_under_open real,
+  home_moneyline real,
+  away_moneyline real,
+  fetched_on     date not null,
+  source_key     text not null unique,
+  primary key (game_id, provider)
+);
+create index if not exists betting_line_season_idx on legacy_cfbd.betting_line (season);
+
+create table if not exists legacy_cfbd.team_talent (
+  season         smallint not null,
+  team           text not null,
+  talent         real,
+  fetched_on     date not null,
+  source_key     text not null unique,
+  primary key (season, team)
+);
+
+create table if not exists legacy_cfbd.team_srs (
+  season         smallint not null,
+  team           text not null,
+  conference     text,
+  division       text,
+  rating         double precision,
+  ranking        integer,
+  fetched_on     date not null,
+  source_key     text not null unique,
+  primary key (season, team)
+);
+
 comment on schema legacy_cfbd is 'CollegeFootballData.com raw loads (green: free key, credit "College football data from CollegeFootballData.com"). DS1 only; not published.';

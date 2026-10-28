@@ -15,7 +15,7 @@ from (values
   ('retrosheet', 'green', 'Credit notice required (AGENTS.md section 3).', 'https://www.retrosheet.org/notice.txt'),
   ('lahman', 'green', 'Lahman (AGENTS.md section 3).', 'https://sabr.org/lahman-database/'),
   ('openstreetmap', 'green', 'ODbL 1.0 (AGENTS.md section 3).', 'https://www.openstreetmap.org/copyright'),
-  ('cfbd', 'green', 'Seeded green by John 2026-10-19; a key is needed.', 'https://collegefootballdata.com/'),
+  ('cfbd', 'green', 'One free key (never create a second); 1,000 requests a calendar month, shared with the basketball API. Fetch through scripts/grey/cfbd_fetch.py (monthly budget and request log). Never expose the raw responses or the legacy_cfbd tables as a download.', 'https://collegefootballdata.com/terms'),
   ('odds_api', 'green', 'Seeded green by John 2026-10-19; a key is needed.', 'https://the-odds-api.com/terms-and-conditions.html'),
   ('hockeytech', 'grey', 'Grey for leagues other than the PWHL only; any request naming the PWHL is red (pwhl_hockeytech). No terms found for the others. Tier set by John on 2026-10-19.', null),
   ('cfl_api', 'grey', 'Tier set by John on 2026-10-19 (no terms found). Check 2026-10-25: the host does not answer (its DNS name points at a CloudFront name with no address); the CFL''s API has needed a key issued by the CFL. The cfl.ca website terms forbid automated collection (cfl_ca is red). No parser until John has a working key and endpoint.', null),

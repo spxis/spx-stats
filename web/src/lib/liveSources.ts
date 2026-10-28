@@ -145,14 +145,14 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "tier": "green",
     "selectable": true,
     "default": false,
-    "reason": "Free API with a key.",
-    "notes": "",
+    "reason": "Free API key (1,000 requests a calendar month); commercial use permitted; data may be shown but not published as a standalone dataset or bulk download.",
+    "notes": "One free key (never create a second); 1,000 requests a calendar month, shared with the basketball API. Fetch through scripts/grey/cfbd_fetch.py (monthly budget and request log). Never expose the raw responses or the legacy_cfbd tables as a download.",
     "leagues": [],
-    "spacing": 1.0,
+    "spacing": 1.5,
     "keyNeeded": true,
     "confirmOnly": false,
-    "evidence": "https://collegefootballdata.com/",
-    "checkedOn": "2026-10-19"
+    "evidence": "https://collegefootballdata.com/terms",
+    "checkedOn": "2026-10-28"
   },
   {
     "id": "odds_api",

@@ -164,18 +164,18 @@ export const SOURCE_REGISTRY: SourceEntry[] = [
     "id": "cfbd",
     "name": "CollegeFootballData.com",
     "tier": "green",
-    "reason": "Free API with a key.",
-    "notes": "",
-    "evidence": "https://collegefootballdata.com/",
+    "reason": "Free API key (1,000 requests a calendar month); commercial use permitted; data may be shown but not published as a standalone dataset or bulk download.",
+    "notes": "One free key (never create a second); 1,000 requests a calendar month, shared with the basketball API. Fetch through scripts/grey/cfbd_fetch.py (monthly budget and request log). Never expose the raw responses or the legacy_cfbd tables as a download.",
+    "evidence": "https://collegefootballdata.com/terms",
     "leagues": [],
     "hosts": [
       "api.collegefootballdata.com"
     ],
     "keyNeeded": true,
-    "spacingSeconds": 1.0,
+    "spacingSeconds": 1.5,
     "dailyCap": null,
-    "checkedOn": "2026-10-19",
-    "checkedBy": "John Morris, 2026-10-19 (ticket cmveuseuh0006kw069tlpou4d)"
+    "checkedOn": "2026-10-28",
+    "checkedBy": "machine1"
   },
   {
     "id": "odds_api",
