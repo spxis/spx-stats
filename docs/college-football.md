@@ -1,6 +1,6 @@
 # College football (NCAA FBS and FCS): proposal
 
-Ticket cmveusfgn0008kw06569ggz2p. Status: proposal, waiting on John's decisions (section 8). Nothing is built, fetched in bulk or written to DS1 or production.
+Ticket cmveusfgn0008kw06569ggz2p. Status: proposal, waiting on John's decisions (section 8). John chose, 2026-10-28, to take every season from 1869 and CFBD as a green source: what that fetched and how it changes sections 2 to 5 is in [cfbd-data.md](cfbd-data.md). Nothing is written to DS1 or production.
 Facts were read on 2026-10-25: the local DS1 working copy (read only, `legacy_spx`), production (read only: size and counts), twelve sample
 English Wikipedia pages (one request every 3 s, kept outside the repository), and the repository. DS1 may differ a little.
 

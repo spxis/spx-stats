@@ -8,7 +8,9 @@ import json, os, sys, tempfile
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
-import common as C, cfbd, hockeytech, wnba
+_raw = tempfile.mkdtemp()
+os.environ["CFBD_RAW_ROOT"], os.environ["CFBD_API_KEY"] = _raw, "SECRET-KEY"
+import common as C, cfbd, cfbd_fetch, cfbd_load, hockeytech, wnba
 
 LM, SRC = C.LM, C.SRC
 FAILS = []
@@ -60,6 +62,49 @@ def test_cfbd():
     sql = cfbd.load_sql(rows, 2024, "2026-10-25")
     check("O''Brien Field" in sql and sql.count("on conflict (game_id) do update") == 2 and sql.startswith("-- legacy_cfbd.game") and "begin;" in sql, "cfbd: quoted, rerunnable load text")
     check(cfbd.parse_games(b"{}", "d")[1], "cfbd: an answer that is not a list is reported, not guessed")
+
+
+def test_cfbd_fetch():
+    clock, seen = Clock(), []
+    lim = LM.Limiter(LM.MemoryStore(clock.now), sleep=clock.sleep, log=lambda *_: None, holder="test")
+    answers = [(200, {"X-CallLimit-Remaining": "900"}, b'[{"id": 1}]'), (200, {}, b"[]")]
+
+    def net(req):
+        seen.append(req)
+        return answers.pop(0)
+
+    cl = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=net)
+    path = cl.get("games", {"year": 2023, "seasonType": "both"})
+    check(path and open(path, "rb").read() == b'[{"id": 1}]' and path.endswith("games/seasonType=both&year=2023.json"), "cfbd fetch: the raw answer saved byte for byte under endpoint/params")
+    check(seen[0].get_header("Authorization") == "Bearer SECRET-KEY" and "key" not in seen[0].full_url.lower(), "cfbd fetch: the key goes in a header, not the URL")
+    log = open(cfbd_fetch.LOG, encoding="utf-8").read()
+    check("SECRET-KEY" not in log and "/games\tseasonType=both&year=2023\t200\t11" in log and "900" in log, "cfbd fetch: one log line with status, bytes and the remaining calls, no key")
+    check("SECRET-KEY" not in open(os.path.join(_raw, cfbd_fetch.DAY, "fetched.json")).read(), "cfbd fetch: fetched.json has no key")
+    check(cl.get("games", {"year": 2023, "seasonType": "both"}) is None and len(seen) == 1, "cfbd fetch: a saved file is not fetched again")
+    check(cfbd_fetch.used_this_month() >= 1, "cfbd fetch: the month count reads the log")
+    cl2 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: (429, {}, b""))
+    refused(lambda: cl2.get("records", {"year": 2023}), cfbd_fetch.Stop, "a 429 answer")
+    cl3 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: (200, {"X-CallLimit-Remaining": "50"}, b"[]"))
+    refused(lambda: cl3.get("records", {"year": 2022}), cfbd_fetch.Stop, "the spare calls reached")
+    cl4 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: (403, {}, b""))
+    refused(lambda: cl4.get("records", {"year": 2021}), C.Blocked, "a 403 answer")
+    old = cfbd_fetch.MONTH_STOP
+    cfbd_fetch.MONTH_STOP = 0
+    sent = []
+    cl5 = cfbd_fetch.Client(limiter=lim, sleep=clock.sleep, network=lambda r: sent.append(r) or (200, {}, b"[]"))
+    refused(lambda: cl5.get("records", {"year": 2020}), cfbd_fetch.Stop, "a request over the month's budget")
+    cfbd_fetch.MONTH_STOP = old
+    check(sent == [], "cfbd fetch: nothing is sent once the budget is spent")
+
+
+def test_cfbd_load():
+    samples = os.path.join(HERE, "samples", "cfbd_raw")
+    rows, bad = cfbd_load.parse_table(samples, cfbd_load.T_TEAM, "2026-10-28")
+    check(len(rows) == 2 and len(bad if isinstance(bad, list) else range(bad)) == 1, "cfbd load: a team without an id is counted unparsed")
+    rows, _ = cfbd_load.parse_table(samples, cfbd_load.T_RECORD, "2026-10-28")
+    check(rows[0]["post_losses"] == 1 and rows[1]["post_games"] is None, "cfbd load: record groups become columns, a missing group is null")
+    text = cfbd_load.load_text("venue", cfbd_load.T_VENUE[3], cfbd_load.T_VENUE[4], None, cfbd_load.parse_table(samples, cfbd_load.T_VENUE, "d")[0], "d")
+    check("Tab\\tDome" in text and "O'Brien Field" in text and "\\N" in text and "copy _load" in text, "cfbd load: COPY text escapes tabs and writes nulls")
 
 
 def test_hockeytech():
@@ -147,7 +192,7 @@ def test_registry():
 
 
 def run():
-    for t in (test_cfbd, test_hockeytech, test_wnba, test_gate, test_raw, test_registry):
+    for t in (test_cfbd, test_cfbd_fetch, test_cfbd_load, test_hockeytech, test_wnba, test_gate, test_raw, test_registry):
         t()
     if FAILS:
         print("FAILED:\n  " + "\n  ".join(FAILS))

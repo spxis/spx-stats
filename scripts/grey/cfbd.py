@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """CollegeFootballData.com (green, a free key; credit, no bulk redistribution): the games of a college football season into legacy_cfbd.game.
 
-    CFBD_API_KEY=... python3 -I scripts/grey/cfbd.py fetch 2025 [--type regular|postseason] [--raw-dir DIR]   one request, the raw answer saved first
-    python3 -I scripts/grey/cfbd.py parse <raw file> --year 2025 --fetched-on 2026-10-25 [--out load.sql]     the rows as a rerunnable load file
+    python3 -I scripts/grey/cfbd.py parse <raw file> --year 2025 --fetched-on 2026-10-28 [--out load.sql]   the rows as a rerunnable load file (insert style)
     python3 -I scripts/grey/test_grey.py                                                                      the parsers and the fetcher gate on saved samples
 
-The key is read from the environment only (never printed or saved; the saved URL has its query cut). Written against samples: no real answer has been
-seen yet because the key is John's to create, so the first real run is watched. The answer's field names are read in both spellings (game_id / id,
-home_team / homeTeam, season_type / seasonType) because the API has used both.
+Fetching is scripts/grey/cfbd_fetch.py (the monthly request budget and the request log); loading every table is scripts/grey/cfbd_load.py (COPY style, per table).
+One request `/games?year=Y&seasonType=both` returns every game of a season, all divisions and both season types. The answer's field names are camelCase (read in
+both spellings: game_id / id, home_team / homeTeam, season_type / seasonType).
 Terms (the source's registry row): a free key, credit "College football data from CollegeFootballData.com", no bulk redistribution of the data.
-Raw first: scripts/archive_raw.py cfbd <raw dir>/cfbd/<day> <day> --sql-out ..., applied by the coordinating session; the load file is for ds1-apply.sh.
+Raw first: scripts/archive_raw.py cfbd <raw dir>/<day> <day> --sql-out ..., applied by the coordinating session; the load file is for ds1-apply.sh.
 """
 import json, os, sys
 
@@ -20,7 +19,13 @@ import common as C
 SOURCE = "cfbd"
 API = "https://api.collegefootballdata.com/games"
 COLS = ("game_id", "season", "week", "season_type", "start_date", "completed", "neutral_site", "conference_game", "attendance", "venue_id", "venue",
-        "home_id", "home_team", "home_conference", "home_points", "away_id", "away_team", "away_conference", "away_points", "fetched_on", "source_key")
+        "home_id", "home_team", "home_conference", "home_points", "away_id", "away_team", "away_conference", "away_points", "fetched_on", "source_key",
+        "start_time_tbd", "home_classification", "away_classification", "home_line_scores", "away_line_scores", "home_pregame_elo", "home_postgame_elo",
+        "away_pregame_elo", "away_postgame_elo", "home_postgame_win_prob", "away_postgame_win_prob", "excitement_index", "notes", "highlights", "playoff")
+
+
+def jtext(v):
+    return None if v is None else json.dumps(v, separators=(",", ":"), sort_keys=True)
 
 
 def pick(d, *names):
@@ -52,7 +57,15 @@ def parse_games(body, fetched_on):
             home_points=C.to_int(pick(g, "home_points", "homePoints")) if completed else None,
             away_id=C.to_int(pick(g, "away_id", "awayId")), away_team=away, away_conference=pick(g, "away_conference", "awayConference"),
             away_points=C.to_int(pick(g, "away_points", "awayPoints")) if completed else None,
-            fetched_on=fetched_on, source_key="cfbd:%d" % gid))
+            fetched_on=fetched_on, source_key="cfbd:%d" % gid,
+            start_time_tbd=C.to_bool(pick(g, "start_time_tbd", "startTimeTBD")),
+            home_classification=pick(g, "home_classification", "homeClassification"), away_classification=pick(g, "away_classification", "awayClassification"),
+            home_line_scores=jtext(pick(g, "home_line_scores", "homeLineScores")), away_line_scores=jtext(pick(g, "away_line_scores", "awayLineScores")),
+            home_pregame_elo=C.to_int(pick(g, "home_pregame_elo", "homePregameElo")), home_postgame_elo=C.to_int(pick(g, "home_postgame_elo", "homePostgameElo")),
+            away_pregame_elo=C.to_int(pick(g, "away_pregame_elo", "awayPregameElo")), away_postgame_elo=C.to_int(pick(g, "away_postgame_elo", "awayPostgameElo")),
+            home_postgame_win_prob=pick(g, "home_postgame_win_probability", "homePostgameWinProbability"),
+            away_postgame_win_prob=pick(g, "away_postgame_win_probability", "awayPostgameWinProbability"),
+            excitement_index=pick(g, "excitement_index", "excitementIndex"), notes=pick(g, "notes"), highlights=pick(g, "highlights"), playoff=jtext(pick(g, "playoff"))))
     return rows, unparsed
 
 
@@ -61,26 +74,11 @@ def load_sql(rows, season, fetched_on):
     return head + C.inserts("legacy_cfbd.game", COLS, rows, ("game_id",)) + "commit;\n"
 
 
-def fetch(year, season_type, raw_dir, fetcher=None):
-    key = os.environ.get("CFBD_API_KEY")
-    if not key:
-        raise SystemExit("NEED: CFBD_API_KEY in the environment (a free key from collegefootballdata.com; John creates it)")
-    f = fetcher or C.Fetcher(SOURCE, "manual")
-    url = "%s?year=%d&seasonType=%s" % (API, year, season_type)
-    status, body = f.get(url, {"Authorization": "Bearer " + key, "Accept": "application/json"})
-    day = C.today()
-    return C.save_raw(raw_dir, SOURCE, day, "games-%d-%s.json" % (year, season_type), body, url), day
-
-
 def main(argv):
-    if not argv or argv[0] not in ("fetch", "parse"):
+    if not argv or argv[0] != "parse":
         print(__doc__)
         return 2
     opt = lambda name, default=None: argv[argv.index(name) + 1] if name in argv else default
-    if argv[0] == "fetch":
-        path, day = fetch(int(argv[1]), opt("--type", "regular"), opt("--raw-dir", "~/Projects/backups/spx-stats/raw/grey"))
-        print("saved", path)
-        return 0
     rows, bad = parse_games(open(os.path.expanduser(argv[1]), "rb").read(), opt("--fetched-on", C.today()))
     sql = load_sql(rows, opt("--year", "?"), opt("--fetched-on", C.today()))
     if opt("--out"):
