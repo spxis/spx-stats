@@ -70,6 +70,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     : [];
   return [
     { url: url("/"), lastModified },
+    { url: url("/more-hockey"), lastModified },
     ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}`), lastModified })),
     ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}/alignment`), lastModified })),
     ...ALL_LEAGUES.map((l) => ({ url: url(`/${l.code}/all-time`), lastModified })),

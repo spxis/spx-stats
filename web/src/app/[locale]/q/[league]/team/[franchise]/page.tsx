@@ -39,7 +39,8 @@ import { getOutageYears } from "@/lib/outageData";
 import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings, type TeamData } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague, type LeagueCode } from "@/lib/leagues";
+import { isLeague, isMoreHockey, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague, type LeagueCode } from "@/lib/leagues";
+import { ClubAffiliationHistory, ClubAffiliationLine, FarmClubs } from "@/components/Affiliation";
 import { pageMeta } from "@/lib/meta";
 import { getTeamAwards } from "@/lib/people";
 import { seasonPath } from "@/lib/slug";
@@ -250,7 +251,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           {map}
           <TeamSwitch current={paths.team(lg, f)} options={switchClubs.map((c) => ({ name: c.name, href: paths.team(lg, c.f) }))} />
         </div>
-        <span className="eyebrow">{PARENT[lg] ? <><Link href={`/${PARENT[lg]}`}>{LG[PARENT[lg]!]}</Link> › </> : null}<Link href={`/${lg}`}>{LG[lg]}</Link>{city ? <> · <Link className="citylink" href={`/city/${city.slug}`} prefetch={false} title={say("city.teamLink", { name: locale === "fr" && city.nameFr ? city.nameFr : city.name })}>{locale === "fr" && city.nameFr ? city.nameFr : city.name}</Link></> : null}</span>
+        <span className="eyebrow">{PARENT[lg] ? <><Link href={`/${PARENT[lg]}`}>{LG[PARENT[lg]!]}</Link> › </> : null}{isMoreHockey(lg) ? <><Link href="/more-hockey">{say("hockey.more")}</Link> › </> : null}<Link href={`/${lg}`}>{LG[lg]}</Link>{city ? <> · <Link className="citylink" href={`/city/${city.slug}`} prefetch={false} title={say("city.teamLink", { name: locale === "fr" && city.nameFr ? city.nameFr : city.name })}>{locale === "fr" && city.nameFr ? city.nameFr : city.name}</Link></> : null}</span>
         <h1 className="teamname"><TeamLogo url={logoFor(brands, f)} size={56} />{now}<Flag code={country} /></h1>
         {reigning && reigning.champion_franchise === f ? (
           <Link className="reigning" href={seasonPath(lg, reigning.year)}>
@@ -259,11 +260,14 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </Link>
         ) : null}
         <p className="lede">{ledeText}</p>
+        {isMoreHockey(lg) ? <ClubAffiliationLine lg={lg} f={f} /> : null}
         {others.map((o) => (
           <p className="note" key={o.lg}>{say("team.otherLeague", { league: LG[o.lg], seasons: plural("count.seasons", o.seasons) })} <Link href={paths.team(o.lg, f)}>{say("team.otherLeagueLink", { league: LG[o.lg] })}</Link></p>
         ))}
         {rows.length ? <CompareControl lg={lg} f={f} name={now} teamPath={at.path} /> : null}
       </section>
+      {isMoreHockey(lg) ? <ClubAffiliationHistory lg={lg} f={f} /> : null}
+      {lg === "nhl" ? <FarmClubs f={f} /> : null}
       {rows.length ? <Lifetime lg={lg} f={f} rows={rows} /> : null}
       {rows.length ? (
         <section className="section">

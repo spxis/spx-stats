@@ -22,7 +22,7 @@ import { allStarPath } from "@/lib/allStarView";
 import { getCupTitles } from "@/lib/cupData";
 import { getBrands, getSummary } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LEAGUE_CODES, leagueInfo } from "@/lib/leagues";
+import { isLeague, isMoreHockey, LEAGUE_CODES, leagueInfo } from "@/lib/leagues";
 import { leagueSeasonRows } from "@/lib/leagueSeasonRows";
 import { FamilyNav } from "@/components/FamilyNav";
 import { familyOf } from "@/lib/leagueFamilies";
@@ -85,7 +85,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
         <span className="eyebrow">{info.short}</span>
         <h1>{info.name}</h1>
         <FamilyNav code={lg} />
-        <p className="lede">{say("league.lede", { seasons: plural("count.seasons", list.filter((x) => !leagueSat(x)).length), withGames: withGames.length, champions: plural("count.champions", champs.length) })}</p>
+        <p className="lede">{say(isMoreHockey(lg) && !withGames.length ? "league.ledeTables" : "league.lede", { seasons: plural("count.seasons", list.filter((x) => !leagueSat(x)).length), withGames: withGames.length, champions: plural("count.champions", champs.length) })}</p>
         {lg === "na" ? <p className="note">{say("league.naNote")}</p> : null}
         <nav className="quicklinks">
           <Link href={`/${lg}/scores`}>{say("nav.scores")}</Link>
@@ -93,13 +93,14 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           <Link href={`/${lg}/alignment`}>{say("align.title")}</Link>
           {allStarGames ? <Link href={allStarPath(lg)}>{say("allstar.leagueLink")}</Link> : null}
           <Link href={trophiesPath(lg)}>{say("trophies.title")}</Link>
-          {info.closed ? null : <Link href={`/${lg}/world`}>{say("country.mapList")}</Link>}
+          {info.closed || isMoreHockey(lg) ? null : <Link href={`/${lg}/world`}>{say("country.mapList")}</Link>}
+          {lg === "nhl" ? <Link href="/more-hockey">{say("hockey.more")}</Link> : null}
         </nav>
       </section>
       {others.length ? (
         <section className="section">
           <h2>{say("league.otherLeagues")}</h2>
-          <p className="note">{say("league.otherNote", { league: info.short })}</p>
+          <p className="note">{say("league.otherNote", { league: info.short })}{lg === "nhl" ? <>{" "}{say("hockey.moreNote")}{" "}<Link href="/more-hockey">{say("hockey.more")}</Link></> : null}</p>
           <ul className="otherleagues">
             {others.map((o) => (
               <li key={o.code}>

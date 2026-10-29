@@ -2,7 +2,7 @@
 
 import { useDeferredValue, useEffect, useId, useLayoutEffect, useMemo, useSyncExternalStore, type ReactNode } from "react";
 import { fmt3 } from "@/lib/format";
-import { LEAGUES, LG } from "@/lib/leagues";
+import { ALL_LEAGUES, isMoreHockey, LEAGUES, LG } from "@/lib/leagues";
 import { listTitle, teamsFilters } from "@/lib/listTitle";
 import { formatSort, parseSort, sortRows, tableOf, type SortKey } from "@/lib/sort";
 import {
@@ -189,8 +189,8 @@ export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
       </section>
       <section className="section">
         <div className="controls">
-          <div className="seg" role="group" aria-label={say("teams.leagueAria")}>
-            {[{ code: "", short: say("phase.all") }, ...LEAGUES].map((l) => (
+          <div className="seg wrap" role="group" aria-label={say("teams.leagueAria")}>
+            {[{ code: "", short: say("phase.all") }, ...LEAGUES, ...ALL_LEAGUES.filter((l) => isMoreHockey(l.code))].map((l) => (
               <button key={l.code} type="button" aria-pressed={l.code === now.league} onClick={() => change({ league: l.code || null, conf: null, div: null, page: null })}>{l.short}</button>
             ))}
           </div>

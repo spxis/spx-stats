@@ -3,7 +3,7 @@
 import Link from "@/components/Link";
 import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import type { MouseEvent } from "react";
-import { menuEntries, menuFamilyOf } from "@/lib/leagueFamilies";
+import { menuEntries, menuFamilyOf, MORE_HOCKEY_PATH } from "@/lib/leagueFamilies";
 import { isLeague } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
@@ -26,7 +26,7 @@ export function LeagueNav() {
     router.push(`/${[code, ...parts.slice(2)].join("/")}${location.search}`);
   };
   return (
-    <nav className="leagues" id="league-nav" aria-label={say("nav.leagues")}>
+    <nav className={family === "nhl" ? "leagues withmore" : "leagues"} id="league-nav" aria-label={say("nav.leagues")}>
       {menuEntries(say("nav.soccer")).map((m) => (
         <Link key={m.id} href={m.href} prefetch onClick={(e) => { if (m.id !== "soccer") go(e, m.href.slice(1)); }} aria-current={family === m.id ? "page" : undefined}>
           {m.label}
@@ -36,6 +36,12 @@ export function LeagueNav() {
         <>
           <Link className="sub" href={`/${current}/scores`} prefetch aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>
           <Link className="sub" href={`/${current}/all-time`} prefetch aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
+        </>
+      ) : null}
+      {family === "nhl" ? (
+        <>
+          <span className="leaguebreak" aria-hidden="true" />
+          <Link className="sub more" href={MORE_HOCKEY_PATH} prefetch aria-current={current === MORE_HOCKEY_PATH.slice(1) ? "page" : undefined}>{say("hockey.more")}</Link>
         </>
       ) : null}
     </nav>

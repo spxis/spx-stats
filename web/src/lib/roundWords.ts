@@ -42,6 +42,7 @@ const ROUND_PHRASE: Partial<Record<SeriesKey, PhraseKey>> = {
   "final.pcha": "rnd.pcha",
   "final.wchl": "rnd.wchl",
   "final.wha": "rnd.wha",
+  "final.ahl": "rnd.ahl",
   "final.cfl": "rnd.cfl",
   "final.other": "rnd.other",
 };

@@ -36,6 +36,7 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   pcha: [TROPHY_PATERSON_CUP, "Paterson Cup"],
   wchl: [TROPHY_HOCKEY_CUP, "WCHL Championship"],
   wha: [TROPHY_AVCO_WORLD_TROPHY, "Avco World Trophy"],
+  ahl: [TROPHY_HOCKEY_CUP, "Calder Cup"],
   na: [TROPHY_BASEBALL, "National Association pennant"],
   aa: [TROPHY_BASEBALL, "American Association pennant"],
   ua: [TROPHY_BASEBALL, "Union Association pennant"],

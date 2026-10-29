@@ -16,7 +16,7 @@
   --nwsl: #9d174d; /* rose, the NWSL's own menu colour, apart from MLS teal */
   --afl: var(--nfl);   /* the AFL is American football: its clubs are the NFL's (pages of the AFL take the NFL's colour) */
   --aafc: var(--nfl);  /* so is the AAFC: three of its clubs joined the NFL in 1950 */
-  --nha: var(--nhl); --pcha: var(--nhl); --wchl: var(--nhl); --wha: var(--nhl);   /* the hockey leagues beside the NHL take its colour */
+  --nha: var(--nhl); --pcha: var(--nhl); --wchl: var(--nhl); --wha: var(--nhl); --ahl: var(--nhl);   /* the hockey leagues beside the NHL, and the minor leagues under More hockey, take its colour */
   --na: var(--mlb); --aa: var(--mlb); --ua: var(--mlb); --pl: var(--mlb); --fl: var(--mlb);   /* the baseball leagues beside MLB take its colour */
   --accent: var(--ink);
   /* The accent where it colours text, or carries the page's own paper-coloured text (a chosen chip): the accent pulled toward the ink by --accent-keep,
@@ -125,7 +125,18 @@
   .leagues a[aria-current="page"] { border-bottom-color: var(--accent); }
   .leagues a.sub { color: var(--muted); font-size: 15px; padding-left: 18px; border-left: 1px solid var(--rule); }
   .leagues a.sub[aria-current="page"] { color: var(--ink); }
+  /* "More hockey": one link on a line of its own, under the NHL tab, on every hockey page. */
+  .leagues .leaguebreak { flex-basis: 100%; height: 0; }
+  .leagues.withmore { max-width: min(100%, 500px); }
+  .leagues a.sub.more { border-left: 0; padding-left: 0; }
   .otherleagues { margin: 8px 0 0; padding-left: 18px; line-height: 1.7; }
+  .hockeyleagues { list-style: none; padding-left: 0; }
+  .hockeyleagues li { padding: 10px 0; border-top: 1px solid var(--rule); }
+  .hockeyleagues li:first-child { border-top: 0; }
+  .hockeyleagues .latest { display: block; margin-top: 2px; font-size: 14px; }
+  .affillist { list-style: none; margin: 8px 0 0; padding: 0; line-height: 1.9; }
+  .affil .tm, .affillist .tm { white-space: nowrap; }
+  .affilcell + .affilcell::before { content: "/"; margin: 0 6px; color: var(--muted); }
   .familynav { display: flex; flex-direction: column; gap: 6px; margin-top: 6px; }
   .familynav-kicker { color: var(--muted); font-size: 14px; }
   .familynav-row { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: baseline; }
@@ -150,6 +161,9 @@
   .crumbs { position: absolute; top: 28px; left: 0; display: flex; gap: 8px; font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
   .crumbs a { color: var(--muted); }
   .crumbs ~ .head > .eyebrow, .crumbs ~ * > .head > .eyebrow { padding-inline-start: 3.6em; }
+  .crumbs.wide ~ .head > .eyebrow, .crumbs.wide ~ * > .head > .eyebrow { padding-inline-start: 8.2em; }
+  /* on a phone the heading rows differ from page to page, so the long crumb would overlap them: the More hockey link of the menu is right above */
+  @media (max-width: 640px) { .crumbs.wide { display: none; } .crumbs.wide ~ .head > .eyebrow, .crumbs.wide ~ * > .head > .eyebrow { padding-inline-start: 0; } }
   .aux { margin-left: auto; }
   .aux a { color: var(--muted); }
   .theme { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
@@ -603,6 +617,7 @@ a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; tex
 :root:has([data-sport="pcha"]) { --mk-r: var(--pcha); }
 :root:has([data-sport="wchl"]) { --mk-r: var(--wchl); }
 :root:has([data-sport="wha"]) { --mk-r: var(--wha); }
+:root:has([data-sport="ahl"]) { --mk-r: var(--ahl); }
 :root:has([data-sport="na"]) { --mk-r: var(--na); }
 :root:has([data-sport="aa"]) { --mk-r: var(--aa); }
 :root:has([data-sport="ua"]) { --mk-r: var(--ua); }

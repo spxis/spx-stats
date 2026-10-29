@@ -19,7 +19,7 @@ behind them, read [AGENTS.md §9](../AGENTS.md#9-the-website). Start with [agent
   `awards`, `champions`, `compare`, `head-to-head`, `player`. Game pages sit under `[year]/game/`
   (address builder `src/lib/gamePath.ts`).
 - **Other public sections under `s/`:** `about`, `cities`, `city`, `countries`, `country`, `logos`, `mls`, `players`,
-  `privacy`, `quality`, `sources`, `teams`, `terms`, `venue`, `venues`, `worldcup`, `soccer`. Under `q/`: `city`,
+  `privacy`, `quality`, `sources`, `teams`, `terms`, `venue`, `venues`, `worldcup`, `soccer`, `more-hockey`. Under `q/`: `city`,
   `country`, `mls`, `players`, `teams`, `venue`, `worldcup`.
 - **`src/app/(dyn)/`**: signed-in pages, drawn per request: `admin/` (with `data`, `logos`, `ops`, `people`, `runs`,
   `tickets`), `login`, `me`, `tickets`. `admin/data` is the release approval page. [§9](../AGENTS.md#9-the-website)

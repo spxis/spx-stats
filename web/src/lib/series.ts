@@ -280,6 +280,7 @@ export function finalName(lg: string, year: number, say: Say): string {
     case "pcha": return say("final.pcha");
     case "wchl": return say("final.wchl");
     case "wha": return say("final.wha");
+    case "ahl": return say("final.ahl");
     case "cfl": return say("final.cfl");
     default: return say("final.other");
   }

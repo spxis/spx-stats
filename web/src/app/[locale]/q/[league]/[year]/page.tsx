@@ -39,7 +39,9 @@ import { trophyPath } from "@/lib/awardTrophy";
 import { NotAwarded } from "@/components/NotAwarded";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, isSpx, leagueInfo, LG, seasonLabel, seasonSeg, srcName } from "@/lib/leagues";
+import { isLeague, isMoreHockey, isSpx, leagueInfo, LG, seasonLabel, seasonSeg, srcName } from "@/lib/leagues";
+import { getSeasonAffiliations } from "@/lib/affiliation";
+import { parentsOfSeason } from "@/lib/affiliationView";
 import { pageMeta } from "@/lib/meta";
 import { isGapYear, withGaps } from "@/lib/coverage";
 import { leadersPath } from "@/lib/leaderStats";
@@ -127,7 +129,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   }
   const complete = summary.seasons.some((x) => x.league === lg && x.year === y && x.champion);
   // The corner map: every club of the season at the venue it used that year, each leading to its team-season page.
-  const [alignment, venuePlaces, venueNames, venueFacts] = await Promise.all([getSeasonAlignment(lg, y).catch(() => []), getVenuePlaces(lg).catch(() => new Map()), getVenueNames().catch(() => new Map()), getVenueFacts().catch(() => new Map())]);
+  const [alignment, venuePlaces, venueNames, venueFacts, affiliations] = await Promise.all([getSeasonAlignment(lg, y).catch(() => []), getVenuePlaces(lg).catch(() => new Map()), getVenueNames().catch(() => new Map()), getVenueFacts().catch(() => new Map()), isMoreHockey(lg) ? getSeasonAffiliations(lg, y) : Promise.resolve([])]);
   // Only what the map needs travels with the page (the page is one kept copy; a team's own page has the addresses, facts and logos).
   const mapPins = clubPins({
     year: y, me: -1, clubs: d.teams.flatMap((t) => (t.f != null ? [{ franchise_id: t.f, team: t.name }] : [])), brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts, say,
@@ -182,6 +184,12 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const regular = d.games.filter((g) => g[5] === "r");
   const maxPct = Math.max(0, ...st.map((r) => r.pct ?? 0)) || 1;
   const showT = st.some((r) => r.t), showO = st.some((r) => r.otl), showP = st.some((r) => r.pts != null);
+  // (a league whose tables give no home and road records, like the AHL's, draws no empty columns)
+  const showHome = st.some((r) => r.home), showRoad = st.some((r) => r.road);
+  // The NHL club each club was affiliated with that season (minor leagues only), as a column of the standings.
+  const parentByClub = new Map<number, { lg: string; f: number; name: string }[]>();
+  for (const r of affiliations) if (!parentByClub.has(r.franchise_id)) parentByClub.set(r.franchise_id, parentsOfSeason(affiliations.filter((a) => a.franchise_id === r.franchise_id), y));
+  const parentName = (r: StandingRow) => (r.franchise_id != null ? parentByClub.get(r.franchise_id)?.[0]?.name ?? "" : "");
 
   const played = new Set(d.games.flatMap((g) => [g[1], g[4]]));
   const cols: ColumnSpec<StandingRow>[] = [
@@ -200,6 +208,12 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       ),
     },
     ...(heading ? [{ key: "place", label: say(heading), cls: "place", get: (r: StandingRow) => placeLabel(r) }] : []),
+    ...(parentByClub.size ? [{
+      key: "nhl", label: say("affil.col"), cls: "team", get: (r: StandingRow) => parentName(r),
+      cell: (r: StandingRow) => (r.franchise_id != null ? parentByClub.get(r.franchise_id) ?? [] : []).map((p) => (
+        <span key={p.f} className="affilcell"><TeamLabel lg={p.lg} f={p.f} name={p.name} logo={logoFor(brands, p.f)} /></span>
+      )),
+    }] : []),
     {
       key: "gp", label: say("col.gp"), num: true, title: say("col.gpTeamTitle"), get: (r) => r.gp,
       cell: (r) => (r.gp != null && played.has(r.team_id) ? (
@@ -212,8 +226,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
     ...(showP ? [{ key: "pts", label: say("col.pts"), num: true, get: (r: StandingRow) => r.pts }] : []),
     { key: "pf", label: say("col.for"), num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
     { key: "pa", label: say("col.against"), num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
-    { key: "home", label: say("col.home"), get: (r) => recShare(r.home), cell: (r) => r.home || "" },
-    { key: "road", label: say("col.road"), get: (r) => recShare(r.road), cell: (r) => r.road || "" },
+    ...(showHome ? [{ key: "home", label: say("col.home"), get: (r: StandingRow) => recShare(r.home), cell: (r: StandingRow) => r.home || "" }] : []),
+    ...(showRoad ? [{ key: "road", label: say("col.road"), get: (r: StandingRow) => recShare(r.road), cell: (r: StandingRow) => r.road || "" }] : []),
     {
       key: "pct", label: say("col.pct"), num: true, get: (r) => r.pct,
       cell: (r) => (
@@ -232,8 +246,8 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       <AccentStyle league={lg} />
       <section className="head fade">
         <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
-          <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>
-          <Link href={`${seasonPath(lg, y)}/world`} prefetch={false}>{say("country.seasonNavLink")}</Link>
+          {isMoreHockey(lg) ? null : <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>}
+          {isMoreHockey(lg) ? null : <Link href={`${seasonPath(lg, y)}/world`} prefetch={false}>{say("country.seasonNavLink")}</Link>}
           {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonSeg(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
         </>} />
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
@@ -243,7 +257,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           : regular.length === 0 && !complete
             ? <p className="lede">{say("season.noSchedule")}</p>
             : regular.length === 0 && pub
-              ? <p className="lede">{say("season.tableOnly")}</p>
+              ? <p className="lede">{say(d.games.length ? "season.tableAndPlayoffs" : "season.tableOnly")}</p>
               : (
               <p className="lede">
                 {say("season.lede", { games: plural("count.regularGames", regular.length), finals: fmt(regular.filter((g) => g[6] === "f").length) })}
@@ -313,7 +327,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       ) : null}
       {d.games.length ? (
         <section className="section">
-          <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={selection} groupFilter={typeof sp.conf === "string" || typeof sp.div === "string"}>
+          <SeasonGames lg={lg} abbrs={abbrsForYear(abbrs, d.teams.map((t) => t.f), y)} year={y} initial={regular.length === 0 && sp.phase === undefined ? { ...selection, phase: "p" } : selection} groupFilter={typeof sp.conf === "string" || typeof sp.div === "string"}>
             {note ? <p className="note">{note.text}{note.src ? <>{" "}<a href={note.src} rel="noopener noreferrer">{say("sched.source")}</a></> : null}</p> : null}
           </SeasonGames>
           <noscript><p className="note"><Link href={`${scoresPath(lg)}?season=${seasonSeg(lg, y)}`}>{say("nav.scores")}</Link></p></noscript>

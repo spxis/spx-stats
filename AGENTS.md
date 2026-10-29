@@ -629,7 +629,11 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   article's list of teams tells it), standings, playoff series (core.series, as a result), the games an article writes out and the Calder Cup champions (the infobox; none in 2019-20 and
   2020-21); divisions and conferences come from step 178, and step 165 leaves the league alone. The AHL is a league of its own, not a child of the NHL (no `PARENT`), and none of its clubs is
   the franchise of its NHL affiliate. No article tabulates a regular season, so no regular-season game exists. `bash db/tests/ahl-from-wikipedia.sh`; parser tests
-  `python3 -I -m unittest discover -s scripts/hockey_minor -p 'test_*.py'`.
+  `python3 -I -m unittest discover -s scripts/hockey_minor -p 'test_*.py'`. The link to the NHL is `core.team_season_affiliation` (migration 160, `api.team_season_affiliation`), built by
+  `db/build/232` from the standings' affiliation column: a code is placed on an NHL franchise only when exactly one NHL franchise's identity carries that abbreviation that season, else it keeps its
+  label with no parent and is logged in `meta.data_issue` (`bash db/tests/ahl-affiliation.sh`, `db/checks/104`). The site shows the league on `/more-hockey` ("More hockey": minor and junior leagues by
+  level, `MORE_HOCKEY_LEVEL` in `web/src/lib/leagues.ts`; one link under the NHL in the menu; no menu entry and no `PARENT` for the leagues on it), a club's NHL parent on its pages and in the season's
+  standings, and an NHL club's farm teams on its page. The next league is one more line in `MORE_HOCKEY_LEVEL`.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.

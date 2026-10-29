@@ -3,7 +3,7 @@ import { test } from "node:test";
 import { championRow, satYears, titleHolders } from "../src/lib/champions.ts";
 import { isGapYear, withGaps } from "../src/lib/coverage.ts";
 import { neutralSite } from "../src/lib/gameSurface.ts";
-import { ALL_LEAGUES, CHILDREN, isLeague, LEAGUE_CODES, LEAGUES, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague } from "../src/lib/leagues.ts";
+import { ALL_LEAGUES, CHILDREN, isLeague, isMoreHockey, LEAGUE_CODES, LEAGUES, LG, PARENT, RELATED_LEAGUES, seasonLabel, topLeague } from "../src/lib/leagues.ts";
 import { finalName, roundName } from "../src/lib/series.ts";
 import { championshipName, trophyPhrase } from "../src/lib/trophies.ts";
 import { leagueTrail, otherLeagues, trailHidden, trailLabels } from "../src/lib/otherLeagues.ts";
@@ -43,9 +43,9 @@ test("a rival league is no league of the menu: it hangs off its parent, in one p
   assert.equal(topLeague("afl"), "nfl");
   assert.equal(topLeague("aafc"), "nfl");
   assert.equal(topLeague("nhl"), "nhl");
-  // every league the archive holds is either a menu league or has a parent that is one; the codes the routes accept are all of them
+  // every league the archive holds is a menu league, has a parent that is one, or is on the More hockey page (the AHL: no parent, no menu entry); the codes the routes accept are all of them
   assert.deepEqual(ALL_LEAGUES.map((l) => l.code), [...LEAGUE_CODES]);
-  for (const l of ALL_LEAGUES) assert.ok(LEAGUES.some((m) => m.code === topLeague(l.code)), l.code);
+  for (const l of ALL_LEAGUES) assert.ok(isMoreHockey(l.code) || LEAGUES.some((m) => m.code === topLeague(l.code)), l.code);
   assert.ok(LEAGUES.every((l) => !(l.code in PARENT)));
 });
 

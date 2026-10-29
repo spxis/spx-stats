@@ -2,7 +2,7 @@
 
 import Link from "@/components/Link";
 import { useSelectedLayoutSegments } from "next/navigation";
-import { LG } from "@/lib/leagues";
+import { isLeague, isMoreHockey, LG } from "@/lib/leagues";
 import { leagueTrail, trailHidden } from "@/lib/otherLeagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
@@ -16,6 +16,15 @@ export function LeagueCrumbs() {
   const segments = useSelectedLayoutSegments();
   const parts = segments[0] === "s" || segments[0] === "q" ? segments.slice(1) : segments;
   const trail = trailHidden(parts) ? null : leagueTrail(parts);
+  // A league on the More hockey page (the AHL) has no parent: its trail is "More hockey ›".
+  if (!trail && !trailHidden(parts) && parts[0] && isLeague(parts[0]) && isMoreHockey(parts[0])) {
+    return (
+      <nav className="crumbs wide" aria-label={say("nav.crumbs")}>
+        <Link href="/more-hockey">{say("hockey.crumbs")}</Link>
+        <span aria-hidden="true">›</span>
+      </nav>
+    );
+  }
   if (!trail) return null;
   return (
     <nav className="crumbs" aria-label={say("nav.crumbs")}>

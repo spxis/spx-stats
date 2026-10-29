@@ -1,4 +1,4 @@
-import { LG, leagueInfo, type LeagueCode } from "./leagues.ts";
+import { isMoreHockey, LG, leagueInfo, type LeagueCode } from "./leagues.ts";
 import { MLS_PATH, mlsSeasonPath } from "./mlsPath.ts";
 import { SOCCER_PATH, tournamentPath, WORLDCUP_PATH } from "./soccerPath.ts";
 import { seasonPath } from "./slug.ts";
@@ -32,6 +32,9 @@ export const FAMILIES: readonly LeagueFamily[] = [
 ];
 
 export const GROW_KEY = "spxn-archive-grow";
+
+/** The page of hockey beyond the NHL (the AHL and the leagues that follow it): one link under the NHL in the menu. */
+export const MORE_HOCKEY_PATH = "/more-hockey";
 
 export const familyOf = (code: string): LeagueFamily | undefined => FAMILIES.find((f) => f.members.includes(code));
 
@@ -77,10 +80,11 @@ export function menuEntries(soccerWord = "Soccer"): MenuEntry[] {
   }));
 }
 
-/** The family a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer): the menu entry to light. */
+/** The family a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer, the More hockey page and its leagues -> nhl): the menu entry to light. */
 export function menuFamilyOf(segment: string | undefined): FamilyId | undefined {
   if (!segment) return undefined;
   if (segment === "worldcup") return "soccer";
+  if (segment === MORE_HOCKEY_PATH.slice(1) || isMoreHockey(segment)) return "nhl";
   return familyOf(segment)?.id;
 }
 

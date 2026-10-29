@@ -27,7 +27,8 @@ import { atUtc, fmt3 } from "@/lib/format";
 import { trophyPhrase } from "@/lib/trophies";
 import { seasonStartDay } from "@/lib/idleTeams";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { isLeague, isMoreHockey, LG, seasonLabel } from "@/lib/leagues";
+import { SeasonFarmLine, SeasonParentLine } from "@/components/Affiliation";
 import { parseLoc } from "@/lib/loc";
 import { pageMeta } from "@/lib/meta";
 import { leagueSat } from "@/lib/noSeason";
@@ -210,6 +211,8 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>        </p>
+        {isMoreHockey(lg) ? <SeasonParentLine lg={lg} f={f} year={y} /> : null}
+        {lg === "nhl" ? <SeasonFarmLine f={f} year={y} /> : null}
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={mePin.venue ?? place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
         <CompareControl lg={lg} f={f} name={name} year={y} />
       </section>

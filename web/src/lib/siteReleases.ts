@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.163.0", date: "2026-10-29", href: "/more-hockey",
+    title: "More hockey: the AHL",
+    text: "Hockey beyond the NHL has a page of its own, reached from the NHL page and from one link under the NHL in the menu. The American Hockey League is the first league on it: 90 seasons from 1936-37 with standings, Calder Cup series and champions. Each club shows its NHL parent club by season, and an NHL club lists its farm teams." },
   { version: "0.162.2", date: "2026-10-29", needsReview: true,
     title: "Admin pages name their database",
     text: "Every admin page and release row now carries a chip that names the database its numbers come from or the one a release writes to: Production, Turso, DS1, or a snapshot in the code. Admins only." },
