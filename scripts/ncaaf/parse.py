@@ -75,8 +75,10 @@ def clean(s):
     """Plain text of a wikitext fragment: links to their text, formatting and small templates removed."""
     if s is None: return ""
     s = strip_junk(s)
+    s = re.sub(r"\{\{\s*(?:ndash|endash|en dash|mdash)\s*\}\}|&ndash;|&mdash;", "–", s, flags=re.I)          # a score written 27{{ndash}}34
     for _ in range(4):
-        s = re.sub(r"\{\{\s*(?:abbr|nowrap|small|nobr|sup|efn|no wrap)\s*\|([^{}|]*)[^{}]*\}\}", lambda m: m.group(1) if not re.match(r"\s*(?:No\.|Number)\s*$", m.group(1)) else "", s, flags=re.I)
+        s = re.sub(r"\{\{\s*(?:nowrap|nobr|no wrap)\s*\|(?:1=)?((?:[^{}]|\{\{[^{}]*\}\})*)\}\}", r"\1", s, flags=re.I)         # the whole content: {{nowrap|[[2025 Sugar Bowl|Sugar Bowl–CFP Quarterfinal]]}}
+        s = re.sub(r"\{\{\s*(?:abbr|small|sup|efn)\s*\|([^{}|]*)[^{}]*\}\}", lambda m: m.group(1) if not re.match(r"\s*(?:No\.|Number)\s*$", m.group(1)) else "", s, flags=re.I)
         s = re.sub(r"\{\{[^{}]*\}\}", "", s)
     s = re.sub(r"\[\[(?:[^\]|]*\|)?([^\]]*)\]\]", r"\1", s)
     s = re.sub(r"<br\s*/?>", " ", s, flags=re.I)
@@ -154,8 +156,13 @@ def parse_standings(text, y, tpl_title):
         dw = dl = None
         if (named.get("div-standings", "") or "").lower().startswith("y") and len(nums) >= 6: dw, dl, cw, cl, w, l = nums[:6]; ct = t = None
         elif len(nums) >= 6: cw, cl, ct, w, l, t = nums[:6]
-        elif len(nums) >= 4: cw, cl, w, l = nums[:4]; ct = None; t = None
-        else: continue
+        else:
+            # conference W L, overall W L, with blank cells before ("||8|1|12|1", "||||2|10") or after (a blank ties cell): the last two numbers are the overall record
+            while nums and nums[-1] is None: nums.pop()
+            if len(nums) < 2: continue
+            w, l = nums[-2], nums[-1]
+            cw, cl = (nums[-4], nums[-3]) if len(nums) >= 4 else (None, None)
+            ct = t = None
         if w is None or l is None: continue
         rank += 1
         flag = lambda k: (named.get(k, "") or "").lower().startswith("y")
@@ -191,8 +198,8 @@ def parse_score(s):
     return int(m.group(1)), int(m.group(2)), ot
 
 
-KNOWN_RIVALRY_BOWLS = r"Iron Bowl|Egg Bowl|Palmetto Bowl|Apple Cup|Bayou Bucket"
-BOWL_RX = re.compile(r"\bBowl\b|\bPlayoff\b|National Championship|Bowl Championship|Fiesta|Peach|Citrus|Alamo|Gator|Orange|Sugar|Rose|Cotton|Hula|Humanitarian", re.I)
+KNOWN_RIVALRY_BOWLS = r"Iron Bowl|Egg Bowl|Palmetto Bowl|Apple Cup|Bayou Bucket|Magnolia Bowl"        # rivalry trophies, played in the regular season (the Magnolia Bowl once on December 19, 2020)
+BOWL_RX = re.compile(r"\bBowl\b|\bPlayoff\b|\bCFP\b|Football Classic|National Championship|Bowl Championship|Fiesta|Peach|Citrus|Alamo|Gator|Orange|Sugar|Rose|Cotton|Hula|Humanitarian", re.I)
 
 
 _GAME_WORD = re.compile(r"Bowl|Playoff|Championship Game|Classic|National Championship|Football Championship", re.I)
@@ -234,11 +241,24 @@ def classify_phase(gamename_raw, date, y, bowl_info, my_pts, opp_pts, opp_text):
     if re.search(KNOWN_RIVALRY_BOWLS, name, re.I) and not re.search(r"\b\d{4}\b", link or ""): return "regular"
     if link and re.match(r"^\d{4} .*?(Bowl|Playoff|National Championship|Bowl Championship Series|Championship Game \(.*\))", link) \
        and not re.search(r"Conference|Big 12|Big Ten|SEC|ACC|Pac|MAC|Mountain West|Sun Belt|American|WAC|C-USA|Big East", link, re.I): return "playoffs"
-    if date and (date.month == 1 or (date.month == 12 and date.day >= 14) or date.month == 2) and BOWL_RX.search(name) and "Championship Game" not in name.replace("National Championship Game", ""):
-        return "playoffs"
+    if date and (date.month == 1 or (date.month == 12 and date.day >= 14) or date.month == 2) and (BOWL_RX.search(name) or BOWL_RX.search(re.sub(r"^\d{4}[–-]?\d{0,2}\s+", "", link or ""))) \
+       and "Championship Game" not in name.replace("National Championship Game", ""):
+        return "playoffs"          # the College Football Playoff's first round links "2024–25 College Football Playoff" and names itself "CFP First Round"
     if bowl_info and date and date.month in (12, 1, 2) and bowl_info.get("score") == (my_pts, opp_pts) and date >= datetime.date(y, 12, 1):
         return "playoffs"
     return "regular"
+
+
+def opponent_of(oraw, y):
+    """(link target, text) of an opponent cell; {{cfb link|year=2000|team=Southern Utah Thunderbirds|title=Southern Utah}} is a link to that team's season."""
+    cl = re.search(r"\{\{\s*cfb link\s*\|([^{}]*)\}\}", oraw, re.I)
+    if cl:
+        _, _, kw = args_of("x|" + cl.group(1))
+        return f"{kw.get('year', y)} {kw.get('team', '')} football team", clean(kw.get("title") or kw.get("team"))
+    # "([[Football Championship Subdivision|FCS]]) [[2009 Furman Paladins football team|Furman]]": the opponent is the link to a team's season, not the first link
+    m = re.search(r"\[\[(\d{4} [^\]|#]*football team)(?:#[^\]|]*)?(?:\|([^\]]*))?\]\]", strip_junk(oraw or ""))
+    if m: return m.group(1).strip(), clean(m.group(2) or m.group(1))
+    return first_link(oraw)
 
 
 def parse_team(text, y, my_title):
@@ -261,11 +281,8 @@ def parse_team(text, y, my_title):
         d = parse_date(named.get("date", ""), y)
         sc = parse_score(named.get("score"))
         oraw = named.get("opponent", "")
-        cl = re.search(r"\{\{\s*cfb link\s*\|([^{}]*)\}\}", oraw, re.I)
-        if cl:                                          # {{cfb link|year=2000|team=Southern Utah Thunderbirds|title=Southern Utah}}
-            _, _, kw = args_of("x|" + cl.group(1))
-            link, otext = f"{kw.get('year', y)} {kw.get('team', '')} football team", clean(kw.get("title") or kw.get("team"))
-        else: link, otext = first_link(oraw)
+        if not clean(oraw) and "football team" in named.get("opprank", ""): oraw = named["opprank"]          # an editor put the opponent into the ranking cell (TCU 2016)
+        link, otext = opponent_of(oraw, y)
         opp_title = link if link and re.match(r"^\d{4} ", link) else None
         wl_raw = clean(named.get("w/l", "")).lower()
         wl = wl_raw[:1] or None
@@ -288,16 +305,18 @@ def parse_team(text, y, my_title):
                       "gamename_raw": gn_raw, "gamename": round_name(gn_raw), "stadium": clean(named.get("site_stadium")) or None,
                       "attend": (lambda t: int(t.replace(",", "")) if re.fullmatch(r"[\d,]+", t) else None)(clean(named.get("attend"))),
                       "nonconf": flag("nonconf"), "vacated": vacated, "phase": classify_phase(gn_raw, d, y, bowl_info, a, b, otext)})
-    if not views:
-        cv, cb = parse_compact(text, y, my_title)
-        for v in cv: v["phase"] = classify_phase(v["gamename_raw"], v["date"], y, bowl_info, v["pts"], v["opp_pts"], v["opp_text"])
-        views, bad = cv, bad + cb
+    cv, cb = parse_compact(text, y, my_title)          # some articles tell the season in the compact layout and one game (the bowl) as an entry: both are read
+    for v in cv: v["phase"] = classify_phase(v["gamename_raw"], v["date"], y, bowl_info, v["pts"], v["opp_pts"], v["opp_text"])
+    if not views: views, bad = cv, bad + cb
+    elif cv:
+        have = {v["date"] for v in views}
+        views += [v for v in cv if v["date"] not in have]
     return info, views, bad
 
 
 # ---------------------------------------------------------------- compact schedules ({{CFB schedule | date | time | at | opponent | site | city | tv | W 1-0 | attendance ...}})
 _DATE_CELL = re.compile(r"^\W*(?:<s>)?\s*(?:\{\{\s*[Tt]ooltip\s*\|(?:\d=)?)?\s*(?:\{\{[^|}]*\|)?\s*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*\.?\s+\d{1,2}")
-_RESULT = re.compile(r"^\W*([WLT])\s+(\d+)\s*" + DASH + r"\s*(\d+)")
+_RESULT = re.compile(r"^\W*([WLT])\s+(\d+)\s*" + DASH + r"\s*(\d+)", re.I)
 _TIME = re.compile(r"^\W*(?:\d{1,2}(?::\d\d)?\s*[ap]\.?\s*m\.?|noon|tba|tbd|\d{1,2}:\d\d)", re.I)
 
 
@@ -323,24 +342,31 @@ def parse_compact(text, y, my_title):
             loc, opp_i = "home", None
             for i in range(1, res):
                 c = clean(row[i])
+                if re.search(r"\{\{\s*cfb link\s*\|", row[i], re.I): opp_i = i; break
                 if c == "" or _TIME.match(c) or re.fullmatch(r"\d{1,2}", c): continue
                 if c.lower() in ("at", "@"): loc = "away"; continue
                 if c.lower() in ("vs.", "vs", "v", "v."): loc = "neutral"; continue
                 opp_i = i; break
+            lk = next((i for i in range(1, res) if re.search(r"\[\[\d{4} [^\]|]*football team|\{\{\s*cfb link\s*\|", row[i], re.I)), None)
+            if lk is not None and (opp_i is None or lk != opp_i): opp_i = lk          # "No. 15 (FCS)" in a cell of its own comes before the opponent's link
             if opp_i is None or d is None: bad.append(f"{my_title}: {clean(row[0])} / no opponent"); continue
             oraw = row[opp_i]
             if re.match(r"\s*(?:<s>)?\s*(?:vs\.?|v\.)\s", oraw, re.I): loc = "neutral"
             if re.match(r"\s*(?:<s>)?\s*(?:at|@)\s", oraw, re.I): loc = "away"
             oraw = re.sub(r"^\s*(?:<s>)?\s*(?:vs\.?|v\.|at|@)\s+", "", oraw, flags=re.I)
             oraw = re.sub(r"<small>.*?</small>|<ncg>|<hc>|\bNo\.?\s*\d+\b|\{\{\s*abbr\s*\|No\.[^}]*\}\}\s*\d*", "", oraw)
-            link, otext = first_link(oraw)
+            ogn = None
+            mm = re.search(r"\(([^()]*(?:Bowl|Championship|Playoff|Classic|Kickoff|Trophy)[^()]*)\)", oraw)
+            if mm:          # "Northern Illinois ([[2021 MAC Championship Game|MAC Championship Game]])": the game's name rides in the opponent's cell, and is not the opponent
+                ogn = mm.group(1).strip(); oraw = (oraw[:mm.start()] + oraw[mm.end():]).strip()
+            link, otext = opponent_of(oraw, y)
             otext = re.sub(r"[*†‡]+$", "", otext).strip()
             if not otext: bad.append(f"{my_title}: {clean(row[0])} / empty opponent"); continue
             opp_title = link if link and re.match(r"^\d{4} ", link) else None
             after = row[opp_i + 1:res]
             raw_after = raw_row[opp_i + 1:res]
-            gn = None
-            for c in raw_after:
+            gn = ogn
+            for c in ([] if gn else raw_after):
                 mm = re.search(r"\(([^()]*(?:Bowl|Championship|Playoff|Classic|Kickoff|Trophy)[^()]*)\)", c)
                 if mm: gn = mm.group(1); break
                 lk = re.search(r"\[\[(\d{4} [^\]|]*(?:Bowl|Playoff|Championship Game|National Championship)[^\]|]*)(?:\|([^\]]*))?\]\]", c)
@@ -471,12 +497,14 @@ def pair(season, views_by_team):
                 dd = abs((va["date"] - vb["date"]).days)
                 if dd <= 1 and (best is None or dd < best[0]): best = (dd, j)
             if best is None: continue
-            used.add(best[1]); done_a.add(ia); games.append(_merge(va, lb[best[1]]))
-        # what is left: the same game dated a few days apart by the two articles, when each side has just one such game left
+            used.add(best[1]); done_a.add(ia); games.append(_merge(va, lb[best[1]], season.y))
+        # what is left: the same game dated apart by the two articles (a typo of the day, the month or the year), when each side has just one such
+        # game left and the two scores are the same score: one game told twice, not two games (Alabama 2005 had Utah State twice)
         left_a = [va for i, va in enumerate(la) if i not in done_a]
         left_b = [vb for j, vb in enumerate(lb) if j not in used]
-        if len(left_a) == 1 and len(left_b) == 1 and abs((left_a[0]["date"] - left_b[0]["date"]).days) <= 7 and left_a[0]["pts"] == left_b[0]["opp_pts"] and left_a[0]["opp_pts"] == left_b[0]["pts"]:
-            games.append(_merge(left_a[0], left_b[0])); continue
+        if len(left_a) == 1 and len(left_b) == 1 and left_a[0]["pts"] == left_b[0]["opp_pts"] and left_a[0]["opp_pts"] == left_b[0]["pts"] \
+           and (abs((left_a[0]["date"] - left_b[0]["date"]).days) <= 7 or left_a[0]["phase"] == left_b[0]["phase"]):
+            games.append(_merge(left_a[0], left_b[0], season.y)); continue
         games += [_one(v, 1) for v in left_a + left_b]
     for v in single: games.append(_one(v, 1))
     games.sort(key=lambda g: (g["date"], g["home"], g["away"]))
@@ -505,12 +533,17 @@ def _one(v, views):
             "src": v["me"], "inside": v["inside"], "outside_team": None if v["inside"] else v["opp"], "nonconf": v["nonconf"]}
 
 
+def _in_season(d, y):
+    """A game of the season that starts in year y is played between August of y and February of the next year."""
+    return datetime.date(y, 8, 1) <= d <= datetime.date(y + 1, 2, 28)
+
+
 def _ok(v):
     """Does the view's score agree with its own w/l letter?"""
     return v["wl"] is None or (v["wl"] == "w") == (v["pts"] > v["opp_pts"]) and (v["wl"] == "t") == (v["pts"] == v["opp_pts"])
 
 
-def _merge(va, vb):
+def _merge(va, vb, y):
     """Two views of one game. Agreement is silent; a disagreement keeps the view that agrees with its own w/l letter, else the home team's."""
     note = []
     pa, pb = (va["pts"], va["opp_pts"]), (vb["opp_pts"], vb["pts"])        # (a's points, b's points) as each view tells it
@@ -525,11 +558,14 @@ def _merge(va, vb):
     if not _ok(va) and _ok(vb): keep = vb
     elif _ok(va) == _ok(vb):
         keep = va if va["loc"] == "home" else vb if vb["loc"] == "home" else va
-    g = _one(keep, 2)
     other = vb if keep is va else va
+    if not _in_season(keep["date"], y) and _in_season(other["date"], y): keep, other = other, keep
+    g = _one(keep, 2)
     if keep["loc"] != "neutral" and other["loc"] == "neutral" and (keep["loc"] in ("home", "away")):
         pass
     if not g["round"] and (other["phase"] == "playoffs" or re.search(r"Championship Game", other["gamename"] or "")): g["round"] = other["gamename"]
+    elif g["round"] and other["gamename"] and other["gamename"] != g["round"] and re.search(r"\(CFP ", other["gamename"]) and not re.search(r"\(CFP ", g["round"]):
+        g["round"] = other["gamename"]          # one article tags the bowl as a Playoff game, the other does not
     if keep["phase"] != other["phase"]:
         note.append(f"phase {va['phase']} / {vb['phase']}")
         if "playoffs" in (keep["phase"], other["phase"]): g["phase"] = "playoffs"

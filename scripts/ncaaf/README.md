@@ -23,3 +23,8 @@ Rules the data follows: a team outside the division (FCS and lower) that a divis
 "Non-FBS opponents", a member of the league (core.franchise_league) only in the seasons it was in the division; the overall record in the standings counts the
 bowl games and the conference championship game; a neutral-site game lists its teams in name order; the national champion is the winner of the national
 championship game. A renamed program is one franchise: db/seed/ncaaf_program.csv (final before the first run on DS1: a changed key makes a new franchise).
+
+The Playoff and the postseason: a bowl, a College Football Playoff game and the national championship game are phase playoffs, a conference championship game is regular season.
+A Playoff game carries its round in the label ("Sugar Bowl (CFP Quarterfinal)", "Rose Bowl (CFP Semifinal)", "College Football Playoff (CFP First Round)"; the final is "College Football Playoff National Championship"); every season from 2014 has its tags (`test_parse.py`).
+A game both teams' articles tell with dates apart (a typo of the day, month or year) is one game when each side has just one such game and the score is the same score; the home side's date is kept, a date outside the season loses to one inside it.
+A published record that differs from the games is left out and logged by 230 (the NCAA's vacated wins: UNC 2008-09, Ohio State 2010, Louisiana-Lafayette 2011-14, Notre Dame 2012, Arizona State 2021, Michigan State 2022-24, FIU 2005; and UTEP 2003, whose article lists a loss to Cal Poly the published 2-10 does not count).
