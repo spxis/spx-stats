@@ -37,6 +37,7 @@ SPECS = {
     "meta.verification": {"indexes": [("entity", ["entity_kind", "entity_id"])]},
     "meta.data_issue": {"indexes": [("entity", ["entity_kind", "entity_key"])]},
     "core.batted_ball_player": {},
+    "core.batted_ball_player_hand": {},
     "core.game_field": {},
     "core.betting_line": {"indexes": [("game", ["game_id"])]},
     "api.person_admin": {

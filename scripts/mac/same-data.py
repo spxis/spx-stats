@@ -13,7 +13,7 @@ Management API with SUPABASE_ACCESS_TOKEN or the keychain item 'spx-stats SUPABA
                                     the table check only, both sides Postgres (the tests). No network, no keychain. The Turso tables are
                                     compared with the libSQL server at URL (a test server) or, without it, skipped with a note.
 
-The tables in scripts/release/turso.py (TABLES: meta.verification, meta.data_issue, core.external_id, core.batted_ball_player,
+The tables in scripts/release/turso.py (TABLES: meta.verification, meta.data_issue, core.external_id, core.batted_ball_player, core.batted_ball_player_hand,
 core.betting_line and the derived api tables) are not on production: releases publish them to Turso. They are compared DS1 against Turso
 with the same code the release runner uses (turso.diff_table), never against production. Turso comes from TURSO_DATABASE_URL and
 TURSO_AUTH_TOKEN (or TURSO_READ_TOKEN), else the keychain items 'spx-stats TURSO_DATABASE_URL' and 'spx-stats TURSO_READ_TOKEN' (the ones
