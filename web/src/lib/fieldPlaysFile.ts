@@ -41,6 +41,13 @@ export async function drawMlbBalls(
   return { ...d, balls };
 }
 
+/** The standard baseball field with nothing on it (a player's spray charts lay their marks over it, in the viewBox of FIELD_BOX in lib/playerSpray.ts), in the reader's language. */
+export function drawStdField(sp: Pick<Speaker, "say" | "locale">): FieldDrawing {
+  return drawBalls([], {
+    park: null, year: 2025, away: { name: "", color: "" }, home: { name: "", color: "" }, language: sp.locale === "ja" ? "ja" : "en", title: sp.say("spray.fieldAria"),
+  });
+}
+
 export async function drawNflDrives(
   row: FieldRow, g: Pick<GameRow, "league" | "year" | "away" | "home" | "away_f" | "home_f">, brands: BrandMap, sp: Pick<Speaker, "say" | "locale">, part: "wide" | "phone",
 ): Promise<FieldDrawing & { drives: Drive[] }> {

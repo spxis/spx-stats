@@ -270,7 +270,7 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
       {multi && played ? <h2 id="playing" className="rolehead">{say("player.playingCareer")}</h2> : null}
       <PlayerTitles titles={titles} />
       <CupsProvider markup={cupsFor(titles.map((t) => t.league))}>
-        {board ? <PlayerBoard data={board} /> : null}
+        {board ? <PlayerBoard data={board} id={p.person_id} /> : null}
         <PlayerResume resume={record.resume} seasons={record.seasonTeams} brands={brands} />
       </CupsProvider>
       {awards.length ? (

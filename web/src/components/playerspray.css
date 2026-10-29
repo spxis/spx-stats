@@ -1,0 +1,33 @@
+/* The player page's spray section (PlayerSpray.tsx). The key's marks and the field's box are fieldplays.css's. */
+@layer components {
+  .pspray { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+  .pspray .pcontrols { align-items: center; }
+  .pspray .seg-one { border: 1px solid var(--rule); background: none; color: inherit; font: inherit; font-size: 13px; padding: 4px 10px; border-radius: 999px; cursor: pointer; }
+  .pspray .seg-one[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .pspray-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 20px 28px; align-items: start; }
+  .pspray-key { justify-content: flex-start; margin: 0; }
+  .pspray-fig { margin: 0; max-width: 560px; }
+  .pspray-cap { font: 600 13px/1.2 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); margin: 0 0 6px; }
+  .pspray-stage { position: relative; }
+  .pspray-marks { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+  .pspray-marks path { stroke: var(--paper); stroke-width: .45; paint-order: stroke; }
+  .pspray-marks circle { stroke: var(--paper); stroke-width: .8; }
+  .pspray-count { font: 700 9px/1 var(--display, system-ui); fill: #fff; text-anchor: middle; dominant-baseline: central; pointer-events: none; }
+  .pspray-hr { margin: 6px 0 0; }
+  .pspray-bars { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+  .pspray-bars h3 { margin: 0; }
+  .pspray-split { display: flex; height: 22px; border-radius: 6px; overflow: hidden; gap: 2px; }
+  .pspray-split i { min-width: 2px; }
+  .pspray-split i[data-side="pull"], .pspray-legend i[data-side="pull"] { background: var(--s1); }
+  .pspray-split i[data-side="centre"], .pspray-legend i[data-side="centre"] { background: var(--s2); }
+  .pspray-split i[data-side="oppo"], .pspray-legend i[data-side="oppo"] { background: var(--s3); }
+  .pspray-legend { display: flex; flex-wrap: wrap; gap: 4px 16px; list-style: none; margin: 0; padding: 0; font-size: 14px; }
+  .pspray-legend li { display: inline-flex; align-items: center; gap: 6px; }
+  .pspray-legend i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+  .pspray .n { color: var(--muted); font-size: 12px; margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .pspray-types { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .pspray-types li { display: grid; grid-template-columns: minmax(90px, 8.5em) 1fr auto; align-items: center; gap: 10px; font-size: 14px; }
+  .pspray-types .tb { height: 10px; background: color-mix(in srgb, var(--ink) 10%, var(--paper)); border-radius: 5px; overflow: hidden; }
+  .pspray-types .tb i { display: block; height: 100%; background: var(--s1); border-radius: 5px; }
+  .pspray-types .tv { font-variant-numeric: tabular-nums; text-align: right; min-width: 5.5em; }
+}

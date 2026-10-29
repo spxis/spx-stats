@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.0", date: "2026-10-29", href: "/mlb/player/aaron-judge-414#spray",
+    title: "Spray charts on baseball player pages",
+    text: "A baseball player's page has a spray chart for the seasons on the slider: his hits (outs and errors on request) in Retrosheet's zones, every home run by zone (the source has no distances), how often he pulled, went up the middle or the other way, and his ground, line, fly and pop-up shares. A pitcher gets it for the balls hit against him. From 1986; a mark is a zone, not a landing spot." },
   { version: "0.167.0", date: "2026-10-29", href: "/mlb/2025/game/1924798-los-angeles-dodgers-at-toronto-blue-jays",
     title: "The plays on the field: baseball hits and football drives",
     text: "A baseball game page draws every ball in play on its park, coloured by what it became and ringed in the batting club's colour, from Retrosheet's hit locations (1986 on; a mark is a zone, not a landing spot). A football game page draws each drive as a bar on the field, with a dot for every play and a mark for how it ended, from nflverse (1999 on)." },

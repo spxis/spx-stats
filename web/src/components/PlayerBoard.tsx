@@ -5,11 +5,13 @@ import { clubKey, groupViews, indexRefs, unpackRef, playerPresets, peakRun, type
 import { parsePlayerState, playerRangeKey, playerStateText, type PlayerState } from "@/lib/playerRange";
 import { releaseRangeHold, saveRange, savedRange } from "@/lib/yearRange";
 import { seasonLabel } from "@/lib/leagues";
+import { SPRAY_FROM } from "@/lib/playerSpray";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { PlayerCharts } from "./PlayerChartsLazy";
 import type { BoardView } from "./playerView";
 import { PlayerHero } from "./PlayerHero";
 import { PlayerPath } from "./PlayerPath";
+import { PlayerSpray } from "./PlayerSpray";
 import { PlayerSeasonsTable, PlayerStatTables } from "./PlayerTables";
 import { YearRange } from "./YearRange";
 import "./playerboard.css";
@@ -58,7 +60,7 @@ function writeQuery(text: string) {
 }
 
 /** The player's board: the season slider with its shortcuts, the phase and club choices, and everything below it drawn for those seasons. */
-export function PlayerBoard({ data }: { data: BoardData }) {
+export function PlayerBoard({ data, id }: { data: BoardData; id: number }) {
   const { say, plural } = useSpeaker();
   const { min, max } = data;
   const validClubs = useMemo(() => [...new Set(data.stats.map(clubKey))], [data.stats]);
@@ -146,6 +148,7 @@ export function PlayerBoard({ data }: { data: BoardData }) {
           <PlayerStatTables view={view} />
         </>
       ) : <p className="note">{say("player.statsNone")}</p>}
+      {data.seasons.some((s) => s.league === "mlb" && s.year >= SPRAY_FROM) ? <PlayerSpray id={id} name={data.name} position={data.position} from={state.span.from} to={state.span.to} /> : null}
       <PlayerSeasonsTable view={view} />
       {groups.length ? <p className="note">{say("player.statsCredit")}</p> : null}
     </section>

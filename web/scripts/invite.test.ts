@@ -115,6 +115,8 @@ test("page versus data, and browser versus not", () => {
   assert.equal(isDataPath("/nhl/team/x/rows/standings"), true);
   assert.equal(isDataPath("/bracket-svg/nba-2023.wide.en.svg"), true);
   assert.equal(isDataPath("/field-plays/mlb-1.std.en.svg"), true);
+  assert.equal(isDataPath("/field-plays/std.en.svg"), true);
+  assert.equal(isDataPath("/api/players/414/spray"), true);
   assert.equal(isDataPath("/venues.geojson"), true);
   assert.equal(isDataPath("/nhl/2012-13"), false);
   assert.equal(isDataPath("/players"), false);
