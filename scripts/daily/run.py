@@ -210,7 +210,7 @@ def main():
     import heartbeat, runlog_hook
     hb = heartbeat.start()
     rl = runlog_hook.start()
-    result = {}
+    result = {"runlog": runlog_hook.status()}      # 'off': no run entry and no admin alert (runlog_hook.py); the heartbeat row shows it
     try:
         rc = run(a, result)
     except BaseException as e:

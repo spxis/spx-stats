@@ -15,7 +15,19 @@ except Exception:          # the log must never stop the job
 JOB = "daily-scores"
 
 
+def status():
+    """'on' when the run log is configured (TURSO_DATABASE_URL and a write token), else 'off': then no run entry and no admin alert is ever written."""
+    try:
+        return "on" if runlog is not None and runlog.config() is not None else "off"
+    except Exception:
+        return "off"
+
+
 def start():
+    if status() == "off":
+        # MLB failed for ten days (2026-10-20 to 29, SPX-761) and raised no alert: the job on the NAS had no run log configured, and this hook is silent
+        # by design. Say it in the log of every run, and in the heartbeat (summary.runlog), so it cannot go unnoticed again.
+        print("run log: NOT CONFIGURED (TURSO_DATABASE_URL, TURSO_RUNLOG_TOKEN in the job's environment): a failed league raises NO admin alert from this run", file=sys.stderr)
     try:
         return runlog.Run(JOB, "job").start("daily scores run started") if runlog else None
     except Exception:
