@@ -2396,6 +2396,13 @@ export const PHRASES = {
   "asrc.report.col.kinds": "Rows by kind",
   "asrc.report.col.total": "Rows",
   "runs.greyArea": "Grey-area source in this run: {names}",
+  // Admin chips naming the database a page or release reads or writes (web/src/components/admin/DbChip.tsx); English only
+  "db.chip.production": "Production (Supabase)",
+  "db.chip.turso": "Turso",
+  "db.chip.ds1": "DS1",
+  "db.chip.ds1Snapshot": "DS1 snapshot",
+  "db.chip.snapshot": "Snapshot in code",
+  "db.chip.board": "Sumilabu board",
   // /admin/ops: the DS1 side (web/src/lib/ops, web/src/app/(dyn)/admin/ops)
   "ops.title": "Ops: the DS1 side",
   "ops.lede": "A very internal view of the machines behind the site: the harvester, the Dropbox backup, whether DS1 and production agree, the daily scores job, the watchdog and the releases. The runner next to DS1 sends one snapshot about every 15 minutes; this page never talks to DS1.",

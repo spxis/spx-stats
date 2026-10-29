@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import LoadNote from "@/components/LoadNote";
 import { Fragment } from "react";
 import type { Metadata } from "next";
@@ -199,6 +200,7 @@ export default async function AdminPeopleSearchPage({ searchParams }: { searchPa
     <>
       <section className="head fade tight">
         <ListHeading say={say} head={say("peopleAdmin.title")} filters={filters} />
+        <p className="note"><DbChip db="turso" /></p>
         <p className="lede">{say("peopleAdmin.lede")}</p>
       </section>
       <section className="section plist">

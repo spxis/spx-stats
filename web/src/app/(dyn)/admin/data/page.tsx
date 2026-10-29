@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ConfirmSummary } from "@/components/ConfirmSummary";
+import { DbChip, type DbKey } from "@/components/admin/DbChip";
 import { LocalTime, Stamped } from "@/components/LocalTime";
 import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
@@ -121,6 +122,9 @@ function previewRows(r: Release): { columns: SortColumn[]; rows: SortRow[] } {
   };
 }
 
+/** Where a release writes: DS1 for a DS1 step, Turso for a Turso publish, production for the rest. */
+const writesTo = (r: Release): DbKey => (r.kind === "ds1_step" ? "ds1" : r.preview?.target === "turso" ? "turso" : "production");
+
 const kindLabel = (kind: string) => (kind === "ds1_step" ? "DS1 step" : kind === "daily_scores" ? "daily scores" : kind);
 
 function AutoNote({ r, paused }: { r: Release; paused: boolean }) {
@@ -166,7 +170,7 @@ function PendingCard({ r, query, paused }: { r: Release; query: Query; paused: b
       holdable={r.kind === "daily_scores" && r.preview?.auto?.eligible === true && !r.held_at && !paused}>
       <div>
         <strong>{r.title}</strong>{" "}
-        <span className="tk-badge">{kindLabel(r.kind)}</span>
+        <span className="tk-badge">{kindLabel(r.kind)}</span> <DbChip db={writesTo(r)} />
       </div>
       <p className="note">
         <code>{r.number}</code> · prepared by {r.created_by} · {when(r.created_at)}
@@ -198,7 +202,7 @@ function recentRow(r: Release): SortRow {
     sort: { number: r.number, title: r.title.toLowerCase(), status: r.status, who: r.approved_by ?? r.created_by, when: r.finished_at ?? r.created_at, add: t.add ?? null, change: t.change ?? null, remove: t.remove ?? null, ticket: r.ticket },
     cells: {
       number: <code>{r.number}</code>,
-      title: <><strong>{r.title}</strong> <span className="tk-badge">{kindLabel(r.kind)}</span></>,
+      title: <><strong>{r.title}</strong> <span className="tk-badge">{kindLabel(r.kind)}</span> <DbChip db={writesTo(r)} /></>,
       status: (
         <>
           <span className={`tk-badge ${tone(r.status)}`}>{r.status.replace("_", " ")}</span>
@@ -240,7 +244,7 @@ function PendingTab({ data, query, paused }: { data: Dashboard; query: Query; pa
         <section className="section">
           <h2>Approved or running</h2>
           {data.approved.map((r) => (
-            <p key={r.id}><code>{r.number}</code> {r.title} <span className={`tk-badge ${tone(r.status)}`}>{r.status}</span>{r.approved_by && isAutoApproved(r.approved_by) ? <span className="note"> approved by {r.approved_by}</span> : null}</p>
+            <p key={r.id}><code>{r.number}</code> {r.title} <span className={`tk-badge ${tone(r.status)}`}>{r.status}</span> <DbChip db={writesTo(r)} />{r.approved_by && isAutoApproved(r.approved_by) ? <span className="note"> approved by {r.approved_by}</span> : null}</p>
           ))}
         </section>
       ) : null}
@@ -310,14 +314,14 @@ function DriftTab({ data, query }: { data: Dashboard; query: Query }) {
     <>
       <DriftNote data={data} />
       <section className="section">
-        <h2>Check now</h2>
+        <h2>Check now <DbChip db="production" /></h2>
         <p className="note">Compares every table on DS1 and production again (the runner looks for requests once a minute; a check also runs every night). One request at a time, about {data.request_cooldown_minutes} minutes apart.</p>
         <RequestButton kind="drift" blocked={blocked} />
         {lastDrift ? <p className="note">Last request #{lastDrift.id} ({lastDrift.status}): {lastDrift.summary ?? "waiting for the runner"}</p> : null}
       </section>
 
       <section className="section">
-        <h2>Sync status</h2>
+        <h2>Sync status <DbChip db="production" /></h2>
         {data.sync.length === 0 ? <p className="note">The nightly check has not written anything yet.</p> : (
           <div className="scroll">
             <SortTable
@@ -337,7 +341,7 @@ function DriftTab({ data, query }: { data: Dashboard; query: Query }) {
       </section>
 
       <section className="section">
-        <h2>Production space</h2>
+        <h2>Production space <DbChip db="production" /></h2>
         <p className="note">The whole database uses {bytesLabel(data.database_bytes)}; the plan holds 500 MB and releases stop at 450 MB.</p>
         <div className="scroll">
           <SortTable
@@ -356,7 +360,7 @@ function SettingsTab({ data, query, paused }: { data: Dashboard; query: Query; p
   return (
     <>
       <section className="section">
-        <h2>Auto-approval</h2>
+        <h2>Auto-approval <DbChip db="production" /></h2>
         {data.auto ? (
           <>
             {paused ? (
@@ -372,7 +376,7 @@ function SettingsTab({ data, query, paused }: { data: Dashboard; query: Query; p
       </section>
 
       <section className="section">
-        <h2>Scores update</h2>
+        <h2>Scores update <DbChip db="production" /></h2>
         <p className="note">
           Asks the runner next to DS1 to fetch the latest scores now (it looks for requests once a minute) and prepare a daily scores release.
           Your click counts as the approval, with no 10 minute wait, but the auto-approval checks and the Hold switch above still apply: anything

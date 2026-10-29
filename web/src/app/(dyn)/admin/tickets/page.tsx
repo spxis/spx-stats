@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { CopyId } from "@/components/auth/CopyId";
@@ -94,7 +95,7 @@ export default async function AdminTicketsPage({ searchParams }: { searchParams:
     const message = error instanceof BoardError ? error.message : "The board is not available.";
     return (
       <section className="head fade">
-        <h1>Tickets</h1>
+        <h1>Tickets <DbChip db="board" /></h1>
         <p className="note" role="alert">{message}</p>
       </section>
     );
@@ -121,7 +122,7 @@ export default async function AdminTicketsPage({ searchParams }: { searchParams:
   return (
     <>
       <section className="head fade">
-        <h1>Tickets</h1>
+        <h1>Tickets <DbChip db="board" /></h1>
         <p className="lede">The spx-stats board on Sumilabu, read fresh on every visit. <Link href="/admin/tickets/new">File a ticket</Link></p>
         <nav className="tk-chips" aria-label="Filter by status">
           <Link prefetch={false} className={status ? undefined : "on"} href={href({ status: undefined })}>All <span>{all.filter((t) => matches(t, true)).length}</span></Link>

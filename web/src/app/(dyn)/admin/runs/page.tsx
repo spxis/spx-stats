@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GreyMarker } from "@/components/GreyMarker";
@@ -165,7 +166,7 @@ export default async function RunsPage({ searchParams }: { searchParams: Promise
   return (
     <>
       <section className="head fade">
-        <h1>{s.say("runs.title")}</h1>
+        <h1>{s.say("runs.title")} <DbChip db="turso" /></h1>
         <p className="lede">{s.say("runs.lede")}</p>
         {problem === "config" ? <p className="note" role="alert">{s.say("runs.notConfigured")}</p> : null}
         {problem && problem !== "config" ? <p className="note" role="alert">{s.say("runs.unavailable", { reason: problem.slice(0, 160) })}</p> : null}

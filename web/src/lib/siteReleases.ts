@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.162.2", date: "2026-10-29", needsReview: true,
+    title: "Admin pages name their database",
+    text: "Every admin page and release row now carries a chip that names the database its numbers come from or the one a release writes to: Production, Turso, DS1, or a snapshot in the code. Admins only." },
   { version: "0.162.1", date: "2026-10-27",
     title: "Signed-in readers stay signed in",
     text: "A signed-in reader could see the Sign in link instead of their account menu, and clicking it did nothing. The header now finds the reader again, and a refused answer from the server no longer signs the header out." },

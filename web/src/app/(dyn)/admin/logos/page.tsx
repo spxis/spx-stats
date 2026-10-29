@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { z } from "zod";
@@ -62,7 +63,7 @@ export default async function AdminLogosPage({ searchParams }: { searchParams: P
   return (
     <>
       <section className="head fade">
-        <h1>Logo approvals</h1>
+        <h1>Logo approvals <DbChip db="production" /></h1>
         <div className={`lc-banner ${waiting ? "lc-banner-wait" : "lc-banner-ok"}`} role="status">
           <div>
             <b>{waiting ? `${waiting} logo${waiting === 1 ? "" : "s"} waiting for your approval` : "Nothing is waiting for your approval"}</b>

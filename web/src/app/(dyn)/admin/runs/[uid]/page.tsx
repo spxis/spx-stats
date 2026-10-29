@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { GreyMarker } from "@/components/GreyMarker";
@@ -40,7 +41,7 @@ export default async function RunDetail({ params }: { params: Promise<{ uid: str
   if (!found) {
     return (
       <section className="head fade">
-        <h1>{s.say("runs.title")}</h1>
+        <h1>{s.say("runs.title")} <DbChip db="turso" /></h1>
         <p className="note" role="alert">{problem || s.say("runs.detail.notFound")}</p>
         <p><Link href="/admin/runs">{s.say("runs.detail.back")}</Link></p>
       </section>
@@ -56,7 +57,7 @@ export default async function RunDetail({ params }: { params: Promise<{ uid: str
   return (
     <>
       <section className="head fade">
-        <h1>{s.say("runs.detail.title", { job: run.job })}</h1>
+        <h1>{s.say("runs.detail.title", { job: run.job })} <DbChip db="turso" /></h1>
         <p><Link href="/admin/runs">{s.say("runs.detail.back")}</Link></p>
         <p><span className={`tk-badge run-${tone(run.outcome)}`}>{run.outcome}</span> {run.summary ?? ""}</p>
         {grey.length ? (

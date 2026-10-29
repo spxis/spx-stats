@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Stamped } from "@/components/LocalTime";
@@ -45,7 +46,7 @@ export default async function AdminOpsPage({ searchParams }: { searchParams: Pro
   return (
     <>
       <section className="head fade">
-        <h1>{s.say("ops.title")}</h1>
+        <h1>{s.say("ops.title")} <DbChip db="ds1-snapshot" /> <DbChip db="production" /></h1>
         <p className="lede">{s.say("ops.lede")}</p>
         {problem ? <p className="note" role="alert">{s.say("ops.unavailable", { reason: problem })}</p> : null}
         {data && !latest ? <p className="dr-alert" role="alert">{s.say("ops.noSnapshot")}</p> : null}

@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import Link from "next/link";
 import { Stamped } from "@/components/LocalTime";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -43,6 +44,7 @@ export async function AlertBanner() {
         ))}
       </ul>
       <div className="alert-foot">
+        <DbChip db="turso" />
         <Link href="/admin/runs">{s.say("runs.alert.link")}</Link>
         {real.length > 1 && write ? (
           <form action={dismissAlerts}>

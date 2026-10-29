@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import { GreyMarker } from "@/components/GreyMarker";
 import { SOURCE_REGISTRY } from "@/data/sourceRegistry";
@@ -36,7 +37,7 @@ export default async function SourcesPage() {
         <p className="lede">{say("asrc.lede")}</p>
       </section>
       <section className="section ops-section" aria-labelledby="src-report">
-        <h2 id="src-report">{say("asrc.report.title")}</h2>
+        <h2 id="src-report">{say("asrc.report.title")} <DbChip db="production" /></h2>
         <p className="note">{say("asrc.report.lede")}</p>
         {problem ? <p className="note" role="alert">{problem.slice(0, 160)}</p> : null}
         {!problem && report === null ? <p className="note">{say("asrc.report.missing")}</p> : null}
@@ -64,7 +65,7 @@ export default async function SourcesPage() {
         ) : null}
       </section>
       <section className="section ops-section" aria-labelledby="src-list">
-        <h2 id="src-list">{say("asrc.col.source")}</h2>
+        <h2 id="src-list">{say("asrc.col.source")} <DbChip db="snapshot" /></h2>
         <div className="runs-wrap">
           <table className="runs-table">
             <thead>

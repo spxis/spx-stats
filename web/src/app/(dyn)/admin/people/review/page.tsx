@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SortTable } from "@/components/SortTable";
@@ -76,7 +77,7 @@ export default async function AdminPeopleReviewPage({ searchParams }: { searchPa
   return (
     <>
       <section className="head fade">
-        <h1>{say("peopleAdmin.reviewTitle")}</h1>
+        <h1>{say("peopleAdmin.reviewTitle")} <DbChip db="snapshot" /></h1>
         <p className="lede">{say("peopleAdmin.reviewLede")}</p>
         <nav className="tk-chips" aria-label={say("peopleAdmin.reviewFilter")}>
           <Link prefetch={false} className={lean ? undefined : "on"} href={href({ lean: undefined })}>All <span>{PERSON_REVIEW.filter((p) => matches(p, true)).length}</span></Link>

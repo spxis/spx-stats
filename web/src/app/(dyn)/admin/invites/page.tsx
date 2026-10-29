@@ -1,3 +1,4 @@
+import { DbChip } from "@/components/admin/DbChip";
 import type { Metadata } from "next";
 import { LocalTime } from "@/components/LocalTime";
 import { adminEmails } from "@/lib/auth/admin";
@@ -47,7 +48,7 @@ export default async function InvitesPage({ searchParams }: { searchParams: Prom
 
   return (
     <section className="head fade">
-      <h1>{say("invite.admin.title")}</h1>
+      <h1>{say("invite.admin.title")} <DbChip db="turso" /></h1>
       <p className="lede">{say("invite.admin.lede")}</p>
       <p className="note">{closed ? say("invite.admin.state.closed") : say("invite.admin.state.open")}</p>
       {!readable ? <p className="note" role="alert">{say("invite.admin.noTurso")}</p> : null}
