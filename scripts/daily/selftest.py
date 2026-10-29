@@ -127,6 +127,38 @@ def test_parsers():
     check(P.undecided("[[2026 Buffalo Bills season|Bills]]/[[2026 Houston Texans season|Texans]]", NFL) and P.undecided("Bills/Texans", NFL)
           and not P.undecided("[[2026 Buffalo Bills season|Bills]]", NFL) and not P.undecided("at Houston Texans", NFL) and not P.undecided("TBD", NFL),
           "undecided(): two clubs in one cell, whatever the markup; one club or none is not")
+    # SPX-761 follow-up: '6†' / '7†' is Wikipedia's "if necessary": a row with no result makes no game until a result is listed
+    ifn = top + ("{{Game log section start|hide=n|style=x|title=World Series|#|Date|Opponent|Score|Win|Loss|Save|Attendance|Record}}\n"
+                 "|- style=\"background:#;\"\n| 5 || October 28 || @ [[2026 Tampa Bay Rays season|Rays]] || - || (-) || (-) || - || - || -\n"
+                 "|- style=\"background:#;\"\n| 6\u2020 || October 30 || [[2026 Tampa Bay Rays season|Rays]] || - || (-) || (-) || - || - || -\n"
+                 "|- style=\"background:#;\"\n| 7\u2020 || October 31 || [[2026 Tampa Bay Rays season|Rays]] || - || (-) || (-) || - || - || -\n"
+                 "|- style=\"background:#bfb;\"\n| 8\u2020 || November 1 || [[2026 Tampa Bay Rays season|Rays]] || 4-1 || a || b || c || 1 || 4-4\n"
+                 "{{Game log section end}}\n")
+    cs, bad = P.parse_mlb(ifn, 2026, "Milwaukee Brewers", MLB, "2026 Milwaukee Brewers season")
+    world = sorted((c["date"], c["status"]) for c in cs if c["date"] >= D(2026, 10, 28))
+    check(world == [(D(2026, 10, 28), "scheduled"), (D(2026, 11, 1), "final")], "mlb: '6†' and '7†' rows with no result make no game, game 5 does, a played '8†' row is a final (%r)" % world)
+    # a series won is over: the unplayed games of a decided series are not games (the 2026 World Series, Brewers 4-1 over the Rays)
+    def cl(day, pair, winner=None, rnd=None, source="wp:x"):
+        a, b = pair
+        sc = None if winner is None else {winner: 5, (b if winner == a else a): 2}
+        return P.claim(source, pair, sc, a, D(2026, 10, day), "scheduled" if winner is None else "final", "playoffs", rnd)
+    ws = ("Tampa Bay Rays", "Milwaukee Brewers")
+    wsc = [cl(23, ws, ws[1], "World Series"), cl(24, ws, ws[1], "World Series"), cl(26, ws, ws[1], "World Series"), cl(27, ws, ws[0]), cl(28, ws, ws[1], "World Series"),
+           cl(30, ws, source="balldontlie"), cl(31, ws, source="balldontlie")]
+    gs = G.build_games(wsc, "mlb", 2026)
+    check(len(gs) == 5 and all(g["status"] == "final" for g in gs) and len(G.LAST_DROPPED) == 2 and sorted(d[1] for d in G.LAST_DROPPED) == [D(2026, 10, 30), D(2026, 10, 31)],
+          "games: World Series games 6 and 7 are left out once the Brewers have 4 wins (%d games, dropped %r)" % (len(gs), G.LAST_DROPPED))
+    gs = G.build_games(wsc[:4] + wsc[5:], "mlb", 2026)     # 3 wins to 1: not decided, the scheduled games stay
+    check(len(gs) == 6 and not G.LAST_DROPPED, "games: a series at 3-1 keeps its scheduled games (%d)" % len(gs))
+    ds = ("New York Yankees", "Tampa Bay Rays")
+    dsc = [cl(3, ds, ds[0], "American League Division Series"), cl(4, ds, ds[0], "American League Division Series"), cl(6, ds, ds[0], "American League Division Series"), cl(7, ds), cl(8, ds)]
+    gs = G.build_games(dsc, "mlb", 2026)
+    check(len(gs) == 3 and len(G.LAST_DROPPED) == 2, "games: a best-of-5 round is decided at 3 wins (the round name says so) (%d)" % len(gs))
+    gs = G.build_games([dict(c, round=None) for c in dsc], "mlb", 2026)
+    check(len(gs) == 5 and not G.LAST_DROPPED, "games: with no round name the format is not known and nothing is dropped below 4 wins (%d)" % len(gs))
+    nfl = [P.claim("wp:x", ("Buffalo Bills", "Houston Texans"), {"Buffalo Bills": 20, "Houston Texans": 10}, "Buffalo Bills", D(2027, 1, d), "final", "playoffs") for d in (10, 17, 24, 31)]
+    nfl.append(P.claim("wp:x", ("Buffalo Bills", "Houston Texans"), None, "Buffalo Bills", D(2027, 2, 7), "scheduled", "playoffs"))
+    check(len(G.build_games(nfl, "nfl", 2026)) == 5 and not G.LAST_DROPPED, "games: single-game leagues have no series to decide")
     # the postseason page writes the first club's dash only sometimes ('Tampa Bay Rays 2, Milwaukee Brewers - 3'; 'Cleveland Guardians - 1 Tampa Bay Rays - 3')
     pp = ("==2026 World Series==\n===(AL1) Tampa Bay Rays vs. (NL1) Milwaukee Brewers===\n{{MLB Playoff Summary\n| winner = Milwaukee\n| score = 2-1\n"
           "| date1 = October 23\n| score1 = Tampa Bay Rays 2, \'\'\'Milwaukee Brewers\'\'\' \u2013 3\n"

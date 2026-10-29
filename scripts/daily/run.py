@@ -394,12 +394,13 @@ def run(a, result):
             if c2 is None: second.append("balldontlie skipped (no key: Mac keychain item '%s' or BALLDONTLIE_API_KEY)" % B.KEYCHAIN_ITEM)
             else: claims += c2; bad += b2; extra_req += n; bdl_req[lg] = n; second.append("balldontlie (%d claims, %d requests)" % (len(c2), n))
         gs = G.build_games(claims, lg, y)
+        decided = list(G.LAST_DROPPED)
         league_claims[lg] = claims
         all_games[lg] = gs
         pre = sum(1 for c in claims if c["phase"] == "preseason")
         stamps = sorted(state["pages"][t].get("timestamp", "") for t in titles if t in state["pages"])
         report[lg] = dict(season=y, pages=len(pages), changed=len(changed), missing=missing, parsed=nparsed, claims=len(claims), preseason=pre,
-                          bad=bad, games=len(gs), second=second, newest_rev=stamps[-1] if stamps else None, oldest_rev=stamps[0] if stamps else None)
+                          bad=bad, games=len(gs), decided=decided, second=second, newest_rev=stamps[-1] if stamps else None, oldest_rev=stamps[0] if stamps else None)
       except Exception as e:
         league_errors[lg] = "%s: %s" % (type(e).__name__, str(e)[:300])
         print("%s FAILED while reading its sources; the other leagues go on: %s" % (lg.upper(), league_errors[lg]))
@@ -452,6 +453,9 @@ def run(a, result):
         for g in gs:
             if g["confidence"] in ("disputed", "resolved") or (a.verbose and g["notes"]):
                 print("     %s %s: %s" % (g["date"], " v ".join(g["teams"]), "; ".join(g["alternatives"] + g["notes"])))
+        if report[lg]["decided"]:
+            print("     %d unplayed game(s) of decided series left out (the series is won): %s" % (len(report[lg]["decided"]),
+                  "; ".join("%s %s v %s (%s)" % (d.isoformat(), aw, hm, st) for _, d, hm, aw, st in report[lg]["decided"][:12])))
         if a.verbose:
             for t, b in report[lg]["bad"][:15]: print("     unreadable [%s]: %s" % (t, b))
     if not a.no_ds1 and not writing:

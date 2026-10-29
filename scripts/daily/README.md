@@ -253,7 +253,11 @@ source that stopped listing games, not placeholders: nothing is retired (`DAILY_
 A retired game loses its game external ids and verifications, its open data issues are closed, and its game_refs go on `ingest.game_retired`, which `ingest.replay`
 (rebuilds, `db/build/153`) skips so the placeholder is not made again from the log; the log itself is never changed. A game_ref listed again for real (an article lists
 it, or it has a result, a postponement, a cancellation, or is less than 3 days past) is taken off the list by `revive.sql` before the report and comes back through the usual
-path. Each retired game is a `DAILY_RETIRED` line in the log and `retired` in the heartbeat; the run's release then deletes the game rows in production, so it takes the
+path. **R3, a decided series** (SPX-761 follow-up): a scheduled playoff game of the MLB, NHL or NBA whose series is already won (one club has the wins the round needs against the other in
+the finals held: 4, or 2 for an MLB Wild Card Series and 3 for a Division Series by the round name; a round with no name needs 4, which ends every format) is never written
+(`games.drop_decided`, logged as "unplayed game(s) of decided series left out") and an existing one is retired whatever source made it. A scheduled MLB row marked "if necessary"
+(`6†`) makes no game until a result is listed. Postponed games stay as notes.
+Each retired game is a `DAILY_RETIRED` line in the log and `retired` in the heartbeat; the run's release then deletes the game rows in production, so it takes the
 review route (the auto lane refuses deletes). Test: `bash scripts/daily/test/retire-test.sh` (scratch Postgres, the real migrations and functions on made-up clubs).
 
 Checks that read rows of every league (a daily team season without an identity, a staged game that is not a game) live in `leaguecheck.sql` and look only at

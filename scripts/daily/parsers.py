@@ -280,6 +280,7 @@ def parse_mlb(text, season, team, roster, page):
         rnd = ctx.get("section")
         rnd = re.sub(r":\s*\d+\s*[–-]\s*\d+\s*$", "", rnd).strip() if rnd else None
         if sk is None:
+            if any(re.search(r"[\u2020\u2021]", c) for c in cl[:di]): continue      # '6†': "if necessary" (Wikipedia's legend): no game until a result is listed
             st = status_of_row(" ".join(cl[di + 2:]), attr)
             out.append(team_claim(page, team, opp["name"], loc, None, None, date=d, status=st, phase=phase, rnd=rnd, dh=dh, src=" | ".join(cl)))
             continue

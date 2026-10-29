@@ -185,4 +185,37 @@ game a 1 2 final 3-2 article 12
 out="$(day)"
 check "day 7: a future game that only the second source listed stays when it is not listed one run" "$(P -t -A -c "select count(*) from core.game where source_key like '%:g'")" "1"
 
+# ---------------------------------------------------------------- day 8: a decided series (SPX-761: the Brewers won the World Series 4-1, games 6 and 7 stayed scheduled)
+# day 8a: three series in progress; the scheduled game of each is listed (by an article, or by the second source only)
+series() { # the games of the three series; $1 = "done" adds the deciding wins and leaves out the unplayed games of the decided ones, as games.py does
+  stage_reset; pages "1,2,3,4,5"
+  game a 1 2 final 3-2 article 12
+  game w1 2 3 final 5-2 article 20      # clubs 2 and 3: club 2 wins its 3rd game, then its 4th
+  game w2 2 3 final 5-2 article 19
+  game w3 3 2 final 2-5 article 18
+  game v1 2 4 final 5-2 article 20      # clubs 2 and 4: three wins in a best of seven are never a decided series
+  game v2 2 4 final 5-2 article 19
+  game v3 4 2 final 2-5 article 18
+  game y 2 4 scheduled - article -2
+  game m1 1 5 final 5-2 article 20      # clubs 1 and 5, a Division Series (best of five): three wins decide it
+  game m2 1 5 final 5-2 article 19
+  if [ "$1" = done ]; then
+    game w4 2 3 final 5-2 article 17
+    game m3 5 1 final 2-5 article 18
+  else
+    game x 3 2 scheduled - bdl -2
+    game z 5 1 scheduled - article -2
+  fi
+  P >/dev/null -c "update legacy_wikipedia_daily.game set round = 'American League Division Series' where source_key ~ ':(m1|m2|m3|z)$'"
+}
+series open; out="$(day)"
+check "day 8a: series in progress: nothing retired, their scheduled games are made" "$(printf '%s' "$out" | grep -c '^DAILY_RETIRED') $(P -t -A -c "select count(*) from core.game where source_key ~ ':(x|y|z)$'")" "0 3"
+series done; out="$(day)"
+retired="$(printf '%s' "$out" | grep '^DAILY_RETIRED' | sed -E 's/.*:([a-z0-9]+)".*/\1/' | sort | paste -sd, -)"
+check "day 8b: the unplayed games of two decided series are retired (a best of seven at 4 wins, a best of five at 3), not those of a series at 3-0 in a best of seven" "$retired" "x,z"
+check "day 8b: the unplayed game of the undecided series stays" "$(P -t -A -c "select count(*) from core.game where source_key like '%:y' and status = 'scheduled'")" "1"
+check "day 8b: no check failed" "$(printf '%s' "$out" | grep -c '^FAILED')" "0"
+out="$(day)"
+check "day 8c: a second run changes nothing" "$(printf '%s' "$out" | grep -c '^DAILY_RETIRED') $(printf '%s' "$out" | grep -c '^FAILED')" "0 0"
+
 [ "$fail" = 0 ] && echo "retire: all passed" || { echo "retire: FAILED"; exit 1; }

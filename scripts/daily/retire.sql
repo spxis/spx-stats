@@ -8,6 +8,10 @@
 --       source (balldontlie, nflverse): a run without that source's key must not wipe the games only it lists.
 --   R2  only a second source still lists it, and its date is 3 or more days past: balldontlie keeps an unplayed game "scheduled" for good (the NLCS games 5 to
 --       7 after a sweep, the ALCS game 7: still scheduled 4 days later), while both clubs' articles, which list every game that is played, have dropped it.
+--   R3  its series is decided: one club has already won the wins the round needs (4; 2 for an MLB Wild Card Series, 3 for a Division Series, by the staged round
+--       name) against the other in the playoff finals core holds (MLB, NHL, NBA), so the game will never be played (SPX-761: the Brewers won the 2026 World
+--       Series 4-1 and balldontlie still listed games 6 and 7 as scheduled). Whatever source made it; scripts/daily/games.py drops such games from the staging,
+--       so no source lists them. The pair of clubs identifies the series: two clubs meet once in a postseason of these leagues.
 -- Typical cases: the "if necessary" games of a playoff series that ended early, and games the job made against an opponent that turned out wrong
 -- (the World Series rows against "Guardians/Rays", before the parser stopped making games from those). A game whose date moved is not retired: the
 -- observation that moved it names it. A final, a postponed, a suspended or a cancelled game is never touched.
@@ -31,6 +35,23 @@ from ingest.game_observation o join sg0 s on s.source_key = o.game_ref
 where o.game_id is not null and o.last_seen >= now() and (:'league' = '' or s.league = :'league')
 group by o.game_id;
 
+-- playoff series already won (R3): wins by pair of clubs from the finals in core, the round name from the staged games of the pair
+create temp table _decided as
+with w as (
+  select s.league_code as league, s.start_year as season, least(h.franchise_id, a.franchise_id) as f1, greatest(h.franchise_id, a.franchise_id) as f2,
+         case when g.home_score > g.away_score then h.franchise_id else a.franchise_id end as winner, count(*) as wins
+  from core.game g join core.season s using (season_id)
+  join core.team_season h on h.team_season_id = g.home_team_season_id join core.team_season a on a.team_season_id = g.away_team_season_id
+  where g.phase = 'playoffs' and g.status = 'final' and g.home_score <> g.away_score and s.league_code in ('mlb', 'nhl', 'nba')
+    and (:'league' = '' or s.league_code = :'league')
+  group by 1, 2, 3, 4, 5),
+r as (
+  select league, season, least(hf, af) as f1, greatest(hf, af) as f2, max(round) as round from sg0 where phase = 'playoffs' and round is not null group by 1, 2, 3, 4)
+select w.league, w.season, w.f1, w.f2
+from w left join r using (league, season, f1, f2)
+where w.wins >= case when w.league = 'mlb' and r.round ~* 'wild[- ]?card' then 2 when w.league = 'mlb' and r.round ~* 'division series|[AN]LDS' then 3 else 4 end
+group by 1, 2, 3, 4;
+
 create temp table _retire_pool as
 select g.game_id, g.source_key, g.game_date, s.league_code as league, s.start_year as season, h.franchise_id as hf, a.franchise_id as af
 from core.game g
@@ -43,7 +64,9 @@ where g.source_id = (select source_id from src) and g.status = 'scheduled' and g
   and (s.league_code, s.start_year) in (select league, season from legacy_wikipedia_daily.game)
   and exists (select 1 from _readable r where r.league = s.league_code and r.season = s.start_year and r.franchise_id = h.franchise_id)
   and exists (select 1 from _readable r where r.league = s.league_code and r.season = s.start_year and r.franchise_id = a.franchise_id)
-  and (   (not exists (select 1 from _listed l where l.game_id = g.game_id)                                                      -- R1
+  and (   (g.phase = 'playoffs' and exists (select 1 from _decided d where d.league = s.league_code and d.season = s.start_year
+                                              and d.f1 = least(h.franchise_id, a.franchise_id) and d.f2 = greatest(h.franchise_id, a.franchise_id)))        -- R3
+       or (not exists (select 1 from _listed l where l.game_id = g.game_id)                                                      -- R1
            and exists (select 1 from ingest.game_observation o where o.game_id = g.game_id)
            and not exists (select 1 from ingest.game_observation o where o.game_id = g.game_id and o.source <> 'wikipedia'))
        or (exists (select 1 from _listed l where l.game_id = g.game_id and not l.by_article) and g.game_date <= current_date - 3));   -- R2

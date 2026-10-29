@@ -10,7 +10,7 @@ apart are one game. A source counts once per game (the two clubs' articles are t
   disputed   sources give different scores: the best-ranked source is kept and every other value is listed (stage 2 applies nothing)
   scheduled  no source has a result yet (also postponed / cancelled / suspended)
 """
-import datetime
+import datetime, re
 
 SOURCE_RANK = {"nflverse": 0, "balldontlie": 0}
 
@@ -127,10 +127,50 @@ def summarize(cl, league, season):
                 sources=sorted({c["source"] for c in cl}), pages=sorted({c["page"] for c in cl}), dh=pick["dh"], claims=cl)
 
 
+# Playoff series that are won by wins against one opponent. A club with this many wins against an opponent has won the series, whatever the format
+# (best of 7 for the NHL and NBA; the MLB's rounds are best of 3, 5 and 7, and 4 ends every one of them). The NFL and CFL play single games.
+SERIES_LEAGUES = ("mlb", "nhl", "nba")
+LAST_DROPPED = []       # (league, date, home, away, status) of the games the last build_games left out because their series was decided, for the run's log
+
+
+def wins_needed(league, rnd):
+    """Wins that decide a series of this league and round (by name); 4 when the round is not known or not a short one, which is right for every
+    best-of-7 series and is the floor for every format. MLB: Wild Card Series best of 3 (2 wins), Division Series best of 5 (3 wins)."""
+    if league == "mlb" and rnd:
+        if re.search(r"wild[- ]?card", rnd, re.I): return 2
+        if re.search(r"division series|\b[AN]LDS\b", rnd, re.I): return 3
+    return 4
+
+
+def drop_decided(games, league):
+    """-> (games without the unplayed ones of decided series, [dropped games]).
+
+    A scheduled game (a postponed, suspended or cancelled one is only a note and stays), between two clubs one of which already has the wins its round needs against the other in the finals held, will never be
+    played: the series is over (SPX-761: the Brewers beat the Rays 4-1 in the 2026 World Series and the second source still listed games 6 and 7 as
+    scheduled). A club pair meets once in a postseason of these leagues, so the pair identifies the series. Finals are never dropped."""
+    if league not in SERIES_LEAGUES: return games, []
+    wins, rounds = {}, {}
+    for g in games:
+        if g["phase"] != "playoffs": continue
+        pair = frozenset(g["teams"])
+        if g["round"]: rounds.setdefault(pair, g["round"])
+        if g["status"] == "final" and g["score"] and len(set(g["score"].values())) == 2:
+            win = max(g["score"], key=g["score"].get)
+            wins.setdefault(pair, {}).setdefault(win, 0)
+            wins[pair][win] += 1
+    decided = {pair for pair, w in wins.items() if max(w.values()) >= wins_needed(league, rounds.get(pair))}
+    keep, dropped = [], []
+    for g in games:
+        (dropped if g["phase"] == "playoffs" and g["status"] == "scheduled" and frozenset(g["teams"]) in decided else keep).append(g)
+    return keep, dropped
+
+
 def build_games(claims, league, season):
     """claims of one league-season -> games sorted by date, each with a source_key."""
     claims = [c for c in claims if c["phase"] != "preseason"]
     games = [summarize(cl, league, season) for cl in pair_claims(claims)]
+    games, dropped = drop_decided(games, league)
+    LAST_DROPPED[:] = [(league, g["date"], g["home"] or "", g["away"] or " v ".join(g["teams"]), g["status"]) for g in dropped]
     games.sort(key=lambda g: (g["date"], g["dh"] or 0, g["home"] or "", g["away"] or "", "|".join(g["teams"])))
     seen = {}
     for g in games:
