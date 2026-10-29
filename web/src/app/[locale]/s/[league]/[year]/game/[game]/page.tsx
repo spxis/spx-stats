@@ -1,3 +1,4 @@
+import { labelBigGame, seriesBigGames } from "@/lib/bigGame";
 import { getRound } from "@/lib/gameRounds";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
@@ -8,6 +9,7 @@ import { OfficialLinks } from "@/components/OfficialLinks";
 import { GameLeaders } from "@/components/GameLeaders";
 import { GameState } from "@/components/GameState";
 import { GameSurface, placeOf, type DrawnGame } from "@/components/GameSurface";
+import { BigBanner, seriesLine } from "@/components/BigBanner";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
 import { Rich } from "@/components/i18n/Rich";
@@ -172,6 +174,9 @@ export default guard(async function GamePage({ params }: Params) {
   const phaseTag = g.phase === "preseason" ? say("phase.preseason") : g.phase === "all_star" ? say("phase.allStar") : null;
   // A league that tells its postseason as games (college football) names the game: its bowl, a Playoff round, a conference championship game.
   const named = hasSeries(lg) ? null : await getRound(lg, y, g.game_id);
+  const big = hasSeries(lg)
+    ? (playoffGames ? seriesBigGames(lg, y, playoffGames, rs, say("playoffs.robin"), say("post.title")).get(g.game_id) : null) ?? null
+    : labelBigGame(g.phase, named, say("post.unnamed"));
   const competition = playoffs && roundDated ? `${roundDated}${gameNo ? ` · ${gameNo}` : ""}` : named ?? (playoffs && !hasSeries(lg) ? say("post.unnamed") : phaseTag ?? say("phase.regular"));
 
   /** A side of an earlier meeting of the two clubs: its logo that season, then its name as a link to that season. */
@@ -196,6 +201,7 @@ export default guard(async function GamePage({ params }: Params) {
     const lines = [
       s.going ? (s.going.number === 1 ? say("gm.firstGame") : say("gm.goingIn", { record: tally(s.going.before, otl), n: fmt(s.going.number - 1) })) : null,
       playoffs && s.going?.season ? say("gm.regularSeason", { record: tally(s.going.season, otl) }) : null,
+      big?.wins ? say("big.record", { a: big.wins[s.i], b: big.wins[1 - s.i] }) : null,
     ].filter((x): x is string => !!x);
     return {
       crest: s.logo ? <TeamLogo url={s.logo} size={88} shape="circle" /> : <span className="crest"><span className="mono">{s.abbr}</span></span>,
@@ -234,12 +240,13 @@ export default guard(async function GamePage({ params }: Params) {
         </p>
       </section>
 
+      {big ? <BigBanner big={big} say={say} state={seriesLine(big, say)} page /> : null}
       <Showdown
         label={say("gm.aria", { away: A.name, home: H.name })} a={side(A)} b={side(H)} winner={winner} level={final && winner == null}
         score={[final ? A.score : "–", final ? H.score : "–"]}
         scoreLabel={final ? say("gs.aria", { away: A.name, awayScore: A.score!, home: H.name, homeScore: H.score!, status: state }) : state}
         verdict={<>{winner != null && sides[winner].logo ? <TeamLogo url={sides[winner].logo} size={36} shape="circle" /> : null}{verdict}</>}
-        notes={[final ? state : null, competition, seriesState].filter((x): x is string => !!x)}
+        notes={[final ? state : null, big ? null : competition, big ? null : seriesState].filter((x): x is string => !!x)}
       />
 
       <nav className="gnav" aria-label={say("gm.navAria")}>

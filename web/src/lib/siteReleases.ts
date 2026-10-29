@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.165.0", date: "2026-10-29", href: "/mlb/scores/2026-10-28",
+    title: "Big games look special",
+    text: "A postseason game now has a banner on its score card and game page: the round and the game's number (World Series, Game 5), where the series stands (Brewers win 4-1) and each club's series wins beside its name. A league's last round, such as the World Series or the Super Bowl, looks strongest. College football's bowl games carry their names. Regular-season games are unchanged." },
   { version: "0.164.1", date: "2026-10-29", needsReview: true,
     title: "Admin release chips name the right database",
     text: "On the admin data page, a release that publishes to Turso is marked Turso in the approved and recent lists too, not only while it waits. Admins only." },

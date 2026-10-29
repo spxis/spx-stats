@@ -5,6 +5,8 @@ import { officialAbbr, type AbbrMap } from "@/lib/abbr";
 import { logoFor } from "@/lib/brand";
 import { getAbbrs, getBrands, getSummary } from "@/lib/data";
 import { atUtc } from "@/lib/format";
+import type { BigGame } from "@/lib/bigGame";
+import { bigGamesOn } from "@/lib/bigGameData";
 import { gamePath } from "@/lib/gamePath";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, topLeague, type LeagueCode } from "@/lib/leagues";
@@ -13,6 +15,7 @@ import { liveCandidates } from "@/lib/liveScores";
 import { loadScores } from "@/lib/scoresData";
 import { stripDates } from "@/lib/weekStrip";
 import { AccentStyle } from "./AccentStyle";
+import { BigBanner, seriesLine } from "./BigBanner";
 import { OfficialLinks } from "./OfficialLinks";
 import { PendingState } from "./GameState";
 import { LiveAdminBar, LiveGameRefresh } from "./LiveAdmin";
@@ -31,34 +34,43 @@ const PHASE_TAG: Record<string, "phase.playoffs" | "phase.preseason" | "phase.al
   playoffs: "phase.playoffs", preseason: "phase.preseason", all_star: "phase.allStar",
 };
 
-function Game({ lg, g, brands, abbrs, say, upcoming, day }: { lg: LeagueCode; g: GameRow; brands: Brands; abbrs: AbbrMap; say: Say; upcoming: boolean; day: string }) {
+function Game({ lg, g, big, brands, abbrs, say, upcoming, day }: { lg: LeagueCode; g: GameRow; big: BigGame | null; brands: Brands; abbrs: AbbrMap; say: Say; upcoming: boolean; day: string }) {
   const final = g.status === "final" && g.home_score != null && g.away_score != null;
   const away = final && g.away_score! > g.home_score!, home = final && g.home_score! > g.away_score!;
   const extra = say(topLeague(lg) === "mlb" ? "game.extras" : "game.ot");
   const page = gamePath(lg, g.year, g.game_id, g.away, g.home);
   const title = say("gm.viewGameTitle", { away: g.away ?? "—", home: g.home ?? "—" });
-  const side = (which: "away" | "home", f: number | null, name: string | null, score: number | null, won: boolean) => (
+  const side = (which: "away" | "home", f: number | null, name: string | null, score: number | null, won: boolean) => {
+    const w = big?.wins ? big.wins[which === "away" ? 0 : 1] : null, l = big?.wins ? big.wins[which === "away" ? 1 : 0] : null;
+    return (
     <div className={"srow" + (won ? " won" : "")}>
-      <span className="sname"><TeamLabel lg={lg} f={f} name={name || "—"} year={g.year} className={won ? "won" : undefined} logo={logoFor(brands, f, g.year)} size={32} shape="square" /></span>
+      <span className="sname">
+        <TeamLabel lg={lg} f={f} name={name || "—"} year={g.year} className={won ? "won" : undefined} logo={logoFor(brands, f, g.year)} size={32} shape="square" />
+        {w != null ? <span className="swins" title={say("big.record", { a: w, b: l! })}>{w}–{l}</span> : null}
+      </span>
       <b className="sscore">{final ? <Link href={page} prefetch={false} title={title}>{score}</Link> : <LiveScore id={g.game_id} side={which} />}</b>
     </div>
+    );
+  };
+  const line = big ? seriesLine(big, say) : null;
+  const stateEl = final ? (
+    <span className="sstate">{g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")}</span>
+  ) : (
+    <LiveState id={g.game_id} extra={extra}>
+      <PendingState
+        text={upcoming ? say("scores.scheduled") : say("scores.noResult")} status={g.status} startsAt={g.starts_at} gameDate={g.game_date}
+        startTitle={say("scores.scheduledStart")} withTime={upcoming}
+      />
+    </LiveState>
   );
   return (
-    <li className="sgame">
+    <li className={"sgame" + (big ? " big" : "") + (big?.final ? " final" : "")}>
+      {big ? <BigBanner big={big} say={say} /> : null}
       {side("away", g.away_f, g.away, g.away_score, away)}
       {side("home", g.home_f, g.home, g.home_score, home)}
       <div className="sinfo">
-        {final ? (
-          <span className="sstate">{g.overtime ? say("scores.finalExtra", { extra }) : say("scores.final")}</span>
-        ) : (
-          <LiveState id={g.game_id} extra={extra}>
-            <PendingState
-              text={upcoming ? say("scores.scheduled") : say("scores.noResult")} status={g.status} startsAt={g.starts_at} gameDate={g.game_date}
-              startTitle={say("scores.scheduledStart")} withTime={upcoming}
-            />
-          </LiveState>
-        )}
-        {PHASE_TAG[g.phase] ? <span className="badge tag">{say(PHASE_TAG[g.phase])}</span> : null}
+        {line ? <div className="sfirst">{stateEl}<span className="sseries">{line}</span></div> : stateEl}
+        {PHASE_TAG[g.phase] && !big ? <span className="badge tag">{say(PHASE_TAG[g.phase])}</span> : null}
         <Badge src={g.source} />
         {g.checked === 1 ? <span className="ok" title={say("game.confirmedTitle")}>{"✓ " + say("game.confirmed")}</span> : null}
         {g.checked === -1 ? <span className="bad" title={say("game.disputedTitle")}>{"≠ " + say("game.disputed")}</span> : null}
@@ -72,11 +84,13 @@ function Game({ lg, g, brands, abbrs, say, upcoming, day }: { lg: LeagueCode; g:
 
 /** A league's scoreboard for one day: every game with its score, the days around it, and the controls to move. */
 export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
-  const { say, plural, dt } = await currentSpeaker();
+  const sp = await currentSpeaker();
+  const { say, plural, dt } = sp;
   const eyebrow = <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>;
-  let data: Awaited<ReturnType<typeof loadScores>>, brands: Brands, abbrs: AbbrMap, seasons: Awaited<ReturnType<typeof getSummary>>["seasons"];
+  let data: Awaited<ReturnType<typeof loadScores>>, brands: Brands, abbrs: AbbrMap, seasons: Awaited<ReturnType<typeof getSummary>>["seasons"], bigs: Map<number, BigGame>;
   try {
     [data, brands, abbrs, { seasons }] = await Promise.all([loadScores(lg, day), getBrands(), getAbbrs(lg), getSummary()]);
+    bigs = await bigGamesOn(lg, data.games, sp);
   } catch {
     return <><AccentStyle league={lg} /><section className="head fade">{eyebrow}<h1>{say("scores.title")}</h1></section><LoadNote /></>;
   }
@@ -114,7 +128,7 @@ export async function Scoreboard({ lg, day }: { lg: LeagueCode; day: string }) {
         {games.length ? (
           <LiveProvider lg={lg} day={day} ids={liveCandidates(games)}>
             <ul className="scoreboard">
-              {games.map((g) => <Game key={g.game_id} lg={lg} g={g} brands={brands} abbrs={abbrs} say={say} upcoming={upcoming} day={day} />)}
+              {games.map((g) => <Game key={g.game_id} lg={lg} g={g} big={bigs.get(g.game_id) ?? null} brands={brands} abbrs={abbrs} say={say} upcoming={upcoming} day={day} />)}
             </ul>
           </LiveProvider>
         ) : (

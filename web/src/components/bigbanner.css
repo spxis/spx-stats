@@ -1,0 +1,19 @@
+/* The banner of a postseason game on a score card and on the game page. The league's last round (.final) is the strongest: ink on the page's paper with the league colour as a stripe. Tokens come from globals.css. */
+.bigbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; padding: 5px 12px; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--ink); border-bottom: 2px solid var(--accent); font: 600 13px/1.25 var(--display); text-transform: uppercase; letter-spacing: .07em; }
+.bigbar .bigname { font-weight: 700; }
+.bigbar .biggame { margin-left: 10px; padding-left: 10px; border-left: 1px solid color-mix(in srgb, currentColor 45%, transparent); font-weight: 600; }
+.bigbar .bigstate { margin-left: auto; padding-left: 12px; font-weight: 700; letter-spacing: .05em; }
+.bigbar.final { background: var(--ink); color: var(--paper); border-bottom: 0; box-shadow: inset 0 -4px 0 var(--accent); padding-block: 7px 9px; font-size: 14px; letter-spacing: .09em; }
+.bigbar.final .bigname { font-size: 15px; }
+/* On a card the banner runs edge to edge over the card's own padding. */
+.sgame > .bigbar { margin: -10px -12px 4px; }
+.sgame.big { border-color: color-mix(in srgb, var(--accent) 55%, var(--rule)); }
+.sgame.big.final { border-color: var(--accent); }
+.sgame .swins { margin-left: 8px; flex: none; font: 600 14px/1 var(--mono); color: var(--muted); white-space: nowrap; }
+.sgame .srow.won .swins { color: var(--ink); }
+.sinfo .sfirst { flex: 1 0 100%; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sinfo .sseries { text-align: right; font: 700 12px/1.2 var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--ink); }
+.sgame.final .sinfo .sseries { color: var(--accent-text, var(--ink)); }
+/* On the game page the banner sits over the showdown, full width. */
+.bigbar.ongame { margin-bottom: 12px; padding-inline: 16px; }
+@media (max-width: 480px) { .bigbar.final { font-size: 13px; } .bigbar .bigstate { margin-left: 0; padding-left: 0; flex-basis: 100%; } }
