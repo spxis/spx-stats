@@ -1,4 +1,4 @@
-export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "na", "aa", "ua", "pl", "fl"] as const;
+export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "na", "aa", "ua", "pl", "fl"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
 /**
@@ -13,6 +13,7 @@ export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; close
   { code: "wnba", name: "Women's National Basketball Association", short: "WNBA" },
   { code: "mlb", name: "Major League Baseball", short: "MLB" },
   { code: "nfl", name: "National Football League", short: "NFL" },
+  { code: "ncaaf", name: "College football", short: "College football" },
   { code: "cfl", name: "Canadian Football League", short: "CFL" },
   { code: "nwsl", name: "National Women's Soccer League", short: "NWSL" },
   { code: "afl", name: "American Football League", short: "AFL", closed: true },
@@ -28,6 +29,32 @@ export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; close
   { code: "pl", name: "Players' League", short: "PL", closed: true },
   { code: "fl", name: "Federal League", short: "FL", closed: true },
 ];
+
+/**
+ * A league whose seasons also carry teams that are not members of it: college football's FCS opponents (and lower) play FBS teams, and those games
+ * count in the FBS teams' records, but the opponents are no teams of the league. The archive files them in a pseudo conference of this name (db/build/230),
+ * so every list of the league's teams, its standings and its alignment leaves that conference out, and a page about one of them says what it is.
+ */
+export const OUTSIDE_CONFERENCE: Partial<Record<LeagueCode, string>> = { ncaaf: "Non-FBS opponents" };
+
+/** True for a conference that is the pseudo conference of a league's outside opponents. */
+export const isOutsideConference = (lg: string, conference: string | null | undefined): boolean => !!conference && OUTSIDE_CONFERENCE[lg as LeagueCode] === conference;
+
+/**
+ * Leagues whose postseason is a list of games (the bowl games), not series that a bracket joins: they have no series pages, no round pages and no playoff
+ * bracket, and a game's page names its bowl instead of a round.
+ */
+export const NO_SERIES: ReadonlySet<string> = new Set(["ncaaf"]);
+
+/** True for a league whose postseason is told as series (every league but college football). */
+export const hasSeries = (lg: string): boolean => !NO_SERIES.has(lg);
+
+/** Leagues with no player data in the archive: no player pages, no players-by-country, no player leaders. Links to those pages are not drawn. */
+export const NO_PLAYERS: ReadonlySet<string> = new Set(["ncaaf"]);
+export const hasPlayers = (lg: string): boolean => !NO_PLAYERS.has(lg);
+
+/** Leagues with over a hundred teams in a season: the standings race (one line a team) would be unreadable, so it is not drawn. */
+export const BIG_FIELD: ReadonlySet<string> = new Set(["ncaaf"]);
 
 /** The league a rival or predecessor league belongs under. One place: the menu, the parent's "Other leagues" section and the trail all read it. */
 export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl", na: "mlb", aa: "mlb", ua: "mlb", pl: "mlb", fl: "mlb" };
@@ -58,7 +85,7 @@ export const topLeague = (code: string): string => PARENT[code as LeagueCode] ??
 
 export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA", ahl: "AHL", na: "NA", aa: "AA", ua: "UA", pl: "PL", fl: "FL" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", ncaaf: "College football", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA", ahl: "AHL", na: "NA", aa: "AA", ua: "UA", pl: "PL", fl: "FL" };
 
 /**
  * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the

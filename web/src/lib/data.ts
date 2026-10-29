@@ -13,7 +13,8 @@ import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { mergeSpans } from "./nameEras";
 import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons";
-import { isSpx } from "./leagues";
+import { isOutsideConference, isSpx } from "./leagues";
+import { getAllMembers, isMemberRow } from "./leagueMembers";
 import { logoFitSchema, type LogoFit } from "./logoFit";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
@@ -100,7 +101,7 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
     getSeasonClubs(lg, y),
   ]);
   if (!summary[0]) return null;
-  const standings = summary[0].champion || !seasonOpen(games) ? standingsPlayed : withIdleTeams(standingsPlayed, clubs);
+  const standings = (summary[0].champion || !seasonOpen(games) ? standingsPlayed : withIdleTeams(standingsPlayed, clubs)).filter((s) => !isOutsideConference(lg, s.conference));
   const teams = new Map<number, ClubTeam>();
   for (const g of games) {
     teams.set(g.home_id, { id: g.home_id, f: g.home_f, name: g.home });
@@ -123,13 +124,13 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
 
 /** Every team of a league's season with the franchise it belongs to, for the map of that season. */
 export const getClubs = cache(async (lg: string, y: number) => {
-  const st = await standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema);
+  const st = (await standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema)).filter((s) => !isOutsideConference(lg, s.conference));
   return st.map((s) => ({ franchise_id: s.franchise_id, team: s.team }));
 });
 
 /** Every standings row of a league's season (the same request as getClubs, so one cached fetch). */
 export const getSeasonStandings = cache(async (lg: string, y: number): Promise<StandingRow[]> =>
-  standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema));
+  (await standingRows(`league=eq.${lg}&year=eq.${y}&select=*`, standingSchema)).filter((s) => !isOutsideConference(lg, s.conference)));
 
 /** The database's notes on a league's season (why it was short, and so on). A missing view or a failed fetch just means no notes. */
 export const getSeasonNotes = cache(async (lg: string, y: number): Promise<SeasonNoteRow[]> =>
@@ -244,14 +245,16 @@ export const getSeasonDays = cache(async (lg: string, y: number): Promise<string
 });
 
 /** Every (league, year, franchise) with a record, for the sitemap's team-season pages. */
-export const getTeamSeasonIndex = cache(async () =>
-  teamSeasonRows("select=league,year,franchise_id,w&order=league,year,franchise_id", z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), w: z.number().nullable() })));
+export const getTeamSeasonIndex = cache(async () => {
+  const [all, members] = await Promise.all([teamSeasonRows("select=league,year,franchise_id,w&order=league,year,franchise_id", z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), w: z.number().nullable() })), getAllMembers()]);
+  return all.filter((t) => isMemberRow(members, t.league, t.franchise_id));
+});
 
 /** Every (league, franchise) with a page, for the sitemap (franchise_names is far cheaper to page than team_seasons). */
 export const getTeamIndex = cache(async (): Promise<{ league: string; franchise_id: number }[]> => {
-  const all = await rows("franchise_names", "select=league,franchise_id&order=league,franchise_id", z.object({ league: z.string(), franchise_id: z.number() }));
+  const [all, members] = await Promise.all([rows("franchise_names", "select=league,franchise_id&order=league,franchise_id", z.object({ league: z.string(), franchise_id: z.number() })), getAllMembers()]);
   const seen = new Set<string>();
-  return all.filter((t) => { const k = `${t.league}|${t.franchise_id}`; return seen.has(k) ? false : (seen.add(k), true); });
+  return all.filter((t) => { const k = `${t.league}|${t.franchise_id}`; return seen.has(k) || !isMemberRow(members, t.league, t.franchise_id) ? false : (seen.add(k), true); });
 });
 
 /* ---------- sources, quality ----------------------------------------------------------- */

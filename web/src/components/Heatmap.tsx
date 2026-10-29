@@ -101,7 +101,7 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
 
   const nameOf = (id: string) => {
     const fam = familyOfRow.get(id);
-    return fam ? familyTitle(fam, soccerWord) : codeLabel(id, internationalWord);
+    return fam ? (fam.chart ? `${fam.chart}${fam.plus ? "+" : ""}` : familyTitle(fam, soccerWord)) : codeLabel(id, internationalWord);
   };
   const cardOf = (lg: string, s: HeatSeason) => ({
     title: `${codeLabel(lg, internationalWord)} ${s.label}`,

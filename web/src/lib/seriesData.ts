@@ -4,12 +4,13 @@ import { z } from "zod";
 import { rows } from "./api/client";
 import { standingRows } from "./api/teamSeasons";
 import { gameSchema, playoffShapeSchema, standingSchema } from "./api/schemas";
+import { hasSeries } from "./leagues";
 import { getFranchiseSeasons, limited, slicesOf } from "./h2hData";
 import type { GameRow, StandingRow } from "./api/types";
 
 /** Every playoff game of a season, in the order played. */
 export const getPlayoffGames = cache(async (lg: string, y: number): Promise<GameRow[]> =>
-  rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema));
+  !hasSeries(lg) ? [] : rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema));
 
 /** The regular-season games of a season played from `from` up to (not including) `to`: the NBA's play-in is among the last days before its playoffs (lib/nbaPlayIn.ts). */
 export const getGamesBetween = cache(async (lg: string, y: number, from: string, to: string): Promise<GameRow[]> =>
@@ -40,8 +41,9 @@ const getSharedSeasons = cache(async (lg: string, a: number, b: number, before: 
  *   answer in parallel, and without the names and the per-row verification lookup.
  */
 export const getPastMeetingGames = cache(async (lg: string, a: number, b: number, before: number): Promise<Map<number, GameRow[]>> => {
-  const { ia, ib, years: shared } = await getSharedSeasons(lg, a, b, before);
   const out = new Map<number, GameRow[]>();
+  if (!hasSeries(lg)) return out;
+  const { ia, ib, years: shared } = await getSharedSeasons(lg, a, b, before);
   if (!ia.length || !ib.length) return out;
   // The year list bounds the read to the seasons both clubs played: a game is only ever between two clubs of one season.
   const side = (x: number[], y: number[]) =>

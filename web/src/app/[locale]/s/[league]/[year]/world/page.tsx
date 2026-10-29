@@ -16,7 +16,7 @@ import { flagCodes } from "@/lib/flagCodes";
 import { tally, UNKNOWN, withOther } from "@/lib/countryModel";
 import { getBrands, getSeasonStandings } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG, seasonLabel } from "@/lib/leagues";
+import { isLeague, LG, seasonLabel, hasPlayers } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { countryName, pctText } from "@/lib/people-format";
@@ -43,6 +43,7 @@ export default guard(async function SeasonWorldPage({ params }: PageProps<"/[loc
   const { league: lg, year } = await params;
   const ys = isLeague(lg) ? parseSeasonSeg(lg, year) : null;
   if (!isLeague(lg) || !ys) notFound();
+  if (!hasPlayers(lg)) notFound();
   if (!ys.canonical) permanentRedirect(`${seasonPath(lg, ys.y)}/world`);
   const y = ys.y;
   const { say, plural, fmt, locale } = await currentSpeaker();

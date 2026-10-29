@@ -3,6 +3,7 @@ import { cache } from "react";
 import { rows } from "./api/client";
 import { standingSchema } from "./api/schemas";
 import type { StandingRow } from "./api/types";
+import { isOutsideConference } from "./leagues";
 import { alignmentChangeSchema, alignmentSchema, type AlignmentChangeRow, type AlignmentRow } from "./alignment";
 
 /**
@@ -12,15 +13,15 @@ import { alignmentChangeSchema, alignmentSchema, type AlignmentChangeRow, type A
 
 /** Every club of a league with the conference and division it sat in, each season it had any. */
 export const getAlignment = cache(async (lg: string): Promise<AlignmentRow[]> =>
-  rows("alignment", `league=eq.${lg}&select=*&order=year,conference,division,team`, alignmentSchema));
+  (await rows("alignment", `league=eq.${lg}&select=*&order=year,conference,division,team`, alignmentSchema)).filter((r) => !isOutsideConference(lg, r.conference)));
 
 /** The seasons in which a club's conference or division differs from its season before. */
 export const getAlignmentChanges = cache(async (lg: string): Promise<AlignmentChangeRow[]> =>
-  rows("alignment_changes", `league=eq.${lg}&select=*&order=year,team`, alignmentChangeSchema));
+  (await rows("alignment_changes", `league=eq.${lg}&select=*&order=year,team`, alignmentChangeSchema)).filter((r) => !isOutsideConference(lg, r.from_conference) && !isOutsideConference(lg, r.to_conference)));
 
 /** One season's alignment, or none when the view is missing: the playoff bracket then has no conferences to show. */
 export const getSeasonAlignment = cache(async (lg: string, year: number): Promise<AlignmentRow[]> =>
-  rows("alignment", `league=eq.${lg}&year=eq.${year}&select=*`, alignmentSchema).catch(() => []));
+  (await rows("alignment", `league=eq.${lg}&year=eq.${year}&select=*`, alignmentSchema).catch(() => [])).filter((r) => !isOutsideConference(lg, r.conference)));
 
 /** One club's places, season by season. */
 export const getTeamAlignment = cache(async (lg: string, f: number): Promise<AlignmentRow[]> =>

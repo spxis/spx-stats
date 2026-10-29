@@ -4,6 +4,7 @@ import { teamIndexSchema, type TeamIndexRow } from "./api/teams";
 import { isLeague } from "./leagues";
 import { readSpan, type Span } from "./listSpan";
 import { overlapFilters } from "./listRange";
+import { memberFilter } from "./leagueMembers";
 import { listQuery, orderOf, searchFilters, searchWords, type Col, type Order, type Val } from "./listQuery";
 import type { SortKey } from "./sort";
 
@@ -35,13 +36,13 @@ export function teamFilters(league: string, words: readonly string[], status: Te
 }
 
 /** The first and last season in the teams index for a league (every league when none), which is the full reach of the year slider. An active club's last season is its league's latest. */
-export const teamSpan = (league: string): Promise<Span> => readSpan("team_index", isLeague(league) ? [`league=eq.${league}`] : []);
+export const teamSpan = async (league: string): Promise<Span> => readSpan("team_index", [isLeague(league) ? `league=eq.${league}` : "", await memberFilter()].filter(Boolean));
 
 export const teamOrder = (sort: readonly SortKey[]): Order => orderOf(sort, TEAM_SORTS, TEAM_TIE);
 
 /** The rows of the teams index that match, in this order: a window of them by offset or the ones after a cursor. */
 export async function readTeams(f: { league: string; words: readonly string[]; status: TeamStatus; from?: number; to?: number }, order: Order, win: { offset: number; limit: number; after?: readonly Val[] | null }): Promise<{ rows: TeamIndexRow[]; total: number | null; more: boolean }> {
-  const query = listQuery({ filters: teamFilters(f.league, f.words, f.status, f), select: TEAM_FIELDS, order, after: win.after });
+  const query = listQuery({ filters: [...teamFilters(f.league, f.words, f.status, f), await memberFilter()].filter(Boolean), select: TEAM_FIELDS, order, after: win.after });
   if (win.after) {
     const rows = await rowsSlice("team_index", query, 0, win.limit + 1, teamIndexSchema);
     return { rows: rows.slice(0, win.limit), total: null, more: rows.length > win.limit };

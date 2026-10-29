@@ -7,6 +7,8 @@ import { seasonPath } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
 import { getLeaguePlayoffTeams } from "@/lib/seriesData";
 import { guard } from "@/lib/loadGuard";
+import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { isVacated, titleGameOf } from "@/lib/postseason";
 
 /**
  * A champion's note ("Won the final 4 games to 3 against Chicago Blackhawks") with the score linked to the
@@ -15,6 +17,13 @@ import { guard } from "@/lib/loadGuard";
  */
 export const ChampionNote = guard(async function ChampionNote({ lg, year, champ, note, alone }: { lg: string; year: number; champ: number | null | undefined; note: string | null | undefined; alone?: boolean }) {
   const text = note ?? "";
+  // College football: the note names the title game ("(game: Orange Bowl)") and says when the NCAA vacated the title.
+  const game = lg === "ncaaf" ? titleGameOf(text) : null;
+  if (game) {
+    const { say } = await currentSpeaker();
+    const named = /National Championship/i.test(game);
+    return <>{say(named ? "ncaaf.champWon" : "ncaaf.champWonTitle", { game })}{isVacated(text) ? ` ${say("post.vacated")}` : ""}</>;
+  }
   const p = parseChampionNote(text);
   if (!p || champ == null) return <>{text}</>;
   const [all, paths, brands] = await Promise.all([getLeaguePlayoffTeams(lg, alone ? year : undefined), getPaths(), getBrands()]);

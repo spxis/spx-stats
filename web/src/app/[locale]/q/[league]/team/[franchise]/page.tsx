@@ -1,3 +1,4 @@
+import { OutsideNote } from "@/components/OutsideNote";
 import type { Metadata } from "next";
 import { Fragment, Suspense } from "react";
 import Link from "@/components/Link";
@@ -102,7 +103,7 @@ async function Lifetime({ lg, f, rows }: { lg: string; f: number; rows: Standing
     <section className="section">
       <h2>{say("team.allTime")}</h2>
       <Figures items={figs} />
-      <p className="note">{say("team.allTimeNote")}</p>
+      <p className="note">{say(lg === "ncaaf" ? "ncaaf.teamNote" : "team.allTimeNote")}</p>
     </section>
   );
 }
@@ -260,6 +261,7 @@ export default guard(async function TeamPage({ params, searchParams }: PageProps
           </Link>
         ) : null}
         <p className="lede">{ledeText}</p>
+        <OutsideNote lg={lg} f={f} name={now} />
         {isMoreHockey(lg) ? <ClubAffiliationLine lg={lg} f={f} /> : null}
         {others.map((o) => (
           <p className="note" key={o.lg}>{say("team.otherLeague", { league: LG[o.lg], seasons: plural("count.seasons", o.seasons) })} <Link href={paths.team(o.lg, f)}>{say("team.otherLeagueLink", { league: LG[o.lg] })}</Link></p>

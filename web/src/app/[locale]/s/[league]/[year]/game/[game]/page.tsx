@@ -1,3 +1,4 @@
+import { getRound } from "@/lib/gameRounds";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { Suspense } from "react";
@@ -26,7 +27,7 @@ import { pairPath } from "@/lib/h2h";
 import { getPairHistory } from "@/lib/h2hData";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { RESULT_KEY } from "@/lib/i18n/keys";
-import { isLeague, LG, seasonLabel, topLeague, type LeagueCode } from "@/lib/leagues";
+import { hasSeries, isLeague, LG, seasonLabel, topLeague, type LeagueCode } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { recordText } from "@/lib/record";
@@ -137,7 +138,7 @@ export default guard(async function GamePage({ params }: Params) {
     const away = i === 0;
     const tid = away ? g.away_id : g.home_id, f = away ? fa : fh, name = (away ? g.away : g.home) ?? "—";
     const timeline = timelineOf(games, tid, g.phase);
-    const going = timeline.some((x) => x.game_id === g.game_id) ? goingInto(timeline, g, tid, otl) : null;
+    const going = timeline.some((x) => x.game_id === g.game_id) ? goingInto(timeline, g, tid, otl, !hasSeries(lg)) : null;
     const near = around(timeline, g);
     const st = rowOf(f);
     return {
@@ -169,7 +170,9 @@ export default guard(async function GamePage({ params }: Params) {
     return say(done ? "gm.seriesWon" : "gm.seriesLead", { team: nickname(lead.name), a: fmt(Math.max(w0, w1)), b: fmt(Math.min(w0, w1)) });
   })() : null;
   const phaseTag = g.phase === "preseason" ? say("phase.preseason") : g.phase === "all_star" ? say("phase.allStar") : null;
-  const competition = playoffs && roundDated ? `${roundDated}${gameNo ? ` · ${gameNo}` : ""}` : phaseTag ?? say("phase.regular");
+  // A league that tells its postseason as games (college football) names the game: its bowl, a Playoff round, a conference championship game.
+  const named = hasSeries(lg) ? null : await getRound(lg, y, g.game_id);
+  const competition = playoffs && roundDated ? `${roundDated}${gameNo ? ` · ${gameNo}` : ""}` : named ?? (playoffs && !hasSeries(lg) ? say("post.unnamed") : phaseTag ?? say("phase.regular"));
 
   /** A side of an earlier meeting of the two clubs: its logo that season, then its name as a link to that season. */
   const clubIn = (x: PairGame, away: boolean) => {

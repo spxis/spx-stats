@@ -6,6 +6,7 @@ import { teamIndexSchema, type TeamIndexRow } from "./api/teams";
 import { logoFor } from "./brand";
 import { getBrands } from "./data";
 import { LG, isLeague } from "./leagues";
+import { getAllMembers, isMemberRow } from "./leagueMembers";
 import { afterValues, BadParams, nextCursor, parseListParams, parseSuggestParams } from "./listParams";
 import { fold, playerQuery, searchWords } from "./listQuery";
 import { memo } from "./memo";
@@ -110,7 +111,10 @@ export async function listTeams(sp: URLSearchParams): Promise<Listing<ReturnType
 
 const teamSearchSchema = teamIndexSchema.extend({ search: z.string() });
 /** Every franchise (about 270 rows) with its folded names, kept a few minutes: suggestions for teams are ranked here, not asked of the database. */
-const teamTable = memo(HOLD, () => allRows("team_index", "select=league,franchise_id,name,former_names,first_season,last_season,seasons,titles,share,active,search&order=league,franchise_id", teamSearchSchema));
+const teamTable = memo(HOLD, async () => {
+  const [all, members] = await Promise.all([allRows("team_index", "select=league,franchise_id,name,former_names,first_season,last_season,seasons,titles,share,active,search&order=league,franchise_id", teamSearchSchema), getAllMembers()]);
+  return all.filter((t) => isMemberRow(members, t.league, t.franchise_id));
+});
 
 /** Teams for autocomplete, in the same tiers as players (also by former name, which is said when it is what matched); clubs still playing and long histories first. */
 export async function suggestTeams(sp: URLSearchParams) {

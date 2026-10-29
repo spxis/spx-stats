@@ -8,7 +8,7 @@ import { seasonPath } from "./slug.ts";
  * leagues that hang off the menu): PWHL, WNBA and NWSL stay in the menu, and fold here only. NFL and CFL are
  * never one family. Virtual members `soccer` (World Cups) and `mls` are not LeagueCodes.
  */
-export type FamilyId = "nhl" | "nba" | "mlb" | "nfl" | "cfl" | "soccer";
+export type FamilyId = "nhl" | "nba" | "mlb" | "nfl" | "ncaaf" | "cfl" | "soccer";
 
 export interface LeagueFamily {
   id: FamilyId;
@@ -20,6 +20,10 @@ export interface LeagueFamily {
   plus: boolean;
   /** The sport the family plays: its name in a sentence ("Other leagues in the hockey family"). */
   sport: "hockey" | "basketball" | "baseball" | "football" | "soccer";
+  /** The name the menu and the chart show when the short code is not what a reader looks for ("College football", not NCAAF). */
+  name?: string;
+  /** The short code on a chart row, where a long name does not fit ("NCAAF"). */
+  chart?: string;
 }
 
 export const FAMILIES: readonly LeagueFamily[] = [
@@ -27,6 +31,7 @@ export const FAMILIES: readonly LeagueFamily[] = [
   { id: "nba", primary: "nba", members: ["nba", "wnba"], plus: true, sport: "basketball" },
   { id: "mlb", primary: "mlb", members: ["mlb", "na", "aa", "ua", "pl", "fl"], plus: true, sport: "baseball" },
   { id: "nfl", primary: "nfl", members: ["nfl", "afl", "aafc"], plus: true, sport: "football" },
+  { id: "ncaaf", primary: "ncaaf", members: ["ncaaf"], plus: false, sport: "football", name: "College football", chart: "NCAAF" },
   { id: "cfl", primary: "cfl", members: ["cfl"], plus: false, sport: "football" },
   { id: "soccer", primary: "soccer", members: ["soccer", "nwsl", "mls"], plus: true, sport: "soccer" },
 ];
@@ -45,9 +50,9 @@ export function codeLabel(code: string, internationalWord = "International"): st
   return LG[code as LeagueCode] ?? code.toUpperCase();
 }
 
-/** NHL+, Soccer+, CFL. */
+/** NHL+, Soccer+, CFL, College football. */
 export function familyTitle(family: LeagueFamily, soccerWord = "Soccer"): string {
-  const base = family.id === "soccer" ? soccerWord : LG[family.primary as LeagueCode] ?? family.primary.toUpperCase();
+  const base = family.id === "soccer" ? soccerWord : family.name ?? LG[family.primary as LeagueCode] ?? family.primary.toUpperCase();
   return family.plus ? `${base}+` : base;
 }
 

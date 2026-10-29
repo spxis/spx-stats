@@ -3,7 +3,7 @@ import { standingSchema } from "./schemas";
 
 /** The columns of a standings row that team leaders are worked out from. */
 export const leaderStandingSchema = standingSchema.pick({
-  year: true, team_id: true, franchise_id: true, team: true, gp: true, w: true, l: true, t: true, otl: true, pts: true, pf: true, pa: true,
+  year: true, team_id: true, franchise_id: true, team: true, gp: true, w: true, l: true, t: true, otl: true, pts: true, pf: true, pa: true, conference: true,
 });
 export type LeaderStanding = z.infer<typeof leaderStandingSchema>;
 

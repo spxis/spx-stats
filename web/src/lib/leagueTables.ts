@@ -9,6 +9,8 @@ import { getBrands, getSummary } from "./data";
 import { getLeagueAwards } from "./people";
 import { getPlayerPaths } from "./playerLinks";
 import { findFinal, pairSegment } from "./series";
+import { hasSeries } from "./leagues";
+import { ncaafChampNote } from "./postseason";
 import { getLeaguePlayoffTeams } from "./seriesData";
 import { seasonPath } from "./slug";
 import { franchiseOfName, getPaths } from "./teamSlugs";
@@ -28,7 +30,7 @@ export async function leagueChampions(lg: string) {
 export async function leagueChampLines(lg: string): Promise<ChampList> {
   const [champs, brands, paths] = await Promise.all([leagueChampions(lg), getBrands(), getPaths()]);
   let games: Awaited<ReturnType<typeof getLeaguePlayoffTeams>> = [];
-  if (champs.some((x) => x.champion_note)) {
+  if (hasSeries(lg) && champs.some((x) => x.champion_note)) {
     try { games = await getLeaguePlayoffTeams(lg); } catch (e) {
       if (!(e instanceof ApiError) || !mayFallBack(true, e, process.env.NODE_ENV)) throw e;
       console.error(e);
@@ -36,13 +38,14 @@ export async function leagueChampLines(lg: string): Promise<ChampList> {
   }
   const byYear = new Map<number, typeof games>();
   for (const g of games) { const l = byYear.get(g.year); if (l) l.push(g); else byYear.set(g.year, [g]); }
-  return buildChampLines(champs, {
+  const list = buildChampLines(lg === "ncaaf" ? champs.map((x) => ({ ...x, champion_note: ncaafChampNote(x.champion_note) })) : champs, {
     logo: (f, year) => logoFor(brands, f, year),
     final: (year, champ, opponent) => {
       const found = findFinal(byYear.get(year) ?? [], champ, opponent);
       return found ? { opp: found.opp, href: `${seasonPath(lg, year)}/series/${pairSegment(paths, lg, year, champ, found.opp, found.meeting)}` } : null;
     },
   });
+  return list;
 }
 
 /** A league's awards by season as plain data (lib/awardGrid.ts); empty when the league has none. */

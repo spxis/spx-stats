@@ -88,7 +88,7 @@ function shades(h: string, awayFrom?: string): string[] {
 /** The league's own colour in each theme (the --nhl... tokens), used when a team has no colours on record. Kept equal to globals.css by pnpm test:sportcolours. */
 const LEAGUE_HEX: Record<string, { light: string; dark: string }> = {
   nhl: { light: "0a86ee", dark: "6cd0ff" }, nba: { light: "cf6d12", dark: "e08a1a" }, mlb: { light: "c169ad", dark: "f194cc" },
-  nfl: { light: "0a7038", dark: "7fe05a" }, cfl: { light: "5a52ac", dark: "8d91fe" },
+  nfl: { light: "0a7038", dark: "7fe05a" }, ncaaf: { light: "9a3d22", dark: "ee8a6a" }, cfl: { light: "5a52ac", dark: "8d91fe" },
   soccer: { light: "00858a", dark: "11a695" }, wnba: { light: "7a5c12", dark: "d4b24a" },
   pwhl: { light: "5b2d8e", dark: "c49bff" }, nwsl: { light: "9d174d", dark: "f9a8d4" },
 };

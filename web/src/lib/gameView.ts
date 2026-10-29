@@ -67,9 +67,12 @@ export interface Going {
   season: Tally | null;
 }
 
-/** A club's record going into a game and coming out of it. `timeline` is `timelineOf` for the club; the game is in it. */
-export function goingInto(timeline: readonly Lite[], game: Lite, team: number, otl: boolean): Going {
-  const same = timeline.filter((g) => g.phase === game.phase);
+/**
+ * A club's record going into a game and coming out of it. `timeline` is `timelineOf` for the club; the game is in it. `whole`: the record is the whole season's
+ * (a bowl game follows the regular season in one record, as in college football, where the overall record counts the bowl) and not the game's own phase's.
+ */
+export function goingInto(timeline: readonly Lite[], game: Lite, team: number, otl: boolean, whole = false): Going {
+  const same = whole ? timeline : timeline.filter((g) => g.phase === game.phase);
   const i = same.findIndex((g) => g.game_id === game.game_id);
   const prior = i < 0 ? same : same.slice(0, i);
   const done = i < 0 ? same : same.slice(0, i + 1);

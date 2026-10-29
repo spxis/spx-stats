@@ -6,6 +6,8 @@ import { ChampionNote } from "@/components/ChampionNote";
 import { ChampionSurface } from "@/components/ChampionSurface";
 import { SeasonPath } from "@/components/SeasonPath";
 import { SeasonPlayoffs } from "@/components/SeasonPlayoffs";
+import { SeasonPostseason } from "@/components/SeasonPostseason";
+import { getRounds } from "@/lib/gameRounds";
 import { TeamCup } from "@/components/TeamCup";
 import { getCupHistory } from "@/lib/cupHistory";
 import { championFinal } from "@/lib/cupRows";
@@ -39,7 +41,7 @@ import { trophyPath } from "@/lib/awardTrophy";
 import { NotAwarded } from "@/components/NotAwarded";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, isMoreHockey, isSpx, leagueInfo, LG, seasonLabel, seasonSeg, srcName } from "@/lib/leagues";
+import { BIG_FIELD, hasPlayers, hasSeries, isLeague, isMoreHockey, isSpx, leagueInfo, LG, seasonLabel, seasonSeg, srcName } from "@/lib/leagues";
 import { getSeasonAffiliations } from "@/lib/affiliation";
 import { parentsOfSeason } from "@/lib/affiliationView";
 import { pageMeta } from "@/lib/meta";
@@ -94,7 +96,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   const sp = await searchParams;
   if (!ys.canonical) permanentRedirect(withQuery(seasonPath(lg, y), sp));
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
-  const [d, brands, abbrs, summary, notes, paths, player, outageYears, notAwarded, allStar, clubs] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg), getTitleNotAwarded(lg, y), orElse(getAllStar(lg), { events: [], games: [], mvps: [] }), getClubs(lg)]);
+  const [d, brands, abbrs, summary, notes, paths, player, outageYears, notAwarded, allStar, clubs, rounds] = await Promise.all([getSeason(lg, y), getBrands(), getAbbrs(lg), getSummary(), getSeasonNotes(lg, y), getPaths(), getPlayerPaths(), getOutageYears(lg), getTitleNotAwarded(lg, y), orElse(getAllStar(lg), { events: [], games: [], mvps: [] }), getClubs(lg), hasSeries(lg) ? Promise.resolve(new Map<number, string>()) : getRounds(lg, y)]);
   const leagueYears = summary.seasons.filter((x) => x.league === lg).map((x) => x.year);
   const lo = Math.min(...leagueYears), hi = Math.max(...leagueYears);
   // The picker also offers the years the league sat out, so a reader can open them.
@@ -247,7 +249,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
       <section className="head fade">
         <LeagueSeasonNav lg={lg} page="season" year={y} lo={lo} hi={hi} seasons={pickable} extra={<>
           {isMoreHockey(lg) ? null : <Link href={leadersPath(lg, y)} prefetch={false}>{say("leaders.link")}</Link>}
-          {isMoreHockey(lg) ? null : <Link href={`${seasonPath(lg, y)}/world`} prefetch={false}>{say("country.seasonNavLink")}</Link>}
+          {isMoreHockey(lg) || !hasPlayers(lg) ? null : <Link href={`${seasonPath(lg, y)}/world`} prefetch={false}>{say("country.seasonNavLink")}</Link>}
           {d.games.length ? <Link href={`${scoresPath(lg)}?season=${seasonSeg(lg, y)}`} prefetch={false}>{say("nav.scores")}</Link> : null}
         </>} />
         <span className="eyebrow"><Link href={`/${lg}`}>{LG[lg]}</Link></span>
@@ -303,9 +305,10 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
             <p className="note">{standingsNote}</p>
             <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
           </StandingsFocus>
-          {asOf ? null : <SeasonRace clubs={raceClubs} countsOtl={d.standings.some((r) => r.otl != null)} weekStart={lg === "nfl" ? 2 : 1} />}
+          {asOf || BIG_FIELD.has(lg) ? null : <SeasonRace clubs={raceClubs} countsOtl={d.standings.some((r) => r.otl != null)} weekStart={lg === "nfl" ? 2 : 1} />}
         </section>
       ) : null}
+      {hasSeries(lg) ? null : <SeasonPostseason lg={lg} year={y} games={d.games} teams={d.teams} rounds={rounds} brands={brands} championNote={champ?.note ?? null} />}
       <SeasonPlayoffs lg={lg} year={y} conf={typeof sp.conf === "string" ? sp.conf : ""} div={typeof sp.div === "string" ? sp.div : ""} sp={sp} />
       {cupFinal && champ ? (
         <TeamCup appearances={[cupFinal]} seasonHref={() => null} heading={say("season.cupTitle")} note={say("season.cupNote", { team: champ.winner ?? "", league: LG[lg] })} />

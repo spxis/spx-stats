@@ -37,7 +37,7 @@ test("the AAFC is a league the site knows, a closed one, with single-year season
 });
 
 test("a rival league is no league of the menu: it hangs off its parent, in one place", () => {
-  assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl"]);
+  assert.deepEqual(LEAGUES.map((l) => l.code), ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl"]);
   assert.deepEqual(PARENT, { afl: "nfl", aafc: "nfl", nha: "nhl", pcha: "nhl", wchl: "nhl", wha: "nhl", na: "mlb", aa: "mlb", ua: "mlb", pl: "mlb", fl: "mlb" });
   assert.deepEqual(CHILDREN, { nhl: ["nha", "pcha", "wchl", "wha"], mlb: ["na", "aa", "ua", "pl", "fl"], nfl: ["afl", "aafc"] });
   assert.equal(topLeague("afl"), "nfl");

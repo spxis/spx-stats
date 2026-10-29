@@ -11,6 +11,7 @@
      other and from the SPX red (--mk-r), in both themes and under the three colour-vision simulations; scripts/sportColours.test.ts (pnpm test:sportcolours)
      measures it and fails if an edit brings two together. Keep lib/seriesLooks.ts LEAGUE_HEX in step (the test checks it too). */
   --nhl: #0a86ee; --nba: #cf6d12; --mlb: #c169ad; --nfl: #0a7038; --cfl: #5a52ac; --soccer: #00858a;
+  --ncaaf: #9a3d22; /* college football's own menu colour: brick, apart from NBA orange and the SPX red */
   --wnba: #7a5c12; /* bronze, apart from NBA orange and the SPX red; WNBA is its own menu league */
   --pwhl: #5b2d8e; /* purple, the PWHL's own menu colour, apart from NHL blue */
   --nwsl: #9d174d; /* rose, the NWSL's own menu colour, apart from MLS teal */
@@ -37,13 +38,13 @@
   :root:not([data-theme="light"]) {
     --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
     --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
-    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --pwhl: #c49bff; --nwsl: #f9a8d4; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
+    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --ncaaf: #ee8a6a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --pwhl: #c49bff; --nwsl: #f9a8d4; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
   }
 }
 :root[data-theme="dark"] {
   --paper: #12161b; --panel: #1a2027; --ink: #e8ebe6; --muted: #9aa4ad; --rule: #2c343d; --soft: #222931;
   --ok: #5cbf86; --warn: #e0a83d; --bad: #ef6b5d; --logo-tile: #e9ecef;
-    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --pwhl: #c49bff; --nwsl: #f9a8d4; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
+    --nhl: #6cd0ff; --nba: #e08a1a; --mlb: #f194cc; --nfl: #7fe05a; --ncaaf: #ee8a6a; --cfl: #8d91fe; --soccer: #11a695; --wnba: #d4b24a; --pwhl: #c49bff; --nwsl: #f9a8d4; --accent-keep: 100%; --today: #f0b24a; --today-on-ink: #a84a00; color-scheme: dark;
 }
 
 /* Where a number comes from: one calm colour per database, used by the admin chips (components/admin/DbChip.tsx). Set for both themes. */
@@ -610,6 +611,7 @@ a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; tex
 :root:has([data-sport="nwsl"]) { --mk-r: var(--nwsl); }
 :root:has([data-sport="mlb"]) { --mk-r: var(--mlb); }
 :root:has([data-sport="nfl"]) { --mk-r: var(--nfl); }
+:root:has([data-sport="ncaaf"]) { --mk-r: var(--ncaaf); }
 :root:has([data-sport="cfl"]) { --mk-r: var(--cfl); }
 :root:has([data-sport="afl"]) { --mk-r: var(--afl); }
 :root:has([data-sport="aafc"]) { --mk-r: var(--aafc); }

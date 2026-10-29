@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.164.0", date: "2026-10-29", href: "/ncaaf",
+    title: "College football",
+    text: "College football has its own place in the menu, right after the NFL: 26 seasons from 2000 with standings by conference and division, every bowl game, the Playoff and the national champion of each season (the vacated 2004 title is said so). Teams from lower divisions show only as opponents. From English Wikipedia." },
   { version: "0.163.0", date: "2026-10-29", href: "/more-hockey",
     title: "More hockey: the AHL",
     text: "Hockey beyond the NHL has a page of its own, reached from the NHL page and from one link under the NHL in the menu. The American Hockey League is the first league on it: 90 seasons from 1936-37 with standings, Calder Cup series and champions. Each club shows its NHL parent club by season, and an NHL club lists its farm teams." },

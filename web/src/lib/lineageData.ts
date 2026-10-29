@@ -4,6 +4,7 @@ import { z } from "zod";
 import { rows } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { buildFranchises, type Franchise } from "./lineage";
+import { getAllMembers, isMemberRow } from "./leagueMembers";
 import { getPaths } from "./teamSlugs";
 
 const seasonSchema = z.object({
@@ -23,11 +24,14 @@ export interface LineageData {
 
 /** Every franchise with its stretches under one name, from the team seasons and the team index (both kept a day). */
 export const getLineage = cache(async (): Promise<LineageData> => {
-  const [seasons, index, paths] = await Promise.all([
+  const [allSeasons, allIndex, paths, members] = await Promise.all([
     teamSeasonRows("select=league,year,franchise_id,team,w,l,t,otl,champion&order=league,franchise_id,year", seasonSchema),
     rows("team_index", "select=league,franchise_id,first_season,last_season,seasons,titles,active&order=league,franchise_id", indexSchema),
     getPaths(),
+    getAllMembers(),
   ]);
+  const seasons = allSeasons.filter((s) => isMemberRow(members, s.league, s.franchise_id));
+  const index = allIndex.filter((i) => isMemberRow(members, i.league, i.franchise_id));
   const franchises = buildFranchises(seasons, index, paths.team);
   const kept = new Set(franchises.map((f) => `${f.league}|${f.f}`));
   const omitted: Record<string, number> = {};

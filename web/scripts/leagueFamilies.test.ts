@@ -32,7 +32,7 @@ const s = (league: string, year: number, extra: Partial<HeatSeasonLike> = {}): H
 });
 
 test("families fold hockey, basketball and soccer; NFL and CFL stay apart", () => {
-  assert.deepEqual(FAMILIES.map((f) => f.id), ["nhl", "nba", "mlb", "nfl", "cfl", "soccer"]);
+  assert.deepEqual(FAMILIES.map((f) => f.id), ["nhl", "nba", "mlb", "nfl", "ncaaf", "cfl", "soccer"]);
   assert.deepEqual(familyOf("nhl")?.members, ["nhl", "pwhl", "nha", "pcha", "wchl", "wha"]);
   assert.deepEqual(familyOf("mlb")?.members, ["mlb", "na", "aa", "ua", "pl", "fl"]);
   assert.equal(familyOf("aa")?.id, "mlb");
@@ -59,7 +59,7 @@ test("PARENT is unchanged: PWHL and WNBA stay menu leagues, NHA still hangs off 
 });
 
 test("family chips: one fixed order, a sport name for the label, International for the FIFA competitions", () => {
-  assert.deepEqual(FAMILIES.map((f) => f.sport), ["hockey", "basketball", "baseball", "football", "football", "soccer"]);
+  assert.deepEqual(FAMILIES.map((f) => f.sport), ["hockey", "basketball", "baseball", "football", "football", "football", "soccer"]);
   assert.equal(codeLabel("soccer", "International"), "International");
   assert.equal(codeLabel("soccer"), "International");
   assert.equal(memberHref("soccer"), "/worldcup");
@@ -173,13 +173,13 @@ test("Grow is a per-session choice: a stored localStorage Grow never expands a n
 
 test("the top menu is the families: NHL+, NBA+, MLB+, NFL+, CFL, Soccer", () => {
   const menu = menuEntries("Soccer");
-  assert.deepEqual(menu.map((m) => m.label), ["NHL+", "NBA+", "MLB+", "NFL+", "CFL", "Soccer"]);
-  assert.deepEqual(menu.map((m) => m.href), ["/nhl", "/nba", "/mlb", "/nfl", "/cfl", SOCCER_PATH]);
+  assert.deepEqual(menu.map((m) => m.label), ["NHL+", "NBA+", "MLB+", "NFL+", "College football", "CFL", "Soccer"]);
+  assert.deepEqual(menu.map((m) => m.href), ["/nhl", "/nba", "/mlb", "/nfl", "/ncaaf", "/cfl", SOCCER_PATH]);
   assert.equal(menuEntries("サッカー").at(-1)!.label, "サッカー");
   // no woman's, rival or predecessor league is an entry of its own
   const hrefs = new Set(menu.map((m) => m.href));
   for (const lg of ["pwhl", "wnba", "nwsl", "nha", "pcha", "wchl", "wha", "afl", "aafc"]) assert.ok(!hrefs.has(`/${lg}`), `${lg} is not a menu entry`);
-  assert.deepEqual(menu.map((m) => m.allTime), ["nhl", "nba", "mlb", "nfl", "cfl", null]);
+  assert.deepEqual(menu.map((m) => m.allTime), ["nhl", "nba", "mlb", "nfl", "ncaaf", "cfl", null]);
 });
 
 test("every league and virtual member lights its family's menu entry and is linked from the family page", () => {

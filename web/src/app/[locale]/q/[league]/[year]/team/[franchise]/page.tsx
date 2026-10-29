@@ -1,3 +1,4 @@
+import { OutsideNote } from "@/components/OutsideNote";
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound, permanentRedirect } from "next/navigation";
@@ -211,6 +212,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
           {say("tseason.lede", { season, record: text }) + " "}
           <Link href={paths.team(lg, f)}>{say("tseason.allSeasons")}</Link>{" · "}
           <Link href={`${seasonPath(lg, y)}?team=${me?.id}`}>{say("tseason.wholeSeason", { league: LG[lg] })}</Link>        </p>
+        <OutsideNote lg={lg} f={f} name={name} />
         {isMoreHockey(lg) ? <SeasonParentLine lg={lg} f={f} year={y} /> : null}
         {lg === "nhl" ? <SeasonFarmLine f={f} year={y} /> : null}
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={mePin.venue ?? place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}

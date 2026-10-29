@@ -31,7 +31,7 @@ test("the menu gets no per-league item: the AHL and the page lights the NHL tab 
   assert.equal(MORE_HOCKEY_PATH, "/more-hockey");
   const hrefs = menuEntries().map((m) => m.href);
   assert.ok(!hrefs.includes("/ahl") && !hrefs.includes("/more-hockey"));
-  assert.equal(hrefs.length, 6);
+  assert.equal(hrefs.length, 7);
 });
 
 test("a season of the AHL is 1985-86 in the address and for the reader, and a final is the Calder Cup Final", () => {

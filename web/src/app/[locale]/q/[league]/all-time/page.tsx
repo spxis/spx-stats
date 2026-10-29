@@ -33,7 +33,7 @@ const query = z.object({
   phase: z.enum(["r", "p", "all"]).catch("r"),
   active: z.enum(["1"]).optional().catch(undefined),
 });
-const UNIT = { nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals", ahl: "unit.goals", na: "unit.runs", aa: "unit.runs", ua: "unit.runs", pl: "unit.runs", fl: "unit.runs" } as const satisfies Record<string, PhraseKey>;
+const UNIT = { nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", ncaaf: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals", ahl: "unit.goals", na: "unit.runs", aa: "unit.runs", ua: "unit.runs", pl: "unit.runs", fl: "unit.runs" } as const satisfies Record<string, PhraseKey>;
 const MIN_SEASONS = 3;
 
 export async function generateMetadata({ params }: PageProps<"/[locale]/q/[league]/all-time">): Promise<Metadata> {
@@ -254,7 +254,7 @@ export default async function AllTimePage({ params, searchParams }: PageProps<"/
       {head}
       {lede}
       {controls}
-      <p className="note">{say(`allTime.note.${phase}`)} {say("allTime.note.common")}</p>
+      <p className="note">{say(lg === "ncaaf" && phase === "r" ? "ncaaf.allTimeNote" : `allTime.note.${phase}`)} {say("allTime.note.common")}</p>
       <Figures items={figs} />
       {view !== "table" ? <section className="section">{highlights}</section> : null}
       {view === "overview" ? (

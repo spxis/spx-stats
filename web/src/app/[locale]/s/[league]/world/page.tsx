@@ -14,7 +14,7 @@ import { getLeagueCounts, getLeagueFranchises, getSeasonCounts } from "@/lib/cou
 import { flagCodes } from "@/lib/flagCodes";
 import { coolCards, isKnown, stackSeries, tally } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { isLeague, LG } from "@/lib/leagues";
+import { isLeague, LG, hasPlayers } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { countryName, pctText } from "@/lib/people-format";
@@ -38,6 +38,7 @@ export const generateMetadata = guardMeta(async ({ params }: PageProps<"/[locale
 export default guard(async function LeagueWorldPage({ params }: PageProps<"/[locale]/s/[league]/world">) {
   const { league: lg } = await params;
   if (!isLeague(lg)) notFound();
+  if (!hasPlayers(lg)) notFound();
   const { say, plural, fmt, locale } = await currentSpeaker();
   const [seasonRows, leagueRows, franchiseRows, brands] = await Promise.all([getSeasonCounts(lg), getLeagueCounts(lg), getLeagueFranchises(lg), getBrands()]);
   const head = (
