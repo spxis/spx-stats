@@ -124,7 +124,7 @@ data repair. If you start a subagent, copy this section into its instructions (t
 - **Merging or deleting a row that others point at** (people, franchises, identities) means every table with a foreign key to it goes in
   the same release; `prepare`'s rehearsal finds the ones you forget.
 - **Changing what a club belongs to** (`core.franchise_league`, a new league, a new parent) reruns `175_team_brand`,
-  `175_team_logo_extra`, `175_team_logo_fit` and their orphan lines must stay empty. *Broken:* 13 logos lost their club when clubs got
+  `175_team_logo_extra`, `175_team_logo_fit`, `175_team_logo_join` (in that order; `bash db/tests/brand-rerun.sh`: a second run changes nothing) and their orphan lines must stay empty. *Broken:* 13 logos lost their club when clubs got
   AFL, NHA and PCHA memberships.
 - **John's rules for his other projects too** (his npm packages: dougu-sports, senshu-jerseys, kyogijo-stadiums, taisen-brackets,
   meigen-sports, hata, chizu, kuni, address-plus and the rest; their tickets live on this board): publish patch and minor releases by

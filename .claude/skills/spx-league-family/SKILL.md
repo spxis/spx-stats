@@ -38,7 +38,7 @@ Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is), [§9 Cups and 
    Each keeps ids on a rerun
    ([spx-build-step-ids](../spx-build-step-ids/SKILL.md)). Step 154 folds the Maroons (VMA) into the Millionaires (VMI): rerun it after any rerun of 145.
 7. **Alignment and brands.** A changed club membership (`core.franchise_league`, a new league, a new parent) reruns `175_team_brand`,
-   `175_team_logo_extra` and `175_team_logo_fit`; their orphan lines must stay empty. 13 logos once lost their club this way.
+   `175_team_logo_extra`, `175_team_logo_fit` and `175_team_logo_join`; their orphan lines must stay empty. 13 logos once lost their club this way.
 8. **Cups.** Drawn by `@johnmorrisdotca/dougu-sports` in `web/src/lib/cups.ts` (server-only); a page receives the markup as data.
    No drawing code in the browser. Credited on `/terms`. Check with `pnpm test:trophies`. A new cup goes through the same path; a
    new bracket through `taisen-brackets` (`bracketLayout.ts`), never a hand-drawn SVG.

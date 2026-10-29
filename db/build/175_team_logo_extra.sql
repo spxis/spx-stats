@@ -52,39 +52,50 @@ select franchise_id, league_code as league from core.franchise_league
 union select fl.franchise_id, p.parent from core.franchise_league fl join league_parent p on p.league = fl.league_code
 union select f.franchise_id, 'other' from core.franchise f where not exists (select 1 from core.franchise_league fl where fl.franchise_id = f.franchise_id);
 
+create temp table logo_extra_pick as
 with ident as (
   select i.franchise_id, i.valid_during, pg_temp.norm(i.full_name) n,
          i.valid_during = first_value(i.valid_during) over w as is_first,
          i.valid_during = last_value(i.valid_during) over w as is_last
   from core.franchise_identity i
   window w as (partition by i.franchise_id order by lower(i.valid_during) nulls first rows between unbounded preceding and unbounded following)
-), pick as (   -- the identity each seed row is for, and the days it covers (a club's first and last identity are open at the ends, as in 175_team_brand)
-  select f.*, i.franchise_id,
-         -- a year that reaches the identity's own first or last season means the identity's own bound (so a row that covers a whole identity
-         -- lines up exactly with the Wikidata rows it may replace, whatever the club's other identities of the same name)
-         daterange(case when f.from_year is null or f.from_year <= extract(year from lower(i.valid_during))::int
-                        then (case when i.is_first then null else lower(i.valid_during) end)
-                        else make_date(f.from_year, 1, 1) end,
-                   case when f.to_year is null or (upper(i.valid_during) is not null and f.to_year >= extract(year from upper(i.valid_during))::int - 1)
-                        then (case when i.is_last then null else upper(i.valid_during) end)
-                        else make_date(f.to_year + 1, 1, 1) end) as rng
-  from logo_extra_file f
-  join ident i on i.n = pg_temp.norm(f.team)
-  join franchise_league_name fn on fn.franchise_id = i.franchise_id and fn.league = f.league
-  where f.url is not null and f.url <> '' and f.page is not null
-    and (f.from_year is null or f.from_year <= coalesce(extract(year from upper(i.valid_during))::int - 1, 9999))   -- a year is a season's first year
-    and (f.to_year is null or f.to_year >= extract(year from lower(i.valid_during))::int)
-), gone as (   -- a logo this one replaces: removed from the rows it fully covers (the row keeps its colours and venue)
-  update core.franchise_brand b set logo_url = null, logo_licence = null, logo_page = null
-  from pick p
-  where p.replaces in ('nonfree', 'free') and b.franchise_id = p.franchise_id and b.logo_url is not null
-    and (b.logo_licence ilike 'Non-free%') = (p.replaces = 'nonfree') and b.valid_during <@ p.rng
-  returning b.franchise_brand_id
-)
+)   -- the identity each seed row is for, and the days it covers (a club's first and last identity are open at the ends, as in 175_team_brand)
+select f.*, i.franchise_id,
+       -- a year that reaches the identity's own first or last season means the identity's own bound (so a row that covers a whole identity
+       -- lines up exactly with the Wikidata rows it may replace, whatever the club's other identities of the same name)
+       daterange(case when f.from_year is null or f.from_year <= extract(year from lower(i.valid_during))::int
+                      then (case when i.is_first then null else lower(i.valid_during) end)
+                      else make_date(f.from_year, 1, 1) end,
+                 case when f.to_year is null or (upper(i.valid_during) is not null and f.to_year >= extract(year from upper(i.valid_during))::int - 1)
+                      then (case when i.is_last then null else upper(i.valid_during) end)
+                      else make_date(f.to_year + 1, 1, 1) end) as rng
+from logo_extra_file f
+join ident i on i.n = pg_temp.norm(f.team)
+join franchise_league_name fn on fn.franchise_id = i.franchise_id and fn.league = f.league
+where f.url is not null and f.url <> '' and f.page is not null
+  and (f.from_year is null or f.from_year <= coalesce(extract(year from upper(i.valid_during))::int - 1, 9999))   -- a year is a season's first year
+  and (f.to_year is null or f.to_year >= extract(year from lower(i.valid_during))::int);
+
+-- A logo this one replaces: removed from the rows it fully covers (the row keeps its colours and venue). A row this step wrote (the seed's own
+-- file and page) is never one of them: a free file that "replaces a free logo" would otherwise clear its own row on the next run, and the empty
+-- row below would be deleted with it.
+update core.franchise_brand b set logo_url = null, logo_licence = null, logo_page = null
+from logo_extra_pick p
+where p.replaces in ('nonfree', 'free') and b.franchise_id = p.franchise_id and b.logo_url is not null
+  and (b.logo_licence ilike 'Non-free%') = (p.replaces = 'nonfree') and b.valid_during <@ p.rng
+  and not exists (select 1 from logo_extra_file s where s.url = b.logo_url and s.page = b.logo_page and b.source_id = (select source_id from meta.source where code = s.source));
+
+-- The years of a seed row that no row of the same source and file holds yet. Years a row already holds are not added again: a row the NBA join
+-- (175_team_logo_join.sql) made out of the cut pieces of one logo covers the seed's own cut, and a second piece beside it would be joined on the
+-- next run and written again after it, for ever.
 insert into core.franchise_brand (franchise_id, valid_during, logo_url, logo_licence, logo_page, source_id, source_key)
-select p.franchise_id, p.rng, p.url, p.licence, p.page, (select source_id from meta.source where code = p.source), p.source_key
-from pick p
-where not isempty(p.rng)
+select p.franchise_id, u.rng, p.url, p.licence, p.page, s.source_id, p.source_key
+from logo_extra_pick p
+join meta.source s on s.code = p.source
+left join lateral (select range_agg(b.valid_during) a from core.franchise_brand b
+                   where b.franchise_id = p.franchise_id and b.source_id = s.source_id and b.logo_url = p.url) h on true
+cross join lateral unnest(datemultirange(p.rng) - coalesce(h.a, '{}'::datemultirange)) u(rng)
+where not isempty(p.rng) and not isempty(u.rng)
 on conflict (franchise_id, valid_during, source_id) do nothing;
 
 -- A row left with no logo, no colours and no venue after a replacement carries nothing.

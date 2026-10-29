@@ -44,7 +44,7 @@ broken game address and a unique-key error.
 - Step 147 remembers NBA identities by franchise and first day. `db/build/147_nba_identity_merge.sql` joins a split identity into the
   lowest id (SPX's row), so every surviving id is unchanged; check 097 (`db/checks/097_nba_identity_split.sql`) must return 0 rows.
 - An identity whose first day moves gets a new id by design. Say so in the hand-off.
-- Changing what a club belongs to reruns `175_team_brand`, `175_team_logo_extra` and `175_team_logo_fit`; their orphan lines must stay empty.
+- Changing what a club belongs to reruns `175_team_brand`, `175_team_logo_extra`, `175_team_logo_fit` and `175_team_logo_join` (`bash db/tests/brand-rerun.sh`); their orphan lines must stay empty.
   A step that cut a club's brand eras by identity range leaves the cut rows behind on a rerun: join them the same way, with a check.
 - Migration 117 gave visitors "permission denied for schema core" and `api.stat_reference` could not be rebuilt on production. New `api`
   objects must work as `anon` (`set role anon` in the test).

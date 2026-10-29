@@ -1,12 +1,12 @@
 #!/bin/bash
-# db/build/175_team_brand.sql, the last statements: NBA brand rows of one source with the same values that touch or overlap become the row with
+# db/build/175_team_logo_join.sql (the last of the 175 steps): NBA brand rows of one source with the same values that touch or overlap become the row with
 # the lowest id over all their years; other rows, other leagues and other values are left alone; a rerun changes nothing. Scratch Postgres with a
-# small hand-made schema, removed by name. The SQL under test is cut out of the real step file (from "create temp table nba_brand_key").
+# small hand-made schema, removed by name. The SQL under test is cut out of the real step file (from "create temp table nba_brand_key" on).
 #   bash db/tests/nba-brand-join.sh            # port 7742, name spx-scratch-nbabrand
 set -eu
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "$HERE/../.." && pwd)"
-STEP="${STEP:-$REPO/db/build/175_team_brand.sql}"
+STEP="${STEP:-$REPO/db/build/175_team_logo_join.sql}"
 NAME="${SCRATCH_NAME:-spx-scratch-nbabrand}"
 PORT="${SCRATCH_PORT:-7742}"
 lsof -nP -iTCP:"$PORT" -sTCP:LISTEN >/dev/null 2>&1 && { echo "port $PORT is busy"; exit 1; }
