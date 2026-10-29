@@ -19,6 +19,8 @@ import fetch as F, parse as P   # noqa: E402  (this folder's own modules)
 DS1 = os.path.join(HERE, "..", "daily", "ds1.sh")
 S = "legacy_wikipedia_hockey_minor"
 NO_ARCHIVE = "--no-archive" in sys.argv
+TIDY_ROUNDS = {"echl"}      # leagues read with the later parsers (game blocks and tables as series sources, round names cleaned of dates, "(Best of 5)" and old spellings and numbered
+                            # by stage); the AHL's rows were loaded as they came and stay as they are
 
 
 def psql(sql):
@@ -74,17 +76,33 @@ class Clubs:
         return P.P.match_name(name, self.names) if name else None
 
 
+_LISTED = {}
+
+
+def listed_champions(league):
+    """The champion column of the league's list of seasons (an infobox is missing in the early articles)."""
+    if league not in _LISTED:
+        _LISTED[league] = {}
+        for t in F.LEAGUES[league][4]:
+            f = os.path.join(F.CACHE, "league", F.F.fname(t))
+            if t.startswith("List of") and os.path.exists(f):
+                txt = open(f, encoding="utf-8").read()
+                if not txt.startswith("#MISSING"): _LISTED[league] = P.listed_champions(P.strip_comments(txt))
+    return _LISTED[league]
+
+
 def run(league, y, dry=False):
     files, text = F.fetch_season(league, y)
     if text is None:
         print(league, y, "no season article"); return
+    text = P.strip_comments(text)
     if not dry and not NO_ARCHIVE: archive(f"wikipedia-hockey-minor/{league}/{y}", files)
     cache = {}
     for f in files:
         sub, fn = f.split("/", 1)
         if sub in ("playoffs", "season"):
             t = open(os.path.join(F.CACHE, f), encoding="utf-8").read()
-            if not t.startswith("#MISSING"): cache[f] = t
+            if not t.startswith("#MISSING"): cache[f] = P.strip_comments(t)
     pt = F.playoffs_title(league, y)
     pfile = f"playoffs/{F.F.fname(pt)}"
     ptext = cache.get(pfile) or ""
@@ -93,9 +111,15 @@ def run(league, y, dry=False):
     for f, t in cache.items():
         if f.startswith("playoffs/") and not t.lstrip().upper().startswith("#REDIRECT"):
             pages[t and re.sub(r"_", " ", re.sub(r"\.wikitext$", "", f.split("/", 1)[1]))] = t
-    full = P.expand_sections(text, pages)
+    tpls = {}
+    for t in sorted(set(F.bracket_templates(text)) | set(F.bracket_templates(ptext))):
+        tt = F.fetch_template(t, [])
+        if tt: tpls[t] = P.strip_comments(tt)
+    text_x = P.expand_named(text, tpls)
+    ptext_x = P.expand_named(ptext, tpls)
+    full = P.expand_sections(text_x, pages)
 
-    std, bad = P.parse_standings(text)
+    std, bad = P.parse_standings(text, v2=league in TIDY_ROUNDS)
     clubs = Clubs(std)
     unparsed = [("standings", b) for b in bad]
 
@@ -127,7 +151,7 @@ def run(league, y, dry=False):
                     unparsed.append(("playoffs", raw + " (winner has fewer)")); continue
                 series.append(dict(round=rd, no=order.index(rd) + 1, winner=cw, loser=cl, ww=a, lw=b, src="sentence: " + raw))
     if not series and ptext:
-        br, odd = P.bracket_series(P.expand_sections(ptext, pages))
+        br, odd = P.bracket_series(P.expand_sections(ptext_x, pages))
         unparsed += [("bracket", o) for o in odd]
         if br:
             how = "bracket (playoffs article)"
@@ -139,9 +163,40 @@ def run(league, y, dry=False):
                     w, l, ww, lw = (a, b2, sa, sb) if sa > sb else (b2, a, sb, sa)
                     series.append(dict(round=rd, no=i, winner=w, loser=l, ww=ww, lw=lw, src="bracket template (playoffs article)"))
 
+    # series told by game blocks ({{NHLPlayoffs}}) or by game tables, when no bracket gives them
+    tg_series, tg_games = [], []
+    for src_text in (ptext_x, text_x) if league in TIDY_ROUNDS else ():
+        if not src_text: continue
+        sx = P.expand_sections(src_text, pages)
+        bs, bb = P.block_series(sx)
+        ts, tgm, tb = P.table_games(sx, y)
+        unparsed += [("playoffs", b) for b in bb + tb]
+        tg_series += bs + ts; tg_games += tgm
+    if tg_series and (not series or league in TIDY_ROUNDS):
+        how = how or "game blocks and tables"
+        order = list(dict.fromkeys(x["group"] for x in tg_series))
+        for x in tg_series:
+            a, b2 = clubs.find(x["team1"]), clubs.find(x["team2"])
+            if not a or not b2:
+                unparsed.append(("playoffs", f"{x['round']}: {x['team1']} {x['wins1']} - {x['wins2']} {x['team2']}")); continue
+            w, l, ww, lw = (a, b2, x["wins1"], x["wins2"]) if x["wins1"] > x["wins2"] else (b2, a, x["wins2"], x["wins1"])
+            if any({s0["winner"], s0["loser"]} == {w, l} for s0 in series) if league in TIDY_ROUNDS else any(s0["winner"] == w and s0["loser"] == l and s0["round"] == x["round"] for s0 in series): continue
+            series.append(dict(round=x["round"], no=order.index(x["group"]) + 1, winner=w, loser=l, ww=ww, lw=lw, src=x["src"]))
+
+    if league in TIDY_ROUNDS:
+        for x in series: x["round"] = P.tidy_round(x["round"])
+        for x in series: x["round"] = " ".join(w[:1].upper() + w[1:] for w in x["round"].split())
+        stages = {x["round"]: P.round_stage(x["round"]) for x in series}
+        if series and all(v is not None for v in stages.values()):
+            rank = {v: i for i, v in enumerate(sorted(set(stages.values())), 1)}
+            for x in series: x["no"] = rank[stages[x["round"]]]
+        else:
+            names = list(dict.fromkeys(x["round"].lower() for x in series))
+            for x in series: x["no"] = names.index(x["round"].lower()) + 1
+
     # games the articles tabulate
     games = []
-    for src_text in (ptext, text):
+    for src_text in (ptext_x, text_x):
         g, gb = P.playoff_games(P.expand_sections(src_text, pages) if src_text else "", y)
         unparsed += [("games", b) for b in gb]
         for x in g:
@@ -150,6 +205,12 @@ def run(league, y, dry=False):
                 unparsed.append(("games", x["src"])); continue
             games.append(dict(x, home=h, away=a))
         if games: break
+    if not games:
+        for x in tg_games:
+            h, a = clubs.find(x["home"]), clubs.find(x["away"])
+            if not h or not a:
+                unparsed.append(("games", x["src"])); continue
+            games.append(dict(x, home=h, away=a))
     seen, uniq = set(), []
     for g in games:
         k = (g["date"], g["home"], g["away"], g["home_pts"], g["away_pts"])
@@ -185,17 +246,24 @@ def run(league, y, dry=False):
     champ = clubs.find(cn, cl_) if cn else None
     basis = "the season article's infobox"
     last = max(series, key=lambda s: s["no"]) if series else None
-    if not champ and last and re.search(r"calder cup", last["round"], re.I) and not re.search(r"division|conference", last["round"], re.I):
-        champ, basis = last["winner"], "the winner of the last playoff series"
-    elif champ and last:
-        if last["winner"] != champ: print(f"   champion differs: infobox {champ}, final series {last['winner']}")
+    final = last["winner"] if last and re.search(r"(calder|kelly|riley) cup" + (r"|\bfinals?\b" if league in TIDY_ROUNDS else ""), last["round"], re.I) and not re.search(r"division|conference|semi", last["round"], re.I) else None
+    if not champ:
+        ln, ll = listed_champions(league).get(y, (None, None))
+        champ = clubs.find(ln, ll) if ln else None
+        if champ: cl_, basis = ll, f"the league's list of seasons"
+    if not champ and final:
+        champ, basis = final, "the winner of the last playoff series"
+    elif champ and final and final != champ:
+        print(f"   champion differs: {basis} {champ}, final series {final}")
+        unparsed.append(("champion", f"{basis} names {champ}; the last playoff series was won by {final}"))
 
     # checks: a league plays only itself, so wins = losses (+ nothing) and goals for = goals against
     sw, sl = sum(r["w"] for r in std), sum(r["l"] for r in std)
     gf, ga = sum(r["gf"] or 0 for r in std), sum(r["ga"] or 0 for r in std)
     flags = []
     sl += sum((r.get("otl") or 0) + (r.get("sol") or 0) for r in std)
-    if std and sw != sl: flags.append(f"wins {sw} != losses {sl}")
+    st = sum(r.get("t") or 0 for r in std)
+    if std and sw != sl and sw != sl + st: flags.append(f"wins {sw} != losses {sl}")
     if std and gf != ga: flags.append(f"GF {gf} != GA {ga}")
     gw = {}
     for g in games:
@@ -219,7 +287,7 @@ def run(league, y, dry=False):
     for r in std:
         if r["team"] in seen_ts: continue
         seen_ts.add(r["team"])
-        out.append(f"insert into {S}.team_season values ({q(league)}, {y}, {q(r['team'])}, {q(r['link'])}, {q(r['affiliation'])});")
+        out.append(f"insert into {S}.team_season (league, season, team_name, link_title, affiliation, affiliation_links) values ({q(league)}, {y}, {q(r['team'])}, {q(r['link'])}, {q(r['affiliation'])}, {q(r.get('affiliation_links'))});")
     for r in std:
         out.append("insert into %s.standing values (%s,%d,%s,%s,%s,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s);" % (
             S, q(league), y, q(r["team"]), q(r["division"] or "League"), q(r["conference"]), r["rank"], n(r.get("gp")), n(r.get("w")), n(r.get("l")), n(r.get("t")),

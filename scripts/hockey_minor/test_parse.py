@@ -232,5 +232,179 @@ class Fetch(unittest.TestCase):
         self.assertEqual(F.section_pages("{{#section:2019 Calder Cup playoffs|2019bracket}}"), ["2019 Calder Cup playoffs"])
 
 
+# ---------------------------------------------------------------------------------------------------------------- the ECHL's shapes
+LINKED_HEAD = """== Standings ==<!-- note to editors -->
+;Eastern Conference
+{| class="wikitable sortable" style="text-align:center"
+|-
+!  style="width:30%;" class="unsortable"| North Division
+!  style="width:5%;"| {{abbr|GP|Games played}}
+!  style="width:5%;"| {{abbr|W|Wins}}
+!  style="width:5%;"| {{abbr|L|Losses}}
+!  style="width:5%;"| {{abbr|[[Overtime (ice hockey)|OTL]]|Overtime losses}}
+!  style="width:5%;"| {{abbr|[[Overtime (ice hockey)|SOL]]|Shootout loss}}
+!  style="width:5%;"| {{abbr|GF|Goals for}}
+!  style="width:5%;"| {{abbr|GA|Goals against}}
+!  style="width:5%;"| {{abbr|[[Ice hockey#Periods and overtime|PTS]]|Points}}
+|- bgcolor=#ffeeaa
+|align=left| '''y''' – [[Newfoundland Growlers]] ([[Toronto Maple Leafs|TOR]]) ||72||43||21||4||4||258||207||'''94'''
+|- bgcolor=
+|align=left| [[Reading Royals]] ([[Philadelphia Flyers|PHI]]/[[Toronto Maple Leafs|TOR]])||72||34||28||4||6||229||229||'''78'''
+|-
+|align=left| [[Maine Mariners (ECHL)|Maine Mariners]] (independent)||72||37||32||2||1||221||247||'''77'''
+|}
+"""
+
+NESTED = """== Regular season ==
+=== Standings ===
+==== By division ====
+'''Eastern Conference'''<br>
+{| border="0" cellspacing="0" cellpadding="0"
+|-
+| colspan="2" |
+{| class="wikitable sortable"
+|+ Atlantic Division
+! style="width 5em;" |
+! style="width:20em;" class="unsortable" |
+! {{abbr|GP|Games played}}
+! {{abbr|W|Wins}}
+! {{abbr|L|Losses}}
+! {{abbr|OTL|Overtime losses}}
+! {{abbr|SOL|Shootout losses}}
+! {{abbr|GF|Goals for}}
+! {{abbr|GA|Goals against}}
+! {{abbr|Pts|Points}}
+
+|- style="text-align: center;"
+|| 1
+| align=left|[[Elmira Jackals]] ([[Anaheim Ducks|ANA]]/[[Ottawa Senators|OTT]]) || 72 || 45 || 22 || 2 || 3 || 228 || 204 || '''95'''
+
+|- style="text-align: center;"
+|| 2
+| align=left|[[Wheeling Nailers]] ([[Montreal Canadiens|MTL]]) || 72 || 37 || 26 || 4 || 5 || 219 || 202 || '''83'''
+|}
+|}
+==== By conference ====
+{| class="wikitable"
+! Eastern Conference
+! GP !! W !! L !! OTL !! SOL !! GF !! GA !! PTS
+|-
+| [[Elmira Jackals]] || 72 || 45 || 22 || 2 || 3 || 228 || 204 || 95
+|}
+"""
+
+TABLES = """===Kelly Cup finals===
+{| cellspacing="10"
+| valign="top" |
+{| class="wikitable"
+! bgcolor="#DDDDDD" colspan="4" | Kelly Cup Finals (1) Atlantic City vs. (2) Columbia
+|-
+! Date !! Away !! Home
+|-
+| May 7 || align="right" | '''Atlantic City 1''' || Columbia 0
+|-
+| May 9 || align="right" | Columbia 2 || '''3 Atlantic City''' || OT
+|- align="center"
+| colspan="4" | '''''Atlantic City wins series and [[Kelly Cup]] 2&ndash;0'''''
+|}
+|}
+"""
+
+BLOCKS = """== First round ==
+=== American Conference quarterfinals ===
+==== (1) Charlotte Checkers vs. (8) Toledo Walleye ====
+{{NHLPlayoffs
+|team1= Charlotte Checkers
+|team2= Toledo Walleye
+|date1= April 2
+|home1= 1
+|score1= 3 &ndash; 1
+|won1= 1
+|date2= April 3
+|home2= 2
+|score2= 2 &ndash; 4
+|won2= 1
+|series= Charlotte wins series 3 &ndash; 1}}
+== Conference Finals ==
+=== American Conference ===
+==== (1) Charlotte Checkers vs. (2) Reading Royals ====
+{{NHLPlayoffs
+|team1= Charlotte Checkers
+|team2= Reading Royals
+|series= Reading wins series 4-3}}
+"""
+
+
+class Echl(unittest.TestCase):
+    def test_header_cells_with_links_and_a_comment_after_the_heading(self):
+        rows, bad = P.parse_standings(P.strip_comments(LINKED_HEAD), v2=True)
+        self.assertEqual([r["team"] for r in rows], ["Newfoundland Growlers", "Reading Royals", "Maine Mariners"])
+        self.assertEqual((rows[0]["otl"], rows[0]["sol"], rows[0]["pts"], rows[0]["gf"]), (4, 4, 94, 258))
+        self.assertEqual(rows[0]["conference"], "Eastern Conference")        # a ';Eastern Conference' line, not a heading
+        self.assertEqual(rows[0]["division"], "North Division")
+        self.assertEqual([(r["affiliation"], r["affiliation_links"]) for r in rows],
+                         [("TOR", "Toronto Maple Leafs"), ("PHI/TOR", "Philadelphia Flyers/Toronto Maple Leafs"), ("independent", None)])
+
+    def test_a_table_in_a_table_with_a_rank_column_and_a_conference_table_left_out(self):
+        rows, bad = P.parse_standings(NESTED, v2=True)
+        self.assertEqual([(r["team"], r["division"], r["conference"], r["gp"], r["pts"]) for r in rows],
+                         [("Elmira Jackals", "Atlantic Division", "Eastern Conference", 72, 95), ("Wheeling Nailers", "Atlantic Division", "Eastern Conference", 72, 83)])
+        self.assertEqual(rows[0]["affiliation_links"], "Anaheim Ducks/Ottawa Senators")
+
+    def test_footnote_marks_and_ind_are_not_affiliations(self):
+        self.assertEqual(P.affiliation_of("[[Columbia Inferno]] (z)"), (None, None))
+        self.assertEqual(P.affiliation_of("[[Utah Grizzlies]] (Ind.)"), ("independent", None))
+        self.assertEqual(P.affiliation_of("[[Rapid City Rush]] ({{abbr|Ind.|Independent}})"), ("independent", None))
+        self.assertEqual(P.affiliation_of("[[Toledo Storm]] ([[Detroit Red Wings|DET]]/[[San Jose Sharks|SJS)]]"), ("DET/SJS", "Detroit Red Wings/San Jose Sharks"))
+
+    def test_game_tables_give_games_and_series_with_the_round_in_the_title(self):
+        series, games, bad = P.table_games(TABLES, 2002)
+        self.assertEqual(bad, [])
+        self.assertEqual([(s["round"], s["team1"], s["team2"], s["wins1"], s["wins2"]) for s in series], [("Kelly Cup Finals", "Atlantic City", "Columbia", 2, 0)])
+        self.assertEqual([(g["date"], g["home"], g["away"], g["home_pts"], g["away_pts"], g["overtime"]) for g in games],
+                         [(datetime.date(2003, 5, 7), "Columbia", "Atlantic City", 0, 1, False), (datetime.date(2003, 5, 9), "Atlantic City", "Columbia", 3, 2, True)])
+
+    def test_game_blocks_give_a_series_under_its_round(self):
+        series, bad = P.block_series(BLOCKS)
+        self.assertEqual(bad, [])
+        self.assertEqual([(s["round"], s["group"], s["wins1"], s["wins2"]) for s in series], [("American Conference quarterfinals", "First round", 3, 1), ("Conference Finals", "Conference Finals", 3, 4)])
+
+    def test_rounds_are_tidied_and_staged(self):
+        self.assertEqual(P.tidy_round("Divisional Semifinals <br/> April 2–8"), "Division Semifinals")
+        self.assertEqual(P.tidy_round("Conference Quarterfinals (Best of 5)"), "Conference Quarterfinals")
+        self.assertEqual(P.tidy_round("Kelley Cup Finals"), "Kelly Cup Finals")
+        self.assertEqual([P.round_stage(x) for x in ("Division Wild Card", "Conference First Round", "Conference Quarterfinals", "Division Semifinals", "Division Finals", "Conference Finals", "Kelly Cup Finals", "Riley Cup Final", "Riley Cup")], [0, 1, 2, 3, 4, 5, 6, 6, 6])
+        self.assertIsNone(P.round_stage("Playoffs"))
+
+    def test_a_bracket_template_is_read_from_its_own_page(self):
+        tpl = {"2013 Kelly Cup Playoffs": "<noinclude>doc</noinclude>{{4TeamBracket | RD1=Semis | RD1-team01=A | RD1-score01=4 | RD1-team02=B | RD1-score02=1}}"}
+        out = P.expand_named("==Bracket==\n{{2013 Kelly Cup Playoffs}}\n", tpl)
+        self.assertIn("4TeamBracket", out)
+        self.assertNotIn("doc", out)
+        self.assertEqual(P.bracket_series(out)[0], [("Semis", "A", None, 4, "B", None, 1)])
+
+    def test_the_list_of_seasons_names_the_champion(self):
+        lst = """{| class="wikitable"
+|-
+! No. !! Season !! Teams !! Games !! Start !! Finish !! Top !! Champion
+|-
+|1
+|[[1988–89 ECHL season|1988–89]]
+|5
+|60
+|
+|April 12
+|[[Erie Panthers]] <small>(37–20–3)</small>
+|[[Carolina Thunderbirds]]
+|}"""
+        self.assertEqual(P.listed_champions(lst), {1988: ("Carolina Thunderbirds", "Carolina Thunderbirds")})
+
+    def test_fetch_titles_and_templates(self):
+        self.assertEqual(F.season_title("echl", 1988), "1988–89 ECHL season")
+        self.assertEqual(F.playoffs_title("echl", 2018), "2019 Kelly Cup playoffs")
+        self.assertEqual((F.years("echl")[0], F.years("echl")[-1]), (1988, 2025))
+        self.assertEqual(F.bracket_templates("{{2013 Kelly Cup Playoffs}} {{2005 Riley Cup playoffs}} {{x}}"), ["2005 Riley Cup playoffs", "2013 Kelly Cup Playoffs"])
+
+
 if __name__ == "__main__":
     unittest.main()

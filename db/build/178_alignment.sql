@@ -43,6 +43,11 @@ create function pg_temp.canon(lg text, lvl text, raw text) returns text[] langua
     when lg = 'ahl' and lvl = 'conference' then case regexp_replace(lower(btrim(raw)), ' conference$', '')
         when 'northern' then array['Northern Conference', 'North'] when 'southern' then array['Southern Conference', 'South']
         when 'eastern' then array['Eastern Conference', 'East'] when 'western' then array['Western Conference', 'West'] end
+    -- the ECHL's Northern and Southern Conferences of 2002-04, the American and National Conferences of 2008-10, then the Eastern and Western Conferences
+    when lg = 'echl' and lvl = 'conference' then case regexp_replace(lower(btrim(raw)), ' conference$', '')
+        when 'northern' then array['Northern Conference', 'North'] when 'southern' then array['Southern Conference', 'South']
+        when 'american' then array['American Conference', 'American'] when 'national' then array['National Conference', 'National']
+        when 'eastern' then array['Eastern Conference', 'East'] when 'western' then array['Western Conference', 'West'] end
     when lg = 'wha' then case regexp_replace(lower(btrim(raw)), ' division$', '') when 'eastern' then array['Eastern Division', 'East'] when 'western' then array['Western Division', 'West']
                                                                       when 'canadian' then array['Canadian Division', 'Canadian'] end
     -- the BAA and the NBA before 1970 had Eastern and Western Divisions (and a Central Division in 1949-50), not conferences
@@ -92,7 +97,7 @@ from core.team_season t join core.season s using (season_id)
 left join core.franchise_identity i using (franchise_identity_id)
 left join lateral (select x.full_name, x.nickname from core.franchise_identity x where x.franchise_id = t.franchise_id and i.franchise_identity_id is null
                    order by abs(extract(year from lower(x.valid_during)) - s.start_year) limit 1) n on true  -- a season with no identity of its own: the nearest era's name
-where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha', 'wnba', 'pwhl', 'nwsl', 'ahl');
+where s.league_code in ('nhl', 'nba', 'mlb', 'nfl', 'cfl', 'afl', 'aafc', 'wha', 'wnba', 'pwhl', 'nwsl', 'ahl', 'echl');
 create index on ts (lg, y, franchise_id);
 
 -- ---------------------------------------------------------------------------------------------- evidence
@@ -201,10 +206,10 @@ select 'wnba', season, division, 'conference',
        case when division ~* 'eastern' then 'Eastern' when division ~* 'western' then 'Western' end, null, team, pg_temp.flat(team)
 from legacy_wikipedia_wnba.standing
 where division ~* '(eastern|western)'
-union all  -- the AHL: the division table's heading and the conference heading above it (the one table of 1952-76 headed "Overall" has no division)
-select 'ahl', season, coalesce(conference || ' ', '') || division, 'division', division, conference, team, pg_temp.flat(team)
+union all  -- the AHL and the ECHL: the division table's heading and the conference heading above it (the one table of 1952-76 headed "Overall" has no division)
+select league, season, coalesce(conference || ' ', '') || division, 'division', division, conference, team, pg_temp.flat(team)
 from legacy_wikipedia_hockey_minor.standing
-where league = 'ahl' and division <> 'Overall';
+where league in ('ahl', 'echl') and division <> 'Overall';
 create temp table wmatch as
 select w.*, coalesce(
     (select min(ts.franchise_id) from ts where ts.lg = w.lg and ts.y = w.y and pg_temp.flat(ts.full_name) = w.fl having count(*) = 1),

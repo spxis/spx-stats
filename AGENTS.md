@@ -635,6 +635,13 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   label with no parent and is logged in `meta.data_issue` (`bash db/tests/ahl-affiliation.sh`, `db/checks/104`). The site shows the league on `/more-hockey` ("More hockey": minor and junior leagues by
   level, `MORE_HOCKEY_LEVEL` in `web/src/lib/leagues.ts`; one link under the NHL in the menu; no menu entry and no `PARENT` for the leagues on it), a club's NHL parent on its pages and in the season's
   standings, and an NHL club's farm teams on its page. The next league is one more line in `MORE_HOCKEY_LEVEL`.
+  **The ECHL** (`echl`, 1988-89 to 2025-26, the East Coast Hockey League until 2002-03; the second league) is the same pipeline: `season.py echl`, `db/build/233` (franchises from the league article's
+  timelines and list of defunct teams: the first Cincinnati Cyclones became the Birmingham Bulls and the Atlantic City Boardwalk Bullies, the second began as the Louisville RiverFrogs), `178` and `234`.
+  The articles give the champion in an infobox only from 1999-2000 (the league's list of seasons names the others), the bracket as a template, a template page (`{{2013 Kelly Cup Playoffs}}`), game blocks
+  or game tables, so the series come from whichever the season has; the column the 1996-97 to 2000-01 tables head T counts overtime losses (the league had no ties) and is read so. The champion is the
+  Riley Cup's until 1995-96 (one award, `echl_kelly_cup`). 234 places the NHL parent from the article the standings cell links to (`affiliation_links`, migration 163), the label of a placed club being
+  its abbreviation that season; the AHL parent is not loaded (the articles name it only where it changed; the table can hold it after the NHL clubs with `parent_league_code` `ahl`).
+  `bash db/tests/echl-from-wikipedia.sh` (it builds an NHL from `db/tests/echl-nhl-fixture.sql`).
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.

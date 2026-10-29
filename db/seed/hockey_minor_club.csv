@@ -152,3 +152,107 @@ Springfield Falcons,ahl,1994,2015,new:SPRFALCONS,US,,the Springfield Falcons bec
 Tucson Roadrunners,ahl,2016,2025,new:SPRFALCONS,US,,,Tucson,Roadrunners
 Colorado Eagles,ahl,2018,2025,new:COLEAGLES,US,,joined in 2018,Colorado,Eagles
 Coachella Valley Firebirds,ahl,2022,2025,new:COACHELLA,US,,joined in 2022,Coachella Valley,Firebirds
+Carolina Thunderbirds,echl,1988,1988,new:WHEELING,US,,"The Carolina Thunderbirds of Winston-Salem, North Carolina (1988-92), who moved to Wheeling, West Virginia, as the Thunderbirds in 1992 and became the Wheeling Nailers in 1996",Carolina,Thunderbirds
+Winston-Salem Thunderbirds,echl,1989,1991,new:WHEELING,US,,,Winston-Salem,Thunderbirds
+Wheeling Thunderbirds,echl,1992,1995,new:WHEELING,US,,,Wheeling,Thunderbirds
+Wheeling Nailers,echl,1996,2025,new:WHEELING,US,,,Wheeling,Nailers
+Erie Panthers,echl,1988,1995,new:ERIE,US,,"The Erie Panthers (1988-96), who moved to Louisiana as the Baton Rouge Kingfish (1996-2003) and to Victoria, British Columbia, as the Salmon Kings (2004-11, folded)",Erie,Panthers
+Baton Rouge Kingfish,echl,1996,2002,new:ERIE,US,,,Baton Rouge,Kingfish
+Victoria Salmon Kings,echl,2004,2010,new:ERIE,CA,,,Victoria,Salmon Kings
+Johnstown Chiefs,echl,1988,2009,new:JOHNSTOWN,US,,"The Johnstown Chiefs (1988-2010), who moved to Greenville, South Carolina, as the Road Warriors and became the Swamp Rabbits in 2015",Johnstown,Chiefs
+Greenville Road Warriors,echl,2010,2014,new:JOHNSTOWN,US,,,Greenville,Road Warriors
+Greenville Swamp Rabbits,echl,2015,2025,new:JOHNSTOWN,US,,,Greenville,Swamp Rabbits
+Knoxville Cherokees,echl,1988,1996,new:KNOXVILLE,US,,"The Knoxville Cherokees (1988-97), who moved to Florence, South Carolina, as the Pee Dee Pride (1997-2005; the Florence Pride in 2003-04) and folded",Knoxville,Cherokees
+Pee Dee Pride,echl,1997,2004,new:KNOXVILLE,US,,,Pee Dee,Pride
+Florence Pride,echl,2003,2003,new:KNOXVILLE,US,,,Florence,Pride
+Virginia Lancers,echl,1988,1989,new:LANCERS,US,,"The Virginia Lancers of Vinton (1988-90), the Roanoke Valley Rebels and Rampage, the Huntsville Blast (1993-94), the Tallahassee Tiger Sharks (1994-2001), the Macon Whoopee (2001-02) and the Lexington Men O' War (2002-03), whose franchise became the Utah Grizzlies in 2005 (to play as the Trenton Ironhawks from 2026-27)",Virginia,Lancers
+Roanoke Valley Rebels,echl,1990,1991,new:LANCERS,US,,,Roanoke Valley,Rebels
+Roanoke Valley Rampage,echl,1992,1992,new:LANCERS,US,,,Roanoke Valley,Rampage
+Huntsville Blast,echl,1993,1993,new:LANCERS,US,,,Huntsville,Blast
+Tallahassee Tiger Sharks,echl,1994,2000,new:LANCERS,US,,,Tallahassee,Tiger Sharks
+Macon Whoopee,echl,2001,2001,new:LANCERS,US,,,Macon,Whoopee
+Lexington Men O' War,echl,2002,2002,new:LANCERS,US,,,Lexington,Men O' War
+Utah Grizzlies,echl,2005,2025,new:LANCERS,US,,,Utah,Grizzlies
+Greensboro Monarchs,echl,1989,1994,new:MONARCHS,US,,"The Greensboro Monarchs (1989-95), replaced in their market by the AHL's Carolina Monarchs",Greensboro,Monarchs
+Hampton Roads Admirals,echl,1989,1999,new:HAMPTONROADS,US,,"The Hampton Roads Admirals (1989-2000), replaced by the AHL's Norfolk Admirals; the ECHL franchise was bought in 2001 and moved to Columbus, Georgia, as the Cottonmouths",Hampton Roads,Admirals
+Columbus Cottonmouths,echl,2001,2003,new:HAMPTONROADS,US,,,Columbus,Cottonmouths
+Nashville Knights,echl,1989,1995,new:NASHVILLE,US,,"The Nashville Knights (1989-96), who moved to Pensacola, Florida, as the Ice Pilots (1996-2008)",Nashville,Knights
+Pensacola Ice Pilots,echl,1996,2007,new:NASHVILLE,US,,,Pensacola,Ice Pilots
+Cincinnati Cyclones,echl,1990,1991,new:ATLANTICCITY,US,,"The first Cincinnati Cyclones (1990-92), who became the Birmingham Bulls (1992-2001), the Atlantic City Boardwalk Bullies (2001-05), the Stockton Thunder (2005-15) and the Adirondack Thunder (2015 on)",Cincinnati,Cyclones
+Birmingham Bulls,echl,1992,2000,new:ATLANTICCITY,US,,,Birmingham,Bulls
+Atlantic City Boardwalk Bullies,echl,2001,2004,new:ATLANTICCITY,US,,,Atlantic City,Boardwalk Bullies
+Stockton Thunder,echl,2005,2014,new:ATLANTICCITY,US,,,Stockton,Thunder
+Adirondack Thunder,echl,2015,2025,new:ATLANTICCITY,US,,,Adirondack,Thunder
+Louisville Icehawks,echl,1990,1993,new:LOUISVILLE,US,Louisville IceHawks,"The Louisville IceHawks (1990-94), who moved to Jacksonville, Florida, as the Lizard Kings (1995-2000)",Louisville,IceHawks
+Jacksonville Lizard Kings,echl,1995,1999,new:LOUISVILLE,US,,,Jacksonville,Lizard Kings
+Richmond Renegades,echl,1990,2002,new:RICHMOND,US,,The Richmond Renegades (1990-2003),Richmond,Renegades
+Columbus Chill,echl,1991,1998,new:COLUMBUSCHILL,US,,"The Columbus Chill (1991-99), who stood down for the Blue Jackets' arrival; the franchise was bought and moved to Reading, Pennsylvania, as the Royals in 2001",Columbus,Chill
+Reading Royals,echl,2001,2025,new:COLUMBUSCHILL,US,,,Reading,Royals
+Dayton Bombers,echl,1991,2008,new:DAYTON,US,,The Dayton Bombers (1991-2009),Dayton,Bombers
+Raleigh Icecaps,echl,1991,1997,new:RALEIGH,US,Raleigh IceCaps,"The Raleigh IceCaps (1991-98), who moved to Augusta, Georgia, as the Lynx (1998-2008)",Raleigh,IceCaps
+Augusta Lynx,echl,1998,2008,new:RALEIGH,US,,,Augusta,Lynx
+Toledo Storm,echl,1991,2006,new:TOLEDO,US,,"The Toledo Storm (1991-2007), suspended for a new arena and back as the Toledo Walleye in 2009",Toledo,Storm
+Toledo Walleye,echl,2009,2025,new:TOLEDO,US,,,Toledo,Walleye
+Charlotte Checkers,echl,1993,2009,new:CHARLOTTE,US,,"The Charlotte Checkers (1993-2010), replaced in their market by the AHL's Checkers",Charlotte,Checkers
+Huntington Blizzard,echl,1993,1999,new:HUNTINGTON,US,,"The Huntington Blizzard (1993-2000), who were reactivated in Texas as the Wildcatters (2003-08), then the Ontario Reign (2008-15) and the Manchester Monarchs (2015-19)",Huntington,Blizzard
+Texas Wildcatters,echl,2003,2007,new:HUNTINGTON,US,,,Texas,Wildcatters
+Ontario Reign,echl,2008,2014,new:HUNTINGTON,US,,,Ontario,Reign
+Manchester Monarchs,echl,2015,2018,new:HUNTINGTON,US,,,Manchester,Monarchs
+Roanoke Express,echl,1993,2003,new:ROANOKE,US,,The Roanoke Express (1993-2004),Roanoke,Express
+South Carolina Stingrays,echl,1993,2025,new:STINGRAYS,US,,The South Carolina Stingrays (1993 on),South Carolina,Stingrays
+Louisiana IceGators,echl,1995,2004,new:ICEGATORS,US,,The Louisiana IceGators (1995-2005),Louisiana,IceGators
+Louisville RiverFrogs,echl,1995,1997,new:CYCLONES,US,,"The Louisville RiverFrogs (1995-98), who moved to Miami as the Matadors (1998-99) and to Cincinnati as the second Cyclones (2001 on; away 2004-06)",Louisville,RiverFrogs
+Miami Matadors,echl,1998,1998,new:CYCLONES,US,,,Miami,Matadors
+Cincinnati Cyclones,echl,2001,2025,new:CYCLONES,US,,,Cincinnati,Cyclones
+Mobile Mysticks,echl,1995,2001,new:MOBILE,US,,"The Mobile Mysticks (1995-2002), reactivated in Duluth, Georgia, as the Gwinnett Gladiators (2003-15) and renamed the Atlanta Gladiators in 2015",Mobile,Mysticks
+Gwinnett Gladiators,echl,2003,2014,new:MOBILE,US,,,Gwinnett,Gladiators
+Atlanta Gladiators,echl,2015,2025,new:MOBILE,US,,,Atlanta,Gladiators
+Mississippi Sea Wolves,echl,1996,2008,new:SEAWOLVES,US,,"The Mississippi Sea Wolves (1996-2009), out of Biloxi for two seasons after Hurricane Katrina",Mississippi,Sea Wolves
+Peoria Rivermen,echl,1996,2004,new:PEORIA,US,,"The Peoria Rivermen (1996-2005), replaced by the AHL's Rivermen",Peoria,Rivermen
+Chesapeake Icebreakers,echl,1997,1998,new:ICEBREAKERS,US,,"The Chesapeake Icebreakers (1997-99), who moved to Jackson, Mississippi, as the Bandits (1999-2003)",Chesapeake,Icebreakers
+Jackson Bandits,echl,1999,2002,new:ICEBREAKERS,US,,,Jackson,Bandits
+New Orleans Brass,echl,1997,2001,new:BRASS,US,,The New Orleans Brass (1997-2002),New Orleans,Brass
+Florida Everblades,echl,1998,2025,new:EVERBLADES,US,,The Florida Everblades (1998 on),Florida,Everblades
+Greenville Grrrowl,echl,1998,2005,new:GRRROWL,US,,The Greenville Grrrowl (1998-2006),Greenville,Grrrowl
+Arkansas RiverBlades,echl,1999,2002,new:RIVERBLADES,US,,The Arkansas RiverBlades (1999-2003),Arkansas,RiverBlades
+Greensboro Generals,echl,1999,2003,new:GENERALS,US,,The Greensboro Generals (1999-2004),Greensboro,Generals
+Trenton Titans,echl,1999,2006,new:TRENTON,US,,"The Trenton Titans (1999-2007), the Devils (2007-11) and the Titans again until 2013",Trenton,Titans
+Trenton Devils,echl,2007,2010,new:TRENTON,US,,,Trenton,Devils
+Trenton Titans,echl,2011,2012,new:TRENTON,US,,,Trenton,Titans
+Columbia Inferno,echl,2001,2007,new:INFERNO,US,,The Columbia Inferno (2001-08),Columbia,Inferno
+Alaska Aces,echl,2003,2016,new:ALASKA,US,,"The Alaska Aces (2003-17), bought and moved to Portland, Maine, as the Maine Mariners (2018 on)",Alaska,Aces
+Maine Mariners,echl,2018,2025,new:ALASKA,US,,,Maine,Mariners
+Bakersfield Condors,echl,2003,2014,new:BAKERSFIELD,US,,"The Bakersfield Condors (2003-15), who moved to Norfolk, Virginia, as the Admirals when the AHL took Bakersfield",Bakersfield,Condors
+Norfolk Admirals,echl,2015,2025,new:BAKERSFIELD,US,,,Norfolk,Admirals
+Fresno Falcons,echl,2003,2008,new:FRESNO,US,,The Fresno Falcons (2003-08),Fresno,Falcons
+Idaho Steelheads,echl,2003,2025,new:IDAHO,US,,The Idaho Steelheads (2003 on),Idaho,Steelheads
+Las Vegas Wranglers,echl,2003,2013,new:WRANGLERS,US,,The Las Vegas Wranglers (2003-14),Las Vegas,Wranglers
+Long Beach Ice Dogs,echl,2003,2006,new:ICEDOGS,US,,The Long Beach Ice Dogs (2003-07),Long Beach,Ice Dogs
+San Diego Gulls,echl,2003,2005,new:GULLS,US,,The San Diego Gulls (2003-06),San Diego,Gulls
+Phoenix RoadRunners,echl,2005,2008,new:ROADRUNNERS,US,,The Phoenix RoadRunners (2005-09),Phoenix,RoadRunners
+Elmira Jackals,echl,2007,2016,new:ELMIRA,US,,The Elmira Jackals (2007-17),Elmira,Jackals
+Kalamazoo Wings,echl,2009,2025,new:KALAMAZOO,US,,The Kalamazoo Wings (2009 on),Kalamazoo,Wings
+Chicago Express,echl,2011,2011,new:CHICAGOEXPRESS,US,,The Chicago Express (2011-12),Chicago,Express
+Colorado Eagles,echl,2011,2017,new:COLORADO,US,,"The Colorado Eagles (2011-18), who left for the AHL",Colorado,Eagles
+Evansville IceMen,echl,2012,2015,new:EVANSVILLE,US,,"The Evansville IceMen (2012-16), who sat out a season and moved to Jacksonville, Florida, as the Icemen (2017 on)",Evansville,IceMen
+Jacksonville Icemen,echl,2017,2025,new:EVANSVILLE,US,,,Jacksonville,Icemen
+Fort Wayne Komets,echl,2012,2025,new:KOMETS,US,,The Fort Wayne Komets (2012 on),Fort Wayne,Komets
+Orlando Solar Bears,echl,2012,2025,new:ORLANDO,US,,The Orlando Solar Bears (2012 on),Orlando,Solar Bears
+San Francisco Bulls,echl,2012,2013,new:SFBULLS,US,,"The San Francisco Bulls (2012-14), who folded in mid-season",San Francisco,Bulls
+Allen Americans,echl,2014,2025,new:ALLEN,US,,The Allen Americans (2014 on),Allen,Americans
+Brampton Beast,echl,2014,2019,new:BRAMPTON,CA,,The Brampton Beast (2014-20),Brampton,Beast
+Indy Fuel,echl,2014,2025,new:INDY,US,,The Indy Fuel (2014 on),Indy,Fuel
+Missouri Mavericks,echl,2014,2016,new:MAVERICKS,US,,"The Missouri Mavericks (2014-17), the Kansas City Mavericks from 2017",Missouri,Mavericks
+Kansas City Mavericks,echl,2017,2025,new:MAVERICKS,US,,,Kansas City,Mavericks
+Quad City Mallards,echl,2014,2017,new:MALLARDS,US,,The Quad City Mallards (2014-18),Quad City,Mallards
+Rapid City Rush,echl,2014,2025,new:RUSH,US,,The Rapid City Rush (2014 on),Rapid City,Rush
+Tulsa Oilers,echl,2014,2025,new:OILERS,US,,The Tulsa Oilers (2014 on),Tulsa,Oilers
+Wichita Thunder,echl,2014,2025,new:WICHITA,US,,The Wichita Thunder (2014 on),Wichita,Thunder
+Worcester Railers,echl,2017,2025,new:WORCESTER,US,,The Worcester Railers (2017 on),Worcester,Railers
+Newfoundland Growlers,echl,2018,2023,new:GROWLERS,CA,,"The Newfoundland Growlers (2018-24), who ceased operations in mid-season",Newfoundland,Growlers
+Iowa Heartlanders,echl,2021,2025,new:HEARTLANDERS,US,,The Iowa Heartlanders (2021 on; suspended for 2026-27),Iowa,Heartlanders
+Trois-Rivières Lions,echl,2021,2025,new:LIONS,CA,,The Trois-Rivieres Lions (2021 on),Trois-Rivières,Lions
+Savannah Ghost Pirates,echl,2022,2025,new:GHOSTPIRATES,US,,The Savannah Ghost Pirates (2022 on),Savannah,Ghost Pirates
+Bloomington Bison,echl,2024,2025,new:BISON,US,,The Bloomington Bison (2024 on),Bloomington,Bison
+Tahoe Knight Monsters,echl,2024,2025,new:KNIGHTMONSTERS,US,,The Tahoe Knight Monsters (2024 on),Tahoe,Knight Monsters
+Greensboro Gargoyles,echl,2025,2025,new:GARGOYLES,US,,The Greensboro Gargoyles (2025 on),Greensboro,Gargoyles

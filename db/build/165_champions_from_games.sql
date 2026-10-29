@@ -38,10 +38,10 @@ left join lateral (select greatest(home_score, away_score) ws, least(home_score,
                    from po where season_id = f.season_id and ((h = f.t1 and a = f.t2) or (h = f.t2 and a = f.t1))
                    order by game_date desc, game_id desc limit 1) sc on true
 -- (The NHA, PCHA, WCHL and WHA name their champions from the articles, db/build/154: their playoffs were often two-game total-goals series. The AHL's
--- Calder Cup is named by the season article (db/build/229): its articles list only some of a series' games, and a postseason without a Cup is no final.
+-- Calder Cup and the ECHL's Kelly Cup are named by the season articles (db/build/229, 233): its articles list only some of a series' games, and a postseason without a Cup is no final.
 --  College football's bowl games are many separate games: its champion is the national championship game's winner, db/build/230.)
 -- A season still being played (the last game logged is a semifinal) has no final yet: its last two clubs are not finalists.
-where f.finals = f.games and f.t1_wins <> f.t2_wins and coalesce(f.round_label, '') !~* 'semi' and f.league_code not in ('nha', 'pcha', 'wchl', 'wha', 'ahl', 'ncaaf');
+where f.finals = f.games and f.t1_wins <> f.t2_wins and coalesce(f.round_label, '') !~* 'semi' and f.league_code not in ('nha', 'pcha', 'wchl', 'wha', 'ahl', 'echl', 'ncaaf');
 
 delete from core.award_winner w
 where w.source_id = (select source_id from meta.source where code = 'spx_stats_derived')
