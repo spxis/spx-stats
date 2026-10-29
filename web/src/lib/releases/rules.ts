@@ -179,6 +179,7 @@ export const TURSO_TABLES: readonly string[] = [
   "meta.verification",
   "meta.data_issue",
   "core.batted_ball_player",
+  "core.game_field",
   "core.betting_line",
   "api.person_admin",
   "api.totals",

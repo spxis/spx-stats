@@ -111,6 +111,7 @@ sides). The flow is the same as for production: preview, `db/checks`, snapshot, 
 | DS1 object | Turso table | Notes |
 |---|---|---|
 | `meta.verification`, `meta.data_issue`, `core.betting_line`, `core.batted_ball_player` | `meta_verification`, `meta_data_issue`, `core_betting_line`, `core_batted_ball_player` | as DS1 |
+| `core.game_field` | `core_game_field` | what the game page draws on the field (MLB batted balls, NFL drives; migration 164, db/build/235 and 236): one row per game and kind, text up to a few KB; about 97,000 rows and 60 MB for the whole archive, just under the 100,000-row comparison limit |
 | `core.external_id` | `core_external_id` | still without the `game` rows (`PUBLISH_FILTER`) |
 | `api.person_admin` (matview) | `api_person_admin` | the matview on DS1 is the source: refresh it (`api.refresh()`) before you prepare |
 | derived, computed live on DS1 | `api_totals`, `api_quality`, `api_provenance` | the counts that used to come from the three production matviews (migrations 015, 056); `''` stands for null in a key |
