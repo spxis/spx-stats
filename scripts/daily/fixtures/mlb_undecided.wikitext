@@ -1,0 +1,30 @@
+<!-- Excerpt of the English Wikipedia article "2026 Milwaukee Brewers season", revision 1380568816 (2026-10-16T15:06:33Z), CC BY-SA 4.0, authors: see the article history. References removed. Test fixture for scripts/daily: the World Series rows name "Guardians/Rays" because the American League pennant was not decided yet (SPX-761). -->
+== Postseason ==
+===Game log===
+{{Game log start|style={{Baseball primary style|Milwaukee Brewers}}; |title=2026 Postseason game log: 7–1 (Home: 4–0; Away: 3–1)}}
+{{Game log section start|hide=y|style={{Baseball secondary style|Milwaukee Brewers}};|title=NL Championship Series: 4–0 (Home: 2–0; Away: 2–0)|#|Date|Opponent|Score|Win|Loss|Save|Attendance|Record|Box/<br />Streak}}
+|- style="background:#bfb;"
+| 1 || October 11 || [[2026 Los Angeles Dodgers season|Dodgers]] || 2–1 || '''[[DL Hall|Hall]]''' (2–0) || [[Tarik Skubal|Skubal]] (1–1) || '''[[Trevor Megill|Megill]]''' (3) || 42,617 || 1–0 ||
+|- style="background:#bfb;"
+| 2 || October 12 || [[2026 Los Angeles Dodgers season|Dodgers]] || 7–4 || '''[[JoJo Romero|Romero]]''' (1–1) || [[Brock Stewart|Stewart]] (0–1) || '''[[Aaron Ashby|Ashby]]''' (1) || 42,516 || 2–0 ||
+|- style="background:#bfb;"
+| 3 || October 14 || @ [[2026 Los Angeles Dodgers season|Dodgers]] || 6–2 || '''[[DL Hall|Hall]]''' (3–0) || [[Blake Snell|Snell]] (0–1) || '''[[Trevor Megill|Megill]]''' (4) || 50,708 || 3–0 ||
+|- style="background:#bfb;"
+| 4 || October 15 || @ [[2026 Los Angeles Dodgers season|Dodgers]] || 6–4 || '''[[JoJo Romero|Romero]]''' (2–1) || [[Tanner Scott|Scott]] (0–1) || '''[[Aaron Ashby|Ashby]]''' (2) || 49,104 || 4–0 ||
+|-
+{{Game log section end}}
+{{Game log section start|hide=n|style={{Baseball secondary style|Milwaukee Brewers}};|title=World Series: 0–0 (Home: 0–0; Away: 0–0)|#|Date|Opponent|Score|Win|Loss|Save|Attendance|Record|Box/<br />Streak}}
+|- style="background:#;"
+| 1 || October 23 || [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –
+|- style="background:#;"
+| 2 || October 24 || [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –
+|- style="background:#;"
+| 3 || October 26 || @ [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –
+|- style="background:#;"
+| 4 || October 27 || @ [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –
+|- style="background:#;"
+| 5† || October 28 || @ [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –
+|- style="background:#;"
+| 6† || October 30 || [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –
+|- style="background:#;"
+| 7† || October 31 || [[2026 Cleveland Guardians season|Guardians]]/[[2026 Tampa Bay Rays season|Rays]] || – || (–) ||  (–) || – || – || – || –

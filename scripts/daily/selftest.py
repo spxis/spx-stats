@@ -107,6 +107,37 @@ def test_parsers():
     c = one(cs, D(2026, 10, 7))
     if c: check(c["home"] == "New York Yankees" and c["score"]["Tampa Bay Rays"] == 4, "mlb postseason page game 3")
     check(any(c["status"] == "scheduled" for c in cs), "mlb postseason page: a scheduled game")
+    # SPX-761: a row whose opponent is not decided yet ('Guardians/Rays') is no game. The 2026-10-18 revision of the Brewers' article had seven World
+    # Series rows like that; the job made seven games against the Guardians, who did not reach the World Series.
+    cs, bad = P.parse_mlb(fx("mlb_undecided.wikitext"), 2026, "Milwaukee Brewers", MLB, "2026 Milwaukee Brewers season")
+    check(not bad, "mlb undecided fixture unreadable: %r" % bad)
+    check(len(cs) == 4 and all(set(c["teams"]) == {"Milwaukee Brewers", "Los Angeles Dodgers"} for c in cs),
+          "mlb: the seven World Series rows against 'Guardians/Rays' make no claim, the four NLCS games do (%d claims)" % len(cs))
+    top = fx("mlb_undecided.wikitext").split("{{Game log section start|hide=n")[0]
+    ws = top + ("{{Game log section start|hide=n|style=x|title=World Series: 1-0|#|Date|Opponent|Score|Win|Loss|Save|Attendance|Record}}\n"
+                "|- style=\"background:#bfb;\"\n| 1 || October 23 || [[2026 Tampa Bay Rays season|Rays]] || 3-2 || a || b || c || 43,250 || 1-0\n"
+                "|- style=\"background:#;\"\n| 2 || October 24 || Guardians/Rays || - || (-) || (-) || - || - || -\n"
+                "|- style=\"background:#;\"\n| 3 || October 26 || @ Guardians or Rays || - || (-) || (-) || - || - || -\n"
+                "|- style=\"background:#;\"\n| 4 || October 27 || @ [[2026 Tampa Bay Rays season|Rays]] || - || (-) || (-) || - || - || -\n"
+                "{{Game log section end}}\n")
+    cs, bad = P.parse_mlb(ws, 2026, "Milwaukee Brewers", MLB, "2026 Milwaukee Brewers season")
+    world = [c for c in cs if c["date"] >= D(2026, 10, 23)]
+    check(sorted(c["date"] for c in world) == [D(2026, 10, 23), D(2026, 10, 27)] and all(set(c["teams"]) == {"Milwaukee Brewers", "Tampa Bay Rays"} for c in world),
+          "mlb: once the opponent is a single club the row is a game; two clubs in a cell, linked or plain, are not (%r)" % [(c["date"], c["teams"]) for c in world])
+    check(P.undecided("[[2026 Buffalo Bills season|Bills]]/[[2026 Houston Texans season|Texans]]", NFL) and P.undecided("Bills/Texans", NFL)
+          and not P.undecided("[[2026 Buffalo Bills season|Bills]]", NFL) and not P.undecided("at Houston Texans", NFL) and not P.undecided("TBD", NFL),
+          "undecided(): two clubs in one cell, whatever the markup; one club or none is not")
+    # the postseason page writes the first club's dash only sometimes ('Tampa Bay Rays 2, Milwaukee Brewers - 3'; 'Cleveland Guardians - 1 Tampa Bay Rays - 3')
+    pp = ("==2026 World Series==\n===(AL1) Tampa Bay Rays vs. (NL1) Milwaukee Brewers===\n{{MLB Playoff Summary\n| winner = Milwaukee\n| score = 2-1\n"
+          "| date1 = October 23\n| score1 = Tampa Bay Rays 2, \'\'\'Milwaukee Brewers\'\'\' \u2013 3\n"
+          "| date2 = October 24\n| score2 = Cleveland Guardians \u2013 1 \'\'\'Tampa Bay Rays\'\'\' \u2013 3\n"
+          "| date3 = October 26\n| score3 = Tampa Bay Rays at Milwaukee Brewers\n}}\n")
+    cs, bad = P.parse_mlb_postseason(pp, 2026, MLB, "2026 Major League Baseball postseason")
+    check(not bad and len(cs) == 3, "mlb postseason page: all three score layouts are read (%r)" % bad)
+    c = one(cs, D(2026, 10, 23))
+    if c: check(c["home"] == "Milwaukee Brewers" and c["score"] == {"Tampa Bay Rays": 2, "Milwaukee Brewers": 3}, "mlb postseason page: first club without a dash %r" % c)
+    c = one(cs, D(2026, 10, 24))
+    if c: check(c["home"] == "Tampa Bay Rays" and c["score"] == {"Cleveland Guardians": 1, "Tampa Bay Rays": 3}, "mlb postseason page: no comma between the clubs %r" % c)
     # NFL
     cs, bad = P.parse_nfl(fx("nfl_bills.wikitext"), 2026, "Buffalo Bills", NFL, "2026 Buffalo Bills season")
     check(not bad, "nfl unreadable rows: %r" % bad)

@@ -44,6 +44,23 @@ def link_of(cell):
     return m.group(1).strip() if m else None
 
 
+def undecided(cell, roster):
+    """True when an opponent cell names more than one club ('Guardians/Rays': the other side of a series is not decided yet).
+
+    Such a row is a placeholder, not a game: it must make no claim, because resolving the cell to its first link would invent a game
+    against a club that may never play (2026-10-19: the Brewers' World Series rows against 'Guardians/Rays' became seven games against the
+    Guardians; the Rays won the pennant)."""
+    clubs = set()
+    for target in re.findall(r"\[\[([^\]|#]+)", cell):
+        c = roster.resolve(None, target.strip())
+        if c: clubs.add(c["name"])
+    if len(clubs) < 2:
+        for part in re.split(r"\s*/\s*|\s+or\s+", clean(cell)):
+            c = roster.resolve(part) if part else None
+            if c: clubs.add(c["name"])
+    return len(clubs) > 1
+
+
 def strip_attr(c):
     """'align="center" | text' -> 'text' (a cell attribute prefix)."""
     m = re.match(r"^[^\[\]{}|]*?\b\w+\s*=\s*[^|\[\]{}]*\|(?!\|)", c)
@@ -211,6 +228,7 @@ def parse_nhl(text, season, team, roster, page):
             vname, hname, order = v["name"], h["name"], "visitor"
         else:      # layout B
             raw = cl[di + 1]
+            if undecided(cells[di + 1], roster): continue        # the opponent is not decided yet: a placeholder, not a game
             away = bool(re.match(r"^(?:@|at\b)", raw, re.I))
             o = roster.resolve(re.sub(r"^(?:@|at\b|vs\.?)\s*", "", raw, flags=re.I), link_of(cells[di + 1]))
             score_cell, ot_cell = cl[di + 2], cl[di + 3]
@@ -249,6 +267,7 @@ def parse_mlb(text, season, team, roster, page):
         if not ctx["in_log"]: continue
         d = mk_date(season, cl[di], lambda mon: season)
         raw = cl[di + 1]
+        if undecided(cells[di + 1], roster): continue            # 'Guardians/Rays': the opponent is not decided yet, so this row is no game
         away = bool(re.match(r"^(?:@|at\b)", raw, re.I))
         opp = roster.resolve(re.sub(r"^(?:@|at\b|vs\.?)\s*", "", raw, flags=re.I), link_of(cells[di + 1]))
         phase = phase_of(ctx)
@@ -307,7 +326,7 @@ def parse_mlb_postseason(text, season, roster, page):
             if "score%d" % n not in kv: continue
             sc, dt = clean(kv["score%d" % n]), clean(kv.get("date%d" % n, ""))
             d = mk_date(season, dt, lambda mon: season)
-            mf = re.match(r"^(.+?)\s*[–—-]\s*(\d+),?\s+(.+?)\s*[–—-]\s*(\d+)(?:\s*\((\d+)\))?$", sc)
+            mf = re.match(r"^(.+?)\s*(?:[–—-]\s*)?(\d+),?\s+(.+?)\s*[–—-]\s*(\d+)(?:\s*\((\d+)\))?$", sc)
             if sc.startswith("TBD"): continue
             ms = re.match(r"^(.+?)\s+at\s+(.+)$", sc)
             if mf:
@@ -343,6 +362,7 @@ def parse_nfl(text, season, team, roster, page):
         if k >= len(cl) or d is None:
             bad.append(" | ".join(cl)[:200]); continue
         raw = cl[k]
+        if undecided(cells[k], roster): continue                 # the opponent is not decided yet (a playoff round): a placeholder, not a game
         loc = "A" if re.match(r"^(?:at|@)\s", raw, re.I) else "H"
         opp = roster.resolve(re.sub(r"^(?:at|@|vs\.?)\s+", "", raw, flags=re.I), link_of(cells[k]))
         if not opp or opp["name"] == team:
