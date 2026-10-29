@@ -411,26 +411,29 @@ join newd n on n.league_code = p.lg and n.name = p.dname
 join core.division d on d.league_code = n.league_code and d.name = n.name and d.first_season = n.first_season
 where t.team_season_id = p.team_season_id and p.dname is not null
   and t.division_id is distinct from d.division_id;
+-- (only the leagues this step covers: college football and the other leagues with their own alignment step keep theirs)
 update core.team_season t set conference_id = null
-where t.conference_id is not null
+where t.conference_id is not null and t.team_season_id in (select team_season_id from ts)
   and not exists (select 1 from pick p where p.team_season_id = t.team_season_id and p.cname is not null);
 update core.team_season t set division_id = null
-where t.division_id is not null
+where t.division_id is not null and t.team_season_id in (select team_season_id from ts)
   and not exists (select 1 from pick p where p.team_season_id = t.team_season_id and p.dname is not null);
 
 update core.team_season t set division_id = null
 where t.division_id in (select d.division_id from core.division d
-                        where not exists (select 1 from newd n
+                        where d.league_code in (select distinct lg from ts)
+                          and not exists (select 1 from newd n
                                           where n.league_code = d.league_code and n.name = d.name and n.first_season = d.first_season));
 delete from core.division d
-where not exists (select 1 from newd n
+where d.league_code in (select distinct lg from ts) and not exists (select 1 from newd n
                   where n.league_code = d.league_code and n.name = d.name and n.first_season = d.first_season);
 update core.team_season t set conference_id = null
 where t.conference_id in (select c.conference_id from core.conference c
-                          where not exists (select 1 from newc n
+                          where c.league_code in (select distinct lg from ts)
+                            and not exists (select 1 from newc n
                                             where n.league_code = c.league_code and n.name = c.name and n.first_season = c.first_season));
 delete from core.conference c
-where not exists (select 1 from newc n
+where c.league_code in (select distinct lg from ts) and not exists (select 1 from newc n
                   where n.league_code = c.league_code and n.name = c.name and n.first_season = c.first_season);
 
 -- ---------------------------------------------------------------------------------------------- report

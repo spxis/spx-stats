@@ -610,6 +610,11 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   is in neither league's games (so none is counted twice). The champions come from the league article's table (a season's infobox may name the regular-season winner), not from the games (165 skips these leagues).
   Step 154 merges the NHL API's two franchises for the Millionaires and Maroons (VMI, VMA): run it again after any rerun of 145. A rival league has a parent (`PARENT` in `web/src/lib/leagues.ts`):
   no menu entry of its own, the parent's page lists it under "Other leagues", its pages carry the trail "NHL > PCHA > 1919-20", addresses `/pcha/...`.
+- **College football** (NCAA Division I-A, the FBS from 2006; league `ncaaf`, 2000 on; John, 2026-10-28) comes from English Wikipedia (CC BY-SA 4.0): the season articles, their conference
+  standings templates and every team-season article's schedule, fetched and parsed by `scripts/ncaaf/season.py` into `legacy_wikipedia_ncaaf` (migration 159), the raw wikitext archived first
+  (`wikipedia-ncaaf/<year>/...`). `db/build/230` builds games (regular season, conference championship games, bowls as `playoffs`), standings, conferences, divisions, the national champion and
+  the programs as franchises; games against FCS teams are kept (the opponent is a franchise outside the league's membership). CollegeFootballData is a cross-check only (`db/build/231`,
+  `meta.verification` and `meta.data_issue`, no value copied, no ESPN id stored). The site shows Wikipedia's data. See `scripts/ncaaf/README.md`.
 - **MLB's rival and predecessor leagues** (the National Association 1871-75, the American Association 1882-91, the Union Association 1884, the Players' League 1890, the Federal League 1914-15;
   `na`, `aa`, `ua`, `pl`, `fl`; John, 2026-10-26, `docs/baseball-family.md`) come from the Retrosheet game logs, which carry each game's league. `db/build/139` adds the leagues (parent `mlb`), `db/build/140`
   puts every game and team season in the season of its own league and gives each franchise one `core.franchise_league` row per league, never counted in MLB's records. The National Association is

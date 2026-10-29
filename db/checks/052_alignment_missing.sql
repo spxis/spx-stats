@@ -8,4 +8,6 @@ where (t.conference_id is null
        and exists (select 1 from core.conference c where c.league_code = s.league_code and s.start_year between c.first_season and coalesce(c.last_season, 32767))
        and exists (select 1 from core.team_season o where o.season_id = t.season_id and o.conference_id is not null))
    or (t.division_id is null
-       and exists (select 1 from core.team_season o where o.season_id = t.season_id and o.division_id is not null))
+       -- college football: only some conferences have divisions, so a team lacks a division only when others of its own conference have one
+       and exists (select 1 from core.team_season o where o.season_id = t.season_id and o.division_id is not null
+                   and (s.league_code <> 'ncaaf' or o.conference_id = t.conference_id)))
