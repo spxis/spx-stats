@@ -5,7 +5,7 @@
  */
 import type { Tie, TiePlay } from "./bracketLayout.ts";
 import type { GameRow } from "./api/types";
-import { LG, SUPER_BOWL_SINCE, type LeagueCode } from "./leagues.ts";
+import { ECHL_KELLY_SINCE, LG, SUPER_BOWL_SINCE, type LeagueCode } from "./leagues.ts";
 import { bestOfFromGames, bestOfIn, roundKeys, winsNeeded, type RoundKey } from "./playoffFormat.ts";
 import type { Say, SeriesKey } from "./seriesCopy.ts";
 import { inOrder, placeOf, seriesOrder, type Order } from "./sides.ts";
@@ -281,6 +281,7 @@ export function finalName(lg: string, year: number, say: Say): string {
     case "wchl": return say("final.wchl");
     case "wha": return say("final.wha");
     case "ahl": return say("final.ahl");
+    case "echl": return year < ECHL_KELLY_SINCE ? say("final.echlOld") : say("final.echl");
     case "cfl": return say("final.cfl");
     default: return say("final.other");
   }

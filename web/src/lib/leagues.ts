@@ -1,4 +1,4 @@
-export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "na", "aa", "ua", "pl", "fl"] as const;
+export const LEAGUE_CODES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl"] as const;
 export type LeagueCode = (typeof LEAGUE_CODES)[number];
 
 /**
@@ -23,6 +23,7 @@ export const ALL_LEAGUES: { code: LeagueCode; name: string; short: string; close
   { code: "wchl", name: "Western Canada Hockey League", short: "WCHL", closed: true },
   { code: "wha", name: "World Hockey Association", short: "WHA", closed: true },
   { code: "ahl", name: "American Hockey League", short: "AHL" },
+  { code: "echl", name: "ECHL", short: "ECHL" },
   { code: "na", name: "National Association of Professional Base Ball Players", short: "NA", closed: true },
   { code: "aa", name: "American Association", short: "AA", closed: true },
   { code: "ua", name: "Union Association", short: "UA", closed: true },
@@ -64,7 +65,7 @@ export const PARENT: Partial<Record<LeagueCode, LeagueCode>> = { afl: "nfl", aaf
  * own with no parent (its records are never added to the NHL's), by level. Only leagues the archive holds are here; the next one (the ECHL, the IHL, the CHL's leagues,
  * the USHL, the defunct minors) is one more line. College and women's hockey will be levels of their own.
  */
-export const MORE_HOCKEY_LEVEL: Partial<Record<LeagueCode, "minor" | "junior" | "defunct">> = { ahl: "minor" };
+export const MORE_HOCKEY_LEVEL: Partial<Record<LeagueCode, "minor" | "junior" | "defunct">> = { ahl: "minor", echl: "minor" };
 
 /** True for a league listed on the More hockey page. */
 export const isMoreHockey = (code: string): boolean => Object.hasOwn(MORE_HOCKEY_LEVEL, code);
@@ -85,7 +86,7 @@ export const topLeague = (code: string): string => PARENT[code as LeagueCode] ??
 
 export const leagueInfo = (code: string) => ALL_LEAGUES.find((l) => l.code === code);
 
-export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", ncaaf: "College football", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA", ahl: "AHL", na: "NA", aa: "AA", ua: "UA", pl: "PL", fl: "FL" };
+export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "NBA", wnba: "WNBA", mlb: "MLB", nfl: "NFL", ncaaf: "College football", cfl: "CFL", nwsl: "NWSL", afl: "AFL", aafc: "AAFC", nha: "NHA", pcha: "PCHA", wchl: "WCHL", wha: "WHA", ahl: "AHL", echl: "ECHL", na: "NA", aa: "AA", ua: "UA", pl: "PL", fl: "FL" };
 
 /**
  * The first NFL season whose last game is a Super Bowl between the league's two conference champions (Super Bowl V, in January 1971). Before that the
@@ -93,6 +94,9 @@ export const LG: Record<LeagueCode, string> = { nhl: "NHL", pwhl: "PWHL", nba: "
  * The AFL-NFL World Championship Games of 1966-1969 (Super Bowls I-IV) join two leagues, so neither league's season holds them.
  */
 export const SUPER_BOWL_SINCE = 1970;
+
+/** The first ECHL season whose champion lifted the Kelly Cup (1996-97); the seasons before it played for the Riley Cup. */
+export const ECHL_KELLY_SINCE = 1996;
 
 /** The leagues a franchise can have seasons in besides the page's own: a club's page points to its seasons there (the AAFC's Browns, the AFL's Oilers, the Maroons in the NHL, PCHA and WCHL). */
 export const RELATED_LEAGUES: Partial<Record<LeagueCode, readonly LeagueCode[]>> = Object.fromEntries(
@@ -108,7 +112,7 @@ export function isLeague(code: string): code is LeagueCode {
 }
 
 /** The leagues whose seasons span two calendar years: 1993-94 (the NHL, the NBA and the hockey leagues beside the NHL). The others are one: 2025. */
-const TWO_YEAR_SEASONS: ReadonlySet<string> = new Set(["nhl", "pwhl", "nba", "nha", "pcha", "wchl", "wha", "ahl"]);
+const TWO_YEAR_SEASONS: ReadonlySet<string> = new Set(["nhl", "pwhl", "nba", "nha", "pcha", "wchl", "wha", "ahl", "echl"]);
 
 /** A season as an address segment: 1999-00 for the two-year leagues (the short form, always), 2019 for the others. Addresses never change. */
 export function seasonSeg(lg: string, y: number): string {

@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.166.0", date: "2026-10-29", href: "/echl",
+    title: "More hockey: the ECHL",
+    text: "The ECHL is the second league on the More hockey page: 38 seasons from 1988-89, when it was the East Coast Hockey League, with standings, playoff series, the games the articles list and every champion (the Riley Cup until 1995-96, then the Kelly Cup; the 2019-20 season was cancelled). Each club shows its NHL parent club by season where Wikipedia names it, from 2005-06 on. From English Wikipedia." },
   { version: "0.165.0", date: "2026-10-29", href: "/mlb/scores/2026-10-28",
     title: "Big games look special",
     text: "A postseason game now has a banner on its score card and game page: the round and the game's number (World Series, Game 5), where the series stands (Brewers win 4-1) and each club's series wins beside its name. A league's last round, such as the World Series or the Super Bowl, looks strongest. College football's bowl games carry their names. Regular-season games are unchanged." },

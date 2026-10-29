@@ -39,7 +39,7 @@ export function codeOfSlug(league: string, slug: string): string | null {
 export const CHAMPIONSHIP_CODE: Readonly<Record<string, string>> = {
   nhl: "nhl_stanley_cup", pwhl: "pwhl_walter_cup", nba: "nba_larry_obrien", wnba: "wnba_championship", mlb: "mlb_world_series", nfl: "nfl_super_bowl",
   ncaaf: "ncaaf_championship", cfl: "cfl_grey_cup", nwsl: "nwsl_championship", afl: "afl_championship", aafc: "aafc_championship", nha: "nha_championship", pcha: "pcha_championship",
-  wchl: "wchl_championship", wha: "wha_championship", ahl: "ahl_calder_cup", na: "mlb_pennant_na", aa: "mlb_pennant_aa", ua: "mlb_pennant_ua", pl: "mlb_pennant_pl", fl: "mlb_pennant_fl",
+  wchl: "wchl_championship", wha: "wha_championship", ahl: "ahl_calder_cup", echl: "echl_kelly_cup", na: "mlb_pennant_na", aa: "mlb_pennant_aa", ua: "mlb_pennant_ua", pl: "mlb_pennant_pl", fl: "mlb_pennant_fl",
 };
 
 /** Who or what won: a person, a franchise or a bare name, as one key, so the same winner counts once whichever source named them. */

@@ -47,6 +47,8 @@ export const SERIES_COPY = {
   "final.wchl": "WCHL Championship",
   "final.wha": "Avco Cup Final",
   "final.ahl": "Calder Cup Final",
+  "final.echl": "Kelly Cup Final",
+  "final.echlOld": "Riley Cup Final",
   "final.cfl": "Grey Cup",
   "final.other": "Final",
   "final.nflDated": "Super Bowl {numeral} ({year})",

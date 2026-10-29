@@ -57,7 +57,7 @@ export async function GroupPage({ lg, f, group, path, sp }: { lg: LeagueCode; f:
   const team = nameOf(f);
   const groupName = say(`h2h.group.of.${group}` as PhraseKey);
   const q = parseH2hQuery(sp, lg);
-  const unit = say(({ nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", ncaaf: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals", ahl: "unit.goals", na: "unit.runs", aa: "unit.runs", ua: "unit.runs", pl: "unit.runs", fl: "unit.runs" } as const)[lg]);
+  const unit = say(({ nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", ncaaf: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals", ahl: "unit.goals", echl: "unit.goals", na: "unit.runs", aa: "unit.runs", ua: "unit.runs", pl: "unit.runs", fl: "unit.runs" } as const)[lg]);
 
   const all = groupGames(lg, d.history, f, group, d.places);
   const hasPlayoffs = all.some((g) => g.ph === "playoffs"), hasRegular = all.some((g) => g.ph === "regular");

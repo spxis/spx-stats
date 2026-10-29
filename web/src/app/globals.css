@@ -17,7 +17,7 @@
   --nwsl: #9d174d; /* rose, the NWSL's own menu colour, apart from MLS teal */
   --afl: var(--nfl);   /* the AFL is American football: its clubs are the NFL's (pages of the AFL take the NFL's colour) */
   --aafc: var(--nfl);  /* so is the AAFC: three of its clubs joined the NFL in 1950 */
-  --nha: var(--nhl); --pcha: var(--nhl); --wchl: var(--nhl); --wha: var(--nhl); --ahl: var(--nhl);   /* the hockey leagues beside the NHL, and the minor leagues under More hockey, take its colour */
+  --nha: var(--nhl); --pcha: var(--nhl); --wchl: var(--nhl); --wha: var(--nhl); --ahl: var(--nhl); --echl: var(--nhl);   /* the hockey leagues beside the NHL, and the minor leagues under More hockey, take its colour */
   --na: var(--mlb); --aa: var(--mlb); --ua: var(--mlb); --pl: var(--mlb); --fl: var(--mlb);   /* the baseball leagues beside MLB take its colour */
   --accent: var(--ink);
   /* The accent where it colours text, or carries the page's own paper-coloured text (a chosen chip): the accent pulled toward the ink by --accent-keep,
@@ -620,6 +620,7 @@ a.addresslink::after { content: "\2197"; margin-left: 3px; font-size: .85em; tex
 :root:has([data-sport="wchl"]) { --mk-r: var(--wchl); }
 :root:has([data-sport="wha"]) { --mk-r: var(--wha); }
 :root:has([data-sport="ahl"]) { --mk-r: var(--ahl); }
+:root:has([data-sport="echl"]) { --mk-r: var(--echl); }
 :root:has([data-sport="na"]) { --mk-r: var(--na); }
 :root:has([data-sport="aa"]) { --mk-r: var(--aa); }
 :root:has([data-sport="ua"]) { --mk-r: var(--ua); }

@@ -20,7 +20,7 @@ export const generateMetadata = guardMeta(async () => {
 });
 
 /**
- * Hockey beyond the NHL, league by league and level by level: the AHL now, then the leagues that follow it. A kept page that reads no query: only the leagues the
+ * Hockey beyond the NHL, league by league and level by level: the AHL and the ECHL now, then the leagues that follow them. A kept page that reads no query: only the leagues the
  * archive holds are listed (lib/moreHockey.ts), each with its years, seasons, champions and latest champion, and a link to its own page.
  */
 export default guard(async function MoreHockeyPage() {
@@ -43,7 +43,7 @@ export default guard(async function MoreHockeyPage() {
           <ul className="otherleagues hockeyleagues">
             {g.leagues.map((l) => (
               <li key={l.code}>
-                <Link href={`/${l.code}`}>{l.name} ({l.short})</Link>
+                <Link href={`/${l.code}`}>{l.name === l.short ? l.name : `${l.name} (${l.short})`}</Link>
                 {" · "}{l.first === l.last ? l.first : `${l.first}–${l.last}`}
                 {" · "}{plural("count.seasons", l.seasons)}
                 {" · "}{plural("count.champions", l.champions)}

@@ -16,7 +16,19 @@ test("the AHL is a league of its own on the More hockey page: no parent, no menu
   assert.ok(!LEAGUES.some((l) => l.code === "ahl"), "the pickers and the menu list the leagues of the menu only");
   assert.ok(ALL_LEAGUES.some((l) => l.code === "ahl" && l.short === "AHL"));
   assert.equal(leagueTrail(["ahl", "1985"]), null, "the NHA-style trail is for a league with a parent");
-  assert.deepEqual(MORE_HOCKEY_LEVEL, { ahl: "minor" });
+  assert.deepEqual(MORE_HOCKEY_LEVEL, { ahl: "minor", echl: "minor" });
+});
+
+test("the ECHL is another league of the minor level: a league of its own, no parent, no menu entry, listed after the AHL", () => {
+  assert.ok(LEAGUE_CODES.includes("echl") && isMoreHockey("echl"));
+  assert.ok(!("echl" in PARENT) && !CHILDREN.nhl?.includes("echl") && !CHILDREN.ahl?.includes("echl") && !RELATED_LEAGUES.nhl?.includes("echl"));
+  assert.equal(topLeague("echl"), "echl");
+  assert.ok(!LEAGUES.some((l) => l.code === "echl"));
+  assert.ok(ALL_LEAGUES.some((l) => l.code === "echl" && l.short === "ECHL"));
+  assert.equal(familyOf("echl"), undefined);
+  assert.equal(menuFamilyOf("echl"), "nhl");
+  assert.equal(leagueTrail(["echl", "1996"]), null);
+  assert.deepEqual(Object.keys(MORE_HOCKEY_LEVEL), ["ahl", "echl"]);
 });
 
 test("the rival hockey leagues stay under the NHL's Other leagues and the NHL family does not hold the AHL", () => {
@@ -52,6 +64,20 @@ test("/more-hockey is a kept page that reads no query; the AHL's addresses are l
   assert.ok((PAGE_ROOTS as readonly string[]).includes("ahl"));
 });
 
+test("a season of the ECHL is 1996-97 in the address, a final is the Kelly Cup Final, and its addresses are league pages", () => {
+  assert.equal(seasonSeg("echl", 1996), "1996-97");
+  assert.equal(seasonLabel("echl", 1999), "1999-2000");
+  const say = ((k: string) => ({ "final.echl": "Kelly Cup Final", "final.echlOld": "Riley Cup Final", "final.other": "Final" })[k] ?? k) as never;
+  assert.equal(finalName("echl", 2001, say), "Kelly Cup Final");
+  assert.equal(finalName("echl", 1996, say), "Kelly Cup Final", "the 1996-97 champion was the first to lift the Kelly Cup");
+  assert.equal(finalName("echl", 1995, say), "Riley Cup Final");
+  const route = (path: string, query: Record<string, string> = {}) => resolvePageDestination(path, query, null, null);
+  assert.equal(route("/echl"), "/en/s/echl");
+  assert.equal(route("/echl/1996-97"), "/en/s/echl/1996-97");
+  assert.equal(route("/echl/1996-97", { phase: "p" }), "/en/q/echl/1996-97");
+  assert.ok((PAGE_ROOTS as readonly string[]).includes("echl"));
+});
+
 const season = (league: string, year: number, champion: string | null, franchise: number | null = null) => ({ league, year, label: seasonLabel(league, year), champion, champion_franchise: franchise });
 
 test("More hockey lists only the leagues the archive holds, by level, with years, seasons, champions and the latest champion", () => {
@@ -62,6 +88,8 @@ test("More hockey lists only the leagues the archive holds, by level, with years
   const [ahl] = g[0].leagues;
   assert.deepEqual([ahl.code, ahl.short, ahl.first, ahl.last, ahl.seasons, ahl.champions], ["ahl", "AHL", "1936-37", "2019-20", 4, 3]);
   assert.deepEqual(ahl.latest, { year: 2018, label: "2018-19", champion: "Charlotte Checkers", franchise: 7 });
+  const two = moreHockeyGroups([season("echl", 2024, "Trois-Rivieres Lions", 5), season("echl", 1988, "Carolina Thunderbirds", 4), season("ahl", 2018, "Charlotte Checkers", 7)]);
+  assert.deepEqual(two[0].leagues.map((l) => [l.code, l.first, l.last, l.seasons]), [["ahl", "2018-19", "2018-19", 1], ["echl", "1988-89", "2024-25", 2]], "the AHL, then the ECHL, in one level");
 });
 
 const row = (year: number, f: number, position: number, label: string, parent: number | null, team = "Club", parentTeam: string | null = null): Affiliation => ({

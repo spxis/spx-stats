@@ -1463,6 +1463,8 @@ export const PHRASES = {
   "rnd.wchl": "WCHL Championship",
   "rnd.wha": "Avco Cup Final",
   "rnd.ahl": "Calder Cup Final",
+  "rnd.echl": "Kelly Cup Final",
+  "rnd.echlOld": "Riley Cup Final",
   "rnd.cfl": "Grey Cup",
   "rnd.other": "Final",
   "rnd.first": "First Round",
