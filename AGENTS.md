@@ -617,6 +617,14 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   (the Cardinals' AA years are logged as SL4 beside SLN, then Louisville, Washington, the Cleveland Spiders, the Boston Reds, Baltimore) and gives BR4 from 1890 its own club (the Brooklyn Gladiators,
   not the Dodgers). The pennant of a league of its own is its championship (`mlb_pennant_na` ... `mlb_pennant_fl`, step 167); the World's Championship Series 1884-90 stay in MLB's season.
   A database built before this is split in place by `db/build/pending/baseball_family_repair.sql` (every id stays), then 140 is rerun; `db/checks/102` watches it.
+- **Minor-league hockey** (the AHL, 1936-37 to 2025-26, `ahl`; John, 2026-10-28: every Canadian and American league, one league at a time) comes from English Wikipedia (CC BY-SA 4.0): each
+  season article's standings (with the NHL club(s) each club was affiliated with), its Calder Cup bracket or sentences, and the playoffs article's {{NHLPlayoffs}} games, fetched and parsed by
+  `scripts/hockey_minor/season.py LEAGUE` into `legacy_wikipedia_hockey_minor` (migration 158; one `league` column, so the next league needs no migration), the raw wikitext archived first
+  (`wikipedia-hockey-minor/<league>/<year>/...`). `db/build/229` builds the seasons, franchises (`db/seed/hockey_minor_club.csv`: a renamed or relocated club is one franchise, as the league
+  article's list of teams tells it), standings, playoff series (core.series, as a result), the games an article writes out and the Calder Cup champions (the infobox; none in 2019-20 and
+  2020-21); divisions and conferences come from step 178, and step 165 leaves the league alone. The AHL is a league of its own, not a child of the NHL (no `PARENT`), and none of its clubs is
+  the franchise of its NHL affiliate. No article tabulates a regular season, so no regular-season game exists. `bash db/tests/ahl-from-wikipedia.sh`; parser tests
+  `python3 -I -m unittest discover -s scripts/hockey_minor -p 'test_*.py'`.
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.

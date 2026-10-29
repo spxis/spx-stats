@@ -11,3 +11,5 @@ where exists (select 1 from core.game g where g.season_id = s.season_id and g.ph
   and coalesce((select g.round_label from core.game g where g.season_id = s.season_id and g.phase = 'playoffs' and g.status <> 'cancelled'
                 order by g.game_date desc, g.game_id desc limit 1), '') !~* 'semi'
   and not exists (select 1 from core.award_winner w join core.award a using (award_id) where w.season_id = s.season_id and a.kind = 'championship')
+  -- a championship that was not awarded (core.title_not_awarded, db/seed/title_not_awarded.csv: the AHL's Calder Cup in 2020-21, when only one division held a postseason)
+  and not exists (select 1 from core.title_not_awarded n where n.league_code = s.league_code and n.start_year = s.start_year)

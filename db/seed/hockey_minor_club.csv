@@ -1,0 +1,154 @@
+club,league,first_year,last_year,franchise,country,display,note,location,nickname
+Buffalo Bisons,ahl,1936,1936,new:BUF1936,US,,"the IHL's Buffalo Bisons, folded 11 games into 1936-37 when the arena roof collapsed",Buffalo,Bisons
+Cleveland Falcons,ahl,1936,1936,new:CLEBARONS,US,,"Cleveland Falcons (1936-37), renamed the Cleveland Barons in 1937; became the Jacksonville Barons in 1973, then bought and moved as the Syracuse Eagles (folded 1975)",Cleveland,Falcons
+Cleveland Barons,ahl,1937,1972,new:CLEBARONS,US,,,Cleveland,Barons
+Jacksonville Barons,ahl,1973,1973,new:CLEBARONS,US,,,Jacksonville,Barons
+Syracuse Eagles,ahl,1974,1974,new:CLEBARONS,US,,,Syracuse,Eagles
+Syracuse Stars,ahl,1936,1939,new:SYRBISONS,US,,"the Syracuse Stars, who became the second Buffalo Bisons in 1940; folded in 1970",Syracuse,Stars
+Buffalo Bisons,ahl,1940,1969,new:SYRBISONS,US,,,Buffalo,Bisons
+Philadelphia Ramblers,ahl,1936,1940,new:PHIROCKETS,US,,"the Philadelphia Ramblers (a New York Rangers farm club), renamed the Rockets in 1941; suspended for the war and back 1946-49",Philadelphia,Ramblers
+Philadelphia Rockets,ahl,1941,1941,new:PHIROCKETS,US,,,Philadelphia,Rockets
+Philadelphia Rockets,ahl,1946,1948,new:PHIROCKETS,US,,,Philadelphia,Rockets
+New Haven Eagles,ahl,1936,1942,new:NHEAGLES,US,,folded during the war and resurrected in 1945; the Ramblers 1946-49,New Haven,Eagles
+New Haven Eagles,ahl,1945,1945,new:NHEAGLES,US,,,New Haven,Eagles
+New Haven Ramblers,ahl,1946,1949,new:NHEAGLES,US,,,New Haven,Ramblers
+New Haven Eagles,ahl,1950,1950,new:NHEAGLES,US,,,New Haven,Eagles
+Pittsburgh Hornets,ahl,1936,1955,new:PITHORNETS,US,,on hiatus 1956-61 for a new arena,Pittsburgh,Hornets
+Pittsburgh Hornets,ahl,1961,1966,new:PITHORNETS,US,,,Pittsburgh,Hornets
+Providence Reds,ahl,1936,1975,new:PROVREDS,US,,"the Providence Reds (Rhode Island Reds in 1976-77) became the Binghamton Dusters in 1977, then the Whalers, Rangers, the Hartford Wolf Pack and the Connecticut Whale",Providence,Reds
+Rhode Island Reds,ahl,1976,1976,new:PROVREDS,US,,,Rhode Island,Reds
+Binghamton Dusters,ahl,1977,1979,new:PROVREDS,US,,,Binghamton,Dusters
+Binghamton Whalers,ahl,1980,1989,new:PROVREDS,US,,,Binghamton,Whalers
+Binghamton Rangers,ahl,1990,1996,new:PROVREDS,US,,,Binghamton,Rangers
+Hartford Wolf Pack,ahl,1997,2009,new:PROVREDS,US,,,Hartford,Wolf Pack
+Hartford Wolf Pack/Connecticut Whale,ahl,2010,2010,new:PROVREDS,US,Connecticut Whale,,Connecticut,Whale
+Connecticut Whale,ahl,2011,2012,new:PROVREDS,US,,,Connecticut,Whale
+Hartford Wolf Pack,ahl,2013,2025,new:PROVREDS,US,,,Hartford,Wolf Pack
+Springfield Indians,ahl,1936,1941,new:SPRINDIANS,US,,"the Springfield Indians (suspended for the war), the Syracuse Warriors 1951-54 and the Springfield Kings 1967-74; became the Worcester IceCats in 1994, the Peoria Rivermen in 2005, the original Utica Comets in 2013 and the Abbotsford Canucks in 2021",Springfield,Indians
+Springfield Indians,ahl,1946,1950,new:SPRINDIANS,US,,,Springfield,Indians
+Syracuse Warriors,ahl,1951,1953,new:SPRINDIANS,US,,,Syracuse,Warriors
+Springfield Indians,ahl,1954,1966,new:SPRINDIANS,US,,,Springfield,Indians
+Springfield Kings,ahl,1967,1973,new:SPRINDIANS,US,,,Springfield,Kings
+Springfield Indians,ahl,1974,1993,new:SPRINDIANS,US,,,Springfield,Indians
+Worcester IceCats,ahl,1994,2002,new:SPRINDIANS,US,,,Worcester,IceCats
+Worcester Ice Cats,ahl,2003,2004,new:SPRINDIANS,US,Worcester IceCats,,Worcester,IceCats
+Peoria Rivermen,ahl,2005,2012,new:SPRINDIANS,US,,,Peoria,Rivermen
+Utica Comets,ahl,2013,2020,new:SPRINDIANS,US,,,Utica,Comets
+Abbotsford Canucks,ahl,2021,2025,new:SPRINDIANS,CA,,,Abbotsford,Canucks
+Indianapolis Capitals,ahl,1939,1951,new:INDYCAPS,US,,folded in 1952,Indianapolis,Capitals
+Washington Lions,ahl,1941,1942,new:WASHLIONS,US,,the Washington Lions became the Cincinnati Mohawks in 1949; they moved to the IHL in 1952,Washington,Lions
+Washington Lions,ahl,1947,1948,new:WASHLIONS,US,,,Washington,Lions
+Cincinnati Mohawks,ahl,1949,1951,new:WASHLIONS,US,,,Cincinnati,Mohawks
+St. Louis Flyers,ahl,1944,1952,new:STLFLYERS,US,,folded in 1953,St. Louis,Flyers
+Hershey Bears,ahl,1938,2025,new:HERSHEY,US,,the oldest continuously operating AHL club,Hershey,Bears
+Rochester Americans,ahl,1956,2025,new:ROCHESTER,US,,joined as an expansion club in 1956,Rochester,Americans
+Quebec Aces,ahl,1959,1970,new:QUEBEC,CA,,the Quebec Aces became the Richmond Robins in 1971; folded 1976,Quebec,Aces
+Richmond Robins,ahl,1971,1975,new:QUEBEC,US,,,Richmond,Robins
+Baltimore Clippers,ahl,1962,1975,new:BALCLIPPERS,US,,folded in 1977,Baltimore,Clippers
+Montreal Voyageurs,ahl,1969,1970,new:MTLVOY,CA,,"the Montreal Voyageurs became the Nova Scotia Voyageurs (1971), Sherbrooke Canadiens (1984), Fredericton Canadiens (1990) and Quebec Citadelles (1999); merged with the Hamilton Bulldogs in 2002",Montreal,Voyageurs
+Nova Scotia Voyageurs,ahl,1971,1983,new:MTLVOY,CA,,,Nova Scotia,Voyageurs
+Sherbrooke Canadiens,ahl,1984,1989,new:MTLVOY,CA,,,Sherbrooke,Canadiens
+Fredericton Canadiens,ahl,1990,1998,new:MTLVOY,CA,,,Fredericton,Canadiens
+Quebec Citadelles,ahl,1999,2001,new:MTLVOY,CA,,,Quebec,Citadelles
+Boston Braves,ahl,1971,1973,new:BOSBRAVES,US,,"the Boston Braves were suspended in 1974 and became the Capital District Islanders (1990), the Albany River Rats (1993) and the Charlotte Checkers (2010)",Boston,Braves
+Capital District Islanders,ahl,1990,1992,new:BOSBRAVES,US,,,Capital District,Islanders
+Albany River Rats,ahl,1993,2009,new:BOSBRAVES,US,,,Albany,River Rats
+Charlotte Checkers,ahl,2010,2019,new:BOSBRAVES,US,,,Charlotte,Checkers
+Charlotte Checkers,ahl,2021,2025,new:BOSBRAVES,US,,,Charlotte,Checkers
+Cincinnati Swords,ahl,1971,1973,new:CINSWORDS,US,,folded in 1974,Cincinnati,Swords
+Tidewater Wings,ahl,1971,1971,new:VAWINGS,US,,"the Tidewater Wings (Norfolk) became the Virginia Wings, then the Adirondack Red Wings (1979), the San Antonio Rampage (2002) and the Henderson Silver Knights (2020)",Tidewater,Wings
+Virginia Wings,ahl,1972,1974,new:VAWINGS,US,,,Virginia,Wings
+Adirondack Red Wings,ahl,1979,1998,new:VAWINGS,US,,,Adirondack,Red Wings
+San Antonio Rampage,ahl,2002,2019,new:VAWINGS,US,,,San Antonio,Rampage
+Henderson Silver Knights,ahl,2020,2025,new:VAWINGS,US,,,Henderson,Silver Knights
+New Haven Nighthawks,ahl,1972,1991,new:NHNIGHT,US,,"the New Haven Nighthawks became the New Haven Senators (1992), the Prince Edward Island Senators (1993), the Binghamton Senators (2002) and the Belleville Senators (2017)",New Haven,Nighthawks
+New Haven Senators,ahl,1992,1992,new:NHNIGHT,US,,,New Haven,Senators
+Prince Edward Island Senators,ahl,1993,1995,new:NHNIGHT,CA,,,Prince Edward Island,Senators
+Binghamton Senators,ahl,2002,2016,new:NHNIGHT,US,,,Binghamton,Senators
+Belleville Senators,ahl,2017,2025,new:NHNIGHT,CA,,,Belleville,Senators
+Hampton Gulls,ahl,1977,1977,new:HAMPGULLS,US,,folded midseason 1977-78,Hampton,Gulls
+Philadelphia Firebirds,ahl,1977,1978,new:PHIFIREBIRDS,US,,the Philadelphia Firebirds became the Syracuse Firebirds in 1979; folded 1980,Philadelphia,Firebirds
+Syracuse Firebirds,ahl,1979,1979,new:PHIFIREBIRDS,US,,,Syracuse,Firebirds
+Maine Mariners,ahl,1977,1986,new:MAINE1,US,,"the original Maine Mariners (a New Jersey Devils farm club) became the Utica Devils in 1987, the Saint John Flames (1993), the Omaha Ak-Sar-Ben Knights (2005), the Quad City Flames, the Abbotsford Heat (2009), the Adirondack Flames (2014), the Stockton Heat (2015) and the Calgary Wranglers (2022)",Maine,Mariners
+Utica Devils,ahl,1987,1992,new:MAINE1,US,,,Utica,Devils
+Saint John Flames,ahl,1993,2002,new:MAINE1,CA,,,Saint John,Flames
+Omaha Ak-Sar-Ben Knights,ahl,2005,2006,new:MAINE1,US,,,Omaha,Ak-Sar-Ben Knights
+Quad City Flames,ahl,2007,2008,new:MAINE1,US,,,Quad City,Flames
+Abbotsford Heat,ahl,2009,2013,new:MAINE1,CA,,,Abbotsford,Heat
+Adirondack Flames,ahl,2014,2014,new:MAINE1,US,,,Adirondack,Flames
+Stockton Heat,ahl,2015,2021,new:MAINE1,US,,,Stockton,Heat
+Calgary Wranglers,ahl,2022,2025,new:MAINE1,CA,,,Calgary,Wranglers
+Maine Mariners,ahl,1987,1991,new:MAINE2,US,,the expansion Maine Mariners of 1987 (a Boston Bruins farm club) became the Providence Bruins in 1992,Maine,Mariners
+Providence Bruins,ahl,1992,2025,new:MAINE2,US,,,Providence,Bruins
+New Brunswick Hawks,ahl,1978,1981,new:NBHAWKS,CA,,"the New Brunswick Hawks became the St. Catharines Saints (1982), the Newmarket Saints (1986), the St. John's Maple Leafs (1991) and the Toronto Marlies (2005)",New Brunswick,Hawks
+St. Catharines Saints,ahl,1982,1985,new:NBHAWKS,CA,,,St. Catharines,Saints
+Newmarket Saints,ahl,1986,1990,new:NBHAWKS,CA,,,Newmarket,Saints
+St. John's Maple Leafs,ahl,1991,2004,new:NBHAWKS,CA,,,St. John's,Maple Leafs
+Toronto Marlies,ahl,2005,2025,new:NBHAWKS,CA,,,Toronto,Marlies
+Erie Blades,ahl,1981,1981,new:ERIEBLADES,US,,merged into the Baltimore Skipjacks after one season,Erie,Blades
+Baltimore Skipjacks,ahl,1982,1992,new:BALSKIP,US,,the Baltimore Skipjacks became the Portland Pirates (1993) and the Springfield Thunderbirds (2016),Baltimore,Skipjacks
+Portland Pirates,ahl,1993,2015,new:BALSKIP,US,,,"Portland, Maine",Pirates
+Springfield Thunderbirds,ahl,2016,2019,new:BALSKIP,US,,,Springfield,Thunderbirds
+Springfield Thunderbirds,ahl,2021,2025,new:BALSKIP,US,,,Springfield,Thunderbirds
+Fredericton Express,ahl,1981,1987,new:FREDEXPRESS,CA,,"the Fredericton Express became the Halifax Citadels (1988) and the Cornwall Aces (1993); dormant until 1999, when it became the Wilkes-Barre/Scranton Penguins",Fredericton,Express
+Halifax Citadels,ahl,1988,1992,new:FREDEXPRESS,CA,,,Halifax,Citadels
+Cornwall Aces,ahl,1993,1995,new:FREDEXPRESS,CA,,,Cornwall,Aces
+Wilkes-Barre/Scranton Penguins,ahl,1999,2025,new:FREDEXPRESS,US,,,Wilkes-Barre/Scranton,Penguins
+Moncton Alpines,ahl,1982,1983,new:MONCTON,CA,,the Moncton Alpines became the Golden Flames (1984) and the Moncton Hawks (1987); folded 1994,Moncton,Alpines
+Moncton Golden Flames,ahl,1984,1986,new:MONCTON,CA,,,Moncton,Golden Flames
+Moncton Hawks,ahl,1987,1993,new:MONCTON,CA,,,Moncton,Hawks
+Sherbrooke Jets,ahl,1982,1983,new:SHERJETS,CA,,folded in 1984,Sherbrooke,Jets
+Nova Scotia Oilers,ahl,1984,1987,new:NSOILERS,CA,,"the Nova Scotia Oilers became the Cape Breton Oilers (1988), the Hamilton Bulldogs (1996), the second St. John's IceCaps (2015) and the Laval Rocket (2017)",Nova Scotia,Oilers
+Cape Breton Oilers,ahl,1988,1995,new:NSOILERS,CA,,,Cape Breton,Oilers
+Hamilton Bulldogs,ahl,1996,2014,new:NSOILERS,CA,,,Hamilton,Bulldogs
+St. John's IceCaps,ahl,2015,2016,new:NSOILERS,CA,,,St. John's,IceCaps
+Laval Rocket,ahl,2017,2025,new:NSOILERS,CA,,,Laval,Rocket
+Hamilton Canucks,ahl,1992,1993,new:HAMCANUCKS,CA,,the Hamilton Canucks became the Syracuse Crunch in 1994,Hamilton,Canucks
+Syracuse Crunch,ahl,1994,2025,new:HAMCANUCKS,US,,,Syracuse,Crunch
+Kentucky Thoroughblades,ahl,1996,2000,new:KYTHORO,US,,"the Kentucky Thoroughblades became the Cleveland Barons (2001), the Worcester Sharks (2006) and the San Jose Barracuda (2015)",Kentucky,Thoroughblades
+Cleveland Barons,ahl,2001,2005,new:KYTHORO,US,,,Cleveland,Barons
+Worcester Sharks,ahl,2006,2014,new:KYTHORO,US,,,Worcester,Sharks
+San Jose Barracuda,ahl,2015,2025,new:KYTHORO,US,,,San Jose,Barracuda
+Utah Grizzlies,ahl,2001,2004,new:UTAHGRIZ,US,,the Utah Grizzlies became the Lake Erie Monsters (2007) and the Cleveland Monsters (2016),Utah,Grizzlies
+Lake Erie Monsters,ahl,2007,2015,new:UTAHGRIZ,US,,,Lake Erie,Monsters
+Cleveland Monsters,ahl,2016,2025,new:UTAHGRIZ,US,,,Cleveland,Monsters
+Baltimore Bandits,ahl,1995,1996,new:BALBANDITS,US,,the Baltimore Bandits became the Cincinnati Mighty Ducks (1997) and the Rockford IceHogs (2007),Baltimore,Bandits
+Cincinnati Mighty Ducks,ahl,1997,2004,new:BALBANDITS,US,,,Cincinnati,Mighty Ducks
+Rockford IceHogs,ahl,2007,2025,new:BALBANDITS,US,,,Rockford,IceHogs
+Carolina Monarchs,ahl,1995,1996,new:CARMONARCHS,US,,the Carolina Monarchs became the Beast of New Haven; folded 1999,Carolina,Monarchs
+Beast of New Haven,ahl,1997,1998,new:CARMONARCHS,US,,,New Haven,Beast
+Philadelphia Phantoms,ahl,1996,2008,new:PHIPHANTOMS,US,,the Philadelphia Phantoms became the Adirondack Phantoms (2009) and the Lehigh Valley Phantoms (2014),Philadelphia,Phantoms
+Adirondack Phantoms,ahl,2009,2013,new:PHIPHANTOMS,US,,,Adirondack,Phantoms
+Lehigh Valley Phantoms,ahl,2014,2025,new:PHIPHANTOMS,US,,,Lehigh Valley,Phantoms
+Lowell Lock Monsters,ahl,1998,2005,new:LOWELL,US,,"the Lowell Lock Monsters became the Lowell Devils (2006), the Albany Devils (2010), the Binghamton Devils (2017) and the second Utica Comets (2021)",Lowell,Lock Monsters
+Lowell Devils,ahl,2006,2009,new:LOWELL,US,,,Lowell,Devils
+Albany Devils,ahl,2010,2016,new:LOWELL,US,,,Albany,Devils
+Binghamton Devils,ahl,2017,2020,new:LOWELL,US,,,Binghamton,Devils
+Utica Comets,ahl,2021,2025,new:LOWELL,US,,,Utica,Comets
+Louisville Panthers,ahl,1999,2000,new:LOUPANTHERS,US,,"the Louisville Panthers became the Iowa Stars (2005), the Iowa Chops (2008) and the Texas Stars (2009)",Louisville,Panthers
+Iowa Stars,ahl,2005,2007,new:LOUPANTHERS,US,,,Iowa,Stars
+Iowa Chops,ahl,2008,2008,new:LOUPANTHERS,US,,,Iowa,Chops
+Texas Stars,ahl,2009,2025,new:LOUPANTHERS,US,,,Texas,Stars
+Norfolk Admirals,ahl,2000,2014,new:NORADM,US,,the Norfolk Admirals became the San Diego Gulls in 2015,Norfolk,Admirals
+San Diego Gulls,ahl,2015,2025,new:NORADM,US,,,San Diego,Gulls
+Bridgeport Sound Tigers,ahl,2001,2020,new:BRIDGEPORT,US,,the Bridgeport Sound Tigers became the Bridgeport Islanders in 2021,Bridgeport,Sound Tigers
+Bridgeport Islanders,ahl,2021,2025,new:BRIDGEPORT,US,,,Bridgeport,Islanders
+Chicago Wolves,ahl,2001,2025,new:CHIWOLVES,US,,joined from the IHL,Chicago,Wolves
+Grand Rapids Griffins,ahl,2001,2025,new:GRGRIFFINS,US,,joined from the IHL,Grand Rapids,Griffins
+Milwaukee Admirals,ahl,2001,2019,new:MILADMIRALS,US,,joined from the IHL; sat out 2020-21,Milwaukee,Admirals
+Milwaukee Admirals,ahl,2021,2025,new:MILADMIRALS,US,,,Milwaukee,Admirals
+Houston Aeros,ahl,2001,2012,new:HOUSTON,US,,the Houston Aeros became the Iowa Wild in 2013,Houston,Aeros
+Iowa Wild,ahl,2013,2025,new:HOUSTON,US,,,Iowa,Wild
+Manchester Monarchs,ahl,2001,2014,new:MANCHESTER,US,,the Manchester Monarchs became the Ontario Reign in 2015,Manchester,Monarchs
+Ontario Reign,ahl,2015,2025,new:MANCHESTER,US,,,Ontario,Reign
+Manitoba Moose,ahl,2001,2010,new:MANITOBA,CA,,the Manitoba Moose (2001-11) played as the original St. John's IceCaps 2011-15 and returned to Winnipeg as the Moose in 2015,Manitoba,Moose
+St. John's IceCaps,ahl,2011,2014,new:MANITOBA,CA,,,St. John's,IceCaps
+Manitoba Moose,ahl,2015,2025,new:MANITOBA,CA,,,Manitoba,Moose
+Toronto Roadrunners,ahl,2003,2003,new:TORROAD,CA,,"the Toronto Roadrunners (2003) became the Edmonton Road Runners (2004); dormant 2005-10, then the Oklahoma City Barons and, in 2015, the Bakersfield Condors",Toronto,Roadrunners
+Edmonton Road Runners,ahl,2004,2004,new:TORROAD,CA,,,Edmonton,Road Runners
+Oklahoma City Barons,ahl,2010,2014,new:TORROAD,US,,,Oklahoma City,Barons
+Bakersfield Condors,ahl,2015,2025,new:TORROAD,US,,,Bakersfield,Condors
+Springfield Falcons,ahl,1994,2015,new:SPRFALCONS,US,,the Springfield Falcons became the Tucson Roadrunners in 2016,Springfield,Falcons
+Tucson Roadrunners,ahl,2016,2025,new:SPRFALCONS,US,,,Tucson,Roadrunners
+Colorado Eagles,ahl,2018,2025,new:COLEAGLES,US,,joined in 2018,Colorado,Eagles
+Coachella Valley Firebirds,ahl,2022,2025,new:COACHELLA,US,,joined in 2022,Coachella Valley,Firebirds
