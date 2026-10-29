@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.167.0", date: "2026-10-29", href: "/mlb/2025/game/1924798-los-angeles-dodgers-at-toronto-blue-jays",
+    title: "The plays on the field: baseball hits and football drives",
+    text: "A baseball game page draws every ball in play on its park, coloured by what it became and ringed in the batting club's colour, from Retrosheet's hit locations (1986 on; a mark is a zone, not a landing spot). A football game page draws each drive as a bar on the field, with a dot for every play and a mark for how it ended, from nflverse (1999 on)." },
   { version: "0.166.0", date: "2026-10-29", href: "/echl",
     title: "More hockey: the ECHL",
     text: "The ECHL is the second league on the More hockey page: 38 seasons from 1988-89, when it was the East Coast Hockey League, with standings, playoff series, the games the articles list and every champion (the Riley Cup until 1995-96, then the Kelly Cup; the 2019-20 season was cancelled). Each club shows its NHL parent club by season where Wikipedia names it, from 2005-06 on. From English Wikipedia." },

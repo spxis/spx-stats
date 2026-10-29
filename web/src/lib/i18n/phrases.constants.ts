@@ -1,4 +1,5 @@
 import { ALLSTAR_EN } from "./allstar.constants.ts";
+import { FIELDPLAYS_EN } from "./fieldPlays.constants.ts";
 import { GAME_EN } from "./game.constants.ts";
 import { EUROPE_EN } from "./europe.constants.ts";
 import { MLS_EN } from "./mls.constants.ts";
@@ -2272,6 +2273,7 @@ export const PHRASES = {
   ...MLS_EN,
   ...EUROPE_EN,
   ...GAME_EN,
+  ...FIELDPLAYS_EN,
   ...ALLSTAR_EN,
   "nav.countries": "Countries",
   "col.country": "Country",

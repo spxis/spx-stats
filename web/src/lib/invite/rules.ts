@@ -43,7 +43,7 @@ export function gateExempt(pathname: string): boolean {
 export function isDataPath(pathname: string): boolean {
   if (pathname.startsWith("/api/")) return true;
   if (/\/rows\//.test(pathname)) return true;
-  if (/^\/(surface|flag|soccer-flag|soccer-road|bracket-svg|jersey-banner|title-banner)(\/|$)/.test(pathname)) return true;
+  if (/^\/(surface|flag|soccer-flag|soccer-road|bracket-svg|field-plays|jersey-banner|title-banner)(\/|$)/.test(pathname)) return true;
   return /\.[a-z0-9]{2,8}$/i.test(pathname.slice(pathname.lastIndexOf("/") + 1));
 }
 

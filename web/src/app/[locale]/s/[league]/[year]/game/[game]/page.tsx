@@ -8,6 +8,7 @@ import { AccentStyle } from "@/components/AccentStyle";
 import { OfficialLinks } from "@/components/OfficialLinks";
 import { GameLeaders } from "@/components/GameLeaders";
 import { GameState } from "@/components/GameState";
+import { FieldPlays } from "@/components/FieldPlays";
 import { GameSurface, placeOf, type DrawnGame } from "@/components/GameSurface";
 import { BigBanner, seriesLine } from "@/components/BigBanner";
 import { SeriesStyle } from "@/components/SeriesStyle";
@@ -24,6 +25,7 @@ import { getAbbrs, getBrands, getSeasonStandings } from "@/lib/data";
 import { atUtc } from "@/lib/format";
 import { gamePath, parseGameSegment } from "@/lib/gamePath";
 import { getClubGames, getFranchiseRows, getGame } from "@/lib/gameData";
+import { getGameField } from "@/lib/gameField";
 import { around, countsOtl, formBefore, goingInto, headOf, inOrder, inSeason, isFinal, meetingsAround, resultFor, timelineOf, type Lite, type PairGame, type Result } from "@/lib/gameView";
 import { pairPath } from "@/lib/h2h";
 import { getPairHistory } from "@/lib/h2hData";
@@ -122,7 +124,9 @@ export default guard(async function GamePage({ params }: Params) {
   drawn.final = isFinalRound && series?.games.at(-1)?.id === g.game_id;
   const roundDated = series && desc && round ? datedRound(lg, y, playedYear(series), round, isFinalRound, rs) : "";
 
-  const { venue, neutral } = await placeOf(lg, y, drawn, brands);
+  const { venue, neutral, park } = await placeOf(lg, y, drawn, brands);
+  // The plays of a finished MLB or NFL game for its field: undefined when the read failed (the section is left out and the page redrawn within seconds), null when the archive has none.
+  const plays = final && (lg === "mlb" || lg === "nfl") ? await getGameField(g.game_id, lg === "mlb" ? "mlb_balls" : "nfl_drives").catch((e): undefined => { if (canFallBack(e)) return undefined; throw e; }) : undefined;
   const otl = countsOtl(lg, y);
   const season = seasonLabel(lg, y);
   const date = dt.full(atUtc(g.game_date));
@@ -264,6 +268,8 @@ export default guard(async function GamePage({ params }: Params) {
           <GameSurface lg={lg} year={y} game={drawn} brands={brands} abbrs={abbrs} competition={competition} />
         </section>
       ) : null}
+
+      {final ? <FieldPlays lg={lg} game={g} brands={brands} park={park} row={plays} /> : null}
 
       <section className="section">
         <h2>{say("gm.factsHead")}</h2>

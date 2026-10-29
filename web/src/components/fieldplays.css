@@ -1,0 +1,40 @@
+/* The plays of a game drawn on its field (FieldPlays.tsx). The drawing's own rules are inside the file it loads (kyogijo's stylesheet, light and dark). */
+@layer components {
+  .fplay { margin: 0 0 1.25rem; max-width: 760px; }
+  .fplay[data-sport="mlb"] { max-width: 560px; }
+  .fplay-key { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: .35rem .9rem; list-style: none; margin: 0 0 .5rem; padding: 0; font-size: .82rem; color: var(--ink2, inherit); }
+  .fplay-key li { display: inline-flex; align-items: center; gap: .35rem; }
+  .fplay-art { border-radius: 10px; overflow: hidden; }
+  .fplay-art > svg { display: block; width: 100%; height: auto; }
+  .fplay figcaption { margin: .5rem 0 0; }
+  .fplay-teams { display: flex; flex-wrap: wrap; gap: .25rem 1.25rem; list-style: none; margin: 0 0 .5rem; padding: 0; font-size: .9rem; }
+  .fplay-teams li { display: inline-flex; align-items: center; gap: .4rem; }
+  .fplay .ft { width: .85rem; height: .85rem; border-radius: 50%; border: 3px solid var(--tc); box-sizing: border-box; background: var(--paper, transparent); }
+  .fplay[data-sport="nfl"] .ft { background: var(--tc); }
+  /* the key's marks: the same shapes the drawing uses */
+  .fplay .fk { display: inline-block; width: .8rem; height: .8rem; background: var(--fk); }
+  .fplay .fk[data-shape="circle"] { border-radius: 50%; }
+  .fplay .fk[data-shape="diamond"] { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); width: .95rem; height: .95rem; }
+  .fplay .fk[data-shape="triangle"] { clip-path: polygon(50% 0, 100% 100%, 0 100%); width: .95rem; height: .95rem; }
+  .fplay .fk[data-shape="star"] { clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 1.1rem; height: 1.1rem; }
+  .fplay .fg { display: inline-block; width: .8rem; height: .8rem; background: currentColor; }
+  .fplay .fg[data-shape="circle"] { border-radius: 50%; }
+  .fplay .fg[data-shape="diamond"] { clip-path: polygon(50% 0, 100% 50%, 50% 100%, 0 50%); }
+  .fplay .fg[data-shape="star"] { clip-path: polygon(50% 0, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); width: 1rem; height: 1rem; }
+  .fplay .fg[data-shape="x"] { clip-path: polygon(15% 0, 50% 35%, 85% 0, 100% 15%, 65% 50%, 100% 85%, 85% 100%, 50% 65%, 15% 100%, 0 85%, 35% 50%, 0 15%); }
+  .fplay .fg[data-shape="cross"] { clip-path: polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%); }
+  .fplay .fg[data-shape="square"] { border-radius: 1px; }
+  .fplay .fg[data-hollow] { background: transparent; box-shadow: inset 0 0 0 2px currentColor; }
+  .fplay .fg[data-shape="diamond"][data-hollow] { background: none; box-shadow: none; clip-path: none; border: 2px solid currentColor; transform: rotate(45deg) scale(.75); }
+  .fplay .fg[data-shape="circle"][data-hollow] { border: 2px solid currentColor; box-shadow: none; box-sizing: border-box; background: none; }
+  /* football: the field is wide on a desk and tall on a phone */
+  .fplay-phone { display: none; max-width: 420px; margin: 0 auto; }
+  @media (max-width: 640px) {
+    .fplay-key { justify-content: flex-start; }
+    .fplay-wide { display: none; }
+    .fplay-phone { display: block; }
+  }
+}
+
+/* Football: each end zone takes the colour of the club that defends it (the visitors the left or top one). Not in a layer: the drawing's own stylesheet is not in one, and a layer loses to it. */
+.fplay[data-sport="nfl"] svg.kyogijo { --ky-left: var(--ba); --ky-right: var(--bb); --ky-left-ink: var(--ia); --ky-right-ink: var(--ib); }
