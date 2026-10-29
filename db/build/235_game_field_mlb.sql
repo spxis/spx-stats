@@ -6,8 +6,12 @@
 -- free of charge from and is copyrighted by Retrosheet. Interested parties may contact Retrosheet at www.retrosheet.org." Dense from 1989; 1986-88
 -- are partial (db/migrations/071). A ball whose play has no location on the diagram is not drawn and not counted.
 --
--- A game is found as in db/build/202 and 184: Retrosheet's game id is the home club's code, the date and the game's number in the day (BAL198704060),
--- and a core.game written from Retrosheet's logs has the source_key retro:<yyyymmdd>:<home>:<visitor>:<number>:<type>. All-star games are not in core.
+-- A game is found through core.external_id (entity_kind 'game', source retrosheet), which db/build/140 writes for every game Retrosheet knows: the ones it
+-- adds itself (source_key retro:<yyyymmdd>:<home>:<visitor>:<number>:<type>) and SPX's own games it matched (same date, same home and away franchise, doubleheaders
+-- in order, or the same score when a game was suspended and completed later), so the seasons SPX holds (2002-2011) are found too. The external key is
+-- <yyyymmdd>:<home>:<visitor>:<number>:<type>; Retrosheet's game id is the home club's code, the date and the game's number in the day (BAL198704060).
+-- A Retrosheet game with located balls that no core game has is logged in meta.data_issue ('game_field_mlb', Retrosheet's game id; one row each, kept between
+-- reruns) and not drawn; all-star games are not in core and not logged. Never guessed.
 --
 -- data (read by web/src/lib/fieldPlays.ts): the balls in the order they were hit, separated by ';', each
 --     <inning>,<half>,<zone>,<trajectory>,<result>,<batter's person id, or empty>
@@ -18,9 +22,9 @@
 create temp table src on commit drop as select source_id from meta.source where code = 'retrosheet';
 
 create temp table rg on commit drop as
-select g.game_id, split_part(g.source_key, ':', 3) || split_part(g.source_key, ':', 2) || split_part(g.source_key, ':', 5) as rid
-from core.game g
-where g.source_id = (select source_id from src) and g.source_key like 'retro:%';
+select e.entity_id as game_id, split_part(e.external_key, ':', 2) || split_part(e.external_key, ':', 1) || split_part(e.external_key, ':', 4) as rid
+from core.external_id e
+where e.entity_kind = 'game' and e.source_id = (select source_id from src);
 create unique index on rg (rid);
 
 create temp table lp on commit drop as
@@ -51,3 +55,15 @@ where (core.game_field.season, core.game_field.n, core.game_field.data) is disti
 
 delete from core.game_field f
 where f.kind = 'mlb_balls' and not exists (select 1 from game_field_new x where x.game_id = f.game_id);
+
+-- Retrosheet games with located balls that no core game has: logged once each, and cleared when a later run finds the game.
+create temp table game_field_lost on commit drop as
+select distinct b.game_id as rid
+from legacy_retrosheet.batted_ball b
+where b.zone is not null and b.game_type <> 'allstar' and not exists (select 1 from rg where rg.rid = b.game_id);
+delete from meta.data_issue i
+where i.entity_kind = 'game_field_mlb' and not exists (select 1 from game_field_lost l where l.rid = i.entity_key);
+insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+select (select source_id from src), 'game_field_mlb', l.rid, 'Retrosheet game with hit locations has no game in core', 'Balls not drawn'
+from game_field_lost l
+where not exists (select 1 from meta.data_issue i where i.entity_kind = 'game_field_mlb' and i.entity_key = l.rid);
