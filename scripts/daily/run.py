@@ -314,6 +314,7 @@ def write_leagues(a, built, league_errors, seasons, plans, report, all_games, le
         load = res.get("load") or {}
         if res.get("committed"):
             lr["games_changed"] = load.get("games_changed", 0)
+            if load.get("retired"): lr["games_retired"] = load["retired"]
             changed += load.get("games_changed", 0) or 0
             for t, n in (load.get("tables") or {}).items():
                 m = tables.setdefault(t, dict(ins=0, upd=0, del_=0))

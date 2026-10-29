@@ -3,7 +3,7 @@
 -- league this run applies: a fault in another league's rows (a team season without an identity, a staged game that is not a game) must not
 -- stop this one.
 -- Needs: temp tables _checks, scope (league, season), sg (source_key, league, season, act), owned_season (league, season), src (source_id),
--- and the core tables season, team_season, game, external_id.
+-- the core tables season, team_season, game, external_id, and ingest.game_retired (game_ref).
 insert into _checks
 select 'every result and cancelled game staged is a game', count(*) = 0, count(*) || ' missing' || coalesce(': ' || string_agg(c.source_key, '; '), '')
 from (select s.source_key from sg s where s.act in ('result', 'cancel') and s.league in (select league from scope)
@@ -12,6 +12,7 @@ from (select s.source_key from sg s where s.act in ('result', 'cancel') and s.le
 insert into _checks
 select 'every staged scheduled game of a new season is a game', count(*) = 0, count(*) || ' missing'
 from sg s where s.act = 'schedule' and s.league in (select league from scope) and (s.league, s.season) in (select league, season from owned_season)
+  and s.source_key <> all (select game_ref from ingest.game_retired)            -- a game the daily job retired (scripts/daily/retire.sql) is still listed by a stale second source
   and not exists (select 1 from core.game g where g.source_key = s.source_key and g.source_id = (select source_id from src))
   and not exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = s.source_key);
 insert into _checks

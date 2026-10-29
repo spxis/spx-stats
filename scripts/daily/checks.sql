@@ -92,7 +92,7 @@ select 'the report ran as the restricted role (it holds no privilege on core.gam
 -- each club's games in core against the rows of its own article: the club mapped to the right franchise. A game held back
 -- because its sources disagree is missing from core on purpose, and a game only one article lists (single) may be missing from
 -- the other club's count. A game only balldontlie lists (the NBA schedule before the articles carry it) is not on any article, so it is
--- taken off the club's core count. The NFL is left out: its article parser skips rows with no date yet, and nflverse supplies every NFL game.
+-- taken off the club's core count (only when it is a game in core: a stale second-source game the job retired is not, scripts/daily/retire.sql). The NFL is left out: its article parser skips rows with no date yet, and nflverse supplies every NFL game.
 create temp table _clubcount as
 select p.league, p.season, p.title, p.club, c.franchise_id,
        (select count(*) from legacy_wikipedia_daily.claim k where k.page_id = p.page_id and k.phase <> 'preseason' and k.status in ('final', 'scheduled', 'cancelled')) as page_rows,
@@ -104,7 +104,9 @@ select p.league, p.season, p.title, p.club, c.franchise_id,
        (select count(*) from sg x where x.confidence = 'single' and c.franchise_id in (x.hf, x.af)) as singles,
        -- games core holds for the club that its own article does not list (yet): only balldontlie lists them, or only the other club's article
        -- and the league page (the later games of an MLB series before the club's article has them)
-       (select count(*) from sg x where x.act in ('result', 'schedule', 'cancel') and c.franchise_id in (x.hf, x.af) and not ('wp:' || p.title) = any (x.sources)) as off_page
+       (select count(*) from sg x where x.act in ('result', 'schedule', 'cancel') and c.franchise_id in (x.hf, x.af) and not ('wp:' || p.title) = any (x.sources)
+          and (exists (select 1 from core.game g where g.source_key = x.source_key and g.source_id = (select source_id from src))
+               or exists (select 1 from core.external_id e where e.source_id = (select source_id from src) and e.entity_kind = 'game' and e.external_key = x.source_key))) as off_page
 from (select distinct on (source, title) * from legacy_wikipedia_daily.page where kind = 'team' order by source, title, page_id desc) p
 join club c on c.league = p.league and c.name = p.club
 join core.season s on s.league_code = p.league and s.start_year = p.season

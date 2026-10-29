@@ -241,6 +241,21 @@ against 181 games in core): the 7 extra games were games core holds that the clu
 league page); they are now counted as off-page games, and any club still unexplained is left out alone. Tests: `run.py --self-test`
 (one club, one league, all leagues pass, all fail, one game, one page) and `bash scripts/daily/test/clubcheck-test.sh` (scratch Postgres in Docker).
 
+**Games no source lists any more are retired** (`retire.sql`, `revive.sql`, migration 162; SPX-761, 2026-10-29). The job makes a scheduled game from every row an
+article lists, including the games a playoff series plays only "if necessary" (the NLCS games 5 to 7 after a sweep, the ALCS game 7). When the series ends early
+the articles drop those rows and nothing took the games back: they stayed "scheduled" in core, and so did the World Series games the job made against the
+Guardians from the Brewers' rows "Guardians/Rays" before the pennant was decided (parsers no longer make a game from a row that names two clubs: `parsers.undecided`).
+The club-count check then failed MLB on every run from 2026-10-20 to 2026-10-29. Now, after the second report and before the checks, in the same transaction
+(rehearsal and load), the job deletes **its own scheduled games with no score** when both clubs' articles were read this run (they hold claims, and neither club
+was left out) and either **R1** no staged game of this run is matched to the game and every observation behind it came from an article, or **R2** only a second
+source still lists it (balldontlie keeps an unplayed game scheduled for good) and its date is 3 or more days past. More than 30 candidates in one league is a
+source that stopped listing games, not placeholders: nothing is retired (`DAILY_RETIRE_SKIPPED`). A final, postponed, suspended or cancelled game is never touched.
+A retired game loses its game external ids and verifications, its open data issues are closed, and its game_refs go on `ingest.game_retired`, which `ingest.replay`
+(rebuilds, `db/build/153`) skips so the placeholder is not made again from the log; the log itself is never changed. A game_ref listed again for real (an article lists
+it, or it has a result, a postponement, a cancellation, or is less than 3 days past) is taken off the list by `revive.sql` before the report and comes back through the usual
+path. Each retired game is a `DAILY_RETIRED` line in the log and `retired` in the heartbeat; the run's release then deletes the game rows in production, so it takes the
+review route (the auto lane refuses deletes). Test: `bash scripts/daily/test/retire-test.sh` (scratch Postgres, the real migrations and functions on made-up clubs).
+
 Checks that read rows of every league (a daily team season without an identity, a staged game that is not a game) live in `leaguecheck.sql` and look only at
 the league being applied (2026-10-21: NBA team seasons without an identity failed the check for every league). `bash scripts/daily/test/leaguecheck-test.sh`
 breaks one league's rows and requires the others to pass.
@@ -398,7 +413,7 @@ archive, load, report, refresh (`observation()` builds what `ingest.report_resul
 checks · `selftest.py` + `fixtures/` the tests · `heartbeat.py` the `ingest.daily_run` row · `release_hook.py` `prepare_release()` ·
 `ingest-writer-login.sh` an optional DS1 login for the role · `../../daily/` the Docker job · `db/migrations/048_ingest_daily_run.sql` the heartbeat table ·
 `db/migrations/043_legacy_wikipedia_daily.sql` the staging schema · `055_daily_balldontlie.sql` lets it hold balldontlie's file · `044_ingest_report_results.sql` the API · `046_ingest_writer_role.sql` the
-role · `114_game_starts_at.sql` the recorded start, applied last so a run does not put 044's functions back · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
+role · `114_game_starts_at.sql` the recorded start and `162_ingest_game_retired.sql` the retired games and `ingest.replay` skipping them, applied last so a run does not put 044's functions back · `retire.sql` + `revive.sql` the retire step · `db/build/152_games_from_wikipedia_daily.sql` seasons and team seasons · `db/build/153_replay_daily_observations.sql` the replay ·
 `db/tests/` (`run-ingest-tests.sh`, `run-rebuild-proof.sh`).
 Fixtures are excerpts of Wikipedia articles (CC BY-SA 4.0); the first line of each names the article and revision, and the
 authors are in the article history.

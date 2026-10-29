@@ -6,7 +6,8 @@ ingest_writer (migration 046). History stays bulk. What `apply()` does, in this 
   1. asks DS1 which page revisions it already holds (legacy_wikipedia_daily.page)
   2. REHEARSAL: one transaction that ends in ROLLBACK: migrations 043, 044, 046, 055 and 114, archive rows, raw load, db/build/152 (seasons and
      team seasons only), the report of every game as an observation (as ingest_writer), ingest.replay(true, true) for the games
-     the report found no row for, the same report again (it must add nothing), and the checks (snapshot.sql + checks.sql).
+     the report found no row for, the same report again (it must add nothing), the retire step (retire.sql: scheduled games of the daily source that no
+     source lists any more are deleted; revive.sql, before the report, takes game_refs listed again off the retired list), and the checks (snapshot.sql + checks.sql).
      A failed check, or any error, means nothing was written.
   3. ARCHIVE: the raw wikitext of the new revisions into legacy_files.raw_archive (committed on its own, archive first)
   4. LOAD: one transaction, the same SQL as the rehearsal, COMMIT only if every check passed
@@ -21,11 +22,13 @@ if HERE not in sys.path: sys.path.insert(0, HERE)
 import games as G, sources as SRC, teams as T
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DS1 = os.path.join(HERE, "ds1.sh")
-MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql", "114_game_starts_at.sql")]
+MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql", "114_game_starts_at.sql", "162_ingest_game_retired.sql")]
 BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
 CLUBCHECK = os.path.join(HERE, "clubcheck.sql")
+REVIVE = os.path.join(HERE, "revive.sql")
+RETIRE = os.path.join(HERE, "retire.sql")
 LEAGUECHECK = os.path.join(HERE, "leaguecheck.sql")
 
 
@@ -234,6 +237,7 @@ def main_script(workdir, with_archive, commit, league="", skip=()):
     s += ["\\set snap before", "\\i " + SNAPSHOT, "\\i " + os.path.join(workdir, "load.sql"), "\\i " + bld,
           "create temp table _chg1 as select * from chg;",
           "create temp table _run as select (select count(*) from ingest.game_observation) as n;",
+          "\\echo", "\\echo '== Games the sources list again after they were retired: taken off ingest.game_retired =='", "\\i " + REVIVE,
           "\\echo", "\\echo '== Reporting the games: ingest.report_results as ingest_writer =='",
           "\\i " + rep, "create temp table _res as select :'j'::jsonb as j;",
           "\\echo '== The bulk step for the games the report found no row for: ingest.replay(true, true) =='",
@@ -243,6 +247,7 @@ def main_script(workdir, with_archive, commit, league="", skip=()):
           "insert into _checks select 'a second pass of db/build/152 changes nothing', coalesce(sum(n), 0) = 0, coalesce(sum(n), 0) || ' rows changed' from chg;",
           "\\i " + rep, "create temp table _res2 as select :'j'::jsonb as j;",
           "select ingest.replay(true, true) as j \\gset", "create temp table _rep2 as select :'j'::jsonb as j;",
+          "\\echo", "\\echo '== Retiring scheduled games of the daily source that no source lists any more =='", "\\i " + RETIRE,
           "\\set snap after", "\\i " + SNAPSHOT, "\\i " + CHECKS,
           "\\echo",
           "select case when ok then 'ok  ' else 'FAIL' end as result, name, detail from _checks where not ok or name like 'a second pass%' order by ok, name;",
@@ -253,6 +258,7 @@ def main_script(workdir, with_archive, commit, league="", skip=()):
           "select 'DAILY_SUMMARY ' || jsonb_build_object("
           "'observations', (select (j ->> 'observations')::int from _res), 'new', (select (j ->> 'new')::int from _res), "
           "'repeat', (select (j ->> 'repeat')::int from _res), 'games_changed', (select jsonb_array_length(j -> 'changed') from _res), "
+          "'retired', (select count(*) from _retired), "
           "'games_made', (select (j ->> 'games_made')::int from _rep), 'games_changed_by_replay', (select (j ->> 'games_changed')::int from _rep), "
           "'tables', coalesce((select jsonb_object_agg(schemaname || '.' || relname, jsonb_build_object('ins', n_tup_ins, 'upd', n_tup_upd, 'del', n_tup_del)) "
           "from pg_stat_xact_all_tables where schemaname in ('core', 'meta', 'ref') and n_tup_ins + n_tup_upd + n_tup_del > 0), '{}'::jsonb))::text;",
