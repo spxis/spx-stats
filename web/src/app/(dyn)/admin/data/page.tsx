@@ -9,7 +9,7 @@ import { SortTable } from "@/components/SortTable";
 import { requireAdmin } from "@/lib/auth/user";
 import { describeRow } from "@/lib/liveRequest";
 import { ReleaseError, apiHealth, releaseDashboard, type Dashboard, type Release, type ScoreRequest } from "@/lib/releases/client";
-import { TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, requestBlock, type Tab } from "@/lib/releases/rules";
+import { TAB_COOKIE, autoApproveAt, bytesLabel, driftState, healthLine, isAutoApproved, matchesAutoFilter, parseTab, releaseTarget, requestBlock, type Tab } from "@/lib/releases/rules";
 import { parseSort, type SortColumn, type SortRow } from "@/lib/sort";
 import { AutoSwitch } from "./AutoSwitch";
 import { DecisionCard } from "./DecisionCard";
@@ -123,7 +123,7 @@ function previewRows(r: Release): { columns: SortColumn[]; rows: SortRow[] } {
 }
 
 /** Where a release writes: DS1 for a DS1 step, Turso for a Turso publish, production for the rest. */
-const writesTo = (r: Release): DbKey => (r.kind === "ds1_step" ? "ds1" : r.preview?.target === "turso" ? "turso" : "production");
+const writesTo = (r: Release): DbKey => releaseTarget(r);
 
 const kindLabel = (kind: string) => (kind === "ds1_step" ? "DS1 step" : kind === "daily_scores" ? "daily scores" : kind);
 
@@ -178,7 +178,7 @@ function PendingCard({ r, query, paused }: { r: Release; query: Query; paused: b
       </p>
       {r.notes ? <p>{r.notes}</p> : null}
       <AutoNote r={r} paused={paused} />
-      {r.preview?.target === "turso" ? <p className="note">Goes to Turso, not production: the last column counts Turso rows. Production is not touched.</p> : null}
+      {writesTo(r) === "turso" ? <p className="note">Goes to Turso, not production: the last column counts Turso rows. Production is not touched.</p> : null}
       {r.kind === "ds1_step" && r.preview?.file ? <p className="note">Runs <code>{r.preview.file}</code> on DS1 only, in one transaction. Production is not touched.</p> : null}
       {blockers.length ? (
         <ul className="dr-alert" role="alert">

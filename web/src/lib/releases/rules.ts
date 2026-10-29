@@ -169,3 +169,32 @@ export function healthLine(events: HealthEvent[]): HealthLine {
   const rest = events.length > 1 ? ` ${events.length} outages recorded in all.` : "";
   return { kind: "past", text: `Last outage ${mark(e.failing_since)} to ${mark(e.recovered_at, "clock")} (${minutes} min).${did}${rest}` };
 }
+
+/**
+ * The tables that publish to Turso, not production (`TABLES` in scripts/release/turso.py; scripts/releases.test.ts checks this list
+ * against that file). A release goes to one place only, so a release whose tables are all in this list is a Turso release.
+ */
+export const TURSO_TABLES: readonly string[] = [
+  "core.external_id",
+  "meta.verification",
+  "meta.data_issue",
+  "core.batted_ball_player",
+  "core.betting_line",
+  "api.person_admin",
+  "api.totals",
+  "api.quality",
+  "api.provenance",
+];
+
+export type ReleaseTarget = "ds1" | "turso" | "production";
+
+/**
+ * Where a release writes. A DS1 step is DS1. The preview's target wins when present. The dashboard strips the preview from the
+ * approved and recent lists, so without one the tables decide: all Turso tables means Turso, anything else production.
+ */
+export function releaseTarget(r: { kind: string; tables: string[]; preview?: { target?: string } | null }): ReleaseTarget {
+  if (r.kind === "ds1_step") return "ds1";
+  const said = r.preview?.target;
+  if (said === "turso" || said === "production") return said;
+  return r.tables.length > 0 && r.tables.every((t) => TURSO_TABLES.includes(t)) ? "turso" : "production";
+}

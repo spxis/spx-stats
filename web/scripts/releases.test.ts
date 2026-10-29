@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { plainMarks, splitMarks } from "../src/lib/localTime.ts";
-import { barMessages, driftState, healthLine, requestBlock, waitingCount, type SyncRow } from "../src/lib/releases/rules.ts";
+import { readFileSync } from "node:fs";
+import { barMessages, driftState, healthLine, releaseTarget, requestBlock, TURSO_TABLES, waitingCount, type SyncRow } from "../src/lib/releases/rules.ts";
 
 /** Run in web/: pnpm test:releases */
 const row = (table_name: string, state: "same" | "differs", checked_at: string): SyncRow => ({ table_name, ds1_rows: 1, prod_rows: 1, state, checked_at, detail: null });
@@ -111,4 +112,27 @@ test("the bar names a failed release, and the menu count and the bar agree on wh
   assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false, failed: 1 }), ["1 failed release needs a look"]);
   assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false, failed: 2 }), ["2 failed releases need a look"]);
   assert.deepEqual(barMessages({ waiting: 0, drift: 0, paused: false, failed: 0 }), []);
+});
+
+test("the Turso table list matches TABLES in scripts/release/turso.py", () => {
+  const src = readFileSync(new URL("../../scripts/release/turso.py", import.meta.url), "utf8");
+  const fromPython = [...src.matchAll(/^    "([a-z_]+\.[a-z_]+)": /gm)].map((m) => m[1]).sort();
+  assert.deepEqual([...TURSO_TABLES].sort(), fromPython);
+});
+
+test("where a release writes: DS1 step, Turso, production; the preview wins when present", () => {
+  const turso = ["meta.verification", "meta.data_issue"];
+  // approved and recent rows come without a preview (the dashboard strips it)
+  assert.equal(releaseTarget({ kind: "publish", tables: turso, preview: null }), "turso");
+  assert.equal(releaseTarget({ kind: "publish", tables: ["meta.verification", "api.totals"] }), "turso");
+  // pending row with a preview that names the target
+  assert.equal(releaseTarget({ kind: "publish", tables: turso, preview: { target: "turso" } }), "turso");
+  assert.equal(releaseTarget({ kind: "publish", tables: ["core.game"], preview: { target: "production" } }), "production");
+  // a production row
+  assert.equal(releaseTarget({ kind: "publish", tables: ["core.game", "meta.verification"] }), "production");
+  assert.equal(releaseTarget({ kind: "publish", tables: ["core.game"], preview: null }), "production");
+  // a DS1 step, whatever its tables
+  assert.equal(releaseTarget({ kind: "ds1_step", tables: turso }), "ds1");
+  // no tables at all is not a Turso release
+  assert.equal(releaseTarget({ kind: "publish", tables: [] }), "production");
 });

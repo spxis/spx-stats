@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.164.1", date: "2026-10-29", needsReview: true,
+    title: "Admin release chips name the right database",
+    text: "On the admin data page, a release that publishes to Turso is marked Turso in the approved and recent lists too, not only while it waits. Admins only." },
   { version: "0.164.0", date: "2026-10-29", href: "/ncaaf",
     title: "College football",
     text: "College football has its own place in the menu, right after the NFL: 26 seasons from 2000 with standings by conference and division, every bowl game, the Playoff and the national champion of each season (the vacated 2004 title is said so). Teams from lower divisions show only as opponents. From English Wikipedia." },
