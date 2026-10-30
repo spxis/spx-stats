@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.172.1", date: "2026-10-30", href: "/nhl/alignment",
+    title: "League alignment, venue and results pages answer faster",
+    text: "The conference and division changes of a league, a venue's page and a club's results graph now come from a few precomputed rows instead of a long calculation or a read for every season, so a first visit to these pages is much quicker and the database does less work. The pages look the same; the results graph is also about a third lighter to download." },
   { version: "0.172.0", date: "2026-10-30", href: "/nba/trophy/larry-obrien",
     title: "Each season gets the trophy that existed then",
     text: "The NBA Finals show the Larry O'Brien Trophy in the design of that season, and no trophy before 1977-78. NBA and NFL conference finals now carry their own trophy, smaller than the Finals: Oscar Robertson, Bob Cousy, George Halas, Lamar Hunt. The Finals MVP and Rookie of the Year trophy pages draw their own trophies." },

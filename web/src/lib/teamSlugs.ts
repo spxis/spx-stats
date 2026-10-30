@@ -1,21 +1,36 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { comparePath } from "./compare";
 import { pairPath, parseH2hSegment } from "./h2h";
 import { groupPath, parseGroupSegment, type GroupId } from "./h2hGroup";
+import { getFranchiseNameRows } from "./franchiseNames";
+import { expandRuns } from "./seasonRuns";
 import { buildSlugs, franchiseNamed, makePaths, parsePair, resolveFranchise, resolveTeamSeason, tableOf } from "./slug";
 
-const nameRow = z.object({ league: z.string(), franchise_id: z.number(), name: z.string(), name_from: z.string().nullable(), name_to: z.string().nullable() });
 const seasonRow = z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), team: z.string().nullable() });
+const runRow = z.object({ league: z.string(), franchise_id: z.number(), team: z.string().nullable(), from_year: z.number(), to_year: z.number() });
+
+/**
+ * Each club's name season by season. Read as unbroken runs of one name (api.team_season_name_run, migration 166: two requests); until that view
+ * is on the server the answer is a 404 and every season is read as a row of its own (eighteen requests).
+ */
+async function seasonNames() {
+  try {
+    return expandRuns(await rows("team_season_name_run", "select=league,franchise_id,team,from_year,to_year&order=league,franchise_id,from_year", runRow));
+  } catch (e) {
+    if (!(e instanceof ApiError) || !e.message.endsWith(": 404")) throw e;
+    return teamSeasonRows("select=league,year,franchise_id,team&order=league,year,franchise_id", seasonRow);
+  }
+}
 
 /** Every league's team addresses, built from the franchise names and each season's team name (kept a day like the rest). */
 export const getSlugs = cache(async () => {
   const [names, seasons] = await Promise.all([
-    rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from", nameRow),
-    teamSeasonRows("select=league,year,franchise_id,team&order=league,year,franchise_id", seasonRow),
+    getFranchiseNameRows(),
+    seasonNames(),
   ]);
   return buildSlugs(names, seasons);
 });

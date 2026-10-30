@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { buildStays, unitOf, type CityRef, type ClubSeason, type Placement, type Stay } from "./cityModel";
 import { withCupTitles } from "./cup";
@@ -50,6 +50,27 @@ export const getPlacements = cache(async (): Promise<Placement[]> =>
   (await rows("team_season_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id", placementRow)).map((p) => ({
     league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
   })));
+
+const venueCityRow = z.object({ latitude: z.number(), longitude: z.number(), venue_city_slug: z.string() });
+
+/** The key of a point on the venue map: coordinates to five places, as the database holds them. */
+export const placeKey = (lat: number, lon: number): string => `${lat.toFixed(5)}|${lon.toFixed(5)}`;
+
+/**
+ * The city page of each venue, by the venue's coordinates (placeKey): the city the database placed club seasons at for that point. The venue
+ * list needs this and nothing else of the city data. api.venue_city (migration 166) holds one row for each point, about 260 in all; until it is on
+ * the server the answer is a 404 and the placements of every club season are read (twelve requests) and reduced here.
+ */
+export const getVenueCityAt = cache(async (): Promise<Map<string, string>> => {
+  const out = new Map<string, string>();
+  try {
+    for (const v of await rows("venue_city", "select=latitude,longitude,venue_city_slug&order=latitude,longitude,venue_city_slug", venueCityRow)) out.set(placeKey(v.latitude, v.longitude), v.venue_city_slug);
+  } catch (e) {
+    if (!(e instanceof ApiError) || !e.message.endsWith(": 404")) throw e;
+    for (const p of await getPlacements()) if (p.venueLat != null && p.venueLon != null && p.venueCity) out.set(placeKey(p.venueLat, p.venueLon), p.venueCity);
+  }
+  return out;
+});
 
 const countryRow = z.object({ league: z.string(), year: z.number(), franchise_id: z.number(), country_code: z.string() });
 

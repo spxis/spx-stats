@@ -187,6 +187,34 @@ export function heatGamesFromRows(lg: string, f: number, rows: readonly GameRow[
   return out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
 }
 
+/**
+ * One season of a club's games as api.franchise_season_games gives it. Each game is
+ * [id, date, status, phase, 1 if the club was at home, its score, the other score, 1 if it went to overtime, the other club's name].
+ */
+export interface SeasonGames {
+  year: number;
+  own: string | null;
+  games: readonly (readonly [number, string, string, string, number, number | null, number | null, number, string | null])[];
+}
+
+/** The same heat games as heatGamesFromRows, from a franchise's seasons in one read (the W / L / T / OTL rule is the same). */
+export function heatGamesFromFranchise(lg: string, seasons: readonly SeasonGames[]): HeatGame[] {
+  const out: HeatGame[] = [];
+  for (const s of seasons) {
+    for (const [id, date, status, phase, home, mine, theirs, ot, opp] of s.games) {
+      if (!countedPhase(phase)) continue;
+      const atHome = home === 1;
+      const final = status === "final" && mine != null && theirs != null;
+      const res: HeatResult | null = !final ? null : mine! > theirs! ? "W" : mine! < theirs! ? (ot === 1 && countsOtl(lg, s.year) ? "OTL" : "L") : "T";
+      out.push({
+        date, id, year: s.year, res, ot: ot === 1, mine, theirs, home: atHome,
+        awayName: atHome ? opp : s.own, homeName: atHome ? s.own : opp,
+      });
+    }
+  }
+  return out.sort((a, b) => (a.date < b.date ? -1 : a.date > b.date ? 1 : a.id - b.id));
+}
+
 /** The season page's own games (already told from the club's side) as heat games. Regular season and playoffs only. */
 export function heatGamesFromTeam(games: readonly TeamGame[], year: number, meName: string | null): HeatGame[] {
   return games.filter((g) => g.ph === "r" || g.ph === "p").map((g) => ({
@@ -255,34 +283,58 @@ const CHAR_RES: Record<string, HeatResult> = { W: "W", L: "L", T: "T", O: "OTL" 
 const b36 = (n: number | null): string => (n == null ? "" : n.toString(36));
 const num = (s: string): number | null => (s === "" ? null : parseInt(s, 36));
 
-/** One franchise's heat games packed for a kept JSON route (the page itself carries none of them). */
+/**
+ * One franchise's heat games packed for a kept JSON route (the page itself carries none of them). `rows` is the games in play order,
+ * `;` between games and `,` between fields, every number in base 36. A game's fields:
+ *   day (days since the last game, the first game since 1970), id (difference from the last game's id, signed),
+ *   season and the club's own name (only when either differs from the last game's; else empty),
+ *   result (W, L, T, O for an overtime loss, empty for none), flags (1 home, 2 went to overtime), score for, score against, opponent.
+ * Names are indexes into `names`. Two thirds the size of one number per game for every field, and it compresses well.
+ */
 export interface PackedHeat { lg: string; f: number; names: string[]; rows: string }
 
 export function packHeat(lg: string, f: number, games: readonly HeatGame[]): PackedHeat {
   const names: string[] = [];
+  const at = new Map<string, number>();
   const idx = (name: string | null): string => {
     if (!name) return "";
-    let i = names.indexOf(name);
-    if (i < 0) i = names.push(name) - 1;
+    let i = at.get(name);
+    if (i === undefined) { i = names.push(name) - 1; at.set(name, i); }
     return b36(i);
   };
-  const rows = games.map((g) => [
-    b36(Math.round(Date.parse(`${g.date}T00:00:00Z`) / DAY_MS)), b36(g.id), b36(g.year),
-    g.res ? RES_CHAR[g.res] : "", g.ot ? 1 : 0, b36(g.mine), b36(g.theirs), g.home ? 1 : 0, idx(g.awayName), idx(g.homeName),
-  ].join(","));
+  let day = 0, id = 0, year = -1, wore: string | null = null;
+  const rows = games.map((g) => {
+    const d = Math.round(Date.parse(`${g.date}T00:00:00Z`) / DAY_MS);
+    const own = g.home ? g.homeName : g.awayName;
+    const opp = g.home ? g.awayName : g.homeName;
+    const season = g.year === year && own === wore ? ["", ""] : [b36(g.year), idx(own)];
+    const row = [
+      b36(d - day), b36(g.id - id), season[0], season[1],
+      g.res ? RES_CHAR[g.res] : "", String((g.home ? 1 : 0) + (g.ot ? 2 : 0)), b36(g.mine), b36(g.theirs), idx(opp),
+    ].join(",");
+    day = d; id = g.id; year = g.year; wore = own;
+    return row;
+  });
   return { lg, f, names, rows: rows.join(";") };
 }
 
 export function unpackHeat(p: PackedHeat): HeatGame[] {
   if (!p.rows) return [];
+  let day = 0, id = 0, year = 0, own: string | null = null;
   return p.rows.split(";").map((row) => {
-    const [d, id, year, res, ot, mine, theirs, home, away, homen] = row.split(",");
+    const [dd, di, y, o, res, fl, mine, theirs, opp] = row.split(",");
+    day += parseInt(dd, 36);
+    id += parseInt(di, 36);
+    if (y !== "") { year = parseInt(y, 36); own = o === "" ? null : p.names[parseInt(o, 36)] ?? null; }
+    const flags = Number(fl);
+    const home = (flags & 1) === 1;
+    const other = opp === "" ? null : p.names[parseInt(opp, 36)] ?? null;
     return {
-      date: new Date(parseInt(d, 36) * DAY_MS).toISOString().slice(0, 10),
-      id: parseInt(id, 36), year: parseInt(year, 36), res: CHAR_RES[res] ?? null, ot: ot === "1",
-      mine: num(mine), theirs: num(theirs), home: home === "1",
-      awayName: away === "" ? null : p.names[parseInt(away, 36)] ?? null,
-      homeName: homen === "" ? null : p.names[parseInt(homen, 36)] ?? null,
+      date: new Date(day * DAY_MS).toISOString().slice(0, 10),
+      id, year, res: CHAR_RES[res] ?? null, ot: (flags & 2) === 2,
+      mine: num(mine), theirs: num(theirs), home,
+      awayName: home ? other : own,
+      homeName: home ? own : other,
     };
   });
 }

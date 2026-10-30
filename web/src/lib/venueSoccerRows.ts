@@ -67,15 +67,20 @@ export function yearsOf(v: Pick<SoccerVenue, "spans">): { first: number | null; 
   return { first: Math.min(...v.spans.map((s) => s.first)), last: Math.max(...v.spans.map((s) => s.last)) };
 }
 
-/** The matches of a view of (venue, competition, year) rows as spans, by venue id. Rows of another competition are left out. */
-export function spansOf(list: readonly { venue_id: number; league: string; year: number }[]): Map<number, SoccerSpan[]> {
+/**
+ * The matches of a view of (venue, competition, year) rows as spans, by venue id. Rows of another competition are left out. A row may stand for
+ * several matches (`matches`, one when absent) and for a stretch of years (`last_year`, the same year when absent): api.venue_soccer_span
+ * gives one row for each venue and competition instead of one for each match.
+ */
+export function spansOf(list: readonly { venue_id: number; league: string; year: number; last_year?: number; matches?: number }[]): Map<number, SoccerSpan[]> {
   const by = new Map<number, Map<SoccerLeague, SoccerSpan>>();
   for (const r of list) {
     if (!isSoccerLeague(r.league)) continue;
     const m = by.get(r.venue_id) ?? new Map<SoccerLeague, SoccerSpan>();
     by.set(r.venue_id, m);
     const s = m.get(r.league);
-    if (s) { s.first = Math.min(s.first, r.year); s.last = Math.max(s.last, r.year); s.matches++; } else m.set(r.league, { lg: r.league, first: r.year, last: r.year, matches: 1 });
+    const last = r.last_year ?? r.year, n = r.matches ?? 1;
+    if (s) { s.first = Math.min(s.first, r.year); s.last = Math.max(s.last, last); s.matches += n; } else m.set(r.league, { lg: r.league, first: r.year, last, matches: n });
   }
   return new Map([...by].map(([id, m]) => [id, SOCCER_LEAGUES.flatMap((l) => (m.has(l) ? [m.get(l)!] : []))]));
 }

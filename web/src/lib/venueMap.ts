@@ -1,7 +1,6 @@
 import "server-only";
 import { cache } from "react";
-import { z } from "zod";
-import { rows } from "./api/client";
+import { getFranchiseNameRows } from "./franchiseNames";
 import { logoFor, type BrandMap } from "./brand";
 import { countryAt } from "./country";
 import { abbrFor, type AbbrMap } from "./abbr";
@@ -19,11 +18,16 @@ export interface VenueStop { wid: string | null; venue: string; from: string | n
 /** A club with a venue on record: its address slug, its latest name and its venues, oldest first. */
 export interface VenueTeam { f: number; slug: string; href: string; name: string; venues: VenueStop[] }
 
-const nameRow = z.object({ franchise_id: z.number(), name: z.string(), name_from: z.string().nullable() });
-
-/** The names of a league's franchises, oldest first (the last is the latest). */
-export const getNames = cache(async (lg: string) =>
-  rows("franchise_names", `league=eq.${lg}&select=franchise_id,name,name_from&order=franchise_id,name_from.nullsfirst`, nameRow).catch(() => []));
+/** The names of a league's franchises, oldest first (the last is the latest). Taken from the one read of every league's names (franchiseNames.ts). */
+export const getNames = cache(async (lg: string): Promise<{ franchise_id: number; name: string; name_from: string | null }[]> => {
+  try {
+    return (await getFranchiseNameRows()).filter((n) => n.league === lg)
+      .map((n) => ({ franchise_id: n.franchise_id, name: n.name, name_from: n.name_from }))
+      .sort((a, b) => a.franchise_id - b.franchise_id || (a.name_from === b.name_from ? 0 : a.name_from === null ? -1 : b.name_from === null ? 1 : a.name_from < b.name_from ? -1 : 1));
+  } catch {
+    return [];
+  }
+});
 
 /**
  * Every club of a league that has a venue with coordinates, for the venue map's team choice. Brand eras that name the same

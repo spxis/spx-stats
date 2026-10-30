@@ -2,6 +2,7 @@ import "server-only";
 import { cache } from "react";
 import { z } from "zod";
 import { groundByWikidata } from "@johnmorrisdotca/kyogijo-stadiums";
+import { ApiError, rows as readRows } from "./api/client";
 import { rows } from "./soccer";
 import { citedTitle, currentName, spansOf, type Pitch, type SoccerName, type SoccerVenue } from "./venueSoccerRows";
 import type { VenueMatch } from "./venueSoccerGames";
@@ -18,6 +19,21 @@ import type { VenueMatch } from "./venueSoccerGames";
 
 const ref = z.object({ venue_id: z.number(), wikidata_id: z.string(), name: z.string().nullable() });
 const played = z.object({ venue_id: z.number(), league: z.string(), year: z.number() });
+const span = z.object({ venue_id: z.number(), league: z.string(), first_year: z.number(), last_year: z.number(), matches: z.number() });
+
+/**
+ * The matches each stadium staged, by competition: api.venue_soccer_span has a row for each stadium and competition (about 600 rows, one request);
+ * until it is on the server (migration 166, a 404) every match is a row of api.soccer_matches (about 10,000, eleven requests).
+ */
+async function playedAt() {
+  try {
+    return (await readRows("venue_soccer_span", "select=venue_id,league,first_year,last_year,matches&order=venue_id,league", span))
+      .map((r) => ({ venue_id: r.venue_id, league: r.league, year: r.first_year, last_year: r.last_year, matches: r.matches }));
+  } catch (e) {
+    if (!(e instanceof ApiError) || e.status !== 404) throw e;
+    return rows("soccer_matches", "venue_id=not.is.null&select=venue_id,league,year&order=match_id", played);
+  }
+}
 const nNum = z.number().nullable();
 const nText = z.string().nullable();
 const fact = z.object({
@@ -45,7 +61,7 @@ function pitchOf(wid: string, published: ReadonlyMap<string, z.infer<typeof pitc
 export const getSoccerVenues = cache(async (): Promise<SoccerVenue[]> => {
   const [refs, played_, facts, pitches] = await Promise.all([
     rows("venue_ref", "select=venue_id,wikidata_id,name&order=venue_id", ref),
-    rows("soccer_matches", "venue_id=not.is.null&select=venue_id,league,year&order=match_id", played),
+    playedAt(),
     rows("venue_soccer", "select=venue_id,city,region,country_code,latitude,longitude,capacity,opened_year,closed_year,surface,roof,address,postal_code,names&order=venue_id", fact),
     rows("venue_pitch", "select=wikidata_id,length_m,width_m,wikipedia_key&order=wikidata_id", pitch),
   ]);

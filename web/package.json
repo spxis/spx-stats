@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.172.0",
+  "version": "0.172.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -114,6 +114,7 @@
     "test:titles": "node --test scripts/rosterTitles.test.ts",
     "test:opheat": "node --test scripts/opponentHeat.test.ts",
     "test:rheat": "node --test scripts/resultHeat.test.ts",
+    "test:seasonruns": "node --test scripts/seasonRuns.test.ts",
     "test:buildshare": "node --conditions=react-server --test scripts/buildShare.test.ts",
     "test:retired": "node --conditions=react-server --test scripts/retired.test.ts"
   },

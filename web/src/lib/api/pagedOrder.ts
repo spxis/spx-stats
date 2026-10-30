@@ -31,6 +31,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   cup_series: ["year", "seq"],
   cup_title: ["year", "team"],
   franchise_names: ["league", "franchise_id", "name_from", "name_to", "name"],
+  franchise_season_games: ["league", "franchise_id", "year"],
   future_venue: ["venue_key"],
   game_field: ["game_id", "kind"],
   game_round: ["game_id"],
@@ -102,12 +103,14 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   team_season_country: ["league", "year", "franchise_id"],
   team_season_identity: ["team_season_id"],
   team_season_index: ["league", "year", "franchise_id"],
+  team_season_name_run: ["league", "franchise_id", "from_year"],
   team_season_roster: ["team_season_id", "person_id"],
   team_season_staff: ["team_season_id", "ord"],
   team_season_stat: ["team_season_id", "phase", "source"],
   team_seasons: ["league", "year", "franchise_id"],
   title_not_awarded: ["league", "year", "award"],
   totals: ["refreshed_at"],
+  venue_city: ["latitude", "longitude", "venue_city_slug"],
   venue_final_game: ["game_id"],
   venue_game_season: ["venue_id", "league", "year"],
   venue_game_total: ["venue_id"],
@@ -119,6 +122,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   venue_place: ["league", "franchise_id", "home_venue", "wikidata_id"],
   venue_ref: ["venue_id"],
   venue_soccer: ["venue_id"],
+  venue_soccer_span: ["venue_id", "league"],
 };
 
 /** The columns an `order=` term list names, in order (`name_from.nullsfirst,year.desc` gives name_from, year); null when the query has no order. */

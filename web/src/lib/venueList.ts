@@ -2,7 +2,7 @@ import "server-only";
 import { z } from "zod";
 import { rows, rowsSlice } from "./api/client";
 import { alignmentSchema } from "./alignment";
-import { getCityData } from "./cityData";
+import { getVenueCityAt, placeKey } from "./cityData";
 import { countryAt } from "./country";
 import { logoFor } from "./brand";
 import { getBrands } from "./data";
@@ -75,15 +75,12 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
   const leagues = order(seen);
   // A league whose only venue is one planned for a club still gets its chip: the league list is the home leagues and those of the future venues.
   const chips = order(new Set([...seen, ...futureLeagues(futureList), ...soccerLeagues]));
-  const [byLeague, spans, facts, align, cityData, tenancies, totals, springList] = await Promise.all([
+  const [byLeague, spans, facts, align, cityAt, tenancies, totals, springList] = await Promise.all([
     Promise.all(leagues.map(async (lg) => ({ lg, teams: await getVenueTeams(lg, brands, paths, say).catch(() => []) }))),
-    getVenueNames(), getVenueFacts(), currentAlignment(), getCityData().catch(() => null), getTenancies(), getGameTotals(), getSpringParks(),
+    getVenueNames(), getVenueFacts(), currentAlignment(), getVenueCityAt().catch(() => new Map<string, string>()), getTenancies(), getGameTotals(), getSpringParks(),
   ]);
 
-  // The city page of a venue is the one the database placed club seasons at, for those coordinates.
-  const cityAt = new Map<string, string>();
-  for (const p of cityData?.placements ?? []) if (p.venueLat != null && p.venueLon != null && p.venueCity) cityAt.set(`${at5(p.venueLat)}|${at5(p.venueLon)}`, p.venueCity);
-
+  // The city page of a venue is the one the database placed club seasons at, for those coordinates (cityAt, by placeKey).
   const byVenue = new Map<string, { row: VenueRow; label: string }>();
   const detail = new Map<string, VenueDetail>();
   for (const { lg, teams } of byLeague) {
@@ -98,7 +95,7 @@ export async function getVenueList(paths: Awaited<ReturnType<typeof getPaths>>, 
           acc = {
             label: v.venue,
             row: {
-              id, key: venueKey(v.wid, v.lat, v.lon), slug: "", name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(`${at5(v.lat)}|${at5(v.lon)}`) ?? null,
+              id, key: venueKey(v.wid, v.lat, v.lon), slug: "", name, former: namesLine(sp), lat: v.lat, lon: v.lon, cc: v.cc, place: v.place, citySlug: cityAt.get(placeKey(v.lat, v.lon)) ?? null,
               wiki: v.wiki, address: v.address, addressHref: v.addressHref, leagues: [], clubs: [],
               opened: f?.opened ?? null, closed: f?.closed ?? null, state: f?.state ?? null, capacity: f?.capacity ?? null, roof: f?.roof ?? null, surface: f?.surface ?? null, owner: f?.owner ?? null,
               from: null, to: null, current: false, al: [],

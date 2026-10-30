@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import type { GameRow } from "../src/lib/api/types.ts";
 import {
-  HEAT_ROWS, HEAT_SPAN_ROWS, HEAT_TARGET_COLS, buildHeat, clipHeatGames, gameTone, heatGamesFromRows, heatGamesFromTeam,
+  HEAT_ROWS, HEAT_SPAN_ROWS, HEAT_TARGET_COLS, buildHeat, clipHeatGames, gameTone, heatGamesFromFranchise, heatGamesFromRows, heatGamesFromTeam,
   heatHover, heatPack, heatRecord, heatSeasons, packHeat, tallyHeat, unpackHeat, type HeatCell, type HeatGame,
 } from "../src/lib/resultHeat.ts";
 import type { TeamGame } from "../src/lib/teamSeason.ts";
@@ -132,6 +132,47 @@ test("packHeat / unpackHeat is a round trip", () => {
   ];
   assert.deepEqual(unpackHeat(packHeat("nhl", 10, games)), games);
   assert.deepEqual(unpackHeat({ lg: "nhl", f: 10, names: [], rows: "" }), []);
+});
+
+test("a long run of games packs small and comes back exactly: out-of-order ids, a changed name inside a year, home and away, no score", () => {
+  const games: HeatGame[] = [];
+  let id = 5000;
+  for (let year = 1990; year < 2020; year++) {
+    for (let i = 0; i < 90; i++) {
+      id += (i * 7) % 5 === 0 ? 1 : 12 + (i % 9) - (i === 40 ? 200 : 0);
+      const home = i % 2 === 0;
+      const date = new Date(Date.UTC(year, 9, 1) + i * 2 * 86_400_000).toISOString().slice(0, 10);
+      const res = i % 11 === 0 ? null : (["W", "L", "T", "OTL"] as const)[i % 4];
+      games.push({
+        date, id, year, res, ot: res === "OTL", mine: res ? i % 6 : null, theirs: res ? (i + 2) % 7 : null, home,
+        awayName: home ? `Club ${i % 31}` : year < 2005 ? "Old Name" : "New Name",
+        homeName: home ? (year < 2005 ? "Old Name" : "New Name") : `Club ${i % 31}`,
+      });
+    }
+  }
+  const packed = packHeat("nhl", 10, games);
+  assert.deepEqual(unpackHeat(packed), games);
+  // The old wire spelled each game with fixed number fields and both names: about 27 characters. This one is well under 18.
+  assert.ok(packed.rows.length / games.length < 18, `${(packed.rows.length / games.length).toFixed(1)} characters a game`);
+});
+
+test("heatGamesFromFranchise gives the games heatGamesFromRows gives, from a franchise's seasons in one read", () => {
+  const row = (over: Partial<GameRow> & Pick<GameRow, "game_id" | "game_date" | "year">): GameRow => ({
+    league: "nhl", phase: "regular", status: "final", away_id: 2, away: "Bruins", away_score: 3, home_id: 1, home: "Hurricanes", home_score: 2,
+    overtime: false, source: "x", checked: null, away_f: 20, home_f: 10, ...over,
+  } as GameRow);
+  const rows = [
+    row({ game_id: 1, game_date: "1998-10-10", year: 1998, overtime: true }),
+    row({ game_id: 2, game_date: "1999-10-10", year: 1999, overtime: true }),
+    row({ game_id: 4, game_date: "1999-10-12", year: 1999, status: "scheduled", home_score: null, away_score: null }),
+    row({ game_id: 5, game_date: "1999-10-14", year: 1999, home_f: 20, away_f: 10, home_id: 2, away_id: 1, home: "Bruins", away: "Hurricanes", home_score: 4, away_score: 4 }),
+    row({ game_id: 6, game_date: "2000-04-20", year: 1999, phase: "playoffs", home_f: 20, away_f: 10, home_id: 2, away_id: 1, home: "Bruins", away: "Hurricanes", home_score: 1, away_score: 2 }),
+  ];
+  const want = heatGamesFromRows("nhl", 10, rows);
+  const tuple = (g: GameRow) => [g.game_id, g.game_date, g.status, g.phase, g.home_f === 10 ? 1 : 0, g.home_f === 10 ? g.home_score : g.away_score, g.home_f === 10 ? g.away_score : g.home_score, g.overtime ? 1 : 0, g.home_f === 10 ? g.away : g.home] as const;
+  const seasons = [1998, 1999].map((y) => ({ year: y, own: "Hurricanes", games: rows.filter((r) => r.year === y).map(tuple) }));
+  assert.deepEqual(heatGamesFromFranchise("nhl", seasons), want);
+  assert.ok(want.some((x) => x.res === "OTL") && want.some((x) => x.res === "T") && want.some((x) => x.res === null), "the sample holds every kind of result");
 });
 
 test("heatPack keeps a season in 8 rows and shrinks all-time to one GitHub-sized box", () => {
