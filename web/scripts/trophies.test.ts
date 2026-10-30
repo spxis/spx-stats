@@ -2,7 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
 import { bindTurn, type TurnContainer, type TurnEvent } from "@johnmorrisdotca/dougu-sports/turn";
-import { bannerCupSvg, bigCupSvg, cupSvg, cupsFor, medalSvg } from "../src/lib/cups.ts";
+import { bannerCupSvg, bigCupSvg, cupSvg, cupsFor, gameCupSvg, medalSvg } from "../src/lib/cups.ts";
+import { bigGameTrophy } from "../src/lib/trophies.ts";
 import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 
 /** Run in web/: pnpm test:trophies (it needs the react-server condition, as lib/cups.ts is server-only). */
@@ -62,5 +63,24 @@ test("the PCHA, NHA and WHA champions are drawn with their own cups, not the Sta
     assert.notEqual(cupSvg(lg), cupSvg("nhl"), lg);
     assert.notEqual(bannerCupSvg(lg), bannerCupSvg("nhl"), lg);
     assert.notEqual(bigCupSvg(lg), bigCupSvg("nhl"), lg);
+  }
+});
+
+test("a big-game banner shows a trophy for the leagues that have a cup, and nothing for the ones that do not", () => {
+  const name = (lg: string, year = 2025) => bigGameTrophy(lg, year);
+  for (const lg of ["nhl", "nba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) assert.ok(name(lg), lg);
+  assert.equal(name("mlb"), "trophy.name.mlb");
+  assert.equal(name("ahl"), "trophy.name.ahl");
+  assert.equal(name("nfl", 1965), null);
+  for (const lg of ["afl", "aafc", "wchl", "na", "fl", "nope"]) assert.equal(name(lg), null, lg);
+});
+
+test("the big-game cup is untitled and sized by the page: the line cup small, the metal cup large", () => {
+  for (const lg of ["nhl", "nba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) {
+    const small = gameCupSvg(lg, false), large = gameCupSvg(lg, true);
+    assert.ok(!small.includes("<title>") && !large.includes("<title>"), lg);
+    assert.ok(!small.includes(' width="64"') && !large.includes(' width="64"'), lg);
+    assert.ok(small.includes("currentColor"), lg);
+    assert.ok(small.length < 2500, `${lg} small cup ${small.length} bytes`);
   }
 });

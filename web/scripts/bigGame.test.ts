@@ -57,11 +57,38 @@ test("a series decided with fewer wins than it takes is missing games: only the 
 });
 
 test("college football names its games from their labels", () => {
-  assert.deepEqual(labelBigGame("playoffs", "College Football Playoff National Championship", "Bowl game"), { round: "College Football Playoff National Championship", final: true, n: null, tag: null, series: null, wins: null });
-  assert.deepEqual(labelBigGame("playoffs", "Peach Bowl (CFP Semifinal)", "Bowl game"), { round: "Peach Bowl", final: false, n: null, tag: "Semifinal", series: null, wins: null });
+  assert.deepEqual(labelBigGame("playoffs", "College Football Playoff National Championship", "Bowl game"), { round: "College Football Playoff National Championship", final: true, decides: true, n: null, tag: null, series: null, wins: null });
+  assert.deepEqual(labelBigGame("playoffs", "Peach Bowl (CFP Semifinal)", "Bowl game"), { round: "Peach Bowl", final: false, decides: false, n: null, tag: "Semifinal", series: null, wins: null });
   assert.equal(labelBigGame("playoffs", "Arizona Bowl", "Bowl game")?.round, "Arizona Bowl");
   assert.equal(labelBigGame("playoffs", null, "Bowl game")?.round, "Bowl game");
   assert.equal(labelBigGame("regular", "SEC Championship Game", "Bowl game")?.final, false);
   assert.equal(labelBigGame("regular", null, "Bowl game"), null);
   assert.equal(labelBigGame("regular", "Week 4", "Bowl game"), null);
+});
+
+/** A World Series after the three rounds before it (the archive reads a lone series as a first round), and the flags of its games. */
+function finalFlags(letters: string): (boolean | undefined)[] {
+  const rounds = [[1, 5, "WW"], [2, 6, "WW"], [1, 7, "WWW"], [2, 8, "WWW"], [1, 9, "WWWW"], [2, 10, "WWWW"]] as const;
+  const before = rounds.flatMap(([a, b, l], i) => series(l, day("2026-09-01", i * 6), a, b));
+  const final = series(letters, "2026-10-23");
+  const m = big([...before, ...final]);
+  return final.map((g) => m.get(g.game_id)?.decides);
+}
+
+test("the game that decides the title is the clinching game or game 7 of the last round, and never an earlier round", () => {
+  // Game 7 is the winner-take-all game; no game before it clinches.
+  assert.deepEqual(finalFlags("WLWLWLW"), [false, false, false, false, false, false, true]);
+  assert.deepEqual(finalFlags("WWWW"), [false, false, false, true]);
+  assert.deepEqual(finalFlags("WLWWW"), [false, false, false, false, true]);
+});
+
+test("a game of an earlier round never decides the title", () => {
+  const rounds = [[1, 5, "WW"], [2, 6, "WW"], [1, 7, "WWW"], [2, 8, "WWW"], [1, 9, "WWWW"], [2, 10, "WWWW"]] as const;
+  const before = rounds.flatMap(([a, b, l], i) => series(l, day("2026-09-01", i * 6), a, b));
+  const m = big([...before, ...series("WWWW", "2026-10-23")]);
+  assert.ok(before.every((g) => m.get(g.game_id)!.decides === false));
+});
+
+test("a series with too few games on record never claims a decider", () => {
+  assert.ok(finalFlags("WLWLWL").every((d) => d !== true));
 });

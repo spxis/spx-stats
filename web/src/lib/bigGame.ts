@@ -14,6 +14,8 @@ export interface BigGame {
   round: string;
   /** The league's last round (World Series, Stanley Cup Final, Super Bowl, Grey Cup, the national championship game): drawn strongest. */
   final: boolean;
+  /** The game decides the title: the clinching game of the final series, a winner-take-all game 7, or a final of one game. Only ever true when `final` is. */
+  decides: boolean;
   /** The game's number in its series (a best-of-N round), else null. */
   n: number | null;
   /** The round of a Playoff game in the college game's labels ("Semifinal"), else null. */
@@ -43,9 +45,11 @@ export function seriesBigGames(lg: string, year: number, games: readonly GameRow
       const [w0, w1] = sg.run;
       const lead = w0 > w1 ? s.sides[0] : s.sides[1];
       const done = sg.played && s.winner != null && sg.n === s.games.length;
+      // The clinching game is known from the result; "the last game of the round" only when the round's length is plausible (no side already past the wins it takes).
+      const decides = final && (s.bestOf === 1 || (counted && (done || (sg.n === s.bestOf && leader <= s.needed))));
       const side = (f: number | null) => Math.max(0, s.sides.findIndex((t) => t.f === f));
       out.set(sg.id, {
-        round, final, tag: null,
+        round, final, decides, tag: null,
         n: counted ? sg.n : null,
         series: counted ? { kind: w0 === w1 ? "tied" : done ? "wins" : "leads", a: Math.max(w0, w1), b: Math.min(w0, w1), lead: w0 === w1 ? null : { f: lead.f, name: nickname(lead.name) } } : null,
         wins: counted ? [sg.run[side(g.away_f)], sg.run[side(g.home_f)]] : null,
@@ -63,5 +67,5 @@ export function labelBigGame(phase: string, label: string | null, fallback: stri
   const group = groupOf({ phase: phase === "playoffs" ? "p" : "r", label }, null);
   if (!group) return null;
   const tag = group === "playoff" ? roundTag(label) : "";
-  return { round: group === "title" || group === "conference" ? (label ?? fallback) : bowlName(label) || fallback, final: group === "title", n: null, tag: tag || null, series: null, wins: null };
+  return { round: group === "title" || group === "conference" ? (label ?? fallback) : bowlName(label) || fallback, final: group === "title", decides: group === "title", n: null, tag: tag || null, series: null, wins: null };
 }

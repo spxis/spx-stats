@@ -65,7 +65,7 @@ function Game({ lg, g, big, brands, abbrs, say, upcoming, day }: { lg: LeagueCod
   );
   return (
     <li className={"sgame" + (big ? " big" : "") + (big?.final ? " final" : "")}>
-      {big ? <BigBanner big={big} say={say} /> : null}
+      {big ? <BigBanner big={big} say={say} lg={lg} year={g.year} /> : null}
       {side("away", g.away_f, g.away, g.away_score, away)}
       {side("home", g.home_f, g.home, g.home_score, home)}
       <div className="sinfo">

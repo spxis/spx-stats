@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.169.0", date: "2026-10-30", href: "/mlb/2025/game/1924798-los-angeles-dodgers-at-toronto-blue-jays",
+    title: "The title trophy on the big-game banner",
+    text: "The banner of a league's last round now carries its trophy: the Commissioner's Trophy, the Stanley Cup, the Larry O'Brien Trophy, the Vince Lombardi Trophy, the Grey Cup, the Calder Cup, the Kelly Cup or the college football national championship trophy. It is small on a score card and large on the game page, and bigger, with a glow, on the game that decides the title. Other games look as before." },
   { version: "0.168.6", date: "2026-10-30", href: "/",
     title: "The home page is lighter",
     text: "The home page carried the archive chart's squares twice over, which made it about six times heavier than it needed to be. The page now sends the seasons as a short list and the chart is drawn as soon as the page is up. It looks and works the same." },

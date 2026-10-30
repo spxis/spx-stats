@@ -1,5 +1,6 @@
 /* The banner of a postseason game on a score card and on the game page. The league's last round (.final) is the strongest: ink on the page's paper with the league colour as a stripe. Tokens come from globals.css. */
-.bigbar { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; padding: 5px 12px; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--ink); border-bottom: 2px solid var(--accent); font: 600 13px/1.25 var(--display); text-transform: uppercase; letter-spacing: .07em; }
+.bigbar { display: flex; align-items: center; gap: 10px; padding: 5px 12px; background: color-mix(in srgb, var(--accent) 14%, var(--panel)); color: var(--ink); border-bottom: 2px solid var(--accent); font: 600 13px/1.25 var(--display); text-transform: uppercase; letter-spacing: .07em; }
+.bigbar .bigtext { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 0; }
 .bigbar .bigname { font-weight: 700; }
 .bigbar .biggame { margin-left: 10px; padding-left: 10px; border-left: 1px solid color-mix(in srgb, currentColor 45%, transparent); font-weight: 600; }
 .bigbar .bigstate { margin-left: auto; padding-left: 12px; font-weight: 700; letter-spacing: .05em; }
@@ -17,3 +18,11 @@
 /* On the game page the banner sits over the showdown, full width. */
 .bigbar.ongame { margin-bottom: 12px; padding-inline: 16px; }
 @media (max-width: 480px) { .bigbar.final { font-size: 13px; } .bigbar .bigstate { margin-left: 0; padding-left: 0; flex-basis: 100%; } }
+
+/* The title trophy of the last round: the line cup in the banner's own colour on a card, the metal cup on the game page. The game that decides the title lifts it a size and gives it a soft glow of the page accent. */
+.bigbar .bigtrophy { flex: none; display: block; width: 22px; height: 22px; }
+.bigbar .bigtrophy svg { display: block; width: 100%; height: 100%; }
+.bigbar.decides .bigtrophy { width: 28px; height: 28px; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 80%, transparent)); }
+.bigbar.ongame .bigtrophy { width: 56px; height: 56px; }
+.bigbar.ongame.decides .bigtrophy { width: 76px; height: 76px; }
+.bigbar .bigcaption { flex-basis: 100%; margin-top: 2px; font: 600 11px/1.2 var(--display); letter-spacing: .12em; opacity: .8; }

@@ -85,6 +85,12 @@ export function bannerCupSvg(league: string): string {
   return unsized(emblem.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: false }));
 }
 
+/** The cup of a big-game banner, untitled (the banner names the trophy in the reader's language): the line cup in the banner's own colour where it is small (a score card), polished metal where it is large (the game page). */
+export function gameCupSvg(league: string, large: boolean): string {
+  const [emblem] = CUPS[league] ?? CUPS.nhl;
+  return unsized(large ? emblem.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: false }) : emblem.svg({ style: "line", size: 64, title: false }));
+}
+
 /** The leagues whose trophy has its own drawing in the package, so a large cup is drawn in metal for them; the others keep the line cup. */
 const FULL_DRAWING = new Set(["nhl", "nba", "mlb", "nfl", "cfl", "nha", "pcha", "wha"]);
 

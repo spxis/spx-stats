@@ -23,3 +23,16 @@ export function trophyPhrase(lg: string, year?: number): PhraseKey | null {
 export function championshipName(lg: string, year: number, name: string): string {
   return lg === "nfl" && year < SUPER_BOWL_SINCE ? "NFL Championship" : name;
 }
+
+/** The leagues that also get a trophy on a big-game banner though no champion banner draws one: the package has no cup of its own for them, so the hockey cup and the football cup stand in, named for the trophy. */
+const BIG_GAME_EXTRA = { ahl: "trophy.name.ahl", echl: "trophy.name.echl", ncaaf: "trophy.name.ncaaf" } as const satisfies Record<string, PhraseKey>;
+
+/**
+ * The phrase that names the trophy a big-game banner shows for a league's season, or null when there is none to show: the leagues with a cup of their own (TROPHY_NAME) and the
+ * AHL, the ECHL and college football. The NFL has none before the Super Bowl (1970), and no other league, the AFL and the AAFC among them, has a cup drawn for it.
+ */
+export function bigGameTrophy(lg: string, year: number): PhraseKey | null {
+  if (lg in BIG_GAME_EXTRA) return BIG_GAME_EXTRA[lg as keyof typeof BIG_GAME_EXTRA];
+  if (lg === "nfl" && year < SUPER_BOWL_SINCE) return null;
+  return trophyPhrase(lg, year);
+}

@@ -244,7 +244,7 @@ export default guard(async function GamePage({ params }: Params) {
         </p>
       </section>
 
-      {big ? <BigBanner big={big} say={say} state={seriesLine(big, say)} page /> : null}
+      {big ? <BigBanner big={big} say={say} lg={lg} year={y} state={seriesLine(big, say)} page /> : null}
       <Showdown
         label={say("gm.aria", { away: A.name, home: H.name })} a={side(A)} b={side(H)} winner={winner} level={final && winner == null}
         score={[final ? A.score : "–", final ? H.score : "–"]}
