@@ -55,7 +55,7 @@ def venues():
         return {r[0]: (r[1], float(r[2]), float(r[3])) for r in rows if len(r) >= 4 and r[0].startswith("Q")}
     got, start = [], 0
     while True:
-        req = urllib.request.Request(REST + "venue_place?select=wikidata_id,home_venue,latitude,longitude&order=wikidata_id", headers={
+        req = urllib.request.Request(REST + "venue_place?select=wikidata_id,home_venue,latitude,longitude&order=wikidata_id,league,franchise_id,home_venue", headers={
             "apikey": KEY, "Accept-Profile": "api", "Range": f"{start}-{start + 999}", **UA})
         page = json.load(urllib.request.urlopen(req, timeout=60))
         got += page

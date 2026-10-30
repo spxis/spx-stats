@@ -81,8 +81,8 @@ def rest_get(base, path):
 
 def logo_urls(base):
     """Every logo address the public pages draw, by key: {key: [url, ...]}."""
-    urls = [r["logo_url"] for r in rest_get(base, "team_brand?select=logo_url&logo_url=not.is.null")]
-    urls += [r["mark_url"] for r in rest_get(base, "logo_fit?select=mark_url&mark_url=not.is.null&status=neq.rejected")]
+    urls = [r["logo_url"] for r in rest_get(base, "team_brand?select=logo_url&logo_url=not.is.null&order=league,franchise_id,brand_from,brand_to,logo_url,source")]
+    urls += [r["mark_url"] for r in rest_get(base, "logo_fit?select=mark_url&mark_url=not.is.null&status=neq.rejected&order=logo_file")]
     by_key = {}
     for u in urls:
         k = logo_key(u)

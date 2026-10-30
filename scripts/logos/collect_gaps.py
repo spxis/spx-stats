@@ -37,8 +37,8 @@ def api(view, query):
 
 
 def gap_idents():
-    teams = api("team_index", "select=league,franchise_id,name,first_season,last_season")
-    brands = api("team_brand", "select=franchise_id,logo_url")
+    teams = api("team_index", "select=league,franchise_id,name,first_season,last_season&order=league,franchise_id")
+    brands = api("team_brand", "select=franchise_id,logo_url&order=league,franchise_id,brand_from,brand_to,logo_url,source")
     has = {b["franchise_id"] for b in brands if b["logo_url"]}
     seeded = {commons_report.norm(r["team"]) for r in library.read_extra()}
     out = []

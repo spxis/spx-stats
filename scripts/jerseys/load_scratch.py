@@ -48,8 +48,8 @@ def sport_of(league):
 
 def main():
     import subprocess
-    teams = pages("team_index", "franchise_id,league,name,former_names")
-    people = pages("player_index", "person_id,name")
+    teams = pages("team_index", "franchise_id,league,name,former_names", "order=league,franchise_id")
+    people = pages("player_index", "person_id,name", "order=person_id")
     print("preview teams", len(teams), "people", len(people))
     sql = ["begin;"]
     seen_f = set()
