@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.2", date: "2026-10-30",
+    title: "Player pages are lighter",
+    text: "A player's page carries about a third less data. The league figures behind ranks, percentiles and the radar load just after the page opens, and the career strip and seasons table are drawn as you reach them. It looks and works the same." },
   { version: "0.168.1", date: "2026-10-30", needsReview: true,
     title: "The data quality page loads from a small read",
     text: "The data quality page asks the second database only for its check lines and its sixty most frequent issues, instead of the whole 6,000-line issue table, which was too big for the site's cache and was read again on every rebuild. The page shows the same figures." },

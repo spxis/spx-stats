@@ -608,7 +608,6 @@ export interface BoardData {
   clubs: Record<string, ClubInfo>;
   titles: { league: string; year: number; team: string | null }[];
   awards: { league: string; year: number; award: string; team: string | null }[];
-  refs: RefPack[];
   /** Seasons the site holds games for, to tell "the league did not play" from "the club did not play" in the seasons table. */
   held: string[];
 }

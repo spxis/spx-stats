@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { packRef, type BoardData, type RefRow, type StatRow } from "../src/lib/playerBoard.ts";
+import type { CompareBoard } from "../src/lib/playerCompare.ts";
 import { careerRows, commonGroups, decades, peakRow, pickerQuery, radarPairs, sideOf, statLines, vsFromSearch, winner, type CompareData } from "../src/lib/playerCompare.ts";
 
 /** Run in web/: pnpm test:playercompare */
@@ -13,10 +14,10 @@ const season = (year: number, f = 1, o: Partial<BoardData["seasons"][number]> = 
 /** A skater's reference row for one year: 11 points from 0 to 1 goals a game and the average. */
 const ref = (m: string, year: number): RefRow => ({ g: "skater", p: "regular", m, y: year, n: 600, a: 0.3, q: [0, 0.05, 0.1, 0.15, 0.2, 0.25, 0.3, 0.4, 0.5, 0.7, 1] });
 
-function board(o: Partial<BoardData>): BoardData {
+function board(o: Partial<CompareBoard>): CompareBoard {
   return { name: "X", min: 1980, max: 1982, bucket: "F", position: "C", stats: [], seasons: [], clubs: {}, titles: [], awards: [], refs: [], held: [], ...o };
 }
-const data = (id: number, b: BoardData | null): CompareData =>
+const data = (id: number, b: CompareBoard | null): CompareData =>
   ({ id, name: `P${id}`, path: `/nhl/player/p-${id}`, home: "nhl", facts: { born: null, died: null, place: null, country: null, heightCm: null, hof: null, positions: [], leagues: ["nhl"], first: 1980, last: 1982 }, board: b, positions: [] });
 
 const refs = [1980, 1981, 1982].flatMap((y) => ["g_pg", "a_pg", "pts_pg", "sog_pg", "pm_pg"].map((m) => packRef(ref(m, y))));

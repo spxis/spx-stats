@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "@/components/Link";
-import { useMemo } from "react";
+import { useMemo, useSyncExternalStore } from "react";
 import { awardBadge, type SeasonInfo } from "@/lib/playerBoard";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -10,6 +10,9 @@ import { TeamLogo } from "./TeamLogo";
 import { usePointCard } from "./usePointCard";
 import type { BoardView } from "./playerView";
 
+const never = () => () => {};
+/** The height of one league's strip (the stay's names, the badges, the cells and the years), so the box does not jump when the strip is drawn. */
+const ROW_HEIGHT = 110;
 const short = (y: number) => `’${String(y % 100).padStart(2, "0")}`;
 
 /**
@@ -26,14 +29,16 @@ export function PlayerPath({ view }: { view: BoardView }) {
   const years = useMemo(() => Array.from({ length: span.to - span.from + 1 }, (_, i) => span.from + i), [span.from, span.to]);
   const keys = useMemo(() => leagues.flatMap((lg) => years.filter((y) => data.seasons.some((s) => s.league === lg && s.year === y)).map((y) => `${lg}:${y}`)), [leagues, years, data.seasons]);
   const card = usePointCard(keys);
+  // The strip is a drawing whose words are all in the tables below, so the page does not carry it: it is drawn in the browser, in a box held at its height.
+  const drawn = useSyncExternalStore(never, () => true, () => false);
   if (!data.seasons.length) return null;
 
   return (
     <div className="pchart ppathbox">
       <h3>{say("ppath.title")}</h3>
       <p className="note">{say("ppath.note")}</p>
-      <div className="chart scroll" data-marks>
-        {leagues.map((lg) => <Row key={lg} lg={lg} many={leagues.length > 1} view={view} years={years} card={card} paths={paths} />)}
+      <div className="chart scroll" data-marks style={drawn ? undefined : { minHeight: leagues.length * ROW_HEIGHT + (leagues.length - 1) * 2 }}>
+        {drawn ? leagues.map((lg) => <Row key={lg} lg={lg} many={leagues.length > 1} view={view} years={years} card={card} paths={paths} />) : null}
         {card.element}
       </div>
     </div>

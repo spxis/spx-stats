@@ -1,7 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useSyncExternalStore } from "react";
-import { clubKey, groupViews, indexRefs, unpackRef, playerPresets, peakRun, type BoardData, type Phase } from "@/lib/playerBoard";
+import { clubKey, groupViews, indexRefs, unpackRef, playerPresets, peakRun, type Phase, type RefPack } from "@/lib/playerBoard";
+import { readBoard, type BoardWire } from "@/lib/playerBoardWire";
 import { parsePlayerState, playerRangeKey, playerStateText, type PlayerState } from "@/lib/playerRange";
 import { releaseRangeHold, saveRange, savedRange } from "@/lib/yearRange";
 import { seasonLabel } from "@/lib/leagues";
@@ -13,6 +14,7 @@ import { PlayerHero } from "./PlayerHero";
 import { PlayerPath } from "./PlayerPath";
 import { PlayerSpray } from "./PlayerSpray";
 import { PlayerSeasonsTable, PlayerStatTables } from "./PlayerTables";
+import { useFetchedJson } from "./useFetchedJson";
 import { YearRange } from "./YearRange";
 import "./playerboard.css";
 
@@ -60,13 +62,16 @@ function writeQuery(text: string) {
 }
 
 /** The player's board: the season slider with its shortcuts, the phase and club choices, and everything below it drawn for those seasons. */
-export function PlayerBoard({ data, id }: { data: BoardData; id: number }) {
+export function PlayerBoard({ wire, id }: { wire: BoardWire; id: number }) {
   const { say, plural } = useSpeaker();
+  const data = useMemo(() => readBoard(wire), [wire]);
   const { min, max } = data;
   const validClubs = useMemo(() => [...new Set(data.stats.map(clubKey))], [data.stats]);
   const raw = useSyncExternalStore(subscribe, readQuery, () => "");
   const state = useMemo(() => parsePlayerState(raw, min, max, validClubs), [raw, min, max, validClubs]);
-  const refs = useMemo(() => indexRefs(data.refs.map(unpackRef)), [data.refs]);
+  // The league's figures (ranks, percentiles, the radar, the league line) are fetched once the board is drawn, not carried by the page; until they are here the board leaves out what needs them.
+  const fetched = useFetchedJson<RefPack[]>(`/api/players/${id}/refs`, "refs", true);
+  const refs = useMemo(() => indexRefs((fetched.data ?? []).map(unpackRef)), [fetched.data]);
 
   // A fresh page starts from its address; leaving it forgets what was chosen so the next player's page does too.
   useEffect(() => () => { chosen = undefined; }, []);

@@ -3,6 +3,9 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { AWARD_GRID_HEAD, AWARD_MANY, awardGridPagePath, awardGridRestPath, awardHead, buildAwardGrid, type AwardInput } from "../src/lib/awardGrid.ts";
 import { CHAMP_HEAD, buildChampLines, champHead, champNoteText, champPagePath, champRestPath, type ChampSeason } from "../src/lib/champLines.ts";
+import { packBoard } from "../src/lib/playerBoardWire.ts";
+import { clubInfoKey, type BoardData } from "../src/lib/playerBoard.ts";
+import { packTable, unpackTable, type SlugTable } from "../src/lib/slug.ts";
 import { FULL_SHARE, leagueSeasonBars, leagueSeasonRows } from "../src/lib/leagueSeasonRows.ts";
 
 /**
@@ -136,3 +139,62 @@ test("the league page keeps its long lists out of the page and its drawings in t
     assert.ok(read(`app/[locale]/q/[league]/${name}/page.tsx`).includes(`s/[league]/${name}/page`), `${name} has its twin in q/`);
   }
 });
+
+/** The HTML budget of a public page, in bytes, as the page is served (no compression). A player with a long career is the heaviest page the site has. */
+const PAGE_BUDGET = 300 * 1000;
+const PLAYER_BUDGET = 250 * 1000;
+
+test("a long career travels as a few kilobytes: names, logos and colours once, the league's figures not at all", () => {
+  const clubs: BoardData["clubs"] = {};
+  const stats = Array.from({ length: 24 }, (_, i) => i).flatMap((i) => (["regular", "playoffs"] as const).map((phase) => {
+    const team = i < 12 ? "Los Angeles Angels of Anaheim" : "St. Louis Cardinals", f = i < 12 ? 7 : 9, year = 2001 + i;
+    clubs[clubInfoKey("mlb", f, year)] = { team, logo: `https://upload.wikimedia.org/wikipedia/en/thumb/${f}/Club_${f}.svg/250px-Club_${f}.svg.png?utm_source=en.wikipedia.org&utm_campaign=imageinfo&utm_content=thumbnail`, tone: "light-dark(#00205B, #D14520)" };
+    return { league: "mlb", year, ts: 70000 + i, f, team, phase, group: "batting", stats: { g: 150, ab: 560, r: 100, h: 170, d: 35, t: 1, hr: 35, rbi: 110, bb: 80, so: 70, sb: 3, cs: 1, hbp: 5, sf: 6, ibb: 10, gidp: 20 } };
+  }));
+  const seasons = stats.filter((s) => s.phase === "regular").map((s) => ({ league: "mlb", year: s.year, label: String(s.year), f: s.f, team: s.team, reg: true, po: true, teamPo: true, champ: false }));
+  const board: BoardData = { name: "A Long Career", min: 2001, max: 2024, bucket: "all", position: "1B", stats, seasons, clubs, titles: [], awards: [], held: [] };
+  const wire = JSON.stringify(packBoard(board));
+  assert.ok(wire.length < 14000, `a 24-season career is ${wire.length} bytes on the wire`);
+  assert.ok(!wire.includes('"refs"'), "the league's figures are fetched by the board, not carried");
+  assert.equal(wire.split("https://upload.wikimedia.org").length - 1, 2, "each logo address is written once");
+});
+
+test("the team address table travels as a flat list and reads back whole", () => {
+  const table: SlugTable = { nhl: { 7: { s: "boston-bruins" }, 9: { s: "montreal-canadiens" }, 12: { s: "winnipeg-jets-2", c: [1996, "phoenix-coyotes", 2014, "arizona-coyotes"] } }, nba: {} };
+  const wire = packTable(table);
+  assert.deepEqual(wire.nhl, [7, "boston-bruins", 9, "montreal-canadiens", 12, { s: "winnipeg-jets-2", c: [1996, "phoenix-coyotes", 2014, "arizona-coyotes"] }]);
+  assert.deepEqual(unpackTable(JSON.parse(JSON.stringify(wire))), table);
+});
+
+test("a player's page leaves the league's figures, the strip and the seasons table out of its HTML", () => {
+  const board = read("components/PlayerBoard.tsx");
+  assert.ok(board.includes("/api/players/${id}/refs") && board.includes("useFetchedJson"), "the board fetches the league's figures");
+  assert.ok(!/data\.refs/.test(board), "no figures ride along with the page");
+  assert.ok(read("components/PlayerPath.tsx").includes("useSyncExternalStore") && read("components/PlayerPath.tsx").includes("drawn ?"), "the career strip is drawn in the browser");
+  assert.ok(read("components/PlayerTables.tsx").includes("useSeen"), "the seasons table is drawn when the reader gets near");
+  const route = read("app/api/players/[id]/refs/route.ts");
+  assert.ok(route.includes("export const revalidate = 86400;") && !/searchParams|cookies\(|headers\(/.test(route), "the figures' route is kept a day and reads nothing per request");
+  assert.ok(read("app/[locale]/q/[league]/player/[player]/page.tsx").includes("<PlayerBoard wire={board}"), "the page hands the board its packed form");
+});
+
+/**
+ * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
+ *   PLAYER_PAGES_URL=http://localhost:7705 pnpm test:weight
+ * Skipped when the variable is not set.
+ */
+const LIVE = process.env.PLAYER_PAGES_URL;
+const PLAYER_PAGES: { path: string; budget: number }[] = [
+  { path: "/mlb/player/156", budget: PLAYER_BUDGET },
+  { path: "/nhl/player/1866", budget: PLAYER_BUDGET },
+  { path: "/nba/player/2786", budget: PLAYER_BUDGET },
+  { path: "/mlb/player/41518", budget: PAGE_BUDGET },
+  { path: "/worldcup/player/76534", budget: PAGE_BUDGET },
+];
+for (const { path, budget } of PLAYER_PAGES) {
+  test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PLAYER_PAGES_URL to measure a running site" }, async () => {
+    const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
+    assert.equal(res.status, 200);
+    const bytes = (await res.arrayBuffer()).byteLength;
+    assert.ok(bytes < budget, `${path} is ${bytes} bytes against ${budget}`);
+  });
+}

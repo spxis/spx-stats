@@ -15,7 +15,7 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { SITE_URL } from "@/lib/leagues";
 import { LOCALE_OG, type Locale } from "@/lib/locale";
 import { approvedTable } from "@/lib/logoFit";
-import { tableOf } from "@/lib/slug";
+import { packTable, tableOf } from "@/lib/slug";
 import { getSlugs } from "@/lib/teamSlugs";
 import { RANGE_HOLD_SCRIPT } from "@/lib/yearRange";
 import "@/app/globals.css";
@@ -61,7 +61,7 @@ export async function SiteShell({ locale, account, children }: { locale: Locale;
       </head>
       <body>
         <LocaleProvider locale={locale}>
-          <SlugProvider table={slugs ? tableOf(slugs) : {}}>
+          <SlugProvider table={slugs ? packTable(tableOf(slugs)) : {}}>
             <LogoFitProvider table={approvedTable(fits)}>
               <AccountProvider enabled={authEnabled()} initial={account}>
                 <AdminBar />

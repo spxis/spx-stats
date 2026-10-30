@@ -3,7 +3,7 @@
  * per-game rates of the stat groups both players have, the best season and the radar of the two against their leagues. Pure and free of React, so
  * the window draws from it and a node script tests it (scripts/playerCompare.test.ts). A figure that cannot be worked out is null and has no winner.
  */
-import { enoughPlayed, GROUPS, groupViews, indexRefs, metricOf, peakSeason, radarOf, unpackRef, type BoardData, type GroupView, type Phase, type RefIndex } from "./playerBoard.ts";
+import { enoughPlayed, GROUPS, groupViews, indexRefs, metricOf, peakSeason, radarOf, unpackRef, type BoardData, type GroupView, type Phase, type RefIndex, type RefPack } from "./playerBoard.ts";
 import type { StatKind } from "./playerStats.ts";
 
 /** What the window shows about a person apart from the statistics. */
@@ -25,6 +25,9 @@ export interface CompareFacts {
 export type PositionName = [string, string, string, string, string];
 
 /** The answer of /api/players/<id>/compare. `board` is null for a person with no playing record (a coach). */
+/** A board with the league's figures in it: the Compare window gets both in one answer. */
+export type CompareBoard = BoardData & { refs: RefPack[] };
+
 export interface CompareData {
   id: number;
   name: string;
@@ -33,7 +36,7 @@ export interface CompareData {
   /** The league the page lives under. */
   home: string;
   facts: CompareFacts;
-  board: BoardData | null;
+  board: CompareBoard | null;
   positions: PositionName[];
 }
 
@@ -49,7 +52,7 @@ export function winner(a: number | null, b: number | null, low = false): Win {
 /** One player as the window holds them for a phase: the board data, the league figures indexed, the stat groups over the whole career. */
 export interface Side {
   data: CompareData;
-  board: BoardData;
+  board: CompareBoard;
   refs: RefIndex;
   groups: GroupView[];
 }

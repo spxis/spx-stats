@@ -4,7 +4,8 @@ import {
   awardBadge, bucketOf, enoughPlayed, groupViews, heroFigure, bySeason, cdfAt, clampSpan, cumulative, GROUPS, indexRefs, packRef, unpackRef, inningsText, inRange, leagueAvg, leagueFinishes, metricOf, milestonesOf,
   peakRun, peakSeason, perOf, pooledPercentile, radarOf, rankIn, refKey, shares, sumStats, topPercent, type RefRow, type StatRow,
 } from "../src/lib/playerBoard.ts";
-import { clubKey } from "../src/lib/playerBoard.ts";
+import { clubInfoKey, clubKey, type BoardData, type SeasonInfo } from "../src/lib/playerBoard.ts";
+import { packBoard, readBoard } from "../src/lib/playerBoardWire.ts";
 import { showStat, STAT_GROUPS } from "../src/lib/playerStats.ts";
 import { playerRangeKey, parsePlayerState, playerStateText, rawPlayerSpan } from "../src/lib/playerRange.ts";
 
@@ -265,4 +266,21 @@ test("football: passer rating, yards per carry and combined tackles are worked o
   assert.deepEqual(groupViews(all, span, "regular", new Set(), "LB").map((g) => g.def.id), ["defense", "passing", "rushing"]);
   assert.equal(enoughPlayed("passing", "regular", { att: 99 }), false);
   assert.equal(enoughPlayed("kicking", "playoffs", { fga: 3 }), true);
+});
+
+test("the board as the page sends it reads back exactly, and a long career is small", () => {
+  const stats: StatRow[] = Array.from({ length: 22 }, (_, i) => i).flatMap((i) => [
+    row(2001 + i, { gp: 150 + i, g: 30 + i, a: 40, pts: 70 + i, ...(i % 3 ? { pm: -i } : {}) }, { ts: 100 + i, team: i < 11 ? "Anaheim Mighty Ducks" : "Oilers" }),
+    row(2001 + i, { gp: 5, g: 1, a: 0, pts: 1 }, { phase: "playoffs", ts: 100 + i, team: i < 11 ? "Anaheim Mighty Ducks" : "Oilers", group: "goalie" }),
+  ]);
+  const seasons = Array.from({ length: 22 }, (_, i): SeasonInfo => ({ league: "nhl", year: 2001 + i, label: `${2001 + i}-${String(2002 + i).slice(2)}`, f: i < 11 ? 1 : 2, team: i === 3 ? null : i < 11 ? "Anaheim Mighty Ducks" : "Oilers", reg: true, po: i % 2 === 0, teamPo: i % 4 === 0, champ: i === 5 }));
+  const clubs: BoardData["clubs"] = {};
+  for (const s of seasons) clubs[clubInfoKey(s.league, s.f, s.year)] = { team: s.team, logo: s.f === 1 ? "https://example.invalid/a.png" : s.year > 2015 ? null : "https://example.invalid/b.png", tone: s.f === 1 ? "light-dark(#111111, #eeeeee)" : "light-dark(#222222, #dddddd)" };
+  const board: BoardData = { name: "A Player", min: 2001, max: 2022, bucket: "F", position: "C", stats, seasons, clubs, titles: [{ league: "nhl", year: 2006, team: "Oilers" }],
+    awards: [{ league: "nhl", year: 2010, award: "Trophy", team: null }], held: ["nhl|2001", "nhl|2002"] };
+  const wire = packBoard(board);
+  assert.deepEqual(readBoard(JSON.parse(JSON.stringify(wire))), board);
+  assert.equal("refs" in wire, false, "the league's figures are fetched, not carried");
+  assert.equal(wire.logos.length, 2, "each logo address is written once");
+  assert.ok(JSON.stringify(wire).length < 0.5 * JSON.stringify(board).length, "the wire form is under half the plain one");
 });

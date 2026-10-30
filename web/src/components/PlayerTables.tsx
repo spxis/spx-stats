@@ -13,7 +13,11 @@ import { SortTable } from "./SortTable";
 import { TeamLabel } from "./TeamLabel";
 import { MiniCup } from "./TrophyIcon";
 import { NoSeason } from "./ui";
+import { useSeen } from "./useSeen";
 import type { BoardView } from "./playerView";
+
+/** The height of a row of the seasons table, so the section does not jump when the table is drawn. */
+const SEASON_ROW = 35;
 
 const leagueName = (l: string) => (isLeague(l) ? LG[l] : l);
 
@@ -62,6 +66,8 @@ export function PlayerStatTables({ view }: { view: BoardView }) {
 export function PlayerSeasonsTable({ view }: { view: BoardView }) {
   const { say } = useSpeaker();
   const { data, state } = view;
+  // Its figures are already in the board; the table of them is drawn once the reader gets near, so the page does not carry it twice.
+  const [ref, seen] = useSeen<HTMLElement>("800px 0px");
   if (!data.seasons.length) return null;
   type Row = { league: string; year: number; label: string; gap: boolean; f: number | null; team: string | null; reg: boolean; po: boolean; teamPo: boolean; champ: boolean };
   const held = new Set(data.held);
@@ -89,9 +95,9 @@ export function PlayerSeasonsTable({ view }: { view: BoardView }) {
   ];
   const table = tableOf(shown, specs, (r) => `${r.league}|${r.year}|${r.team ?? "gap"}`);
   return (
-    <section className="section">
+    <section ref={ref} className="section">
       <h2>{say("player.seasonsTitle")}</h2>
-      <div className="tablebox"><SortTable {...table} param="sort_seasons" def="season.desc" /></div>
+      <div className="tablebox" style={seen ? undefined : { minHeight: SEASON_ROW * (shown.length + 1) }}>{seen ? <SortTable {...table} param="sort_seasons" def="season.desc" /> : null}</div>
       <p className="note">{say("player.seasonsNote", { name: data.name })}</p>
     </section>
   );

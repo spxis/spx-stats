@@ -17,6 +17,33 @@ export interface SlugEntry { s: string; c?: (string | number)[] }
 /** league -> franchise id -> entry. Small enough to send to the browser. */
 export type SlugTable = Record<string, Record<number, SlugEntry>>;
 
+/**
+ * The table as it travels to the browser (the root layout sends it to every page): per league a flat list of franchise id and entry, an entry that never
+ * changed its address as the bare slug. `unpackTable` is the exact inverse of `packTable`.
+ */
+export type SlugWire = Record<string, (number | string | SlugEntry)[]>;
+
+export function packTable(table: SlugTable): SlugWire {
+  const out: SlugWire = {};
+  for (const [lg, entries] of Object.entries(table)) {
+    out[lg] = Object.entries(entries).flatMap(([f, e]) => [Number(f), e.c?.length ? e : e.s]);
+  }
+  return out;
+}
+
+export function unpackTable(wire: SlugWire): SlugTable {
+  const out: SlugTable = {};
+  for (const [lg, list] of Object.entries(wire)) {
+    const entries: Record<number, SlugEntry> = {};
+    for (let i = 0; i + 1 < list.length; i += 2) {
+      const e = list[i + 1] as string | SlugEntry;
+      entries[list[i] as number] = typeof e === "string" ? { s: e } : e;
+    }
+    out[lg] = entries;
+  }
+  return out;
+}
+
 export function seasonSlug(e: SlugEntry, y: number): string {
   let out = e.s;
   for (let i = 0; e.c && i < e.c.length; i += 2) {
