@@ -15,6 +15,8 @@ import { COUNTRIES_HEAD } from "../src/lib/countryLines.ts";
 import { FULL_SHARE, leagueSeasonBars, leagueSeasonRows } from "../src/lib/leagueSeasonRows.ts";
 import { packHeat, unpackHeat, type HeatSeason } from "../src/lib/heatWire.ts";
 import { seasonLabel } from "../src/lib/leagues.ts";
+import { packTeams, unpackTeams } from "../src/lib/teamWire.ts";
+import type { BoardTeam } from "../src/lib/teamBoard.ts";
 import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
 
 /**
@@ -400,6 +402,24 @@ test("an MLS season travels as one short line a match and reads back as the tabl
   }
 });
 
+test("the teams list travels as short arrays, with logos written by their shared beginnings, and reads back whole", () => {
+  const leagues = ["nhl", "nba", "mlb", "ncaaf", "echl"];
+  const logos = Array.from({ length: 80 }, (_, i) => i % 5 === 4 ? `/team-logos/sl/${5000 + i}.gif`
+    : `https://${i % 2 ? "thumb" : "upload"}.wikimedia.org/wikipedia/${i % 3 ? "commons" : "en"}/thumb/a/b${i}/Club_${i}.svg/120px-Club_${i}.svg.png?utm_source=${i % 3 ? "commons.wikimedia.org" : "en.wikipedia.org"}&utm_campaign=imageinfo&utm_content=thumbnail`);
+  const teams: BoardTeam[] = Array.from({ length: 540 }, (_, i): BoardTeam => ({
+    lg: leagues[i % 5], f: 1000 + i, name: `Some City Club ${i} Hawks`, former: i % 4 === 0 ? [[`Old Name ${i}`, i % 80], [`Older Name ${i}`, -1]] : [],
+    first: i % 17 === 0 ? null : 1900 + (i % 100), last: i % 17 === 0 ? null : 2000 + (i % 26), seasons: i % 90, titles: i % 7, share: i % 11 === 0 ? null : Math.round((i % 1000)) / 1000,
+    active: i % 3 === 0, logo: i % 9 === 0 ? -1 : i % 80, cc: i % 13 === 0 ? null : ["US", "CA"][i % 2], lat: i % 13 === 0 ? null : 33.808 + i / 1000, lon: i % 13 === 0 ? null : -117.877 - i / 1000,
+    place: i % 13 === 0 ? null : `City ${i % 120}, ST`, places: i % 6 === 0 ? [] : [["West", "Pacific"], [null, "West"], ["East", null]].slice(0, 1 + (i % 3)) as [string | null, string | null][],
+  }));
+  const wire = packTeams(teams, logos);
+  const back = unpackTeams(wire);
+  assert.deepEqual(back.logos, logos);
+  assert.deepEqual(back.teams, teams);
+  assert.ok(JSON.stringify(wire).length < 125 * teams.length + 8000, "a franchise costs about a hundred bytes in the page");
+  assert.ok(wire.lg.length === 5 && wire.pl.length === 3, "league codes and conference pairs are written once");
+});
+
 test("the MLS season page sends its matches as lines and keeps every match on a page of its own", () => {
   assert.ok(MLS_MATCHES_HEAD <= 20, "the table's head is a few rows");
   const page = read("app/[locale]/s/mls/[year]/page.tsx");
@@ -430,6 +450,9 @@ const FLOOR_PAGES = [{ path: "/privacy", budget: ROOT_FLOOR }, { path: "/terms",
 /** The home page: the figures, the archive chart's seasons as packed numbers and a card for each league. It was 471 KB, drawing every square of the chart as markup. */
 const HOME_PAGES = [{ path: "/", budget: 120 * 1000 }];
 
+/** The teams list: every franchise as a short array, drawn and filtered in the browser (it was 363 KB of HTML, 304 KB of it the list as named fields). */
+const TEAMS_PAGES = [{ path: "/teams", budget: 250 * 1000 }];
+
 /** An MLS season: a full season's games was 1,045 KB of HTML (the table drawn as markup and sent again as elements). The season page, and the page of every match. */
 const MLS_PAGES = [
   ...["1996", "2008", "2020", "2025"].map((y) => ({ path: `/mls/${y}`, budget: PAGE_BUDGET })),
@@ -455,7 +478,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

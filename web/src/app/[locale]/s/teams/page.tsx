@@ -8,6 +8,7 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { countryName } from "@/lib/people-format";
 import { getTeamBoard } from "@/lib/teamBoardData";
+import { packTeams } from "@/lib/teamWire";
 import "@/components/alignment.css";
 
 // A kept page: the league, search, status, years, conference and division, least titles, sort and page are all chosen and applied in the browser from the one
@@ -34,7 +35,7 @@ export default guard(async function TeamsPage() {
   return (
     <>
       <PageFlagSprite codes={codes} />
-      <TeamsBoard teams={data.teams} logos={data.logos} groups={data.groups} countries={countries} head={head} />
+      <TeamsBoard wire={packTeams(data.teams, data.logos)} groups={data.groups} countries={countries} head={head} />
     </>
   );
 });

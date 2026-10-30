@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.2", date: "2026-10-30", href: "/teams",
+    title: "The teams list is lighter",
+    text: "The teams page carried every franchise as a long list of labelled fields and the full address of every logo. It now sends them as short lines with the shared parts written once, so the page is about a third lighter. Search, filters, sorting, paging and the map work exactly as before." },
   { version: "0.170.1", date: "2026-10-30", href: "/mls/2025",
     title: "MLS season pages are lighter",
     text: "A Major League Soccer season page was about four times heavier than it needed to be, because its table of every match was sent twice. The page now opens on the first matches and the rest appear when you press Show all or sort another way; every match is also on a page of its own, /mls/2025/matches. It looks and works the same." },

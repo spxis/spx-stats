@@ -9,6 +9,7 @@ import {
   currentPlace, DEF_SORT, filterTeams, leagueSpan, mostTitles, pageOf, readFilters, searchTextOf, STATUSES,
   type BoardTeam, type Status,
 } from "@/lib/teamBoard";
+import { unpackTeams, type TeamsWire } from "@/lib/teamWire";
 import { currentGroups, placeText, type Conf, type Div } from "@/lib/teamGroups";
 import { replaceQuery } from "@/lib/urlQuery";
 import { RANGE_PAGES, releaseRangeHold, saveRange, savedRange } from "@/lib/yearRange";
@@ -48,8 +49,8 @@ function change(changes: Record<string, string | null>) {
 const COLUMN_KEYS = ["name", "league", "country", "place", "first", "last", "seasons", "titles", "share", "former"];
 
 interface Props {
-  teams: BoardTeam[];
-  logos: string[];
+  /** Every franchise and the logo addresses they point into, packed (lib/teamWire.ts). */
+  wire: TeamsWire;
   groups: Record<string, { confs: Conf[]; divs: Div[] }>;
   /** Country names in this page's language, for the codes the teams carry. */
   countries: Record<string, string>;
@@ -63,7 +64,8 @@ interface Props {
  * copy for everyone and a choice costs the server nothing. The choices live in the address (?league=&q=&status=&from=&to=&conf=&div=&titles=&sort=&page=);
  * the years are also remembered for the next visit.
  */
-export function TeamsBoard({ teams, logos, groups, countries, head }: Props) {
+export function TeamsBoard({ wire, groups, countries, head }: Props) {
+  const { teams, logos } = useMemo(() => unpackTeams(wire), [wire]);
   const { say, fmt, plural } = useSpeaker();
   const uid = useId();
   const snap = useSyncExternalStore(subscribe, snapshot, () => SPLIT);
