@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.17", date: "2026-10-30", href: "/nhl/2004-05",
+    title: "Seasons that were not played open in about half the weight",
+    text: "The page of a season the league sat out (the 2004-05 NHL lockout, say) now builds its club, head coach and roster tables in the browser from short lines, names each club once, and loads the map of the clubs when you scroll to it. Every row is still in the page. The 2004-05 page went from 406 to 239 KB." },
   { version: "0.170.16", date: "2026-10-30", href: "/ncaaf/2025/leaders",
     title: "Season leaders pages are about a third of the weight",
     text: "The table of every team on a team leaders page now travels as short lines and is drawn in the browser, the first twenty teams until Show all (a link to the full table, which is also what a sort asks for). College football 2025 went from 281 to 101 KB." },

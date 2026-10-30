@@ -30,6 +30,7 @@ import type { GameRow, StandingRow } from "../src/lib/api/types.ts";
 import { coachRowsPath, packCoach, unpackCoach, type CoachLeague } from "../src/lib/coachWire.ts";
 import { buildWcMatches, buildWcScorers, buildWcTeams, readWcMatches, WC_HEAD, wcTablesPath, type WcMatchInput } from "../src/lib/wcLines.ts";
 import { buildLeaderLines, LEADER_HEAD, leaderShare } from "../src/lib/leaderLines.ts";
+import { outageClubLines, outageCoachLines, outagePersonLines, outageRosterLines } from "../src/lib/outageLines.ts";
 import { stripLines } from "../src/lib/wcStrip.ts";
 import { lineageRowsPath, packLineage, unpackLineage, type LineageLeague } from "../src/lib/lineageWire.ts";
 
@@ -692,6 +693,7 @@ const KIND_SAMPLES: Record<string, string> = {
   "[league]/[year]/playoffs/round/[n]": "/nfl/1973/playoffs/round/1",
   "[league]/[year]/rows/games": "/mlb/2024/rows/games",
   "[league]/[year]/rows/path": "/nhl/2024-25/rows/path",
+  "[league]/[year]/rows/outage-map": "/nhl/2004-05/rows/outage-map",
   "[league]/alignment": "/ncaaf/alignment",
   "[league]/all-star": "/mlb/all-star",
   "[league]/all-star/[year]": "/nfl/all-star/2018",
@@ -776,7 +778,6 @@ const KIND_EXTRA = ["/nhl/2004-05", "/mlb/head-to-head/baltimore-orioles-vs-detr
  * the budget its line must go (the test says so), so this list only ever gets shorter.
  */
 const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string }> = {
-  "/nhl/2004-05": { kb: 420, ticket: "SPX-799 outage seasons", why: "a season not played: before-and-after tables of every club and roster" },
   "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "SPX-800 franchise results", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
 };
 
@@ -930,4 +931,27 @@ test("the team leaders table travels as one short line a team, with its places w
   const page = read("components/TeamLeaders.tsx");
   assert.doesNotMatch(page, /SortTable/, "the page does not draw the table's cells on the server");
   assert.match(page, /TeamLeaderTable/);
+});
+
+test("a season-outage page sends one short line a club for each table, and its map is fetched when the reader gets near it", () => {
+  const club = (f: number, rank: number) => ({ f, teamId: f, name: `Club ${f}`, gp: 82, w: 40, l: 30, t: 2, otl: 10, pts: 92, pf: 200, pa: 190, strength: 0.55, rank });
+  const lines = outageClubLines([
+    { f: 1, before: club(1, 3), after: club(1, 5), change: -0.02, places: -2 },
+    { f: 2, before: null, after: club(2, 1), change: null, places: null },
+  ], (f) => (f === 2 ? "joined" : ""));
+  assert.deepEqual(lines[0], [1, "", [3, 0.55, 40, 30, 2, 10, 92], [5, 0.55, 40, 30, 2, 10, 92], -2, -0.02]);
+  assert.deepEqual(lines[1], [2, "joined", null, [1, 0.55, 40, 30, 2, 10, 92], null, null], "a club on one side only has null for the other");
+  const coaches = outageCoachLines([{ f: 1, before: { id: 1, name: "A" }, after: { id: 2, name: "B" }, changed: true }, { f: 2, before: null, after: null, changed: null }, { f: 3, before: { id: 3, name: "C" }, after: null, changed: null }]);
+  assert.deepEqual(coaches, [[1, "A", "B", 1], [3, "C", "", -1]], "a club with no coach on file leaves no row");
+  const person = (id: number, gp: number) => ({ id, name: `P${id}`, gp, seasons: 3, first: 2000, last: 2010, position: null });
+  const rosters = outageRosterLines([{ f: 1, stayed: [1, 2, 3, 4].map((i) => person(i, 10)), traded: [person(5, 5)], gone: [person(6, 50)], fromElsewhere: [], fresh: [person(7, 1)], continuity: 0.62, sizeBefore: 30, sizeAfter: 29 }], (p) => `/nhl/player/${p.id}`);
+  assert.equal(rosters[0][6].length, 3, "the first three returners are named");
+  assert.deepEqual(rosters[0][7], [["/nhl/player/6", "P6"], ["/nhl/player/5", "P5"]], "departures, the most games first");
+  assert.deepEqual(rosters[0].slice(1, 6), [30, 4, 2, 1, 0.62]);
+  const people = outagePersonLines(Array.from({ length: 20 }, (_, i) => ({ ...person(i, 1), club: 7 })), (p) => `/nhl/player/${p.id}`, 2004);
+  assert.equal(people.length, 12);
+  assert.deepEqual(people[0], ["/nhl/player/0", "P0", 3, 7, 2004]);
+  const page = read("components/SeasonOutage.tsx");
+  assert.doesNotMatch(page, /<SortTable|MapViewer/, "the tables are built in the browser and the map is fetched");
+  assert.match(page, /rows\/outage-map/);
 });

@@ -63,9 +63,9 @@ const TEAM_LABELS = [
   "col.team", "col.opponent", "col.champion", "col.home", "col.away", "h2h.home", "h2h.away", "h2h.col.home", "h2h.col.away", "h2h.col.teams",
   "wc.col.away", "wc.col.runnerUp", "past.winner", "mls.col.name", "mls.col.shield", "mls.col.cup",
 ];
-/** What may draw a team in such a cell: the logo with its link, a national team's flag with its link, a club with no logo held (a European club: its crest is not ours to draw), a logo alone, or a page's own `team(`/`club(` helper that returns a TeamLabel. */
+/** What may draw a team in such a cell: the logo with its link, a national team's flag with its link, a club with no logo held (a European club: its crest is not ours to draw), a logo alone, or a page's own `team(`/`club(` helper that returns a TeamLabel, or `Tm`, the season-outage pages' TeamLabel whose logo the page told once (components/OutageTeams.tsx). */
 // (an MLS club is a link to mlsClubPath with no crest, as MlsClubName draws it; the matches table draws that link itself, a hundred rows lighter than a component each)
-const TEAM_CELL = /<TeamLabel\b|<SoccerTeamName\b|<MlsClubName\b|\bmlsClubPath\(|<EuropeClubName\b|<TeamLogo\b|\b(?:team|club)\(/;
+const TEAM_CELL = /<TeamLabel\b|<Tm\b|<SoccerTeamName\b|<MlsClubName\b|\bmlsClubPath\(|<EuropeClubName\b|<TeamLogo\b|\b(?:team|club)\(/;
 
 /** The table columns (a `{ key, label, cls: "team", get, cell }` object) that name a team but show the bare string: no `cell`, or a cell that is plain text or a bare link. */
 export function bareTeamColumns(code: string): string[] {

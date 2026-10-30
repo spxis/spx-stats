@@ -1,32 +1,26 @@
 import Link from "@/components/Link";
-import type { ReactNode } from "react";
-import { MapViewer } from "@/components/MapViewer";
+import { OutageMapNear } from "@/components/OutageMapNear";
 import { OutageSlope } from "@/components/OutageSlope";
-import { SortTable } from "@/components/SortTable";
-import { TeamLabel } from "@/components/TeamLabel";
+import { OutageClubsTable, OutageCoachesTable, OutagePeopleList, OutageRostersTable } from "@/components/OutageTables";
+import { OutageTeams, Tm } from "@/components/OutageTeams";
 import type { SeasonOutageRow, SeasonSummaryRow } from "@/lib/api/types";
 import { abbrFor, type AbbrMap } from "@/lib/abbr";
 import { logoFor, type BrandMap } from "@/lib/brand";
-import { getSeasonAlignment } from "@/lib/alignmentData";
 import { getAbbrs, getBrands, getSeasonStandings } from "@/lib/data";
 import { atUtc, fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LG, seasonLabel } from "@/lib/leagues";
 import {
   carryOver, coachMoves, crossing, figuresOf, franchiseChanges, lineUp, movers, rankClubs, usesPoints,
-  type Carry, type Club, type Line, type Person,
+  type Person,
 } from "@/lib/outage";
 import { getHeadCoaches, getIdentities, getOutage, getSeasonRoster, neighbours } from "@/lib/outageData";
 import { getPlayerPaths } from "@/lib/playerLinks";
 import { seasonPath } from "@/lib/slug";
-import { tableOf, type ColumnSpec } from "@/lib/sort";
+import { outageClubLines, outageCoachLines, outagePersonLines, outageRosterLines } from "@/lib/outageLines";
 import { getPaths } from "@/lib/teamSlugs";
-import { clubPins } from "@/lib/venueMap";
-import { getVenuePlaces } from "@/lib/venuePlace";
-import { getVenueFacts, getVenueNames } from "@/lib/venueName";
 import "@/components/outage.css";
 
-const rec = (c: Club | null): string => (c ? `${c.w ?? 0}-${c.l ?? 0}${c.t ? `-${c.t}` : ""}${c.otl ? `-${c.otl}` : ""}` : "");
 const sign = (n: number) => (n > 0 ? "+" : n < 0 ? "−" : "±");
 const share = (n: number) => fmt3(Math.abs(n)).replace(/^0/, "");
 
@@ -42,34 +36,10 @@ export async function SeasonOutage({ lg, year, seasons }: { lg: string; year: nu
   return (
     <>
       <Article outage={outage} />
-      {before ? <ClubMap lg={lg} before={before} brands={brands} abbrs={abbrs} paths={paths} /> : null}
+      {before ? <OutageMapNear dataHref={`${seasonPath(lg, year)}/rows/outage-map`} season={before.label} /> : null}
       {before && after ? <BeforeAfter lg={lg} before={before} after={after} brands={brands} abbrs={abbrs} paths={paths} player={player} /> : null}
       {outage ? null : <p className="note">{say("outage.noArticle")}</p>}
     </>
-  );
-}
-
-/**
- * Every club of the season before the gap on one map, each at the venue it used then: the same viewer as a team's season map, framed
- * round the dots (Canada for the CFL, North America for the rest). A dot opens that club's season. Left out when no club can be placed.
- */
-async function ClubMap({ lg, before, brands, abbrs, paths }: Pick<BAProps, "lg" | "brands" | "abbrs" | "paths"> & { before: SeasonSummaryRow }) {
-  const { say } = await currentSpeaker();
-  const [standings, alignment, places, names, facts] = await Promise.all([
-    getSeasonStandings(lg, before.year).catch(() => []), getSeasonAlignment(lg, before.year), getVenuePlaces(lg), getVenueNames(), getVenueFacts(),
-  ]);
-  const pins = clubPins({
-    year: before.year, me: -1, clubs: standings, brands, abbrs, alignment, places, names, facts, say, href: (f) => paths.teamSeason(lg, f, before.year),
-  });
-  if (!pins.length) return null;
-  const total = new Set(standings.map((r) => r.franchise_id)).size;
-  const label = say("map.label", { league: LG[lg as keyof typeof LG] ?? lg, season: before.label });
-  return (
-    <section className="section">
-      <h2>{say("outage.mapTitle")}</h2>
-      <p>{say("outage.mapLede", { season: before.label })}</p>
-      <MapViewer pins={pins} title={label} note={say("outage.mapNote", { n: pins.length, total })} />
-    </section>
   );
 }
 
@@ -113,7 +83,7 @@ interface BAProps {
 }
 
 async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: BAProps) {
-  const { say, plural, fmt } = await currentSpeaker();
+  const { say, fmt } = await currentSpeaker();
   const [stB, stA, idB, idA, rosB, rosA, coB, coA] = await Promise.all([
     getSeasonStandings(lg, before.year), getSeasonStandings(lg, after.year),
     getIdentities(lg, before.year), getIdentities(lg, after.year),
@@ -129,11 +99,12 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
   for (const c of cb) nameOf.set(c.f, nameOf.get(c.f) ?? c.name);
   for (const c of ca) nameOf.set(c.f, c.name);
   const labelB = seasonLabel(lg, before.year), labelA = seasonLabel(lg, after.year);
-  const team = (f: number, y: number, text?: string) => (
-    <span className="tm"><TeamLabel lg={lg} f={f} name={text ?? nameOf.get(f) ?? ""} logo={logoFor(brands, f, y)} /></span>
-  );
-  const pLink = (p: Person) => <Link key={p.id} href={player(p.id, p.name, lg)} prefetch={false}>{p.name}</Link>;
-  const list = (ps: Person[], n: number): ReactNode => ps.slice(0, n).flatMap((p, i) => (i ? [", ", pLink(p)] : [pLink(p)]));
+  // Each club the page names, and the logo it wore in the season named, told once to the clubs' provider (components/OutageTeams.tsx).
+  const used = new Map<string, [number, number, string]>();
+  const team = (f: number, y: number, text?: string) => {
+    used.set(`${f}:${y}`, [f, y, logoFor(brands, f, y) ?? ""]);
+    return <Tm f={f} y={y} text={text} />;
+  };
   const changes = franchiseChanges(cb, ca, idB, idA);
   const changeOf = new Map(changes.map((c) => [c.f, c]));
   const fig = { b: figuresOf(cb), a: figuresOf(ca) };
@@ -143,58 +114,23 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
   const cross = rosB.length && rosA.length ? crossing(rosB, rosA, before.year, after.year) : null;
   const changedCoaches = coaches.filter((c) => c.changed).length, known = coaches.filter((c) => c.changed != null).length;
 
-  /* the clubs table */
-  const kindLabel = (f: number) => {
-    const c = changeOf.get(f);
-    return c ? <span className="defending">{say(`outage.kind.${c.kind}` as const)}</span> : null;
+  /* the tables: one short line a club, built into cells in the browser (components/OutageTables.tsx) */
+  const kindOf = (f: number) => changeOf.get(f)?.kind ?? "";
+  const sideB = { year: before.year, label: labelB }, sideA = { year: after.year, label: labelA };
+  const note = (f: number, y: number) => { used.set(`${f}:${y}`, [f, y, logoFor(brands, f, y) ?? ""]); };
+  for (const l of lines) note(l.f, (l.after ? after : before).year);
+  for (const c of coaches) note(c.f, after.year);
+  for (const c of carry) note(c.f, after.year);
+  const pageOf = (p: Person) => player(p.id, p.name, lg);
+  const clubLines = outageClubLines(lines, kindOf);
+  const coachLines = outageCoachLines(coaches);
+  const rosterLines = outageRosterLines(carry, pageOf);
+  const peopleList = (ps: (Person & { club?: number; to?: number })[], y: number) => {
+    for (const p of ps.slice(0, 12)) { const f = p.to ?? p.club; if (f != null) note(f, y); }
+    return <OutagePeopleList lines={outagePersonLines(ps, pageOf, y)} />;
   };
-  const cols: ColumnSpec<Line>[] = [
-    { key: "team", label: say("col.team"), cls: "team", get: (l) => nameOf.get(l.f) ?? "", cell: (l) => <>{team(l.f, (l.after ? after : before).year)}{kindLabel(l.f)}</> },
-    { key: "rb", label: say("outage.colRank", { season: labelB }), num: true, get: (l) => l.before?.rank ?? null },
-    { key: "recb", label: say("col.record"), title: labelB, get: (l) => l.before?.strength ?? null, cell: (l) => (l.before ? <Link href={paths.teamSeason(lg, l.f, before.year)} prefetch={false}>{rec(l.before)}</Link> : "") },
-    ...(usesPoints(stB) ? [{ key: "ptsb", label: say("col.pts"), title: labelB, num: true, get: (l: Line) => l.before?.pts ?? null } as ColumnSpec<Line>] : []),
-    { key: "ra", label: say("outage.colRank", { season: labelA }), num: true, get: (l) => l.after?.rank ?? null },
-    { key: "reca", label: say("col.record"), title: labelA, get: (l) => l.after?.strength ?? null, cell: (l) => (l.after ? <Link href={paths.teamSeason(lg, l.f, after.year)} prefetch={false}>{rec(l.after)}</Link> : "") },
-    ...(usesPoints(stA) ? [{ key: "ptsa", label: say("col.pts"), title: labelA, num: true, get: (l: Line) => l.after?.pts ?? null } as ColumnSpec<Line>] : []),
-    { key: "places", label: say("outage.colPlaces"), num: true, title: say("outage.colPlacesTitle"), get: (l) => l.places, cell: (l) => (l.places == null ? "" : <span className={l.places > 0 ? "up" : l.places < 0 ? "down" : undefined}>{sign(l.places)}{Math.abs(l.places)}</span>) },
-    { key: "chg", label: say("outage.colChange", { metric }), num: true, get: (l) => l.change, cell: (l) => (l.change == null ? "" : <span className={l.change > 0.005 ? "up" : l.change < -0.005 ? "down" : undefined}>{sign(l.change)}{share(l.change)}</span>) },
-  ];
-  const clubs = tableOf(lines, cols, (l) => l.f);
 
-  /* coaches */
-  const ccols: ColumnSpec<(typeof coaches)[number]>[] = [
-    { key: "team", label: say("col.team"), cls: "team", get: (c) => nameOf.get(c.f) ?? "", cell: (c) => team(c.f, after.year) },
-    { key: "cb", label: say("outage.coachIn", { season: labelB }), get: (c) => c.before?.name ?? null },
-    { key: "ca", label: say("outage.coachIn", { season: labelA }), get: (c) => c.after?.name ?? null },
-    { key: "st", label: say("outage.coachStatus"), get: (c) => (c.changed == null ? null : c.changed ? 1 : 0), cell: (c) => (c.changed == null ? "" : c.changed ? <span className="defending">{say("outage.coachNew")}</span> : say("outage.coachSame")) },
-  ];
-  const coachTable = tableOf(coaches.filter((c) => c.before || c.after), ccols, (c) => c.f);
-
-  /* rosters */
-  const rcols: ColumnSpec<Carry>[] = [
-    { key: "team", label: say("col.team"), cls: "team", get: (c) => nameOf.get(c.f) ?? "", cell: (c) => team(c.f, after.year) },
-    { key: "n", label: say("outage.colPlayers", { season: labelB }), num: true, get: (c) => c.sizeBefore },
-    { key: "stay", label: say("outage.colStayed"), num: true, get: (c) => c.stayed.length },
-    { key: "left", label: say("outage.colLeft"), num: true, title: say("outage.colLeftTitle"), get: (c) => c.traded.length + c.gone.length },
-    { key: "new", label: say("outage.colArrived"), num: true, title: say("outage.colArrivedTitle"), get: (c) => c.fromElsewhere.length + c.fresh.length },
-    { key: "cont", label: say("outage.colContinuity"), num: true, title: say("outage.colContinuityTitle", { after: labelA, before: labelB }), get: (c) => c.continuity, cell: (c) => (c.continuity == null ? "" : `${Math.round(c.continuity * 100)}%`) },
-    { key: "ret", label: say("outage.colReturners"), cls: "names", get: () => null, cell: (c) => list(c.stayed, 3) },
-    { key: "dep", label: say("outage.colDepartures"), cls: "names", get: () => null, cell: (c) => list([...c.traded, ...c.gone].sort((a, b) => b.gp - a.gp), 3) },
-    { key: "arr", label: say("outage.colArrivals"), cls: "names", get: () => null, cell: (c) => list([...c.fromElsewhere, ...c.fresh].sort((a, b) => b.gp - a.gp), 3) },
-  ];
-  const rosterTable = tableOf(carry, rcols, (c) => c.f);
-
-  const personRow = (p: Person & { club?: number; to?: number }, y: number) => (
-    <li key={p.id}>
-      {pLink(p)}
-      <span className="meta">
-        {" "}{plural("count.seasons", p.seasons)}
-        {p.club != null || p.to != null ? <> · {team((p.to ?? p.club)!, y, nameOf.get((p.to ?? p.club)!))}</> : null}
-      </span>
-    </li>
-  );
-
-  return (
+  const body = (
     <>
       <section className="section">
         <h2>{say("outage.across")}</h2>
@@ -244,7 +180,7 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
 
       <section className="section">
         <h2>{say("outage.teamByTeam")}</h2>
-        <div className="scroll"><SortTable {...clubs} param="sort_clubs" def="ra.asc" /></div>
+        <div className="scroll"><OutageClubsTable lg={lg} lines={clubLines} sideB={sideB} sideA={sideA} points={[usesPoints(stB), usesPoints(stA)]} metric={metric} /></div>
         <p className="note">{say("outage.tableNote", { metric })}</p>
       </section>
 
@@ -269,7 +205,7 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
         <section className="section">
           <h2>{say("outage.coaches")}</h2>
           <p>{say("outage.coachSummary", { n: changedCoaches, total: known })}</p>
-          <div className="scroll"><SortTable {...coachTable} param="sort_coach" def="team.asc" /></div>
+          <div className="scroll"><OutageCoachesTable lines={coachLines} sideB={labelB} sideA={labelA} year={after.year} /></div>
         </section>
       ) : null}
 
@@ -277,7 +213,7 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
         <section className="section">
           <h2>{say("outage.rosters")}</h2>
           {cross ? <p>{say("outage.rosterLede", { both: fmt(cross.both), ended: fmt(cross.ended.length), debuts: fmt(cross.debuts.length), league: LG[lg as keyof typeof LG] ?? lg, before: labelB, after: labelA })}</p> : null}
-          <div className="scroll"><SortTable {...rosterTable} param="sort_roster" def="cont.desc" /></div>
+          <div className="scroll"><OutageRostersTable lines={rosterLines} sideB={labelB} sideA={labelA} year={after.year} /></div>
         </section>
       ) : null}
 
@@ -288,21 +224,24 @@ async function BeforeAfter({ lg, before, after, brands, abbrs, paths, player }: 
             <div>
               <h3>{say("outage.ended", { n: fmt(cross.ended.length) })}</h3>
               <p className="note">{say("outage.endedNote", { season: labelB })}</p>
-              <ul>{cross.ended.slice(0, 12).map((p) => personRow(p, before.year))}</ul>
+              {peopleList(cross.ended, before.year)}
             </div>
             <div>
               <h3>{say("outage.debuts", { n: fmt(cross.debuts.length) })}</h3>
               <p className="note">{say("outage.debutsNote", { season: labelA })}</p>
-              <ul>{cross.debuts.slice(0, 12).map((p) => personRow(p, after.year))}</ul>
+              {peopleList(cross.debuts, after.year)}
             </div>
             <div>
               <h3>{say("outage.moved", { n: fmt(cross.moved.length) })}</h3>
               <p className="note">{say("outage.movedNote")}</p>
-              <ul>{cross.moved.slice(0, 12).map((p) => personRow(p, after.year))}</ul>
+              {peopleList(cross.moved, after.year)}
             </div>
           </div>
         </section>
       ) : null}
     </>
+  );
+  return (
+    <OutageTeams lg={lg} names={[...used.values()].map(([f]) => [f, nameOf.get(f) ?? ""] as [number, string]).filter((v, i, all) => all.findIndex((o) => o[0] === v[0]) === i)} logos={[...used.values()]}>{body}</OutageTeams>
   );
 }
