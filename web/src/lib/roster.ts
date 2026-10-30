@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 import { canFallBack } from "./api/soften";
 import type { StatNumbers } from "./api/player";
 import { playerIndexSchema } from "./api/people";
@@ -10,6 +10,12 @@ import { positionCode, positionCodes } from "./positions";
 import { countedRoster } from "./titles";
 
 const statSchema = z.object({ person_id: z.number(), stat_group: z.string(), games_played: z.number().nullable(), stats: z.record(z.string(), z.number()) });
+
+const joinedSchema = z.object({
+  person_id: z.number(), stat_group: z.string(), games_played: z.number().nullable(), stats: z.record(z.string(), z.number()),
+  name: z.string(), position: z.string().nullable(), positions: z.array(z.string()).nullable(),
+  nationality_code: z.string().nullable(), birth_country_code: z.string().nullable(), championship_count: z.number().nullable(),
+});
 
 const natSchema = z.object({
   person_id: z.number(), nationality_code: z.string().nullable(), birth_country_code: z.string().nullable(), championship_count: z.number(),
@@ -41,26 +47,44 @@ const short = (p: string | null): string | null => (p && p.trim() ? positionCode
 
 const FORWARD = new Set(["C", "LW", "RW", "W", "F"]);
 
+/** A person's name and positions as the roster draws them (api.player_index), with his countries and career titles (api.people). */
+interface Who { name: string; position: string | null; positions?: string[] | null }
+interface Bio { nat: string | null; titles: number }
+
 /**
- * The players with statistics for one club's season (api.person_stats by team season), under their names and positions from api.player_index.
- * Two requests. Empty when the archive holds no player statistics for that club and year (every league but the NHL and MLB today) and
- * when either read fails: the roster is an extra on the page, not a reason to lose it.
+ * The players with statistics for one club's season, under their names and positions from api.player_index. One request (api.team_season_player_stat, migration 169);
+ * while that view is a 404, three: api.person_stats by team season, then api.player_index and api.people by the person ids. Empty when the archive holds no
+ * player statistics for that club and year (every league but the NHL and MLB today) and when a read fails softly: the roster is an extra on the page, not a reason to lose it.
  */
 export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlayer[]> => {
   try {
-    const stats = await rows("person_stats", `team_season_id=eq.${teamSeasonId}&phase=eq.regular&select=person_id,stat_group,games_played,stats`, statSchema);
+    let stats: { person_id: number; stat_group: string; games_played: number | null; stats: StatNumbers }[];
+    let who: Map<number, Who>;
+    let bio: Map<number, Bio>;
+    let titlesKnown = true;
+    try {
+      const joined = await rows("team_season_player_stat", `team_season_id=eq.${teamSeasonId}&phase=eq.regular&select=person_id,stat_group,games_played,stats,name,position,positions,nationality_code,birth_country_code,championship_count`, joinedSchema);
+      stats = joined;
+      who = new Map(joined.map((p) => [p.person_id, p]));
+      bio = new Map(joined.map((p) => [p.person_id, { nat: p.birth_country_code ?? p.nationality_code, titles: p.championship_count ?? 0 }]));
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 404) throw e;
+      stats = await rows("person_stats", `team_season_id=eq.${teamSeasonId}&phase=eq.regular&select=person_id,stat_group,games_played,stats`, statSchema);
+      if (!stats.length) return [];
+      const ids = [...new Set(stats.map((s) => s.person_id))];
+      who = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,positions,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
+      // championship_count is the player page's career total. A soft failure leaves the roster up and the Titles column off.
+      const bios = await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code,championship_count`, natSchema)
+        .catch((err) => { if (!canFallBack(err)) throw err; return null; });
+      bio = new Map((bios ?? []).map((n) => [n.person_id, { nat: n.birth_country_code ?? n.nationality_code, titles: n.championship_count }]));
+      titlesKnown = bios != null;
+    }
     if (!stats.length) return [];
     const ids = [...new Set(stats.map((s) => s.person_id))];
-    const people = new Map((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,positions,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => [p.person_id, p]));
-    // championship_count is the player page's career total. A soft failure leaves the roster up and the Titles column off.
-    const bios = await rows("people", `person_id=in.(${ids.join(",")})&select=person_id,nationality_code,birth_country_code,championship_count`, natSchema)
-      .catch((e) => { if (!canFallBack(e)) throw e; return null; });
-    const nats = new Map((bios ?? []).map((n) => [n.person_id, n.birth_country_code ?? n.nationality_code]));
-    const titleOf = bios ? new Map(bios.map((n) => [n.person_id, n.championship_count])) : null;
     const out: RosterPlayer[] = [];
     for (const id of ids) {
       const mine = stats.filter((s) => s.person_id === id);
-      const p = people.get(id);
+      const p = who.get(id);
       if (!p) continue;
       const by = (g: string) => mine.find((s) => s.stat_group === g);
       const pitch = by("pitching"), bat = by("batting"), sk = by("skater"), gk = by("goalie");
@@ -71,7 +95,8 @@ export const getRoster = cache(async (teamSeasonId: number): Promise<RosterPlaye
       else if (sk) row = { kind: "skater", group: pos === "D" ? "defense" : pos && FORWARD.has(pos) ? "forwards" : "skaters", stats: sk.stats };
       else if (pitch && (!bat || (pitch.games_played ?? 0) >= (bat.games_played ?? 0))) row = { kind: "pitching", group: "pitchers", stats: pitch.stats };
       else if (bat) row = { kind: "batting", group: "batters", stats: bat.stats };
-      if (row) out.push({ id, name: p.name, pos, positions, nat: nats.get(id)?.toUpperCase() ?? null, titles: titleOf ? (titleOf.get(id) ?? 0) : null, ...row });
+      const b = bio.get(id);
+      if (row) out.push({ id, name: p.name, pos, positions, nat: b?.nat?.toUpperCase() ?? null, titles: titlesKnown ? (b?.titles ?? 0) : null, ...row });
     }
     return out;
   } catch (e) {
