@@ -24,7 +24,9 @@ test("the address of a trophy is made from its award code and back", () => {
   assert.equal(codeOfSlug("nhl", "Stanley Cup"), null);
   assert.equal(codeOfSlug("nhl", "a/b"), null);
   assert.equal(codeOfSlug("nhl", ""), null);
-  for (const [lg, code] of Object.entries(CHAMPIONSHIP_CODE)) assert.equal(codeOfSlug(lg, trophySlug(code)), code, code);
+  // A trophy lives under the league its code starts with: the National Association (league na) wins mlb_pennant_na, at /mlb/trophy/pennant-na.
+  for (const code of Object.values(CHAMPIONSHIP_CODE)) assert.equal(codeOfSlug(leagueOfCode(code), trophySlug(code)), code, code);
+  assert.equal(trophyPath(CHAMPIONSHIP_CODE.na), "/mlb/trophy/pennant-na");
 });
 
 test("two sources naming the same winner are one winner, and the note and team of either are kept", () => {
