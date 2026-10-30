@@ -139,7 +139,11 @@ export const getTeamList = cache(async (league: string, teamSeasonId: number): P
   if (!LISTED.has(league)) return [];
   try {
     const list = await rows("team_season_roster", `team_season_id=eq.${teamSeasonId}&select=person_id,name,position,positions,country,jersey_number,status`, listSchema);
-    const titleOf = await championshipCounts(list.map((p) => p.person_id)).catch((e) => { if (!canFallBack(e)) throw e; return null; });
+    // The roster of the same season (a league with statistics and a list both) has most of these counts already: only the others are read.
+    const known = new Map((await getRoster(teamSeasonId)).flatMap((p) => (p.titles == null ? [] : [[p.id, p.titles] as const])));
+    const rest = list.map((p) => p.person_id).filter((id) => !known.has(id));
+    const more = await championshipCounts(rest).catch((e) => { if (!canFallBack(e)) throw e; return null; });
+    const titleOf = more ? new Map([...known, ...more]) : null;
     return list.map((p) => ({
       id: p.person_id, name: p.name, pos: short(p.position), positions: positionCodes(p.positions, p.position), nat: p.country?.toUpperCase() ?? null,
       number: p.jersey_number, status: p.status, titles: titleOf ? (titleOf.get(p.person_id) ?? 0) : null,
@@ -175,10 +179,10 @@ export interface StaffMember {
 export const getStaff = cache(async (teamSeasonId: number): Promise<StaffMember[]> => {
   try {
     const staff = await rows("team_season_staff", `team_season_id=eq.${teamSeasonId}&select=role,person_id,name,kind,first_on,last_on&order=ord`, staffSchema);
-    const ids = [...new Set(staff.filter((s) => s.kind === "player").map((s) => s.person_id))];
-    const known = ids.length
-      ? new Set((await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)).map((p) => p.person_id))
-      : new Set<number>();
+    // A captain on the roster has a player page: the roster's own read of api.player_index says so, so only the others are looked up.
+    const known = new Set((await getRoster(teamSeasonId)).map((p) => p.id));
+    const ids = [...new Set(staff.filter((s) => s.kind === "player" && !known.has(s.person_id)).map((s) => s.person_id))];
+    if (ids.length) for (const p of await rows("player_index", `person_id=in.(${ids.join(",")})&select=person_id,name,position,leagues,first_season,last_season,seasons_played,award_count`, playerIndexSchema)) known.add(p.person_id);
     return staff.map((s) => ({ role: s.role, id: known.has(s.person_id) ? s.person_id : null, name: s.name, firstOn: s.first_on, lastOn: s.last_on }));
   } catch (e) {
     if (!canFallBack(e)) throw e;

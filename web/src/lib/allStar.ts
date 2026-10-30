@@ -1,5 +1,5 @@
 import "server-only";
-import type { z } from "zod";
+import { z } from "zod";
 import { cache } from "react";
 import { ApiError, rows as readRows } from "./api/client";
 import { officialAbbr } from "./abbr";
@@ -31,10 +31,21 @@ async function rows<S extends z.ZodType>(view: string, query: string, schema: S)
 const EMPTY: AllStarLeague = { events: [], games: [], mvps: [] };
 const lg = (league: string) => encodeURIComponent(league.toLowerCase());
 
-/** Every event, game and MVP of one league, oldest first. Empty when the archive holds none. */
+const leagueRow = z.object({ events: z.array(allStarEventSchema), games: z.array(allStarGameSchema), mvps: z.array(allStarMvpSchema) });
+
+/**
+ * Every event, game and MVP of one league, oldest first. Empty when the archive holds none. One request (api.all_star_league, migration 170);
+ * while that view is a 404, the three lists are read one by one.
+ */
 export async function getAllStar(league: string): Promise<AllStarLeague> {
   if (!/^[a-z]{2,8}$/.test(league)) return EMPTY;
   const q = `league=eq.${lg(league)}`;
+  try {
+    const one = (await readRows("all_star_league", `${q}&select=events,games,mvps`, leagueRow))[0];
+    return one ?? EMPTY;
+  } catch (e) {
+    if (!(e instanceof ApiError) || e.status !== 404) throw e;
+  }
   const [events, games, mvps] = await Promise.all([
     rows("all_star_event", `${q}&order=year.asc,event_no.asc`, allStarEventSchema),
     rows("all_star_game", `${q}&order=year.asc,event_no.asc,game_no.asc`, allStarGameSchema),

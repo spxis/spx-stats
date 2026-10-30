@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 
 /**
  * Where one game was played, from api.game_venue (data release 2026.10.13-20) and the Wikidata item of that venue from api.venue_ref (migration 082).
@@ -12,10 +12,18 @@ import { rows } from "./api/client";
 export interface GameVenue { venueId: number | null; basis: string; wid: string | null; name: string | null }
 
 const gv = z.object({ venue_id: z.number().nullable(), basis: z.string() });
+const joined = z.object({ venue_id: z.number().nullable(), basis: z.string(), wikidata_id: z.string().nullable(), name: z.string().nullable() });
 const ref = z.object({ venue_id: z.number(), wikidata_id: z.string(), name: z.string().nullable() });
 
 export const getGameVenue = cache(async (gameId: number): Promise<GameVenue | null> => {
   if (!Number.isInteger(gameId) || gameId <= 0) return null;
+  // One read where api.game_venue_place exists (migration 170); a 404 reads the two views one after the other, as before.
+  try {
+    const both = (await rows("game_venue_place", `game_id=eq.${gameId}&select=venue_id,basis,wikidata_id,name`, joined))[0];
+    return both ? { venueId: both.venue_id, basis: both.basis, wid: both.venue_id == null ? null : both.wikidata_id, name: both.venue_id == null ? null : both.name } : null;
+  } catch (e) {
+    if (!(e instanceof ApiError) || e.status !== 404) return null;
+  }
   let row: z.infer<typeof gv> | undefined;
   try {
     row = (await rows("game_venue", `game_id=eq.${gameId}&select=venue_id,basis`, gv))[0];
