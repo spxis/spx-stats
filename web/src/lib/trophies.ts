@@ -24,7 +24,7 @@ export function championshipName(lg: string, year: number, name: string): string
   return lg === "nfl" && year < SUPER_BOWL_SINCE ? "NFL Championship" : name;
 }
 
-/** The leagues that also get a trophy on a big-game banner though no champion banner draws one: the package has no cup of its own for them, so the hockey cup and the football cup stand in, named for the trophy. */
+/** The leagues that also get a trophy on a big-game banner though no champion banner draws one: no champion banner draws one for them, but the banner of a big game does: the package's drawing of the Calder Cup, the Kelly Cup and the College Football Playoff trophy, named for the trophy. */
 const BIG_GAME_EXTRA = { ahl: "trophy.name.ahl", echl: "trophy.name.echl", ncaaf: "trophy.name.ncaaf" } as const satisfies Record<string, PhraseKey>;
 
 /**

@@ -80,6 +80,18 @@ test("the PWHL final is drawn with the Walter Cup, not the Stanley Cup", () => {
   assert.ok(gameCupSvg("pwhl", false).includes("currentColor"));
 });
 
+test("the AHL, ECHL and college football finals are drawn with the Calder Cup, the Kelly Cup and the College Football Playoff trophy, not a stand-in", () => {
+  for (const [lg, standIn, name] of [["ahl", "nhl", "Calder Cup"], ["echl", "nhl", "Kelly Cup"], ["ncaaf", "nfl", "National Championship"]] as const) {
+    assert.notEqual(gameCupSvg(lg, true), gameCupSvg(standIn, true), lg);
+    assert.notEqual(gameCupSvg(lg, false), gameCupSvg(standIn, false), lg);
+    assert.notEqual(cupSvg(lg), cupSvg(standIn), lg);
+    assert.notEqual(bannerCupSvg(lg), bannerCupSvg(standIn), lg);
+    assert.match(bigCupSvg(lg), new RegExp(`<title>${name}</title>`), lg);
+    assert.match(gameCupSvg(lg, false), /currentColor/, lg);
+  }
+  assert.notEqual(gameCupSvg("ahl", true), gameCupSvg("echl", true));
+});
+
 test("a big-game banner shows a trophy for the leagues that have a cup, and nothing for the ones that do not", () => {
   const name = (lg: string, year = 2025) => bigGameTrophy(lg, year);
   for (const lg of ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) assert.ok(name(lg), lg);
@@ -97,6 +109,7 @@ test("the big-game cup is untitled and sized by the page: the line cup small, th
     assert.ok(!small.includes("<title>") && !large.includes("<title>"), lg);
     assert.ok(!small.includes(' width="64"') && !large.includes(' width="64"'), lg);
     assert.ok(small.includes("currentColor"), lg);
-    assert.ok(small.length < 2500, `${lg} small cup ${small.length} bytes`);
+    // the Calder and Kelly cups are measured on photographs and carry more strokes (3 and 4 KB) than the older cups
+    assert.ok(small.length < (lg === "ahl" || lg === "echl" ? 4500 : 2500), `${lg} small cup ${small.length} bytes`);
   }
 });

@@ -5,11 +5,14 @@ import "server-only";
 import { TROPHY_BASEBALL } from "@johnmorrisdotca/dougu-sports/trophy/baseball";
 import { TROPHY_BASKETBALL } from "@johnmorrisdotca/dougu-sports/trophy/basketball";
 import { TROPHY_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/bowl";
+import { TROPHY_CALDER_CUP } from "@johnmorrisdotca/dougu-sports/trophy/calder-cup";
 import { TROPHY_CANADIAN_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/canadian-bowl";
+import { TROPHY_CFP_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/cfp-trophy";
 import { TROPHY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/cup";
 import { TROPHY_FOOTBALL } from "@johnmorrisdotca/dougu-sports/trophy/football";
 import { TROPHY_AVCO_WORLD_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/avco-world-trophy";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
+import { TROPHY_KELLY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/kelly-cup";
 import { TROPHY_OBRIEN_CUP } from "@johnmorrisdotca/dougu-sports/trophy/obrien-cup";
 import { TROPHY_PATERSON_CUP } from "@johnmorrisdotca/dougu-sports/trophy/paterson-cup";
 import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-ball";
@@ -31,7 +34,7 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   nwsl: [TROPHY_SOCCER_BALL, "NWSL Championship"],
   mlb: [TROPHY_BASEBALL, "Commissioner's Trophy"],
   nfl: [TROPHY_FOOTBALL, "Vince Lombardi Trophy"],
-  ncaaf: [TROPHY_FOOTBALL, "National Championship"],
+  ncaaf: [TROPHY_CFP_TROPHY, "National Championship"],
   cfl: [TROPHY_CANADIAN_BOWL, "Grey Cup"],
   afl: [TROPHY_FOOTBALL, "AFL Championship"],
   aafc: [TROPHY_FOOTBALL, "AAFC Championship"],
@@ -39,8 +42,8 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   pcha: [TROPHY_PATERSON_CUP, "Paterson Cup"],
   wchl: [TROPHY_HOCKEY_CUP, "WCHL Championship"],
   wha: [TROPHY_AVCO_WORLD_TROPHY, "Avco World Trophy"],
-  ahl: [TROPHY_HOCKEY_CUP, "Calder Cup"],
-  echl: [TROPHY_HOCKEY_CUP, "Kelly Cup"],
+  ahl: [TROPHY_CALDER_CUP, "Calder Cup"],
+  echl: [TROPHY_KELLY_CUP, "Kelly Cup"],
   na: [TROPHY_BASEBALL, "National Association pennant"],
   aa: [TROPHY_BASEBALL, "American Association pennant"],
   ua: [TROPHY_BASEBALL, "Union Association pennant"],
@@ -104,7 +107,7 @@ export function gameCupSvg(league: string, large: boolean): string {
 }
 
 /** The leagues whose trophy has its own drawing in the package, so a large cup is drawn in metal for them; the others keep the line cup. */
-const FULL_DRAWING = new Set(["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nha", "pcha", "wha"]);
+const FULL_DRAWING = new Set(["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nha", "pcha", "wha", "ahl", "echl", "ncaaf"]);
 
 /** A cup for a large place beside a count: the full metal drawing (titled with the trophy's name) for a league that has one, else the line cup. */
 export function bigCupSvg(league: string): string {

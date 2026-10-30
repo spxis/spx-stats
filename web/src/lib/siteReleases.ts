@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.18", date: "2026-10-30", href: "/ahl",
+    title: "The AHL, ECHL and college football finals show their own trophies",
+    text: "The big-game banner of an AHL final, an ECHL final and a college football championship now draws the Calder Cup, the Kelly Cup and the College Football Playoff trophy, each measured on a photograph of the real one, instead of the generic hockey and football cups." },
   { version: "0.170.17", date: "2026-10-30", href: "/nhl/2004-05",
     title: "Seasons that were not played open in about half the weight",
     text: "The page of a season the league sat out (the 2004-05 NHL lockout, say) now builds its club, head coach and roster tables in the browser from short lines, names each club once, and loads the map of the clubs when you scroll to it. Every row is still in the page. The 2004-05 page went from 406 to 239 KB." },
