@@ -81,7 +81,7 @@ class Ctx2:
         open(self.stub, "w").write(STUB)
 
     def run(self, mode="scores", revalidate=True):
-        extra = {"STUB_MODE": mode, "STUB_MARK": self.mark, "STUB_RELEASE": RELEASE, "STUB_DSN": dsn(DS1), "STUB_API": self.env.url}
+        extra = {"REVALIDATE_GAP": "0", "STUB_MODE": mode, "STUB_MARK": self.mark, "STUB_RELEASE": RELEASE, "STUB_DSN": dsn(DS1), "STUB_API": self.env.url}
         if revalidate:
             extra.update(REVALIDATE_URL=self.site.url, REVALIDATE_SECRET=REV_SECRET)
         return self.env.rel("--daily-script", self.stub, "run", env=extra)

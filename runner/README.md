@@ -46,7 +46,7 @@ of the release prepared for an admin's **Request scores update** (below).
   commit that has them** (`RELEASE_REF`, then Build) and apply migration 156 first (DS1, then production).
 - A requested run holds the shared DS1 lock (`scripts/release/daily_lock.py`) and waits while the daily job's heartbeat shows a run in
   progress. While it runs (a few minutes at most; `RELEASE_DAILY_TIMEOUT`, 2400 s) the runner does nothing else.
-- **Site refresh.** After each committed release the runner makes one `POST` to the site's `/api/revalidate` so the changed pages rebuild now.
+- **Site refresh.** After each committed release the runner sends the changed tables' tags to the site's `/api/revalidate` in small batches a few seconds apart (`REVALIDATE_BATCH`, `REVALIDATE_GAP`, `REVALIDATE_SPREAD`; scripts/release/README.md) so the changed pages rebuild now without all of them at once.
   Add to `release-runner.env`: `REVALIDATE_URL=https://spxn.com/api/revalidate` and `REVALIDATE_SECRET=<the same value as the site's
   REVALIDATE_SECRET, 32 or more characters>`. Without them nothing is sent and pages refresh within the hour. The secret only lets a caller
   refresh cache tags; it cannot read or change data.

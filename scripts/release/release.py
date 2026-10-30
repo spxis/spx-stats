@@ -80,9 +80,14 @@ REQUEST_PREFIX = "request:"
 HEARTBEAT_MINUTES = 30
 DAILY_TIMEOUT = int(os.environ.get("RELEASE_DAILY_TIMEOUT", "2400"))
 REVALIDATE_MAX_TAGS = 100
+REVALIDATE_BATCH = int(os.environ.get("REVALIDATE_BATCH", "6"))        # tags per request to /api/revalidate
+REVALIDATE_GAP = float(os.environ.get("REVALIDATE_GAP", "5"))          # seconds between two requests
+REVALIDATE_SPREAD = float(os.environ.get("REVALIDATE_SPREAD", "45"))   # the most the whole refresh may take; bigger batches beat a longer wait
 STEP_FILE_RE = re.compile(r"^db/(migrations|build)/[A-Za-z0-9_.-]+\.sql$")
 REHEARSE = os.environ.get("RELEASE_REHEARSAL", "on") != "off"   # prepare proves the apply on production in a statement that rolls back
 REQUEST_BYTES = 900_000
+STAGE_PAUSE = float(os.environ.get("RELEASE_STAGE_PAUSE", "0.25"))   # seconds between two staging requests, so a big fill is a trickle for the Nano plan, not a burst
+REHEARSAL_LOCK_TIMEOUT = "10s"   # the rehearsal gives up on a lock instead of queueing behind one (it takes only ROW EXCLUSIVE / ROW SHARE, which never block a read)
 ROWS_PER_INSERT = 500
 RELEASE_FIELDS = ("id", "number", "kind", "title", "notes", "ticket", "tables", "options", "status", "digest", "preview",
                   "checks", "result", "created_by", "created_at", "approved_by", "approved_at", "started_at",
@@ -712,14 +717,18 @@ def key_literals(t, keys):
 
 def send_batches(prod, statements):
     """Send statements in requests of about REQUEST_BYTES. Every statement is on conflict do nothing, so a retry is harmless."""
-    buf, size = [], 0
+    buf, size, sent = [], 0, False
     for st in statements:
         if buf and size + len(st) > REQUEST_BYTES:
+            if sent:
+                time.sleep(STAGE_PAUSE)
             prod_exec(prod, ";\n".join(buf))
-            buf, size = [], 0
+            buf, size, sent = [], 0, True
         buf.append(st)
         size += len(st)
     if buf:
+        if sent:
+            time.sleep(STAGE_PAUSE)
         prod_exec(prod, ";\n".join(buf))
 
 
@@ -742,11 +751,21 @@ class Stage:
         self.prod, self.rid, self.names = prod, rid, []
 
     def create(self, kind, i, t, cols):
-        name = "meta.r%s_%d_%d" % (kind, self.rid, i)
-        self.names.append(name)
-        prod_exec(self.prod, "drop table if exists %s;\ncreate unlogged table %s as select %s from %s with no data;\nalter table %s add primary key (%s)"
-                  % (name, name, ",".join(C.qi(c) for c in cols), t.fq, name, ",".join(C.qi(k) for k in t.pk)))
-        return name
+        return self.create_many([(kind, i, t, cols)])[0]
+
+    def create_many(self, specs):
+        """Create the staging tables of specs [(kind, i, table, cols)] in ONE request. Production's PostgREST reloads its schema cache
+        for every DDL transaction (an event trigger on create, alter and drop), so one request per table made it reload once or twice per table."""
+        names, texts = [], []
+        for kind, i, t, cols in specs:
+            name = "meta.r%s_%d_%d" % (kind, self.rid, i)
+            names.append(name)
+            texts.append("drop table if exists %s;\ncreate unlogged table %s as select %s from %s with no data;\nalter table %s add primary key (%s)"
+                         % (name, name, ",".join(C.qi(c) for c in cols), t.fq, name, ",".join(C.qi(k) for k in t.pk)))
+        self.names.extend(names)
+        if texts:
+            prod_exec(self.prod, ";\n".join(texts))
+        return names
 
     def drop(self):
         try:
@@ -840,19 +859,26 @@ def apply_block(steps, rehearsal=False):
 def stage_plan(ctx, st, plan):
     """Create and fill the staging tables of a plan on production (committed, unlogged, dropped by st.drop()); returns the steps
     apply_block takes."""
-    steps = []
+    steps, specs = [], []
     for i, p in enumerate(plan):
         t = p["t"]
         step = {"t": t, "up": None, "del": None, "expected": p["expected"], "fresh": p.get("fresh", False)}
         if p["ups"] is not None:
-            step["up"] = st.create("s", i, t, t.insert_cols)
+            specs.append(("s", i, t, t.insert_cols))
+        if p["dels"]:
+            specs.append(("d", i, t, t.pk))
+        steps.append(step)
+    names = iter(st.create_many(specs))
+    for i, p in enumerate(plan):
+        t, step = p["t"], steps[i]
+        if p["ups"] is not None:
+            step["up"] = next(names)
             send_batches(ctx.prod, insert_statements(step["up"], t.insert_cols, p["ups"]))
         if p["dels"]:
-            step["del"] = st.create("d", i, t, t.pk)
+            step["del"] = next(names)
             lits = key_literals(t, p["dels"])
             head = "insert into %s (%s) values\n" % (step["del"], ",".join(C.qi(k) for k in t.pk))
             send_batches(ctx.prod, (head + ",\n".join(lits[j:j + 1000]) + "\non conflict do nothing" for j in range(0, len(lits), 1000)))
-        steps.append(step)
     return steps
 
 
@@ -888,7 +914,11 @@ def rehearsal_block(steps):
     tail = "end $apply$"
     if not block.endswith(tail):
         raise RuntimeError("the apply block has an unexpected ending: not rehearsing")
-    return block[:-len(tail)] + "raise exception '%s' using errcode = 'RH001';\n%s" % (REHEARSAL_DONE, tail)
+    head = "do $apply$ begin"
+    if not block.startswith(head):
+        raise RuntimeError("the apply block has an unexpected start: not rehearsing")
+    return (head + "\nset local lock_timeout = '%s';" % REHEARSAL_LOCK_TIMEOUT + block[len(head):-len(tail)]
+            + "raise exception '%s' using errcode = 'RH001';\n%s" % (REHEARSAL_DONE, tail))
 
 
 def rehearse(ctx, plan):
@@ -1956,9 +1986,41 @@ def revalidate_tags(ctx, tables, leagues):
     return tags
 
 
-def revalidate_site(ctx, tables, leagues):
-    """After a release changed production: ONE request to the site's secret-protected POST route, so the changed pages are rebuilt
-    now instead of within the hour. Never changes the release outcome. Returns "ok (<n> tags)", "off" or "failed: <why>"."""
+def revalidate_batches(tags, size=None, gap=None, spread=None):
+    """-> (batches, gap seconds). Tags expire on the next visit, so every tag that expires at once is a page that regenerates at once against
+    production (the Nano plan answered 500 and timed out on 2026-10-29, six minutes after a release). The tags go out a few at a time, a few
+    seconds apart (REVALIDATE_GAP=0: one request): "data-version" and "api" (one cheap fetch, one wide tag) alone in the first request, the rest in batches of `size`. When
+    that would take longer than `spread` seconds the batches grow instead of the wait."""
+    size = max(1, REVALIDATE_BATCH if size is None else size)
+    gap = max(0.0, REVALIDATE_GAP if gap is None else gap)
+    spread = REVALIDATE_SPREAD if spread is None else spread
+    if gap <= 0:
+        return [list(tags)], 0.0                      # no spacing asked for: one request, as before
+    first = [t for t in tags if t == "data-version"]
+    rest = [t for t in tags if t != "data-version"]
+    if "api" in rest:
+        return ([first] if first else []) + [["api"]], gap
+    if spread > 0:
+        most = max(2, int(spread // gap) + 1)         # requests that fit, the first one included
+        room = most - (1 if first else 0)
+        size = max(size, -(-len(rest) // room)) if room > 0 else size
+    out = [rest[i:i + size] for i in range(0, len(rest), size)]
+    return ([first] if first else []) + out, gap
+
+
+def post_tags(url, secret, tags):
+    req = urllib.request.Request(url, data=json.dumps({"tags": tags}).encode(), method="POST",
+                                 headers={"Authorization": "Bearer " + secret, "Content-Type": "application/json",
+                                          "User-Agent": "spx-stats-release-runner/1"})
+    with urllib.request.urlopen(req, timeout=20) as resp:
+        resp.read()
+
+
+def revalidate_site(ctx, tables, leagues, sleep=time.sleep, post=post_tags):
+    """After a release changed production: the changed tables' tags go to the site's secret-protected POST route in small batches, a few
+    seconds apart (revalidate_batches), so the changed pages are rebuilt now instead of within the day without all of them at once. Never
+    changes the release outcome; a request that fails stops the rest (the site is down, and the pages refresh within the day anyway).
+    Returns "ok (<n> tags)", "ok (<n> tags, <b> requests)", "off" or "failed: <why>"."""
     url, secret = os.environ.get("REVALIDATE_URL", "").strip(), os.environ.get("REVALIDATE_SECRET", "").strip()
     if not url or not secret:
         log("REVALIDATE_URL / REVALIDATE_SECRET not set: the site refreshes within the hour")
@@ -1966,17 +2028,19 @@ def revalidate_site(ctx, tables, leagues):
     parts = urllib.parse.urlsplit(url)
     if parts.scheme != "https" and not (parts.scheme == "http" and parts.hostname in ("127.0.0.1", "localhost")):
         return "failed: REVALIDATE_URL must be https"
+    sent = 0
     try:
         tags = revalidate_tags(ctx, tables, leagues)
-        req = urllib.request.Request(url, data=json.dumps({"tags": tags}).encode(), method="POST",
-                                     headers={"Authorization": "Bearer " + secret, "Content-Type": "application/json",
-                                              "User-Agent": "spx-stats-release-runner/1"})
-        with urllib.request.urlopen(req, timeout=20) as resp:
-            resp.read()
-        log("site cache refresh requested (%d tags)" % len(tags))
-        return "ok (%d tags)" % len(tags)
+        batches, gap = revalidate_batches(tags)
+        for i, batch in enumerate(batches):
+            if i:
+                sleep(gap)
+            post(url, secret, batch)
+            sent += 1
+        log("site cache refresh requested (%d tags, %d requests)" % (len(tags), len(batches)))
+        return "ok (%d tags)" % len(tags) if len(batches) == 1 else "ok (%d tags, %d requests)" % (len(tags), len(batches))
     except Exception as e:  # noqa: BLE001 - the pages refresh within the hour anyway
-        log("site cache refresh failed: " + scrub(e)[:200])
+        log("site cache refresh failed after %d request(s): %s" % (sent, scrub(e)[:200]))
         return "failed: " + scrub(e)[:200]
 
 

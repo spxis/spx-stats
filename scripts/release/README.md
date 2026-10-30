@@ -79,7 +79,9 @@ apply before John sees the release, when it has no other blocker: it stages the 
 (`stage_plan`, the same batches), then sends the same DO block with one more statement, a final `raise exception` (`rehearse`,
 `rehearsal_block`). The statement therefore never completes, so nothing in it can commit, whatever the Management API does around a
 query text; it needs no begin/rollback and survives being wrapped in one (tested with psql autocommit, `psql -1` and `begin; ...; commit;`).
-The rehearsal block has no `setval` (the one statement a rollback would not undo), the staging tables are dropped afterwards, and a
+The rehearsal takes only ROW EXCLUSIVE and ROW SHARE locks (measured with `pg_locks` on a scratch copy), which never block a read; it sets `lock_timeout` to
+10 s so it gives up instead of queueing. All the staging tables of a plan are created in ONE request (production's PostgREST reloads its schema cache for every DDL
+transaction: 14 reloads for 8 tables one by one, 4 in one request), and the staging inserts are `RELEASE_STAGE_PAUSE` (0.25) seconds apart. The rehearsal block has no `setval` (the one statement a rollback would not undo), the staging tables are dropped afterwards, and a
 leftover from a killed run is dropped by the next one. The result is `preview.rehearsal` (`ok`, `error`, `seconds`; `prepare` prints it).
 A failure is a blocker with the exact database error, so the release cannot be approved. A release that is still pending needs no
 second proof: the runner's re-check (`run_publish`) compares fingerprints and the apply is the same block. Cost: one more staging upload
@@ -287,8 +289,11 @@ comparison, and a table reported as different whose release finished after that 
 
 ## Site cache refresh after a release
 
-After each committed release (`done`, failed verification after commit, rollback) the runner makes ONE `POST` to the site
-(`REVALIDATE_URL`, with `REVALIDATE_SECRET` as a Bearer token) listing cache tags; no timers, no retries. The site's fetches carry the tags
+After each committed release (`done`, failed verification after commit, rollback) the runner `POST`s to the site
+(`REVALIDATE_URL`, with `REVALIDATE_SECRET` as a Bearer token) the cache tags, a few at a time: `data-version` alone, then batches of `REVALIDATE_BATCH`
+(6) tags, `REVALIDATE_GAP` (5) seconds apart, growing the batches rather than taking longer than `REVALIDATE_SPREAD` (45) seconds (`REVALIDATE_GAP=0`: one
+request). A tag expires its pages on their next visit, so spreading the tags spreads the pages that regenerate against production at once. The first
+failed request stops the rest; no retries. A wide `api` tag is sent alone. The site's fetches carry the tags
 `api`, `api:<view>` and `api:<view>:<league>` (or `:all`, for a query that names no league), so the route calls `revalidateTag` for what the
 release touched: the api views that read the release's tables (found in DS1's catalog), and for a `daily_scores` release the leagues of the
 games it changed (`api:<view>:<league>` and `api:<view>:all`); a release that cannot say which leagues refreshes `api:<view>`, and a table no
@@ -368,6 +373,7 @@ with `select api.refresh_one('api.<view>')`.
     python3 -I scripts/release/test/test_auto.py     # automatic approval, hold, pause, resume, auto-pause (migration 047)
     TEST_ORDER_PORT=<free port> python3 -I scripts/release/test/test_guard.py   # the size estimate with the two real releases of 2026-10-15, and the per-view refresh (own throwaway Postgres; stops it after)
     python3 -I scripts/release/test/test_apply_order.py  # the apply block's order against non-deferrable keys (own throwaway Postgres, port 7740; stops it after; includes the position-release shape, exclusion constraints, the rehearsal, withdraw and superseding, and the foreign key loop refusal)
+    python3 -I scripts/release/test/test_quiet.py    # staging in one request, paced inserts, the rehearsal's lock timeout, the batched site refresh (no database, no network)
     python3 -I scripts/release/test/test_ops.py      # the /admin/ops snapshot builder, requests and migrations 104/105 (SQL part needs PGHOST/PGPORT/PGUSER on a scratch Postgres)
     TEST_PG_PORT=<scratch Postgres> python3 -I scripts/release/test/test_turso.py   # releases to Turso against a local libSQL server (docker run ghcr.io/tursodatabase/libsql-server on 127.0.0.1:7742, --turso to change): schema, prepare, run, rollback, drift, a failing batch restored, a changed DS1
     TEST_PG_PORT=<scratch Postgres> python3 -I scripts/release/test/test_drop_migration.py   # migration 131 on a stand-in for production
