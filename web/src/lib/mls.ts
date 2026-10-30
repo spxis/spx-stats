@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { matchSchema, rows, standingSchema, teamMatchSchema, type Match } from "./soccer";
+import { matchSchema, rows, rowsFromIndex, standingSchema, teamMatchSchema, type Match } from "./soccer";
 
 /**
  * Major League Soccer, read from the api views of migration 078 and the soccer views of 066 (docs/mls.md). Like lib/soccer.ts, every function
@@ -73,7 +73,8 @@ export const getMlsLeaders = cache((tournament: string) =>
   SEASON.test(tournament) ? rows("mls_leaders", `tournament_id=eq.${tournament}&order=category.asc,label.asc,rank.asc,player_name.asc`, leaderSchema) : Promise.resolve([]));
 
 export const getMlsClubs = cache(() => rows("mls_clubs", "order=name.asc", clubSchema));
-export const getMlsAllTime = cache(() => rows("mls_alltime", "order=team_id.asc", allTimeSchema));
+/** The all-time table: api.mls_alltime_index (migration 171) while it exists, else api.mls_alltime. */
+export const getMlsAllTime = cache(() => rowsFromIndex("mls_alltime_index", "mls_alltime", "order=team_id.asc", allTimeSchema));
 
 export const mlsClubBySlug = cache(async (slug: string): Promise<Club | null> =>
   SLUG.test(slug) ? ((await rows("mls_clubs", `slug=eq.${slug}`, clubSchema))[0] ?? null) : null);

@@ -177,7 +177,18 @@ export const getSquads = cache((tournament: string) =>
     ? rows("soccer_squads", `tournament_id=eq.${tournament}&order=team.asc,shirt_number.asc.nullslast,player.asc`, squadSchema) : Promise.resolve([]));
 
 export const getSoccerTeams = cache(() => rows("soccer_teams", "order=name.asc", teamSchema));
-export const getTeamRecords = cache(() => rows("soccer_team_records", "order=team_id.asc", teamRecordSchema));
+/** A precomputed copy of a view while it exists (a migration of this project made it), else the view it is worked out from (read as `rows` above does). */
+export async function rowsFromIndex<S extends z.ZodType>(index: string, live: string, query: string, schema: S): Promise<z.infer<S>[]> {
+  try {
+    return await readRows(index, query, schema);
+  } catch (e) {
+    if (!(e instanceof ApiError) || e.status !== 404) throw e;
+    return rows(live, query, schema);
+  }
+}
+
+/** Every team's record: api.soccer_team_record_index (migration 171) while it exists, else api.soccer_team_records. */
+export const getTeamRecords = cache(() => rowsFromIndex("soccer_team_record_index", "soccer_team_records", "order=team_id.asc", teamRecordSchema));
 
 export const teamBySlug = cache(async (slug: string): Promise<SoccerTeam | null> =>
   SLUG.test(slug) ? ((await rows("soccer_teams", `slug=eq.${slug}`, teamSchema))[0] ?? null) : null);
