@@ -17,10 +17,12 @@
 .awardsgrid th:first-child { z-index: 2; }
 .awardwin { display: flex; align-items: center; gap: 6px; min-width: 0; }
 .awardcup { flex: none; width: 18px; height: 18px; color: var(--accent); overflow: visible; }
+/* The cup of a cell with no markup of its own: the accent painted through the league's cup (CupMask sets --cup on the table's box). */
+.cupped::before { content: ""; flex: none; width: 18px; height: 18px; background: var(--accent); -webkit-mask: var(--cup) center / contain no-repeat; mask: var(--cup) center / contain no-repeat; }
 td.wincell:hover, td.wincell:focus-within { background: color-mix(in srgb, var(--accent) 16%, var(--panel)); }
 td.wincell:focus-within { outline: 2px solid var(--ink); outline-offset: -2px; }
 @media (prefers-reduced-motion: no-preference) {
-  td.wincell:hover .awardcup, td.wincell:focus-within .awardcup { animation: awardturn 6s linear infinite; }
+  td.wincell:hover .awardcup, td.wincell:focus-within .awardcup, td.wincell:hover .cupped::before, td.wincell:focus-within .cupped::before { animation: awardturn 6s linear infinite; }
 }
 @keyframes awardturn {
   from { transform: perspective(60px) scale(1.25) rotateY(0deg); }

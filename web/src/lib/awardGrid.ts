@@ -1,3 +1,5 @@
+import { playerPath } from "./playerPath.ts";
+
 /**
  * A league's awards by season as plain data: a row a season, a column an award, a cell its winners (or how many, where there are many). No server code:
  * the league page, the route that serves the older seasons and the table in the browser agree on it. See components/AwardsGrid.tsx.
@@ -5,7 +7,9 @@
 export interface AwardWinner {
   /** The winner's name. */
   w?: string;
-  /** The address of the winner's page, for a player. */
+  /** The winner's person id, for a player whose page is the league's usual address for that name and id (`playerPath`): the address is not sent. */
+  p?: number;
+  /** The address of the winner's page, for a player whose page is somewhere else (filed under another league). */
   h?: string;
   /** The franchise, for a team winner, and its logo that season (a place in the table's list of logos). */
   f?: number;
@@ -16,6 +20,9 @@ export type AwardCell = number | AwardWinner[];
 export interface AwardSeason { y: number; c: Record<string, AwardCell> }
 export interface AwardColumn { code: string; name: string }
 export interface AwardGrid { columns: AwardColumn[]; seasons: AwardSeason[]; logos: string[]; winners: number }
+
+/** The address of a player winner's page. */
+export const awardHref = (league: string, x: AwardWinner): string | undefined => (x.p != null ? playerPath(league, x.p, x.w ?? "") : x.h);
 
 /** More winners than this in one season's cell are shown as a count. */
 export const AWARD_MANY = 4;
@@ -29,7 +36,7 @@ export const awardGridPagePath = (league: string): string => `/${league}/awards`
 export interface AwardInput { year: number; award_code: string; award: string; kind: string; winner: string | null; person_id: number | null; franchise_id: number | null }
 
 /** The grid from the awards, with the columns ordered person awards first, then by how many times each was given, and the seasons newest first. */
-export function buildAwardGrid(list: readonly AwardInput[], look: { player: (id: number, name: string) => string; logo: (franchise: number, year: number) => string | null | undefined }): AwardGrid {
+export function buildAwardGrid(list: readonly AwardInput[], look: { league: string; player: (id: number, name: string) => string; logo: (franchise: number, year: number) => string | null | undefined }): AwardGrid {
   const cols = new Map<string, { code: string; name: string; kind: string; n: number }>();
   const by = new Map<number, Map<string, AwardInput[]>>();
   for (const a of list) {
@@ -55,7 +62,10 @@ export function buildAwardGrid(list: readonly AwardInput[], look: { player: (id:
       c[col.code] = w.length > AWARD_MANY ? w.length : w.map((x): AwardWinner => {
         const o: AwardWinner = {};
         if (x.winner) o.w = x.winner;
-        if (x.person_id != null) o.h = look.player(x.person_id, x.winner ?? "");
+        if (x.person_id != null) {
+          const h = look.player(x.person_id, x.winner ?? "");
+          if (h === playerPath(look.league, x.person_id, x.winner ?? "")) o.p = x.person_id; else o.h = h;
+        }
         else if (x.franchise_id != null) {
           o.f = x.franchise_id;
           const lo = place(look.logo(x.franchise_id, x.year));

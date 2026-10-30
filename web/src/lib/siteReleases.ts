@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.3", date: "2026-10-30", href: "/nhl/awards",
+    title: "Awards-by-season pages are lighter",
+    text: "A league's awards-by-season table drew a small cup drawing beside each of its thousand winners. The cup is now painted once for the whole table, so the page is about 120 KB lighter. It looks and works the same." },
   { version: "0.170.2", date: "2026-10-30", href: "/teams",
     title: "The teams list is lighter",
     text: "The teams page carried every franchise as a long list of labelled fields and the full address of every logo. It now sends them as short lines with the shared parts written once, so the page is about a third lighter. Search, filters, sorting, paging and the map work exactly as before." },

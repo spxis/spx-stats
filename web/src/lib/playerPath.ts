@@ -1,4 +1,4 @@
-import { slugify } from "./slug";
+import { slugify } from "./slug.ts";
 
 /** A player's page address: /nhl/player/nathan-mackinnon-2430. The id is the last hyphen-separated part and is what identifies the person; the name is for people. */
 export const playerPath = (league: string, id: number, name: string): string => {

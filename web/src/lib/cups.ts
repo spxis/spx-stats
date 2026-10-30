@@ -79,6 +79,16 @@ export function cupSymbols(leagues: Iterable<string>): string {
   }).join("");
 }
 
+/**
+ * The line cup of a league as a CSS mask, for a table with a cup beside every winner (a league's awards by season has about a thousand): the cell draws it with a
+ * `::before` that paints the page's accent through the mask, so the drawing is in the page once and a cell carries no markup for it. Trusted static markup.
+ */
+export function cupMask(league: string): string {
+  const svg = cupSvg(league).replace(/<title>.*?<\/title>/, "").replace(/currentColor/g, "#000").replace(/"/g, "'");
+  const named = svg.includes("xmlns=") ? svg : svg.replace("<svg", "<svg xmlns='http://www.w3.org/2000/svg'");
+  return `url("data:image/svg+xml,${named.replace(/%/g, "%25").replace(/</g, "%3C").replace(/>/g, "%3E").replace(/#/g, "%23")}")`;
+}
+
 /** A banner trophy, drawn large: polished metal, leaning a little toward the eye, no title (the page labels it in the reader's language). It is the first frame of the turn the browser then runs. */
 export function bannerCupSvg(league: string): string {
   const [emblem] = CUPS[league] ?? CUPS.nhl;

@@ -51,5 +51,5 @@ export async function leagueChampLines(lg: string): Promise<ChampList> {
 /** A league's awards by season as plain data (lib/awardGrid.ts); empty when the league has none. */
 export async function leagueAwardGrid(lg: string): Promise<AwardGrid> {
   const [list, player, brands] = await Promise.all([getLeagueAwards(lg), getPlayerPaths(), getBrands()]);
-  return buildAwardGrid(list, { player: (id, name) => player(id, name, lg), logo: (f, year) => logoFor(brands, f, year) });
+  return buildAwardGrid(list, { league: lg, player: (id, name) => player(id, name, lg), logo: (f, year) => logoFor(brands, f, year) });
 }

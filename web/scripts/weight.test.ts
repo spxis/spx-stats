@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { AWARD_GRID_HEAD, AWARD_MANY, awardGridPagePath, awardGridRestPath, awardHead, buildAwardGrid, type AwardInput } from "../src/lib/awardGrid.ts";
+import { AWARD_GRID_HEAD, AWARD_MANY, awardGridPagePath, awardHref, awardGridRestPath, awardHead, buildAwardGrid, type AwardInput } from "../src/lib/awardGrid.ts";
 import { CHAMP_HEAD, buildChampLines, champHead, champNoteText, champPagePath, champRestPath, type ChampSeason } from "../src/lib/champLines.ts";
 import { packBoard } from "../src/lib/playerBoardWire.ts";
 import { clubInfoKey, type BoardData } from "../src/lib/playerBoard.ts";
@@ -81,7 +81,7 @@ const awardRows = (n: number): AwardInput[] => YEARS.slice(0, n).flatMap((year, 
   { year, award_code: "trophy", award: "Trophy", kind: "team_award", winner: `Club ${i % 30}`, person_id: null, franchise_id: 100 + (i % 30) },
   ...Array.from({ length: i % 2 ? AWARD_MANY + 3 : 2 }, (_, k) => ({ year, award_code: "allstar", award: "All-Star", kind: "person_award", winner: `Star ${i}-${k}`, person_id: 5000 + k, franchise_id: null })),
 ]);
-const awardLook = { player: (id: number, name: string) => `/nhl/player/${name.toLowerCase().replace(/\W+/g, "-")}-${id}`, logo: lookup.logo as (f: number, y: number) => string | null };
+const awardLook = { league: "nhl", player: (id: number, name: string) => `/nhl/player/${name.toLowerCase().replace(/\W+/g, "-")}-${id}`, logo: lookup.logo as (f: number, y: number) => string | null };
 
 test("the awards grid sends the newest seasons and counts a crowded cell", () => {
   const grid = buildAwardGrid(awardRows(100), awardLook);
@@ -109,7 +109,11 @@ test("a team winner points into the list of logos, a player winner carries his p
   const team = s.c.trophy;
   assert.ok(Array.isArray(team) && team[0].f != null && team[0].lo != null && grid.logos[team[0].lo]);
   const player = s.c.mvp;
-  assert.ok(Array.isArray(player) && player[0].h?.startsWith("/nhl/player/") && player[0].lo === undefined);
+  assert.ok(Array.isArray(player) && player[0].lo === undefined);
+  assert.equal(player[0].h, undefined, "a player's usual address is not sent, only his id");
+  assert.ok(awardHref("nhl", player[0])?.startsWith("/nhl/player/") && awardHref("nhl", player[0]) === awardLook.player(player[0].p!, player[0].w!));
+  const elsewhere = buildAwardGrid(awardRows(1), { ...awardLook, player: (id, name) => `/mlb/player/${name.toLowerCase().replace(/\W+/g, "-")}-${id}` });
+  assert.ok(String(elsewhere.seasons[0].c.mvp && (elsewhere.seasons[0].c.mvp as { h?: string }[])[0].h).startsWith("/mlb/player/"), "a player filed under another league keeps his address");
 });
 
 test("the season chips, the strip and the bars read one short list of rows", () => {
@@ -420,6 +424,14 @@ test("the teams list travels as short arrays, with logos written by their shared
   assert.ok(wire.lg.length === 5 && wire.pl.length === 3, "league codes and conference pairs are written once");
 });
 
+test("the awards grid draws its cup once, as a mask, not beside every winner", () => {
+  const grid = read("components/AwardsGrid.tsx");
+  assert.ok(grid.includes('className="awardwin cupped"') && !grid.includes("<AwardCup"), "a cell carries no drawing of its own");
+  const league = read("components/LeagueAwards.tsx");
+  assert.ok(league.includes("<CupMask") && !league.includes("<CupSprite"), "the cup is set once for the table");
+  assert.ok(read("components/people.css").includes(".cupped::before"), "the cup is painted by the cell's ::before");
+});
+
 test("the MLS season page sends its matches as lines and keeps every match on a page of its own", () => {
   assert.ok(MLS_MATCHES_HEAD <= 20, "the table's head is a few rows");
   const page = read("app/[locale]/s/mls/[year]/page.tsx");
@@ -453,6 +465,9 @@ const HOME_PAGES = [{ path: "/", budget: 120 * 1000 }];
 /** The teams list: every franchise as a short array, drawn and filtered in the browser (it was 363 KB of HTML, 304 KB of it the list as named fields). */
 const TEAMS_PAGES = [{ path: "/teams", budget: 250 * 1000 }];
 
+/** A league's awards by season, every season on one page: about a thousand winners, each once had a cup drawing of its own in the markup (380 KB). */
+const AWARDS_PAGES = ["nhl", "nba", "mlb", "nfl"].map((lg) => ({ path: `/${lg}/awards`, budget: TABLE_BUDGET }));
+
 /** An MLS season: a full season's games was 1,045 KB of HTML (the table drawn as markup and sent again as elements). The season page, and the page of every match. */
 const MLS_PAGES = [
   ...["1996", "2008", "2020", "2025"].map((y) => ({ path: `/mls/${y}`, budget: PAGE_BUDGET })),
@@ -478,7 +493,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...AWARDS_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

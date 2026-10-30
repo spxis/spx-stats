@@ -3,12 +3,11 @@
 import Link from "@/components/Link";
 import { useMemo } from "react";
 import { trophyPath } from "@/lib/awardTrophy";
-import { awardGridPagePath, awardGridRestPath, type AwardColumn, type AwardSeason, type AwardWinner } from "@/lib/awardGrid";
+import { awardGridPagePath, awardGridRestPath, awardHref, type AwardColumn, type AwardSeason, type AwardWinner } from "@/lib/awardGrid";
 import { seasonLabel } from "@/lib/leagues";
 import { seasonPath } from "@/lib/slug";
 import { tableOf, type ColumnSpec } from "@/lib/sort";
 import { useSpeaker } from "./i18n/LocaleProvider";
-import { AwardCup } from "./TrophyIcon";
 import { SortTable } from "./SortTable";
 import { TeamLabel } from "./TeamLabel";
 import { useMoreLines } from "./useMoreLines";
@@ -23,7 +22,7 @@ export function AwardsGrid({ lg, columns, head, logos, total }: { lg: string; co
   const more = useMoreLines<AwardSeason, { lines?: AwardSeason[]; logos?: string[] }>(awardGridRestPath(lg), head);
   const list = more.body?.logos ?? logos;
   const table = useMemo(() => {
-    const winner = (x: AwardWinner) => x.h ? <Link href={x.h} prefetch={false}>{x.w}</Link>
+    const winner = (x: AwardWinner) => x.p != null || x.h ? <Link href={awardHref(lg, x)!} prefetch={false}>{x.w}</Link>
       : x.f != null ? <TeamLabel lg={lg} f={x.f} name={x.w} logo={x.lo != null ? list[x.lo] : null} /> : x.w;
     const specs: ColumnSpec<AwardSeason>[] = [
       { key: "season", label: say("col.season"), num: true, cls: "seasoncell", get: (s) => s.y, cell: (s) => <Link href={seasonPath(lg, s.y)} prefetch={false}>{seasonLabel(lg, s.y)}</Link> },
@@ -34,7 +33,7 @@ export function AwardsGrid({ lg, columns, head, logos, total }: { lg: string; co
           const w = s.c[c.code];
           if (w == null) return null;
           if (typeof w === "number") return <Link href={seasonPath(lg, s.y)} prefetch={false} title={say("awards.openSeason")}>{plural("count.winners", w)}</Link>;
-          return w.map((x, i) => <div key={i} className="awardwin"><AwardCup league={lg} />{winner(x)}</div>);
+          return w.map((x, i) => <div key={i} className="awardwin cupped">{winner(x)}</div>);
         },
       })),
     ];
