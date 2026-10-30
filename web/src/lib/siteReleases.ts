@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.6", date: "2026-10-30", href: "/players",
+    title: "The players list is half the weight",
+    text: "A page of a hundred players was 392 KB: every row was sent twice, every country in the filter was a flag and a link of its own, and every club's address came along. Rows now travel as short lines, the long country list is drawn when you open it, and the page is half the size. It looks, sorts and filters as before." },
   { version: "0.170.5", date: "2026-10-30", href: "/nhl/team/montreal-canadiens",
     title: "Team pages open their venue map faster",
     text: "The list of every club's venues and addresses behind a team page's venue map is the same for all clubs of a league, but it used to be worked out again for each club's page. It is now worked out once per league and shared, so a team page's map fills in quicker the first time. It looks and works the same." },

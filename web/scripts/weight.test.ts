@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { AWARD_GRID_HEAD, AWARD_MANY, awardGridPagePath, awardHref, awardGridRestPath, awardHead, buildAwardGrid, type AwardInput } from "../src/lib/awardGrid.ts";
 import { CHAMP_HEAD, buildChampLines, champHead, champNoteText, champPagePath, champRestPath, type ChampSeason } from "../src/lib/champLines.ts";
@@ -191,7 +191,7 @@ test("the root layout carries no team addresses and no logo fits: a page carries
   }
   const data = read("components/TeamData.tsx");
   assert.ok(data.includes("tableOf(slugs, leagues)") && data.includes("fitLeagues(fits, leagues)"), "TeamData cuts both tables to the leagues asked for");
-  for (const dir of ["s/teams", "s/players", "s/city", "s/country", "s/venue", "s/trophies", "q/teams", "q/players", "q/city", "q/country", "q/venue"]) {
+  for (const dir of ["s/teams", "s/city", "s/country", "s/venue", "s/trophies", "q/teams", "q/city", "q/country", "q/venue"]) {
     assert.ok(read(`app/[locale]/${dir}/layout.tsx`).includes("TeamDataLayout"), `${dir} names teams of any league and carries them all`);
   }
 });
@@ -462,6 +462,15 @@ test("a franchise's map answer carries no league-wide venue list: that is its ow
   assert.ok(read("lib/mapView.ts").includes("export interface LeagueVenues"));
 });
 
+test("the players list sends short lines and the browser draws the cells; the country chips are short arrays; no team tables ride along", () => {
+  const page = read("app/[locale]/q/players/page.tsx");
+  assert.ok(page.includes("<PlayersTable") && !page.includes("<SortTable") && !page.includes("tableOf("), "the page gives the table lines, not drawn cells");
+  assert.ok(read("components/PlayersTable.tsx").includes("remote"), "a sort still asks the server for the rows in order");
+  assert.ok(read("components/PlayerCountries.tsx").includes("<CountryChips") && !read("components/PlayerCountries.tsx").includes("<Flag code={c.code}"), "the chips are not a server-drawn flag and link each");
+  assert.ok(read("components/CountryChips.tsx").includes("wanted ? more.map(chip)"), "the countries behind More countries are drawn once the list is opened");
+  for (const side of ["s", "q"]) assert.ok(!existsSync(new URL(`../src/app/[locale]/${side}/players/layout.tsx`, import.meta.url)), `${side}/players carries no team addresses or logo fits (the list names its teams with ready addresses)`);
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
  *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
@@ -483,6 +492,9 @@ const HOME_PAGES = [{ path: "/", budget: 120 * 1000 }];
 
 /** The teams list: every franchise as a short array, drawn and filtered in the browser (it was 363 KB of HTML, 304 KB of it the list as named fields). */
 const TEAMS_PAGES = [{ path: "/teams", budget: 250 * 1000 }];
+
+/** The players list: a hundred players a page, each once as a short line (it was 392 KB: every row as markup and again as elements, every country as a flag and link, and every club's address). */
+const PLAYERS_PAGES = ["/players", "/players?league=nhl", "/players?sort=seasons.desc"].map((path) => ({ path, budget: path.includes("sort") ? PAGE_BUDGET : 250 * 1000 }));
 
 /** A league's awards by season, every season on one page: about a thousand winners, each once had a cup drawing of its own in the markup (380 KB). */
 const AWARDS_PAGES = ["nhl", "nba", "mlb", "nfl"].map((lg) => ({ path: `/${lg}/awards`, budget: TABLE_BUDGET }));
@@ -515,7 +527,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

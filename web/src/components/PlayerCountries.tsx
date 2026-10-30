@@ -1,10 +1,11 @@
 import Link from "@/components/Link";
-import { ChipsMore } from "@/components/ChipsMore";
+import { CountryChips } from "@/components/CountryChips";
 import { CountryDonut } from "@/components/CountryDonut";
 import { CountryMapDialog } from "@/components/CountryMapDialog";
 import { Credits } from "@/components/Credits";
 import { Flag } from "@/components/Flag";
-import { flagCodes } from "@/lib/flagCodes";
+import type { ChipCountry } from "@/lib/countryChips";
+import { flagCodes, hasFlag } from "@/lib/flagCodes";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LOCALE_TAG } from "@/lib/locale";
 import { countryName, pctText } from "@/lib/people-format";
@@ -44,22 +45,10 @@ export async function PlayerCountries({ part, t, reference, league, chosen, href
     const { shown, more } = chipSplit(t.list, chosen, CHIPS_SHOWN);
     const byName = new Intl.Collator(LOCALE_TAG[locale], { sensitivity: "base" });
     const moreByName = [...more].sort((a, b) => byName.compare(countryName(a.code, locale), countryName(b.code, locale)));
-    const chip = (c: { code: string; n: number }) => {
-      const on = c.code === chosen;
-      const name = countryName(c.code, locale);
-      return (
-        <Link key={c.code} href={href({ nat: on ? null : c.code })} prefetch={false} aria-current={on ? "true" : undefined} data-country={c.code}
-          title={`${name}: ${plural("count.players", c.n)}`}>
-          <Flag code={c.code} shape="round" />{name}<span className="n">{fmt(c.n)}</span>
-        </Link>
-      );
-    };
+    const chip = (c: { code: string; n: number }): ChipCountry => [c.code, countryName(c.code, locale), c.n, hasFlag(c.code) ? 1 : 0];
     return (
-      <nav className="pchips" aria-label={say("players.whereChips")}>
-        <Link className="pall" href={href({ nat: null })} prefetch={false} aria-current={chosen ? undefined : "true"}>{say("players.countryClear")}</Link>
-        {shown.map(chip)}
-        {more.length ? <ChipsMore label={say("players.whereMore", { n: fmt(more.length) })}>{moreByName.map(chip)}</ChipsMore> : null}
-      </nav>
+      <CountryChips shown={shown.map(chip)} more={moreByName.map(chip)} chosen={chosen} hrefTpl={href({ nat: "XXCODEXX" }).replace("XXCODEXX", "{code}")} clearHref={href({ nat: null })}
+        allLabel={say("players.countryClear")} moreLabel={more.length ? say("players.whereMore", { n: fmt(more.length) }) : ""} />
     );
   }
 

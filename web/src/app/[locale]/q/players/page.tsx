@@ -1,14 +1,12 @@
 import LoadNote from "@/components/LoadNote";
 import type { Metadata } from "next";
-import Link from "@/components/Link";
-import { NatLink } from "@/components/NatLink";
 import { hasFlag } from "@/lib/flagCodes";
 import { Credits } from "@/components/Credits";
 import { Pager } from "@/components/Pager";
 import { CountryScope } from "@/components/CountryScope";
 import { moreChips, PlayerCountries } from "@/components/PlayerCountries";
 import { PlayersFilterBar } from "@/components/PlayersFilterBar";
-import { SortTable } from "@/components/SortTable";
+import { PlayersTable } from "@/components/PlayersTable";
 import { positionBook } from "@/components/PositionKey";
 import { queryHref } from "@/components/ViewTabs";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
@@ -18,7 +16,9 @@ import { listTitle, playersFilters } from "@/lib/listTitle";
 import { isLeague, LG } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import type { PlayerIndexRow } from "@/lib/api/people";
-import { countryName, positionsText } from "@/lib/people-format";
+import { countryName } from "@/lib/people-format";
+import { positionCodes } from "@/lib/positions";
+import type { PlayerCols, PlayerLine } from "@/lib/playerLines";
 import { readLetter } from "@/lib/listQuery";
 import { getLetterCounts, getPlayerPage, PLAYER_SORTS, playerSpan, searchWords } from "@/lib/playerIndex";
 import { getPlayerCountries, getReferenceCountries } from "@/lib/playerCountries";
@@ -30,10 +30,10 @@ import { split, stintLine } from "@/lib/playerTeamModel";
 import { getBrands } from "@/lib/data";
 import { logoFor } from "@/lib/brand";
 import { getLeagueClubs, getPaths, getSlugs, teamOf } from "@/lib/teamSlugs";
-import { PlayerTeamChips, TeamLogoList } from "@/components/PlayerTeamChips";
+import { TeamLogoList } from "@/components/PlayerTeamChips";
 import { chipTuple, type TeamChip } from "@/lib/teamChips";
 import { TeamPicker } from "@/components/TeamPicker";
-import { formatSort, parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
+import { formatSort, parseSort } from "@/lib/sort";
 import { rangeFromQuery } from "@/lib/yearRange";
 import "@/components/alignment.css";
 import "@/components/spinner.css";
@@ -67,7 +67,7 @@ export const generateMetadata = guardMeta(async ({ searchParams }: PageProps<"/[
 export default guard(async function PlayersPage({ searchParams }: PageProps<"/[locale]/q/players">) {
   const sp = await searchParams;
   const speaker = await currentSpeaker();
-  const { say, plural, fmt, locale } = speaker;
+  const { say, plural, fmt } = speaker;
   const filters = await filtersOf(sp, speaker);
   const player = await getPlayerPaths();
   const league = isLeague(first(sp.league)) ? first(sp.league) : "";
@@ -110,7 +110,7 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
 
   // The country column only draws once the database has `country` (migration 063); before that the rows carry none.
   const book = await positionBook();
-  const withCountry =!!data?.list.some((p) => p.country !== undefined);
+  const withCountry = !!data?.list.some((p) => p.country !== undefined);
   // The picker's clubs: the league's, the ones still playing first, each by the address segment its page has.
   const pickable = teamsOn && league ? (await getLeagueClubs(league)).map((c) => ({ slug: paths.slug(league, c.f), name: c.name, active: c.active })) : [];
   // One player's teams as small logos, the earliest first: at most four, then "+N" (the name and the years of each are in its tooltip).
@@ -126,30 +126,23 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
     });
     return items;
   };
-  const table = data ? tableOf(data.list, [
-    { key: "name", label: say("col.name"), cls: "team", rest: "name", get: (p: PlayerIndexRow) => p.name, cell: (p: PlayerIndexRow) => <Link href={player(p.person_id, p.name, p.leagues?.[0])} prefetch={false}>{p.name}</Link> },
-    { key: "league", label: say("col.league"), rest: "leagues", get: (p: PlayerIndexRow) => (p.leagues ?? []).map((l) => (isLeague(l) ? LG[l] : l)).join(", ") },
-    // The league filter, when there is one, reads a code first (C is a centre in the NHL, a catcher in MLB); otherwise the player's own leagues in order.
-    { key: "position", label: say("player.factPosition"), rest: "position", get: (p: PlayerIndexRow) => positionsText(p.positions, p.position), cell: (p: PlayerIndexRow) => book.list(p.positions, p.position, [...(league ? [league] : []), ...(p.leagues ?? [])]) },
-    ...(teams ? [{
-      key: "teams", label: say("players.teamsCol"), title: say("players.teamsTitle"), cls: "nowrap", get: (p: PlayerIndexRow) => chipsOf(p).length,
-      cell: (p: PlayerIndexRow) => {
-        const { shown, more } = split(chipsOf(p));
-        return <PlayerTeamChips shown={shown.map((t) => chipTuple(t, logoList))} more={more.map((t) => t.tip)} />;
-      },
-    } satisfies ColumnSpec<PlayerIndexRow>] : []),
-    ...(withCountry ? [{
-      key: "country", label: say("players.colCountry"), title: say("players.countryTitle"), get: (p: PlayerIndexRow) => (p.country ? countryName(p.country, locale) : ""),
-      cell: (p: PlayerIndexRow) => (p.country ? <NatLink href={href({ nat: p.country.toUpperCase() })} title={say("players.byCountry", { name: countryName(p.country, locale) })} code={hasFlag(p.country) ? p.country : null} /> : null),
-    } satisfies ColumnSpec<PlayerIndexRow>] : []),
-    { key: "years", label: say("col.years"), cls: "nowrap", title: say("players.yearsTitle"), rest: "last_season", get: (p: PlayerIndexRow) => p.last_season, cell: (p: PlayerIndexRow) => (p.first_season == null ? "" : p.last_season != null && p.last_season !== p.first_season ? `${p.first_season}–${p.last_season}` : String(p.first_season)) },
-    { key: "seasons", label: say("players.colSeasons"), num: true, rest: "seasons_played", get: (p: PlayerIndexRow) => p.seasons_played, cell: (p: PlayerIndexRow) => fmt(p.seasons_played) },
-    { key: "awards", label: say("players.colAwards"), num: true, rest: "award_count", get: (p: PlayerIndexRow) => p.award_count, cell: (p: PlayerIndexRow) => fmt(p.award_count) },
-    ...(titles ? [{
-      key: "titles", label: say("titles.col"), title: say("titles.career"), num: true, nosort: true,
-      get: (p: PlayerIndexRow) => titles.get(p.person_id) ?? 0, cell: (p: PlayerIndexRow) => fmt(titles.get(p.person_id) ?? 0),
-    } satisfies ColumnSpec<PlayerIndexRow>] : []),
-  ], (p) => p.person_id) : null;
+  // The rows go to the browser as short lines (lib/playerLines.ts); the position names are sent once, the rows point into the list.
+  const posNames: string[] = [];
+  const nameAt = (name: string | null) => (name == null ? -1 : posNames.includes(name) ? posNames.indexOf(name) : posNames.push(name) - 1);
+  const cols: PlayerCols = { teams: !!teams, country: withCountry, titles: !!titles };
+  const lines: PlayerLine[] | null = data ? data.list.map((p): PlayerLine => {
+    const rowLeagues = [...(league ? [league] : []), ...(p.leagues ?? [])];
+    const line: PlayerLine = {
+      i: p.person_id, n: p.name, h: player(p.person_id, p.name, p.leagues?.[0]), lg: p.leagues ?? [],
+      p: positionCodes(p.positions, p.position).map((code) => [code, nameAt(book.name(code, rowLeagues) ?? null)]),
+      f: p.first_season, e: p.last_season, s: p.seasons_played, a: p.award_count,
+    };
+    if (teams) { const { shown, more } = split(chipsOf(p)); line.t = [shown.map((t) => chipTuple(t, logoList)), more.map((t) => t.tip)]; }
+    if (withCountry) { line.c = p.country ?? null; if (p.country && !hasFlag(p.country)) line.nf = 1; }
+    if (titles) line.w = titles.get(p.person_id) ?? 0;
+    return line;
+  }) : null;
+  const natTpl = href({ nat: "XXCODEXX" }).replace("XXCODEXX", "{code}");
 
   // The country filter is a row of chips among the other filters; the donut and the map are a small strip under the list. They share one scope, so a country
   // pointed at or chosen is lit in both. Without the chips (the country is known for too few players) a chosen country still needs a line to say so.
@@ -177,10 +170,10 @@ export default guard(async function PlayersPage({ searchParams }: PageProps<"/[l
       {/* Shown (by CSS) only while a saved year range is being applied and the list is held out of sight; it never leaves the table area empty. */}
       <div className="listwait" role="status" aria-live="polite"><span className="spinner" aria-hidden="true" /><span>{say("load.loading")}</span></div>
       <div className="yr-hold">
-        {data == null || table == null ? <LoadNote /> : data.list.length ? (
+        {data == null || lines == null ? <LoadNote /> : data.list.length ? (
           <>
             <p className="note">{plural("count.players", data.total)}{data.pages > 1 ? ` · ${say("players.pageOf", { page: fmt(data.page), pages: fmt(data.pages) })}` : ""}</p>
-            <div className="scroll"><TeamLogoList logos={logoList}><SortTable {...table} def={DEF_SORT} initial={sort} remote /></TeamLogoList></div>
+            <div className="scroll"><TeamLogoList logos={logoList}><PlayersTable lines={lines} names={posNames} cols={cols} natTpl={natTpl} def={DEF_SORT} initial={sort} /></TeamLogoList></div>
             <Pager page={data.page} pages={data.pages} href={to} label={say("players.pager")} say={say} fmt={fmt} />
             {countries ? <PlayerCountries part="strip" t={countries} reference={reference} league={league} chosen={nat} href={href} /> : null}
             {book.key()}

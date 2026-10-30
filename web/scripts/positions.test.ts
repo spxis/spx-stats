@@ -179,7 +179,8 @@ test("scan: a position column draws PositionCode (through the page's position bo
   // europe.col.pos is a club's place in a league table, not a player's position
   const cols = lines.filter((l) => /\bkey:\s*"(pos|position)"/.test(l.text) && /get:/.test(l.text) && !/europe\.col\.pos/.test(l.text));
   assert.ok(cols.length >= 3, "the players list, the roster and the World Cup player page have one each");
-  assert.deepEqual(show(cols.filter((l) => !/cell:[^\n]*book\.(list|code)\(/.test(l.text))), []);
+  // The players list draws its cells in the browser (components/PlayersTable.tsx) from names the page took from the book, which notes the codes for the key.
+  assert.deepEqual(show(cols.filter((l) => !/cell:[^\n]*(book\.(list|code)\(|<PositionList )/.test(l.text))), []);
 });
 
 test("scan: a soccer position code is drawn through the book, in every file that renders one", () => {
@@ -200,7 +201,7 @@ test("scan: the code links to the key, upper case, and the key carries the id it
 });
 
 test("scan: every page that draws a position list also draws the key", () => {
-  const users = files.filter((f) => /\bbook\.(list|code)\(/i.test(f.text) && f.path.endsWith("page.tsx"));
+  const users = files.filter((f) => /\bbook\.(list|code|name)\(/i.test(f.text) && f.path.endsWith("page.tsx"));
   assert.ok(users.length >= 4, "players, player, World Cup year, match and player pages");
   const lacking = users.filter((f) => !/\b(book|pickBook)\.key\(\)/.test(f.text));
   assert.deepEqual(lacking.map((f) => f.path), []);
