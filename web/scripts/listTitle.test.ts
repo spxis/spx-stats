@@ -44,7 +44,7 @@ test("teams: league, conference or division, status, in the order a reader narro
 test("a screen reader hears one sentence, and the bare word when nothing is filtered", () => {
   assert.equal(listLabel(en, "Players", ["NHL", "from Russia"]), "Players, filtered: NHL, from Russia");
   assert.equal(listLabel(en, "Teams", []), "Teams");
-  assert.equal(listLabel(fr, "Joueurs", ["NHL", "Pays : Russie"]), "Joueurs, filtré : NHL, Pays : Russie");
+  assert.equal(listLabel(fr, "Joueurs", ["NHL", "Pays : Russie"]), "Joueurs, filtres : NHL, Pays : Russie");
   assert.equal(listLabel(ja, "選手", ["NHL", "ロシア出身"]), "選手、絞り込み：NHL, ロシア出身");
 });
 
