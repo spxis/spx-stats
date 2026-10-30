@@ -19,10 +19,10 @@ const ERAS: Record<string, readonly (readonly [number, number, readonly RoundKey
   nhl: [
     [2019, 2019, ["qual", "first", "second", "confFinal", "final"]],
     [2020, 2020, ["first", "second", "scSemis", "final"]],
-    [2014, 9999, ["first", "second", "confFinal", "final"]],
-    [1994, 2013, ["confQuarters", "confSemis", "confFinal", "final"]],
-    [1982, 1993, ["divSemis", "divFinals", "confFinal", "final"]],
-    [1974, 1981, ["prelim", "quarters", "semis", "final"]],
+    [2013, 9999, ["first", "second", "confFinal", "final"]],
+    [1993, 2012, ["confQuarters", "confSemis", "confFinal", "final"]],
+    [1981, 1992, ["divSemis", "divFinals", "confFinal", "final"]],
+    [1974, 1980, ["prelim", "quarters", "semis", "final"]],
   ],
   pwhl: [
     [2023, 9999, ["semis", "final"]],

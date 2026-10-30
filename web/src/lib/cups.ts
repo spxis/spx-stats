@@ -29,6 +29,34 @@ import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-
 import { TROPHY_SOCCER_GLOBE } from "@johnmorrisdotca/dougu-sports/trophy/soccer-globe";
 import { TROPHY_WALTER_CUP } from "@johnmorrisdotca/dougu-sports/trophy/walter-cup";
 import { TROPHY_WNBA_CHAMPIONSHIP_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/wnba-championship-trophy";
+import { TROPHY_ART_ROSS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/art-ross-trophy";
+import { TROPHY_CALDER_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/calder-trophy";
+import { TROPHY_CAMPBELL_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/campbell-bowl";
+import { TROPHY_COMMISSIONERS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/commissioners-trophy";
+import { TROPHY_CONN_SMYTHE_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/conn-smythe-trophy";
+import { TROPHY_CY_YOUNG_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/cy-young-award";
+import { TROPHY_GOLD_GLOVE_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/gold-glove-award";
+import { TROPHY_GREY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/grey-cup";
+import { TROPHY_HANK_AARON_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/hank-aaron-award";
+import { TROPHY_HART_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/hart-trophy";
+import { TROPHY_JACK_ADAMS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/jack-adams-trophy";
+import { TROPHY_JENNINGS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/jennings-trophy";
+import { TROPHY_KING_CLANCY_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/king-clancy-trophy";
+import { TROPHY_LADY_BYNG_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/lady-byng-trophy";
+import { TROPHY_LOMBARDI_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/lombardi-trophy";
+import { TROPHY_MASTERTON_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/masterton-trophy";
+import { TROPHY_MLB_MVP_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/mlb-mvp-award";
+import { TROPHY_NORRIS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/norris-trophy";
+import { TROPHY_PRESIDENTS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/presidents-trophy";
+import { TROPHY_PRINCE_OF_WALES_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/prince-of-wales-trophy";
+import { TROPHY_RELIEF_MAN_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/relief-man-award";
+import { TROPHY_ROCKET_RICHARD_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/rocket-richard-trophy";
+import { TROPHY_SELKE_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/selke-trophy";
+import { TROPHY_SILVER_SLUGGER_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/silver-slugger-award";
+import { TROPHY_STANLEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/stanley-cup";
+import { TROPHY_TED_LINDSAY_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/ted-lindsay-award";
+import { TROPHY_VEZINA_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/vezina-trophy";
+import { TROPHY_WORLD_SERIES_MVP_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/world-series-mvp-trophy";
 import { MEDAL_BRONZE } from "@johnmorrisdotca/dougu-sports/medal/bronze";
 import { MEDAL_GOLD } from "@johnmorrisdotca/dougu-sports/medal/gold";
 import { MEDAL_SILVER } from "@johnmorrisdotca/dougu-sports/medal/silver";
@@ -67,11 +95,20 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
 };
 
 /**
- * The trophies that depend on the season (lib/trophyEra.ts chooses): the NBA's Larry O'Brien Trophy in its two designs and the conference trophies of the NBA and the NFL. A key here
+ * The named trophies, and the ones that depend on the season (lib/trophyEra.ts chooses): the Stanley Cup, MLB's Commissioner's Trophy, the Vince Lombardi Trophy and the Grey Cup, the NBA's
+ * Larry O'Brien Trophy in its two designs, and the conference trophies of the NBA, the NFL and the NHL. A key here
  * wins over the league's cup above for the large drawings (a banner, a game page, a trophy's own page), which draw the real trophy; the small line cups of a table or a sprite keep
  * the league's cup, a symbol of "champion" that is the same for every season.
  */
 const ERA: Record<EraTrophy, readonly [Emblem, string]> = {
+  "nhl": [TROPHY_STANLEY_CUP, "Stanley Cup"],
+  "nhl-east": [TROPHY_PRINCE_OF_WALES_TROPHY, "Prince of Wales Trophy"],
+  "nhl-west": [TROPHY_CAMPBELL_BOWL, "Clarence S. Campbell Bowl"],
+  "mlb": [TROPHY_COMMISSIONERS_TROPHY, "Commissioner's Trophy"],
+  "mlb-1967": [TROPHY_BASEBALL, "World Series Trophy"],
+  "nfl": [TROPHY_LOMBARDI_TROPHY, "Vince Lombardi Trophy"],
+  "nfl-pre": [TROPHY_FOOTBALL, "NFL Championship"],
+  "cfl": [TROPHY_GREY_CUP, "Grey Cup"],
   "nba": [TROPHY_LARRY_OBRIEN_TROPHY, "Larry O'Brien Trophy"],
   "nba-1977": [TROPHY_LARRY_OBRIEN_TROPHY_1977, "Larry O'Brien Trophy"],
   "nba-west": [TROPHY_OSCAR_ROBERTSON_TROPHY, "Oscar Robertson Trophy"],
@@ -156,13 +193,36 @@ export function medalSvg(place: number): string {
 
 /**
  * The drawing of one award for the trophy pages (lib/awardTrophy.ts, app/[locale]/s/[league]/trophy). A league's championship is drawn as its cup above. Every other
- * award has no drawing of its own in the package yet, so it is drawn with a plain stand-in: a generic cup for an award to a person, a bowl for an award to a team,
- * and the page says so (`named` is false). When the package gets a named drawing (the Calder, the Hart, the Vezina), add it to NAMED by the award's code (one import and
- * one line): the pages then draw it, in the list and large on the award's own page, and drop the note.
+ * award that has no drawing of its own in the package (docs/trophy-audit.md of the package lists them: the NBA's sculpted figures, the CFL's and the AP's awards, the
+ * NHL's General Manager of the Year, the Super Bowl MVP and the managers of the year) is drawn with a plain stand-in: a generic cup for an award to a person, a bowl for an
+ * award to a team, and the page says so (`named` is false). When the package gets a named drawing, add it to NAMED by the award's code (one import and one line): the
+ * pages then draw it, in the list and large on the award's own page, and drop the note.
  */
 const NAMED: Record<string, Emblem> = {
+  nhl_hart: TROPHY_HART_TROPHY,
+  nhl_vezina: TROPHY_VEZINA_TROPHY,
+  nhl_norris: TROPHY_NORRIS_TROPHY,
+  nhl_calder: TROPHY_CALDER_TROPHY,
+  nhl_art_ross: TROPHY_ART_ROSS_TROPHY,
+  nhl_conn_smythe: TROPHY_CONN_SMYTHE_TROPHY,
+  nhl_lady_byng: TROPHY_LADY_BYNG_TROPHY,
+  nhl_selke: TROPHY_SELKE_TROPHY,
+  nhl_jennings: TROPHY_JENNINGS_TROPHY,
+  nhl_masterton: TROPHY_MASTERTON_TROPHY,
+  nhl_king_clancy: TROPHY_KING_CLANCY_TROPHY,
+  nhl_jack_adams: TROPHY_JACK_ADAMS_TROPHY,
+  nhl_presidents_trophy: TROPHY_PRESIDENTS_TROPHY,
+  nhl_rocket_richard: TROPHY_ROCKET_RICHARD_TROPHY,
+  nhl_ted_lindsay: TROPHY_TED_LINDSAY_AWARD,
   nba_finals_mvp: TROPHY_BILL_RUSSELL_TROPHY,
+  mlb_mvp: TROPHY_MLB_MVP_AWARD,
+  mlb_cy_young: TROPHY_CY_YOUNG_AWARD,
+  mlb_gold_glove: TROPHY_GOLD_GLOVE_AWARD,
+  mlb_silver_slugger: TROPHY_SILVER_SLUGGER_AWARD,
+  mlb_world_series_mvp: TROPHY_WORLD_SERIES_MVP_TROPHY,
   mlb_rookie_of_the_year: TROPHY_JACKIE_ROBINSON_AWARD,
+  mlb_hank_aaron: TROPHY_HANK_AARON_AWARD,
+  mlb_rolaids_relief_man: TROPHY_RELIEF_MAN_AWARD,
 };
 
 export interface TrophyArt {
@@ -182,6 +242,8 @@ export function trophyArt(code: string, kind: string): TrophyArt {
   if (own) return { key: code, emblem: own, named: true };
   if (kind === "championship") {
     const league = code.slice(0, Math.max(0, code.indexOf("_")));
+    // MLB's pennants and its championship before the World Series are not the Commissioner's Trophy: the generic baseball stands for them.
+    if (league === "mlb" && code !== "mlb_world_series") return { key: "cup-mlb-early", emblem: TROPHY_BASEBALL, named: true };
     const cup = ERA_BY_KEY[league] ?? CUPS[league];
     if (cup) return { key: `cup-${league}`, emblem: cup[0], named: true };
     return GENERIC_TEAM;

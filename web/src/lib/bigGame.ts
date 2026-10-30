@@ -29,8 +29,8 @@ export interface BigGame {
   conf?: { side: ConferenceSide | null };
 }
 
-/** The round keys (lib/playoffFormat.ts) that are a conference final whose winner lifts a conference trophy. */
-const CONFERENCE_FINAL = new Set(["confFinals", "confChamp"]);
+/** The round keys (lib/playoffFormat.ts) that are a conference final whose winner lifts a conference trophy: the NBA's and NFL's, the NHL's Conference Final and, in 2020-21, its Stanley Cup semifinal. */
+const CONFERENCE_FINAL = new Set(["confFinals", "confChamp", "confFinal", "scSemis"]);
 
 /** The series of a season's playoff games, one entry per game that belongs to one (a game with none is left out). */
 export function seriesBigGames(lg: string, year: number, games: readonly GameRow[], say: Say, robin: string, fallback: string, sideOf?: (franchise: number | null) => ConferenceSide | null): Map<number, BigGame> {
@@ -42,7 +42,7 @@ export function seriesBigGames(lg: string, year: number, games: readonly GameRow
     const roundNo = desc.round[i];
     const round = roundTitle(desc.names, roundNo, robin) || fallback;
     const final = desc.final > 0 && roundNo === desc.final;
-    const confFinal = !final && (lg === "nba" || lg === "nfl") && CONFERENCE_FINAL.has(desc.keys?.[roundNo - 1] ?? "");
+    const confFinal = !final && (lg === "nba" || lg === "nfl" || lg === "nhl") && CONFERENCE_FINAL.has(desc.keys?.[roundNo - 1] ?? "");
     const conf = confFinal ? { conf: { side: sideOf?.(s.sides[0].f) ?? sideOf?.(s.sides[1].f) ?? null } } : {};
     const leader = Math.max(s.sides[0].wins, s.sides[1].wins);
     // A series someone won with fewer wins than it takes is missing games: its numbers would be wrong, so the card names the round and nothing more.

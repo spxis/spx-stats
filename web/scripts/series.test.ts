@@ -163,6 +163,13 @@ test("rounds are named from the league's format, by year and number of rounds", 
   assert.deepEqual(roundKeys("mlb", 2005, 3, true, false), ["ds", "lcs", "final"]);
   assert.deepEqual(roundKeys("nhl", 2025, 4, true, false), ["first", "second", "confFinal", "final"]);
   assert.deepEqual(roundKeys("nhl", 2005, 4, true, false), ["confQuarters", "confSemis", "confFinal", "final"]);
+  // A season is its first year: 1981-82 was the first with division rounds and a conference final, 1993-94 the first named by the compass, 2013-14 the first with a first and second round.
+  assert.deepEqual(roundKeys("nhl", 1980, 4, true, false), ["prelim", "quarters", "semis", "final"]);
+  assert.deepEqual(roundKeys("nhl", 1981, 4, true, false), ["divSemis", "divFinals", "confFinal", "final"]);
+  assert.deepEqual(roundKeys("nhl", 1992, 4, true, false), ["divSemis", "divFinals", "confFinal", "final"]);
+  assert.deepEqual(roundKeys("nhl", 1993, 4, true, false), ["confQuarters", "confSemis", "confFinal", "final"]);
+  assert.deepEqual(roundKeys("nhl", 2012, 4, true, false), ["confQuarters", "confSemis", "confFinal", "final"]);
+  assert.deepEqual(roundKeys("nhl", 2013, 4, true, false), ["first", "second", "confFinal", "final"]);
   assert.deepEqual(roundKeys("nba", 2025, 4, true, false), ["first", "confSemis", "confFinals", "final"]);
   assert.deepEqual(roundKeys("pwhl", 2023, 2, true, false), ["semis", "final"]);
   assert.deepEqual(roundKeys("pwhl", 2024, 2, true, false), ["semis", "final"]);

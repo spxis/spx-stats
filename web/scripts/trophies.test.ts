@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
+import { TROPHY_STANLEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/stanley-cup";
 import { bindTurn, type TurnContainer, type TurnEvent } from "@johnmorrisdotca/dougu-sports/turn";
 import { bannerCupSvg, bigCupSvg, cupSvg, cupsFor, gameCupSvg, medalSvg, trophyArt, trophyBigSvg } from "../src/lib/cups.ts";
 import { bigGameTrophy, championshipName, conferenceTrophyPhrase, trophyPhrase } from "../src/lib/trophies.ts";
-import { conferenceSide, conferenceTrophyKey, sideLookup, titleTrophyKey } from "../src/lib/trophyEra.ts";
+import { conferenceSide, conferenceTrophyKey, hasConferenceTrophy, sideLookup, titleTrophyKey } from "../src/lib/trophyEra.ts";
 import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 
 /** Run in web/: pnpm test:trophies (it needs the react-server condition, as lib/cups.ts is server-only). */
@@ -54,7 +54,7 @@ class Fake implements TurnContainer {
 
 test("the banner still the server sends is the first frame the browser draws when the trophy is bound to turn", () => {
   const el = new Fake();
-  const turner = bindTurn(el, TROPHY_HOCKEY_CUP, { style: "metal", size: 64, title: false, pitch: TROPHY_TILT });
+  const turner = bindTurn(el, TROPHY_STANLEY_CUP, { style: "metal", size: 64, title: false, pitch: TROPHY_TILT });
   assert.equal(el.innerHTML.replace(' width="64" height="64"', ""), bannerCupSvg("nhl"));
   turner.destroy();
 });
@@ -150,11 +150,11 @@ test("a conference trophy is chosen by conference and season, and never for a se
   assert.equal(conferenceTrophyKey("nfl", 2024, "nfc"), "nfc");
   assert.equal(conferenceTrophyKey("nfl", 1984, "afc"), "afc");
   assert.equal(conferenceTrophyKey("nfl", 1983, "afc"), null);
-  assert.equal(conferenceTrophyKey("nhl", 2024, "east"), null);
+  assert.equal(conferenceTrophyKey("wnba", 2024, "east"), null);
   assert.equal(conferenceTrophyPhrase("nba", 2023, "west"), "trophy.name.nbaWest");
   assert.equal(conferenceTrophyPhrase("nba", 2010, "east"), "trophy.name.nbaEast2001");
   assert.equal(conferenceTrophyPhrase("nfl", 2024, "afc"), "trophy.name.afc");
-  for (const key of ["nba-west", "nba-west-2001", "nba-east", "nba-east-2001", "nfc", "afc"]) {
+  for (const key of ["nba-west", "nba-west-2001", "nba-east", "nba-east-2001", "nfc", "afc", "nhl-east", "nhl-west"]) {
     assert.ok(gameCupSvg(key, true).length > 500, key);
     assert.match(gameCupSvg(key, false), /currentColor/, key);
     assert.ok(!gameCupSvg(key, true).includes("<title>"), key);
@@ -178,4 +178,96 @@ test("the Finals MVP award and the Rookie of the Year award have their own drawi
   }
   assert.equal(trophyArt("nba_larry_obrien", "championship").emblem.id, "trophy:larry-obrien-trophy");
   assert.equal(trophyArt("nba_mvp", "person_award").named, false, "an award with no drawing keeps the stand-in");
+});
+
+test("the Stanley Cup, the Grey Cup, the Commissioner's Trophy and the Vince Lombardi Trophy are the package's named trophies, not a generic cup", () => {
+  for (const [lg, id] of [["nhl", "stanley-cup"], ["cfl", "grey-cup"], ["mlb", "commissioners-trophy"], ["nfl", "lombardi-trophy"]] as const) {
+    assert.equal(trophyArt({ nhl: "nhl_stanley_cup", cfl: "cfl_grey_cup", mlb: "mlb_world_series", nfl: "nfl_super_bowl" }[lg], "championship").emblem.id, `trophy:${id}`, lg);
+    assert.ok(gameCupSvg(lg, true).length > 900, lg);
+    assert.match(gameCupSvg(lg, false), /currentColor/, lg);
+    assert.ok(gameCupSvg(lg, false).length < 2500, `${lg} small cup ${gameCupSvg(lg, false).length} bytes`);
+  }
+});
+
+test("the NFL's title trophy is the Vince Lombardi Trophy from the 1970 season and the football cup of the NFL Championship before it", () => {
+  assert.equal(titleTrophyKey("nfl", 1970), "nfl");
+  assert.equal(titleTrophyKey("nfl", 2024), "nfl");
+  assert.equal(titleTrophyKey("nfl", 1969), "nfl-pre");
+  assert.equal(titleTrophyKey("nfl", 1933), "nfl-pre");
+  assert.equal(titleTrophyKey("nfl"), "nfl");
+  assert.notEqual(bannerCupSvg("nfl"), bannerCupSvg("nfl-pre"));
+  assert.match(bigCupSvg("nfl"), /<title>Vince Lombardi Trophy<\/title>/);
+  assert.equal(trophyPhrase("nfl", 1969), "rnd.nflOld");
+});
+
+test("MLB's title trophy: none before 1967, the baseball cup for 1967 to 1999, the Commissioner's Trophy of Tiffany's design from 2000", () => {
+  assert.equal(titleTrophyKey("mlb", 1966), null);
+  assert.equal(titleTrophyKey("mlb", 1903), null);
+  assert.equal(titleTrophyKey("mlb", 1967), "mlb-1967");
+  assert.equal(titleTrophyKey("mlb", 1999), "mlb-1967");
+  assert.equal(titleTrophyKey("mlb", 2000), "mlb");
+  assert.equal(titleTrophyKey("mlb", 2025), "mlb");
+  assert.equal(titleTrophyKey("mlb"), "mlb");
+  assert.equal(trophyPhrase("mlb", 1966), null);
+  assert.equal(trophyPhrase("mlb", 1999), "trophy.name.mlbOld");
+  assert.equal(trophyPhrase("mlb", 2000), "trophy.name.mlb");
+  assert.equal(bigGameTrophy("mlb", 1950), null);
+  assert.notEqual(bannerCupSvg("mlb"), bannerCupSvg("mlb-1967"));
+  assert.match(bigCupSvg("mlb"), /<title>Commissioner's Trophy<\/title>/);
+  // The World Series pennants of other leagues and the early championship are not the Commissioner's Trophy.
+  assert.equal(trophyArt("mlb_world_series", "championship").key, "cup-mlb");
+  assert.equal(trophyArt("mlb_early_championship", "championship").emblem.id, "trophy:baseball");
+  assert.equal(trophyArt("mlb_pennant_na", "championship").emblem.id, "trophy:baseball");
+});
+
+test("the NHL's conference trophies go to a conference's playoff champion from 1981-82, and are never drawn for a season they did not go to one", () => {
+  assert.equal(conferenceTrophyKey("nhl", 2024, "east"), "nhl-east");
+  assert.equal(conferenceTrophyKey("nhl", 2024, "west"), "nhl-west");
+  assert.equal(conferenceTrophyKey("nhl", 1981, "east"), "nhl-east", "the 1981-82 playoffs: the first with a conference playoff champion");
+  assert.equal(conferenceTrophyKey("nhl", 1980, "east"), null, "to 1980-81 they went to the regular season's first place");
+  assert.equal(conferenceTrophyKey("nhl", 1950, "west"), null);
+  assert.equal(conferenceTrophyKey("nhl", 2024, "nfc"), null);
+  assert.equal(conferenceTrophyKey("nhl", 2024, null), null);
+  assert.equal(hasConferenceTrophy("nhl", 1981), true);
+  assert.equal(hasConferenceTrophy("nhl", 1980), false);
+  assert.equal(conferenceTrophyPhrase("nhl", 2023, "east"), "trophy.name.nhlEast");
+  assert.equal(conferenceTrophyPhrase("nhl", 1990, "west"), "trophy.name.nhlWest");
+  assert.equal(conferenceTrophyPhrase("nhl", 1975, "west"), null);
+  // The archive's names for the NHL conferences, over the years.
+  assert.equal(conferenceSide("nhl", "Wales"), "east");
+  assert.equal(conferenceSide("nhl", "Prince of Wales Conference"), "east");
+  assert.equal(conferenceSide("nhl", "Campbell"), "west");
+  assert.equal(conferenceSide("nhl", "Clarence Campbell Conference"), "west");
+  assert.equal(conferenceSide("nhl", "East"), "east");
+  assert.equal(conferenceSide("nhl", "Western Conference"), "west");
+  assert.equal(conferenceSide("nhl", "Central"), null);
+  // 2020-21 had four divisions: East and Central semifinal winners took the Prince of Wales Trophy, North and West the Campbell Bowl.
+  const rows = [["East", 1], ["Central", 2], ["North", 3], ["West", 4]].map(([d, f]) => ({ franchise_id: f as number, year: 2020, conference_short: null, division_short: d as string }));
+  const side = sideLookup("nhl", rows);
+  assert.deepEqual([1, 2, 3, 4].map(side), ["east", "east", "west", "west"]);
+  assert.equal(sideLookup("nhl", rows.map((r) => ({ ...r, year: 2021 })))(1), null, "a division is a side only in 2020-21");
+  assert.notEqual(gameCupSvg("nhl-east", true), gameCupSvg("nhl-west", true));
+});
+
+test("every award the archive names that the package has a trophy for is drawn with it, and the others keep the stand-in", () => {
+  const named: Record<string, string> = {
+    nhl_hart: "hart-trophy", nhl_vezina: "vezina-trophy", nhl_norris: "norris-trophy", nhl_calder: "calder-trophy", nhl_art_ross: "art-ross-trophy", nhl_conn_smythe: "conn-smythe-trophy",
+    nhl_lady_byng: "lady-byng-trophy", nhl_selke: "selke-trophy", nhl_jennings: "jennings-trophy", nhl_masterton: "masterton-trophy", nhl_king_clancy: "king-clancy-trophy",
+    nhl_jack_adams: "jack-adams-trophy", nhl_presidents_trophy: "presidents-trophy", nhl_rocket_richard: "rocket-richard-trophy", nhl_ted_lindsay: "ted-lindsay-award",
+    mlb_mvp: "mlb-mvp-award", mlb_cy_young: "cy-young-award", mlb_gold_glove: "gold-glove-award", mlb_silver_slugger: "silver-slugger-award", mlb_world_series_mvp: "world-series-mvp-trophy",
+    mlb_rookie_of_the_year: "jackie-robinson-award", mlb_hank_aaron: "hank-aaron-award", mlb_rolaids_relief_man: "relief-man-award", nba_finals_mvp: "bill-russell-trophy",
+  };
+  const kinds: Record<string, string> = { nhl_presidents_trophy: "team_award" };
+  const keys = new Set<string>();
+  for (const [code, id] of Object.entries(named)) {
+    const art = trophyArt(code, kinds[code] ?? "person_award");
+    assert.equal(art.emblem.id, `trophy:${id}`, code);
+    assert.equal(art.named, true, code);
+    assert.ok(!keys.has(art.key), `${code} has a drawing of its own`);
+    keys.add(art.key);
+  }
+  for (const [code, kind] of [["nhl_gm_of_the_year", "person_award"], ["nba_mvp", "person_award"], ["nba_coach_of_the_year", "person_award"], ["nfl_super_bowl_mvp", "person_award"], ["nfl_ap_mvp", "person_award"],
+    ["mlb_manager_of_the_year", "person_award"], ["cfl_most_outstanding_player", "person_award"], ["cfl_coach_of_the_year", "person_award"], ["mlb_pennant_al", "team_award"]] as const) {
+    assert.equal(trophyArt(code, kind).named, false, code);
+  }
 });

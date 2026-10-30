@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.173.0", date: "2026-10-30", href: "/nhl/trophies",
+    title: "Finals and trophy pages show the real trophies",
+    text: "The Stanley Cup, the Grey Cup, the Vince Lombardi Trophy (from 1970) and the Commissioner's Trophy (from 2000) are drawn as themselves on big-game banners. NHL conference finals carry the Prince of Wales Trophy and Clarence S. Campbell Bowl (from 1981-82). Award pages draw the Hart, Vezina, Cy Young, Gold Glove and the rest." },
   { version: "0.172.1", date: "2026-10-30", href: "/nhl/alignment",
     title: "League alignment, venue and results pages answer faster",
     text: "The conference and division changes of a league, a venue's page and a club's results graph now come from a few precomputed rows instead of a long calculation or a read for every season, so a first visit to these pages is much quicker and the database does less work. The pages look the same; the results graph is also about a third lighter to download." },

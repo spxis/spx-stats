@@ -18,7 +18,7 @@ export function seriesLine(big: BigGame, say: Speaker["say"]): string | null {
  * where the series stands. The league's last round is the strongest look (`final`), every other round a quieter one; both take the page's accent and the
  * site's tokens, so they read in light and dark. The last round also carries the league's title trophy when the package has a cup for it (lib/trophies.ts,
  * drawn on the server by lib/cups.ts): small on a score card, large on the game page, and stronger still on the game that decides the title. The trophy is the one the
- * league gave that season (lib/trophyEra.ts: the NBA's Larry O'Brien Trophy in its two designs, none before 1977-78). A conference final (the NBA's, the NFL's) is not the
+ * league gave that season (lib/trophyEra.ts: the NBA's Larry O'Brien Trophy in its two designs and none before 1977-78, the Vince Lombardi Trophy from 1970, the Commissioner's Trophy from 1967 in the design of 2000 on, the Stanley Cup, the Grey Cup). A conference final (the NBA's, the NFL's, the NHL's) is not the
  * league's last round, so it keeps the quieter look and carries its conference trophy, smaller, with that trophy's own name and no deciding-game treatment.
  */
 export function BigBanner({ big, say, lg, year, state, page = false }: { big: BigGame; say: Speaker["say"]; lg: string; year: number; state?: string | null; page?: boolean }) {

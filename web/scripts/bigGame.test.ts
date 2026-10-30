@@ -124,9 +124,19 @@ test("a conference final is told apart from the Finals and carries its conferenc
   assert.deepEqual(seriesBigGames("nba", 2023, games, say as never, "Round robin", "Postseason").get(conf[0][0].game_id)!.conf, { side: null });
 });
 
-test("only the NBA and the NFL have a conference trophy to draw", () => {
-  const { games, conf } = nbaBracket(2023, "nhl");
-  assert.equal(seriesBigGames("nhl", 2023, games, say as never, "Round robin", "Postseason", () => "west").get(conf[0][0].game_id)!.conf, undefined);
+test("only the NBA, the NFL and the NHL have a conference trophy to draw", () => {
+  const { games, conf } = nbaBracket(2023, "wnba");
+  assert.equal(seriesBigGames("wnba", 2023, games, say as never, "Round robin", "Postseason", () => "west").get(conf[0][0].game_id)!.conf, undefined);
+});
+
+test("the NHL's Conference Final carries its conference, and the Stanley Cup Final never does", () => {
+  const { games, conf, finals } = nbaBracket(2023, "nhl");
+  const m = seriesBigGames("nhl", 2023, games, say as never, "Round robin", "Postseason", (f) => (f != null && f <= 8 ? "west" : "east"));
+  assert.equal(m.get(conf[0][0].game_id)!.conf?.side, "west");
+  assert.equal(m.get(conf[1][0].game_id)!.conf?.side, "east");
+  assert.equal(m.get(finals[0][0].game_id)!.final, true);
+  assert.equal(m.get(finals[0][0].game_id)!.conf, undefined);
+  assert.equal(m.get(games[0].game_id)!.conf, undefined, "the first round is no conference final");
 });
 
 test("the NFL's Conference Championship is a conference final too, a single game with its own conference", () => {
