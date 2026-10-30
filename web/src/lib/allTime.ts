@@ -52,9 +52,12 @@ export interface StandLine { year: number; franchise_id: number; team: string | 
 export interface PlayoffGame { year: number; away_f: number | null; home_f: number | null; away_score: number | null; home_score: number | null }
 export interface NameLine { franchise_id: number; name: string }
 
+/** A franchise's playoff record: the sums api.playoff_franchise_pack holds (migration 188), or `playoffTotals` of the games. */
+export interface PlayoffTotals { f: number; gp: number; w: number; l: number; t: number; pf: number; pa: number; years: number }
+
 export interface Inputs {
   stand: StandLine[];
-  games: PlayoffGame[];
+  playoffs: PlayoffTotals[];
   champs: { year: number; franchise_id: number }[];
   /** In the order of the team page: oldest first, so the last is the current name. */
   names: NameLine[];
@@ -68,6 +71,25 @@ function distinct(rows: StandLine[]): StandLine[] {
     const k = [r.year, r.franchise_id, r.gp, r.w, r.l, r.t, r.otl, r.pf, r.pa].join("|");
     return seen.has(k) ? false : (seen.add(k), true);
   });
+}
+
+/** Each franchise's playoff games, wins, losses, ties, for, against and seasons played, added up from the games (a game with no score is not counted). */
+export function playoffTotals(games: PlayoffGame[]): PlayoffTotals[] {
+  const po = new Map<number, { line: Line; years: Set<number> }>();
+  const bump = (f: number | null, year: number, mine: number, theirs: number) => {
+    if (f == null) return;
+    const e = po.get(f) ?? { line: emptyLine(), years: new Set<number>() };
+    e.years.add(year);
+    e.line.gp += 1; e.line.pf += mine; e.line.pa += theirs;
+    if (mine > theirs) e.line.w += 1; else if (mine < theirs) e.line.l += 1; else e.line.t += 1;
+    po.set(f, e);
+  };
+  for (const g of games) {
+    if (g.away_score == null || g.home_score == null) continue;
+    bump(g.away_f, g.year, g.away_score, g.home_score);
+    bump(g.home_f, g.year, g.home_score, g.away_score);
+  }
+  return [...po].map(([f, e]) => ({ f, gp: e.line.gp, w: e.line.w, l: e.line.l, t: e.line.t, pf: e.line.pf, pa: e.line.pa, years: e.years.size }));
 }
 
 const median = (xs: number[]): number => {
@@ -100,20 +122,8 @@ export function buildAllTime(inp: Inputs): { franchises: Franchise[]; first: num
   const titles = new Map<number, Set<number>>();
   for (const c of inp.champs) titles.set(c.franchise_id, (titles.get(c.franchise_id) ?? new Set()).add(c.year));
 
-  const po = new Map<number, { line: Line; years: Set<number> }>();
-  const bump = (f: number | null, year: number, mine: number, theirs: number) => {
-    if (f == null) return;
-    const e = po.get(f) ?? { line: emptyLine(), years: new Set<number>() };
-    e.years.add(year);
-    e.line.gp += 1; e.line.pf += mine; e.line.pa += theirs;
-    if (mine > theirs) e.line.w += 1; else if (mine < theirs) e.line.l += 1; else e.line.t += 1;
-    po.set(f, e);
-  };
-  for (const g of inp.games) {
-    if (g.away_score == null || g.home_score == null) continue;
-    bump(g.away_f, g.year, g.away_score, g.home_score);
-    bump(g.home_f, g.year, g.home_score, g.away_score);
-  }
+  const po = new Map<number, PlayoffTotals>();
+  for (const p of inp.playoffs) po.set(p.f, p);
 
   const by = new Map<number, StandLine[]>();
   for (const r of stand) by.set(r.franchise_id, [...(by.get(r.franchise_id) ?? []), r]);
@@ -147,7 +157,7 @@ export function buildAllTime(inp: Inputs): { franchises: Franchise[]; first: num
     franchises.push({
       f, name: now, former: all.filter((n) => n !== now), abbr: inp.abbr(f, lastYear, now),
       first: marks[0].year, last: lastYear, active: lastYear >= lastActive,
-      seasons: marks.length, reg, po: p?.line ?? emptyLine(), playoffs: p?.years.size ?? 0, titles: [...won].sort((a, b) => a - b),
+      seasons: marks.length, reg, po: p ? { gp: p.gp, w: p.w, l: p.l, t: p.t, otl: 0, pf: p.pf, pa: p.pa } : emptyLine(), playoffs: p?.years ?? 0, titles: [...won].sort((a, b) => a - b),
       years: marks, best: sorted[0] ?? null, worst: sorted.at(-1) ?? null,
     });
   }

@@ -17,6 +17,8 @@ import type { StayRow } from "../src/lib/cityModel.ts";
 import { peopleFromPack, playerLeaguePackSchema } from "../src/lib/playerLeaguePack.ts";
 import { primaryLeague, primaryLeagueBy } from "../src/lib/playerPath.ts";
 import { abbrPackSchema, abbrsFromPack } from "../src/lib/abbrPack.ts";
+import { playoffTotals, type PlayoffGame } from "../src/lib/allTime.ts";
+import { playoffPackSchema, playoffTotalsFromPack } from "../src/lib/playoffPack.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -251,4 +253,18 @@ test("a league's abbreviations come back as the rows of api.team_abbr", () => {
   ];
   const pack = abbrPackSchema.parse({ league: "nhl", franchise_id: col(rows, "franchise_id"), valid_from: col(rows, "valid_from"), valid_to: col(rows, "valid_to"), abbreviation: col(rows, "abbreviation") });
   assert.deepEqual(abbrsFromPack(pack), rows);
+});
+
+test("a league's playoff record comes back as what adding up its playoff games gives", () => {
+  const g = (year: number, away_f: number | null, home_f: number | null, away_score: number | null, home_score: number | null): PlayoffGame => ({ year, away_f, home_f, away_score, home_score });
+  const games = [
+    g(1990, 1, 2, 3, 1), g(1990, 2, 1, 2, 2), g(1991, 2, 1, 0, 5), g(1991, 1, 3, null, 4), g(1991, 1, null, 1, 0), g(1992, 3, 3, 2, 1), g(1992, 4, 1, 0, 0),
+  ];
+  // What migration 188 does, in plain code: a side with no franchise, and a game with a score missing, count for nothing; the seasons are counted once each.
+  const packed = playoffTotals(games).sort((a, b) => a.f - b.f).flatMap((t) => [t.f, t.gp, t.w, t.l, t.t, t.pf, t.pa, t.years]);
+  const decoded = playoffTotalsFromPack(playoffPackSchema.parse({ league: "nhl", franchises: packed }));
+  assert.deepEqual(decoded, playoffTotals(games).sort((a, b) => a.f - b.f));
+  assert.deepEqual(decoded.find((t) => t.f === 1), { f: 1, gp: 5, w: 3, l: 0, t: 2, pf: 11, pa: 3, years: 3 });
+  assert.deepEqual(decoded.find((t) => t.f === 3), { f: 3, gp: 2, w: 1, l: 1, t: 0, pf: 3, pa: 3, years: 1 }, "a club on both sides of one game has both its results");
+  assert.throws(() => playoffTotalsFromPack({ league: "nhl", franchises: [1, 2, 3] }), /whole number/);
 });

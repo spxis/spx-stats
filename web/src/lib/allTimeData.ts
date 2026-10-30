@@ -5,11 +5,12 @@ import { checkRows, rows } from "./api/client";
 import { leagueStandings, standingRows, teamSeasonRows } from "./api/teamSeasons";
 import { franchiseNameSchema } from "./api/schemas";
 import { abbrFor } from "./abbr";
-import { buildAllTime } from "./allTime";
+import { buildAllTime, playoffTotals } from "./allTime";
 import { buildAtList, type AtList } from "./allTimeLines";
 import { brandFor, logoFor, teamAccent } from "./brand";
 import { getAbbrs, getBrands } from "./data";
 import { isOutsideConference } from "./leagues";
+import { leaguePlayoffTotals } from "./playoffPackRead";
 import { byFranchise } from "./standingPack";
 
 const int = z.number(), intN = z.number().nullable();
@@ -18,22 +19,22 @@ const gameSchema = z.object({ year: int, away_f: intN, home_f: intN, away_score:
 const champSchema = z.object({ year: int, franchise_id: int });
 
 /**
- * Every franchise of a league added up: four list requests (the league's team seasons, its playoff games, its title
- * seasons and the franchise names), each kept a day by the API client. Same rows the team pages add up.
+ * Every franchise of a league added up from its team seasons, its playoff record (api.playoff_franchise_pack, migration 188; the league's playoff games added up
+ * while that is a 404), its title seasons and the franchise names, each kept a day by the API client. Same rows the team pages add up.
  */
 export const getAllTime = cache(async (lg: string) => {
   const q = `league=eq.${lg}`;
-  const [stand, games, champs, names, abbrs] = await Promise.all([
+  const [stand, playoffs, champs, names, abbrs] = await Promise.all([
     leagueStandings(lg).then(async (packed) => (packed
       ? checkRows("standing_league_pack", byFranchise(packed), standSchema)
       : await standingRows(`${q}&select=year,franchise_id,team,gp,w,l,t,otl,pf,pa,conference&order=year,franchise_id`, standSchema)).filter((x) => !isOutsideConference(lg, x.conference))),
-    rows("games", `${q}&phase=eq.playoffs&select=year,away_f,home_f,away_score,home_score&order=game_id`, gameSchema),
+    leaguePlayoffTotals(lg).then(async (packed) => packed ?? playoffTotals(await rows("games", `${q}&phase=eq.playoffs&select=year,away_f,home_f,away_score,home_score&order=game_id`, gameSchema))),
     teamSeasonRows(`${q}&champion=is.true&select=year,franchise_id&order=year`, champSchema),
     rows("franchise_names", `${q}&select=*&order=franchise_id,name_from`, franchiseNameSchema),
     getAbbrs(lg),
   ]);
   return buildAllTime({
-    stand, games, champs, names,
+    stand, playoffs, champs, names,
     abbr: (f, year, name) => abbrFor(abbrs, f, year, name),
   });
 });

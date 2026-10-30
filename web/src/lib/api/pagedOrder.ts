@@ -70,6 +70,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   player_search: ["person_id"],
   player_team_search: ["franchise_id", "person_id"],
   player_teams: ["person_id", "franchise_id"],
+  playoff_franchise_pack: ["league"],
   position: ["league", "code"],
   provenance: ["kind", "league", "source", "checked_by", "outcome"],
   quality: ["kind", "source", "entity", "what", "resolution"],
