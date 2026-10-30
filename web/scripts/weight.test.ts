@@ -15,6 +15,7 @@ import { COUNTRIES_HEAD } from "../src/lib/countryLines.ts";
 import { FULL_SHARE, leagueSeasonBars, leagueSeasonRows } from "../src/lib/leagueSeasonRows.ts";
 import { packHeat, unpackHeat, type HeatSeason } from "../src/lib/heatWire.ts";
 import { seasonLabel } from "../src/lib/leagues.ts";
+import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
 
 /**
  * Page weight of the league pages: a league page lists every season, champion and award, and sent them all (the NHL's was 970 KB of HTML against a budget
@@ -368,6 +369,48 @@ test("the home page sends the archive chart as data and draws it in the browser 
   assert.ok(!/setInterval|router\.refresh/.test(chart + read("components/HomeCards.tsx")), "nothing on the home page runs on a timer");
 });
 
+test("an MLS season travels as one short line a match and reads back as the table draws it", () => {
+  const clubs = Array.from({ length: 30 }, (_, i) => ({ id: `C-club-${i}`, slug: `club-${i}`, name: `Club Number ${i} FC` }));
+  const matches: MlsMatchInput[] = Array.from({ length: 520 }, (_, i): MlsMatchInput => {
+    const h = clubs[i % 30], a = clubs[(i * 7 + 3) % 30 === i % 30 ? (i + 1) % 30 : (i * 7 + 3) % 30];
+    return {
+      match_id: 20000 + i, match_date: `2025-0${1 + (i % 9)}-${String(1 + (i % 28)).padStart(2, "0")}`, stage_key: i > 500 ? "round_one" : "regular", stage_order: i > 500 ? 2 : 1,
+      home_team_id: h.id, home: h.name, home_slug: h.slug, home_goals: i % 4, away_team_id: a.id, away: a.name, away_slug: a.slug, away_goals: (i + 1) % 3,
+      extra_time: i % 50 === 0, shootout: i % 100 === 0, home_penalties: i % 100 === 0 ? 4 : null, away_penalties: i % 100 === 0 ? 3 : null, winner_team_id: i % 60 === 0 ? h.id : null,
+      shootout_style: i % 60 === 0 ? "mls" : null, venue_name: i % 11 === 0 ? null : `Ground ${i % 30}`, venue_city: i % 11 === 0 ? null : `City ${i % 30}`,
+      venue_wikidata_id: i % 5 === 0 ? null : `Q${1000 + (i % 30)}`, venue_id: i % 7 === 0 ? null : 1, attendance: i % 13 === 0 ? null : 15000 + i,
+    };
+  });
+  const wire = buildMlsMatches(matches);
+  assert.equal(wire.lines.length, matches.length);
+  assert.equal(wire.c.length, 30, "each club name once");
+  assert.ok(wire.v.length < matches.length / 4, "a ground is listed once, not for every match");
+  assert.ok(JSON.stringify(wire).length < 75 * matches.length, "a match costs well under a hundred bytes in the page");
+  const back = readMlsMatches(wire);
+  for (const [i, m] of matches.entries()) {
+    const b = back[i];
+    assert.equal(b.id, m.match_id); assert.equal(b.date, m.match_date); assert.equal(b.stageOrder, m.stage_order); assert.equal(b.stageKey, m.stage_key);
+    assert.equal(b.home, m.home); assert.equal(b.homeSlug, m.home_slug); assert.equal(b.away, m.away); assert.equal(b.awaySlug, m.away_slug);
+    assert.equal(b.hg, m.home_goals); assert.equal(b.ag, m.away_goals);
+    assert.equal(b.venue, m.venue_name); assert.equal(b.venueCity, m.venue_city); if (m.venue_name) assert.equal(b.venueQid, m.venue_wikidata_id); if (m.venue_name) assert.equal(b.venueLinked, m.venue_id != null);
+    assert.equal(b.crowd, m.attendance ?? 0);
+    const note = m.shootout && m.home_penalties != null ? 2 : m.shootout_style === "mls" && m.winner_team_id ? 3 : m.extra_time ? 1 : 0;
+    assert.equal(b.note, note);
+    if (note === 2) { assert.equal(b.hp, m.home_penalties); assert.equal(b.ap, m.away_penalties); }
+  }
+});
+
+test("the MLS season page sends its matches as lines and keeps every match on a page of its own", () => {
+  assert.ok(MLS_MATCHES_HEAD <= 20, "the table's head is a few rows");
+  const page = read("app/[locale]/s/mls/[year]/page.tsx");
+  assert.ok(page.includes("<MlsMatchesTable") && page.includes("buildMlsMatches(") && !page.includes("matchTable"), "no match table drawn on the server");
+  const table = read("components/MlsMatchesTable.tsx");
+  assert.ok(table.includes("useReveal(") && table.includes("partial="), "the table draws its first rows and shows the rest on request");
+  const all = read("app/[locale]/s/mls/[year]/matches/page.tsx");
+  assert.ok(all.includes("export const revalidate = 2592000;") && all.includes(" full ") && !/searchParams|cookies\(|headers\(/.test(all), "the matches page is every row, kept, reading nothing per request");
+  assert.ok(read("app/[locale]/q/mls/[year]/matches/page.tsx").includes("s/mls/[year]/matches/page"), "the matches page has its twin in q/");
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
  *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
@@ -386,6 +429,12 @@ const ROOT_FLOOR = 45 * 1000;
 const FLOOR_PAGES = [{ path: "/privacy", budget: ROOT_FLOOR }, { path: "/terms", budget: 60 * 1000 }];
 /** The home page: the figures, the archive chart's seasons as packed numbers and a card for each league. It was 471 KB, drawing every square of the chart as markup. */
 const HOME_PAGES = [{ path: "/", budget: 120 * 1000 }];
+
+/** An MLS season: a full season's games was 1,045 KB of HTML (the table drawn as markup and sent again as elements). The season page, and the page of every match. */
+const MLS_PAGES = [
+  ...["1996", "2008", "2020", "2025"].map((y) => ({ path: `/mls/${y}`, budget: PAGE_BUDGET })),
+  ...["2008", "2025"].map((y) => ({ path: `/mls/${y}/matches`, budget: TABLE_BUDGET })),
+];
 
 /** The all-time page of every league (its default view), and the heaviest leagues' table view, which lists every franchise. */
 const ALL_TIME_LEAGUES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl"];
@@ -406,7 +455,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

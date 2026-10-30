@@ -4,6 +4,7 @@
   .soccer { --accent: var(--soccer); }
   .sc-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
   .sct { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+  td.sctc { white-space: nowrap; }
   .sct .flag, .sct svg { flex: none; }
   .head h1 .sct { gap: 12px; }
   .sc-score { font: 700 20px/1 var(--display); letter-spacing: .02em; white-space: nowrap; }

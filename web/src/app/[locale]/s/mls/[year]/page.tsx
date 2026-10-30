@@ -3,6 +3,7 @@ import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
+import { MlsMatchesTable } from "@/components/MlsMatchesTable";
 import { MlsPlayoffs } from "@/components/MlsPlayoffs";
 import { MlsTables } from "@/components/MlsTables";
 import { SortTable } from "@/components/SortTable";
@@ -12,8 +13,9 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { getMlsLeaders, getMlsMatches, getMlsSeasonTeams, getMlsStandings, mlsSeasonOfYear, type Leader } from "@/lib/mls";
-import { MLS_PATH, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
-import { mlsReachRank, mlsReached, mlsScoreLines, mlsStageName } from "@/lib/mlsView";
+import { buildMlsMatches, mlsMatchesPath } from "@/lib/mlsLines";
+import { MLS_PATH, mlsSeasonPath } from "@/lib/mlsPath";
+import { mlsReachRank, mlsReached } from "@/lib/mlsView";
 import { tableOf } from "@/lib/sort";
 import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
@@ -63,22 +65,6 @@ export default guard(async function MlsSeasonPage({ params }: Params) {
     { key: "result", label: say("wc.col.reached"), cls: "team", get: (t) => mlsReachRank(t.performance), cell: (t) => mlsReached(say, t.performance) },
     { key: "venue", label: say("col.venue"), cls: "team", get: (t) => t.venue_name, cell: (t) => <StadiumName name={t.venue_name} qid={t.venue_wikidata_id} rest={t.venue_city ?? undefined} /> },
   ], (t) => t.team_id);
-
-  const matchTable = tableOf(matches, [
-    { key: "date", label: say("col.date"), get: (m) => m.match_date, cell: (m) => day(m.match_date) },
-    { key: "stage", label: say("wc.col.stage"), get: (m) => m.stage_order, cell: (m) => mlsStageName(say, m.stage_key) },
-    { key: "home", label: say("col.home"), cls: "team", get: (m) => m.home, cell: (m) => <MlsClubName slug={m.home_slug} name={m.home} /> },
-    {
-      key: "score", label: say("col.score"), get: (m) => m.home_goals + m.away_goals,
-      cell: (m) => {
-        const sc = mlsScoreLines(say, m);
-        return <Link className="sc-score" href={mlsMatchPath(m.year, m.match_id, m.home, m.away)} prefetch={false}>{sc.main}{sc.note ? <small>{sc.note}</small> : null}</Link>;
-      },
-    },
-    { key: "away", label: say("wc.col.away"), cls: "team", get: (m) => m.away, cell: (m) => <MlsClubName slug={m.away_slug} name={m.away} /> },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={m.venue_city ?? undefined} /> },
-    { key: "crowd", label: say("mls.col.crowd"), num: true, get: (m) => m.attendance ?? null, cell: (m) => (m.attendance ? fmt(m.attendance) : "") },
-  ], (m) => m.match_id);
 
   const board = (category: Leader["category"], title: string, unit: string) => {
     const list = leaders.filter((l) => l.category === category);
@@ -148,7 +134,7 @@ export default guard(async function MlsSeasonPage({ params }: Params) {
       {matches.length ? (
         <section className="section scroll" id="matches">
           <h2>{say("wc.t.matches")}</h2>
-          <div className="tablebox"><SortTable {...matchTable} def="date.asc" param="sort_games" /></div>
+          <MlsMatchesTable year={s.year} wire={buildMlsMatches(matches)} hrefAll={mlsMatchesPath(s.year)} label={say("wc.t.matches")} />
           {s.complete && s.expected_regular != null && s.regular_matches < s.expected_regular ? <p className="note">{say("mls.s.incomplete", { found: s.regular_matches, expected: s.expected_regular })}</p> : null}
           {matches.some((m) => !m.venue_name) ? <p className="note">{say("mls.s.noVenues")}</p> : null}
         </section>
