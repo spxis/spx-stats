@@ -7,6 +7,7 @@ import { namePackSchema, nameRowsFromPack, runsFromPack } from "../src/lib/nameP
 import { latestHomes } from "../src/lib/teamHome.ts";
 import type { CityRef, Placement } from "../src/lib/cityModel.ts";
 import { summaryPackSchema, summaryRowsFromPack } from "../src/lib/summaryPack.ts";
+import { infoRowsFromPack, nameRowsFromPack as venueNamesFromPack, placeRowsFromPack, venuePackSchema } from "../src/lib/venuePack.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -104,4 +105,36 @@ test("the teams list takes the same homes from each club's newest placement as f
   const countryOnly = [{ league: "nhl", year: 2015, f: 2, cc: "CA" }];
   assert.deepEqual([...latestHomes(latest, cities, false, countryOnly)], [...latestHomes(all, cities, false, countryOnly)]);
   assert.deepEqual([...latestHomes(latest, cities, true)], [...latestHomes(all, cities, true)]);
+});
+
+/* The packs of migrations 181 to 187. The packers below do what the migrations do, on a few rows with the awkward cases (nothing known, a name used twice, a missing count). */
+
+const col = <T, K extends keyof T>(rows: T[], k: K): T[K][] => rows.map((r) => r[k]);
+
+test("venue places, facts and names come back as the rows of their views, in the order the site read them", () => {
+  const places = [
+    { league: "nhl", franchise_id: 1, home_venue: "Old Arena", latitude: 40.5, longitude: -74.1, city: "Newark", region: "US-NJ", country_code: "US", wikipedia_title: "Old Arena", wikidata_id: "Q1" },
+    { league: "nhl", franchise_id: 2, home_venue: "Gardens", latitude: 45.5, longitude: -73.5, city: null, region: null, country_code: null, wikipedia_title: null, wikidata_id: null },
+  ];
+  const infos = [
+    { wikidata_id: "Q1", capacity: 17000, opened_year: 1950, closed_year: null, owner: null, surface: "ice", roof: "fixed", address: "1 Main St", postal_code: null, surface_raw: "ice", status: "demolished" },
+    { wikidata_id: "Q9", capacity: null, opened_year: null, closed_year: null, owner: "Town", surface: null, roof: null, address: null, postal_code: "A1A 1A1", surface_raw: null, status: null },
+  ];
+  const names = [
+    { wikidata_id: "Q1", name: "Old Arena", from_year: null, until_year: 1990, is_current: false },
+    { wikidata_id: "Q1", name: "New Arena", from_year: 1990, until_year: null, is_current: true },
+  ];
+  const pack = venuePackSchema.parse({
+    place_league: col(places, "league"), place_franchise_id: col(places, "franchise_id"), place_home_venue: col(places, "home_venue"), place_latitude: col(places, "latitude"),
+    place_longitude: col(places, "longitude"), place_city: col(places, "city"), place_region: col(places, "region"), place_country_code: col(places, "country_code"),
+    place_wikipedia_title: col(places, "wikipedia_title"), place_wikidata_id: col(places, "wikidata_id"),
+    info_wikidata_id: col(infos, "wikidata_id"), info_capacity: col(infos, "capacity"), info_opened_year: col(infos, "opened_year"), info_closed_year: col(infos, "closed_year"),
+    info_owner: col(infos, "owner"), info_surface: col(infos, "surface"), info_roof: col(infos, "roof"), info_address: col(infos, "address"), info_postal_code: col(infos, "postal_code"),
+    info_surface_raw: col(infos, "surface_raw"), info_status: col(infos, "status"),
+    name_wikidata_id: col(names, "wikidata_id"), name_name: col(names, "name"), name_from_year: col(names, "from_year"), name_until_year: col(names, "until_year"), name_is_current: col(names, "is_current"),
+  });
+  assert.deepEqual(placeRowsFromPack(pack), places);
+  assert.deepEqual(infoRowsFromPack(pack), infos);
+  assert.deepEqual(venueNamesFromPack(pack), names);
+  assert.throws(() => placeRowsFromPack({ ...pack, place_city: [] }), /place columns/);
 });

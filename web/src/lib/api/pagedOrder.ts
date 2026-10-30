@@ -131,6 +131,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   venue_home_period: ["venue_id", "franchise_id", "valid_from"],
   venue_info: ["wikidata_id"],
   venue_name: ["wikidata_id", "name"],
+  venue_pack: ["id"],
   venue_period: ["wikidata_id", "kind", "seq"],
   venue_pitch: ["wikidata_id"],
   venue_place: ["league", "franchise_id", "home_venue", "wikidata_id"],

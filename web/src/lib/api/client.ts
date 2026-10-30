@@ -14,6 +14,15 @@ export { ApiError };
 /** Whether a read failed because the view is not on the server (a 404): a migration that has not landed yet, so a caller falls back on the reads it made before. */
 export const viewMissing = (e: unknown): boolean => e instanceof ApiError && e.message.endsWith(": 404");
 
+/** Rows rebuilt from a packed view, each checked against the schema the reader of the view itself uses, so a pack that is wrong fails as a page of rows would. */
+export function checkRows<S extends z.ZodType>(view: string, list: readonly unknown[], schema: S): z.infer<S>[] {
+  return list.map((row) => {
+    const parsed = schema.safeParse(row);
+    if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
+    return parsed.data;
+  });
+}
+
 /** Seconds a request may take before it is given up on and tried again. */
 const TIMEOUT_MS = 8000;
 

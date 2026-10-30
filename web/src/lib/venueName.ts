@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { checkRows, rows } from "./api/client";
 import type { Speaker } from "./i18n/i18n";
 import { COUNTRY_KEY } from "../components/countryKey";
 import { countryAt } from "./country";
@@ -9,6 +9,8 @@ import { formatVenueAddress, type VenueAddress } from "./venueAddress";
 import type { VenuePlace } from "./venuePlace";
 import type { VenueState } from "./venueSurface";
 import { factsText } from "./venueWire";
+import { infoRowsFromPack, nameRowsFromPack } from "./venuePack";
+import { getVenuePack } from "./venuePackRead";
 
 type Say = Speaker["say"];
 
@@ -42,13 +44,16 @@ function settle(spans: VenueSpan[]): VenueSpan[] {
 }
 
 /**
- * The names of every home venue, by Wikidata id (api.venue_place.wikidata_id), oldest first. The view comes with migration 052;
- * until it is on the server, or if it cannot be read, this is empty and the pages show the venue names they showed before.
+ * The names of every home venue, by Wikidata id (api.venue_place.wikidata_id), oldest first, from api.venue_pack (migration 181) or, while that is a 404, api.venue_name
+ * (migration 052); until neither is on the server, or if it cannot be read, this is empty and the pages show the venue names they showed before.
  */
 export const getVenueNames = cache(async (): Promise<Map<string, VenueSpan[]>> => {
   const out = new Map<string, VenueSpan[]>();
   try {
-    for (const r of await rows("venue_name", "select=wikidata_id,name,from_year,until_year,is_current&order=wikidata_id,from_year.nullsfirst,name", nameRow)) {
+    const pack = await getVenuePack();
+    const names = pack ? checkRows("venue_pack", nameRowsFromPack(pack), nameRow)
+      : await rows("venue_name", "select=wikidata_id,name,from_year,until_year,is_current&order=wikidata_id,from_year.nullsfirst,name", nameRow);
+    for (const r of names) {
       const list = out.get(r.wikidata_id) ?? [];
       list.push({ name: r.name, from: r.from_year, until: r.until_year, current: r.is_current });
       out.set(r.wikidata_id, list);
@@ -69,12 +74,26 @@ const INFO_COLUMNS = "wikidata_id,capacity,opened_year,closed_year,owner,surface
 export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> => {
   const out = new Map<string, VenueFacts>();
   let list: z.infer<typeof infoRow>[] = [];
-  for (const extra of [",postal_code,surface_raw,status", ",postal_code", ""]) {
+  let pack: Awaited<ReturnType<typeof getVenuePack>> = null;
+  try {
+    pack = await getVenuePack();
+  } catch {
+    return out;
+  }
+  if (pack) {
     try {
-      list = await rows("venue_info", `select=${INFO_COLUMNS}${extra}&order=wikidata_id`, infoRow);
-      break;
+      list = checkRows("venue_pack", infoRowsFromPack(pack), infoRow);
     } catch {
       list = [];
+    }
+  } else {
+    for (const extra of [",postal_code,surface_raw,status", ",postal_code", ""]) {
+      try {
+        list = await rows("venue_info", `select=${INFO_COLUMNS}${extra}&order=wikidata_id`, infoRow);
+        break;
+      } catch {
+        list = [];
+      }
     }
   }
   for (const r of list) {

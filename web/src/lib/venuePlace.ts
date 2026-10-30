@@ -1,7 +1,9 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { checkRows, rows } from "./api/client";
+import { placeRowsFromPack } from "./venuePack";
+import { getVenuePack } from "./venuePackRead";
 
 /** Where a home venue stands and its Wikipedia article, from api.venue_place; any part can be missing. */
 /** `region` is the state or province code alone ("QC"); `iso` is the whole ISO 3166-2 code ("CA-QC"). */
@@ -17,9 +19,15 @@ export function placeKey(f: number, venue: string | null, lat: number | null, lo
   return venue && lat != null && lon != null ? `${f}|${venue}|${lat.toFixed(5)}|${lon.toFixed(5)}` : null;
 }
 
-/** Every home venue's place of every league: one read (about 600 rows) that every league's pages share. The venue list used to read it once for each league, eleven requests. */
-const getAllPlaceRows = cache(async () =>
-  rows("venue_place", "select=league,franchise_id,home_venue,latitude,longitude,city,region,country_code,wikipedia_title,wikidata_id&order=league,franchise_id,home_venue", placeRow));
+/**
+ * Every home venue's place of every league: one read (about 450 rows) that every league's pages share. It comes from api.venue_pack (migration 181), with the venues'
+ * facts and names; while that is a 404, api.venue_place is read as before.
+ */
+const getAllPlaceRows = cache(async () => {
+  const pack = await getVenuePack();
+  if (pack) return checkRows("venue_pack", placeRowsFromPack(pack), placeRow);
+  return rows("venue_place", "select=league,franchise_id,home_venue,latitude,longitude,city,region,country_code,wikipedia_title,wikidata_id&order=league,franchise_id,home_venue", placeRow);
+});
 
 /**
  * The city, state or province and Wikipedia page of every home venue of a league's clubs. The view comes with migration 035; until
