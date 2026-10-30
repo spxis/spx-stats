@@ -27,6 +27,8 @@ import { deriveTeamGames, gameLine, teamGamesFromLines, teamsIn } from "../src/l
 import { seasonRowsPath } from "../src/lib/teamSeasonRows.ts";
 import { wire as rosterWire } from "../src/lib/rosterWire.ts";
 import type { GameRow, StandingRow } from "../src/lib/api/types.ts";
+import { coachRowsPath, packCoach, unpackCoach, type CoachLeague } from "../src/lib/coachWire.ts";
+import { lineageRowsPath, packLineage, unpackLineage, type LineageLeague } from "../src/lib/lineageWire.ts";
 
 /**
  * Page weight of the league pages: a league page lists every season, champion and award, and sent them all (the NHL's was 970 KB of HTML against a budget
@@ -746,7 +748,9 @@ const KIND_SAMPLES: Record<string, string> = {
   "sources": "/sources",
   "teams": "/teams",
   "teams/coaches": "/teams/coaches",
+  "teams/coaches/rows/[league]": "/teams/coaches/rows/nhl",
   "teams/lineage": "/teams/lineage",
+  "teams/lineage/rows/[league]": "/teams/lineage/rows/nba",
   "terms": "/terms",
   "trophies": "/trophies",
   "venue/[slug]": "/venue/fenway-park",
@@ -769,8 +773,6 @@ const KIND_EXTRA = ["/nhl/2004-05", "/mlb/head-to-head/baltimore-orioles-vs-detr
  */
 const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string }> = {
   "/nhl/2004-05": { kb: 420, ticket: "SPX-799 outage seasons", why: "a season not played: before-and-after tables of every club and roster" },
-  "/teams/coaches": { kb: 420, ticket: "SPX-799 coaches", why: "every coach move of every league travels as props of one chart" },
-  "/teams/lineage": { kb: 340, ticket: "SPX-799 lineage", why: "every lineage of every league travels as props" },
   "/worldcup/2026": { kb: 340, ticket: "SPX-799 worldcup 2026", why: "groups, matches, teams and squads drawn on the server" },
   "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "SPX-800 franchise results", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
 };
@@ -823,3 +825,38 @@ for (const { path, budget } of [...KIND_PAGES, ...FLOOR_PAGES, ...HOME_PAGES, ..
     }
   });
 }
+
+test("the coaches and lineage pages carry no data: a league's moves come from a kept JSON route and travel packed", () => {
+  const coach: CoachLeague = {
+    names: ["", "Boston Bruins", "Chicago Blackhawks"],
+    clubs: { 6: { href: "/nhl/team/boston-bruins", tone: "#fcb514" }, 16: { href: "/nhl/team/chicago-blackhawks", tone: "#cf0a2c" } },
+    careers: [
+      { id: 11, name: "Pat Burns", href: "/nhl/player/pat-burns-11", stints: [{ f: 6, a: 2002, b: 2005, n: 4, s: 1, rec: { w: 100, l: 60, t: 9, otl: 7 }, sole: 4 }, { f: 16, a: 2006, b: 2006, n: 1, s: 2, rec: { w: 0, l: 0, t: 0, otl: 0 }, sole: 0 }] },
+      { id: 12, name: "Other Coach", href: "/nba/player/other-coach-12", stints: [{ f: 6, a: 1990, b: 1991, n: 2, s: 1, rec: { w: 1, l: 2, t: 3, otl: 4 }, sole: 1 }, { f: 16, a: 1992, b: 1992, n: 1, s: 2, rec: { w: 5, l: 6, t: 7, otl: 8 }, sole: 1 }] },
+      { id: 13, name: "No Page", href: null, stints: [{ f: 6, a: 1980, b: 1980, n: 1, s: 1, rec: { w: 0, l: 0, t: 0, otl: 0 }, sole: 0 }, { f: 16, a: 1981, b: 1981, n: 1, s: 2, rec: { w: 0, l: 0, t: 0, otl: 0 }, sole: 0 }] },
+    ],
+  };
+  const packed = packCoach("nhl", coach);
+  assert.deepEqual(unpackCoach("nhl", JSON.parse(JSON.stringify(packed))), coach, "what the route sends builds the same league as the page used to carry");
+  assert.ok(JSON.stringify(packed).length < JSON.stringify(coach).length * 0.6, "packed is well under the object form");
+  assert.equal(packed.k[0][2], "pat-burns-11", "the part every address shares is cut off");
+  assert.equal(packed.k[1][2], "/nba/player/other-coach-12", "an address of another league is kept whole");
+  assert.equal(coachRowsPath("nhl"), "/teams/coaches/rows/nhl");
+
+  const lineage: LineageLeague = {
+    omitted: 2,
+    franchises: [
+      { league: "nba", f: 3, href: "/nba/team/boston-celtics", active: true, first: 1946, last: 2025, seasons: 80, titles: 18, stretches: [{ name: "Boston Celtics", from: 1946, to: 2025, seasons: 80, titles: 18, w: 3500, l: 2500, t: 0, otl: 0 }] },
+      { league: "nba", f: 9, href: "/nba/team/seattle-supersonics", active: false, first: 1967, last: 2007, seasons: 41, titles: 1, stretches: [{ name: "Seattle SuperSonics", from: 1967, to: 2007, seasons: 41, titles: 1, w: 1, l: 2, t: 3, otl: 4 }] },
+    ],
+  };
+  const wire = packLineage("nba", lineage);
+  assert.deepEqual(unpackLineage("nba", JSON.parse(JSON.stringify(wire))), lineage);
+  assert.equal(wire.f[0][1], "boston-celtics");
+  assert.equal(lineageRowsPath("nba"), "/teams/lineage/rows/nba");
+
+  for (const file of ["app/[locale]/s/teams/coaches/page.tsx", "app/[locale]/s/teams/lineage/page.tsx"]) {
+    const src = read(file);
+    assert.doesNotMatch(src, /get(CoachMoves|CoachLeague|Lineage|LineageLeague)/, `${file} reads no data: the chart fetches its league`);
+  }
+});

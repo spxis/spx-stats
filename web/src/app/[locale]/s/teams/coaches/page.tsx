@@ -1,5 +1,4 @@
 import { CoachMoves } from "@/components/CoachMoves";
-import { getCoachMoves } from "@/lib/coachData";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
@@ -15,7 +14,6 @@ export async function generateMetadata() {
 
 export default guard(async function CoachesPage() {
   const { say } = await currentSpeaker();
-  const leagues = await getCoachMoves();
   return (
     <>
       <section className="head fade">
@@ -23,7 +21,7 @@ export default guard(async function CoachesPage() {
         <p className="lede">{say("coaches.lede")}</p>
       </section>
       <section className="section">
-        <CoachMoves leagues={leagues} />
+        <CoachMoves />
       </section>
     </>
   );

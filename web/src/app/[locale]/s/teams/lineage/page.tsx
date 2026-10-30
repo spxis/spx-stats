@@ -1,7 +1,6 @@
 import { FranchiseLineage } from "@/components/FranchiseLineage";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard } from "@/lib/loadGuard";
-import { getLineage } from "@/lib/lineageData";
 import { pageMeta } from "@/lib/meta";
 
 // Kept and revalidated every day. The league, decade and "changed name" choices are read from the address in the browser, so the page
@@ -15,7 +14,6 @@ export async function generateMetadata() {
 
 export default guard(async function LineagePage() {
   const { say } = await currentSpeaker();
-  const data = await getLineage();
   return (
     <>
       <section className="head fade">
@@ -23,7 +21,7 @@ export default guard(async function LineagePage() {
         <p className="lede">{say("lineage.lede")}</p>
       </section>
       <section className="section">
-        <FranchiseLineage franchises={data.franchises} omitted={data.omitted} />
+        <FranchiseLineage />
       </section>
     </>
   );

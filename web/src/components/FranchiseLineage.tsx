@@ -3,31 +3,31 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { addressSearch, readParam, serverSearch, subscribeSearch, writeParams } from "@/lib/addressQuery";
 import { isLeague, LEAGUES, LG, seasonLabel } from "@/lib/leagues";
-import { decadesOf, lineageGraph, MERGERS, pickFranchises, type Franchise } from "@/lib/lineage";
+import { decadesOf, lineageGraph, MERGERS, pickFranchises } from "@/lib/lineage";
+import { lineageRowsPath, unpackLineage, type LineageWire } from "@/lib/lineageWire";
 import { recordText } from "@/lib/record";
 import { seasonPath } from "@/lib/slug";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { SankeyLinkIn, SankeyNodeIn } from "./Sankey";
 import { SankeyLazy } from "./SankeyLazy";
-
-interface Props {
-  franchises: Franchise[];
-  omitted: Record<string, number>;
-}
+import { useFetchedJson } from "./useFetchedJson";
 
 const DEFAULT_LEAGUE = "nhl";
 const NAMES_SHOWN = 8;
 
 /**
  * Where every franchise of a league came from: the season it first appears in, then each name it played under. The league, the
- * decade and "changed name" live in the address (?lg= ?dec= ?chg=1) and are read by the browser, so the page itself stays static.
+ * decade and "changed name" live in the address (?lg= ?dec= ?chg=1) and are read by the browser, so the page itself stays static. The franchises of the league chosen
+ * are fetched from a kept JSON route (/teams/lineage/rows/nhl), not carried by the page.
  */
-export function FranchiseLineage({ franchises, omitted }: Props) {
+export function FranchiseLineage() {
   const { say, plural, fmt } = useSpeaker();
   const search = useSyncExternalStore(subscribeSearch, addressSearch, serverSearch);
   const lgParam = readParam(search, "lg");
   const lg = isLeague(lgParam) ? lgParam : DEFAULT_LEAGUE;
-  const mine = useMemo(() => franchises.filter((f) => f.league === lg), [franchises, lg]);
+  const { state, data: wire } = useFetchedJson<LineageWire>(lineageRowsPath(lg), "data", true);
+  const loaded = useMemo(() => (wire ? unpackLineage(lg, wire) : null), [wire, lg]);
+  const mine = useMemo(() => loaded?.franchises ?? [], [loaded]);
   const decades = useMemo(() => decadesOf(mine), [mine]);
   const decParam = Number(readParam(search, "dec"));
   const decade = decades.includes(decParam) ? decParam : null;
@@ -86,7 +86,7 @@ export function FranchiseLineage({ franchises, omitted }: Props) {
   }, [picked, lg, say, plural, fmt]);
 
   const set = (changes: Record<string, string>) => writeParams(changes);
-  const omittedHere = omitted[lg] ?? 0;
+  const omittedHere = loaded?.omitted ?? 0;
 
   return (
     <div>
@@ -113,6 +113,8 @@ export function FranchiseLineage({ franchises, omitted }: Props) {
           nodes={built.nodes} links={built.links} columnTitles={built.columnTitles} unitPx={22}
           labels={{ hint: say("lineage.hint"), open: (title) => say("sankey.open", { title }), aria: say("lineage.aria", { league: LG[lg] }) }}
         />
+      ) : !loaded ? (
+        state === "failed" || state === "empty" ? <p className="note">{say("load.failed")}</p> : <div className="sk-skeleton" role="status">{say("sankey.loading")}</div>
       ) : <p className="note">{say("lineage.none")}</p>}
       <p className="sk-note">{say("lineage.noteChanged")}{MERGERS[lg] ? ` ${say("lineage.noteMergers")}` : ""}{omittedHere ? ` ${plural("lineage.noteOmitted", omittedHere)}` : ""}</p>
     </div>

@@ -3,27 +3,29 @@
 import { useMemo, useSyncExternalStore } from "react";
 import { addressSearch, readParam, serverSearch, subscribeSearch, writeParams } from "@/lib/addressQuery";
 import { chainsFor, coachGraph, decadesOf, defaultDecade, type Stint } from "@/lib/coachMoves";
-import type { CoachLeague } from "@/lib/coachData";
+import { coachRowsPath, unpackCoach, type CoachWire } from "@/lib/coachWire";
 import { isLeague, LEAGUES, LG, seasonLabel } from "@/lib/leagues";
 import { recordText } from "@/lib/record";
 import { nickname } from "@/lib/series";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { SankeyLinkIn, SankeyNodeIn } from "./Sankey";
 import { SankeyLazy } from "./SankeyLazy";
+import { useFetchedJson } from "./useFetchedJson";
 
 const DEFAULT_LEAGUE = "nhl";
 
 /**
  * How head coaches moved between franchises, league by league: each block is a franchise at a coach's nth job, each band one coach going
  * on to the next. The league and the decade the moves were made in live in the address (?lg= ?dec=, "all" for every decade) and are read
- * by the browser, so the page itself stays static.
+ * by the browser, so the page itself stays static. The moves of the league chosen are fetched from a kept JSON route (/teams/coaches/rows/nhl), not carried by the page.
  */
-export function CoachMoves({ leagues }: { leagues: Record<string, CoachLeague> }) {
+export function CoachMoves() {
   const { say, plural } = useSpeaker();
   const search = useSyncExternalStore(subscribeSearch, addressSearch, serverSearch);
   const lgParam = readParam(search, "lg");
   const lg = isLeague(lgParam) ? lgParam : DEFAULT_LEAGUE;
-  const data = leagues[lg];
+  const { state, data: wire } = useFetchedJson<CoachWire>(coachRowsPath(lg), "data", true);
+  const data = useMemo(() => (wire ? unpackCoach(lg, wire) : null), [wire, lg]);
   const careers = data?.careers;
   const decades = useMemo(() => (careers ? decadesOf(careers) : []), [careers]);
   const decParam = readParam(search, "dec");
@@ -85,6 +87,8 @@ export function CoachMoves({ leagues }: { leagues: Record<string, CoachLeague> }
             labels={{ hint: say("coaches.hint"), open: (title) => say("sankey.open", { title }), aria: say("coaches.aria", { league: LG[lg] }) }}
           />
         </>
+      ) : !data ? (
+        state === "failed" || state === "empty" ? <p className="note">{say("load.failed")}</p> : <div className="sk-skeleton" role="status">{say("sankey.loading")}</div>
       ) : <p className="note">{say("coaches.none")}</p>}
       <p className="sk-note">{say("coaches.note")}</p>
     </div>

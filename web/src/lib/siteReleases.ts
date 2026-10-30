@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.14", date: "2026-10-30", href: "/teams/coaches",
+    title: "Coaches and franchise lineage are a quarter of the weight",
+    text: "The coaches page and the franchise lineage page used to carry every league's data inside the page itself. They now fetch only the league you are looking at, as a small cached file, so the chart appears as soon as that file arrives. Coaches went from 404 to 90 KB, lineage from 324 to 91 KB." },
   { version: "0.170.13", date: "2026-10-30", href: "/wnba",
     title: "The WNBA and PWHL finals show their own trophies",
     text: "The big-game banner and the champion banners of the WNBA and the PWHL now draw the WNBA championship trophy and the Walter Cup, instead of the basketball and hockey cups they borrowed." },
