@@ -93,7 +93,9 @@ def step(state, ok, now, cfg):
         if s["detected"]:
             actions.append(("recovered",))
         # keep last_restart (the hourly limit outlives the incident); everything else starts over
+        # and the run log's beat times (rl_*), or the hourly "probes are answering" entry would be written on every good probe
         keep = {k: s.get(k) for k in ("last_restart", "episode", "synced")}
+        keep.update({k: v for k, v in s.items() if k.startswith("rl_")})
         s = new_state()
         s.update(keep)
         return s, actions

@@ -270,6 +270,37 @@ def test_http():
     srv.shutdown()
 
 
+def test_beat():
+    """60 good probes a minute apart write one run log entry, not 60: the beat time must survive step() and the state file."""
+    rf = W._feed_module()
+    wrote = []
+    real = rf.note
+    rf.note = lambda job, kind, outcome, summary, counts=None, **kw: wrote.append((job, outcome)) or True
+    try:
+        path = os.path.join(tempfile.mkdtemp(prefix="spx-wd-beat-"), "watchdog.json")
+        cfg = W.Config({"WATCHDOG_STATE": path})
+        T0 = 1.8e9
+        state = W.new_state()
+        for i in range(60):
+            state = W.run_once(cfg, state, T0 + i * 60, probe_fn=lambda c: (True, ""))
+            W.save_state(path, state)
+            state = W.load_state(path)  # as tick() does every minute
+        check("beat: 60 good probes in an hour write 1 entry", wrote == [("watchdog", "ok")], wrote)
+        state = W.run_once(cfg, state, T0 + 3600 + 60, probe_fn=lambda c: (True, ""))
+        check("beat: the next hour writes the next one", len(wrote) == 2, wrote)
+        # a failure and a recovery in between do not reset the hour
+        wrote.clear()
+        state = W.new_state()
+        t = 1.8e9
+        state = W.run_once(cfg, state, t, probe_fn=lambda c: (True, ""))
+        state = W.run_once(cfg, state, t + 60, probe_fn=lambda c: (False, "HTTP 503"))
+        state = W.run_once(cfg, state, t + 120, probe_fn=lambda c: (True, ""))
+        state = W.run_once(cfg, state, t + 180, probe_fn=lambda c: (True, ""))
+        check("beat: a short outage inside the hour does not bring a second beat", wrote == [("watchdog", "ok")], wrote)
+    finally:
+        rf.note = real
+
+
 def test_off():
     check("WATCHDOG=0 switches off", not W.Config({"WATCHDOG": "0"}).enabled and W.Config({}).enabled)
 
@@ -278,6 +309,7 @@ if __name__ == "__main__":
     test_machine()
     test_loop()
     test_http()
+    test_beat()
     test_off()
     print("\n%s" % ("all passed" if not FAILED else "FAILED: " + ", ".join(FAILED)))
     sys.exit(1 if FAILED else 0)
