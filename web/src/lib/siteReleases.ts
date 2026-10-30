@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.4", date: "2026-10-30", href: "/nhl/all-time",
+    title: "All-time tables read each club's playoff record, not every playoff game",
+    text: "A league's all-time page used to read every playoff game of the league (about 375 KB in six requests for the NHL) only to add up each club's playoff record. It now reads one short precomputed row for the league, about 1 KB. The figures on the page are the same for all 22 leagues."
+  },
   { version: "0.174.3", date: "2026-10-30", href: "/nhl/all-time",
     title: "League tables read less on a first visit",
     text: "Venues, a league's standings, award winners and alignment, the cities' clubs, team abbreviations and the leagues of players who played in more than one each come from one precomputed list instead of several requests that repeated their column names. A first visit to a league page reads up to 85 percent fewer bytes for these; nothing on a page changes."
