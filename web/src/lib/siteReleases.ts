@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.3", date: "2026-10-30", href: "/ncaaf/all-time",
+    title: "All-time pages are lighter",
+    text: "A league's all-time page carries about a third of the data it did. The table opens on its first franchises and the rest load when you press Show all or sort another way; the lists under the bars and the scatter and season charts load as you reach them. It looks and works the same." },
   { version: "0.168.2", date: "2026-10-30",
     title: "Player pages are lighter",
     text: "A player's page carries about a third less data. The league figures behind ranks, percentiles and the radar load just after the page opens, and the career strip and seasons table are drawn as you reach them. It looks and works the same." },

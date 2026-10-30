@@ -6,7 +6,9 @@ import { standingRows, teamSeasonRows } from "./api/teamSeasons";
 import { franchiseNameSchema } from "./api/schemas";
 import { abbrFor } from "./abbr";
 import { buildAllTime } from "./allTime";
-import { getAbbrs } from "./data";
+import { buildAtList, type AtList } from "./allTimeLines";
+import { brandFor, logoFor, teamAccent } from "./brand";
+import { getAbbrs, getBrands } from "./data";
 import { isOutsideConference } from "./leagues";
 
 const int = z.number(), intN = z.number().nullable();
@@ -30,5 +32,14 @@ export const getAllTime = cache(async (lg: string) => {
   return buildAllTime({
     stand, games, champs, names,
     abbr: (f, year, name) => abbrFor(abbrs, f, year, name),
+  });
+});
+
+/** A league's all-time table as plain data (lib/allTimeLines.ts): every franchise as one line, with its current logo and its colours. */
+export const getAllTimeList = cache(async (lg: string): Promise<AtList> => {
+  const [data, brands] = await Promise.all([getAllTime(lg), getBrands()]);
+  return buildAtList(data.franchises, {
+    logo: (f) => logoFor(brands, f),
+    tone: (f) => { const a = teamAccent(brandFor(brands, f)); return { tl: a.light, td: a.dark }; },
   });
 });

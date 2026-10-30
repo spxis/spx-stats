@@ -6,6 +6,10 @@ import { CHAMP_HEAD, buildChampLines, champHead, champNoteText, champPagePath, c
 import { packBoard } from "../src/lib/playerBoardWire.ts";
 import { clubInfoKey, type BoardData } from "../src/lib/playerBoard.ts";
 import { packTable, unpackTable, type SlugTable } from "../src/lib/slug.ts";
+import { barItems, barRows, type BarCtx } from "../src/lib/allTimeBars.ts";
+import type { Franchise, SeasonMark } from "../src/lib/allTime.ts";
+import { AT_HEAD, atGrid, atKeys, atPoints, atSort, buildAtList, lineAt, pickAt, resolveAt, shownAt, allTimeRestPath } from "../src/lib/allTimeLines.ts";
+import { sortRows } from "../src/lib/sort.ts";
 import { FULL_SHARE, leagueSeasonBars, leagueSeasonRows } from "../src/lib/leagueSeasonRows.ts";
 
 /**
@@ -143,6 +147,7 @@ test("the league page keeps its long lists out of the page and its drawings in t
 /** The HTML budget of a public page, in bytes, as the page is served (no compression). A player with a long career is the heaviest page the site has. */
 const PAGE_BUDGET = 300 * 1000;
 const PLAYER_BUDGET = 250 * 1000;
+const TABLE_BUDGET = 300 * 1000;
 
 test("a long career travels as a few kilobytes: names, logos and colours once, the league's figures not at all", () => {
   const clubs: BoardData["clubs"] = {};
@@ -177,12 +182,100 @@ test("a player's page leaves the league's figures, the strip and the seasons tab
   assert.ok(read("app/[locale]/q/[league]/player/[player]/page.tsx").includes("<PlayerBoard wire={board}"), "the page hands the board its packed form");
 });
 
+/** A league of 60 franchises with 40 to 130 seasons each, as the all-time table adds them up. */
+const franchise = (f: number): Franchise => {
+  const first = 1900 + (f % 40) * 2, last = f % 3 === 0 ? 2025 : first + 30 + (f % 50);
+  const years: SeasonMark[] = [];
+  for (let year = first; year <= last; year++) {
+    if (f % 7 === 0 && year % 11 === 0) continue;
+    const w = 30 + ((year * f) % 30), l = 82 - w;
+    years.push({ year, gp: 82, w, l, t: 0, otl: 0, share: w / 82, champion: (year * f) % 31 === 0, eligible: year !== 1999 });
+  }
+  const reg = years.reduce((a, m) => ({ ...a, gp: a.gp + m.gp, w: a.w + m.w, l: a.l + m.l, pf: a.pf + m.w * 3, pa: a.pa + m.l * 3 }), { gp: 0, w: 0, l: 0, t: 0, otl: 0, pf: 0, pa: 0 });
+  const ranked = years.filter((m) => m.eligible);
+  return {
+    f, name: `Franchise number ${f} of the league`, former: f % 5 === 0 ? ["An Older Name", "A Name Before That"] : [], abbr: `F${f}`, first: years[0].year, last: years.at(-1)!.year, active: f % 3 === 0,
+    seasons: years.length, reg, po: { gp: f % 4 ? 40 : 0, w: 20, l: 20, t: 0, otl: 0, pf: 100, pa: 100 }, playoffs: f % 4 ? 9 : 0, titles: years.filter((m) => m.champion).map((m) => m.year),
+    years, best: ranked.reduce((a, m) => ((m.share ?? 0) > (a.share ?? 0) ? m : a)), worst: ranked.reduce((a, m) => ((m.share ?? 1) < (a.share ?? 1) ? m : a)),
+  };
+};
+const LEAGUE = Array.from({ length: 60 }, (_, i) => franchise(i + 1));
+const atLook = { logo: (f: number) => `https://upload.wikimedia.org/wikipedia/en/thumb/a/ab/Franchise_${f % 20}_logo.svg/250px-Franchise_${f % 20}_logo.svg.png`, tone: (f: number) => ({ tl: f % 2 ? "0a2351" : null, td: "ffb81c" }) };
+
+test("the all-time table travels as a short line a franchise, the first few in the page", () => {
+  assert.ok(AT_HEAD <= 15, "the page carries a few franchises");
+  const list = buildAtList(LEAGUE, atLook);
+  assert.equal(list.lines.length, 60);
+  assert.equal(list.logos.length, 20, "each logo address is written once");
+  const bytes = JSON.stringify(list.lines).length / list.lines.length;
+  assert.ok(bytes < 900, `a franchise is ${Math.round(bytes)} bytes on the wire`);
+  assert.equal(allTimeRestPath("nhl"), "/nhl/rows/all-time");
+  const rows = resolveAt(list);
+  const head = pickAt(sortRows(shownAt(rows, "r", false), [{ key: "w", dir: "desc" }], (t, k) => atSort(t, k, "r")).slice(0, AT_HEAD));
+  assert.equal(head.lines.length, AT_HEAD);
+  assert.ok(head.logos.length <= AT_HEAD, "the other franchises' logos are not in the page");
+  assert.ok(JSON.stringify(head).length < 12000, "the head of the table is a few KB");
+  for (const l of head.lines) if (l.lo != null) assert.ok(l.lo < head.logos.length);
+  assert.deepEqual(resolveAt(head).map((t) => [t.f, t.logo]), sortRows(shownAt(rows, "r", false), [{ key: "w", dir: "desc" }], (t, k) => atSort(t, k, "r")).slice(0, AT_HEAD).map((t) => [t.f, t.logo]));
+});
+
+test("a line gives back the franchise's record, win shares and seasons", () => {
+  const list = buildAtList(LEAGUE, atLook);
+  const rows = resolveAt(list);
+  for (const t of LEAGUE) {
+    const row = rows.find((r) => r.f === t.f)!;
+    assert.deepEqual(lineAt(row, "r"), t.reg);
+    assert.deepEqual(lineAt(row, "p"), t.po);
+    assert.equal(atSort(row, "diff", "r"), t.reg.pf - t.reg.pa);
+    assert.equal(atSort(row, "titles", "r"), t.titles.length);
+    assert.equal(row.s, t.seasons);
+    assert.deepEqual(atGrid(row).map((g) => g[0]), t.years.map((m) => m.year), "a season for each year played, none for a year off");
+    assert.deepEqual(atGrid(row).map((g) => g[2]), t.years.map((m) => (m.champion ? 1 : 0)));
+    assert.deepEqual(atGrid(row).map((g) => g[1] < 0), t.years.map((m) => !m.eligible || m.share == null), "a season too short to rate is -1");
+    assert.deepEqual(atPoints(row).map((p) => p[0]), t.years.filter((m) => m.eligible).map((m) => m.year));
+    assert.ok(Math.abs(atPoints(row)[0][1] - t.years.find((m) => m.eligible)!.share!) < 0.0006);
+    assert.deepEqual(row.b, [t.best!.year, t.best!.share!], "the sorts by best and worst season see the exact shares");
+  }
+});
+
+test("the order of the whole list is kept by the lines, whichever are in the page", () => {
+  const rows = resolveAt(buildAtList(LEAGUE, atLook));
+  const shuffled = [...rows].reverse();
+  assert.deepEqual(shownAt(shuffled, "r", false).map((t) => t.f), [...LEAGUE].sort((a, b) => a.first - b.first || a.name.localeCompare(b.name)).map((t) => t.f));
+  assert.ok(shownAt(rows, "p", false).every((t) => t.p[0] > 0), "a franchise with no playoff game is left out of the playoff view");
+  assert.ok(shownAt(rows, "r", true).every((t) => t.on));
+  assert.deepEqual(atKeys(false, false).slice(0, 3), ["team", "years", "seasons"]);
+});
+
+test("the bars rank the lines as the page always has, the first ones in the page and the rest on request", () => {
+  const rows = resolveAt(buildAtList(LEAGUE, atLook));
+  const ctx: BarCtx = { lg: "nhl", phase: "r", active: false, paths: { team: (lg, f) => `/${lg}/team/${f}`, teamSeason: () => "", season: () => "", slug: () => "" }, fmt: String, plural: (_k, n) => `${n} seasons` };
+  const share = barItems("share", rows, ctx);
+  assert.ok(share.length > 10 && share.every((i, k) => k === 0 || i.value <= share[k - 1].value), "best win share first");
+  assert.ok(share.every((i) => i.tip.startsWith(i.name)));
+  const titles = barRows("titles", rows, "r", false);
+  assert.ok(titles.every((t) => t.ti?.length) && titles.every((t, k) => k === 0 || t.ti!.length <= titles[k - 1].ti!.length));
+  assert.ok(barRows("playoffs", rows, "p", true).every((t) => t.on && t.po));
+});
+
+test("the all-time page keeps its long lists and drawings out of the page", () => {
+  const page = read("app/[locale]/q/[league]/all-time/page.tsx");
+  assert.ok(page.includes("<AllTimeTable") && page.includes("<AllTimeChartLazy") && page.includes("<AllTimeBars"));
+  assert.ok(!page.includes("<SortTable") && !page.includes("<SeasonGrid") && !page.includes("<WinLossScatter") && !page.includes("<Spark"), "no table, chart or spark drawn on the server");
+  assert.ok(page.includes("ordered.slice(0, AT_HEAD)"), "the overview carries only the first franchises of the table");
+  const route = read("app/[locale]/s/[league]/rows/all-time/route.ts");
+  assert.ok(route.includes("export const revalidate = 2592000;") && !/searchParams|cookies\(|headers\(/.test(route), "the rest of the franchises come from a kept route that reads nothing per request");
+  assert.ok(read("components/AllTimeChartLazy.tsx").includes("useSeen") && read("components/AllTimeChartLazy.tsx").includes("ssr: false"), "the charts are drawn in the browser when near");
+  assert.ok(read("components/AllTimeBars.tsx").includes("onToggle"), "the rest of the bars load when the disclosure is opened");
+  assert.ok(read("components/AllTimeTable.tsx").includes("partial="), "the table shows all franchises on request");
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
- *   PLAYER_PAGES_URL=http://localhost:7705 pnpm test:weight
+ *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
  * Skipped when the variable is not set.
  */
-const LIVE = process.env.PLAYER_PAGES_URL;
+const LIVE = process.env.PAGES_URL ?? process.env.PLAYER_PAGES_URL;
 const PLAYER_PAGES: { path: string; budget: number }[] = [
   { path: "/mlb/player/156", budget: PLAYER_BUDGET },
   { path: "/nhl/player/1866", budget: PLAYER_BUDGET },
@@ -190,8 +283,14 @@ const PLAYER_PAGES: { path: string; budget: number }[] = [
   { path: "/mlb/player/41518", budget: PAGE_BUDGET },
   { path: "/worldcup/player/76534", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of PLAYER_PAGES) {
-  test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PLAYER_PAGES_URL to measure a running site" }, async () => {
+/** The all-time page of every league (its default view), and the heaviest leagues' table view, which lists every franchise. */
+const ALL_TIME_LEAGUES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl"];
+const ALL_TIME_PAGES = [
+  ...ALL_TIME_LEAGUES.map((lg) => ({ path: `/${lg}/all-time`, budget: PAGE_BUDGET })),
+  ...["nhl", "nba", "mlb", "nfl", "ncaaf"].flatMap((lg) => [{ path: `/${lg}/all-time?view=table`, budget: TABLE_BUDGET }, { path: `/${lg}/all-time?view=charts`, budget: PAGE_BUDGET }]),
+];
+for (const { path, budget } of [...PLAYER_PAGES, ...ALL_TIME_PAGES]) {
+  test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);
     const bytes = (await res.arrayBuffer()).byteLength;
