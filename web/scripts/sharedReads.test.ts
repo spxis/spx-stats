@@ -12,6 +12,8 @@ import { byFranchise, standingPackSchema, standingsFromPack } from "../src/lib/s
 import { awardPackSchema, awardsFromPack, sourceCounts } from "../src/lib/awardPack.ts";
 import { alignmentFromPack, alignmentPackSchema } from "../src/lib/alignmentPack.ts";
 import type { AlignmentRow } from "../src/lib/alignment.ts";
+import { cityStayPackSchema, stayRowsFromPack } from "../src/lib/cityStayPack.ts";
+import type { StayRow } from "../src/lib/cityModel.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -184,4 +186,31 @@ test("a league's alignment comes back as the rows of api.alignment", () => {
     league: "nhl", conferences: confs.map((c) => c[0]), conference_shorts: confs.map((c) => c[1]), divisions: divs.map((d) => d[0]), division_shorts: divs.map((d) => d[1]), teams, seasons: flat,
   }));
   assert.deepEqual(decoded, rows);
+});
+
+test("the stays of the cities come back as the rows of api.city_stay, with and without ties and overtime losses", () => {
+  const stays: StayRow[] = [
+    { league: "mlb", franchise_id: 1, city_slug: "boston", name: "Red Sox", names: ["Americans", "Red Sox"], first_year: 1901, last_year: 1904, active: false,
+      runs: [[1901, 1904]], rows: [[1901, 0, 79, 57, 0, 0], [1902, 1, 77, 60, 0, 0], [1904, 0, -1, -1, 0, 0]], title_teams: ["Americans"] },
+    { league: "nfl", franchise_id: 2, city_slug: "boston", name: "Patriots", names: ["Patriots"], first_year: 1960, last_year: 1961, active: true,
+      runs: [[1960, 1961]], rows: [[1960, 0, 5, 9, 0, 0], [1961, 0, 9, 4, 1, 0]], title_teams: [] },
+    { league: "nhl", franchise_id: 3, city_slug: "boston", name: "Bruins", names: ["Bruins"], first_year: 2000, last_year: 2003, active: true,
+      runs: [[2000, 2000], [2003, 2003]], rows: [[2000, 0, 40, 30, 5, 7], [2003, 1, 41, 31, 0, 10]], title_teams: ["Bruins"] },
+    { league: "nhl", franchise_id: 4, city_slug: "boston", name: "", names: [], first_year: 1999, last_year: 1999, active: false, runs: [], rows: [], title_teams: [] },
+  ];
+  // what migration 185 does
+  const seasons = (s: StayRow) => {
+    const ties = s.rows.some((r) => r[4] !== 0), otl = s.rows.some((r) => r[5] !== 0);
+    let prev = s.first_year;
+    return { columns: (ties ? 1 : 0) + (otl ? 2 : 0), flat: s.rows.flatMap((r) => { const dy = r[0] - prev; prev = r[0]; return [dy * 2 + r[1], r[2], r[3], ...(ties ? [r[4]] : []), ...(otl ? [r[5]] : [])]; }) };
+  };
+  const packed = stays.map(seasons);
+  const pack = cityStayPackSchema.parse({
+    league: col(stays, "league"), franchise_id: col(stays, "franchise_id"), city_slug: col(stays, "city_slug"), name: col(stays, "name"), first_year: col(stays, "first_year"),
+    last_year: col(stays, "last_year"), active: col(stays, "active"), columns: packed.map((p) => p.columns),
+    names_n: stays.map((s) => s.names.length), runs_n: stays.map((s) => s.runs.length * 2), seasons_n: packed.map((p) => p.flat.length), title_teams_n: stays.map((s) => s.title_teams.length),
+    names: stays.flatMap((s) => s.names), runs: stays.flatMap((s) => s.runs.flat()), seasons: packed.flatMap((p) => p.flat), title_teams: stays.flatMap((s) => s.title_teams),
+  });
+  assert.deepEqual(stayRowsFromPack(pack), stays);
+  assert.throws(() => stayRowsFromPack({ ...pack, title_teams: [] }), /title names/);
 });

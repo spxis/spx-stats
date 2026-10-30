@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows, rowsSlice, viewMissing } from "./api/client";
+import { ApiError, checkRows, rows, rowsSlice, viewMissing } from "./api/client";
+import { cityStayPackSchema, stayRowsFromPack } from "./cityStayPack";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { buildStays, staysFromRows, unitOf, type CityRef, type ClubSeason, type Placement, type Stay } from "./cityModel";
 import { withCupTitles } from "./cup";
@@ -39,10 +40,16 @@ const stayRow = z.object({
 });
 
 /**
- * The clubs of every city with their seasons there (api.city_stay, migration 168: one request). While the view is a 404 they are added up here from every
+ * The clubs of every city with their seasons there (api.city_stay_pack, migration 185: one request; else api.city_stay, migration 168). While both are a 404 they are added up here from every
  * placement and every club season (about thirty requests), as the city pages did before.
  */
 const getCityStays = cache(async (): Promise<Stay[]> => {
+  try {
+    const [pack] = await rows("city_stay_pack", "select=*&order=id", cityStayPackSchema);
+    if (pack) return staysFromRows(checkRows("city_stay_pack", stayRowsFromPack(pack), stayRow));
+  } catch (e) {
+    if (!viewMissing(e)) throw e;
+  }
   try {
     return staysFromRows(await rows("city_stay", "select=league,franchise_id,city_slug,name,names,first_year,last_year,active,runs,rows,title_teams&order=league,franchise_id,city_slug", stayRow));
   } catch (e) {
