@@ -1,14 +1,19 @@
 import "server-only";
 import { cache } from "react";
-import { countRows, rows } from "./api/client";
-import { standingRows } from "./api/teamSeasons";
+import { checkRows, countRows, rows } from "./api/client";
+import { leagueStandings, standingRows } from "./api/teamSeasons";
 import { leaderStandingSchema, leaderStatSchema, personNameSchema, type LeaderStat } from "./api/leaders";
 import { isOutsideConference } from "./leagues";
 import type { PlayerGroupId } from "./leaderPlayers";
 
 /** Every standings row of a league, all seasons, trimmed to the columns the leaders use (a few pages, kept a day). */
-export const getLeagueStandings = cache(async (lg: string) =>
-  (await standingRows(`league=eq.${lg}&select=year,team_id,franchise_id,team,gp,w,l,t,otl,pts,pf,pa,conference&order=year,team_id`, leaderStandingSchema)).filter((r) => !isOutsideConference(lg, r.conference)));
+export const getLeagueStandings = cache(async (lg: string) => {
+  const packed = await leagueStandings(lg);
+  const list = packed
+    ? checkRows("standing_league_pack", packed, leaderStandingSchema)
+    : await standingRows(`league=eq.${lg}&select=year,team_id,franchise_id,team,gp,w,l,t,otl,pts,pf,pa,conference&order=year,team_id`, leaderStandingSchema);
+  return list.filter((r) => !isOutsideConference(lg, r.conference));
+});
 
 /** The regular-season counting stats of one stat group in a league season, a row for each club a player played for. The club's name is left out: asking the view for it is what makes it slow. */
 export const getSeasonStats = cache(async (lg: string, y: number, group: PlayerGroupId): Promise<LeaderStat[]> =>

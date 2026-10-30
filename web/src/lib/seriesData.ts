@@ -1,8 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
-import { standingRows } from "./api/teamSeasons";
+import { checkRows, rows } from "./api/client";
+import { leagueStandings, standingRows } from "./api/teamSeasons";
 import { gameSchema, playoffShapeSchema, standingSchema } from "./api/schemas";
 import { hasSeries } from "./leagues";
 import { getSummary, seasonGamesAsked } from "./data";
@@ -102,7 +102,7 @@ export const getLeaguePlayoffTeams = cache(async (lg: string, year?: number): Pr
   }
   const [champs, clubs] = await Promise.all([
     rows("season_summary", `league=eq.${lg}&champion_franchise=not.is.null&select=year,champion_franchise&order=year`, champSchema),
-    standingRows(`league=eq.${lg}&select=year,team_id,franchise_id,team&order=year,team_id`, clubSchema),
+    leagueStandings(lg).then(async (packed) => packed ? checkRows("standing_league_pack", packed, clubSchema) : await standingRows(`league=eq.${lg}&select=year,team_id,franchise_id,team&order=year,team_id`, clubSchema)),
   ]);
   const champOf = new Map(champs.map((c) => [c.year, c.champion_franchise]));
   const club = new Map<number, { franchise_id: number; team: string | null }>(clubs.map((c) => [c.team_id, c]));

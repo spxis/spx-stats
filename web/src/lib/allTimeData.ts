@@ -1,8 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
-import { standingRows, teamSeasonRows } from "./api/teamSeasons";
+import { checkRows, rows } from "./api/client";
+import { leagueStandings, standingRows, teamSeasonRows } from "./api/teamSeasons";
 import { franchiseNameSchema } from "./api/schemas";
 import { abbrFor } from "./abbr";
 import { buildAllTime } from "./allTime";
@@ -10,6 +10,7 @@ import { buildAtList, type AtList } from "./allTimeLines";
 import { brandFor, logoFor, teamAccent } from "./brand";
 import { getAbbrs, getBrands } from "./data";
 import { isOutsideConference } from "./leagues";
+import { byFranchise } from "./standingPack";
 
 const int = z.number(), intN = z.number().nullable();
 const standSchema = z.object({ year: int, franchise_id: int, team: z.string().nullable(), gp: intN, w: intN, l: intN, t: intN, otl: intN, pf: intN, pa: intN, conference: z.string().nullish() });
@@ -23,7 +24,9 @@ const champSchema = z.object({ year: int, franchise_id: int });
 export const getAllTime = cache(async (lg: string) => {
   const q = `league=eq.${lg}`;
   const [stand, games, champs, names, abbrs] = await Promise.all([
-    standingRows(`${q}&select=year,franchise_id,team,gp,w,l,t,otl,pf,pa,conference&order=year,franchise_id`, standSchema).then((r) => r.filter((x) => !isOutsideConference(lg, x.conference))),
+    leagueStandings(lg).then(async (packed) => (packed
+      ? checkRows("standing_league_pack", byFranchise(packed), standSchema)
+      : await standingRows(`${q}&select=year,franchise_id,team,gp,w,l,t,otl,pf,pa,conference&order=year,franchise_id`, standSchema)).filter((x) => !isOutsideConference(lg, x.conference))),
     rows("games", `${q}&phase=eq.playoffs&select=year,away_f,home_f,away_score,home_score&order=game_id`, gameSchema),
     teamSeasonRows(`${q}&champion=is.true&select=year,franchise_id&order=year`, champSchema),
     rows("franchise_names", `${q}&select=*&order=franchise_id,name_from`, franchiseNameSchema),

@@ -8,6 +8,7 @@ import { latestHomes } from "../src/lib/teamHome.ts";
 import type { CityRef, Placement } from "../src/lib/cityModel.ts";
 import { summaryPackSchema, summaryRowsFromPack } from "../src/lib/summaryPack.ts";
 import { infoRowsFromPack, nameRowsFromPack as venueNamesFromPack, placeRowsFromPack, venuePackSchema } from "../src/lib/venuePack.ts";
+import { byFranchise, standingPackSchema, standingsFromPack } from "../src/lib/standingPack.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -137,4 +138,17 @@ test("venue places, facts and names come back as the rows of their views, in the
   assert.deepEqual(infoRowsFromPack(pack), infos);
   assert.deepEqual(venueNamesFromPack(pack), names);
   assert.throws(() => placeRowsFromPack({ ...pack, place_city: [] }), /place columns/);
+});
+
+test("a league's standings come back as the rows of api.standing_index, in both orders the readers ask for", () => {
+  const row = (year: number, team_id: number, franchise_id: number, team: string | null, conference: string | null, w: number | null) =>
+    ({ year, team_id, franchise_id, team, gp: 82, w, l: 10, t: 0, otl: null, pts: 90, pf: 250, pa: 200, conference });
+  const rows = [row(2000, 5, 9, "Bruins", "East", 40), row(2000, 7, 3, "Canadiens", null, null), row(2001, 4, 9, null, "East", 41), row(2001, 6, 3, "Canadiens", "West", 30)];
+  const names = ["Bruins", "Canadiens"], confs = ["East", "West"];
+  const flat = rows.flatMap((r) => [r.year, r.team_id, r.franchise_id, r.team == null ? null : names.indexOf(r.team), r.gp, r.w, r.l, r.t, r.otl, r.pts, r.pf, r.pa, r.conference == null ? null : confs.indexOf(r.conference)]);
+  const decoded = standingsFromPack(standingPackSchema.parse({ league: "nhl", teams: names, conferences: confs, standings: flat }));
+  assert.deepEqual(decoded, rows);
+  assert.deepEqual(byFranchise(decoded).map((r) => r.team_id), [7, 5, 6, 4], "year, then franchise_id, then team_id");
+  assert.throws(() => standingsFromPack({ league: "nhl", teams: [], conferences: [], standings: [1, 2, 3] }), /whole number/);
+  assert.throws(() => standingsFromPack({ league: "nhl", teams: [], conferences: [], standings: [...flat.slice(0, 3), 4, ...flat.slice(4, 13)] }), /club name 4/);
 });

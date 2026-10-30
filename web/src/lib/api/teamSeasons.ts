@@ -1,6 +1,8 @@
 import "server-only";
+import { cache } from "react";
 import type { z } from "zod";
-import { ApiError, rows } from "./client";
+import { ApiError, rows, viewMissing } from "./client";
+import { standingPackSchema, standingsFromPack, type PackedStanding } from "../standingPack";
 
 /**
  * Reads a precomputed copy of a live view (migration 036). The copy is missing until that migration has run, and PostgREST
@@ -20,3 +22,17 @@ export const teamSeasonRows = <S extends z.ZodType>(query: string, schema: S) =>
 
 /** Rows of api.standings, from api.standing_index. */
 export const standingRows = <S extends z.ZodType>(query: string, schema: S) => fromIndex("standing_index", "standings", query, schema);
+
+/**
+ * Every club season of a league (year, team_id, franchise_id, team, gp, w, l, t, otl, pts, pf, pa, conference) ordered by year then team_id, once for a page, from
+ * api.standing_league_pack (migration 182). Null while that is a 404, so the reader asks for the rows of api.standing_index as before.
+ */
+export const leagueStandings = cache(async (lg: string): Promise<PackedStanding[] | null> => {
+  try {
+    const [pack] = await rows("standing_league_pack", `league=eq.${lg}&select=league,teams,conferences,standings&order=league`, standingPackSchema);
+    return pack ? standingsFromPack(pack) : [];
+  } catch (e) {
+    if (!viewMissing(e)) throw e;
+    return null;
+  }
+});
