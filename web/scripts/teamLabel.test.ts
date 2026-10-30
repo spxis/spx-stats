@@ -63,8 +63,8 @@ const TEAM_LABELS = [
   "col.team", "col.opponent", "col.champion", "col.home", "col.away", "h2h.home", "h2h.away", "h2h.col.home", "h2h.col.away", "h2h.col.teams",
   "wc.col.away", "wc.col.runnerUp", "past.winner", "mls.col.name", "mls.col.shield", "mls.col.cup",
 ];
-/** What may draw a team in such a cell: the logo with its link, a national team's flag with its link, a club with no logo held, a logo alone, or a page's own `team(`/`club(` helper that returns a TeamLabel. */
-const TEAM_CELL = /<TeamLabel\b|<SoccerTeamName\b|<MlsClubName\b|<TeamLogo\b|\b(?:team|club)\(/;
+/** What may draw a team in such a cell: the logo with its link, a national team's flag with its link, a club with no logo held (a European club: its crest is not ours to draw), a logo alone, or a page's own `team(`/`club(` helper that returns a TeamLabel. */
+const TEAM_CELL = /<TeamLabel\b|<SoccerTeamName\b|<MlsClubName\b|<EuropeClubName\b|<TeamLogo\b|\b(?:team|club)\(/;
 
 /** The table columns (a `{ key, label, cls: "team", get, cell }` object) that name a team but show the bare string: no `cell`, or a cell that is plain text or a bare link. */
 export function bareTeamColumns(code: string): string[] {
@@ -106,6 +106,7 @@ test("the column scanner flags a bare team string and passes a label, a flag nam
   assert.equal(bareTeamColumns('{ key: "team", label: say("col.team"), cls: "team", get: (r) => r.team, cell: (r) => <TeamLabel lg={lg} f={r.f} name={r.team} logo={null} /> }').length, 0);
   assert.equal(bareTeamColumns('{ key: "home", label: say("col.home"), cls: "team", get: (m) => m.home, cell: (m) => <SoccerTeamName slug={m.s} name={m.home} flag={m.f} /> }').length, 0);
   assert.equal(bareTeamColumns('{ key: "club", label: say("col.team"), cls: "team", get: (c) => c.name, cell: (c) => <MlsClubName slug={c.slug} name={c.name} /> }').length, 0);
+  assert.equal(bareTeamColumns('{ key: "club", label: say("col.team"), cls: "team", get: (t) => t.name, cell: (t) => <EuropeClubName slug={t.slug} name={t.name} /> }').length, 0);
   // Not a team: a venue, a player, a record or a manager carries the same class or label words.
   assert.equal(bareTeamColumns('{ key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.v }').length, 0);
   assert.equal(bareTeamColumns('{ key: "name", label: say("col.name"), cls: "team", get: (p) => p.name, cell: (p) => <Link href={h}>{p.name}</Link> }').length, 0);

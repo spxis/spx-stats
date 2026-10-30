@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.5", date: "2026-10-30", href: "/about",
+    title: "Every page is lighter",
+    text: "Every page used to carry every team address and the logo adjustments of every league, teams shown or not. A page now carries only its own leagues', so About sends about 60 KB less and a league page about 50 KB less. Looks and works the same." },
   { version: "0.168.4", date: "2026-10-30", href: "/countries",
     title: "Players-by-country pages are lighter",
     text: "The players-by-country page and every league's world page carry a fraction of the data they did (the countries page was about four times lighter). The long tables open on their first rows and the rest appear when you press Show all or sort another way, or on a page of their own; the trend and the stacked chart load as you reach them. It looks and works the same." },
