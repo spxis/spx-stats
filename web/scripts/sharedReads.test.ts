@@ -14,6 +14,9 @@ import { alignmentFromPack, alignmentPackSchema } from "../src/lib/alignmentPack
 import type { AlignmentRow } from "../src/lib/alignment.ts";
 import { cityStayPackSchema, stayRowsFromPack } from "../src/lib/cityStayPack.ts";
 import type { StayRow } from "../src/lib/cityModel.ts";
+import { peopleFromPack, playerLeaguePackSchema } from "../src/lib/playerLeaguePack.ts";
+import { primaryLeague, primaryLeagueBy } from "../src/lib/playerPath.ts";
+import { abbrPackSchema, abbrsFromPack } from "../src/lib/abbrPack.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -213,4 +216,39 @@ test("the stays of the cities come back as the rows of api.city_stay, with and w
   });
   assert.deepEqual(stayRowsFromPack(pack), stays);
   assert.throws(() => stayRowsFromPack({ ...pack, title_teams: [] }), /title names/);
+});
+
+test("the league a person is filed under is the same from the seasons or from the counts of the pack", () => {
+  const seasons = (list: [string, number][]) => list.map(([league, year]) => ({ league, year }));
+  const people = [
+    { person_id: 1, leagues: ["nhl", "wha"], seasons: seasons([["nhl", 1980], ["nhl", 1980], ["wha", 1975], ["wha", 1976], ["wha", 1977]]) },
+    { person_id: 2, leagues: ["mlb", "nl"], seasons: seasons([["mlb", 1900], ["nl", 1900]]) },
+    { person_id: 3, leagues: ["cfl", "nfl"], seasons: seasons([["cfl", 1990], ["nfl", 1995]]) },
+    { person_id: 4, leagues: ["nba", "wnba"], seasons: [] },
+  ];
+  const names = ["cfl", "mlb", "nba", "nfl", "nhl", "nl", "wha", "wnba"];
+  const counts = people.map((p) => p.leagues.map((lg) => {
+    const own = p.seasons.filter((s) => s.league === lg);
+    return { seasons: new Set(own.map((s) => s.year)).size, last: Math.max(0, ...own.map((s) => s.year)) };
+  }));
+  const pack = playerLeaguePackSchema.parse({
+    leagues: names, person_id: people.map((p) => p.person_id), league_count: people.map((p) => p.leagues.length),
+    league: people.flatMap((p) => p.leagues.map((lg) => names.indexOf(lg))), seasons: counts.flat().map((c) => c.seasons), last: counts.flat().map((c) => c.last),
+  });
+  const decoded = peopleFromPack(pack);
+  assert.deepEqual(decoded.map((p) => p.person_id), [1, 2, 3, 4]);
+  for (const [i, p] of decoded.entries()) {
+    assert.equal(primaryLeagueBy(p.leagues, p.stats), primaryLeague(people[i].leagues, people[i].seasons), `person ${p.person_id}`);
+  }
+  assert.deepEqual(decoded.map((p) => primaryLeagueBy(p.leagues, p.stats)), ["wha", "mlb", "nfl", "nba"], "most seasons, then the newest, then the code");
+});
+
+test("a league's abbreviations come back as the rows of api.team_abbr", () => {
+  const rows = [
+    { league: "nhl", franchise_id: 1, valid_from: null, valid_to: "1990-01-01", abbreviation: "OLD" },
+    { league: "nhl", franchise_id: 1, valid_from: "1990-01-01", valid_to: null, abbreviation: "NEW" },
+    { league: "nhl", franchise_id: 2, valid_from: "1961-04-11", valid_to: "1965-09-02", abbreviation: "LAA" },
+  ];
+  const pack = abbrPackSchema.parse({ league: "nhl", franchise_id: col(rows, "franchise_id"), valid_from: col(rows, "valid_from"), valid_to: col(rows, "valid_to"), abbreviation: col(rows, "abbreviation") });
+  assert.deepEqual(abbrsFromPack(pack), rows);
 });

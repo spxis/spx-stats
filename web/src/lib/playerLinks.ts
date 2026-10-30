@@ -1,13 +1,14 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows } from "./api/client";
+import { ApiError, rows, viewMissing } from "./api/client";
 import { canFallBack } from "./api/soften";
 import { LEAGUES } from "./leagues";
 
 /** The leagues of the menu: no player is filed under a rival or predecessor league (the AFL, the NHA), so the pairs are theirs only. */
 const LEAGUE_CODES: string[] = LEAGUES.map((l) => l.code);
-import { playerPath, primaryLeague } from "./playerPath";
+import { playerPath, primaryLeague, primaryLeagueBy } from "./playerPath";
+import { peopleFromPack, playerLeaguePackSchema } from "./playerLeaguePack";
 
 const multiRow = z.object({ person_id: z.number(), leagues: z.array(z.string()).nullable() });
 const seasonRow = z.object({ person_id: z.number(), league: z.string(), year: z.number() });
@@ -29,8 +30,26 @@ async function multiLeaguePeople() {
   }
 }
 
-/** The league each person who played in more than one is filed under (everyone else has just the one). Throws ApiError when the archive cannot be read. */
+/**
+ * The league each person who played in more than one is filed under (everyone else has just the one). Throws ApiError when the archive cannot be read.
+ * api.player_league_pack (migration 186) holds the people and each one's seasons in each league, so this is one request; while it is a 404 the people and then
+ * their seasons are read from api.player_multi_league and api.person_season_teams.
+ */
 export const getMultiLeague = cache(async (): Promise<Map<number, string>> => {
+  try {
+    const [pack] = await rows("player_league_pack", "select=*&order=id", playerLeaguePackSchema);
+    if (pack) {
+      const found = new Map<number, string>();
+      for (const p of peopleFromPack(pack)) {
+        if (p.leagues.filter((l) => LEAGUE_CODES.includes(l)).length < 2) continue;
+        const lg = primaryLeagueBy(p.leagues, p.stats);
+        if (lg) found.set(p.person_id, lg);
+      }
+      return found;
+    }
+  } catch (e) {
+    if (!viewMissing(e)) throw e;
+  }
   const multi = await multiLeaguePeople();
   const out = new Map<number, string>();
   for (let i = 0; i < multi.length; i += CHUNK) {

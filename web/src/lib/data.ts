@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows, viewMissing } from "./api/client";
+import { ApiError, checkRows, rows, viewMissing } from "./api/client";
 import { standingRows, teamSeasonRows } from "./api/teamSeasons";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
@@ -22,6 +22,7 @@ import { brandPackSchema, brandRowsFromPack } from "./brandPack";
 import { summaryPackSchema, summaryRowsFromPack } from "./summaryPack";
 import { awardPacks } from "./awardPackRead";
 import { sourceCounts } from "./awardPack";
+import { abbrsFromPack, abbrPackSchema } from "./abbrPack";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
@@ -68,6 +69,13 @@ async function withUpcomingClubs(seasons: SeasonSummaryRow[]): Promise<SeasonSum
 /** Every brand era of every franchise. A missing or empty view just means no logos or colours yet. */
 /** A league's team abbreviations, era by era (the database's own: core.franchise_identity.abbreviation). */
 export const getAbbrs = cache(async (lg: string): Promise<AbbrMap> => {
+  // api.team_abbr_pack (migration 187): the league's rows as parallel arrays; while it is a 404, api.team_abbr is read as before.
+  try {
+    const [pack] = await rows("team_abbr_pack", `league=eq.${lg}&select=*&order=league`, abbrPackSchema);
+    return groupAbbrs(pack ? checkRows("team_abbr_pack", abbrsFromPack(pack), teamAbbrSchema) : []);
+  } catch (e) {
+    if (!viewMissing(e)) return groupAbbrs([]);
+  }
   const all = await rows("team_abbr", `league=eq.${lg}&select=*&order=franchise_id,valid_from.nullsfirst`, teamAbbrSchema).catch(() => []);
   return groupAbbrs(all);
 });

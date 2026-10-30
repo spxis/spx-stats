@@ -20,6 +20,11 @@ export function primaryLeague(leagues: readonly string[], seasons: readonly { le
     e.years.add(s.year);
     e.last = Math.max(e.last, s.year);
   }
-  const rank = (l: string) => by.get(l) ?? { years: new Set<number>(), last: 0 };
-  return [...leagues].sort((a, b) => rank(b).years.size - rank(a).years.size || rank(b).last - rank(a).last || a.localeCompare(b))[0] ?? null;
+  return primaryLeagueBy(leagues, new Map([...by].map(([lg, e]) => [lg, { seasons: e.years.size, last: e.last }])));
+}
+
+/** The same choice from the count of different seasons a person has in each league and the newest of them (api.player_league_pack). */
+export function primaryLeagueBy(leagues: readonly string[], counts: ReadonlyMap<string, { seasons: number; last: number }>): string | null {
+  const rank = (l: string) => counts.get(l) ?? { seasons: 0, last: 0 };
+  return [...leagues].sort((a, b) => rank(b).seasons - rank(a).seasons || rank(b).last - rank(a).last || a.localeCompare(b))[0] ?? null;
 }
