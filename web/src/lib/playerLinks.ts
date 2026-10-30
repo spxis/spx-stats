@@ -1,12 +1,12 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 import { canFallBack } from "./api/soften";
 import { LEAGUES } from "./leagues";
 
 /** The leagues of the menu: no player is filed under a rival or predecessor league (the AFL, the NHA), so the pairs are theirs only. */
-const LEAGUE_CODES = LEAGUES.map((l) => l.code);
+const LEAGUE_CODES: string[] = LEAGUES.map((l) => l.code);
 import { playerPath, primaryLeague } from "./playerPath";
 
 const multiRow = z.object({ person_id: z.number(), leagues: z.array(z.string()).nullable() });
@@ -15,9 +15,23 @@ const seasonRow = z.object({ person_id: z.number(), league: z.string(), year: z.
 const pairs = LEAGUE_CODES.flatMap((a, i) => LEAGUE_CODES.slice(i + 1).map((b) => `leagues.cs.${encodeURIComponent(`{${a},${b}}`)}`));
 const CHUNK = 150;
 
+/**
+ * The people who played in more than one league of the menu. api.player_multi_league (migration 167) lists the people with more than one league
+ * of any kind, which is filtered again here; until it is on the server (a 404) the whole people list is asked one league pair at a time, which takes 36 tests of every person.
+ */
+async function multiLeaguePeople() {
+  try {
+    const listed = await rows("player_multi_league", "select=person_id,leagues&order=person_id", multiRow);
+    return listed.filter((p) => (p.leagues ?? []).filter((l) => LEAGUE_CODES.includes(l)).length > 1);
+  } catch (e) {
+    if (!(e instanceof ApiError) || !e.message.endsWith(": 404")) throw e;
+    return rows("player_index", `select=person_id,leagues&or=(${pairs.join(",")})`, multiRow);
+  }
+}
+
 /** The league each person who played in more than one is filed under (everyone else has just the one). Throws ApiError when the archive cannot be read. */
 export const getMultiLeague = cache(async (): Promise<Map<number, string>> => {
-  const multi = await rows("player_index", `select=person_id,leagues&or=(${pairs.join(",")})`, multiRow);
+  const multi = await multiLeaguePeople();
   const out = new Map<number, string>();
   for (let i = 0; i < multi.length; i += CHUNK) {
     const part = multi.slice(i, i + CHUNK);

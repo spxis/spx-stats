@@ -55,6 +55,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   person_stats: ["person_id", "team_season_id", "phase", "stat_group", "games_played", "games_started", "stats"],
   person_teams: ["person_id", "league", "franchise_id", "from_year"],
   player_index: ["person_id"],
+  player_multi_league: ["person_id"],
   player_search: ["person_id"],
   player_team_search: ["franchise_id", "person_id"],
   player_teams: ["person_id", "franchise_id"],
