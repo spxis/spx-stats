@@ -46,8 +46,9 @@ import { guard, guardMeta } from "@/lib/loadGuard";
 // Drawn for the request when the address has a query (lib/routing.ts); without one, s/[league]/head-to-head/[pair] keeps this page and revalidates it every day. The data behind it keeps its one-day cache (lib/api/client.ts).
 
 const UNIT = { nhl: "unit.goals", pwhl: "unit.goals", nba: "unit.points", wnba: "unit.points", mlb: "unit.runs", nfl: "unit.points", ncaaf: "unit.points", cfl: "unit.points", nwsl: "unit.goals", afl: "unit.points", aafc: "unit.points", nha: "unit.goals", pcha: "unit.goals", wchl: "unit.goals", wha: "unit.goals", ahl: "unit.goals", echl: "unit.goals", na: "unit.runs", aa: "unit.runs", ua: "unit.runs", pl: "unit.runs", fl: "unit.runs" } as const satisfies Record<string, PhraseKey>;
-/** A long history is listed from the newest game; the rest is one click away (?list=all). */
-const LIST_LIMIT = 200;
+/** A long history is listed from the newest game and the newest seasons; the rest is one click away (?list=all). */
+const LIST_LIMIT = 25;
+const SEASON_LIMIT = 15;
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v);
 
@@ -326,7 +327,8 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
   for (const s of rows) { run += s.t.a.w - s.t.b.w; cumulative.set(s.year, run); }
   const renamed = rows.some((s) => s.aName !== (d.names[0] ?? s.aName) || s.bName !== (d.names[1] ?? s.bName));
   const signed = (v: number) => (v > 0 ? "+" : v < 0 ? "−" : "") + fmt(Math.abs(v));
-  const seasonTable = tableOf(rows, [
+  const seasonCut = year == null && !q.list && rows.length > SEASON_LIMIT;
+  const seasonTable = tableOf(seasonCut ? rows.slice(-SEASON_LIMIT) : rows, [
     { key: "season", label: say("col.season"), cls: "seasoncell", get: (s: Season) => s.year, cell: (s: Season) => <Link href={seasonHref(s.year)} prefetch={false} scroll={false}>{seasonLabel(lg, s.year)}</Link> },
     ...(renamed ? [{ key: "teams", label: say("h2h.col.teams"), cls: "team", get: (s: Season) => `${s.aName} ${s.bName}`, cell: (s: Season) => (
       <span className="h2hpair">
@@ -440,6 +442,7 @@ export default guard(async function HeadToHeadPage({ params, searchParams }: Pag
           <h2>{say("h2h.seasons.title")}</h2>
           <p className="note">{say("h2h.seasons.note", { team: na })}</p>
           <div className="tablebox"><SortTable {...seasonTable} param="sort_seasons" def="season.desc" initial={sortSeasons} label={say("h2h.seasons.title")} /></div>
+          {seasonCut ? <p className="showall"><Link href={hrefTo({ list: "all" })} prefetch={false} scroll={false}>{say("table.showAll", { count: fmt(rows.length) })}</Link></p> : null}
         </section>
       ) : null}
 

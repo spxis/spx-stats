@@ -486,6 +486,14 @@ test("a team's season sends its games table as a head until Show all, with the s
   assert.ok(QUERY_KEYS.includes("full"));
 });
 
+test("a head-to-head page lists the newest games and seasons of a long rivalry and links to the rest", () => {
+  const page = read("app/[locale]/q/[league]/head-to-head/[pair]/page.tsx");
+  const limit = (name: string) => Number(new RegExp(`const ${name} = (\\d+);`).exec(page)?.[1]);
+  assert.ok(limit("LIST_LIMIT") <= 30 && limit("SEASON_LIMIT") <= 20, "a few dozen games and seasons, the rest on ?list=all");
+  assert.ok(page.includes("seasonCut ? rows.slice(-SEASON_LIMIT) : rows"), "the seasons table is cut to the newest");
+  assert.ok(QUERY_KEYS.includes("list"), "?list=all is a query key, so that address is drawn in q/");
+});
+
 test("a franchise's map answer carries no league-wide venue list: that is its own route, worked out once per league", () => {
   const map = read("lib/franchiseMap.ts");
   assert.ok(!/teams\b[^\n]*getVenueTeams\(/.test(map.split("export async function leagueVenueTeams")[0]), "franchiseMapView does not build the league's venue list");
