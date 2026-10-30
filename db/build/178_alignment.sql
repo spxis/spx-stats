@@ -441,6 +441,17 @@ delete from core.conference c
 where c.league_code in (select distinct lg from ts) and not exists (select 1 from newc n
                   where n.league_code = c.league_code and n.name = c.name and n.first_season = c.first_season);
 
+-- api.alignment_changes (migration 166) is precomputed from the places written above: refreshed here once it exists.
+do $$
+declare v text;
+begin
+  foreach v in array array['alignment_changes'] loop
+    if (select c.relkind from pg_class c where c.oid = to_regclass('api.' || v)) = 'm' then
+      execute 'refresh materialized view concurrently api.' || v;
+    end if;
+  end loop;
+end $$;
+
 -- ---------------------------------------------------------------------------------------------- report
 select lg, count(*) filter (where cname is not null) with_conference, count(*) filter (where dname is not null) with_division, count(*) team_seasons
 from pick group by lg order by lg;

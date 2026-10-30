@@ -5,3 +5,13 @@ refresh materialized view concurrently api.team_season_index;
 refresh materialized view concurrently api.standing_index;
 analyze api.team_season_index;
 analyze api.standing_index;
+-- api.alignment_changes and api.team_season_name_run (migration 166) are precomputed from the same tables: refreshed here once they exist.
+do $$
+declare v text;
+begin
+  foreach v in array array['team_season_name_run', 'alignment_changes'] loop
+    if (select c.relkind from pg_class c where c.oid = to_regclass('api.' || v)) = 'm' then
+      execute 'refresh materialized view concurrently api.' || v;
+    end if;
+  end loop;
+end $$;
