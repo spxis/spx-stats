@@ -145,7 +145,11 @@ test("what is no page is answered, unkept, with the 404", () => {
   assert.equal(route({ path: "/wp-login.php" }), "/en/q/wp-login.php");
   assert.equal(route({ path: "/xx/yy/zz", cookie: "spxn-locale=fr" }), "/fr/q/xx/yy/zz");
   assert.equal(route({ path: "/about/more" }), "/en/q/about/more");
-  assert.deepEqual([...PAGE_ROOTS], ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl", "players", "teams", "city", "venue", "worldcup", "mls", "soccer", "country", "releases"]);
+  assert.deepEqual([...PAGE_ROOTS], ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl", "players", "teams", "city", "venue", "worldcup", "mls", "soccer", "country", "releases", "countries"]);
+  assert.equal(route({ path: "/countries/versus" }), "/en/s/countries/versus");
+  assert.equal(route({ path: "/countries/rows/trend" }), "/en/s/countries/rows/trend");
+  assert.equal(route({ path: "/countries/versus", query: { sort: "x" } }), "/en/q/countries/versus");
+  assert.equal(route({ path: "/nhl/world/tables" }), "/en/s/nhl/world/tables");
   assert.equal(route({ path: "/releases" }), "/en/s/releases");
   assert.equal(route({ path: "/releases/older" }), "/en/s/releases/older");
   assert.equal(route({ path: "/releases/older", query: { sort: "x" } }), "/en/q/releases/older");

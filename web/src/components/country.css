@@ -39,6 +39,8 @@
 .cmode { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
 .ctable summary { cursor: pointer; font: 600 14px var(--display); text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
 .ctable .tablebox { max-height: 360px; overflow: auto; margin-top: 8px; }
+/* A table that shows only its first rows has no scroll box, so its "Show all" is in view; the whole table scrolls in one. */
+.tablebox.cpart, .ctable .tablebox.cpart { max-height: none; overflow: visible; }
 
 /* the world map of counts */
 .cmap { display: flex; flex-direction: column; gap: 10px; min-width: 0; }

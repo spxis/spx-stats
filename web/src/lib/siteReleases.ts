@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.4", date: "2026-10-30", href: "/countries",
+    title: "Players-by-country pages are lighter",
+    text: "The players-by-country page and every league's world page carry a fraction of the data they did (the countries page was about four times lighter). The long tables open on their first rows and the rest appear when you press Show all or sort another way, or on a page of their own; the trend and the stacked chart load as you reach them. It looks and works the same." },
   { version: "0.168.3", date: "2026-10-30", href: "/ncaaf/all-time",
     title: "All-time pages are lighter",
     text: "A league's all-time page carries about a third of the data it did. The table opens on its first franchises and the rest load when you press Show all or sort another way; the lists under the bars and the scatter and season charts load as you reach them. It looks and works the same." },

@@ -10,6 +10,7 @@ import { barItems, barRows, type BarCtx } from "../src/lib/allTimeBars.ts";
 import type { Franchise, SeasonMark } from "../src/lib/allTime.ts";
 import { AT_HEAD, atGrid, atKeys, atPoints, atSort, buildAtList, lineAt, pickAt, resolveAt, shownAt, allTimeRestPath } from "../src/lib/allTimeLines.ts";
 import { sortRows } from "../src/lib/sort.ts";
+import { COUNTRIES_HEAD } from "../src/lib/countryLines.ts";
 import { FULL_SHARE, leagueSeasonBars, leagueSeasonRows } from "../src/lib/leagueSeasonRows.ts";
 
 /**
@@ -270,6 +271,37 @@ test("the all-time page keeps its long lists and drawings out of the page", () =
   assert.ok(read("components/AllTimeTable.tsx").includes("partial="), "the table shows all franchises on request");
 });
 
+test("the country pages send their tables as short lines and draw the long ones' first rows only", () => {
+  const countries = read("app/[locale]/s/countries/page.tsx");
+  assert.ok(countries.includes("<CountriesVersus") && countries.includes("<CountriesFirsts") && countries.includes("<CountryMixBars") && countries.includes("<CountryTrend"));
+  assert.ok(!countries.includes("<SortTable") && !countries.includes("tableOf(") && !countries.includes("shareSeries("), "no table is drawn on the server and no trend data rides along");
+  for (const file of ["components/CountriesTables.tsx", "components/WorldTables.tsx"]) {
+    const src = read(file);
+    assert.ok(src.includes("useReveal(") && src.includes("partial="), `${file} draws its first rows and shows the rest on request`);
+  }
+  assert.ok(COUNTRIES_HEAD <= 15, "a table's head is a few rows");
+  const trend = read("components/CountryTrend.tsx");
+  assert.ok(trend.includes("useSeen") && trend.includes("countriesTrendPath"), "the trend loads its decades when the reader gets near");
+  const route = read("app/[locale]/s/countries/rows/trend/route.ts");
+  assert.ok(route.includes("export const revalidate = 86400;") && !/searchParams|cookies\(|headers\(/.test(route), "the trend's route is kept a day and reads nothing per request");
+  for (const name of ["versus", "firsts"]) {
+    const page = read(`app/[locale]/s/countries/${name}/page.tsx`);
+    assert.ok(page.includes("export const revalidate = 86400;") && page.includes(" full ") && !/searchParams|cookies\(|headers\(/.test(page), `/countries/${name} is the whole table, kept, reading nothing per request`);
+    assert.ok(read(`app/[locale]/q/countries/${name}/page.tsx`).includes(`s/countries/${name}/page`), `${name} has its twin in q/`);
+  }
+});
+
+test("a league's world page draws its chart when near and its two long tables from lines", () => {
+  const page = read("app/[locale]/s/[league]/world/page.tsx");
+  assert.ok(page.includes("<CountryAreaLazy") && page.includes("<WorldTeamsTable") && page.includes("<WorldStackTable"));
+  assert.ok(!page.includes("<CountryArea ") && !page.includes("<SortTable") && !page.includes("tableOf("), "no chart or table drawn on the server");
+  const lazy = read("components/CountryAreaLazy.tsx");
+  assert.ok(lazy.includes("useSeen") && lazy.includes("ssr: false"), "the stacked chart is drawn in the browser when near");
+  const tables = read("app/[locale]/s/[league]/world/tables/page.tsx");
+  assert.ok(tables.includes("export const revalidate = 2592000;") && tables.includes(" full ") && !/searchParams|cookies\(|headers\(/.test(tables), "the tables page has every row, kept, reading nothing per request");
+  assert.ok(read("app/[locale]/q/[league]/world/tables/page.tsx").includes("s/[league]/world/tables/page"), "the tables page has its twin in q/");
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
  *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
@@ -289,7 +321,20 @@ const ALL_TIME_PAGES = [
   ...ALL_TIME_LEAGUES.map((lg) => ({ path: `/${lg}/all-time`, budget: PAGE_BUDGET })),
   ...["nhl", "nba", "mlb", "nfl", "ncaaf"].flatMap((lg) => [{ path: `/${lg}/all-time?view=table`, budget: TABLE_BUDGET }, { path: `/${lg}/all-time?view=charts`, budget: PAGE_BUDGET }]),
 ];
-for (const { path, budget } of [...PLAYER_PAGES, ...ALL_TIME_PAGES]) {
+/** Players by country, and the world page of every league whose players have a country (and a season of the heaviest ones), each with the page of its full tables. */
+const WORLD_LEAGUES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl"];
+const WORLD_PAGES = [
+  { path: "/countries", budget: PAGE_BUDGET },
+  { path: "/countries/versus", budget: TABLE_BUDGET },
+  { path: "/countries/firsts", budget: TABLE_BUDGET },
+  ...WORLD_LEAGUES.map((lg) => ({ path: `/${lg}/world`, budget: PAGE_BUDGET })),
+  ...["nhl", "nba", "mlb", "nfl"].map((lg) => ({ path: `/${lg}/world/tables`, budget: TABLE_BUDGET })),
+  { path: "/nhl/2024-25/world", budget: PAGE_BUDGET },
+  { path: "/nba/2024-25/world", budget: PAGE_BUDGET },
+  { path: "/mlb/2025/world", budget: PAGE_BUDGET },
+  { path: "/nfl/2024/world", budget: PAGE_BUDGET },
+];
+for (const { path, budget } of [...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

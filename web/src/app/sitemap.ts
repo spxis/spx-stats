@@ -87,6 +87,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...allStarUrls,
     ...countryUrls,
     ...worldUrls,
-    ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/countries", "/players", "/terms", "/privacy","/sources", "/quality", "/logos", "/help-wikipedia", "/releases", "/releases/older"].map((p) => ({ url: url(p), lastModified })),
+    ...["/about", "/teams", "/teams/lineage", "/teams/coaches", "/cities", "/venues", "/countries", "/countries/versus", "/countries/firsts", "/players", "/terms", "/privacy","/sources", "/quality", "/logos", "/help-wikipedia", "/releases", "/releases/older"].map((p) => ({ url: url(p), lastModified })),
   ];
 }

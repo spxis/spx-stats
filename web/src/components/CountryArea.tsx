@@ -18,9 +18,9 @@ interface Layer { key: string; slice: Slice; values: number[] }
 /**
  * The countries of a franchise's or a league's players over the seasons, stacked: players each season (or their share of the season's players),
  * the biggest countries in their own colours, the rest together, and the players with no country known on top. Hovering names the season's figures;
- * the table under the chart ("Show as a table") holds them all.
+ * the table under the chart ("Show as a table") holds them all (`table` false leaves it out: the league world page draws its own, WorldTables.tsx).
  */
-export function CountryArea({ stack: s, league, label, tableLabel, allowShare = true }: { stack: Stack; league: string; label: string; tableLabel: string; allowShare?: boolean }) {
+export function CountryArea({ stack: s, league, label, tableLabel, allowShare = true, table = true }: { stack: Stack; league: string; label: string; tableLabel: string; allowShare?: boolean; table?: boolean }) {
   const { say, fmt, locale } = useSpeaker();
   const [mode, setMode] = useState<"count" | "share">("count");
   const [ref, W] = useChartWidth(720, 280);
@@ -79,10 +79,12 @@ export function CountryArea({ stack: s, league, label, tableLabel, allowShare = 
         {tip.element}
       </div>
       <div className="legend">{layers.map((l) => <span key={l.key}><i style={{ background: slotColor(l.slice) }} />{nameOf(l)}</span>)}</div>
-      <details className="ctable">
-        <summary>{tableLabel}</summary>
-        <div className="tablebox"><SortTable {...tbl} param="sort_stack" def="season.desc" label={label} /></div>
-      </details>
+      {table ? (
+        <details className="ctable">
+          <summary>{tableLabel}</summary>
+          <div className="tablebox"><SortTable {...tbl} param="sort_stack" def="season.desc" label={label} /></div>
+        </details>
+      ) : null}
     </div>
   );
 }

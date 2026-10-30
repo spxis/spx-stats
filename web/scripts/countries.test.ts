@@ -2,6 +2,8 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { coolCards, decadeOf, rangeTally, rankCountries, shareSeries, stackSeries, tally, versus, withOther, type LeagueCount, type SeasonCount } from "../src/lib/countryModel.ts";
 import { colorsOf, rampColor } from "../src/lib/countryRamp.ts";
+import { buildFirstsWire, buildVersusWire, readFirsts, readVersus } from "../src/lib/countryLines.ts";
+import { buildTeamsWire, readTeams } from "../src/lib/worldLines.ts";
 
 /** Run in web/: pnpm test:countries */
 
@@ -103,4 +105,45 @@ test("the map ramp darkens with the count and leaves a zero out", () => {
   assert.equal(rampColor(0, 100), rampColor(0, 100));
   assert.notEqual(rampColor(1, 100), rampColor(100, 100));
   assert.deepEqual(Object.keys(colorsOf({ US: 10, CA: 0, JP: 2 })).sort(), ["JP", "US"]);
+});
+
+const plain = (id: number, name: string, league: string) => `/${league}/player/${name.toLowerCase().replace(/\W+/g, "-")}-${id}`;
+
+test("the league-against-league table as lines gives back the same rows, in the same order", () => {
+  const rows = [lc("mlb", "US", 80, 1871, 100, 100), lc("mlb", "DO", 20, 1956, 100, 100), lc("nhl", "CA", 50, 1917, 100, 60), lc("nhl", "US", 10, 1920, 100, 60), lc("nhl", "ZZ", 40, 1917, 100, 60)];
+  const wire = buildVersusWire(rows, ["nhl", "mlb"]);
+  assert.deepEqual(wire.lines, [["US", 10, 80], ["CA", 50, 0], ["DO", 0, 20]]);
+  assert.deepEqual(wire.known, [60, 100]);
+  const back = readVersus(JSON.parse(JSON.stringify(wire)));
+  assert.deepEqual(back, versus(rows).map((v) => ({ ...v })), "the rows the server used to draw");
+  assert.equal(back[1].byLeague.nhl.share, 50 / 60);
+});
+
+test("firsts as lines: oldest first, a player's own address only where it differs, and the same rows back", () => {
+  const rows = [
+    { ...lc("mlb", "US", 80, 1876, 100, 100), first_person_id: 7, first_name: "Art Allison" },
+    { ...lc("nhl", "CA", 50, 1917, 100, 60), first_person_id: 8, first_name: "Joe Hall" },
+    { ...lc("na", "US", 9, 1871, 10, 10), first_person_id: null, first_name: "Somebody" },
+    { ...lc("na", "CA", 2, 1871, 10, 10), first_person_id: 9, first_name: "Bob Addy" },
+    lc("nhl", "ZZ", 40, 1917, 100, 60),
+  ];
+  const wire = buildFirstsWire(rows, (id, name, league) => (id === 8 ? `/mlb/player/joe-hall-8` : plain(id, name, league)), plain);
+  assert.deepEqual(wire.lines.map((l) => l[2]), [1871, 1871, 1876, 1917], "oldest first, ties as listed, no unknown country");
+  assert.equal(wire.lines.filter((l) => l.length > 6).length, 1, "only the person filed under another league carries an address");
+  const back = readFirsts(JSON.parse(JSON.stringify(wire)), plain);
+  assert.deepEqual(back.map((r) => [r.code, r.league, r.year, r.name, r.href]), [
+    ["US", "na", 1871, "Somebody", null], ["CA", "na", 1871, "Bob Addy", "/na/player/bob-addy-9"],
+    ["US", "mlb", 1876, "Art Allison", "/mlb/player/art-allison-7"], ["CA", "nhl", 1917, "Joe Hall", "/mlb/player/joe-hall-8"],
+  ]);
+});
+
+test("the by-team table as lines: most players first, each logo written once, the same rows back", () => {
+  const t = (f: number, name: string, list: [string, number][]) => ({ f, name, t: tally(list) });
+  const teams = [t(1, "Small", [["US", 5]]), t(2, "Big", [["US", 40], ["CA", 10], ["ZZ", 3]]), t(3, "Alike", [["CA", 9]])];
+  const wire = buildTeamsWire(teams, (f) => (f === 3 ? null : "https://example.org/logo.png"));
+  assert.deepEqual(wire.lines.map((l) => l[1]), ["Big", "Alike", "Small"]);
+  assert.deepEqual(wire.logos, ["https://example.org/logo.png"]);
+  const [big, alike] = readTeams(JSON.parse(JSON.stringify(wire)));
+  assert.deepEqual([big.total, big.known, big.countries, big.top, big.second, big.logo], [53, 50, 2, { code: "US", n: 40 }, { code: "CA", n: 10 }, "https://example.org/logo.png"]);
+  assert.deepEqual([alike.second, alike.logo], [null, null]);
 });

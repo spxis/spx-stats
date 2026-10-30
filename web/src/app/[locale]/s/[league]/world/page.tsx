@@ -2,25 +2,19 @@ import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { AccentStyle } from "@/components/AccentStyle";
-import { CountryArea } from "@/components/CountryArea";
+import { CountryAreaLazy } from "@/components/CountryAreaLazy";
 import { Credits } from "@/components/Credits";
-import { FlagIcon } from "@/components/FlagIcon";
 import { LeagueWorld, type LeagueWorldData } from "@/components/LeagueWorld";
-import { SortTable } from "@/components/SortTable";
-import { TeamLabel } from "@/components/TeamLabel";
-import { logoFor } from "@/lib/brand";
-import { getBrands } from "@/lib/data";
+import { WorldStackTable, WorldTeamsTable } from "@/components/WorldTables";
 import { getLeagueCounts, getLeagueFranchises, getSeasonCounts } from "@/lib/countryData";
-import { flagCodes } from "@/lib/flagCodes";
-import { coolCards, isKnown, stackSeries, tally } from "@/lib/countryModel";
+import { coolCards, isKnown } from "@/lib/countryModel";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { isLeague, LG, hasPlayers } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
-import { countryName, pctText } from "@/lib/people-format";
+import { pctText } from "@/lib/people-format";
 import { getPlayerPaths } from "@/lib/playerLinks";
-import { tableOf } from "@/lib/sort";
-import { getLeagueClubs } from "@/lib/teamSlugs";
+import { worldTables } from "@/lib/worldData";
 import { CountryCards } from "@/components/CountryCards";
 import "@/components/country.css";
 
@@ -40,7 +34,7 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
   if (!isLeague(lg)) notFound();
   if (!hasPlayers(lg)) notFound();
   const { say, plural, fmt, locale } = await currentSpeaker();
-  const [seasonRows, leagueRows, franchiseRows, brands] = await Promise.all([getSeasonCounts(lg), getLeagueCounts(lg), getLeagueFranchises(lg), getBrands()]);
+  const [seasonRows, leagueRows, franchiseRows] = await Promise.all([getSeasonCounts(lg), getLeagueCounts(lg), getLeagueFranchises(lg)]);
   const head = (
     <>
       <AccentStyle league={lg} />
@@ -71,33 +65,9 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
       firstHref: r.first_person_id != null && r.first_name ? paths(r.first_person_id, r.first_name, lg) : null,
     })),
   };
-  const best = tally(leagueRows.map((r) => [r.country, r.players] as [string, number])).list.slice(0, 6).map((c) => c.code);
-  const stack = stackSeries(seasonRows, best);
-  const flags = flagCodes(tally(leagueRows.map((r) => [r.country, r.players] as [string, number])).list.map((c) => c.code));
+  const { stack, flags, teams } = await worldTables(lg, seasonRows, leagueRows, franchiseRows);
   const cards = coolCards(seasonRows, leagueRows);
-
-  // by team: everyone who was on the club, by country
-  const clubs = new Map((await getLeagueClubs(lg)).map((c) => [c.f, c.name]));
-  const perClub = new Map<number, [string, number][]>();
-  for (const r of franchiseRows ?? []) (perClub.get(r.franchise_id) ?? perClub.set(r.franchise_id, []).get(r.franchise_id)!).push([r.country, r.players]);
-  const teams = [...perClub].flatMap(([f, list]) => {
-    const t = tally(list);
-    return t.known ? [{ f, name: clubs.get(f) ?? `#${f}`, t }] : [];
-  });
-  const teamTable = tableOf(teams, [
-    { key: "team", label: say("col.team"), cls: "team", get: (x) => x.name, cell: (x) => <TeamLabel lg={lg} f={x.f} name={x.name} logo={logoFor(brands, x.f)} /> },
-    { key: "players", label: say("country.colPlayers"), num: true, get: (x) => x.t.total, cell: (x) => fmt(x.t.total) },
-    { key: "countries", label: say("country.colCountries"), num: true, get: (x) => x.t.list.length, cell: (x) => fmt(x.t.list.length) },
-    {
-      key: "top", label: say("country.colTop"), get: (x) => countryName(x.t.list[0].code, locale),
-      cell: (x) => <span className="cflagname">{flags[x.t.list[0].code] ? <FlagIcon code={x.t.list[0].code} /> : null}{countryName(x.t.list[0].code, locale)}</span>,
-    },
-    { key: "topshare", label: say("country.colTopShare"), num: true, get: (x) => x.t.list[0].n / x.t.known, cell: (x) => pctText(x.t.list[0].n / x.t.known, locale, 0) },
-    {
-      key: "second", label: say("country.colSecond"), get: (x) => (x.t.list[1] ? countryName(x.t.list[1].code, locale) : null),
-      cell: (x) => (x.t.list[1] ? <span className="cflagname">{countryName(x.t.list[1].code, locale)} <span className="note">{fmt(x.t.list[1].n)}</span></span> : ""),
-    },
-  ], (x) => x.f);
+  const tablesPath = `/${lg}/world/tables`;
 
   return (
     <>
@@ -108,13 +78,17 @@ export default guard(async function LeagueWorldPage({ params }: PageProps<"/[loc
       <section className="section">
         <h2>{say("country.areaTitle")}</h2>
         <p className="note">{say("country.areaLeagueNote", { league: LG[lg] })}</p>
-        <CountryArea stack={stack} league={lg} label={say("country.areaAria", { name: LG[lg] })} tableLabel={say("country.showTable")} />
+        <CountryAreaLazy stack={stack} league={lg} label={say("country.areaAria", { name: LG[lg] })} tableLabel={say("country.showTable")} />
+        <details className="ctable">
+          <summary>{say("country.showTable")}</summary>
+          <WorldStackTable stack={stack} league={lg} label={say("country.areaAria", { name: LG[lg] })} hrefAll={`${tablesPath}#seasons`} />
+        </details>
       </section>
-      {teams.length ? (
+      {teams.lines.length ? (
         <section className="section">
           <h2>{say("country.byTeam")}</h2>
           <p className="note">{say("country.byTeamNote")}</p>
-          <div className="tablebox"><SortTable {...teamTable} param="sort_teams" def="players.desc" label={say("country.byTeam")} /></div>
+          <WorldTeamsTable lg={lg} wire={teams} flags={flags} hrefAll={`${tablesPath}#teams`} label={say("country.byTeam")} />
         </section>
       ) : null}
       <p className="note">{say("country.noteSource")} <Credits say={say} use={["maps", "flags"]} /></p>
