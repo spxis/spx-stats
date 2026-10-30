@@ -1,0 +1,12 @@
+==Regular season==
+===Offensive leaders===
+{|class="wikitable" width="90%"
+|- align="center"  ! style="background:black;color:#FF8800;"
+| Player ||Passing yds||Rushing yds||Receiving yds||TD
+|- align="center" bgcolor=""
+| [[Willie Fleming]] || ||958||220||4
+|- align="center" bgcolor=""
+| Nub Beamer || 2310 ||31||0||0
+|- align="center" bgcolor=""
+|}
+==Roster==

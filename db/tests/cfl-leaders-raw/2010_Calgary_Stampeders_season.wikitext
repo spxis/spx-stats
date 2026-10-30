@@ -1,0 +1,63 @@
+==Roster==
+{| class="toccolours"
+|}
+
+== Player stats ==
+
+===Passing===
+{| class="wikitable sortable"
+|-
+! style="background:#bd0d18;color:white;" width="16%" | Player
+! style="background:#bd0d18;color:white;" width="9%" | Att
+! style="background:#bd0d18;color:white;" width="9%" | Comp
+! style="background:#bd0d18;color:white;" width="9%" | %
+! style="background:#bd0d18;color:white;" width="9%" | Yards
+! style="background:#bd0d18;color:white;" width="9%" | TD
+! style="background:#bd0d18;color:white;" width="9%" | INT
+! style="background:#bd0d18;color:white;" width="9%" | Rating
+|- align="center"
+| [[Henry Burris]] || 559 || 370 || 66.2 || 4,945 || 38 || 20 || 101.9
+|- align="center"
+| Drew Tate<ref name="cfl"/> || 62 || 44 || 71.0 || 521 || 7 || 0 || N/A
+|}<ref>{{Cite web |url=https://example.org/ |title = Passing 2010}}</ref>
+
+===Rushing===
+{| class="wikitable sortable"
+|-
+! style="background:#bd0d18;color:white;" width="16%" | Player
+! style="background:#bd0d18;color:white;" width="9%" | Att
+! style="background:#bd0d18;color:white;" width="9%" | Yards
+! style="background:#bd0d18;color:white;" width="9%" | Avg
+! style="background:#bd0d18;color:white;" width="9%" | TD
+! style="background:#bd0d18;color:white;" width="9%" | Fumbles
+|- align="center"
+| [[Joffrey Reynolds]] || 217 || 1200 || 5.5 || 8 || 1
+|- align="center"
+| Jon Cornish || 85 || 618 || 7.3 || 0 || 3
+|- align="center"
+| Jesse Lumsden || 4 || 40 || 10.0 || 1 || 0
+|- align="center"
+|}
+
+===Receiving===
+{| class="wikitable sortable"
+|-
+! style="background:#bd0d18;color:white;" width="16%" | Player
+! style="background:#bd0d18;color:white;" width="9%" | No.
+! style="background:#bd0d18;color:white;" width="9%" | Yards
+! style="background:#bd0d18;color:white;" width="9%" | Avg
+! style="background:#bd0d18;color:white;" width="9%" | Long
+! style="background:#bd0d18;color:white;" width="9%" | TD
+|- align="center"
+| [[Nik Lewis]] || 90 || 1262 || 14.0 || 74 || 9
+|- align="center"
+| [[Ken-Yon Rambo]] || 72 || 1172 || 16.3 || 100T || 8
+|- align="center"
+| [[Arjei Franklin]] || 42 || 523 || 12.5 || 39 || 2
+|- align="center"
+| [[Deon Murphy]] || 25 || 271 || 10.8 || 48 || 4
+|- align="center"
+| [[Rob Cote (running back)|Rob Cote]] || 3 || 20 || 6.7 || 12 || 0
+|}
+
+==Awards and records==

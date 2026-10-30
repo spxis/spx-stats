@@ -1,0 +1,7 @@
+===Passing===
+{| class="wikitable"
+|-
+| '''Player''' || '''Attempts''' || '''Yards'''
+|-
+|Sam Etcheverry||400||5000
+|}
