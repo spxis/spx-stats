@@ -18,6 +18,8 @@ import { seasonLabel } from "../src/lib/leagues.ts";
 import { packTeams, unpackTeams } from "../src/lib/teamWire.ts";
 import type { BoardTeam } from "../src/lib/teamBoard.ts";
 import { venuesRestPath } from "../src/lib/mapView.ts";
+import { headPerGroup, seasonStandKeys, STANDINGS_FULL, STANDINGS_HEAD } from "../src/lib/seasonStandLines.ts";
+import { QUERY_KEYS } from "../src/lib/routing.ts";
 import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
 
 /**
@@ -471,6 +473,22 @@ test("the players list sends short lines and the browser draws the cells; the co
   for (const side of ["s", "q"]) assert.ok(!existsSync(new URL(`../src/app/[locale]/${side}/players/layout.tsx`, import.meta.url)), `${side}/players carries no team addresses or logo fits (the list names its teams with ready addresses)`);
 });
 
+test("a big season table sends short lines and draws a head until \"Show all\", which is a real link to the table in full", () => {
+  assert.equal(headPerGroup(1), STANDINGS_HEAD);
+  assert.equal(headPerGroup(13), 3, "a head per conference, never fewer than three");
+  assert.equal(headPerGroup(2), 20);
+  assert.ok(STANDINGS_FULL >= 32 && STANDINGS_HEAD <= STANDINGS_FULL, "the leagues of thirty-odd clubs are drawn whole");
+  assert.deepEqual(seasonStandKeys({ place: "col.confDiv", nhl: false, showT: false, showO: true, showP: true, showHome: true, showRoad: true }), ["team", "place", "gp", "w", "l", "otl", "pts", "pf", "pa", "home", "road", "pct"]);
+  const page = read("app/[locale]/q/[league]/[year]/page.tsx");
+  assert.ok(page.includes("<SeasonStandings") && !page.includes("<SortTable") && !page.includes("tableOf("), "the page gives the table lines, not drawn cells");
+  assert.ok(/allHref=\{bigTable \? standAll : undefined\}/.test(page) && page.includes('{ full: "1" }'), "Show all links to the table drawn in full");
+  assert.ok(QUERY_KEYS.includes("full"), "?full= is a query key, so that address is drawn in q/");
+  assert.ok(page.includes("parentByClub.size ? <TeamData"), "the page re-wraps its team data only for the parent leagues of a minor league (the league's layout has the rest)");
+  const table = read("components/SortTable.tsx");
+  assert.ok(table.includes("groupLimit") && table.includes("allHref"), "the table can cap each group and link its Show all");
+  assert.ok(read("components/SeasonPostseason.tsx").includes("<PostseasonTable"), "the postseason is lines too");
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
  *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
@@ -494,6 +512,8 @@ const HOME_PAGES = [{ path: "/", budget: 120 * 1000 }];
 const TEAMS_PAGES = [{ path: "/teams", budget: 250 * 1000 }];
 
 /** The players list: a hundred players a page, each once as a short line (it was 392 KB: every row as markup and again as elements, every country as a flag and link, and every club's address). */
+const SEASON_PAGES = ["/ncaaf/2024", "/ncaaf/2024?view=conference", "/ncaaf/2023", "/mlb/2024"].map((path) => ({ path, budget: PAGE_BUDGET }));
+
 const PLAYERS_PAGES = ["/players", "/players?league=nhl", "/players?sort=seasons.desc"].map((path) => ({ path, budget: path.includes("sort") ? PAGE_BUDGET : 250 * 1000 }));
 
 /** A league's awards by season, every season on one page: about a thousand winners, each once had a cup drawing of its own in the markup (380 KB). */
@@ -527,7 +547,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...SEASON_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

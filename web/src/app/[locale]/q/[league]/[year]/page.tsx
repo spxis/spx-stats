@@ -20,7 +20,7 @@ import { SeasonGamesProvider } from "@/components/SeasonGamesData";
 import { SeasonWeek } from "@/components/SeasonWeek";
 import { SeasonRace } from "@/components/SeasonRace";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
-import { SortTable } from "@/components/SortTable";
+import { SeasonStandings, type SeasonStandWords } from "@/components/SeasonStandings";
 import { StandingsFocus } from "@/components/StandingsFocus";
 import { TeamData } from "@/components/TeamData";
 import { TeamLabel } from "@/components/TeamLabel";
@@ -31,7 +31,6 @@ import { queryHref, ViewTabs } from "@/components/ViewTabs";
 import { availableViews, dateSchema, groupStandings, viewSchema } from "@/lib/alignment";
 import { getSeasonAlignment, getStandingsAsOf } from "@/lib/alignmentData";
 import { chosenGroup, groupChoices, placeHeading, placeLabel, rowClasses } from "@/lib/standingsGroups";
-import type { StandingRow } from "@/lib/api/types";
 import { joinList } from "@/lib/people-format";
 import { abbrFor, abbrsForYear } from "@/lib/abbr";
 import { brandFor, logoFor, teamTone } from "@/lib/brand";
@@ -40,7 +39,7 @@ import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSummary } from "@/li
 import { getOutage, getOutageYears, getTitleNotAwarded } from "@/lib/outageData";
 import { trophyPath } from "@/lib/awardTrophy";
 import { NotAwarded } from "@/components/NotAwarded";
-import { atUtc, fmt3 } from "@/lib/format";
+import { atUtc } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { BIG_FIELD, hasPlayers, hasSeries, isLeague, isMoreHockey, isSpx, leagueInfo, LG, seasonLabel, seasonSeg, srcName } from "@/lib/leagues";
 import { getSeasonAffiliations } from "@/lib/affiliation";
@@ -52,7 +51,8 @@ import { isIdleTeam, seasonStartDay } from "@/lib/idleTeams";
 import { leagueSat } from "@/lib/noSeason";
 import { scheduleNote } from "@/lib/schedule";
 import { parseSelection } from "@/lib/season";
-import { parseSort, recShare, tableOf, type ColumnSpec } from "@/lib/sort";
+import { parseSort } from "@/lib/sort";
+import { headPerGroup, seasonStandKeys, STANDINGS_FULL, type SeasonStandFlags, type SeasonStandLine } from "@/lib/seasonStandLines";
 import { scoresPath } from "@/lib/scores";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getPlayerPaths } from "@/lib/playerLinks";
@@ -192,58 +192,42 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
   // The NHL club each club was affiliated with that season (minor leagues only), as a column of the standings.
   const parentByClub = new Map<number, { lg: string; f: number; name: string }[]>();
   for (const r of affiliations) if (!parentByClub.has(r.franchise_id)) parentByClub.set(r.franchise_id, parentsOfSeason(affiliations.filter((a) => a.franchise_id === r.franchise_id), y));
-  const parentName = (r: StandingRow) => (r.franchise_id != null ? parentByClub.get(r.franchise_id)?.[0]?.name ?? "" : "");
 
   const played = new Set(d.games.flatMap((g) => [g[1], g[4]]));
-  const cols: ColumnSpec<StandingRow>[] = [
-    {
-      key: "team", label: say("col.team"), cls: "team", get: (r) => r.team,
-      cell: (r) => (
-        <>
-          <TeamLabel lg={lg} f={r.franchise_id} name={r.team} year={played.has(r.team_id) || isIdleTeam(r.team_id) ? y : undefined} abbr={abbrFor(abbrs, r.franchise_id, y, r.team)} logo={logoFor(brands, r.franchise_id, y)} />
-          {winner != null && r.franchise_id === winner ? (
-            <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, y) })}>{say("season.winner")}</span>
-          ) : null}
-          {defending != null && r.franchise_id === defending ? (
-            <span className="defending" title={say("season.wonTitle", { season: holder?.label ?? seasonLabel(lg, y - 1) })}>{streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending")}</span>
-          ) : null}
-        </>
-      ),
-    },
-    ...(heading ? [{ key: "place", label: say(heading), cls: "place", get: (r: StandingRow) => placeLabel(r) }] : []),
-    ...(parentByClub.size ? [{
-      key: "nhl", label: say("affil.col"), cls: "team", get: (r: StandingRow) => parentName(r),
-      cell: (r: StandingRow) => (r.franchise_id != null ? parentByClub.get(r.franchise_id) ?? [] : []).map((p) => (
-        <span key={p.f} className="affilcell"><TeamLabel lg={p.lg} f={p.f} name={p.name} logo={logoFor(brands, p.f)} /></span>
-      )),
-    }] : []),
-    {
-      key: "gp", label: say("col.gp"), num: true, title: say("col.gpTeamTitle"), get: (r) => r.gp,
-      cell: (r) => (r.gp != null && played.has(r.team_id) ? (
-        <Link href={paths.teamSeason(lg, r.franchise_id, y)} prefetch={false} title={say("season.teamGames", { team: r.team ?? "", label: d.label })}>{r.gp}</Link>
-      ) : r.gp ?? ""),
-    },
-    { key: "w", label: say("col.w"), num: true, get: (r) => r.w }, { key: "l", label: say("col.l"), num: true, get: (r) => r.l },
-    ...(showT ? [{ key: "t", label: say("col.t"), num: true, get: (r: StandingRow) => r.t }] : []),
-    ...(showO ? [{ key: "otl", label: say("col.otl"), num: true, get: (r: StandingRow) => r.otl }] : []),
-    ...(showP ? [{ key: "pts", label: say("col.pts"), num: true, get: (r: StandingRow) => r.pts }] : []),
-    { key: "pf", label: say("col.for"), num: true, get: (r) => r.pf, cell: (r) => (r.pf != null ? fmt(r.pf) : "") },
-    { key: "pa", label: say("col.against"), num: true, get: (r) => r.pa, cell: (r) => (r.pa != null ? fmt(r.pa) : "") },
-    ...(showHome ? [{ key: "home", label: say("col.home"), get: (r: StandingRow) => recShare(r.home), cell: (r: StandingRow) => r.home || "" }] : []),
-    ...(showRoad ? [{ key: "road", label: say("col.road"), get: (r: StandingRow) => recShare(r.road), cell: (r: StandingRow) => r.road || "" }] : []),
-    {
-      key: "pct", label: say("col.pct"), num: true, get: (r) => r.pct,
-      cell: (r) => (
-        <>
-          {r.pct != null ? fmt3(r.pct) : ""}
-          {r.pct != null ? <span className="pctbar" style={{ width: `${Math.round((60 * r.pct) / maxPct)}px` }} /> : null}
-        </>
-      ),
-    },
-  ];
-  const standings = tableOf(shown, cols, (r) => r.team_id, (r) => rowClasses(r) || undefined);
-  standings.rows.forEach((r, i) => { r.group = grouped.of[i]; });
-  const sort = parseSort(sp.sort, cols.map((c) => c.key), "pct.desc");
+  // The table goes to the browser as short lines (lib/seasonStandLines.ts); a logo's address is long and a club's is on every row, so the lines point into one list.
+  const logoList: string[] = [];
+  const logoAt = (url: string | null | undefined) => (url ? (logoList.indexOf(url) >= 0 ? logoList.indexOf(url) : logoList.push(url) - 1) : -1);
+  const standFlags: SeasonStandFlags = { place: heading, nhl: parentByClub.size > 0, showT, showO, showP, showHome, showRoad, maxPct, logos: logoList };
+  const standLines: SeasonStandLine[] = shown.map((r, i) => {
+    const line: SeasonStandLine = {
+      id: r.team_id, n: r.team, gp: r.gp, w: r.w, l: r.l, t: r.t, otl: r.otl, pts: r.pts, pf: r.pf, pa: r.pa, home: r.home, road: r.road, pct: r.pct,
+    };
+    if (r.franchise_id != null) line.f = r.franchise_id;
+    const ab = abbrFor(abbrs, r.franchise_id, y, r.team);
+    if (ab) line.ab = ab;
+    const lo = logoAt(logoFor(brands, r.franchise_id, y));
+    if (lo >= 0) line.lo = lo;
+    if (played.has(r.team_id) || isIdleTeam(r.team_id)) line.y = 1;
+    if (winner != null && r.franchise_id === winner) line.wn = 1;
+    if (defending != null && r.franchise_id === defending) line.df = 1;
+    if (heading) line.pl = placeLabel(r);
+    if (parentByClub.size) line.af = (r.franchise_id != null ? parentByClub.get(r.franchise_id) ?? [] : []).map((p) => [p.lg, p.f, p.name, logoAt(logoFor(brands, p.f))]);
+    if (r.gp != null && played.has(r.team_id)) line.g = 1;
+    const cl = rowClasses(r);
+    if (cl) line.cl = cl;
+    if (grouped.of[i] != null) line.gr = grouped.of[i];
+    return line;
+  });
+  const standWords: SeasonStandWords = {
+    label: d.label,
+    winTitle: say("season.wonTitle", { season: seasonLabel(lg, y) }), winText: say("season.winner"),
+    defTitle: say("season.wonTitle", { season: holder?.label ?? seasonLabel(lg, y - 1) }), defText: streak > 1 ? say("season.defendingMany", { n: fmt(streak) }) : say("season.defending"),
+  };
+  const sort = parseSort(sp.sort, seasonStandKeys(standFlags), "pct.desc");
+  // A table of many clubs draws its first rows (of each group) until "Show all"; all the lines are in the page, and without script the link draws the table in full.
+  const bigTable = shown.length > STANDINGS_FULL && sp.full !== "1";
+  const standHead = headPerGroup(grouped.groups.length);
+  const standAll = queryHref(seasonPath(lg, y), sp, { full: "1" });
   return (
     <SeasonGamesProvider seasonPath={seasonPath(lg, y)}>
       <AccentStyle league={lg} />
@@ -304,7 +288,11 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <StandingsFocus>
             <ViewTabs lg={lg} path={seasonPath(lg, y)} sp={sp} view={view} views={views} rows={st} choices={choices} group={group?.key ?? ""} />
             <p className="note">{standingsNote}</p>
-            <TeamData leagues={[lg, ...[...parentByClub.values()].flatMap((ps) => ps.map((x) => x.lg))]}><div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div></TeamData>
+            {(() => {
+              const table = <div className="scroll"><SeasonStandings lg={lg} year={y} lines={standLines} flags={standFlags} words={standWords} groups={grouped.groups} def="pct.desc" initial={sort}
+                head={bigTable ? standHead : undefined} perGroup={grouped.groups.length > 1} allHref={bigTable ? standAll : undefined} /></div>;
+              return parentByClub.size ? <TeamData leagues={[lg, ...[...parentByClub.values()].flatMap((ps) => ps.map((x) => x.lg))]}>{table}</TeamData> : table;
+            })()}
           </StandingsFocus>
           {asOf || BIG_FIELD.has(lg) ? null : <SeasonRace clubs={raceClubs} countsOtl={d.standings.some((r) => r.otl != null)} weekStart={lg === "nfl" ? 2 : 1} />}
         </section>

@@ -60,6 +60,10 @@ interface Props {
   onSort?: (sort: SortKey[]) => void;
   /** Draws only the first `limit` rows of the sort in force, under a "Show all" button that draws the rest (already on the page: no request). The sort still covers every row. */
   limit?: number;
+  /** With `groups`, draws only the first `groupLimit` rows of each group instead (a head per conference), under the same "Show all". */
+  groupLimit?: number;
+  /** Where "Show all" goes without script: the same table drawn in full. With it the button is a link, and a press still draws the rest at once. */
+  allHref?: string;
   /**
    * The rows given are only the first of the table: the page left the rest out (they come from `load` when asked for). A "Show all" link under the table
    * calls `load`, and is a plain link to `href` (the whole list as a page of its own) where script is off or the rest could not be fetched. A sort other than the
@@ -74,7 +78,7 @@ interface Props {
  * and blanks come last whichever way the sort runs. The rows arrive already drawn (the page makes the links), so the
  * table is server-rendered and crawlable.
  */
-export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort, limit, partial }: Props) {
+export function SortTable({ columns, rows, param = "sort", def = null, initial, remote = false, label, groups, link, onSort, limit, groupLimit, allHref, partial }: Props) {
   const router = useRouter();
   const { say } = useSpeaker();
   const known = useMemo(() => columns.filter((c) => !c.nosort).map((c) => c.key), [columns]);
@@ -101,8 +105,9 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
 
   const sorted = useMemo(() => sortRows(rows, spec, (r, k) => r.sort[k]), [rows, spec]);
   const [all, setAll] = useState(false);
-  const capped = limit != null && !all && sorted.length > limit;
-  const shown = capped ? sorted.slice(0, limit) : sorted;
+  const perGroup = groups != null && groupLimit != null;
+  const capped = !all && (perGroup ? groups.some((g) => sorted.filter((r) => r.group === g.id).length > groupLimit) : limit != null && sorted.length > limit);
+  const shown = !capped ? sorted : perGroup ? groups.flatMap((g) => sorted.filter((r) => r.group === g.id).slice(0, groupLimit)) : sorted.slice(0, limit);
   const first = spec[0];
 
   function press(c: SortColumn) {
@@ -174,7 +179,13 @@ export function SortTable({ columns, rows, param = "sort", def = null, initial, 
   return (
     <>
       {table}
-      <p className="showall"><button type="button" onClick={() => setAll(true)}>{say("table.showAll", { count: String(sorted.length) })}</button></p>
+      <p className="showall">
+        {allHref ? (
+          <a href={allHref} onClick={(e) => { e.preventDefault(); setAll(true); }}>{say("table.showAll", { count: String(sorted.length) })}</a>
+        ) : (
+          <button type="button" onClick={() => setAll(true)}>{say("table.showAll", { count: String(sorted.length) })}</button>
+        )}
+      </p>
     </>
   );
 }

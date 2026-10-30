@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.7", date: "2026-10-30", href: "/ncaaf/2024",
+    title: "College football season pages are less than half the weight",
+    text: "A college football season page was 362 KB because its table drew all 134 clubs and its postseason list drew every game twice. The table now shows the first rows and a Show all link (it opens the whole table without script), and the tables are sent as short lines. The page is 156 KB; everything is still there." },
   { version: "0.170.6", date: "2026-10-30", href: "/players",
     title: "The players list is half the weight",
     text: "A page of a hundred players was 392 KB: every row was sent twice, every country in the filter was a flag and a link of its own, and every club's address came along. Rows now travel as short lines, the long country list is drawn when you open it, and the page is half the size. It looks, sorts and filters as before." },
