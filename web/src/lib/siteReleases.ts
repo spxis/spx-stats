@@ -19,7 +19,7 @@ export type SiteRelease = {
 export const SITE_RELEASES: readonly SiteRelease[] = [
   { version: "0.170.12", date: "2026-10-30", href: "/mlb/2007/team/cincinnati-reds",
     title: "A club's season page is another third lighter and quicker to open",
-    text: "The chart of where a club's players came from and went, and the pins of the big map, are now fetched when you scroll to the chart or open the map, instead of being read and sent with every visit. The games travel as short lines, and the roster tables draw their first fifteen players until you press Show all (a link to every row without script). Cincinnati 2007 went from 412 to 245 KB and needs a dozen database reads instead of twenty; no sampled season is over 250 KB now." },
+    text: "The chart of where a club's players came from and went, and the big map's pins, now load when you scroll to the chart or open the map. The games travel as short lines, and the roster tables show their first fifteen players until Show all (a link to every row without script). Cincinnati 2007 went from 412 to 245 KB." },
   { version: "0.170.11", date: "2026-10-30", href: "/mlb/head-to-head/baltimore-orioles-vs-detroit-tigers",
     title: "Long head-to-head pages are a quarter of the weight",
     text: "A head-to-head page for clubs that met for a century listed every season and up to 200 games, over a megabyte. It now lists the newest fifteen seasons and twenty-five games, with Show all for the rest. Baltimore against Minnesota went from 1,304 KB to 286 KB; the heaviest rivalries of the other leagues lost about three quarters too." },
