@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.2", date: "2026-10-30", href: "/teams",
+    title: "The teams list reads one short list for home cities",
+    text: "The list of teams finds each club's home city from one row for each club instead of the city of every club season (about 2 MB in twelve requests). The list looks the same; a first visit reads about 1.8 MB less."
+  },
   { version: "0.174.1", date: "2026-10-30", href: "/nhl/2023-24",
     title: "Pages read less shared data on a first visit",
     text: "The colours and logos of every club, the club names behind every team address, the list of seasons and the logo fits each come from one precomputed list instead of up to four requests that repeated their column names. A first visit to a page with nothing cached reads about 40 percent fewer bytes; nothing on a page changes."

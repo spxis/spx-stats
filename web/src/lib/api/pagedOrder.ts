@@ -107,6 +107,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   team_awards: ["league", "franchise_id", "year", "award_code", "person_id", "winner"],
   team_brand: ["league", "franchise_id", "brand_from", "brand_to", "logo_url", "source"],
   team_brand_pack: ["franchise_id"],
+  team_home_city: ["league", "franchise_id"],
   team_index: ["league", "franchise_id"],
   team_opponent_season: ["league", "year", "franchise_id", "opponent_franchise_id", "phase"],
   team_season_affiliation: ["league", "year", "franchise_id", "position"],

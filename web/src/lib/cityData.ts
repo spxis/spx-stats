@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows, rowsSlice } from "./api/client";
+import { ApiError, rows, rowsSlice, viewMissing } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { buildStays, staysFromRows, unitOf, type CityRef, type ClubSeason, type Placement, type Stay } from "./cityModel";
 import { withCupTitles } from "./cup";
@@ -72,6 +72,21 @@ export const getPlacements = cache(async (): Promise<Placement[]> =>
   (await rows("team_season_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id", placementRow)).map((p) => ({
     league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
   })));
+
+/**
+ * The city of each club's newest season (api.team_home_city, migration 180: about 700 rows, one request), which is all the teams list takes from the placements.
+ * While the view is a 404 every placement is read (api.team_season_city, twelve requests).
+ */
+export const getLatestPlacements = cache(async (): Promise<Placement[]> => {
+  try {
+    return (await rows("team_home_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,franchise_id", placementRow)).map((p) => ({
+      league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
+    }));
+  } catch (e) {
+    if (!viewMissing(e)) throw e;
+    return getPlacements();
+  }
+});
 
 /** The city of each club season in some cities (api.team_season_city read by city: one request for a city and its metro area, not the whole list). */
 const getPlacementsIn = async (slugs: string[]): Promise<Placement[]> =>

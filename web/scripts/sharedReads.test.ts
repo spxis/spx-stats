@@ -4,6 +4,8 @@ import type { FranchiseNameRow, SeasonSummaryRow, TeamBrandRow } from "../src/li
 import { brandPackSchema, brandRowsFromPack } from "../src/lib/brandPack.ts";
 import { logoFitPackSchema, logoFitsFromPack } from "../src/lib/logoFitPack.ts";
 import { namePackSchema, nameRowsFromPack, runsFromPack } from "../src/lib/namePack.ts";
+import { latestHomes } from "../src/lib/teamHome.ts";
+import type { CityRef, Placement } from "../src/lib/cityModel.ts";
 import { summaryPackSchema, summaryRowsFromPack } from "../src/lib/summaryPack.ts";
 
 /**
@@ -87,4 +89,19 @@ test("logo fits come back as the rows of api.logo_fit, and a status the site doe
   const [row] = logoFitsFromPack([logoFitPackSchema.parse({ fits: [fit] })]);
   assert.deepEqual(row, { logo_file: "commons:A.svg", league: "nhl", team: "A", wordmark: false, mark_url: null, mark_licence: null, mark_page: null, scale: 1.15, dx: 0, dy: -4, bg: "auto", status: "approved", note: "note" });
   assert.throws(() => logoFitPackSchema.parse({ fits: [[...fit.slice(0, 11), "maybe", null]] }));
+});
+
+test("the teams list takes the same homes from each club's newest placement as from every placement (api.team_home_city)", () => {
+  const city = (slug: string, lat: number): CityRef => ({ slug, name: slug, nameFr: null, region: "US-MA", country: "US", lat, lon: -71, metro: null, metroName: null, metroNameFr: null });
+  const cities = [city("boston", 42.3), city("hartford", 41.7), city("worcester", 42.2)];
+  const place = (league: string, year: number, f: number, slug: string, venue: boolean): Placement => ({ league, year, f, city: slug, basis: "identity", venueLat: venue ? 1 : null, venueLon: venue ? 2 : null, venueCity: venue ? slug : null });
+  const all = [
+    place("nhl", 1980, 1, "hartford", true), place("nhl", 1997, 1, "boston", false), place("nhl", 2010, 1, "worcester", true),
+    place("nhl", 1990, 2, "boston", true), place("wha", 1975, 1, "hartford", false),
+  ];
+  const newest = (league: string, f: number) => all.filter((p) => p.league === league && p.f === f).sort((a, b) => b.year - a.year)[0];
+  const latest = [newest("nhl", 1), newest("nhl", 2), newest("wha", 1)];
+  const countryOnly = [{ league: "nhl", year: 2015, f: 2, cc: "CA" }];
+  assert.deepEqual([...latestHomes(latest, cities, false, countryOnly)], [...latestHomes(all, cities, false, countryOnly)]);
+  assert.deepEqual([...latestHomes(latest, cities, true)], [...latestHomes(all, cities, true)]);
 });

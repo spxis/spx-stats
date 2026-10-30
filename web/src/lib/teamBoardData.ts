@@ -3,7 +3,7 @@ import { rows } from "./api/client";
 import { franchiseNameSchema } from "./api/schemas";
 import { teamIndexSchema } from "./api/teams";
 import { getAlignment } from "./alignmentData";
-import { getCities, getCountryOnly, getPlacements } from "./cityData";
+import { getCities, getCountryOnly, getLatestPlacements } from "./cityData";
 import { getNamePack } from "./franchiseNames";
 import { nameRowsFromPack } from "./namePack";
 import { getBrands } from "./data";
@@ -40,7 +40,7 @@ export async function getTeamBoard(french: boolean): Promise<TeamBoardData> {
     getBrands(),
     getNamePack().then((pack) => (pack ? nameRowsFromPack(pack, true) : rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from.nullsfirst", franchiseNameSchema))).catch(() => []),
     getCities().catch(() => []),
-    getPlacements().catch(() => []),
+    getLatestPlacements().catch(() => []),
     getCountryOnly().catch(() => []),
     ...LEAGUE_CODES.map((lg) => getAlignment(lg).catch(() => [])),
   ]);
