@@ -701,6 +701,22 @@ EXCLUSIVE lock for the whole rebuild. So:
      5 s (`lock_timeout`) instead of queueing behind a refresh, and refuses if a view is built from the old one (drop and recreate those after).
   3. Apply to DS1 first, then production, like any migration. Add the migration number to the view's comment. `api.refresh()` needs no change.
 - A step in `db/build` that refreshes a view uses `concurrently` (190, 191, 192, 194 do).
+- **Packed views hang on the views they read.** The packs the site reads first on a visit (`api.team_brand_pack`, `franchise_name_pack`, `season_summary_pack`,
+  `logo_fit_pack`, `team_home_city`, `city_stay`, `city_stay_pack`, `venue_pack`, `standing_league_pack`, `award_league_pack`, `alignment_pack`, `player_league_pack`,
+  `team_abbr_pack`; migrations 168 and 176 to 187) are materialized views built from api views (`team_brand`, `franchise_names`, `team_season_name_run`, `season_summary`,
+  `logo_fit`, `team_season_city`, `team_season_index`, `venue_place`, `venue_info`, `venue_name`, `standing_index`, `awards`, `alignment`, `player_multi_league`,
+  `person_season_teams`, `team_abbr`). Postgres refuses `drop view`, `drop materialized view` and a `create or replace view` that changes the columns of anything a
+  materialized view reads, so a rebuild of one of those views by drop and create now fails with "other objects depend on it". Do this instead:
+  1. List what depends on it: `select distinct c.relname from pg_depend d join pg_rewrite r on r.oid = d.objid join pg_class c on c.oid = r.ev_class
+     join pg_class s on s.oid = d.refobjid where s.relnamespace = 'api'::regnamespace and s.relname = '<view>' and c.oid <> s.oid;` (and again for each pack it lists).
+  2. A view whose columns stay as they are (same names and types in the same order, new ones only at the end) is changed with `create or replace view`; nothing else is needed.
+     A materialized view is changed by the build-beside-and-swap above (`api.swap_matview` refuses while a view is built from the old one, so do 3 first).
+  3. A change that cannot be done in place: in one transaction `drop materialized view` for each pack of step 1 (a pack is derived and holds nothing the view does not), change the
+     view, then create the packs again from their migration files, in the order of their dependencies, with their unique index, `analyze` and grant. While a pack is missing the
+     site falls back on the whole-table reads it made before (each reader treats a 404 so), which are correct and heavier, so there is no outage; every other statement of the file must still
+     finish in about 40 s, so a pack on a big view is built beside (`<name>_new`) in its own file, then swapped. Never `drop ... cascade` on an api view: it drops the packs without saying so.
+  4. A new pack goes in `UNIQUE_KEYS` (`web/src/lib/api/pagedOrder.ts`) with its unique index, gets a decoder test in `scripts/sharedReads.test.ts` that rebuilds the view's rows
+     exactly, and is read with the 404 fallback. `api.refresh()` finds it from the catalog and rebuilds it after the views it reads.
 - A plain `create unique index` on a view takes a SHARE lock (it blocks a refresh, not reads), which is fine for small views in a migration
   file; `create index concurrently` cannot run in the transaction `ds1-apply.sh` and the Supabase query API wrap a file in.
 
