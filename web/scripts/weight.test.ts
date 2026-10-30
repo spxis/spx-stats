@@ -616,11 +616,11 @@ test("the all-leagues trophies page names its cups by address and carries only t
  */
 const LIVE = process.env.PAGES_URL ?? process.env.PLAYER_PAGES_URL;
 const PLAYER_PAGES: { path: string; budget: number }[] = [
-  { path: "/mlb/player/156", budget: PLAYER_BUDGET },
-  { path: "/nhl/player/1866", budget: PLAYER_BUDGET },
-  { path: "/nba/player/2786", budget: PLAYER_BUDGET },
-  { path: "/mlb/player/41518", budget: PAGE_BUDGET },
-  { path: "/worldcup/player/76534", budget: PAGE_BUDGET },
+  { path: "/mlb/player/albert-pujols-156", budget: PLAYER_BUDGET },
+  { path: "/nhl/player/wayne-gretzky-1866", budget: PLAYER_BUDGET },
+  { path: "/nba/player/lebron-james-2786", budget: PLAYER_BUDGET },
+  { path: "/mlb/player/luke-french-41518", budget: PAGE_BUDGET },
+  { path: "/worldcup/player/lionel-messi-76534", budget: PAGE_BUDGET },
 ];
 /** The floor every page stands on: the document, header, footer and the sign-in and language scripts, nothing else. A small static page shows what the root layout sends. */
 const ROOT_FLOOR = 45 * 1000;
@@ -741,7 +741,7 @@ const KIND_SAMPLES: Record<string, string> = {
   "mls/team/[slug]": "/mls/team/dc-united",
   "more-hockey": "/more-hockey",
   "players": "/players?sort=seasons.desc",
-  "players/[id]/[[...rest]]": "/mlb/player/156",
+  "players/[id]/[[...rest]]": "/mlb/player/albert-pujols-156",
   "privacy": "/privacy",
   "quality": "/quality",
   "releases": "/releases",
@@ -778,7 +778,7 @@ const KIND_EXTRA = ["/nhl/2004-05", "/mlb/head-to-head/baltimore-orioles-vs-detr
  * the budget its line must go (the test says so), so this list only ever gets shorter.
  */
 const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string }> = {
-  "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "SPX-800 franchise results", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
+  "/mlb/team/philadelphia-phillies/rows/results": { kb: 400, ticket: "SPX-800 franchise results", why: "JSON of every game of a 144-season franchise (22,000 games; 640 KB before the packing was shortened, and 144 reads to make it before api.franchise_season_games)" },
 };
 
 /** With READS_URL (the scripts/weightCrawl.ts proxy in front of the PostgREST the site reads) each page may also make only so many database reads while it is drawn. Pages served from the site's cache make none: run it on a fresh build. */
