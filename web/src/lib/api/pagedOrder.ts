@@ -18,6 +18,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   all_star_mvp: ["league", "year", "event_no", "seq"],
   all_star_selection: ["league", "year", "event_no", "seq"],
   award_list: ["league", "code"],
+  award_league_pack: ["league"],
   awards: ["league", "year", "award_code", "winner", "source", "franchise_id", "person_id", "note"],
   batted_ball_player_hand: ["person_id", "year", "role", "bat_hand"],
   city: ["slug"],

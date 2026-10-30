@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { rows } from "./api/client";
+import { checkRows, rows } from "./api/client";
+import { leagueAwardsPacked } from "./awardPackRead";
 import { orElse } from "./api/soften";
 import { trophyInfoSchema, trophyRowSchema } from "./api/trophies";
 import { dedupe, type TrophyInfo, type TrophyRow } from "./awardTrophy";
@@ -18,7 +19,11 @@ export const getTrophyList = cache(async (): Promise<TrophyInfo[]> =>
 /** Every winner of every award of one league, newest season first, each once. Empty for a league that has none. */
 export const getLeagueTrophyRows = cache(async (lg: string): Promise<TrophyRow[]> => {
   if (!isLeague(lg)) return [];
-  const list = await orElse(rows("awards", `league=eq.${lg}&select=year,award_code,award,kind,winner,note,franchise_id,person_id&order=year.desc,award_code,winner`, trophyRowSchema), []);
+  const list = await orElse((async () => {
+    const packed = await leagueAwardsPacked(lg);
+    return packed ? checkRows("award_league_pack", packed, trophyRowSchema)
+      : rows("awards", `league=eq.${lg}&select=year,award_code,award,kind,winner,note,franchise_id,person_id&order=year.desc,award_code,winner`, trophyRowSchema);
+  })(), []);
   return dedupe(list);
 });
 

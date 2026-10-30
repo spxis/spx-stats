@@ -20,6 +20,8 @@ import { logoFitSchema, type LogoFit } from "./logoFit";
 import { logoFitPackSchema, logoFitsFromPack } from "./logoFitPack";
 import { brandPackSchema, brandRowsFromPack } from "./brandPack";
 import { summaryPackSchema, summaryRowsFromPack } from "./summaryPack";
+import { awardPacks } from "./awardPackRead";
+import { sourceCounts } from "./awardPack";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
@@ -323,14 +325,23 @@ const SPX_SOURCE = {
   url: null, notes: "SPX's own databases, scraper store and published files.",
 };
 
+/** How many award winners each source holds: api.award_league_pack (migration 183) counts them, else every row of api.awards is read and counted. */
+async function awardSourceCounts(): Promise<Map<string, number>> {
+  const packs = await awardPacks();
+  if (packs) return sourceCounts(packs);
+  const counts = new Map<string, number>();
+  for (const w of await rows("awards", "select=source", awardSourceSchema)) counts.set(w.source, (counts.get(w.source) ?? 0) + 1);
+  return counts;
+}
+
 export const getSources = cache(async () => {
   const [src, by, aw] = await Promise.all([
     rows("sources", "select=*", sourceSchema),
     rows("games_by_source", "select=*", gamesBySourceSchema),
-    rows("awards", "select=source", awardSourceSchema),
+    awardSourceCounts(),
   ]);
   const games = (c: string) => by.filter((b) => one(b.source) === c).reduce((a, b) => a + b.games, 0);
-  const winners = (c: string) => aw.filter((w) => one(w.source) === c).length;
+  const winners = (c: string) => [...aw].filter(([source]) => one(source) === c).reduce((a, [, n]) => a + n, 0);
   const list = src.filter((s) => one(s.code) !== "spx");
   list.unshift({ ...SPX_SOURCE, code: "spx" });
   return list.map((s) => ({ ...s, games: games(s.code), award_winners: winners(s.code) }));

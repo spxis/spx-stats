@@ -1,7 +1,8 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { checkRows, rows } from "./api/client";
+import { leagueAwardsPacked } from "./awardPackRead";
 import { canFallBack, orElse } from "./api/soften";
 import { leagueAwardSchema, personAwardSchema, personSchema, personTeamSchema, teamAwardSchema } from "./api/people";
 import { personResumeSchema, personSeasonTeamSchema, personStatSchema, statReferenceSchema } from "./api/player";
@@ -50,7 +51,11 @@ export const getTeamAwards = cache(async (lg: string, f: number): Promise<TeamAw
 /** Every award of a league that is not the championship, for the awards-by-season table. */
 export const getLeagueAwards = cache(async (lg: string): Promise<LeagueAwardRow[]> => {
   if (!isLeague(lg)) return [];
-  return orElse(rows("awards", `league=eq.${lg}&kind=neq.championship&select=year,award_code,award,kind,winner,person_id,franchise_id&order=year.desc,award_code,winner`, leagueAwardSchema), []);
+  return orElse((async () => {
+    const packed = await leagueAwardsPacked(lg);
+    return packed ? checkRows("award_league_pack", packed.filter((a) => a.kind != null && a.kind !== "championship"), leagueAwardSchema)
+      : rows("awards", `league=eq.${lg}&kind=neq.championship&select=year,award_code,award,kind,winner,person_id,franchise_id&order=year.desc,award_code,winner`, leagueAwardSchema);
+  })(), []);
 });
 
 export interface PlayerRecord {

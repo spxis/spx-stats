@@ -9,6 +9,7 @@ import type { CityRef, Placement } from "../src/lib/cityModel.ts";
 import { summaryPackSchema, summaryRowsFromPack } from "../src/lib/summaryPack.ts";
 import { infoRowsFromPack, nameRowsFromPack as venueNamesFromPack, placeRowsFromPack, venuePackSchema } from "../src/lib/venuePack.ts";
 import { byFranchise, standingPackSchema, standingsFromPack } from "../src/lib/standingPack.ts";
+import { awardPackSchema, awardsFromPack, sourceCounts } from "../src/lib/awardPack.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -151,4 +152,22 @@ test("a league's standings come back as the rows of api.standing_index, in both 
   assert.deepEqual(byFranchise(decoded).map((r) => r.team_id), [7, 5, 6, 4], "year, then franchise_id, then team_id");
   assert.throws(() => standingsFromPack({ league: "nhl", teams: [], conferences: [], standings: [1, 2, 3] }), /whole number/);
   assert.throws(() => standingsFromPack({ league: "nhl", teams: [], conferences: [], standings: [...flat.slice(0, 3), 4, ...flat.slice(4, 13)] }), /club name 4/);
+});
+
+test("a league's winners come back as the rows of api.awards, and the sources are counted", () => {
+  const winners = [
+    { year: 2020, award_code: "mvp", award: "Hart", kind: "player", winner: "A", note: null, franchise_id: 3, person_id: 11 },
+    { year: 2020, award_code: "cup", award: "Cup", kind: "championship", winner: "Club", note: "Won 4-0", franchise_id: 3, person_id: null },
+    { year: 2019, award_code: "mvp", award: "Hart Trophy", kind: null, winner: null, note: null, franchise_id: null, person_id: null },
+  ];
+  const dict = [["mvp", "Hart", "player"], ["cup", "Cup", "championship"], ["mvp", "Hart Trophy", null]] as const;
+  const pack = awardPackSchema.parse({
+    league: "nhl", dict_code: dict.map((d) => d[0]), dict_award: dict.map((d) => d[1]), dict_kind: dict.map((d) => d[2]),
+    year: col(winners, "year"), dict: [0, 1, 2], winner: col(winners, "winner"), note: col(winners, "note"), franchise_id: col(winners, "franchise_id"), person_id: col(winners, "person_id"),
+    source_name: ["spx", "wikipedia"], source_count: [2, 1],
+  });
+  assert.deepEqual(awardsFromPack(pack), winners);
+  const other = awardPackSchema.parse({ ...pack, league: "nba", source_name: ["wikipedia", null], source_count: [4, 1] });
+  assert.deepEqual([...sourceCounts([pack, other])].sort(), [["", 1], ["spx", 2], ["wikipedia", 5]]);
+  assert.throws(() => awardsFromPack({ ...pack, dict: [0, 1, 9] }), /award 9/);
 });
