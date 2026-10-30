@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.1", date: "2026-10-30", needsReview: true,
+    title: "The data quality page loads from a small read",
+    text: "The data quality page asks the second database only for its check lines and its sixty most frequent issues, instead of the whole 6,000-line issue table, which was too big for the site's cache and was read again on every rebuild. The page shows the same figures." },
   { version: "0.168.0", date: "2026-10-29", href: "/mlb/player/aaron-judge-414#spray",
     title: "Spray charts on baseball player pages",
     text: "A baseball player's page has a spray chart for the seasons on the slider: his hits (outs and errors on request) in Retrosheet's zones, every home run by zone (the source has no distances), how often he pulled, went up the middle or the other way, and his ground, line, fly and pop-up shares. A pitcher gets it for the balls hit against him. From 1986; a mark is a zone, not a landing spot." },

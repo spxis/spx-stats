@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.168.0",
+  "version": "0.168.1",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -33,6 +33,7 @@
     "test:live": "node --conditions=react-server --test scripts/liveScores.test.ts",
     "test:livereq": "node --test scripts/liveRequest.test.ts",
     "test:turso": "node --conditions=react-server --test scripts/turso.test.ts scripts/adminPeople.test.ts",
+    "test:tursosize": "node --conditions=react-server --test scripts/tursoAnswerSize.test.ts",
     "test:revalidate": "node --test scripts/revalidate.test.ts",
     "test:releases": "node --test scripts/releases.test.ts",
     "test:localtime": "node --test scripts/localTime.test.ts",

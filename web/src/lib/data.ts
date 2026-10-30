@@ -9,6 +9,7 @@ import {
 } from "./api/schemas";
 import type { AwardRow, GameRow, SeasonNoteRow, SeasonSummaryRow, StandingRow, TotalsRow } from "./api/types";
 import { tursoConfigured, tursoQuality, tursoTotals } from "./turso/aggregates";
+import { QUALITY_ISSUES_SHOWN } from "./turso/qualitySql";
 import { groupAbbrs, type AbbrMap } from "./abbr";
 import { groupBrands, type BrandMap } from "./brand";
 import { mergeSpans } from "./nameEras";
@@ -308,7 +309,7 @@ export const getQuality = cache(async () => {
   const desc = (a: { n: number }, b: { n: number }) => b.n - a.n;
   return {
     checks: checks.sort(desc),
-    issues: issues.sort(desc).slice(0, 60),
+    issues: issues.sort(desc).slice(0, QUALITY_ISSUES_SHOWN),
     games_by_source: games.sort((a, b) => a.league.localeCompare(b.league) || b.n - a.n),
   };
 });

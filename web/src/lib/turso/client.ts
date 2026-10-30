@@ -16,6 +16,13 @@ export type Arg = string | number | null;
 type Cell = { type: "null" } | { type: "integer" | "float" | "text"; value: string | number } | { type: "blob"; base64: string };
 
 const TIMEOUT_MS = 8000;
+
+/**
+ * Next's data cache refuses a fetch answer over 2 MB ("Failed to set Next.js data cache ... items over 2MB can not be cached"), so a read that big
+ * is fetched again by every build worker and every regeneration. Keep each answer under this many bytes (scripts/tursoAnswerSize.test.ts holds the
+ * readers to it) by asking for the rows a page draws, not the table; a run that gets one anyway says so in its log.
+ */
+export const TURSO_ANSWER_BUDGET = 1_500_000;
 const AT_BUILD = process.env.NEXT_PHASE === "phase-production-build";
 const PAUSES_MS = AT_BUILD ? [1000, 3000, 6000] : [300];
 
@@ -69,7 +76,9 @@ export async function tursoQuery(sql: string, args: readonly Arg[], opts: TursoO
         });
       const res = opts.live ? await send() : await queuedAtBuild(`turso|${sql}|${JSON.stringify(args)}`, send);
       if (res.ok) {
-        const data = (await res.json()) as { results?: { type: string; response?: { result?: { cols: { name: string }[]; rows: Cell[][] } }; error?: { message?: string } }[] };
+        const text = await res.text();
+        if (text.length > TURSO_ANSWER_BUDGET) console.warn(`turso: answer of ${text.length} bytes is over the ${TURSO_ANSWER_BUDGET} byte budget (Next will not cache one over 2 MB): ${sql.slice(0, 120)}`);
+        const data = JSON.parse(text) as { results?: { type: string; response?: { result?: { cols: { name: string }[]; rows: Cell[][] } }; error?: { message?: string } }[] };
         const first = data.results?.[0];
         if (first?.type !== "ok" || !first.response?.result) throw new ApiError(`turso: ${first?.error?.message ?? "no answer"}`.slice(0, 200), 400, false);
         const { cols, rows } = first.response.result;

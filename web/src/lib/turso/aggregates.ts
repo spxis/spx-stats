@@ -1,8 +1,9 @@
 import "server-only";
 import { z } from "zod";
-import { qualitySchema } from "../api/schemas";
+import { qualitySchema } from "../api/schemas.ts";
 import type { QualityRow, TotalsRow } from "../api/types";
-import { tursoConfigured, tursoRows } from "./client";
+import { tursoConfigured, tursoRows } from "./client.ts";
+import { QUALITY_CHECKS_SQL, QUALITY_ISSUES_SQL } from "./qualitySql.ts";
 
 /**
  * The counts that are worked out from the check and issue tables (home page totals, /quality, /sources), which live in Turso. DS1 works
@@ -22,8 +23,12 @@ export async function tursoTotals(): Promise<Pick<TotalsRow, "lines" | "confirme
 const qualityRow = z.object({ kind: z.string(), source: z.string(), entity: z.string(), what: z.string(), resolution: z.string(), n: z.number() });
 
 export async function tursoQuality(): Promise<QualityRow[]> {
-  const r = await tursoRows("select kind, source, entity, what, resolution, n from api_quality order by n desc", [], qualityRow, { tables: ["api_quality"] });
-  return r.map((x) => qualitySchema.parse({ ...x, resolution: x.resolution || null }));
+  const opts = { tables: ["api_quality"] };
+  const [checks, issues] = await Promise.all([
+    tursoRows(QUALITY_CHECKS_SQL, [], qualityRow, opts),
+    tursoRows(QUALITY_ISSUES_SQL, [], qualityRow, opts),
+  ]);
+  return [...checks, ...issues].map((x) => qualitySchema.parse({ ...x, resolution: x.resolution || null }));
 }
 
 const provRow = z.object({ kind: z.string(), league: z.string(), source: z.string(), checked_by: z.string(), outcome: z.string(), n: z.number() });
