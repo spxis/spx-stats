@@ -24,7 +24,7 @@ const STEPS = [1, 2, 5, 10, 20, 25, 50];
 export function CityTimeline({ clubs }: { clubs: TimelineClub[] }) {
   const router = useRouter();
   const paths = usePaths();
-  const { say, fmt } = useSpeaker();
+  const { say } = useSpeaker();
   const [ref, W] = useChartWidth(900, 280);
   const card = useHeatCard();
   const touched = useRef(false);
@@ -79,7 +79,6 @@ export function CityTimeline({ clubs }: { clubs: TimelineClub[] }) {
   };
 
   return (
-    <>
     <div className="chart scroll citytimeline" ref={ref}>
       <svg viewBox={`0 0 ${Wd} ${H}`} role="group" aria-label={say("timeline.aria")}>
         <g>{ticks.map((y) => <text key={y} x={x(y)} y={12}>{y}</text>)}</g>
@@ -120,8 +119,6 @@ export function CityTimeline({ clubs }: { clubs: TimelineClub[] }) {
       </svg>
       {card.element}
     </div>
-    <p className="note">{say("timeline.legend", { n: fmt(clubs.length) })}</p>
-    </>
   );
 }
 

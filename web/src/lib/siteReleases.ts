@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.4", date: "2026-10-30", href: "/city/toronto",
+    title: "City pages are lighter and open faster",
+    text: "A city page used to draw the timeline of its clubs' seasons before the page was sent, which made the busiest cities (New York was 645 KB) heavy and slow to open the first time. The timeline now draws as you scroll to it. The clubs table above it lists the same clubs and years, and everything looks and works the same." },
   { version: "0.170.3", date: "2026-10-30", href: "/nhl/awards",
     title: "Awards-by-season pages are lighter",
     text: "A league's awards-by-season table drew a small cup drawing beside each of its thousand winners. The cup is now painted once for the whole table, so the page is about 120 KB lighter. It looks and works the same." },

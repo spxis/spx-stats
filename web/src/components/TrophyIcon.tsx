@@ -23,3 +23,9 @@ export function MiniCup({ league }: { league: string }) {
   if (!markup) return null;
   return <span className="minicup" title={say("trophy.champion")} role="img" aria-label={say("trophy.champion")} dangerouslySetInnerHTML={{ __html: markup }} />;
 }
+
+/** The same small cup as `MiniCup`, drawn from the page's CupSprite (`<use href="#cup-<league>">`): a list of hundreds of titles carries the drawing once, not in every entry. */
+export function MiniCupUse({ league }: { league: string }) {
+  const { say } = useSpeaker();
+  return <span className="minicup" title={say("trophy.champion")} role="img" aria-label={say("trophy.champion")}><svg viewBox="0 0 64 64" aria-hidden="true" focusable="false"><use href={`#cup-${league}`} /></svg></span>;
+}

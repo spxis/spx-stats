@@ -432,6 +432,16 @@ test("the awards grid draws its cup once, as a mask, not beside every winner", (
   assert.ok(read("components/people.css").includes(".cupped::before"), "the cup is painted by the cell's ::before");
 });
 
+test("a city's timeline is drawn in the browser when near, and its legend stays in the page", () => {
+  const board = read("components/CityBoard.tsx");
+  assert.ok(board.includes("<CityTimelineLazy") && !board.includes("<CityTimeline "), "the board draws no timeline of its own");
+  const lazy = read("components/CityTimelineLazy.tsx");
+  assert.ok(lazy.includes("useSeen") && lazy.includes("ssr: false") && lazy.includes("timeline.legend"), "the drawing waits until the reader is near; the legend is in the page");
+  assert.ok(board.includes("<MiniCupUse") && !board.includes("<MiniCup "), "the list of titles carries no drawing of a cup in every entry");
+  assert.ok(read("app/[locale]/s/city/[slug]/page.tsx").includes("<CupSprite"), "the cups are drawn once for the page");
+  assert.ok(!/abbrs = Object.fromEntries\(await Promise.all\(LEAGUE_CODES/.test(read("app/[locale]/s/city/[slug]/page.tsx")), "the page reads the short forms of its clubs' leagues, not of all of them");
+});
+
 test("the MLS season page sends its matches as lines and keeps every match on a page of its own", () => {
   assert.ok(MLS_MATCHES_HEAD <= 20, "the table's head is a few rows");
   const page = read("app/[locale]/s/mls/[year]/page.tsx");
@@ -468,6 +478,9 @@ const TEAMS_PAGES = [{ path: "/teams", budget: 250 * 1000 }];
 /** A league's awards by season, every season on one page: about a thousand winners, each once had a cup drawing of its own in the markup (380 KB). */
 const AWARDS_PAGES = ["nhl", "nba", "mlb", "nfl"].map((lg) => ({ path: `/${lg}/awards`, budget: TABLE_BUDGET }));
 
+/** A city with many clubs: the timeline of its clubs' seasons was drawn on the server (over 100 KB of markup, 645 KB for New York) and took most of its first render. */
+const CITY_PAGES = ["toronto", "chicago", "new-york", "boston", "los-angeles", "montreal", "detroit"].map((c) => ({ path: `/city/${c}`, budget: PAGE_BUDGET }));
+
 /** An MLS season: a full season's games was 1,045 KB of HTML (the table drawn as markup and sent again as elements). The season page, and the page of every match. */
 const MLS_PAGES = [
   ...["1996", "2008", "2020", "2025"].map((y) => ({ path: `/mls/${y}`, budget: PAGE_BUDGET })),
@@ -493,7 +506,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...AWARDS_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

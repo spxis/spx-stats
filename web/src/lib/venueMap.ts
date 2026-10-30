@@ -28,15 +28,17 @@ export const getNames = cache(async (lg: string) =>
 /**
  * Every club of a league that has a venue with coordinates, for the venue map's team choice. Brand eras that name the same
  * venue are one stop, from the first year to the last (open if any is). Locations come from the brand rows, which carry
- * only the venue name and coordinates; the city and state come from api.venue_place.
+ * only the venue name and coordinates; the city and state come from api.venue_place. `only` keeps just those franchises: each club's venues have their addresses
+ * worked out, which a page that wants a few clubs (a city's) should not pay for every club of the league.
  */
-export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPaths, say: Speaker["say"]): Promise<VenueTeam[]> {
+export async function getVenueTeams(lg: string, brands: BrandMap, paths: TeamPaths, say: Speaker["say"], only?: ReadonlySet<number>): Promise<VenueTeam[]> {
   const names = new Map<number, string>();
   const [named, places, spans, facts] = await Promise.all([getNames(lg), getVenuePlaces(lg), getVenueNames(), getVenueFacts()]);
   for (const n of named) names.set(n.franchise_id, n.name);
   const out: VenueTeam[] = [];
   for (const [id, eras] of Object.entries(brands)) {
     const f = Number(id);
+    if (only && !only.has(f)) continue;
     const stops = new Map<string, VenueStop>();
     const placed = eras.filter((b) => b.league === lg && b.home_venue && b.latitude != null && b.longitude != null)
       .sort((a, b) => (a.brand_from ?? "").localeCompare(b.brand_from ?? ""));

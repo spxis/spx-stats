@@ -2,8 +2,7 @@ import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound } from "next/navigation";
 import { CityBoard, type BoardStay } from "@/components/CityBoard";
-import { CupsProvider } from "@/components/TrophyIcon";
-import { cupsFor } from "@/lib/cups";
+import { CupSprite } from "@/components/CupSprite";
 import { CityMapCorner } from "@/components/CityMap";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
@@ -16,7 +15,7 @@ import { MIN_RANKED_SEASONS, rankOf, totalsOf, unitOf, unitTotals, type CityRef,
 import { getAbbrs, getBrands } from "@/lib/data";
 import { fmt3 } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { LEAGUE_CODES, LG } from "@/lib/leagues";
+import { LG } from "@/lib/leagues";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { countryName } from "@/lib/people-format";
@@ -55,11 +54,12 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
   const city = data.byslug.get(slug);
   if (!city) notFound();
   const [paths, brands] = await Promise.all([getPaths(), getBrands()]);
-  const abbrs = Object.fromEntries(await Promise.all(LEAGUE_CODES.map(async (lg) => [lg, await getAbbrs(lg).catch(() => ({}))] as const)));
   const nameOf = (c: CityRef) => (locale === "fr" && c.nameFr ? c.nameFr : c.name);
   const metroName = city.metro ? (locale === "fr" && city.metroNameFr ? city.metroNameFr : city.metroName) : null;
 
   const here = data.stays.filter((s) => s.city === slug);
+  // The short forms of the leagues this city's clubs played in, not of all twenty-two.
+  const abbrs = Object.fromEntries(await Promise.all([...new Set(here.map((s) => s.league))].map(async (lg) => [lg, await getAbbrs(lg).catch(() => ({}))] as const)));
   const unit = unitOf(city);
   const members = data.cities.filter((c) => unitOf(c) === unit);
   const around = data.stays.filter((s) => !s.cup && s.city !== slug && members.some((m) => m.slug === s.city));
@@ -110,7 +110,8 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
       </section>
 
       {total.clubs ? (
-        <CupsProvider markup={cupsFor(board.filter((s) => s.titles.length).map((s) => s.league))}>
+        <>
+        <CupSprite leagues={[...new Set(board.filter((s) => s.titles.length).map((s) => s.league))]} />
         <CityBoard
           stays={board}
           rank={(
@@ -142,7 +143,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
             </section>
           ) : null}
         </CityBoard>
-        </CupsProvider>
+        </>
       ) : null}
 
       {members2.length ? (

@@ -106,7 +106,7 @@ export async function getCityPins(stays: Stay[], placements: Placement[], cities
     wanted.set(k, w);
   }
   const leagues = LEAGUE_CODES.filter((lg) => stays.some((s) => s.league === lg));
-  const teams = (await Promise.all(leagues.map(async (lg) => (await getVenueTeams(lg, brands, paths, say).catch(() => [])).map((t) => ({ lg, t })))))
+  const teams = (await Promise.all(leagues.map(async (lg) => (await getVenueTeams(lg, brands, paths, say, new Set(stays.filter((s) => s.league === lg).map((s) => s.f))).catch(() => [])).map((t) => ({ lg, t })))))
     .flat();
   const pins: Pin[] = [];
   for (const { lg, t } of teams) {

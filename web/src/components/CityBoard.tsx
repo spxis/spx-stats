@@ -8,11 +8,12 @@ import { LEAGUE_CODES, LG, seasonLabel } from "@/lib/leagues";
 import { seasonPath } from "@/lib/slug";
 import { tableOf } from "@/lib/sort";
 import { addressRange, parseRange, releaseRangeHold, saveRange, savedRange, writeAddress, type YearSpan } from "@/lib/yearRange";
-import { CityTimeline, type TimelineClub } from "./CityTimeline";
+import { CityTimelineLazy } from "./CityTimelineLazy";
+import type { TimelineClub } from "./CityTimeline";
 import { CityTitles } from "./CityTitles";
 import { SortTable } from "./SortTable";
 import { TeamLabel } from "./TeamLabel";
-import { MiniCup } from "./TrophyIcon";
+import { MiniCupUse } from "./TrophyIcon";
 import { Figures } from "./ui";
 import { YearRange } from "./YearRange";
 import { useSpeaker } from "./i18n/LocaleProvider";
@@ -124,7 +125,7 @@ export function CityBoard({ stays, rank, children }: { stays: BoardStay[]; rank:
           <section className="section">
             <h2>{say("city.timelineHead")}</h2>
             <p className="note">{say("city.timelineNote")}</p>
-            <CityTimeline clubs={timeline} />
+            <CityTimelineLazy clubs={timeline} />
           </section>
 
           {total.titles ? (
@@ -139,11 +140,11 @@ export function CityBoard({ stays, rank, children }: { stays: BoardStay[]; rank:
               <div className="seasonlist citytitlelist">
                 {titleList.map(({ s, y, team }) => s.before?.includes(y) ? (
                   <span key={`${s.league}-${s.f}-${y}`} className="full" title={`${say("cup.name")} (${say("cup.before")}) ${y} · ${team}`}>
-                    <MiniCup league={s.league} />{y} {say("cup.name")} · {team}
+                    <MiniCupUse league={s.league} />{y} {say("cup.name")} · {team}
                   </span>
                 ) : (
                   <Link key={`${s.league}-${s.f}-${y}`} className="full" href={seasonPath(s.league, y)} prefetch={false} title={`${LG[s.league as keyof typeof LG]} ${seasonLabel(s.league, y)} · ${team}`}>
-                    <MiniCup league={s.league} />{seasonLabel(s.league, y)} {LG[s.league as keyof typeof LG]} · {team}
+                    <MiniCupUse league={s.league} />{seasonLabel(s.league, y)} {LG[s.league as keyof typeof LG]} · {team}
                   </Link>
                 ))}
               </div>
