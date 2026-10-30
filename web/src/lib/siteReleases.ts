@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.8", date: "2026-10-30", href: "/trophies",
+    title: "The trophies page is lighter",
+    text: "The trophies page held its sixty-odd cup drawings twice, and carried an address and logo fit for every club of every league. The cups now come from one file the browser keeps, and the page carries only the clubs it names. It is 236 KB instead of 336 KB and looks the same." },
   { version: "0.170.7", date: "2026-10-30", href: "/ncaaf/2024",
     title: "College football season pages are less than half the weight",
     text: "A college football season page was 362 KB because its table drew all 134 clubs and its postseason list drew every game twice. The table now shows the first rows and a Show all link (it opens the whole table without script), and the tables are sent as short lines. The page is 156 KB; everything is still there." },

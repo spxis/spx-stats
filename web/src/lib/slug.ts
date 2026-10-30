@@ -271,8 +271,13 @@ export function resolveTeamSeason(L: LeagueSlugs | undefined, y: number, seg: st
 }
 
 /** What a browser needs to build addresses: the table without the lookups. */
-export function tableOf(s: Slugs, leagues?: readonly string[]): SlugTable {
+export function tableOf(s: Slugs, leagues?: readonly string[], only?: ReadonlySet<string>): SlugTable {
   const out: SlugTable = {};
-  for (const [lg, L] of Object.entries(s.leagues)) if (!leagues || leagues.includes(lg)) out[lg] = L.entries;
+  for (const [lg, L] of Object.entries(s.leagues)) {
+    if (leagues && !leagues.includes(lg)) continue;
+    // `only` ("league:franchise") keeps just those clubs: a page that names a few clubs of many leagues.
+    const entries = only ? Object.fromEntries(Object.entries(L.entries).filter(([f]) => only.has(`${lg}:${f}`))) : L.entries;
+    if (!only || Object.keys(entries).length) out[lg] = entries;
+  }
   return out;
 }

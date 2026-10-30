@@ -5,6 +5,7 @@ import { TrophySprite } from "@/components/TrophySprite";
 import { logoFor, type BrandMap } from "@/lib/brand";
 import { bigSeasons, factsOf, holders, leagueOfCode, streaks, tally, trophyPath, type TrophyInfo, type TrophyRow } from "@/lib/awardTrophy";
 import { trophyArt } from "@/lib/cups";
+import { TROPHY_SPRITE } from "@/lib/trophySprite";
 import { getBrands } from "@/lib/data";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { leagueInfo, seasonLabel } from "@/lib/leagues";
@@ -30,8 +31,8 @@ function Winner({ r, look, league }: { r: Pick<TrophyRow, "person_id" | "franchi
   return r.winner;
 }
 
-/** The cards of some trophies: its drawing, name, what it honours, when it was first given and who holds it (the winners of its latest season). */
-export async function TrophyCards({ infos, rows, sprite = true }: { infos: readonly TrophyInfo[]; rows: readonly TrophyRow[]; sprite?: boolean }) {
+/** The cards of some trophies (with `spriteFile` their drawings are named by address in the all-trophies sprite file, else the page carries them: `sprite`): its drawing, name, what it honours, when it was first given and who holds it (the winners of its latest season). */
+export async function TrophyCards({ infos, rows, sprite = true, spriteFile = false }: { infos: readonly TrophyInfo[]; rows: readonly TrophyRow[]; sprite?: boolean; spriteFile?: boolean }) {
   const { say, plural } = await currentSpeaker();
   const [brands, player] = await Promise.all([getBrands(), getPlayerPaths()]);
   const look: Look = { brands, player };
@@ -51,7 +52,7 @@ export async function TrophyCards({ infos, rows, sprite = true }: { infos: reado
           const shownNow = now ? now.rows.slice(0, 3) : [];
           return (
             <li key={t.code} className="trophycard">
-              <svg className="trophyart" aria-hidden="true" focusable="false"><use href={`#trophy-${arts[i].key}`} /></svg>
+              <svg className="trophyart" aria-hidden="true" focusable="false"><use href={`${spriteFile ? TROPHY_SPRITE : ""}#trophy-${arts[i].key}`} /></svg>
               <div className="trophybody">
                 <h3><Link href={trophyPath(t.code)} prefetch={false}>{t.name}</Link></h3>
                 <p className="note">

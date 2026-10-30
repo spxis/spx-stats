@@ -20,6 +20,7 @@ import type { BoardTeam } from "../src/lib/teamBoard.ts";
 import { venuesRestPath } from "../src/lib/mapView.ts";
 import { headPerGroup, seasonStandKeys, STANDINGS_FULL, STANDINGS_HEAD } from "../src/lib/seasonStandLines.ts";
 import { QUERY_KEYS } from "../src/lib/routing.ts";
+import { trophyTeams } from "../src/lib/trophyTeams.ts";
 import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
 
 /**
@@ -192,8 +193,8 @@ test("the root layout carries no team addresses and no logo fits: a page carries
     assert.ok(read(`app/[locale]/${side}/[league]/layout.tsx`).includes("<TeamData leagues={[league, ...(RELATED_LEAGUES[league as LeagueCode] ?? [])]}>"), `${side}/[league] carries its league's (and its relatives') addresses and fits`);
   }
   const data = read("components/TeamData.tsx");
-  assert.ok(data.includes("tableOf(slugs, leagues)") && data.includes("fitLeagues(fits, leagues)"), "TeamData cuts both tables to the leagues asked for");
-  for (const dir of ["s/teams", "s/city", "s/country", "s/venue", "s/trophies", "q/teams", "q/city", "q/country", "q/venue"]) {
+  assert.ok(data.includes("tableOf(slugs, leagues, teams)") && data.includes("fitLeagues(fits, leagues)"), "TeamData cuts both tables to the leagues asked for");
+  for (const dir of ["s/teams", "s/city", "s/country", "s/venue", "q/teams", "q/city", "q/country", "q/venue"]) {
     assert.ok(read(`app/[locale]/${dir}/layout.tsx`).includes("TeamDataLayout"), `${dir} names teams of any league and carries them all`);
   }
 });
@@ -489,6 +490,23 @@ test("a big season table sends short lines and draws a head until \"Show all\", 
   assert.ok(read("components/SeasonPostseason.tsx").includes("<PostseasonTable"), "the postseason is lines too");
 });
 
+test("the all-leagues trophies page names its cups by address and carries only the clubs it draws", () => {
+  const page = read("app/[locale]/s/trophies/page.tsx");
+  assert.ok(!page.includes("<TrophySprite") && page.includes("spriteFile"), "the cups are one file, not markup twice");
+  assert.ok(page.includes("<TeamData teams={teams} logos={logos}>") && page.includes("trophyTeams("), "the page carries the addresses and fits of the clubs it names");
+  assert.ok(!existsSync(new URL("../src/app/[locale]/s/trophies/layout.tsx", import.meta.url)), "no layout carries every league's team tables");
+  assert.ok(read("lib/routing.ts").includes('"trophy-sprite.svg"'), "the sprite file is a reserved root");
+  assert.ok(read("components/TeamData.tsx").includes("logos.has(r.logo_file)"));
+  // The clubs a trophies page draws are those of its holders, club board and runs; a person winning names no club.
+  const info = { code: "nhl_stanley_cup", league: "nhl", kind: "championship", name: "Stanley Cup", description: null } as never;
+  const rows = [
+    { year: 2020, award_code: "nhl_stanley_cup", award: "Stanley Cup", kind: "championship", winner: "Club", note: null, franchise_id: 7, person_id: null },
+    { year: 2020, award_code: "nhl_hart", award: "Hart", kind: "person_award", winner: "P", note: null, franchise_id: 9, person_id: 5 },
+  ];
+  const used = trophyTeams([info], rows, {});
+  assert.deepEqual([...used.teams], ["nhl:7"]);
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
  *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
@@ -513,6 +531,9 @@ const TEAMS_PAGES = [{ path: "/teams", budget: 250 * 1000 }];
 
 /** The players list: a hundred players a page, each once as a short line (it was 392 KB: every row as markup and again as elements, every country as a flag and link, and every club's address). */
 const SEASON_PAGES = ["/ncaaf/2024", "/ncaaf/2024?view=conference", "/ncaaf/2023", "/mlb/2024"].map((path) => ({ path, budget: PAGE_BUDGET }));
+
+/** The all-leagues trophies page: its cup sprite was in the page twice and every club of every league had an address and fit in it (336 KB). */
+const TROPHY_PAGES = [{ path: "/trophies", budget: 250 * 1000 }];
 
 const PLAYERS_PAGES = ["/players", "/players?league=nhl", "/players?sort=seasons.desc"].map((path) => ({ path, budget: path.includes("sort") ? PAGE_BUDGET : 250 * 1000 }));
 
@@ -547,7 +568,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...SEASON_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...SEASON_PAGES, ...TROPHY_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);
