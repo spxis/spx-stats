@@ -15,6 +15,7 @@ import { getPaths } from "@/lib/teamSlugs";
 import { roundPath, seriesPath, type Series } from "@/lib/series";
 import { playInOptions, seasonBracketOptions } from "@/lib/seasonBracket";
 import { BracketFocus } from "./BracketFocus";
+import { BracketViews } from "./BracketViews";
 import { Credits } from "./Credits";
 import { Knockout } from "./Knockout";
 import { KnockoutFile, type KnockoutSource } from "./KnockoutFile";
@@ -47,7 +48,7 @@ export function SeriesCard({ paths, lg, s, brands, year, say }: { paths: TeamPat
 export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, conf, div, sp: query }: { lg: string; year: number; conf: string; div: string; sp: Record<string, string | string[] | undefined> }) {
   const sp = await currentSpeaker();
   const say = roundSay(sp);
-  const [{ series, names, bracket, layoutOf, align, playIn }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
+  const [{ series, names, bracket, picture, layoutOf, align, playIn }, paths] = await Promise.all([loadPlayoffs(lg, year, say), getPaths()]);
   if (!series.length) return null;
   const b: Bracket = bracket;
   const slug = (label: string | null) => (label ?? "").toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -86,8 +87,10 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
   // The whole bracket and the play-in are files the page loads when they come into view (app/bracket-svg, components/KnockoutFile.tsx), so the page's HTML does not hold the
   // drawings (twice); a conference or a division chosen in the address is drawn into the page, as it is a view of its own.
   const asFile = !keep && !chosen;
-  const fileOf = (part: "wide" | "phone" | "inwide" | "inphone", svg: string): KnockoutSource => ({ src: `/bracket-svg/${lg}-${year}.${part}.${sp.locale}.svg`, ratio: shapeOf(svg) });
+  const fileOf = (part: "wide" | "phone" | "inwide" | "inphone" | "picwide" | "picphone", svg: string): KnockoutSource => ({ src: `/bracket-svg/${lg}-${year}.${part}.${sp.locale}.svg`, ratio: shapeOf(svg) });
   const files = asFile ? drawKnockoutFiles(shownLayout, options) : null;
+  // The postseason picture sits beside it: the same ties, drawn as logo tiles with each result (a second pair of files; the reader's choice is read in the browser, components/BracketViews.tsx).
+  const pictureFiles = asFile ? drawKnockoutFiles(picture, seasonBracketOptions({ lg, year, locale: sp.locale, paths, series, names, picture: true })) : null;
   const art = asFile ? null : drawKnockout(shownLayout, options);
   // The NBA's play-in (2020-21 on), under the bracket it leads to: drawn only where the games fit the known shape (lib/nbaPlayIn.ts).
   // What the group buttons and the "today" marker need, per tie shown (components/BracketFocus.tsx): the groups a club of it is in, the days of its games, and the final (kept by a
@@ -122,7 +125,14 @@ export const SeasonPlayoffs = guard(async function SeasonPlayoffs({ lg, year, co
         </nav>
       ) : null}
       {chosen ? <p className="note">{sp.say("playoffs.divNote", { division: chosen.label })}</p> : null}
-      {files ? <KnockoutFile wide={fileOf("wide", files.wide)} phone={fileOf("phone", files.phone)} /> : <Knockout art={art!} />}
+      {files && pictureFiles ? (
+        <BracketViews
+          labels={{ aria: sp.say("playoffs.viewAria"), tree: sp.say("playoffs.viewTree"), picture: sp.say("playoffs.viewPicture") }}
+          note={sp.say("playoffs.pictureNote")}
+          tree={<KnockoutFile wide={fileOf("wide", files.wide)} phone={fileOf("phone", files.phone)} />}
+          picture={<KnockoutFile wide={fileOf("picwide", pictureFiles.wide)} phone={fileOf("picphone", pictureFiles.phone)} />}
+        />
+      ) : <Knockout art={art!} />}
       </BracketFocus>
       {playInFiles && !only ? (
         <>

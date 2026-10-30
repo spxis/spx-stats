@@ -3,7 +3,8 @@ import { getSeasonAlignment } from "./alignmentData";
 import { buildBracket, halvesOf, type SideLook } from "./bracketLayout";
 import { logoFor } from "./brand";
 import { officialAbbr } from "./abbr";
-import { getAbbrs, getBrands } from "./data";
+import { getAbbrs, getBrands, getLogoFits } from "./data";
+import { logoKey } from "./logoFit";
 import { buildPlayIn, findPlayInGames, PLAY_IN_FROM, PLAY_IN_WINDOW_DAYS, type PlayIn } from "./nbaPlayIn";
 import type { Say } from "./seriesCopy";
 import { describeRounds, deriveSeries, nickname, roundTitle, seriesTies, type Series } from "./series";
@@ -11,7 +12,7 @@ import { getGamesBetween, getPastMeetingGames, getPlayoffGames } from "./seriesD
 
 /** A season's playoff series, their rounds and the shape of the bracket (halves by conference where the alignment gives them). */
 export async function loadPlayoffs(lg: string, year: number, say: Say) {
-  const [games, brands, align, abbrs] = await Promise.all([getPlayoffGames(lg, year), getBrands(), getSeasonAlignment(lg, year), getAbbrs(lg)]);
+  const [games, brands, align, abbrs, fits] = await Promise.all([getPlayoffGames(lg, year), getBrands(), getSeasonAlignment(lg, year), getAbbrs(lg), getLogoFits()]);
   const series = deriveSeries(lg, year, games);
   const { round, names, final } = describeRounds(lg, year, series, say);
   const conf = halvesOf(lg, align);
@@ -19,6 +20,14 @@ export async function loadPlayoffs(lg: string, year: number, say: Say) {
   const name = new Map(series.flatMap((s) => s.sides.map((t) => [t.f, nickname(t.name)] as const)));
   const look = (f: number): SideLook => ({ name: name.get(f) ?? String(f), ...(officialAbbr(abbrs, f, year) ? { abbr: officialAbbr(abbrs, f, year)! } : {}), ...(logoFor(brands, f, year) ? { mark: logoFor(brands, f, year)! } : {}) });
   const bracket = buildBracket(ties, round, (f) => conf.get(f) ?? null, look);
+  // The postseason picture draws every club as a square tile, where a wordmark is unreadable: a logo with an approved fit (lib/logoFit.ts) is drawn there as its primary mark, as in the site's other squares.
+  const primary = new Map(fits.filter((r) => r.status === "approved" && r.wordmark && r.mark_url).map((r) => [r.logo_file, r.mark_url!] as const));
+  const pictureLook = (f: number): SideLook => {
+    const l = look(f);
+    const key = logoKey(l.mark);
+    return key && primary.has(key) ? { ...l, mark: primary.get(key)! } : l;
+  };
+  const picture = buildBracket(ties, round, (f) => conf.get(f) ?? null, pictureLook);
   /** The bracket of some of the series only (one conference's half), its ties in the order of `keep`; `keep[k]` is the series the layout's tie k is. */
   const layoutOf = (keep: readonly number[]) => buildBracket(keep.map((i) => ties[i]), keep.map((i) => round[i]), (f) => conf.get(f) ?? null, look, "ltr");
   /** The NBA's play-in (from 2020-21), worked out from the games just before the playoffs (lib/nbaPlayIn.ts): one more small read, made only by the page that draws it. */
@@ -35,7 +44,7 @@ export async function loadPlayoffs(lg: string, year: number, say: Say) {
     const lookIn = (f: number): SideLook => ({ name: named.get(f) ?? String(f), ...(officialAbbr(abbrs, f, year) ? { abbr: officialAbbr(abbrs, f, year)! } : {}), ...(logoFor(brands, f, year) ? { mark: logoFor(brands, f, year)! } : {}) });
     return buildPlayIn(found, series, round, (f) => conf.get(f) ?? null, lookIn);
   };
-  return { series, round, names, final, bracket, layoutOf, brands, align, playIn };
+  return { series, round, names, final, bracket, picture, layoutOf, brands, align, playIn };
 }
 
 export interface PastMeeting { year: number; s: Series; round: string; n: number }

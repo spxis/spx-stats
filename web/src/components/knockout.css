@@ -18,3 +18,6 @@
 .kobracket .tb-tie.ko-today { filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 70%, transparent)); }
 .kobracket .ko-todaytag rect { fill: var(--ink); }
 .kobracket .ko-todaytag text { fill: var(--paper); font: 700 11px/1 var(--display); letter-spacing: .06em; text-transform: uppercase; }
+
+/* The choice between the tree and the postseason picture (components/BracketViews.tsx), set apart from the conference and division choices above it. */
+.bkviews { margin: 12px 0 6px; max-width: 100%; }

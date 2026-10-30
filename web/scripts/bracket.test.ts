@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
-import { drawKnockout, knockoutLook, knockoutScope } from "../src/lib/bracketDraw.ts";
+import { drawKnockout, drawKnockoutFiles, knockoutLook, knockoutScope } from "../src/lib/bracketDraw.ts";
 import { buildBracket, halvesOf, type Tie } from "../src/lib/bracketLayout.ts";
 import { buildSeries, seriesPlay, seriesTies, type PlayoffGame } from "../src/lib/series.ts";
 import { seriesOrder } from "../src/lib/sides.ts";
@@ -186,6 +186,22 @@ test("each league's playoffs have their layout: rows, columns with AT, the tree;
     assert.ok(art.wide.includes(knockoutScope(knockoutLook(lg).layout)) && art.phone.includes(knockoutScope(knockoutLook(lg).layout)));
   }
   assert.notEqual(knockoutScope("rows"), knockoutScope("tree"));
+});
+
+test("the postseason picture is a second look at the same ties: logo tiles, who won and the length of each series, from a file of its own", () => {
+  assert.deepEqual(knockoutLook("mlb", true), { layout: "picture", headers: true });
+  assert.deepEqual(knockoutLook("nfl", true), { layout: "picture", headers: true }, "the picture never takes the NFL's AT");
+  assert.equal(knockoutScope("picture"), "kobk-picture");
+  const ko = knockoutOf(eight);
+  const ties: Tie<string>[] = ko.ties.map((t, i) => ({ ...t, play: { kind: "series" as const, bestOf: ko.round[i] === 1 ? 5 : 7, score: [4, 2] as [number, number] } }));
+  const layout = buildBracket(ties, ko.round, () => null, (id) => ({ name: `Team ${id}`, abbr: id, mark: `/team-logos/${id}.png` }));
+  const art = drawKnockoutFiles(layout, { ...knockoutLook("mlb", true), href: (t) => `/series/${t.index}` });
+  for (const svg of [art.wide, art.phone]) {
+    assert.ok(svg.includes("kobk-picture"), "the picture's own stylesheet scope");
+    assert.match(svg, /wins/, "the result beside each pair");
+    assert.ok(svg.includes("Best of 5") && svg.includes("Best of 7"), "the length of each round's series");
+    assert.equal((svg.match(/<style>/g) ?? []).length, 1, "each file stands alone");
+  }
 });
 
 test("a conference decides the halves, and where a season has divisions and no conferences the divisions do; the CFL's halves are its divisions", () => {

@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.171.0", date: "2026-10-30", href: "/mlb/2025?bracket=picture#playoffs",
+    title: "Playoff brackets can be seen as a postseason picture",
+    text: "Under the playoff bracket of an NHL, NBA, MLB, NFL or CFL season there is now a Postseason picture button: each club is a logo tile, the result of every series stands beside its pair (\"LAD wins 4-3\"), the length of each round is under its column, and the champion is big in the middle. The Bracket button brings the old drawing back." },
   { version: "0.170.18", date: "2026-10-30", href: "/ahl",
     title: "The AHL, ECHL and college football finals show their own trophies",
     text: "The big-game banner of an AHL final, an ECHL final and a college football championship now draws the Calder Cup, the Kelly Cup and the College Football Playoff trophy, each measured on a photograph of the real one, instead of the generic hockey and football cups." },

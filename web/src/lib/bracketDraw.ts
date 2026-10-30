@@ -71,8 +71,10 @@ export function drawKnockout(layout: BracketLayout, options: KnockoutOptions): K
 /**
  * How a league's playoffs are drawn on a season page (the package's `layout`): the NHL's as rows (a name and a mark a line, the score at the end), the NFL's as
  * columns (tall slots and "AT": a one-game round, the visitor first), every other league's as the tree, in the road look. Each half carries its conference's
- * name over it where the data knows the halves.
+ * name over it where the data knows the halves. `picture` asks for the postseason picture instead, for any league.
  */
-export function knockoutLook(lg: string): Pick<DrawOptions, "layout" | "headers" | "at"> {
+export function knockoutLook(lg: string, picture = false): Pick<DrawOptions, "layout" | "headers" | "at"> {
+  // The postseason picture (the package's `picture` layout) is a second view of the same ties: logo tiles with the result beside each pair, the champion in the middle.
+  if (picture) return { layout: "picture", headers: true };
   return { layout: lg === "nhl" ? "rows" : lg === "nfl" ? "columns" : "tree", headers: true, ...(lg === "nfl" ? { at: true } : {}) };
 }

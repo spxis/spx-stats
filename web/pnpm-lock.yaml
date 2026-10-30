@@ -27,8 +27,8 @@ importers:
         specifier: 0.5.2
         version: 0.5.2
       '@johnmorrisdotca/taisen-brackets':
-        specifier: 0.6.0
-        version: 0.6.0(@johnmorrisdotca/dougu-sports@0.26.0)(@johnmorrisdotca/hata@1.5.0)
+        specifier: 0.18.0
+        version: 0.18.0(@johnmorrisdotca/dougu-sports@0.26.0)(@johnmorrisdotca/hata@1.5.0)
       d3:
         specifier: 7.9.0
         version: 7.9.0
@@ -422,8 +422,8 @@ packages:
     resolution: {integrity: sha512-MkrENjkprSDI8nTnAv7F18JUWQTMS9lxzlvvmdfIN5MvFNeZ9EXdYGfrQ5mgAs72aMzIUpwDek11opJbRB+iBw==}
     engines: {node: '>=22'}
 
-  '@johnmorrisdotca/taisen-brackets@0.6.0':
-    resolution: {integrity: sha512-aIuX6rNu9vSNdF19nywFH5hJ28sXCrdZdRAezTPCCP1eJNnb33FJxO/1iG/Z+MF2aQMAnJAnomxtbI6y3zA5Dw==}
+  '@johnmorrisdotca/taisen-brackets@0.18.0':
+    resolution: {integrity: sha512-6ik3d3rOhpVKki1F3wfq7THd7EEdtCt8nhjyanzZpAKvOPcIWpm7je9gm2eERjnhAIKAkf+XW6WlyzTG6FC5ug==}
     engines: {node: '>=22'}
     peerDependencies:
       '@johnmorrisdotca/dougu-sports': '>=0.1.0 <1'
@@ -2734,7 +2734,7 @@ snapshots:
 
   '@johnmorrisdotca/senshu-jerseys@0.5.2': {}
 
-  '@johnmorrisdotca/taisen-brackets@0.6.0(@johnmorrisdotca/dougu-sports@0.26.0)(@johnmorrisdotca/hata@1.5.0)':
+  '@johnmorrisdotca/taisen-brackets@0.18.0(@johnmorrisdotca/dougu-sports@0.26.0)(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:
       '@johnmorrisdotca/dougu-sports': 0.26.0
       '@johnmorrisdotca/hata': 1.5.0
