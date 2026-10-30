@@ -478,6 +478,14 @@ test("an MLS club's matches travel as one short line each and read back whole; t
   assert.ok(read("components/MlsClubMatches.tsx").includes("limit={MLS_CLUB_HEAD}"), "the table draws its newest rows until Show all");
 });
 
+test("a team's season sends its games table as a head until Show all, with the short forms of its own opponents only", () => {
+  const page = read("app/[locale]/q/[league]/[year]/team/[franchise]/page.tsx");
+  assert.ok(/head=\{sp\.full === "1" \? undefined : GAMES_HEAD\}/.test(page) && page.includes('{ full: "1" }'), "Show all links to the table drawn in full");
+  assert.ok(page.includes("abbrsForYear(abbrs,"), "the league's whole abbreviation history is not a prop");
+  assert.ok(read("components/TeamSeasonView.tsx").includes("limit={head}"));
+  assert.ok(QUERY_KEYS.includes("full"));
+});
+
 test("a franchise's map answer carries no league-wide venue list: that is its own route, worked out once per league", () => {
   const map = read("lib/franchiseMap.ts");
   assert.ok(!/teams\b[^\n]*getVenueTeams\(/.test(map.split("export async function leagueVenueTeams")[0]), "franchiseMapView does not build the league's venue list");

@@ -25,16 +25,16 @@ export interface TeamGame {
   recPct: number | null;
   /** The game as the season page's calendar and game list draw it. */
   tuple: GameTuple;
-  /** The NHL's numeric game id, when the row carries one. */
-  nhlId: number | null;
+  /** The NHL's numeric game id, when the row carries one (left out of the page otherwise). */
+  nhlId?: number;
   /** The nflverse week, when the row carries one. */
-  nflWeek: number | null;
+  nflWeek?: number;
   /** Retrosheet home code and game number, when the row carries one. */
-  retroBox: string | null;
+  retroBox?: string;
   /** core.game status, so game notes can wait until the game has started. */
   status: string;
   /** Scheduled start, UTC, when a source recorded one. */
-  startsAt: string | null;
+  startsAt?: string;
 }
 
 const PHASE: Record<string, Phase> = { regular: "r", playoffs: "p", preseason: "s", all_star: "a" };
@@ -65,11 +65,11 @@ export function deriveTeamGames(games: GameRow[], franchise: number, standing: S
       rec: res ? `${c.w}–${c.l}${standing?.t || c.t ? `–${c.t}` : ""}${standing?.otl || c.o ? `–${c.o}` : ""}` : "",
       recPct: res && played ? (c.w + c.t / 2) / played : null,
       tuple: [g.game_date, g.away_id, g.away_score, g.home_score, g.home_id, ph, g.status[0] ?? "", g.source, g.overtime ? 1 : 0, g.checked, g.game_id],
-      nhlId: g.nhl_id ?? null,
-      nflWeek: g.nfl_week ?? null,
-      retroBox: g.retro_box ?? null,
+      ...(g.nhl_id != null ? { nhlId: g.nhl_id } : {}),
+      ...(g.nfl_week != null ? { nflWeek: g.nfl_week } : {}),
+      ...(g.retro_box ? { retroBox: g.retro_box } : {}),
       status: g.status,
-      startsAt: g.starts_at ?? null,
+      ...(g.starts_at ? { startsAt: g.starts_at } : {}),
     });
   }
   return games.map((g) => out.get(g)!);

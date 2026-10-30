@@ -21,6 +21,7 @@ import { BadgeCup } from "@/components/TrophyMark";
 import { Figures, NoSeason } from "@/components/ui";
 import { getSeasonAlignment } from "@/lib/alignmentData";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
+import { abbrsForYear } from "@/lib/abbr";
 import { countryAt } from "@/lib/country";
 import { titleHolders } from "@/lib/champions";
 import { getAbbrs, getBrands, getSeason, getSeasonNotes, getSeasonStandings, getTeam, getTeamGames, getTeamStandings, getSummary } from "@/lib/data";
@@ -52,6 +53,10 @@ import { SeasonNav } from "@/components/SeasonNav";
 import { getVenuePlaces } from "@/lib/venuePlace";
 import { getVenueFacts, getVenueNames } from "@/lib/venueName";
 import { guard, guardMeta } from "@/lib/loadGuard";
+import { queryHref } from "@/components/ViewTabs";
+
+/** A team's games table draws this many games before "Show all"; all of them are in the page, and ?full=1 draws the table in full for a reader without script. */
+const GAMES_HEAD = 40;
 
 /** The team's season: its games (in date order, or the reverse), its standings row for the year and its brand for the year. */
 const load = cache(async (lg: string, y: number, f: number, dir: "asc" | "desc") => {
@@ -216,7 +221,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
         {isMoreHockey(lg) ? <SeasonParentLine lg={lg} f={f} year={y} /> : null}
         {lg === "nhl" ? <SeasonFarmLine f={f} year={y} /> : null}
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={mePin.venue ?? place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
-        <CompareControl lg={lg} f={f} name={name} year={y} />
+        <CompareControl lg={lg} f={f} name={name} year={y} teamPath={at.path} />
       </section>
       {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
       <Figures items={figs} />
@@ -228,8 +233,9 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       {st ? <Suspense fallback={null}><TeamCountries lg={lg} year={y} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       <Suspense fallback={null}><TeamFlow lg={lg} year={y} f={f} name={name} /></Suspense>
-      <TeamSeasonView lg={lg} abbrs={abbrs} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
-        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} teamPath={paths.team(lg, f)} />
+      <TeamSeasonView lg={lg} abbrs={abbrsForYear(abbrs, [f, ...teamsIn(raw).map((x) => x.f)], y)} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
+        initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} teamPath={paths.team(lg, f)}
+        head={sp.full === "1" ? undefined : GAMES_HEAD} allHref={queryHref(at.path, sp, { full: "1" })} />
       {st ? <Suspense fallback={null}><TeamPositionsKey lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}
       <p className="note"><Credits say={say} use={["flags"]} /></p>
     </>

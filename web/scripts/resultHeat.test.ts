@@ -112,7 +112,7 @@ test("heatGamesFromTeam keeps regular and playoff rows and builds away/home name
   const tg = (over: Partial<TeamGame> & Pick<TeamGame, "id" | "date" | "ph" | "loc">): TeamGame => ({
     oppF: 2, oppName: "Bruins", mine: 4, theirs: 1, res: "W", ot: false, margin: 3, src: "spx", v: 1,
     rec: "1–0", recPct: 1, tuple: [over.date, 2, 1, 4, 1, over.ph, "f", "spx", 0, 1, over.id],
-    nhlId: null, nflWeek: null, retroBox: null, status: "final", startsAt: null, ...over,
+    status: "final", ...over,
   });
   const games = heatGamesFromTeam([
     tg({ id: 1, date: "2024-10-11", ph: "r", loc: "Home" }),

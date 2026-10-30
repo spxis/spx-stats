@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.10", date: "2026-10-30", href: "/mlb/2007/team/cincinnati-reds",
+    title: "A club's season page is about a third lighter",
+    text: "The games table of a club's season now draws the first forty games until you press Show all (a link to the full table without script). The results graph is drawn when you scroll to it, the Compare list loads when you open the menu, and the page carries short names for its own opponents only. Cincinnati 2007 went from 653 to 412 KB; most seasons lost a third." },
   { version: "0.170.9", date: "2026-10-30", href: "/mls/team/dc-united",
     title: "MLS club pages are an eighth of the weight",
     text: "A club's page listed every match it had played as a table drawn on the server and sent twice: D.C. United's was 1,071 KB. The matches now travel as short lines, and the table shows the newest twenty until you press Show all. The page is 133 KB and looks the same." },
