@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.171.1", date: "2026-10-30", href: "/teams/coaches",
+    title: "Long lists no longer lose or repeat a row",
+    text: "A list read from the database in several requests could, when two rows tied in the sort order, show one of them twice and miss another, so the coaches chart gave a different number of moves on different visits. Every such read now ends its sort on a column that is unique, so the same data always gives the same page." },
   { version: "0.171.0", date: "2026-10-30", href: "/mlb/2025?bracket=picture#playoffs",
     title: "Playoff brackets can be seen as a postseason picture",
     text: "Under the playoff bracket of an NHL, NBA, MLB, NFL or CFL season there is now a Postseason picture button: each club is a logo tile, the result of every series stands beside its pair (\"LAD wins 4-3\"), the length of each round is under its column, and the champion is big in the middle. The Bracket button brings the old drawing back." },

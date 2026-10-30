@@ -28,7 +28,7 @@ export const getCoachLeague = cache(async (lg: string): Promise<CoachLeague | nu
   if (!LEAGUE_CODES.some((c) => c === lg)) return null;
   const [brands, paths, playerPath] = await Promise.all([getBrands(), getPaths(), getPlayerPaths()]);
   const [staff, seasons] = await Promise.all([
-    rows("team_season_staff", `league=eq.${lg}&role=eq.head_coach&select=person_id,name,kind,franchise_id,year,first_on&order=person_id,year`, staffSchema),
+    rows("team_season_staff", `league=eq.${lg}&role=eq.head_coach&select=person_id,name,kind,franchise_id,year,first_on&order=person_id,year,first_on,franchise_id`, staffSchema),
     teamSeasonRows(`league=eq.${lg}&select=year,franchise_id,team,w,l,t,otl`, seasonSchema),
   ]);
   const names: string[] = [""];

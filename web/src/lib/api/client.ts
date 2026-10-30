@@ -5,6 +5,7 @@ import { queuedAtBuild } from "./buildShare";
 import { API_KEY, PAGE_SIZE, REST_URL, RETRY_REVALIDATE, REVALIDATE } from "./config";
 import { ApiError } from "./error";
 import { isTransient } from "./failure";
+import { hasOrder, withUniqueOrder } from "./pagedOrder";
 import { tagsFor } from "./tags";
 import { withChecked } from "../turso/checked";
 
@@ -64,35 +65,43 @@ export async function countRows(view: string, query: string): Promise<number> {
   return Number(total);
 }
 
+/** The rows of one page of a view, each checked against its schema. */
+async function pageOf<S extends z.ZodType>(view: string, query: string, from: number, size: number, schema: S): Promise<z.infer<S>[]> {
+  const part = (await (await get(view, query, from, size)).json()) as unknown;
+  if (!Array.isArray(part)) throw new ApiError(`${view}: expected a list of rows`);
+  return part.map((row) => {
+    const parsed = schema.safeParse(row);
+    if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
+    return parsed.data;
+  });
+}
+
 /**
  * Reads every row of an `api` view, PAGE_SIZE rows per request (Range header), validating each
  * row against its Zod schema. Runs on the server only; each page of rows is kept by Next's
  * data cache for REVALIDATE seconds, so a page request normally costs no round trip at all.
+ *
+ * Every page is a request of its own, so the order must put each row in one place or a row near a page boundary is read twice or lost
+ * (pagedOrder.ts): the order asked for is ended with the view's key. A query with no order at all that fits in one page is read as asked;
+ * one that does not is read again, page by page, in the order of the view's key.
  */
 export async function rows<S extends z.ZodType>(view: string, query: string, schema: S): Promise<z.infer<S>[]> {
+  const ask = withUniqueOrder(view, query);
+  if (!hasOrder(query)) {
+    const first = await pageOf(view, query, 0, PAGE_SIZE, schema);
+    if (first.length < PAGE_SIZE) return withChecked(view, first);
+  }
   const out: z.infer<S>[] = [];
   for (let from = 0; ; from += PAGE_SIZE) {
-    const res = await get(view, query, from);
-    const part = (await res.json()) as unknown;
-    if (!Array.isArray(part)) throw new ApiError(`${view}: expected a list of rows`);
-    for (const row of part) {
-      const parsed = schema.safeParse(row);
-      if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
-      out.push(parsed.data);
-    }
+    const part = await pageOf(view, ask, from, PAGE_SIZE, schema);
+    out.push(...part);
     if (part.length < PAGE_SIZE) return withChecked(view, out);
   }
 }
 
 /** `size` rows of a view from row `from`, with no count (for a page that only needs to know whether there is more). */
 export async function rowsSlice<S extends z.ZodType>(view: string, query: string, from: number, size: number, schema: S): Promise<z.infer<S>[]> {
-  const part = (await (await get(view, query, from, size)).json()) as unknown;
-  if (!Array.isArray(part)) throw new ApiError(`${view}: expected a list of rows`);
-  return withChecked(view, part.map((row) => {
-    const parsed = schema.safeParse(row);
-    if (!parsed.success) throw new ApiError(`${view}: unexpected row shape (${parsed.error.issues[0]?.path.join(".")}: ${parsed.error.issues[0]?.message})`);
-    return parsed.data;
-  }));
+  return withChecked(view, await pageOf(view, withUniqueOrder(view, query), from, size, schema));
 }
 
 /**
@@ -100,7 +109,7 @@ export async function rowsSlice<S extends z.ZodType>(view: string, query: string
  * count). A window past the end is not an error: it comes back empty with the total.
  */
 export async function rowsWindow<S extends z.ZodType>(view: string, query: string, from: number, size: number, schema: S): Promise<{ rows: z.infer<S>[]; total: number }> {
-  const res = await get(view, query, from, size, true);
+  const res = await get(view, withUniqueOrder(view, query), from, size, true);
   const total = /\/(\d+)$/.exec(res.headers.get("content-range") ?? "")?.[1];
   if (total == null) throw new ApiError(`${view}: no row count`);
   const part = res.ok ? ((await res.json()) as unknown) : [];
