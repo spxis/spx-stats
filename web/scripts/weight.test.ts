@@ -1,5 +1,5 @@
 import assert from "node:assert/strict";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import { AWARD_GRID_HEAD, AWARD_MANY, awardGridPagePath, awardHref, awardGridRestPath, awardHead, buildAwardGrid, type AwardInput } from "../src/lib/awardGrid.ts";
 import { CHAMP_HEAD, buildChampLines, champHead, champNoteText, champPagePath, champRestPath, type ChampSeason } from "../src/lib/champLines.ts";
@@ -478,20 +478,20 @@ test("an MLS club's matches travel as one short line each and read back whole; t
   assert.ok(read("components/MlsClubMatches.tsx").includes("limit={MLS_CLUB_HEAD}"), "the table draws its newest rows until Show all");
 });
 
-test("a team's season sends its games table as a head until Show all, with the short forms of its own opponents only", () => {
-  const page = read("app/[locale]/q/[league]/[year]/team/[franchise]/page.tsx");
-  assert.ok(/head=\{sp\.full === "1" \? undefined : GAMES_HEAD\}/.test(page) && page.includes('{ full: "1" }'), "Show all links to the table drawn in full");
-  assert.ok(page.includes("abbrsForYear(abbrs,"), "the league's whole abbreviation history is not a prop");
-  assert.ok(read("components/TeamSeasonView.tsx").includes("limit={head}"));
-  assert.ok(QUERY_KEYS.includes("full"));
-});
-
 test("a head-to-head page lists the newest games and seasons of a long rivalry and links to the rest", () => {
   const page = read("app/[locale]/q/[league]/head-to-head/[pair]/page.tsx");
   const limit = (name: string) => Number(new RegExp(`const ${name} = (\\d+);`).exec(page)?.[1]);
   assert.ok(limit("LIST_LIMIT") <= 30 && limit("SEASON_LIMIT") <= 20, "a few dozen games and seasons, the rest on ?list=all");
   assert.ok(page.includes("seasonCut ? rows.slice(-SEASON_LIMIT) : rows"), "the seasons table is cut to the newest");
   assert.ok(QUERY_KEYS.includes("list"), "?list=all is a query key, so that address is drawn in q/");
+});
+
+test("a team's season sends its games table as a head until Show all, with the short forms of its own opponents only", () => {
+  const page = read("app/[locale]/q/[league]/[year]/team/[franchise]/page.tsx");
+  assert.ok(/head=\{sp\.full === "1" \? undefined : GAMES_HEAD\}/.test(page) && page.includes('{ full: "1" }'), "Show all links to the table drawn in full");
+  assert.ok(page.includes("abbrsForYear(abbrs,"), "the league's whole abbreviation history is not a prop");
+  assert.ok(read("components/TeamSeasonView.tsx").includes("limit={head}"));
+  assert.ok(QUERY_KEYS.includes("full"));
 });
 
 test("a franchise's map answer carries no league-wide venue list: that is its own route, worked out once per league", () => {
@@ -605,11 +605,163 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...SEASON_PAGES, ...TROPHY_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
-  test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
+/**
+ * THE BUDGET LIST: one sample of every kind of public page (each route under app/[locale]/s) with the most HTML it may send, in KB as served (no compression).
+ * Heavy samples were picked on purpose (a long rivalry, a big season, a club with many seasons): the kind is judged by its worst page. A route added to the
+ * site needs a line here (the test below reads the app folder), and scripts/weightCrawl.ts (its header says how to run it) measures a wider sample, with the reads of each page.
+ * A JSON route (`rows/...`) is measured the same way and has the JSON budget. Page kinds that are over budget today are in KNOWN_EXCEPTIONS, never here.
+ */
+const KB = 1000;
+const JSON_BUDGET = 100 * KB;
+const KIND_SAMPLES: Record<string, string> = {
+  "": "/",
+  "[league]": "/nhl",
+  "[league]/[year]": "/mlb/2024",
+  "[league]/[year]/leaders": "/ncaaf/2025/leaders",
+  "[league]/[year]/world": "/nba/2010-11/world",
+  "[league]/[year]/team/[franchise]": "/mlb/2007/team/cincinnati-reds",
+  "[league]/[year]/team/[franchise]/rows/compare": "/mlb/2007/team/cincinnati-reds/rows/compare",
+  "[league]/[year]/game/[game]": "/mlb/2026/game/4887974-milwaukee-brewers-at-tampa-bay-rays",
+  "[league]/[year]/series/[pair]": "/nhl/1971-72/series/boston-bruins-vs-new-york-rangers",
+  "[league]/[year]/playoffs/round/[n]": "/nfl/1973/playoffs/round/1",
+  "[league]/[year]/rows/games": "/mlb/2024/rows/games",
+  "[league]/[year]/rows/path": "/nhl/2024-25/rows/path",
+  "[league]/alignment": "/ncaaf/alignment",
+  "[league]/all-star": "/mlb/all-star",
+  "[league]/all-star/[year]": "/nfl/all-star/2018",
+  "[league]/all-star/decade/[decade]": "/wnba/all-star/decade/2020s",
+  "[league]/all-time": "/ncaaf/all-time?view=table",
+  "[league]/awards": "/nhl/awards",
+  "[league]/champions": "/mlb/champions",
+  "[league]/compare/[pair]": "/mlb/compare/arizona-diamondbacks-vs-cincinnati-reds",
+  "[league]/head-to-head/[pair]": "/mlb/head-to-head/baltimore-orioles-vs-minnesota-twins",
+  "[league]/player/[player]": "/nhl/player/red-kelly-2363",
+  "[league]/scores": "/nba/scores",
+  "[league]/scores/[date]": "/nhl/scores/2026-10-28",
+  "[league]/team/[franchise]": "/na/team/atlanta-braves",
+  "[league]/team/[franchise]/seasons": "/mlb/team/philadelphia-phillies/seasons",
+  "[league]/trophies": "/nhl/trophies",
+  "[league]/trophy/[slug]": "/mlb/trophy/rolaids-relief-man",
+  "[league]/world": "/nba/world",
+  "[league]/world/tables": "/mlb/world/tables",
+  "[league]/rows/all-time": "/ncaaf/rows/all-time",
+  "[league]/rows/awards": "/nhl/rows/awards",
+  "[league]/rows/champions": "/mlb/rows/champions",
+  "[league]/rows/venues": "/nba/rows/venues",
+  "[league]/team/[franchise]/rows/awards": "/mlb/team/arizona-diamondbacks/rows/awards",
+  "[league]/team/[franchise]/rows/compare": "/ncaaf/team/air-force-falcons/rows/compare",
+  "[league]/team/[franchise]/rows/countries": "/mlb/team/arizona-diamondbacks/rows/countries",
+  "[league]/team/[franchise]/rows/map": "/nhl/team/anaheim-ducks/rows/map",
+  "[league]/team/[franchise]/rows/opponents": "/na/team/atlanta-braves/rows/opponents",
+  "[league]/team/[franchise]/rows/results": "/mlb/team/philadelphia-phillies/rows/results",
+  "[league]/team/[franchise]/rows/standings": "/mlb/team/philadelphia-phillies/rows/standings",
+  "[league]/trophy/[slug]/rows": "/nba/trophy/larry-obrien/rows",
+  "about": "/about",
+  "cities": "/cities",
+  "city/[slug]": "/city/boston",
+  "countries": "/countries",
+  "countries/firsts": "/countries/firsts",
+  "countries/versus": "/countries/versus",
+  "countries/rows/trend": "/countries/rows/trend",
+  "country/[code]": "/country/PL",
+  "help-wikipedia": "/help-wikipedia",
+  "logos": "/logos",
+  "mls": "/mls",
+  "mls/[year]": "/mls/2020",
+  "mls/[year]/match/[match]": "/mls/2023/match/19296-seattle-sounders-fc-minnesota-united-fc",
+  "mls/[year]/matches": "/mls/2025/matches",
+  "mls/team/[slug]": "/mls/team/dc-united",
+  "more-hockey": "/more-hockey",
+  "players": "/players?sort=seasons.desc",
+  "players/[id]/[[...rest]]": "/mlb/player/156",
+  "privacy": "/privacy",
+  "quality": "/quality",
+  "releases": "/releases",
+  "releases/older": "/releases/older",
+  "soccer": "/soccer",
+  "soccer/[league]": "/soccer/la-liga",
+  "soccer/[league]/[season]": "/soccer/premier-league/1992-93",
+  "soccer/club/[slug]": "/soccer/club/inter-milan",
+  "sources": "/sources",
+  "teams": "/teams",
+  "teams/coaches": "/teams/coaches",
+  "teams/lineage": "/teams/lineage",
+  "terms": "/terms",
+  "trophies": "/trophies",
+  "venue/[slug]": "/venue/fenway-park",
+  "venues": "/venues",
+  "worldcup": "/worldcup",
+  "worldcup/[year]": "/worldcup/2026",
+  "worldcup/[year]/match/[match]": "/worldcup/2022/match/2537-qatar-ecuador",
+  "worldcup/[year]/squad/[team]": "/worldcup/2022/squad/croatia",
+  "worldcup/[year]/squad/[team]/rows": "/worldcup/2022/squad/wales/rows",
+  "worldcup/head-to-head/[pair]": "/worldcup/head-to-head/brazil-vs-france",
+  "worldcup/player/[player]": "/worldcup/player/wilfried-van-moer-79988",
+  "worldcup/team/[slug]": "/worldcup/team/algeria",
+  "worldcup/teams": "/worldcup/teams",
+};
+/** Other pages of a kind that are known to be heavier than the kind's sample (a season with no games, the heaviest rivalries), measured with the sample's budget. */
+const KIND_EXTRA = ["/nhl/2004-05", "/mlb/head-to-head/baltimore-orioles-vs-detroit-tigers", "/nba/head-to-head/detroit-pistons-vs-golden-state-warriors", "/mlb/1986/team/cincinnati-reds", "/nhl/2002-03/team/new-york-rangers", "/mls/team/real-salt-lake"];
+/**
+ * Pages allowed over the budget for now: the most HTML each may send (a ceiling that can only come down) and the work that removes the exception. When a page falls under
+ * the budget its line must go (the test says so), so this list only ever gets shorter. Ticket ids are filled in by the coordinating session.
+ */
+const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string }> = {
+  "/mlb/2007/team/cincinnati-reds": { kb: 440, ticket: "TBD team-season-flow", why: "club season: roster tables, flow chart, map pins and the games as props (the games table is a head already)" },
+  "/mlb/1986/team/cincinnati-reds": { kb: 370, ticket: "TBD team-season-flow", why: "same as the club seasons above" },
+  "/nhl/2002-03/team/new-york-rangers": { kb: 390, ticket: "TBD team-season-flow", why: "same as the club seasons above" },
+  "/nhl/2004-05": { kb: 420, ticket: "TBD outage-season", why: "a season not played: before-and-after tables of every club and roster" },
+  "/teams/coaches": { kb: 420, ticket: "TBD coaches-data", why: "every coach move of every league travels as props of one chart" },
+  "/teams/lineage": { kb: 340, ticket: "TBD lineage-data", why: "every lineage of every league travels as props" },
+  "/worldcup/2026": { kb: 340, ticket: "TBD worldcup-year", why: "groups, matches, teams and squads drawn on the server" },
+  "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "TBD results-wire", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
+};
+
+/** With READS_URL (the scripts/weightCrawl.ts proxy in front of the PostgREST the site reads) each page may also make only so many database reads while it is drawn. Pages served from the site's cache make none: run it on a fresh build. */
+const READS = process.env.READS_URL;
+const MAX_READS = 25;
+const KIND_PAGES = [...Object.values(KIND_SAMPLES), ...KIND_EXTRA].map((path) => {
+  const json = /\/rows\/[a-z-]+$|\/rows$|\.(csv|geojson)$/.test(path.split("?")[0]);
+  return { path, budget: KNOWN_EXCEPTIONS[path] ? KNOWN_EXCEPTIONS[path].kb * KB : json ? JSON_BUDGET : PAGE_BUDGET };
+});
+
+test("every route of the site has a sample in the budget list, and every exception names its ticket and still needs it", () => {
+  const roots = new URL("../src/app/[locale]/s/", import.meta.url);
+  const routes: string[] = [];
+  const walk = (dir: URL, rel: string) => {
+    for (const e of readdirSync(dir, { withFileTypes: true })) {
+      if (e.isDirectory()) walk(new URL(`${e.name}/`, dir), rel ? `${rel}/${e.name}` : e.name);
+      else if (e.name === "page.tsx" || e.name === "route.ts") routes.push(rel);
+    }
+  };
+  walk(roots, "");
+  assert.ok(routes.length > 60, "the app folder was read");
+  const missing = routes.filter((r) => !(r in KIND_SAMPLES));
+  assert.deepEqual(missing, [], `add a sample (the heaviest page you know of the kind) to KIND_SAMPLES for: ${missing.join(", ")}`);
+  const gone = Object.keys(KIND_SAMPLES).filter((k) => !routes.includes(k));
+  assert.deepEqual(gone, [], `KIND_SAMPLES names routes that no longer exist: ${gone.join(", ")}`);
+  const paths = new Set([...Object.values(KIND_SAMPLES), ...KIND_EXTRA]);
+  for (const [path, e] of Object.entries(KNOWN_EXCEPTIONS)) {
+    assert.ok(paths.has(path), `${path} is an exception but is not measured`);
+    assert.ok(e.ticket && e.why, `${path} needs a ticket and a reason`);
+    assert.ok(e.kb * KB > (path.includes("/rows/") ? JSON_BUDGET : PAGE_BUDGET), `${path} is within the normal budget: remove it from KNOWN_EXCEPTIONS`);
+  }
+});
+
+const SEEN = new Set<string>();
+for (const { path, budget } of [...KIND_PAGES, ...FLOOR_PAGES, ...HOME_PAGES, ...TEAMS_PAGES, ...PLAYERS_PAGES, ...SEASON_PAGES, ...TROPHY_PAGES, ...AWARDS_PAGES, ...CITY_PAGES, ...MLS_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+  if (SEEN.has(path)) continue;
+  SEEN.add(path);
+  test(`${path} stays under ${budget / 1000} KB of HTML${READS ? ` and ${MAX_READS} reads` : ""}`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
+    if (READS) await fetch(`${READS}/__reset`);
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);
     const bytes = (await res.arrayBuffer()).byteLength;
     assert.ok(bytes < budget, `${path} is ${bytes} bytes against ${budget}`);
+    if (KNOWN_EXCEPTIONS[path]) assert.ok(bytes >= (path.includes("/rows/") ? JSON_BUDGET : PAGE_BUDGET), `${path} is ${bytes} bytes, within the normal budget: remove it from KNOWN_EXCEPTIONS`);
+    if (READS) {
+      const reads = ((await (await fetch(`${READS}/__dump`)).json()) as { path: string }[]).length;
+      assert.ok(reads <= MAX_READS, `${path} made ${reads} database reads against ${MAX_READS}`);
+    }
   });
 }
