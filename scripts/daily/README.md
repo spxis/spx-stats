@@ -374,6 +374,9 @@ ingest function is **not** installed on production, there is no production login
   - **Review.** Anything else (a new season, `core.season`, `core.team_season`, `core.external_id`, `meta.source` ..., or no
     `DAILY_RELEASE_KIND`): a normal publish release, `prepare --title "Daily scores <date> (needs review)" --tables <all the tables the run
     wrote to>`. It waits for John at `/admin/data`.
+    An ordinary day writes only `core.game` and the tables set aside. db/build/152 makes the `wikipedia_daily` row of `meta.source` once and never
+    touches it again (it used to set `retrieved_on` to the pages' fetch day, so every day wrote `meta.source` and took the review route). Test:
+    `bash scripts/daily/test/route-test.sh` (scratch Postgres: first load of a season and a new team season take review, an ordinary day takes auto).
   - **Switches.** **Off** unless `DAILY_PREPARE_RELEASE=1`. It also needs `SUPABASE_ACCESS_TOKEN`, `PGHOST` (or `SPX_DS1_HOST`) and
     `PGPASSWORD` in the environment; when any is missing it logs `left to the nightly drift check` and carries on.
   - **Outcomes** (log and heartbeat `summary.release`, with the `route`): `prepared`; `nothing` (release.py exit 1 saying "nothing to release":

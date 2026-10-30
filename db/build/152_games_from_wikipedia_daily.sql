@@ -19,8 +19,7 @@ select 'wikipedia_daily', 'Wikipedia (daily scores)', 'website', 'CC BY-SA 4.0',
        'Game scores from the clubs'' season articles on English Wikipedia (en.wikipedia.org), CC BY-SA 4.0; text by the articles'' editors, see each article''s history. NFL scores are cross-checked with nflverse (github.com/nflverse), CC BY 4.0.',
        'https://en.wikipedia.org', date '2026-09-01', coalesce((select max(fetched_at)::date from legacy_wikipedia_daily.page), current_date),
        'Scores of the season in progress, read each day from the "<season> <club> season" articles (and the MLB postseason article) by scripts/daily; the exact wikitext of every revision used is in legacy_files.raw_archive under wikipedia/<day>/<league>/.'
-on conflict (code) do update set retrieved_on = excluded.retrieved_on
-where meta.source.retrieved_on is distinct from excluded.retrieved_on;
+on conflict (code) do nothing;   -- retrieved_on is set when the row is made, not on every run: a daily bump wrote meta.source each day and sent that day's release to review
 create temp table src as select source_id from meta.source where code = 'wikipedia_daily';
 create temp table chg (what text not null, n bigint not null);
 

@@ -24,6 +24,10 @@ REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 DS1 = os.path.join(HERE, "ds1.sh")
 MIGRATIONS = [os.path.join(REPO, "db", "migrations", f) for f in ("043_legacy_wikipedia_daily.sql", "044_ingest_report_results.sql", "046_ingest_writer_role.sql", "055_daily_balldontlie.sql", "114_game_starts_at.sql", "162_ingest_game_retired.sql")]
 BUILD = os.path.join(REPO, "db", "build", "152_games_from_wikipedia_daily.sql")
+# the release tables a transaction wrote to so far (pg_stat_xact counts the rows inserted, updated and deleted in THIS transaction); the release hook
+# chooses its route from these names (release_hook.py), so a table written on an ordinary day sends that day's release to review
+WROTE_TABLES = ("coalesce((select jsonb_object_agg(schemaname || '.' || relname, jsonb_build_object('ins', n_tup_ins, 'upd', n_tup_upd, 'del', n_tup_del)) "
+                "from pg_stat_xact_all_tables where schemaname in ('core', 'meta', 'ref') and n_tup_ins + n_tup_upd + n_tup_del > 0), '{}'::jsonb)")
 SNAPSHOT = os.path.join(HERE, "snapshot.sql")
 CHECKS = os.path.join(HERE, "checks.sql")
 CLUBCHECK = os.path.join(HERE, "clubcheck.sql")
@@ -260,8 +264,7 @@ def main_script(workdir, with_archive, commit, league="", skip=()):
           "'repeat', (select (j ->> 'repeat')::int from _res), 'games_changed', (select jsonb_array_length(j -> 'changed') from _res), "
           "'retired', (select count(*) from _retired), "
           "'games_made', (select (j ->> 'games_made')::int from _rep), 'games_changed_by_replay', (select (j ->> 'games_changed')::int from _rep), "
-          "'tables', coalesce((select jsonb_object_agg(schemaname || '.' || relname, jsonb_build_object('ins', n_tup_ins, 'upd', n_tup_upd, 'del', n_tup_del)) "
-          "from pg_stat_xact_all_tables where schemaname in ('core', 'meta', 'ref') and n_tup_ins + n_tup_upd + n_tup_del > 0), '{}'::jsonb))::text;",
+          "'tables', " + WROTE_TABLES + ")::text;",
           "select 'DAILY_FAIL ' || name || ' | ' || coalesce(detail, '') from _checks where not ok;",
           "\\pset format aligned", "\\pset tuples_only off",
           "\\if :all_ok", "  \\if :commit", "    commit;", "    \\echo RESULT: committed", "  \\else", "    rollback;", "    \\echo RESULT: rolled back (rehearsal), every check passed", "  \\endif",
