@@ -6,6 +6,7 @@ import { leagueStandings, standingRows } from "./api/teamSeasons";
 import { gameSchema, playoffShapeSchema, standingSchema } from "./api/schemas";
 import { hasSeries } from "./leagues";
 import { getSummary, seasonGamesAsked } from "./data";
+import { readSeasonGames } from "./seasonGameRows";
 import { getFranchiseSeasons, limited, slicesOf } from "./h2hData";
 import type { GameRow, StandingRow } from "./api/types";
 
@@ -13,7 +14,7 @@ import type { GameRow, StandingRow } from "./api/types";
 const playoffRows = cache(async (lg: string, y: number): Promise<GameRow[]> => {
   const whole = seasonGamesAsked(lg, y);
   if (whole) return (await whole).filter((g) => g.phase === "playoffs");
-  return rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema);
+  return readSeasonGames(lg, y, "&phase=eq.playoffs");
 });
 
 /** Every playoff game of a season, in the order played. */

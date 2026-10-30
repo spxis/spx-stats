@@ -37,14 +37,14 @@ const QUERY_ONLY_WRAPPERS: Record<string, string> = { "src/lib/affiliation.ts": 
 interface Call { file: string; line: number; fn: string; view: string | null; query: string | null }
 
 /**
- * Every call of rows, rowsSlice and rowsWindow imported from the api client (under any local name), and of the wrappers around them: a
+ * Every call of rows, rowsSlice, rowsWindow and rowsCsv imported from the api client (under any local name), and of the wrappers around them: a
  * function named rows that a file declares itself, and the rows that lib/soccer.ts exports.
  */
 function calls(): Call[] {
   const out: Call[] = [];
   for (const f of walk(SRC)) {
     const text = readFileSync(f, "utf8");
-    if (!/\brows(Slice|Window)?\b/.test(text)) continue;
+    if (!/\brows(Slice|Window|Csv)?\b/.test(text)) continue;
     const sf = ts.createSourceFile(f, text, ts.ScriptTarget.Latest, true);
     const local = new Map<string, string>();
     for (const st of sf.statements) {
@@ -56,7 +56,7 @@ function calls(): Call[] {
       if (!isClient || !bindings || !ts.isNamedImports(bindings)) continue;
       for (const el of bindings.elements) {
         const name = (el.propertyName ?? el.name).text;
-        if (name === "rows" || name === "rowsSlice" || name === "rowsWindow") local.set(el.name.text, name);
+        if (name === "rows" || name === "rowsSlice" || name === "rowsWindow" || name === "rowsCsv") local.set(el.name.text, name);
       }
     }
     if (sf.statements.some((st) => ts.isFunctionDeclaration(st) && st.name?.text === "rows")) local.set("rows", "rows");

@@ -17,8 +17,12 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.5", date: "2026-10-30", href: "/mlb/2007",
+    title: "A season's games are read in a third of the size",
+    text: "A season page read every game of the season with all of its columns, in a form that repeats each column name on every line (about 370 KB for a baseball season). It now asks for only the columns the page uses, written once at the top, about 115 KB. The games, scores and pages are the same for all 782 seasons."
+  },
   { version: "0.174.4", date: "2026-10-30", href: "/nhl/all-time",
-    title: "All-time tables read each club's playoff record, not every playoff game",
+    title: "All-time tables read each club's playoff record, not every game",
     text: "A league's all-time page used to read every playoff game of the league (about 375 KB in six requests for the NHL) only to add up each club's playoff record. It now reads one short precomputed row for the league, about 1 KB. The figures on the page are the same for all 22 leagues."
   },
   { version: "0.174.3", date: "2026-10-30", href: "/nhl/all-time",

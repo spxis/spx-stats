@@ -24,6 +24,7 @@ import { awardPacks } from "./awardPackRead";
 import { sourceCounts } from "./awardPack";
 import { abbrsFromPack, abbrPackSchema } from "./abbrPack";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
+import { readSeasonGames } from "./seasonGameRows";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
 /* ---------- home, leagues -------------------------------------------------------------- */
@@ -138,7 +139,7 @@ const getSeasonGameRows = (lg: string, y: number): Promise<GameRow[]> => {
   const key = `${lg}|${y}`;
   const had = asked.get(key);
   if (had) return had;
-  const read = rows("games", `league=eq.${lg}&year=eq.${y}&select=*&order=game_date,game_id`, gameSchema);
+  const read = readSeasonGames(lg, y);
   asked.set(key, read);
   return read;
 };

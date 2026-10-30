@@ -3,6 +3,7 @@ import { cache } from "react";
 import type { z } from "zod";
 import { queuedAtBuild } from "./buildShare";
 import { API_KEY, PAGE_SIZE, REST_URL, RETRY_REVALIDATE, REVALIDATE } from "./config";
+import { csvRows, type CsvKind } from "./csv";
 import { ApiError } from "./error";
 import { isTransient } from "./failure";
 import { hasOrder, withUniqueOrder } from "./pagedOrder";
@@ -38,7 +39,7 @@ const PAUSES_MS = AT_BUILD ? [1000, 3000, 6000, 10000] : [300];
  * showing the "Couldn't load" note, or a gap, for the day a good page is kept. Asked once per page render (`cache()`), so the same page
  * of a view read twice in one render costs one request, and each reader gets its own copy of the answer.
  */
-const fetchPage = cache(async (view: string, query: string, from: number, size: number, count: boolean): Promise<Response> => {
+const fetchPage = cache(async (view: string, query: string, from: number, size: number, count: boolean, csv = false): Promise<Response> => {
   let last = "";
   let threw = false;
   for (let attempt = 0; attempt <= PAUSES_MS.length; attempt++) {
@@ -46,12 +47,12 @@ const fetchPage = cache(async (view: string, query: string, from: number, size: 
     try {
       const send = () =>
         fetch(`${REST_URL}${view}?${query}`, {
-          headers: { apikey: API_KEY, "Accept-Profile": "api", Range: `${from}-${from + size - 1}`, ...(count ? { Prefer: "count=exact" } : {}) },
+          headers: { apikey: API_KEY, "Accept-Profile": "api", Range: `${from}-${from + size - 1}`, ...(count ? { Prefer: "count=exact" } : {}), ...(csv ? { Accept: "text/csv" } : {}) },
           next: { revalidate: attempt ? RETRY_REVALIDATE : REVALIDATE, tags: tagsFor(view, query) },
           signal: AbortSignal.timeout(TIMEOUT_MS),
         });
       // During `next build` only, the page-drawing workers take turns per read so it is sent once, not once per worker (buildShare.ts).
-      const res = await queuedAtBuild(`${view}?${query}|${from}|${size}|${count}`, send);
+      const res = await queuedAtBuild(`${view}?${query}|${from}|${size}|${count}${csv ? "|csv" : ""}`, send);
       if (res.ok || (count && res.status === 416)) return res;
       last = String(res.status);
       threw = false;
@@ -65,8 +66,8 @@ const fetchPage = cache(async (view: string, query: string, from: number, size: 
   throw new ApiError(`${view}: ${last}`, status, isTransient(status, threw));
 });
 
-async function get(view: string, query: string, from: number, size = PAGE_SIZE, count = false): Promise<Response> {
-  return (await fetchPage(view, query, from, size, count)).clone();
+async function get(view: string, query: string, from: number, size = PAGE_SIZE, count = false, csv = false): Promise<Response> {
+  return (await fetchPage(view, query, from, size, count, csv)).clone();
 }
 
 /** How many rows of an `api` view match a query, without reading them (PostgREST's exact count, from the Content-Range header). */
@@ -107,6 +108,24 @@ export async function rows<S extends z.ZodType>(view: string, query: string, sch
   for (let from = 0; ; from += PAGE_SIZE) {
     const part = await pageOf(view, ask, from, PAGE_SIZE, schema);
     out.push(...part);
+    if (part.length < PAGE_SIZE) return withChecked(view, out);
+  }
+}
+
+/**
+ * `rows` for a long read of a few columns, asked for as CSV: PostgREST then writes the column names once, not in every row (a season of games is about a third
+ * of its size as JSON). `kinds` names the columns asked for (`select=` must list exactly them) and their types (csv.ts); each row is checked against the schema as
+ * in `rows`. The order is settled as in `rows`, so `query` must carry an `order=`.
+ */
+export async function rowsCsv<S extends z.ZodType>(view: string, query: string, kinds: Readonly<Record<string, CsvKind>>, schema: S): Promise<z.infer<S>[]> {
+  if (!hasOrder(query)) throw new ApiError(`${view}: a csv read needs an order`);
+  const ask = withUniqueOrder(view, query);
+  const out: z.infer<S>[] = [];
+  for (let from = 0; ; from += PAGE_SIZE) {
+    const res = await get(view, ask, from, PAGE_SIZE, false, true);
+    let part;
+    try { part = csvRows(await res.text(), kinds); } catch (e) { throw new ApiError(`${view}: ${e instanceof Error ? e.message : "unreadable csv"}`); }
+    out.push(...checkRows(view, part, schema));
     if (part.length < PAGE_SIZE) return withChecked(view, out);
   }
 }
