@@ -315,7 +315,7 @@ export function planRounds(lg: string, year: number, list: readonly Series[], as
 }
 
 /** Every series with its round (0 for a round robin), the names of the rounds 1..n, and the number of the final (0 when there is none yet). */
-export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[]; final: number } {
+export function describeRounds(lg: string, year: number, list: readonly Series[], say: Say): { round: number[]; names: string[]; final: number; keys: RoundKey[] | null } {
   const { round, keys, final, single } = planRounds(lg, year, list);
   const count = Math.max(0, ...round);
   const names = Array.from({ length: count }, (_, i) => {
@@ -323,7 +323,7 @@ export function describeRounds(lg: string, year: number, list: readonly Series[]
     if (key) return key === "final" ? finalName(lg, year, say) : say(ROUND_WORD[key]);
     return single ? roundName(lg, year, i + 1, count, say) : say("round.n", { n: i + 1 });
   });
-  return { round, names, final };
+  return { round, names, final, keys };
 }
 
 /** The series word that names each round of the format table. */

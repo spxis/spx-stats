@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.171.1",
+  "version": "0.172.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -120,7 +120,7 @@
   "dependencies": {
     "@johnmorrisdotca/address-plus": "1.6.0",
     "@johnmorrisdotca/chizu": "1.4.0",
-    "@johnmorrisdotca/dougu-sports": "0.26.0",
+    "@johnmorrisdotca/dougu-sports": "0.28.0",
     "@johnmorrisdotca/hata": "1.5.0",
     "@johnmorrisdotca/kyogijo-stadiums": "0.10.2",
     "@johnmorrisdotca/senshu-jerseys": "0.5.2",

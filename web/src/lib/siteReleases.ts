@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.172.0", date: "2026-10-30", href: "/nba/trophy/larry-obrien",
+    title: "Each season gets the trophy that existed then",
+    text: "The NBA Finals show the Larry O'Brien Trophy in the design of that season, and no trophy before 1977-78. NBA and NFL conference finals now carry their own trophy, smaller than the Finals: Oscar Robertson, Bob Cousy, George Halas, Lamar Hunt. The Finals MVP and Rookie of the Year trophy pages draw their own trophies." },
   { version: "0.171.1", date: "2026-10-30", href: "/teams/coaches",
     title: "Long lists no longer lose or repeat a row",
     text: "A list read from the database in several requests could, when two rows tied in the sort order, show one of them twice and miss another, so the coaches chart gave a different number of moves on different visits. Every such read now ends its sort on a column that is unique, so the same data always gives the same page." },

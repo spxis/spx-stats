@@ -5,15 +5,25 @@ import "server-only";
 import { TROPHY_BASEBALL } from "@johnmorrisdotca/dougu-sports/trophy/baseball";
 import { TROPHY_BASKETBALL } from "@johnmorrisdotca/dougu-sports/trophy/basketball";
 import { TROPHY_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/bowl";
+import { TROPHY_BILL_RUSSELL_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/bill-russell-trophy";
+import { TROPHY_BOB_COUSY_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/bob-cousy-trophy";
 import { TROPHY_CALDER_CUP } from "@johnmorrisdotca/dougu-sports/trophy/calder-cup";
 import { TROPHY_CANADIAN_BOWL } from "@johnmorrisdotca/dougu-sports/trophy/canadian-bowl";
 import { TROPHY_CFP_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/cfp-trophy";
 import { TROPHY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/cup";
 import { TROPHY_FOOTBALL } from "@johnmorrisdotca/dougu-sports/trophy/football";
+import { TROPHY_GEORGE_HALAS_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/george-halas-trophy";
 import { TROPHY_AVCO_WORLD_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/avco-world-trophy";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
+import { TROPHY_JACKIE_ROBINSON_AWARD } from "@johnmorrisdotca/dougu-sports/trophy/jackie-robinson-award";
 import { TROPHY_KELLY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/kelly-cup";
+import { TROPHY_LAMAR_HUNT_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/lamar-hunt-trophy";
+import { TROPHY_LARRY_OBRIEN_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/larry-obrien-trophy";
+import { TROPHY_LARRY_OBRIEN_TROPHY_1977 } from "@johnmorrisdotca/dougu-sports/trophy/larry-obrien-trophy-1977";
+import { TROPHY_NBA_EASTERN_CONFERENCE_2001 } from "@johnmorrisdotca/dougu-sports/trophy/nba-eastern-conference-2001";
+import { TROPHY_NBA_WESTERN_CONFERENCE_2001 } from "@johnmorrisdotca/dougu-sports/trophy/nba-western-conference-2001";
 import { TROPHY_OBRIEN_CUP } from "@johnmorrisdotca/dougu-sports/trophy/obrien-cup";
+import { TROPHY_OSCAR_ROBERTSON_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/oscar-robertson-trophy";
 import { TROPHY_PATERSON_CUP } from "@johnmorrisdotca/dougu-sports/trophy/paterson-cup";
 import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-ball";
 import { TROPHY_SOCCER_GLOBE } from "@johnmorrisdotca/dougu-sports/trophy/soccer-globe";
@@ -23,6 +33,7 @@ import { MEDAL_BRONZE } from "@johnmorrisdotca/dougu-sports/medal/bronze";
 import { MEDAL_GOLD } from "@johnmorrisdotca/dougu-sports/medal/gold";
 import { MEDAL_SILVER } from "@johnmorrisdotca/dougu-sports/medal/silver";
 import type { Emblem } from "@johnmorrisdotca/dougu-sports/emblems";
+import type { EraTrophy } from "./trophyEra.ts";
 import { TROPHY_TILT } from "./trophyTurn.ts";
 
 /** Each league's (or tournament's) cup, keyed by the league the page passes in, with the name of the trophy a team won as the drawing's title. */
@@ -54,6 +65,27 @@ const CUPS: Record<string, readonly [Emblem, string]> = {
   mls: [TROPHY_SOCCER_BALL, "MLS Cup"],
   soccer: [TROPHY_SOCCER_BALL, "Trophy"],
 };
+
+/**
+ * The trophies that depend on the season (lib/trophyEra.ts chooses): the NBA's Larry O'Brien Trophy in its two designs and the conference trophies of the NBA and the NFL. A key here
+ * wins over the league's cup above for the large drawings (a banner, a game page, a trophy's own page), which draw the real trophy; the small line cups of a table or a sprite keep
+ * the league's cup, a symbol of "champion" that is the same for every season.
+ */
+const ERA: Record<EraTrophy, readonly [Emblem, string]> = {
+  "nba": [TROPHY_LARRY_OBRIEN_TROPHY, "Larry O'Brien Trophy"],
+  "nba-1977": [TROPHY_LARRY_OBRIEN_TROPHY_1977, "Larry O'Brien Trophy"],
+  "nba-west": [TROPHY_OSCAR_ROBERTSON_TROPHY, "Oscar Robertson Trophy"],
+  "nba-west-2001": [TROPHY_NBA_WESTERN_CONFERENCE_2001, "Western Conference Trophy"],
+  "nba-east": [TROPHY_BOB_COUSY_TROPHY, "Bob Cousy Trophy"],
+  "nba-east-2001": [TROPHY_NBA_EASTERN_CONFERENCE_2001, "Eastern Conference Trophy"],
+  "nfc": [TROPHY_GEORGE_HALAS_TROPHY, "George Halas Trophy"],
+  "afc": [TROPHY_LAMAR_HUNT_TROPHY, "Lamar Hunt Trophy"],
+};
+
+const ERA_BY_KEY: Record<string, readonly [Emblem, string] | undefined> = ERA;
+
+/** The drawing and name for a key: a season's trophy (ERA), else a league's cup; an unknown key gets the NHL's. */
+const drawing = (key: string): readonly [Emblem, string] => ERA_BY_KEY[key] ?? CUPS[key] ?? CUPS.nhl;
 
 const MEDALS: Record<number, readonly [Emblem, string]> = {
   1: [MEDAL_GOLD, "Gold medal"],
@@ -94,15 +126,15 @@ export function cupMask(league: string): string {
   return `url("data:image/svg+xml,${named.replace(/%/g, "%25").replace(/</g, "%3C").replace(/>/g, "%3E").replace(/#/g, "%23")}")`;
 }
 
-/** A banner trophy, drawn large: polished metal, leaning a little toward the eye, no title (the page labels it in the reader's language). It is the first frame of the turn the browser then runs. */
+/** A banner trophy, drawn large: polished metal, leaning a little toward the eye, no title (the page labels it in the reader's language). It is the first frame of the turn the browser then runs. `league` is a league or a season's trophy (lib/trophyEra.ts `titleTrophyKey`). */
 export function bannerCupSvg(league: string): string {
-  const [emblem] = CUPS[league] ?? CUPS.nhl;
+  const [emblem] = drawing(league);
   return unsized(emblem.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: false }));
 }
 
-/** The cup of a big-game banner, untitled (the banner names the trophy in the reader's language): the line cup in the banner's own colour where it is small (a score card), polished metal where it is large (the game page). */
+/** The cup of a big-game banner, untitled (the banner names the trophy in the reader's language): the line cup in the banner's own colour where it is small (a score card), polished metal where it is large (the game page). `league` is a league or a season's trophy (lib/trophyEra.ts). */
 export function gameCupSvg(league: string, large: boolean): string {
-  const [emblem] = CUPS[league] ?? CUPS.nhl;
+  const [emblem] = drawing(league);
   return unsized(large ? emblem.frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: false }) : emblem.svg({ style: "line", size: 64, title: false }));
 }
 
@@ -111,8 +143,8 @@ const FULL_DRAWING = new Set(["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl",
 
 /** A cup for a large place beside a count: the full metal drawing (titled with the trophy's name) for a league that has one, else the line cup. */
 export function bigCupSvg(league: string): string {
-  const entry = CUPS[league];
-  if (!entry || !FULL_DRAWING.has(league)) return cupSvg(league);
+  const entry = ERA_BY_KEY[league] ?? CUPS[league];
+  if (!entry || !(FULL_DRAWING.has(league) || league in ERA_BY_KEY)) return cupSvg(league);
   return unsized(entry[0].frame({ style: "metal", size: 64, yaw: 0, pitch: TROPHY_TILT, title: entry[1] }));
 }
 
@@ -128,7 +160,10 @@ export function medalSvg(place: number): string {
  * and the page says so (`named` is false). When the package gets a named drawing (the Calder, the Hart, the Vezina), add it to NAMED by the award's code (one import and
  * one line): the pages then draw it, in the list and large on the award's own page, and drop the note.
  */
-const NAMED: Record<string, Emblem> = {};
+const NAMED: Record<string, Emblem> = {
+  nba_finals_mvp: TROPHY_BILL_RUSSELL_TROPHY,
+  mlb_rookie_of_the_year: TROPHY_JACKIE_ROBINSON_AWARD,
+};
 
 export interface TrophyArt {
   /** One per distinct drawing: what the sprite's symbol and the cards share, so a drawing used by many awards is on the page once. */
@@ -147,7 +182,7 @@ export function trophyArt(code: string, kind: string): TrophyArt {
   if (own) return { key: code, emblem: own, named: true };
   if (kind === "championship") {
     const league = code.slice(0, Math.max(0, code.indexOf("_")));
-    const cup = CUPS[league];
+    const cup = ERA_BY_KEY[league] ?? CUPS[league];
     if (cup) return { key: `cup-${league}`, emblem: cup[0], named: true };
     return GENERIC_TEAM;
   }

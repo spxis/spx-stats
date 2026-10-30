@@ -23,6 +23,8 @@
 .bigbar .bigtrophy { flex: none; display: block; width: 22px; height: 22px; }
 .bigbar .bigtrophy svg { display: block; width: 100%; height: 100%; }
 .bigbar.decides .bigtrophy { width: 28px; height: 28px; filter: drop-shadow(0 0 4px color-mix(in srgb, var(--accent) 80%, transparent)); }
+.bigbar.conf .bigtrophy { width: 18px; height: 18px; }
 .bigbar.ongame .bigtrophy { width: 56px; height: 56px; }
+.bigbar.ongame.conf .bigtrophy { width: 40px; height: 40px; }
 .bigbar.ongame.decides .bigtrophy { width: 76px; height: 76px; }
 .bigbar .bigcaption { flex-basis: 100%; margin-top: 2px; font: 600 11px/1.2 var(--display); letter-spacing: .12em; opacity: .8; }

@@ -7,11 +7,12 @@ export const TROPHY_TILT = 10;
 /** Degrees of turn a second: one full turn in 26 seconds. */
 export const TROPHY_SPEED = 14;
 
-/** The trophy's emblem module per league, loaded only by a page that shows its banner, and only once the banner is in view. */
+/** The trophy's emblem module per league (the NBA's by design, lib/trophyEra.ts), loaded only by a page that shows its banner, and only once the banner is in view. */
 export const TROPHY_EMBLEM_LOADERS = {
   nhl: () => import("@johnmorrisdotca/dougu-sports/trophy/hockey-cup").then((m) => m.TROPHY_HOCKEY_CUP),
   pwhl: () => import("@johnmorrisdotca/dougu-sports/trophy/walter-cup").then((m) => m.TROPHY_WALTER_CUP),
-  nba: () => import("@johnmorrisdotca/dougu-sports/trophy/basketball").then((m) => m.TROPHY_BASKETBALL),
+  nba: () => import("@johnmorrisdotca/dougu-sports/trophy/larry-obrien-trophy").then((m) => m.TROPHY_LARRY_OBRIEN_TROPHY),
+  "nba-1977": () => import("@johnmorrisdotca/dougu-sports/trophy/larry-obrien-trophy-1977").then((m) => m.TROPHY_LARRY_OBRIEN_TROPHY_1977),
   wnba: () => import("@johnmorrisdotca/dougu-sports/trophy/wnba-championship-trophy").then((m) => m.TROPHY_WNBA_CHAMPIONSHIP_TROPHY),
   nwsl: () => import("@johnmorrisdotca/dougu-sports/trophy/soccer-ball").then((m) => m.TROPHY_SOCCER_BALL),
   mlb: () => import("@johnmorrisdotca/dougu-sports/trophy/baseball").then((m) => m.TROPHY_BASEBALL),

@@ -11,6 +11,7 @@ import { GameState } from "@/components/GameState";
 import { FieldPlays } from "@/components/FieldPlays";
 import { GameSurface, placeOf, type DrawnGame } from "@/components/GameSurface";
 import { BigBanner, seriesLine } from "@/components/BigBanner";
+import { sideLookup } from "@/lib/trophyEra";
 import { SeriesStyle } from "@/components/SeriesStyle";
 import { Showdown, type ShowdownSide } from "@/components/Showdown";
 import { Rich } from "@/components/i18n/Rich";
@@ -179,7 +180,7 @@ export default guard(async function GamePage({ params }: Params) {
   // A league that tells its postseason as games (college football) names the game: its bowl, a Playoff round, a conference championship game.
   const named = hasSeries(lg) ? null : await getRound(lg, y, g.game_id);
   const big = hasSeries(lg)
-    ? (playoffGames ? seriesBigGames(lg, y, playoffGames, rs, say("playoffs.robin"), say("post.title")).get(g.game_id) : null) ?? null
+    ? (playoffGames ? seriesBigGames(lg, y, playoffGames, rs, say("playoffs.robin"), say("post.title"), sideLookup(lg, standings)).get(g.game_id) : null) ?? null
     : labelBigGame(g.phase, named, say("post.unnamed"));
   const competition = playoffs && roundDated ? `${roundDated}${gameNo ? ` · ${gameNo}` : ""}` : named ?? (playoffs && !hasSeries(lg) ? say("post.unnamed") : phaseTag ?? say("phase.regular"));
 

@@ -2,8 +2,9 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 import { TROPHY_HOCKEY_CUP } from "@johnmorrisdotca/dougu-sports/trophy/hockey-cup";
 import { bindTurn, type TurnContainer, type TurnEvent } from "@johnmorrisdotca/dougu-sports/turn";
-import { bannerCupSvg, bigCupSvg, cupSvg, cupsFor, gameCupSvg, medalSvg } from "../src/lib/cups.ts";
-import { bigGameTrophy } from "../src/lib/trophies.ts";
+import { bannerCupSvg, bigCupSvg, cupSvg, cupsFor, gameCupSvg, medalSvg, trophyArt, trophyBigSvg } from "../src/lib/cups.ts";
+import { bigGameTrophy, championshipName, conferenceTrophyPhrase, trophyPhrase } from "../src/lib/trophies.ts";
+import { conferenceSide, conferenceTrophyKey, sideLookup, titleTrophyKey } from "../src/lib/trophyEra.ts";
 import { TROPHY_TILT } from "../src/lib/trophyTurn.ts";
 
 /** Run in web/: pnpm test:trophies (it needs the react-server condition, as lib/cups.ts is server-only). */
@@ -112,4 +113,69 @@ test("the big-game cup is untitled and sized by the page: the line cup small, th
     // the Calder and Kelly cups are measured on photographs and carry more strokes (3 and 4 KB) than the older cups
     assert.ok(small.length < (lg === "ahl" || lg === "echl" ? 4500 : 2500), `${lg} small cup ${small.length} bytes`);
   }
+});
+
+test("the NBA's title trophy is chosen by season: none before 1977-78, the first Larry O'Brien design to 2020-21, the 2022 design from 2021-22", () => {
+  assert.equal(titleTrophyKey("nba", 1976), null);
+  assert.equal(titleTrophyKey("nba", 1946), null);
+  assert.equal(titleTrophyKey("nba", 1977), "nba-1977");
+  assert.equal(titleTrophyKey("nba", 2014), "nba-1977");
+  assert.equal(titleTrophyKey("nba", 2020), "nba-1977");
+  assert.equal(titleTrophyKey("nba", 2021), "nba");
+  assert.equal(titleTrophyKey("nba", 2023), "nba");
+  assert.equal(titleTrophyKey("nba"), "nba", "the trophy of today");
+  assert.equal(titleTrophyKey("nhl", 1930), "nhl", "another league keeps its own cup");
+  assert.equal(trophyPhrase("nba", 1976), null);
+  assert.equal(championshipName("nba", 1970, "Larry O'Brien Championship Trophy"), "NBA Championship");
+  assert.equal(championshipName("nba", 1977, "Larry O'Brien Championship Trophy"), "Larry O'Brien Championship Trophy");
+  assert.equal(trophyPhrase("nba", 1977), "trophy.name.nba");
+  assert.equal(bigGameTrophy("nba", 1960), null);
+  assert.equal(bigGameTrophy("nba", 2014), "trophy.name.nba");
+  assert.notEqual(bannerCupSvg("nba-1977"), bannerCupSvg("nba"));
+  assert.notEqual(gameCupSvg("nba-1977", true), gameCupSvg("nba", true));
+  assert.notEqual(gameCupSvg("nba-1977", false), gameCupSvg("nba", false));
+  assert.match(gameCupSvg("nba-1977", false), /currentColor/);
+  assert.match(bigCupSvg("nba"), /<title>Larry O'Brien Trophy<\/title>/);
+  assert.notEqual(bannerCupSvg("nba"), bannerCupSvg("wnba"));
+});
+
+test("a conference trophy is chosen by conference and season, and never for a season before it existed", () => {
+  assert.equal(conferenceTrophyKey("nba", 2023, "east"), "nba-east");
+  assert.equal(conferenceTrophyKey("nba", 2021, "west"), "nba-west", "named in 2022, the 2021-22 season");
+  assert.equal(conferenceTrophyKey("nba", 2020, "west"), "nba-west-2001");
+  assert.equal(conferenceTrophyKey("nba", 2000, "east"), "nba-east-2001", "first given in the 2001 playoffs, the 2000-01 season");
+  assert.equal(conferenceTrophyKey("nba", 1999, "east"), null);
+  assert.equal(conferenceTrophyKey("nba", 2023, null), null);
+  assert.equal(conferenceTrophyKey("nba", 2023, "nfc"), null);
+  assert.equal(conferenceTrophyKey("nfl", 2024, "nfc"), "nfc");
+  assert.equal(conferenceTrophyKey("nfl", 1984, "afc"), "afc");
+  assert.equal(conferenceTrophyKey("nfl", 1983, "afc"), null);
+  assert.equal(conferenceTrophyKey("nhl", 2024, "east"), null);
+  assert.equal(conferenceTrophyPhrase("nba", 2023, "west"), "trophy.name.nbaWest");
+  assert.equal(conferenceTrophyPhrase("nba", 2010, "east"), "trophy.name.nbaEast2001");
+  assert.equal(conferenceTrophyPhrase("nfl", 2024, "afc"), "trophy.name.afc");
+  for (const key of ["nba-west", "nba-west-2001", "nba-east", "nba-east-2001", "nfc", "afc"]) {
+    assert.ok(gameCupSvg(key, true).length > 500, key);
+    assert.match(gameCupSvg(key, false), /currentColor/, key);
+    assert.ok(!gameCupSvg(key, true).includes("<title>"), key);
+  }
+  assert.notEqual(gameCupSvg("nba-west", true), gameCupSvg("nba-west-2001", true));
+  assert.notEqual(gameCupSvg("nfc", true), gameCupSvg("nhl", true));
+  assert.equal(conferenceSide("nba", "West"), "west");
+  assert.equal(conferenceSide("nba", "Eastern Conference"), "east");
+  assert.equal(conferenceSide("nfl", "NFC"), "nfc");
+  assert.equal(conferenceSide("nfl", "East"), null);
+  assert.equal(sideLookup("nfl", [{ franchise_id: 7, conference_short: "AFC" }])(7), "afc");
+  assert.equal(sideLookup("nfl", null)(7), null);
+});
+
+test("the Finals MVP award and the Rookie of the Year award have their own drawings on the trophy pages", () => {
+  for (const [code, kind] of [["nba_finals_mvp", "person_award"], ["mlb_rookie_of_the_year", "person_award"]] as const) {
+    const art = trophyArt(code, kind);
+    assert.equal(art.named, true, code);
+    assert.notEqual(art.emblem, trophyArt("nhl_hart", "person_award").emblem, code);
+    assert.ok(trophyBigSvg(art, "x").length > 500, code);
+  }
+  assert.equal(trophyArt("nba_larry_obrien", "championship").emblem.id, "trophy:larry-obrien-trophy");
+  assert.equal(trophyArt("nba_mvp", "person_award").named, false, "an award with no drawing keeps the stand-in");
 });

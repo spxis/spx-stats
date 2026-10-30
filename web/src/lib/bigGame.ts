@@ -8,6 +8,7 @@ import type { GameRow } from "./api/types";
 import { bowlName, groupOf, roundTag } from "./postseason.ts";
 import { describeRounds, deriveSeries, nickname, roundTitle } from "./series.ts";
 import type { Say } from "./seriesCopy.ts";
+import type { ConferenceSide } from "./trophyEra.ts";
 
 export interface BigGame {
   /** The round's name: "World Series", "League Championship Series", a bowl game's name. */
@@ -24,10 +25,15 @@ export interface BigGame {
   series: { kind: "tied" | "leads" | "wins"; a: number; b: number; lead: { f: number; name: string } | null } | null;
   /** The series wins of this game's away and home club after it (the same order), null when the series is not counted. */
   wins: [number, number] | null;
+  /** The game is in a conference final (the NBA's Conference Finals, the NFL's Conference Championship), not the league's last round: a smaller banner with the conference trophy. `side` is the conference, null while unknown. Left out of every other game. */
+  conf?: { side: ConferenceSide | null };
 }
 
+/** The round keys (lib/playoffFormat.ts) that are a conference final whose winner lifts a conference trophy. */
+const CONFERENCE_FINAL = new Set(["confFinals", "confChamp"]);
+
 /** The series of a season's playoff games, one entry per game that belongs to one (a game with none is left out). */
-export function seriesBigGames(lg: string, year: number, games: readonly GameRow[], say: Say, robin: string, fallback: string): Map<number, BigGame> {
+export function seriesBigGames(lg: string, year: number, games: readonly GameRow[], say: Say, robin: string, fallback: string, sideOf?: (franchise: number | null) => ConferenceSide | null): Map<number, BigGame> {
   const out = new Map<number, BigGame>();
   const byId = new Map(games.map((g) => [g.game_id, g]));
   const all = deriveSeries(lg, year, games);
@@ -36,6 +42,8 @@ export function seriesBigGames(lg: string, year: number, games: readonly GameRow
     const roundNo = desc.round[i];
     const round = roundTitle(desc.names, roundNo, robin) || fallback;
     const final = desc.final > 0 && roundNo === desc.final;
+    const confFinal = !final && (lg === "nba" || lg === "nfl") && CONFERENCE_FINAL.has(desc.keys?.[roundNo - 1] ?? "");
+    const conf = confFinal ? { conf: { side: sideOf?.(s.sides[0].f) ?? sideOf?.(s.sides[1].f) ?? null } } : {};
     const leader = Math.max(s.sides[0].wins, s.sides[1].wins);
     // A series someone won with fewer wins than it takes is missing games: its numbers would be wrong, so the card names the round and nothing more.
     const counted = s.bestOf > 1 && s.basis !== "goals" && !(s.winner != null && leader < s.needed);
@@ -53,6 +61,7 @@ export function seriesBigGames(lg: string, year: number, games: readonly GameRow
         n: counted ? sg.n : null,
         series: counted ? { kind: w0 === w1 ? "tied" : done ? "wins" : "leads", a: Math.max(w0, w1), b: Math.min(w0, w1), lead: w0 === w1 ? null : { f: lead.f, name: nickname(lead.name) } } : null,
         wins: counted ? [sg.run[side(g.away_f)], sg.run[side(g.home_f)]] : null,
+        ...conf,
       });
     }
   });
