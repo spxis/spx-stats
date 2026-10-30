@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.15", date: "2026-10-30", href: "/worldcup/2026",
+    title: "World Cup tournament pages are about a third lighter",
+    text: "The teams strip, and the tables of teams, matches and top scorers, now travel as short lines and are drawn in the browser; each table shows its first twenty rows until Show all, a link to a new page that lists every row. The 2026 page went from 326 to 195 KB, the 2018 page from 283 to 192 KB." },
   { version: "0.170.14", date: "2026-10-30", href: "/teams/coaches",
     title: "Coaches and franchise lineage are a quarter of the weight",
     text: "The coaches page and the franchise lineage page used to carry every league's data inside the page itself. They now fetch only the league you are looking at, as a small cached file, so the chart appears as soon as that file arrives. Coaches went from 404 to 90 KB, lineage from 324 to 91 KB." },

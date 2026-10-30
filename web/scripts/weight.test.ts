@@ -28,6 +28,8 @@ import { seasonRowsPath } from "../src/lib/teamSeasonRows.ts";
 import { wire as rosterWire } from "../src/lib/rosterWire.ts";
 import type { GameRow, StandingRow } from "../src/lib/api/types.ts";
 import { coachRowsPath, packCoach, unpackCoach, type CoachLeague } from "../src/lib/coachWire.ts";
+import { buildWcMatches, buildWcScorers, buildWcTeams, readWcMatches, WC_HEAD, wcTablesPath, type WcMatchInput } from "../src/lib/wcLines.ts";
+import { stripLines } from "../src/lib/wcStrip.ts";
 import { lineageRowsPath, packLineage, unpackLineage, type LineageLeague } from "../src/lib/lineageWire.ts";
 
 /**
@@ -759,6 +761,7 @@ const KIND_SAMPLES: Record<string, string> = {
   "worldcup/[year]": "/worldcup/2026",
   "worldcup/[year]/match/[match]": "/worldcup/2022/match/2537-qatar-ecuador",
   "worldcup/[year]/squad/[team]": "/worldcup/2022/squad/croatia",
+  "worldcup/[year]/tables": "/worldcup/2026/tables",
   "worldcup/[year]/squad/[team]/rows": "/worldcup/2022/squad/wales/rows",
   "worldcup/head-to-head/[pair]": "/worldcup/head-to-head/brazil-vs-france",
   "worldcup/player/[player]": "/worldcup/player/wilfried-van-moer-79988",
@@ -773,7 +776,6 @@ const KIND_EXTRA = ["/nhl/2004-05", "/mlb/head-to-head/baltimore-orioles-vs-detr
  */
 const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string }> = {
   "/nhl/2004-05": { kb: 420, ticket: "SPX-799 outage seasons", why: "a season not played: before-and-after tables of every club and roster" },
-  "/worldcup/2026": { kb: 340, ticket: "SPX-799 worldcup 2026", why: "groups, matches, teams and squads drawn on the server" },
   "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "SPX-800 franchise results", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
 };
 
@@ -859,4 +861,50 @@ test("the coaches and lineage pages carry no data: a league's moves come from a 
     const src = read(file);
     assert.doesNotMatch(src, /get(CoachMoves|CoachLeague|Lineage|LineageLeague)/, `${file} reads no data: the chart fetches its league`);
   }
+});
+
+test("a tournament's teams, matches and scorers travel as short lines the table builds its cells from, and the tables page holds every row", () => {
+  const club = (i: number) => ({ slug: `team-${i}`, name: `Team ${i}`, flag: i % 7 ? `T${i}` : null });
+  const matches: WcMatchInput[] = Array.from({ length: 104 }, (_, i) => {
+    const h = club(i % 48), a = club((i * 5 + 1) % 48);
+    return {
+      match_id: 2000 + i, match_date: new Date(Date.UTC(2026, 5, 11) + i * 6 * 3600e3).toISOString().slice(0, 10), stage_key: i < 72 ? "group" : "quarter", stage_order: i < 72 ? 1 : 6, group_name: i < 72 ? `Group ${"ABCDEFGH"[i % 8]}` : null,
+      home: h.name, home_slug: h.slug, home_flag: h.flag, home_goals: i % 4, away: a.name, away_slug: a.slug, away_flag: a.flag, away_goals: (i + 1) % 3,
+      extra_time: i % 10 === 0, shootout: i % 20 === 0, home_penalties: i % 20 === 0 ? 4 : null, away_penalties: i % 20 === 0 ? 3 : null,
+      venue_name: i % 9 ? `Stadium ${i % 16}` : null, venue_city: i % 9 ? `City ${i % 16}` : null, venue_wikidata_id: i % 9 ? `Q${100 + (i % 16)}` : null, venue_id: i % 3 ? i % 16 : null,
+    };
+  });
+  const wire = buildWcMatches(matches);
+  const rows = readWcMatches(JSON.parse(JSON.stringify(wire)));
+  assert.equal(rows.length, 104);
+  assert.deepEqual(rows.map((r) => r.id), matches.map((m) => m.match_id), "every match, by date and in the data's order within a day");
+  assert.equal(rows[0].home, "Team 0");
+  assert.equal(rows[0].note, 2, "a shootout keeps its penalties");
+  assert.equal(rows[0].hp, 4);
+  assert.equal(rows[10].note, 1, "extra time is a note");
+  assert.equal(rows[10].hp, 0);
+  assert.equal(rows[0].group, "Group A");
+  assert.equal(rows[80].group, "");
+  assert.equal(rows[1].venue, "Stadium 1");
+  assert.equal(rows[9].venue, null, "a match with no ground has none");
+  assert.ok(wire.c.length <= 48 && wire.v.length <= 32 && wire.s.length <= 9, "clubs, grounds and stages are listed once");
+  assert.ok(JSON.stringify(wire).length < 104 * 70, "a match is a short line");
+  assert.ok(WC_HEAD <= 25, "the page draws a few rows and the rest follow");
+  assert.equal(wcTablesPath(2026), "/worldcup/2026/tables");
+  const team = (slug: string, name: string, performance: string, place: number | null) => ({ team_slug: slug, team: name, flag_code: "ES", group_name: "Group B", performance, final_position: place, played: 7, won: 6, drawn: 1, lost: 0, goals_for: 15, goals_against: 3, managers: ["A", "B"] });
+  const order = buildWcTeams([team("algeria", "Algeria", "group stage", null), team("argentina", "Argentina", "final", 2), team("spain", "Spain", "final", 1), team("belgium", "Belgium", "quarter-finals", null)]);
+  assert.deepEqual(order.map((l) => l[0]), ["spain", "argentina", "belgium", "algeria"], "the head of the teams is the table's own first rows: the champion first, not the first in the alphabet");
+  const early = buildWcMatches([{ ...matches[1], match_date: "2026-06-30", match_id: 1 }, { ...matches[2], match_date: "2026-06-11", match_id: 2 }]);
+  assert.deepEqual(early.lines.map((l) => l[0]), [2, 1], "the matches are by date");
+  assert.deepEqual(buildWcScorers([{ person_id: 1, player: "A", team_id: "t", team: "T", team_slug: "t", flag_code: null, goals: 1, penalties: 0, matches_scored_in: 1 }, { person_id: 2, player: "B", team_id: "t", team: "T", team_slug: "t", flag_code: null, goals: 4, penalties: 0, matches_scored_in: 1 }]).map((l) => l[1]), ["B", "A"]);
+  const teams = buildWcTeams([team("spain", "Spain", "final", 1)]);
+  assert.deepEqual(teams[0], ["spain", "Spain", "ES", "Group B", "final", 1, 7, 6, 1, 0, 15, 3, "A, B"]);
+  const scorers = buildWcScorers([{ person_id: null, player: "X", team_id: "t", team: "Spain", team_slug: "spain", flag_code: null, goals: 3, penalties: 1, matches_scored_in: 2 }]);
+  assert.deepEqual(scorers[0], [0, "X", "spain", "Spain", null, 3, 1, 2]);
+  const strip = stripLines([{ id: "T-1", anchor: "squad-esp", code: "ESP", region: "ES", slug: "spain", squad: true, name: "Spain", flag: "ES", stage: "Champions", tier: 5, p: 7, w: 6, d: 1, l: 0, gf: 15, ga: 3 }]);
+  assert.deepEqual(strip[0], ["T-1", "squad-esp", "ESP", "spain", 1, "Spain", "ES", "Champions", 5]);
+  const page = read("app/[locale]/s/worldcup/[year]/page.tsx");
+  assert.doesNotMatch(page, /limit=\{LONG_TABLE\}/, "the page's long tables are built in the browser from lines");
+  assert.match(page, /wcTablesPath/, "Show all leads to the page that holds every row");
+  assert.ok(existsSync(new URL("../src/app/[locale]/s/worldcup/[year]/tables/page.tsx", import.meta.url)));
 });

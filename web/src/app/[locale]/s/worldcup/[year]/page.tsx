@@ -6,6 +6,7 @@ import { SoccerCredit } from "@/components/SoccerCredit";
 import { SoccerGroups } from "@/components/SoccerGroups";
 import { SoccerKnockout } from "@/components/SoccerKnockout";
 import { TeamStrip } from "@/components/TeamStrip";
+import { WcMatchesTable, WcScorersTable, WcTeamsTable } from "@/components/WcTables";
 import { TournamentMap } from "@/components/TournamentMap";
 import { SoccerRoad } from "@/components/SoccerRoad";
 import { SoccerSquads } from "@/components/SoccerSquads";
@@ -20,17 +21,15 @@ import {
   getAwards, getSoccerTeams, getSquads, getStandings, getTopScorers, getTournamentMatches, getTournamentTeams, tournamentOfYear,
 } from "@/lib/soccer";
 import { teamName } from "@/lib/soccerNames";
-import { isYearSeg, soccerMatchPath, soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPath";
+import { isYearSeg, soccerPlayerPath, tournamentPath, WORLDCUP_PATH } from "@/lib/soccerPath";
 import { stripTeams } from "@/lib/soccerStrip";
-import { groupLabel, reachRank, reached, scoreLines } from "@/lib/soccerView";
 import { tableOf } from "@/lib/sort";
+import { buildWcMatches, buildWcScorers, buildWcTeams, wcTablesPath } from "@/lib/wcLines";
+import { stripLines } from "@/lib/wcStrip";
 import { PlaceMedal } from "@/components/PlaceMedal";
 import "@/components/soccer.css";
 
 export const revalidate = 2592000;
-
-/** The long tables (teams, matches, scorers) show this many rows until the reader asks for all of them. */
-const LONG_TABLE = 20;
 
 // Nothing is drawn at build time: each tournament is drawn on its first visit, then kept and revalidated like the rest.
 export const generateStaticParams = () => [];
@@ -72,42 +71,6 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
   const knockout = matches.filter((m) => m.stage_order >= 4);
   const per = t.matches ? Math.round((t.goals / t.matches) * 100) / 100 : 0;
 
-  const teamTable = tableOf(teams, [
-    { key: "team", label: say("col.team"), cls: "team", get: (x) => x.team, cell: (x) => <SoccerTeamName slug={x.team_slug} name={x.team} flag={x.flag_code} /> },
-    { key: "group", label: say("wc.col.group"), get: (x) => x.group_name, cell: (x) => x.group_name?.replace(/^Group\s+/, "") ?? "" },
-    { key: "reached", label: say("wc.col.reached"), cls: "team", get: (x) => reachRank(x), cell: (x) => reached(say, x) },
-    { key: "p", label: say("wc.col.played"), title: say("wc.col.playedTitle"), num: true, get: (x) => x.played },
-    { key: "w", label: say("wc.col.w"), num: true, get: (x) => x.won },
-    { key: "d", label: say("wc.col.d"), num: true, get: (x) => x.drawn },
-    { key: "l", label: say("wc.col.l"), num: true, get: (x) => x.lost },
-    { key: "gf", label: say("wc.col.gf"), title: say("wc.col.goalsForTitle"), num: true, get: (x) => x.goals_for },
-    { key: "ga", label: say("wc.col.ga"), title: say("wc.col.goalsAgainstTitle"), num: true, get: (x) => x.goals_against },
-    { key: "manager", label: say("wc.col.manager"), cls: "team", get: (x) => x.managers?.join(", ") ?? "" },
-  ], (x) => x.team_id);
-
-  const matchTable = tableOf(matches, [
-    { key: "date", label: say("col.date"), get: (m) => m.match_date, cell: (m) => day(m.match_date) },
-    { key: "stage", label: say("wc.col.stage"), get: (m) => m.stage_order, cell: (m) => groupLabel(say, m) },
-    { key: "home", label: say("col.home"), cls: "team", get: (m) => m.home, cell: (m) => <SoccerTeamName slug={m.home_slug} name={m.home} flag={m.home_flag} /> },
-    {
-      key: "score", label: say("col.score"), get: (m) => m.home_goals + m.away_goals,
-      cell: (m) => {
-        const s = scoreLines(say, m);
-        return <Link className="sc-score" href={soccerMatchPath(m.year, m.match_id, m.home, m.away)} prefetch={false}>{s.main}{s.note ? <small>{s.note}</small> : null}</Link>;
-      },
-    },
-    { key: "away", label: say("wc.col.away"), cls: "team", get: (m) => m.away, cell: (m) => <SoccerTeamName slug={m.away_slug} name={m.away} flag={m.away_flag} /> },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => <StadiumName name={m.venue_name} qid={m.venue_wikidata_id} linked={m.venue_id != null} rest={m.venue_city ?? undefined} /> },
-  ], (m) => m.match_id);
-
-  const scorerTable = tableOf(scorers, [
-    { key: "player", label: say("wc.col.player"), cls: "team", get: (s) => s.player, cell: (s) => (s.person_id != null ? <Link href={soccerPlayerPath(s.person_id, s.player)} prefetch={false}>{s.player}</Link> : s.player) },
-    { key: "team", label: say("col.team"), cls: "team", get: (s) => s.team, cell: (s) => <SoccerTeamName slug={s.team_slug} name={s.team} flag={s.flag_code} /> },
-    { key: "goals", label: say("wc.col.goals"), num: true, get: (s) => s.goals },
-    { key: "pens", label: say("wc.col.penalties"), num: true, get: (s) => s.penalties },
-    { key: "games", label: say("wc.col.gamesScored"), num: true, get: (s) => s.matches_scored_in },
-  ], (s, i) => `${s.person_id ?? s.player}-${s.team_id}-${i}`);
-
   // stadiums as the source names them; the name links to /venue/Q<venue_wikidata_id> (that route redirects to the venue's own address) when the
   // world stadium dataset holds the ground (venue_id), else it is plain text.
   const stadiums = [...matches.reduce((map, m) => {
@@ -148,7 +111,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
         <p className="note"><Link href={WORLDCUP_PATH}>{say("wc.t.all")}</Link></p>
         {strip.length ? <TournamentMap teams={strip} title={title} /> : null}
       </section>
-      <TeamStrip teams={strip} title={title} />
+      <TeamStrip teams={stripLines(strip)} title={title} />
       <Figures items={[
         [say("wc.col.teams"), t.team_count ?? teams.length], [say("wc.col.matches"), t.matches], [say("wc.col.goals"), t.goals], [say("wc.t.perMatch"), fmt(per)],
       ]} />
@@ -178,20 +141,20 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       {teams.length ? (
         <section className="section scroll" id="teams">
           <h2>{say("wc.t.teams")}</h2>
-          <div className="tablebox"><SortTable {...teamTable} def="reached.desc" param="sort_teams" limit={LONG_TABLE} /></div>
+          <WcTeamsTable lines={buildWcTeams(teams)} hrefAll={`${wcTablesPath(t.year)}#teams`} />
         </section>
       ) : null}
       {matches.length ? (
         <section className="section scroll" id="matches">
           <h2>{say("wc.t.matches")}</h2>
-          <div className="tablebox"><SortTable {...matchTable} def="date.asc" param="sort_games" limit={LONG_TABLE} /></div>
+          <WcMatchesTable year={t.year} wire={buildWcMatches(matches)} hrefAll={`${wcTablesPath(t.year)}#matches`} />
           {matches.some((m) => m.lineup_players === 0) ? <p className="note">{say("wc.t.noLineups")}</p> : null}
         </section>
       ) : null}
       {scorers.length ? (
         <section className="section scroll" id="scorers">
           <h2>{say("wc.t.scorers")}</h2>
-          <div className="tablebox"><SortTable {...scorerTable} def="goals.desc" param="sort_scorers" limit={LONG_TABLE} /></div>
+          <WcScorersTable lines={buildWcScorers(scorers)} hrefAll={`${wcTablesPath(t.year)}#scorers`} />
           {scorers.some((s) => s.person_id == null) ? <p className="note">{say("wc.t.scorerNamesOnly")}</p> : null}
         </section>
       ) : null}
