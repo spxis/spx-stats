@@ -5,12 +5,19 @@ import { rows } from "./api/client";
 import { standingRows } from "./api/teamSeasons";
 import { gameSchema, playoffShapeSchema, standingSchema } from "./api/schemas";
 import { hasSeries } from "./leagues";
+import { getSummary, seasonGamesAsked } from "./data";
 import { getFranchiseSeasons, limited, slicesOf } from "./h2hData";
 import type { GameRow, StandingRow } from "./api/types";
 
+/** A season's playoff games: taken from the season's games when the page has read them already, else one read of their own. */
+const playoffRows = cache(async (lg: string, y: number): Promise<GameRow[]> => {
+  const whole = seasonGamesAsked(lg, y);
+  if (whole) return (await whole).filter((g) => g.phase === "playoffs");
+  return rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema);
+});
+
 /** Every playoff game of a season, in the order played. */
-export const getPlayoffGames = cache(async (lg: string, y: number): Promise<GameRow[]> =>
-  !hasSeries(lg) ? [] : rows("games", `league=eq.${lg}&year=eq.${y}&phase=eq.playoffs&select=*&order=game_date,game_id`, gameSchema));
+export const getPlayoffGames = cache(async (lg: string, y: number): Promise<GameRow[]> => (!hasSeries(lg) ? [] : playoffRows(lg, y)));
 
 /** The regular-season games of a season played from `from` up to (not including) `to`: the NBA's play-in is among the last days before its playoffs (lib/nbaPlayIn.ts). */
 export const getGamesBetween = cache(async (lg: string, y: number, from: string, to: string): Promise<GameRow[]> =>
@@ -86,10 +93,16 @@ export interface FinalsGame { year: number; game_date: string; away: string | nu
  * more small read of those team seasons by id.
  */
 export const getLeaguePlayoffTeams = cache(async (lg: string, year?: number): Promise<FinalsGame[]> => {
-  const only = year == null ? "" : `&year=eq.${year}`;
+  if (year != null) {
+    // One season: its champion is in the summary every page reads, and its playoff games are one small read the season page makes anyway (the games carry both clubs' names and franchises).
+    const [{ seasons }, games] = await Promise.all([getSummary(), playoffRows(lg, year)]);
+    const champ = seasons.find((s) => s.league === lg && s.year === year)?.champion_franchise;
+    if (champ == null) return [];
+    return games.filter((g) => g.away_f === champ || g.home_f === champ).map((g) => ({ year: g.year, game_date: g.game_date, away: g.away, away_f: g.away_f, home: g.home, home_f: g.home_f }));
+  }
   const [champs, clubs] = await Promise.all([
-    rows("season_summary", `league=eq.${lg}${only}&champion_franchise=not.is.null&select=year,champion_franchise&order=year`, champSchema),
-    standingRows(`league=eq.${lg}${only}&select=year,team_id,franchise_id,team&order=year,team_id`, clubSchema),
+    rows("season_summary", `league=eq.${lg}&champion_franchise=not.is.null&select=year,champion_franchise&order=year`, champSchema),
+    standingRows(`league=eq.${lg}&select=year,team_id,franchise_id,team&order=year,team_id`, clubSchema),
   ]);
   const champOf = new Map(champs.map((c) => [c.year, c.champion_franchise]));
   const club = new Map<number, { franchise_id: number; team: string | null }>(clubs.map((c) => [c.team_id, c]));

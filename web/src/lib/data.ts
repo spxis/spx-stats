@@ -92,17 +92,36 @@ const clubSchema = z.object({
 const getSeasonClubs = cache(async (lg: string, y: number) =>
   teamSeasonRows(`league=eq.${lg}&year=eq.${y}&select=*`, clubSchema).catch(() => []));
 
+const seasonGameReads = cache(() => new Map<string, Promise<GameRow[]>>());
+
+/** Every game of a season, in the order played: one read, kept for the page being drawn so the playoff games can be taken from it (`seasonGamesAsked`). */
+const getSeasonGameRows = (lg: string, y: number): Promise<GameRow[]> => {
+  const asked = seasonGameReads();
+  const key = `${lg}|${y}`;
+  const had = asked.get(key);
+  if (had) return had;
+  const read = rows("games", `league=eq.${lg}&year=eq.${y}&select=*&order=game_date,game_id`, gameSchema);
+  asked.set(key, read);
+  return read;
+};
+
+/** The season's games if this page has already asked for them (the season page does), else undefined. */
+export const seasonGamesAsked = (lg: string, y: number): Promise<GameRow[]> | undefined => seasonGameReads().get(`${lg}|${y}`);
+
 export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData | null> => {
   const q = `league=eq.${lg}&year=eq.${y}`;
-  const [summary, games, standingsPlayed, awards, clubs] = await Promise.all([
-    rows("season_summary", `${q}&select=*`, seasonSummarySchema),
-    rows("games", `${q}&select=*&order=game_date,game_id`, gameSchema),
+  // The season's summary row comes from the whole list every page already reads (kept a day, shared), not from a read of its own.
+  const [all, games, standingsPlayed, awards] = await Promise.all([
+    getSummary(),
+    getSeasonGameRows(lg, y),
     standingRows(`${q}&select=*`, standingSchema),
     rows("awards", `${q}&select=*`, awardSchema),
-    getSeasonClubs(lg, y),
   ]);
+  const summary = all.seasons.filter((s) => s.league === lg && s.year === y);
   if (!summary[0]) return null;
-  const standings = (summary[0].champion || !seasonOpen(games) ? standingsPlayed : withIdleTeams(standingsPlayed, clubs)).filter((s) => !isOutsideConference(lg, s.conference));
+  // The clubs that have not played are looked for only in a season still open.
+  const idle = !summary[0].champion && seasonOpen(games);
+  const standings = (idle ? withIdleTeams(standingsPlayed, await getSeasonClubs(lg, y)) : standingsPlayed).filter((s) => !isOutsideConference(lg, s.conference));
   const teams = new Map<number, ClubTeam>();
   for (const g of games) {
     teams.set(g.home_id, { id: g.home_id, f: g.home_f, name: g.home });
@@ -149,13 +168,22 @@ export interface TeamData {
   unrecorded: [number, boolean, string | null][];
 }
 
+/**
+ * A franchise's team seasons in every league it played in, in one read: a club of a rival league is the same franchise as the one that played on (the Braves in the
+ * National Association and MLB), and the team page asks for each league of its family, so one read serves them all (each then keeps the rows of its own league).
+ */
+const getFranchiseTeamSeasons = cache(async (f: number) => teamSeasonRows(`franchise_id=eq.${f}&select=*&order=year`, teamSeasonSchema));
+
+/** The same for a franchise's standings rows, newest first. */
+const getFranchiseStandings = cache(async (f: number): Promise<StandingRow[]> => standingRows(`franchise_id=eq.${f}&select=*&order=year.desc`, standingSchema));
+
 export const getTeam = cache(async (lg: string, f: number): Promise<TeamData | null> => {
-  const q = `league=eq.${lg}&franchise_id=eq.${f}`;
   // Every name the franchise wore in any league, so a club of a rival league (the PCHA's Millionaires, the NHL's Maroons) lists them all.
-  const [ts, names] = await Promise.all([
-    teamSeasonRows(`${q}&select=*&order=year`, teamSeasonSchema),
+  const [all, names] = await Promise.all([
+    getFranchiseTeamSeasons(f),
     rows("franchise_names", `franchise_id=eq.${f}&select=*&order=name_from`, franchiseNameSchema),
   ]);
+  const ts = all.filter((s) => s.league === lg);
   if (!ts.length && !names.some((n) => n.league === lg)) return null;
   const t: TeamData = { f, names: mergeSpans(names.map((n) => ({ name: n.name, from: n.name_from, to: n.name_to }))), seasons: [], titles: [], unrecorded: [] };
   let last: string | null = null;
@@ -182,7 +210,7 @@ export const getTeamPhases = cache(async (lg: string, f: number, years: string):
 });
 
 export const getTeamStandings = cache(async (lg: string, f: number): Promise<StandingRow[]> =>
-  standingRows(`franchise_id=eq.${f}&league=eq.${lg}&select=*&order=year.desc`, standingSchema));
+  (await getFranchiseStandings(f)).filter((s) => s.league === lg));
 
 /**
  * Every game a franchise played in a season, in the order asked for: `game_date.asc|desc` (then the game id the same way).

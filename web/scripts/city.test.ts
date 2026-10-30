@@ -229,3 +229,17 @@ test("Stanley Cup titles before the NHL join the NHL franchise's stay, or make a
   assert.equal(clipStay(mtl, 1890, 1899)?.titles.length, 1);
   assert.equal(clipStay(mtl, 1901, 1990), null);
 });
+
+test("the city of a club now is the city of its newest placed season, which is what the team page reads as one row", () => {
+  const seasons = [season("nhl", 2001, 1, 1, 1), season("nhl", 2002, 1, 1, 1), season("nhl", 2003, 1, 1, 1), season("nhl", 2004, 1, 1, 1), season("nhl", 2002, 2, 1, 1), season("nhl", 2003, 2, 1, 1), season("nhl", 2004, 2, 1, 1)];
+  // club 1 moves a to b and back to a; club 2 has a season with no city at the end
+  const places = [place("nhl", 2001, 1, "a"), place("nhl", 2002, 1, "b"), place("nhl", 2003, 1, "b"), place("nhl", 2004, 1, "a"), place("nhl", 2002, 2, "c"), place("nhl", 2003, 2, "c")];
+  const cup = [{ year: 1915, team: "Club 1", league: "PCHA", club: "Club 1", franchise: 1, city: "z", wins: 1 }, { year: 1960, team: "Club 9", league: "PCHA", club: "Club 9", franchise: null, city: "y", wins: 1 }];
+  const stays = withCupTitles(buildStays(places, seasons), cup, [{ year: 2000, team: "Club 9", league: "PCHA", club: "Club 9", franchise: null, city: "y" }]);
+  const newest = (f: number) => stays.filter((s) => s.league === "nhl" && s.f === f).sort((p, q) => q.last - p.last)[0]?.city;
+  const latest = (f: number) => places.filter((p) => p.f === f).sort((p, q) => q.year - p.year)[0]?.city;
+  assert.equal(newest(1), "a");
+  assert.equal(newest(1), latest(1), "a title won before the NHL moves a stay's start, not its last season");
+  assert.equal(newest(2), latest(2), "a season with no placement is no stay");
+  assert.equal(stays.filter((s) => s.cup).every((s) => s.f < 0), true, "a club with no season has a stand-in number below zero, never a real club's");
+});

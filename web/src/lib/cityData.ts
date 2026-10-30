@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows } from "./api/client";
+import { ApiError, rows, rowsSlice } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { buildStays, unitOf, type CityRef, type ClubSeason, type Placement, type Stay } from "./cityModel";
 import { withCupTitles } from "./cup";
@@ -92,18 +92,6 @@ export const getCityData = cache(async (): Promise<CityData> => {
   return { cities, byslug: new Map(cities.map((c) => [c.slug, c])), placements, stays: withCupTitles(buildStays(placements, club), cup, finalists) };
 });
 
-/** The city of each club now (or last): "league|franchise" to the slug of the city of its latest season, for the team page's link. */
-export async function getClubCities(): Promise<Map<string, string>> {
-  const { stays } = await getCityData();
-  const out = new Map<string, { last: number; city: string }>();
-  for (const s of stays) {
-    const k = `${s.league}|${s.f}`;
-    const had = out.get(k);
-    if (!had || s.last > had.last) out.set(k, { last: s.last, city: s.city });
-  }
-  return new Map([...out].map(([k, v]) => [k, v.city]));
-}
-
 const at5 = (n: number) => n.toFixed(5);
 
 /**
@@ -144,12 +132,20 @@ export async function getCityPins(stays: Stay[], placements: Placement[], cities
   return pins;
 }
 
-/** The city a club plays in now (or played in last), for the link on its team page; null when the cities are not readable or the club has none. */
+const clubCityRow = z.object({ city_slug: z.string() });
+
+/**
+ * The city a club plays in now (or played in last), for the link on its team page; null when the cities are not readable or the club has none.
+ * It is the city of the club's latest placed season (what the city model's newest stay of the club is), so one row of api.team_season_city, not the whole list.
+ */
 export async function getClubCity(league: string, f: number): Promise<CityRef | null> {
   try {
-    const [data, clubs] = await Promise.all([getCityData(), getClubCities()]);
-    const slug = clubs.get(`${league}|${f}`);
-    return slug ? data.byslug.get(slug) ?? null : null;
+    const [last, cities] = await Promise.all([
+      rowsSlice("team_season_city", `league=eq.${encodeURIComponent(league)}&franchise_id=eq.${f}&select=city_slug&order=year.desc,league,franchise_id`, 0, 1, clubCityRow),
+      getCities(),
+    ]);
+    const slug = last[0]?.city_slug;
+    return slug ? cities.find((c) => c.slug === slug) ?? null : null;
   } catch {
     return null;
   }

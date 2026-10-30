@@ -2,12 +2,12 @@ import "server-only";
 import type { z } from "zod";
 import { cache } from "react";
 import { ApiError, rows as readRows } from "./api/client";
-import { franchiseNameSchema } from "./api/schemas";
 import { officialAbbr } from "./abbr";
 import { brandFor, logoFor } from "./brand";
 import type { TeamBrandRow } from "./api/types";
 import { clubMatcher } from "./allStarClubs";
 import { getAbbrs, getBrands } from "./data";
+import { getFranchiseNameRows } from "./franchiseNames";
 import { seasonUnder } from "./nameEras";
 import {
   allStarEventSchema, allStarGameSchema, allStarMvpSchema, allStarSelectionSchema, personRows,
@@ -76,7 +76,7 @@ export interface Clubs {
 export const getClubs = cache(async (league: string): Promise<Clubs> => {
   const lgq = /^[a-z]{2,8}$/.test(league) ? league : "none";
   const [names, brands, abbrs] = await Promise.all([
-    readRows("franchise_names", `league=eq.${lgq}&select=*&order=franchise_id,name_from`, franchiseNameSchema).catch(() => []),
+    getFranchiseNameRows().then((all) => all.filter((n) => n.league === lgq)).catch(() => []),
     getBrands().catch(() => ({})),
     getAbbrs(lgq).catch(() => ({})),
   ]);

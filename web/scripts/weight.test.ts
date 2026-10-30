@@ -784,6 +784,14 @@ const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string
 /** With READS_URL (the scripts/weightCrawl.ts proxy in front of the PostgREST the site reads) each page may also make only so many database reads while it is drawn. Pages served from the site's cache make none: run it on a fresh build. */
 const READS = process.env.READS_URL;
 const MAX_READS = 25;
+/**
+ * Pages that may make more reads on a fresh cache, with what they read. The count is the pages' own reads plus the whole-table reads they are the first to make
+ * (shared by every page that follows, and kept a day), so it depends on the order of this list; each is capped at its measured count so it cannot grow.
+ */
+const KNOWN_READ_EXCEPTIONS: Record<string, { reads: number; ticket: string; why: string }> = {
+  "/mlb/2024": { reads: 33, ticket: "SPX-808", why: "24 of its reads are whole tables every page shares (brands 3, names 4, summary, venues 3, logo fits, abbreviations...) and it is the first page to ask; the season's own games are 3 reads of 1,000 rows" },
+  "/city/boston": { reads: 41, ticket: "SPX-808", why: "the first city page reads every placement (12) and every club season (18) the city model adds up; one packed view of the stays would make it about 5" },
+};
 const KIND_PAGES = [...Object.values(KIND_SAMPLES), ...KIND_EXTRA].map((path) => {
   const json = /\/rows\/[a-z-]+$|\/rows$|\.(csv|geojson)$/.test(path.split("?")[0]);
   return { path, budget: KNOWN_EXCEPTIONS[path] ? KNOWN_EXCEPTIONS[path].kb * KB : json ? JSON_BUDGET : PAGE_BUDGET };
@@ -825,7 +833,8 @@ for (const { path, budget } of [...KIND_PAGES, ...FLOOR_PAGES, ...HOME_PAGES, ..
     if (KNOWN_EXCEPTIONS[path]) assert.ok(bytes >= (path.includes("/rows/") ? JSON_BUDGET : PAGE_BUDGET), `${path} is ${bytes} bytes, within the normal budget: remove it from KNOWN_EXCEPTIONS`);
     if (READS) {
       const reads = ((await (await fetch(`${READS}/__dump`)).json()) as { path: string }[]).length;
-      assert.ok(reads <= MAX_READS, `${path} made ${reads} database reads against ${MAX_READS}`);
+      const cap = KNOWN_READ_EXCEPTIONS[path]?.reads ?? MAX_READS;
+      assert.ok(reads <= cap, `${path} made ${reads} database reads against ${cap}`);
     }
   });
 }
