@@ -1,3 +1,4 @@
+import { FieldPlay } from "@/components/FieldPlay";
 import { RoadArt } from "@/components/RoadArt";
 import type { GameRow } from "@/lib/api/types";
 import { brandFor, type BrandMap } from "@/lib/brand";
@@ -66,6 +67,7 @@ export async function FieldPlays({ lg, game, brands, park, row }: { lg: string; 
             {([[0, away], [1, home]] as const).map(([i, name]) => <li key={i} style={swatch(i)}><i className="ft" aria-hidden="true" />{line(i, name)}</li>)}
           </ul>
           <RoadArt className="fplay-art" src={`/field-plays/mlb-${game.game_id}.${park ?? "std"}.${locale}.svg`} ratio={d.width / d.height} />
+          <FieldPlay sport="mlb" src={`/field-plays/mlb-${game.game_id}.${park ?? "std"}.json`} />
           <noscript><p className="note"><a href={`/field-plays/mlb-${game.game_id}.${park ?? "std"}.${locale}.svg`}>{say("fp.fileLink")}</a></p></noscript>
           <figcaption>
             <p className="note">{say("fp.mlbNote")}{y < 1989 ? ` ${say("fp.mlbPartial")}` : ""}{" "}<Rich text={say("fp.mlbCredit")} parts={{ retrosheet: <a href="https://www.retrosheet.org" target="_blank" rel="noopener noreferrer">Retrosheet</a> }} /></p>
@@ -92,6 +94,7 @@ export async function FieldPlays({ lg, game, brands, park, row }: { lg: string; 
         </ul>
         <div className="fplay-wide"><RoadArt className="fplay-art" src={src("wide")} ratio={wide.width / wide.height} /></div>
         <div className="fplay-phone"><RoadArt className="fplay-art" src={src("phone")} ratio={phone.width / phone.height} /></div>
+        <FieldPlay sport="nfl" src={`/field-plays/nfl-${game.game_id}.json`} />
         <noscript><p className="note"><a href={src("wide")}>{say("fp.fileLink")}</a></p></noscript>
         <figcaption>
           <p className="note">{say("fp.nflNote", { away, home })}{" "}<Rich text={say("fp.nflCredit")} parts={{ nflverse: <a href="https://github.com/nflverse/nflverse-data" target="_blank" rel="noopener noreferrer">nflverse</a> }} /></p>

@@ -2,6 +2,8 @@ import "server-only";
 import type { GameRow } from "./api/types";
 import { brandFor, type BrandMap } from "./brand";
 import { DRIVE_KINDS, BALL_KINDS, drawBalls, drawDrives, parseBalls, parseDrives, zoneWhere, type Ball, type Drive } from "./fieldPlays";
+import type { MlbWire, NflWire } from "./playTimeline";
+import { mlbWire, nflWire } from "./fieldPlaysWire";
 import { getBatterNames, type FieldRow } from "./gameField";
 import type { Speaker } from "./i18n/i18n";
 import { seriesLooks } from "./seriesLooks";
@@ -67,4 +69,15 @@ export async function drawNflDrives(
     },
   });
   return { ...d, drives };
+}
+
+/**
+ * The replay's data for one game (the JSON the Play button fetches the first time it is pressed): the same row the still drawing is made of, with each place worked
+ * out as the file draws it. The park is the one the page names for the game, as for the drawing. Nothing in it depends on the reader's language.
+ */
+export function playWire(kind: "mlb" | "nfl", row: FieldRow, g: Pick<GameRow, "league" | "year" | "away" | "home" | "away_f" | "home_f" | "away_score" | "home_score">, brands: BrandMap, park: string | null): MlbWire | NflWire {
+  const [la, lb] = looks(g, brands);
+  const teams: [{ name: string; color: string }, { name: string; color: string }] = [{ name: g.away ?? "—", color: la.block }, { name: g.home ?? "—", color: lb.block }];
+  const score: [number | null, number | null] = [g.away_score ?? null, g.home_score ?? null];
+  return kind === "mlb" ? mlbWire(parseBalls(row.data), { park, year: g.year, teams, score }) : nflWire(parseDrives(row.data), { teams, score });
 }

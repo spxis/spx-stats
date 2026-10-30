@@ -231,7 +231,13 @@ export function driveScores(drives: readonly Drive[], side: 0 | 1): number {
 }
 
 /** Where a yard line is on the field: yards from the left back line, the end zones counted (so the goal lines are at 10 and 110). The visitors attack the right end zone, the home team the left. */
-const xOf = (side: 0 | 1, yd: number): number => (side === 0 ? 10 + (100 - yd) : 10 + yd);
+export const xOf = (side: 0 | 1, yd: number): number => (side === 0 ? 10 + (100 - yd) : 10 + yd);
+
+/** The drawing's own units are feet: a yard is 3 of them, and the field is 160 high. The lane of a drive (its place from the bottom, in yards) as the file draws it, for n drives. */
+export const FT_PER_YD = 3;
+export const FIELD_FT_HIGH = 160;
+const LANE_WIDTH = 160 / 3;
+export const driveLane = (i: number, n: number): number => Math.round((LANE_WIDTH * (1 - (i + 0.8) / (n + 0.6))) * 100) / 100;
 
 export interface DrivesDrawing { svg: string; width: number; height: number }
 
@@ -242,8 +248,8 @@ export interface DrivesDrawing { svg: string; width: number; height: number }
  */
 export function drawDrives(drives: readonly Drive[], o: { year: number; away: Team; home: Team; title: string; language?: "en" | "ja"; orientation?: "wide" | "tall"; label?: (d: Drive, kind?: "return") => string }): DrivesDrawing {
   const n = Math.max(drives.length, 1);
-  const width = 160 / 3;
-  const lane = (i: number) => Math.round((width * (1 - (i + 0.8) / (n + 0.6))) * 100) / 100;
+  const width = LANE_WIDTH;
+  const lane = (i: number) => driveLane(i, n);
   const bars: LineDatum[] = [], returns: LineDatum[] = [], ticks: PointDatum[] = [], ends: PointDatum[] = [];
   drives.forEach((d, i) => {
     const y = lane(i);

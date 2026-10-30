@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.0", date: "2026-10-30", href: "/mlb/2025/game/1922322-los-angeles-dodgers-at-chicago-cubs",
+    title: "Play a game on its field",
+    text: "Under the field of an MLB or NFL game there is now a Play button. An MLB game replays inning by inning, each ball in play flying from home plate to its zone; an NFL game replays drive by drive, play by play. It has a speed choice, a slider and buttons to jump to an inning or quarter. It plays only when you press it; with reduced motion it steps instead." },
   { version: "0.169.0", date: "2026-10-30", href: "/mlb/2025/game/1924798-los-angeles-dodgers-at-toronto-blue-jays",
     title: "The title trophy on the big-game banner",
     text: "The banner of a league's last round now carries its trophy: the Commissioner's Trophy, the Stanley Cup, the Larry O'Brien Trophy, the Vince Lombardi Trophy, the Grey Cup, the Calder Cup, the Kelly Cup or the college football national championship trophy. It is small on a score card and large on the game page, and bigger, with a glow, on the game that decides the title. Other games look as before." },

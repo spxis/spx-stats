@@ -38,3 +38,49 @@
 
 /* Football: each end zone takes the colour of the club that defends it (the visitors the left or top one). Not in a layer: the drawing's own stylesheet is not in one, and a layer loses to it. */
 .fplay[data-sport="nfl"] svg.kyogijo { --ky-left: var(--ba); --ky-right: var(--bb); --ky-left-ink: var(--ia); --ky-right-ink: var(--ib); }
+
+/* The replay of a game on its field (FieldPlayer.tsx): the controls under the drawing, and the rules that show the drawing's marks one after another. */
+@layer components {
+  .fpp { margin: .75rem 0 0; display: flex; flex-direction: column; gap: .5rem; min-height: 48px; }
+  /* the controls belong to the figure, so the bar can stay at the foot of the screen for as long as the field is in view */
+  .fpp-open { display: contents; }
+  .fpp-open > * { margin-top: .5rem; }
+  .fpp-bar { position: sticky; bottom: 0; z-index: 5; display: flex; flex-direction: column; gap: .4rem; padding: .55rem 0 calc(.55rem + env(safe-area-inset-bottom)); background: var(--paper); border-top: 1px solid var(--rule); }
+  .fpp-status { display: flex; flex-wrap: wrap; align-items: baseline; gap: .15rem 1.1rem; }
+  .fpp-when { font: 700 22px/1.1 var(--display); text-transform: uppercase; letter-spacing: .04em; min-width: 3.2em; }
+  .fpp-teams { margin: 0; }
+  .fpp-final { font-weight: 600; }
+  .fpp-caption { min-height: 1.3em; margin: 0; font-size: .85rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .fpp-row { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+  .fpp-speeds { display: flex; gap: .35rem; }
+  .fpp-btn { box-sizing: border-box; min-width: 48px; min-height: 48px; padding: 0 14px; display: inline-flex; align-items: center; justify-content: center; gap: .5rem; border: 1px solid var(--rule); border-radius: 10px; background: var(--panel); color: var(--ink); font: 600 15px/1 var(--display); letter-spacing: .02em; font-variant-numeric: tabular-nums; }
+  .fpp-btn:disabled { opacity: .5; }
+  .fpp-btn[aria-pressed="true"] { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .fpp-main { min-width: 8.5rem; border-color: var(--ink); }
+  .fpp-start .fpp-main { min-width: 0; align-self: flex-start; }
+  .fpp-close { align-self: flex-start; background: none; font-weight: 500; }
+  .fpp-scrub { width: 100%; min-height: 48px; margin: 0; accent-color: var(--ink); cursor: pointer; }
+  .fpp-chips { display: flex; gap: .35rem; overflow-x: auto; scrollbar-width: thin; padding-bottom: 2px; }
+  .fpp-chip { flex: none; }
+  .fpp-note { margin: 0; }
+  /* while the replay runs, its own score line stands in for the sums of the whole game */
+  .fplay[data-play] > .fplay-teams { display: none; }
+  .fpp-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
+  .fpp-icon { display: inline-block; width: 14px; height: 14px; background: currentColor; }
+  .fpp-icon[data-icon="play"] { clip-path: polygon(10% 0, 100% 50%, 10% 100%); }
+  .fpp-icon[data-icon="pause"] { background: linear-gradient(90deg, currentColor 0 36%, transparent 36% 64%, currentColor 64%); }
+  .fpp-icon[data-icon="step"] { clip-path: polygon(0 0, 70% 50%, 0 100%, 0 78%, 0 22%); width: 14px; box-shadow: 4px 0 0 0 currentColor; clip-path: polygon(0 0, 78% 50%, 0 100%); }
+  @media (max-width: 640px) {
+    .fpp-main { flex: 1 1 8.5rem; }
+    .fpp-speeds { flex: 1 1 auto; }
+    .fpp-speeds .fpp-btn { flex: 1 1 0; padding: 0 6px; }
+  }
+}
+
+/* While it plays, a mark of the drawing shows once the replay has reached it. Not in a layer: the drawing's own stylesheet is not in one, and a layer loses to it. */
+svg.kyogijo.fp-live .fp-anim > :not(title, desc, .fp-on, .fp-ball, .fp-trail) { visibility: hidden; }
+svg.kyogijo .fp-trail { fill: none; stroke-width: 1.3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 4 3; opacity: .65; pointer-events: none; }
+svg.kyogijo .fp-ball { stroke-width: .7; pointer-events: none; paint-order: stroke; }
+@media (prefers-reduced-motion: reduce) {
+  svg.kyogijo.fp-live .fp-anim > * { transition: none; }
+}

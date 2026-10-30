@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.169.0",
+  "version": "0.170.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -74,6 +74,7 @@
     "test:series": "node --test scripts/series.test.ts",
     "test:game": "node --test scripts/game.test.ts",
     "test:fieldplays": "node --test scripts/fieldPlays.test.ts",
+    "test:playtimeline": "node --test scripts/playTimeline.test.ts",
     "test:spray": "node --test scripts/playerSpray.test.ts",
     "test:biggame": "node --test scripts/bigGame.test.ts",
     "test:flow": "node --test scripts/rosterFlow.test.ts",
