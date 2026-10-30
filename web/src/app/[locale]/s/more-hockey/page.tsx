@@ -2,6 +2,7 @@ import Link from "@/components/Link";
 import { AccentStyle } from "@/components/AccentStyle";
 import { SportMark } from "@/components/SportMark";
 import { Rich } from "@/components/i18n/Rich";
+import { TeamData } from "@/components/TeamData";
 import { TeamLabel } from "@/components/TeamLabel";
 import { logoFor } from "@/lib/brand";
 import { getBrands, getSummary } from "@/lib/data";
@@ -30,6 +31,7 @@ export default guard(async function MoreHockeyPage() {
   const groups = moreHockeyGroups(seasons.filter((s) => !leagueSat(s)));
   return (
     <SportMark sport="nhl">
+      <TeamData leagues={groups.flatMap((g) => g.leagues.map((l) => l.code))}>
       <AccentStyle league="nhl" />
       <section className="head fade">
         <span className="eyebrow">{say("hockey.eyebrow")}</span>
@@ -60,6 +62,7 @@ export default guard(async function MoreHockeyPage() {
       <section className="section">
         <p className="note">{say("hockey.nhlNote")} <Link href="/nhl">{say("hockey.nhlLink")}</Link></p>
       </section>
+      </TeamData>
     </SportMark>
   );
 });

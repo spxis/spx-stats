@@ -4,19 +4,13 @@ import type { ReactNode } from "react";
 import { AccountProvider, AdminBar, type Account } from "@/components/auth/Account";
 import { LeagueCrumbs } from "@/components/LeagueCrumbs";
 import { LocaleProvider } from "@/components/i18n/LocaleProvider";
-import { LogoFitProvider } from "@/components/LogoFitProvider";
-import { SlugProvider } from "@/components/SlugProvider";
 import { SiteFooter, SiteHeader } from "@/components/SiteChrome";
 import { authEnabled } from "@/lib/auth/config";
 import { SITE_ICONS, SOCIAL_IMAGES } from "@/lib/brandAssets";
-import { getLogoFits } from "@/lib/data";
 import { HINT_SCRIPT } from "@/lib/auth/hint";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { SITE_URL } from "@/lib/leagues";
 import { LOCALE_OG, type Locale } from "@/lib/locale";
-import { approvedTable } from "@/lib/logoFit";
-import { packTable, tableOf } from "@/lib/slug";
-import { getSlugs } from "@/lib/teamSlugs";
 import { RANGE_HOLD_SCRIPT } from "@/lib/yearRange";
 import "@/app/globals.css";
 
@@ -45,12 +39,11 @@ export const siteViewport: Viewport = { width: "device-width", initialScale: 1, 
 const themeScript = `try { const t = localStorage.getItem('spxn-theme'); if (t === 'light' || t === 'dark') document.documentElement.dataset.theme = t; } catch (e) {}`;
 
 /**
- * The document around every page: head scripts, the language and address providers, the header, the footer. The public pages
+ * The document around every page: head scripts, the language provider, the header, the footer. The team addresses and logo fits are not here: each page carries its own (components/TeamData.tsx). The public pages
  * (app/[locale]) are kept, so this reads nothing from the request; who is signed in is learned in the browser (AccountProvider).
  * The signed-in pages (app/(dyn)) pass `account`, which they know.
  */
-export async function SiteShell({ locale, account, children }: { locale: Locale; account?: Account; children: ReactNode }) {
-  const [slugs, fits] = await Promise.all([getSlugs().catch(() => null), getLogoFits()]);
+export function SiteShell({ locale, account, children }: { locale: Locale; account?: Account; children: ReactNode }) {
   return (
     <html lang={locale} className={`${barlow.variable} ${source.variable} ${mono.variable}`} suppressHydrationWarning>
       {/* eslint-disable-next-line @next/next/no-head-element -- this is the root layout's own <head> */}
@@ -61,19 +54,15 @@ export async function SiteShell({ locale, account, children }: { locale: Locale;
       </head>
       <body>
         <LocaleProvider locale={locale}>
-          <SlugProvider table={slugs ? packTable(tableOf(slugs)) : {}}>
-            <LogoFitProvider table={approvedTable(fits)}>
-              <AccountProvider enabled={authEnabled()} initial={account}>
-                <AdminBar />
-                <SiteHeader />
-                <main id="app" tabIndex={-1} className="page">
-                  <LeagueCrumbs />
-                  {children}
-                </main>
-                <SiteFooter />
-              </AccountProvider>
-            </LogoFitProvider>
-          </SlugProvider>
+          <AccountProvider enabled={authEnabled()} initial={account}>
+            <AdminBar />
+            <SiteHeader />
+            <main id="app" tabIndex={-1} className="page">
+              <LeagueCrumbs />
+              {children}
+            </main>
+            <SiteFooter />
+          </AccountProvider>
         </LocaleProvider>
       </body>
     </html>

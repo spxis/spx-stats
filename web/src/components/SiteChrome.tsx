@@ -4,6 +4,7 @@ import { BrandImg } from "./BrandImg";
 import { BrandSwoosh } from "./BrandSwoosh";
 import { Rich } from "./i18n/Rich";
 import { LeagueNav } from "./LeagueNav";
+import { LinkList } from "./LinkList";
 import { SoccerFooterLinks } from "./SoccerFooterLinks";
 import { authEnabled } from "@/lib/auth/config";
 import { latestDataVersion } from "@/lib/releases/client";
@@ -41,34 +42,26 @@ export async function SiteFooter() {
         <nav className="foot-col" aria-label={say("footer.colLeagues")}>
           <b>{say("footer.colLeagues")}</b>
           <div className="foot-links">
-            {menu.filter((m) => m.id !== "soccer").map((m) => <Link key={m.id} href={m.href}>{m.label}</Link>)}
+            <LinkList links={menu.filter((m) => m.id !== "soccer").map((m) => [m.href, m.label] as const)} />
             <SoccerFooterLinks />
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("nav.allTime")}>
           <b>{say("nav.allTime")}</b>
           <div className="foot-links">
-            {menu.flatMap((m) => (m.allTime ? [<Link key={m.id} href={`/${m.allTime}/all-time`}>{m.label}</Link>] : []))}
+            <LinkList links={menu.flatMap((m) => (m.allTime ? [[`/${m.allTime}/all-time`, m.label] as const] : []))} />
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("footer.colData")}>
           <b>{say("footer.colData")}</b>
           <div className="foot-links">
-            <Link href="/about">{say("nav.aboutPage")}</Link>
-            <Link href="/teams">{say("nav.teams")}</Link>
-            <Link href="/players">{say("nav.players")}</Link>
-            <Link href="/venues">{say("nav.venues")}</Link>
-            <Link href="/countries">{say("nav.countries")}</Link>
-            <Link href="/sources">{say("nav.sources")}</Link>
-            <Link href="/quality">{say("nav.quality")}</Link>
-            <Link href="/logos">{say("nav.logos")}</Link>
+            <LinkList links={[["/about", say("nav.aboutPage")], ["/teams", say("nav.teams")], ["/players", say("nav.players")], ["/venues", say("nav.venues")], ["/countries", say("nav.countries")], ["/sources", say("nav.sources")], ["/quality", say("nav.quality")], ["/logos", say("nav.logos")]]} />
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("footer.colLegal")}>
           <b>{say("footer.colLegal")}</b>
           <div className="foot-links">
-            <Link href="/privacy">{say("nav.privacy")}</Link>
-            <Link href="/terms">{say("nav.terms")}</Link>
+            <LinkList links={[["/privacy", say("nav.privacy")], ["/terms", say("nav.terms")]]} />
           </div>
         </nav>
       </div>

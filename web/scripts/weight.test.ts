@@ -5,7 +5,8 @@ import { AWARD_GRID_HEAD, AWARD_MANY, awardGridPagePath, awardGridRestPath, awar
 import { CHAMP_HEAD, buildChampLines, champHead, champNoteText, champPagePath, champRestPath, type ChampSeason } from "../src/lib/champLines.ts";
 import { packBoard } from "../src/lib/playerBoardWire.ts";
 import { clubInfoKey, type BoardData } from "../src/lib/playerBoard.ts";
-import { packTable, unpackTable, type SlugTable } from "../src/lib/slug.ts";
+import { buildSlugs, packTable, tableOf, unpackTable, type SlugTable } from "../src/lib/slug.ts";
+import { approvedTable, fitLeagues, type LogoFit } from "../src/lib/logoFit.ts";
 import { barItems, barRows, type BarCtx } from "../src/lib/allTimeBars.ts";
 import type { Franchise, SeasonMark } from "../src/lib/allTime.ts";
 import { AT_HEAD, atGrid, atKeys, atPoints, atSort, buildAtList, lineAt, pickAt, resolveAt, shownAt, allTimeRestPath } from "../src/lib/allTimeLines.ts";
@@ -172,6 +173,33 @@ test("the team address table travels as a flat list and reads back whole", () =>
   assert.deepEqual(unpackTable(JSON.parse(JSON.stringify(wire))), table);
 });
 
+test("the root layout carries no team addresses and no logo fits: a page carries those of the leagues it shows", () => {
+  const shell = read("components/SiteShell.tsx");
+  assert.ok(!/SlugProvider|LogoFitProvider|getSlugs|getLogoFits|packTable|approvedTable/.test(shell), "the document around every page holds no table (they were 45 KB of every page)");
+  for (const side of ["s", "q"]) {
+    assert.ok(read(`app/[locale]/${side}/[league]/layout.tsx`).includes("<TeamData leagues={[league, ...(RELATED_LEAGUES[league as LeagueCode] ?? [])]}>"), `${side}/[league] carries its league's (and its relatives') addresses and fits`);
+  }
+  const data = read("components/TeamData.tsx");
+  assert.ok(data.includes("tableOf(slugs, leagues)") && data.includes("fitLeagues(fits, leagues)"), "TeamData cuts both tables to the leagues asked for");
+  for (const dir of ["s/teams", "s/players", "s/city", "s/country", "s/venue", "s/trophies", "q/teams", "q/players", "q/city", "q/country", "q/venue"]) {
+    assert.ok(read(`app/[locale]/${dir}/layout.tsx`).includes("TeamDataLayout"), `${dir} names teams of any league and carries them all`);
+  }
+});
+
+test("addresses and fits are cut to the leagues a page shows, and a league not carried keeps the numeric address", () => {
+  const slugs = buildSlugs(
+    [{ league: "nhl", franchise_id: 1, name: "Boston Bruins", name_from: null, name_to: null }, { league: "nba", franchise_id: 2, name: "Boston Celtics", name_from: null, name_to: null }],
+    [{ league: "nhl", year: 2000, franchise_id: 1, team: "Boston Bruins" }, { league: "nba", year: 2000, franchise_id: 2, team: "Boston Celtics" }],
+  );
+  assert.deepEqual(Object.keys(tableOf(slugs, ["nhl"])), ["nhl"]);
+  assert.deepEqual(Object.keys(tableOf(slugs)).sort(), ["nba", "nhl"]);
+  assert.deepEqual(packTable(tableOf(slugs, ["nba"])), { nba: [2, "boston-celtics"] });
+  const fit = (logo_file: string, league: string | null): LogoFit => ({ logo_file, league, team: "t", wordmark: true, mark_url: "m", mark_licence: null, mark_page: null, scale: 1, dx: 0, dy: 0, bg: "auto", status: "approved", note: null });
+  const rows = [fit("commons:A.svg", "nhl"), fit("commons:B.svg", "nba"), fit("commons:C.svg", null), fit("commons:D.svg", "other")];
+  assert.deepEqual(Object.keys(approvedTable(fitLeagues(rows, ["nhl"]))), ["commons:A.svg", "commons:C.svg", "commons:D.svg"], "a fit of no known league is in every list");
+  assert.equal(Object.keys(approvedTable(fitLeagues(rows))).length, 4);
+});
+
 test("a player's page leaves the league's figures, the strip and the seasons table out of its HTML", () => {
   const board = read("components/PlayerBoard.tsx");
   assert.ok(board.includes("/api/players/${id}/refs") && board.includes("useFetchedJson"), "the board fetches the league's figures");
@@ -315,6 +343,10 @@ const PLAYER_PAGES: { path: string; budget: number }[] = [
   { path: "/mlb/player/41518", budget: PAGE_BUDGET },
   { path: "/worldcup/player/76534", budget: PAGE_BUDGET },
 ];
+/** The floor every page stands on: the document, header, footer and the sign-in and language scripts, nothing else. A small static page shows what the root layout sends. */
+const ROOT_FLOOR = 45 * 1000;
+const FLOOR_PAGES = [{ path: "/privacy", budget: ROOT_FLOOR }, { path: "/terms", budget: 60 * 1000 }];
+
 /** The all-time page of every league (its default view), and the heaviest leagues' table view, which lists every franchise. */
 const ALL_TIME_LEAGUES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl"];
 const ALL_TIME_PAGES = [
@@ -334,7 +366,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

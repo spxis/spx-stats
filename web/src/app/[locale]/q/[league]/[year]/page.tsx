@@ -22,6 +22,7 @@ import { SeasonRace } from "@/components/SeasonRace";
 import { SeasonStreaks } from "@/components/SeasonStreaks";
 import { SortTable } from "@/components/SortTable";
 import { StandingsFocus } from "@/components/StandingsFocus";
+import { TeamData } from "@/components/TeamData";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TrophyBanner } from "@/components/TrophyBanner";
 import { championshipName } from "@/lib/trophies";
@@ -303,7 +304,7 @@ export default guard(async function SeasonPage({ params, searchParams }: PagePro
           <StandingsFocus>
             <ViewTabs lg={lg} path={seasonPath(lg, y)} sp={sp} view={view} views={views} rows={st} choices={choices} group={group?.key ?? ""} />
             <p className="note">{standingsNote}</p>
-            <div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div>
+            <TeamData leagues={[lg, ...[...parentByClub.values()].flatMap((ps) => ps.map((x) => x.lg))]}><div className="scroll"><SortTable {...standings} def="pct.desc" initial={sort} groups={grouped.groups} /></div></TeamData>
           </StandingsFocus>
           {asOf || BIG_FIELD.has(lg) ? null : <SeasonRace clubs={raceClubs} countsOtl={d.standings.some((r) => r.otl != null)} weekStart={lg === "nfl" ? 2 : 1} />}
         </section>

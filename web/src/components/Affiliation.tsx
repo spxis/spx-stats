@@ -1,5 +1,6 @@
 import Link from "@/components/Link";
 import { Rich } from "@/components/i18n/Rich";
+import { TeamData } from "@/components/TeamData";
 import { TeamLabel } from "@/components/TeamLabel";
 import { getClubAffiliations, getFarmClubs } from "@/lib/affiliation";
 import { farmStays, independentRuns, parentsOfSeason, parentStays, type Stay } from "@/lib/affiliationView";
@@ -13,14 +14,14 @@ type Say = Awaited<ReturnType<typeof currentSpeaker>>["say"];
 const span = (say: Say, lg: string, first: number, last: number): string =>
   first === last ? seasonLabel(lg, first) : say("affil.years", { from: seasonLabel(lg, first), to: seasonLabel(lg, last) });
 
-/** The clubs of a list of stays, named in a sentence ("A and B"); each is a link with its logo, through TeamLabel. */
+/** The clubs of a list of stays, named in a sentence ("A and B"); each is a link with its logo, through TeamLabel. They are clubs of other leagues than the page's, so their addresses and fits come with them. */
 function Names({ items, say, brands }: { items: { lg: string; f: number; name: string }[]; say: Say; brands: Awaited<ReturnType<typeof getBrands>> }) {
   return (
-    <>
+    <TeamData leagues={items.map((p) => p.lg)}>
       {items.map((p, i) => (
         <span key={`${p.lg}${p.f}`}>{i ? ` ${say("affil.and")} ` : ""}<span className="tm"><TeamLabel lg={p.lg} f={p.f} name={p.name} logo={logoFor(brands, p.f)} /></span></span>
       ))}
-    </>
+    </TeamData>
   );
 }
 
@@ -53,6 +54,7 @@ export async function ClubAffiliationHistory({ lg, f }: { lg: string; f: number 
     <section className="section">
       <h2>{say("affil.title")}</h2>
       <p className="note">{say("affil.note")}</p>
+      <TeamData leagues={stays.map((s) => s.lg)}>
       <ul className="affillist">
         {[...stays.map((s) => ({ first: s.first, last: s.last, s })), ...indep.map((r) => ({ first: r.first, last: r.last, s: null as Stay | null }))]
           .sort((a, b) => a.first - b.first || a.last - b.last)
@@ -63,6 +65,7 @@ export async function ClubAffiliationHistory({ lg, f }: { lg: string; f: number 
             </li>
           ))}
       </ul>
+      </TeamData>
     </section>
   );
 }
@@ -77,6 +80,7 @@ export async function FarmClubs({ f }: { f: number }) {
     <section className="section">
       <h2>{say("affil.farmTitle")}</h2>
       <p className="note">{say("affil.farmNote")}</p>
+      <TeamData leagues={stays.map((s) => s.lg)}>
       <ul className="affillist">
         {stays.map((s) => (
           <li key={`${s.lg}${s.f}${s.first}`}>
@@ -86,6 +90,7 @@ export async function FarmClubs({ f }: { f: number }) {
           </li>
         ))}
       </ul>
+      </TeamData>
     </section>
   );
 }

@@ -18,6 +18,7 @@ import { getPaths } from "@/lib/teamSlugs";
 import { getBrands, getSummary } from "@/lib/data";
 import { atUtc } from "@/lib/format";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
+import { TeamData } from "@/components/TeamData";
 import { isLeague, LG, seasonLabel } from "@/lib/leagues";
 import { pageMeta } from "@/lib/meta";
 import { PlayerResume } from "@/components/PlayerResume";
@@ -243,9 +244,11 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
   const coachSeasons = coaching.reduce((n, c) => n + c.seasons, 0);
   const coachClubs = new Set(coaching.map((c) => `${c.league}|${c.franchise}`)).size;
   const partial = coaching.some((c) => c.sole < c.seasons);
+  // The clubs of every league he played, coached or was honoured in: their addresses and logo fits travel with the page (the layout carries only this address's league).
+  const clubLeagues = [...new Set([league, ...lgs, ...teams.map((t) => t.league), ...coaching.map((c) => c.league), ...staff.map((c) => c.league), ...allStar.map((r) => r.league), ...record.stats.map((r) => r.league), ...record.seasonTeams.map((r) => r.league), ...retired.map((r) => r.league)])];
 
   return (
-    <>
+    <TeamData leagues={clubLeagues}>
       {isLeague(home) ? <AccentStyle league={home} /> : null}
       <section className="head fade">
         {homePin ? <BirthMap home={homePin} pins={[homePin, ...teamPins]} name={p.name} /> : null}
@@ -325,6 +328,6 @@ export default guard(async function PlayerPage({ params, searchParams }: PagePro
           credits: <Credits say={say} use={["flags", "maps"]} />,
         }} />
       </p>
-    </>
+    </TeamData>
   );
 });

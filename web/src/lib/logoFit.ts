@@ -57,6 +57,11 @@ export function approvedTable(rows: LogoFit[]): FitTable {
   return table;
 }
 
+/** The fits of the given leagues' logos, else all of them. A fit of no known league (league "other", or none) is in every list: it is a few rows. */
+export function fitLeagues(rows: LogoFit[], leagues?: readonly string[]): LogoFit[] {
+  return leagues ? rows.filter((r) => !r.league || r.league === "other" || leagues.includes(r.league)) : rows;
+}
+
 /** A fit as TeamLogo draws it. */
 export interface Fit { mark: string | null; scale: number; dx: number; dy: number; bg: string; wordmark: boolean }
 
