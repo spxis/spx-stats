@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.16", date: "2026-10-30", href: "/ncaaf/2025/leaders",
+    title: "Season leaders pages are about a third of the weight",
+    text: "The table of every team on a team leaders page now travels as short lines and is drawn in the browser, the first twenty teams until Show all (a link to the full table, which is also what a sort asks for). College football 2025 went from 281 to 101 KB." },
   { version: "0.170.15", date: "2026-10-30", href: "/worldcup/2026",
     title: "World Cup tournament pages are about a third lighter",
     text: "The teams strip, and the tables of teams, matches and top scorers, now travel as short lines and are drawn in the browser; each table shows its first twenty rows until Show all, a link to a new page that lists every row. The 2026 page went from 326 to 195 KB, the 2018 page from 283 to 192 KB." },

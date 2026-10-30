@@ -1,7 +1,7 @@
 import Link from "@/components/Link";
 import { LeaderSpark } from "@/components/LeaderSpark";
 import { LeaderTrend, type TrendPoint } from "@/components/LeaderTrend";
-import { SortTable } from "@/components/SortTable";
+import { TeamLeaderTable } from "@/components/TeamLeaderTable";
 import { TeamLabel } from "@/components/TeamLabel";
 import { TeamLogo, type LogoShape } from "@/components/TeamLogo";
 import { queryHref } from "@/components/ViewTabs";
@@ -10,11 +10,12 @@ import type { LeaderStanding } from "@/lib/api/leaders";
 import { logoFor, type BrandMap } from "@/lib/brand";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import {
-  beats, isTeamStatId, leadersPath, scoreTeams, seasonContext, showDelta, showTeam, teamStatsFor, UNIT_OF, yearLeads, type SeasonIssue, type TeamKind, type TeamStat,
+  beats, isTeamStatId, leadersPath, scoreTeams, seasonContext, showTeam, teamStatsFor, UNIT_OF, yearLeads, type SeasonIssue, type TeamKind, type TeamStat,
 } from "@/lib/leaderStats";
 import { LG, seasonLabel } from "@/lib/leagues";
 import { recordText } from "@/lib/record";
-import { parseSort, tableOf, type ColumnSpec } from "@/lib/sort";
+import { buildLeaderLines } from "@/lib/leaderLines";
+import { parseSort } from "@/lib/sort";
 import "./leaders.css";
 
 type Query = Record<string, string | string[] | undefined>;
@@ -84,24 +85,14 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
     const ever = all.map((r) => stat.get(r)).filter((v): v is number => v != null && Number.isFinite(v));
     const placeIn = (list: number[], v: number) => list.filter((o) => beats(stat, o, v)).length + 1;
     const best = rows[0].value, last = rows[rows.length - 1].value;
-    const club = (r: LeaderStanding, short = false, size?: number, shape?: LogoShape) => <TeamLabel lg={lg} f={r.franchise_id} name={name(r)} year={year} abbr={short ? abbrFor(abbrs, r.franchise_id, year, r.team) : undefined} logo={logoFor(brands, r.franchise_id, year)} size={size} shape={shape} />;
-    const cols: ColumnSpec<(typeof rows)[number]>[] = [
-      { key: "rk", label: say("leaders.col.rank"), num: true, cls: "rk", get: (r) => placeIn(thisSeason, r.value) },
-      { key: "team", label: say("col.team"), cls: "team", get: (r) => r.row.team, cell: (r) => <>{club(r.row, true)}{champion != null && r.row.franchise_id === champion ? <span className="defending winner" title={say("season.wonTitle", { season: seasonLabel(lg, year) })}>{say("season.winner")}</span> : null}{defending != null && r.row.franchise_id === defending.f ? <span className="defending" title={say("season.wonTitle", { season: defending.label })}>{defending.streak > 1 ? say("season.defendingMany", { n: fmt(defending.streak) }) : say("season.defending")}</span> : null}</> },
-      {
-        key: "value", label: label(stat), num: true, title: perGame(stat) || undefined, get: (r) => r.value,
-        cell: (r) => {
-          const share = best === last ? 1 : Math.max(0.04, Math.abs(r.value - last) / Math.abs(best - last));
-          return <span className="lval"><span className="lbar" aria-hidden="true"><i style={{ width: `${Math.round(share * 100)}%` }} /></span><b>{showTeam(stat.kind, r.value, fmt)}</b></span>;
-        },
-      },
-      { key: "vs", label: say("leaders.col.vsAvg"), num: true, title: say("leaders.col.vsAvgTitle"), get: (r) => r.value - lead.mean, cell: (r) => <span className="dim">{showDelta(stat.kind, r.value - lead.mean)}</span> },
-      { key: "gp", label: say("col.gp"), num: true, title: say("col.gpTeamTitle"), get: (r) => r.row.gp },
-      { key: "rec", label: say("col.record"), get: (r) => r.row.w, cell: (r) => recordText({ w: r.row.w ?? 0, l: r.row.l ?? 0, t: r.row.t, otl: r.row.otl }) },
-      { key: "ever", label: say("leaders.col.ever"), num: true, title: say("leaders.col.everTitle", { count: fmt(ctx.teamOf) }), get: (r) => placeIn(ever, r.value), cell: (r) => <span className="dim">{`#${fmt(placeIn(ever, r.value))}`}</span> },
-    ];
-    const table = tableOf(rows, cols, (r) => r.row.team_id, (r) => (placeIn(thisSeason, r.value) === 1 ? "leadrow" : undefined));
-    const sort = parseSort(sp.sort, cols.map((c) => c.key), "rk.asc");
+    const club = (r: LeaderStanding, size?: number, shape?: LogoShape) => <TeamLabel lg={lg} f={r.franchise_id} name={name(r)} year={year} logo={logoFor(brands, r.franchise_id, year)} size={size} shape={shape} />;
+    const lines = buildLeaderLines(rows.map((r) => ({
+      id: r.row.team_id, franchise: r.row.franchise_id, name: name(r.row), abbr: abbrFor(abbrs, r.row.franchise_id, year, r.row.team), logo: logoFor(brands, r.row.franchise_id, year),
+      value: r.value, gp: r.row.gp, w: r.row.w, l: r.row.l, t: r.row.t, otl: r.row.otl,
+    })), (v) => placeIn(thisSeason, v), (v) => placeIn(ever, v));
+    // A sort in the address is applied to every row, so that request is drawn in full; so is the one the table's "Show all" link names.
+    const sort = parseSort(sp.sort, ["rk", "team", "value", "vs", "gp", "rec", "ever"], "rk.asc");
+    const full = param(sp.sort) !== "";
     const recordYear = ctx.record.row.year;
     const points: TrendPoint[] = history.map((h) => ({
       year: h.year, label: seasonLabel(lg, h.year), value: h.value, worst: h.worst, mean: h.mean,
@@ -119,7 +110,7 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
             <span className="num">{showTeam(stat.kind, lead.value, fmt)}{perGame(stat) ? <small>{perGame(stat)}</small> : null}</span>
             <span className="name">
               {lead.teams.slice(0, 3).map((r, i) => (
-                <span key={r.team_id}>{i > 0 ? <span className="dim">{" / "}</span> : null}{club(r, false, 36, "square")}</span>
+                <span key={r.team_id}>{i > 0 ? <span className="dim">{" / "}</span> : null}{club(r, 36, "square")}</span>
               ))}
               {lead.teams.length > 3 ? <span className="dim">{`+${lead.teams.length - 3}`}</span> : null}
             </span>
@@ -167,7 +158,7 @@ export async function TeamLeaders({ lg, year, all, mine, issue, sp, brands, abbr
         </section>
         <section className="section">
           <h3>{say("leaders.allTeams", { label: seasonLabel(lg, year) })}</h3>
-          <div className="tablebox ltable"><SortTable {...table} def="rk.asc" initial={sort} /></div>
+          <TeamLeaderTable lg={lg} year={year} lines={lines} kind={stat.kind} label={label(stat)} title={perGame(stat) || undefined} mean={lead.mean} best={best} last={last} everCount={ctx.teamOf} champion={champion ?? null} defending={defending ?? null} full={full} hrefAll={queryHref(path, sp, { sort: "rk.asc" })} sort={sort} />
         </section>
       </>
     );

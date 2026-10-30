@@ -29,6 +29,7 @@ import { wire as rosterWire } from "../src/lib/rosterWire.ts";
 import type { GameRow, StandingRow } from "../src/lib/api/types.ts";
 import { coachRowsPath, packCoach, unpackCoach, type CoachLeague } from "../src/lib/coachWire.ts";
 import { buildWcMatches, buildWcScorers, buildWcTeams, readWcMatches, WC_HEAD, wcTablesPath, type WcMatchInput } from "../src/lib/wcLines.ts";
+import { buildLeaderLines, LEADER_HEAD, leaderShare } from "../src/lib/leaderLines.ts";
 import { stripLines } from "../src/lib/wcStrip.ts";
 import { lineageRowsPath, packLineage, unpackLineage, type LineageLeague } from "../src/lib/lineageWire.ts";
 
@@ -907,4 +908,26 @@ test("a tournament's teams, matches and scorers travel as short lines the table 
   assert.doesNotMatch(page, /limit=\{LONG_TABLE\}/, "the page's long tables are built in the browser from lines");
   assert.match(page, /wcTablesPath/, "Show all leads to the page that holds every row");
   assert.ok(existsSync(new URL("../src/app/[locale]/s/worldcup/[year]/tables/page.tsx", import.meta.url)));
+});
+
+test("the team leaders table travels as one short line a team, with its places worked out, and draws only its head until Show all", () => {
+  const teams = Array.from({ length: 137 }, (_, i) => ({
+    id: 9000 + i, franchise: 100 + i, name: `Team ${i} Mascots`, abbr: i % 5 ? `T${i}` : undefined, logo: i % 3 ? `https://upload.wikimedia.org/wikipedia/en/thumb/a/ab/Team_${i}_logo.svg/120px-Team_${i}_logo.svg.png` : null, value: 13 - Math.floor(i / 12),
+    gp: 13, w: 13 - Math.floor(i / 12), l: Math.floor(i / 12), t: i % 2 ? 0 : null, otl: null,
+  }));
+  const values = teams.map((t) => t.value);
+  const lines = buildLeaderLines(teams, (v) => values.filter((o) => o > v).length + 1, (v) => values.filter((o) => o > v).length + 1);
+  assert.equal(lines.length, 137);
+  assert.deepEqual(lines[0], [9000, 100, "Team 0 Mascots", "", "", 13, 13, 13, 0, null, null, 1, 1], "a team with no abbreviation and no logo sends empty text");
+  assert.equal(lines[1][3], "T1");
+  assert.equal(lines[1][4].startsWith("https://"), true);
+  assert.equal(lines[136][11], 133, "the place among the season's teams is worked out before the lines go");
+  assert.ok(JSON.stringify(lines).length < 137 * 190, "a team is a short line");
+  assert.ok(LEADER_HEAD <= 25);
+  assert.equal(leaderShare(13, 13, 2), 1);
+  assert.equal(leaderShare(2, 13, 2), 0.04, "the weakest keeps a sliver of bar");
+  assert.equal(leaderShare(5, 5, 5), 1);
+  const page = read("components/TeamLeaders.tsx");
+  assert.doesNotMatch(page, /SortTable/, "the page does not draw the table's cells on the server");
+  assert.match(page, /TeamLeaderTable/);
 });
