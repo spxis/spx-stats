@@ -55,6 +55,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   person_redirect: ["old_person_id"],
   person_resume: ["person_id", "kind", "name", "start_year", "end_year", "league", "level", "source", "detail", "club_qid"],
   person_season_teams: ["person_id", "team_season_id"],
+  person_head_coach_season: ["person_id", "team_season_id", "first_on", "last_on", "source"],
   person_staff: ["person_id", "team_season_id", "role", "first_on", "last_on", "position", "source"],
   person_stats: ["person_id", "team_season_id", "phase", "stat_group", "games_played", "games_started", "stats"],
   person_teams: ["person_id", "league", "franchise_id", "from_year"],

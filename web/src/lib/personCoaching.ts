@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { rows } from "./api/client";
+import { ApiError, rows } from "./api/client";
 import { orElse } from "./api/soften";
 import { teamSeasonRows } from "./api/teamSeasons";
 import { buildCareers, type Rec } from "./coachMoves";
@@ -34,7 +34,16 @@ export interface CoachStint {
 
 /** A person's head-coach (baseball: manager) stints, oldest first. Empty for someone who never held the job, or while the archive has no staff rows. */
 export const getPersonCoaching = cache(async (id: number): Promise<CoachStint[]> => {
-  const mine = (await orElse(rows("team_season_staff", `person_id=eq.${id}&role=eq.head_coach&select=${FIELDS}&order=year`, staff), [])).filter((r) => isLeague(r.league));
+  // api.person_head_coach_season (migration 172) answers a read by person from the index; api.team_season_staff numbers every club season's staff first.
+  const own = async () => {
+    try {
+      return await rows("person_head_coach_season", `person_id=eq.${id}&select=${FIELDS}&order=year`, staff);
+    } catch (e) {
+      if (!(e instanceof ApiError) || e.status !== 404) throw e;
+      return rows("team_season_staff", `person_id=eq.${id}&role=eq.head_coach&select=${FIELDS}&order=year`, staff);
+    }
+  };
+  const mine = (await orElse(own(), [])).filter((r) => isLeague(r.league));
   if (!mine.length) return [];
   // Every head coach of those club seasons, to tell the seasons he shared.
   const all = await rows("team_season_staff", `team_season_id=in.(${[...new Set(mine.map((r) => r.team_season_id))].join(",")})&role=eq.head_coach&select=${FIELDS}`, staff);
