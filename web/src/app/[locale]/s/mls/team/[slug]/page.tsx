@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "@/components/Link";
 import { notFound } from "next/navigation";
+import { MlsClubMatches } from "@/components/MlsClubMatches";
 import { MlsClubName } from "@/components/MlsClubName";
 import { MlsCredit } from "@/components/MlsCredit";
 import { SortTable } from "@/components/SortTable";
@@ -9,8 +10,9 @@ import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { guard, guardMeta } from "@/lib/loadGuard";
 import { pageMeta } from "@/lib/meta";
 import { getMlsClubMatches, getMlsClubNames, getMlsClubSeasons, getMlsAllTime, mlsClubBySlug } from "@/lib/mls";
-import { MLS_PATH, mlsClubPath, mlsMatchPath, mlsSeasonPath } from "@/lib/mlsPath";
-import { mlsReachRank, mlsReached, mlsStageName } from "@/lib/mlsView";
+import { buildMlsClubMatches } from "@/lib/mlsClubLines";
+import { MLS_PATH, mlsClubPath, mlsSeasonPath } from "@/lib/mlsPath";
+import { mlsReachRank, mlsReached } from "@/lib/mlsView";
 import { tableOf } from "@/lib/sort";
 import "@/components/soccer.css";
 
@@ -35,11 +37,10 @@ export default guard(async function MlsClubPage({ params }: Params) {
   const { slug } = await params;
   const club = isSlug(slug) ? await mlsClubBySlug(slug) : null;
   if (!club) notFound();
-  const { say, fmt, dt, plural } = await currentSpeaker();
+  const { say, fmt, plural } = await currentSpeaker();
   const [names, seasons, matches, allTime] = await Promise.all([getMlsClubNames(club.team_id), getMlsClubSeasons(club.team_id), getMlsClubMatches(club.team_id), getMlsAllTime()]);
   const rec = allTime.find((r) => r.team_id === club.team_id);
   const name = club.latest_name ?? club.name;
-  const day = (iso: string) => dt.ymd(new Date(iso));
   const span = (a: number, b: number) => (a === b ? String(a) : `${a}–${b}`);
   const cups = seasons.filter((x) => x.champion).map((x) => x.year);
   const shields = seasons.filter((x) => x.shield).map((x) => x.year);
@@ -61,22 +62,6 @@ export default guard(async function MlsClubPage({ params }: Params) {
     { key: "result", label: say("wc.col.reached"), cls: "team", get: (x) => mlsReachRank(x.performance), cell: (x) => mlsReached(say, x.performance) },
     { key: "venue", label: say("col.venue"), cls: "team", get: (x) => x.venue_name, cell: (x) => <StadiumName name={x.venue_name} qid={x.venue_wikidata_id} rest={x.venue_city ?? undefined} /> },
   ], (x) => x.tournament_id);
-
-  const matchTable = tableOf(matches, [
-    { key: "date", label: say("col.date"), get: (m) => m.match_date, cell: (m) => day(m.match_date) },
-    { key: "stage", label: say("wc.col.stage"), get: (m) => m.stage_order, cell: (m) => mlsStageName(say, m.stage_key) },
-    { key: "opp", label: say("col.opponent"), cls: "team", get: (m) => m.opponent, cell: (m) => <MlsClubName slug={m.opponent_slug} name={m.opponent} /> },
-    {
-      key: "score", label: say("col.score"), get: (m) => m.gf - m.ga,
-      cell: (m) => {
-        const tail = m.shootout && m.pens_for != null ? ` (${m.pens_for}–${m.pens_against})` : m.extra_time ? ` ${say("wc.aetShort")}` : "";
-        return <Link href={mlsMatchPath(m.year, m.match_id, m.is_home ? club.name : m.opponent, m.is_home ? m.opponent : club.name)} prefetch={false}>{`${m.gf}–${m.ga}${tail}`}</Link>;
-      },
-    },
-    { key: "result", label: say("col.result"), get: (m) => (m.result === "w" ? 3 : m.result === "d" ? 1 : 0), cell: (m) => say(m.result === "w" ? "wc.col.w" : m.result === "d" ? "wc.col.d" : "wc.col.l") },
-    { key: "loc", label: say("mls.col.homeAway"), get: (m) => (m.is_home ? 1 : 0), cell: (m) => say(m.is_home ? "mls.home" : "mls.away") },
-    { key: "venue", label: say("col.venue"), cls: "team", get: (m) => m.venue_name, cell: (m) => [m.venue_name, m.venue_city].filter(Boolean).join(", ") },
-  ], (m) => m.match_id);
 
   return (
     <div className="soccer">
@@ -120,7 +105,7 @@ export default guard(async function MlsClubPage({ params }: Params) {
       {matches.length ? (
         <section className="section scroll" id="matches">
           <h2>{say("wc.t.matches")}</h2>
-          <div className="tablebox"><SortTable {...matchTable} def="date.desc" param="sort_games" /></div>
+          <MlsClubMatches clubName={club.name} wire={buildMlsClubMatches(matches)} />
         </section>
       ) : null}
       <section className="section"><MlsCredit say={say} /></section>

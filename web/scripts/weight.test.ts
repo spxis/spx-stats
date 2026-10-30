@@ -22,6 +22,7 @@ import { headPerGroup, seasonStandKeys, STANDINGS_FULL, STANDINGS_HEAD } from ".
 import { QUERY_KEYS } from "../src/lib/routing.ts";
 import { trophyTeams } from "../src/lib/trophyTeams.ts";
 import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
+import { MLS_CLUB_HEAD, buildMlsClubMatches, readMlsClubMatches, type MlsClubMatchInput } from "../src/lib/mlsClubLines.ts";
 
 /**
  * Page weight of the league pages: a league page lists every season, champion and award, and sent them all (the NHL's was 970 KB of HTML against a budget
@@ -455,6 +456,26 @@ test("the MLS season page sends its matches as lines and keeps every match on a 
   const all = read("app/[locale]/s/mls/[year]/matches/page.tsx");
   assert.ok(all.includes("export const revalidate = 2592000;") && all.includes(" full ") && !/searchParams|cookies\(|headers\(/.test(all), "the matches page is every row, kept, reading nothing per request");
   assert.ok(read("app/[locale]/q/mls/[year]/matches/page.tsx").includes("s/mls/[year]/matches/page"), "the matches page has its twin in q/");
+});
+
+test("an MLS club's matches travel as one short line each and read back whole; the page draws the newest few", () => {
+  const input: MlsClubMatchInput[] = Array.from({ length: 800 }, (_, i) => ({
+    match_id: 1000 + i, year: 1996 + (i % 30), match_date: `${1996 + (i % 30)}-0${1 + (i % 9)}-1${i % 9}`, stage_key: i % 7 ? "regular_season" : "conference_semifinal", stage_order: i % 7 ? 1 : 2,
+    opponent: `Club ${i % 28}`, opponent_slug: `club-${i % 28}`, is_home: i % 2 === 0, gf: i % 4, ga: (i + 1) % 3, result: (["w", "d", "l"] as const)[i % 3],
+    extra_time: i % 11 === 0, shootout: i % 13 === 0, pens_for: i % 13 === 0 ? 4 : null, pens_against: i % 13 === 0 ? 3 : null, venue_name: i % 5 ? `Ground ${i % 12}` : null, venue_city: i % 5 ? "City" : null,
+  }));
+  const wire = buildMlsClubMatches(input);
+  const back = readMlsClubMatches(wire);
+  assert.equal(back.length, 800);
+  assert.deepEqual(back[0], { id: 1000, year: 1996, date: "1996-01-10", stageKey: "conference_semifinal", stageOrder: 2, opponent: "Club 0", opponentSlug: "club-0", gf: 0, ga: 1, home: true, extraTime: true, pens: [4, 3], result: "w", venue: null });
+  assert.equal(back[7].result, "d");
+  assert.equal(back[7].venue, "Ground 7, City");
+  assert.equal(back[1].pens, null);
+  assert.ok(JSON.stringify(wire).length < 800 * 70, "a match is a few dozen bytes");
+  assert.ok(MLS_CLUB_HEAD <= 25);
+  const page = read("app/[locale]/s/mls/team/[slug]/page.tsx");
+  assert.ok(page.includes("<MlsClubMatches") && !page.includes("matchTable"), "no match table drawn on the server");
+  assert.ok(read("components/MlsClubMatches.tsx").includes("limit={MLS_CLUB_HEAD}"), "the table draws its newest rows until Show all");
 });
 
 test("a franchise's map answer carries no league-wide venue list: that is its own route, worked out once per league", () => {

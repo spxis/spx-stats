@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.9", date: "2026-10-30", href: "/mls/team/dc-united",
+    title: "MLS club pages are an eighth of the weight",
+    text: "A club's page listed every match it had played as a table drawn on the server and sent twice: D.C. United's was 1,071 KB. The matches now travel as short lines, and the table shows the newest twenty until you press Show all. The page is 133 KB and looks the same." },
   { version: "0.170.8", date: "2026-10-30", href: "/trophies",
     title: "The trophies page is lighter",
     text: "The trophies page held its sixty-odd cup drawings twice, and carried an address and logo fit for every club of every league. The cups now come from one file the browser keeps, and the page carries only the clubs it names. It is 236 KB instead of 336 KB and looks the same." },
