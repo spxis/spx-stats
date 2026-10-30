@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.3", date: "2026-10-30", href: "/nhl/all-time",
+    title: "League tables read less on a first visit",
+    text: "Venues, a league's standings, award winners and alignment, the cities' clubs, team abbreviations and the leagues of players who played in more than one each come from one precomputed list instead of several requests that repeated their column names. A first visit to a league page reads up to 85 percent fewer bytes for these; nothing on a page changes."
+  },
   { version: "0.174.2", date: "2026-10-30", href: "/teams",
     title: "The teams list reads one short list for home cities",
     text: "The list of teams finds each club's home city from one row for each club instead of the city of every club season (about 2 MB in twelve requests). The list looks the same; a first visit reads about 1.8 MB less."
