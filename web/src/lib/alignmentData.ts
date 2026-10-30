@@ -1,6 +1,7 @@
 import "server-only";
 import { cache } from "react";
-import { rows } from "./api/client";
+import { checkRows, rows, viewMissing } from "./api/client";
+import { alignmentFromPack, alignmentPackSchema } from "./alignmentPack";
 import { standingSchema } from "./api/schemas";
 import type { StandingRow } from "./api/types";
 import { isOutsideConference } from "./leagues";
@@ -12,8 +13,18 @@ import { alignmentChangeSchema, alignmentSchema, type AlignmentChangeRow, type A
  */
 
 /** Every club of a league with the conference and division it sat in, each season it had any. */
-export const getAlignment = cache(async (lg: string): Promise<AlignmentRow[]> =>
-  (await rows("alignment", `league=eq.${lg}&select=*&order=year,conference,division,team`, alignmentSchema)).filter((r) => !isOutsideConference(lg, r.conference)));
+export const getAlignment = cache(async (lg: string): Promise<AlignmentRow[]> => {
+  // api.alignment_pack (migration 184): the league's rows in one request of numbers; while it is a 404, api.alignment is read as before.
+  let list: AlignmentRow[];
+  try {
+    const [pack] = await rows("alignment_pack", `league=eq.${lg}&select=*&order=league`, alignmentPackSchema);
+    list = checkRows("alignment_pack", pack ? alignmentFromPack(pack) : [], alignmentSchema);
+  } catch (e) {
+    if (!viewMissing(e)) throw e;
+    list = await rows("alignment", `league=eq.${lg}&select=*&order=year,conference,division,team`, alignmentSchema);
+  }
+  return list.filter((r) => !isOutsideConference(lg, r.conference));
+});
 
 /** The seasons in which a club's conference or division differs from its season before. */
 export const getAlignmentChanges = cache(async (lg: string): Promise<AlignmentChangeRow[]> =>

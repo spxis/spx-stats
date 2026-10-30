@@ -10,6 +10,8 @@ import { summaryPackSchema, summaryRowsFromPack } from "../src/lib/summaryPack.t
 import { infoRowsFromPack, nameRowsFromPack as venueNamesFromPack, placeRowsFromPack, venuePackSchema } from "../src/lib/venuePack.ts";
 import { byFranchise, standingPackSchema, standingsFromPack } from "../src/lib/standingPack.ts";
 import { awardPackSchema, awardsFromPack, sourceCounts } from "../src/lib/awardPack.ts";
+import { alignmentFromPack, alignmentPackSchema } from "../src/lib/alignmentPack.ts";
+import type { AlignmentRow } from "../src/lib/alignment.ts";
 
 /**
  * Run in web/: pnpm test:sharedreads. The packs of migrations 176 to 179 hold the rows of the views the first visit to any page read whole; the readers must give back
@@ -170,4 +172,16 @@ test("a league's winners come back as the rows of api.awards, and the sources ar
   const other = awardPackSchema.parse({ ...pack, league: "nba", source_name: ["wikipedia", null], source_count: [4, 1] });
   assert.deepEqual([...sourceCounts([pack, other])].sort(), [["", 1], ["spx", 2], ["wikipedia", 5]]);
   assert.throws(() => awardsFromPack({ ...pack, dict: [0, 1, 9] }), /award 9/);
+});
+
+test("a league's alignment comes back as the rows of api.alignment", () => {
+  const row = (year: number, team_id: number, conference: string | null, conference_short: string | null, division: string | null, division_short: string | null, team: string | null): AlignmentRow =>
+    ({ league: "nhl", year, conference, division, franchise_id: 9, team, conference_short, division_short, team_id });
+  const rows = [row(2000, 5, "East", "E", "Atlantic", "ATL", "Bruins"), row(2000, 6, "East", "E", null, null, null), row(2001, 7, null, null, null, null, "Bruins"), row(2001, 8, null, "?", null, null, "Habs")];
+  const confs = [["East", "E"], [null, "?"]] as const, divs = [["Atlantic", "ATL"]] as const, teams = ["Bruins", "Habs"];
+  const flat = [2000, 0, 0, 9, 0, 5, 2000, 0, null, 9, null, 6, 2001, null, null, 9, 0, 7, 2001, 1, null, 9, 1, 8];
+  const decoded = alignmentFromPack(alignmentPackSchema.parse({
+    league: "nhl", conferences: confs.map((c) => c[0]), conference_shorts: confs.map((c) => c[1]), divisions: divs.map((d) => d[0]), division_shorts: divs.map((d) => d[1]), teams, seasons: flat,
+  }));
+  assert.deepEqual(decoded, rows);
 });

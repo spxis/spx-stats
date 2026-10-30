@@ -11,6 +11,7 @@
  */
 export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   alignment: ["team_id"],
+  alignment_pack: ["league"],
   alignment_changes: ["league", "year", "franchise_id"],
   all_star_event: ["league", "year", "event_no"],
   all_star_league: ["league"],
