@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.173.2", date: "2026-10-30", href: "/city/boston",
+    title: "City, club-season and All-Star pages read less from the database",
+    text: "A city page, the list of cities and the sitemap take the clubs of every city from one precomputed list instead of adding up thousands of club seasons, a club season's roster comes from one request instead of three, and the All-Star pages ask once for a league's events, games and MVPs. The pages look the same, and a first visit does much less work.",
+  },
   { version: "0.173.1", date: "2026-10-30", href: "/na/team/atlanta-braves",
     title: "Club and season pages read less from the database",
     text: "A club's page finds its city from one row instead of the whole list of cities, and asks once for all the leagues a club played in. A season page reuses what it already holds for its champion and summary. The pages look the same, and a first visit does much less work.",
