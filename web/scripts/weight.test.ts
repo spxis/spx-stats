@@ -17,6 +17,7 @@ import { packHeat, unpackHeat, type HeatSeason } from "../src/lib/heatWire.ts";
 import { seasonLabel } from "../src/lib/leagues.ts";
 import { packTeams, unpackTeams } from "../src/lib/teamWire.ts";
 import type { BoardTeam } from "../src/lib/teamBoard.ts";
+import { venuesRestPath } from "../src/lib/mapView.ts";
 import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
 
 /**
@@ -451,6 +452,14 @@ test("the MLS season page sends its matches as lines and keeps every match on a 
   const all = read("app/[locale]/s/mls/[year]/matches/page.tsx");
   assert.ok(all.includes("export const revalidate = 2592000;") && all.includes(" full ") && !/searchParams|cookies\(|headers\(/.test(all), "the matches page is every row, kept, reading nothing per request");
   assert.ok(read("app/[locale]/q/mls/[year]/matches/page.tsx").includes("s/mls/[year]/matches/page"), "the matches page has its twin in q/");
+});
+
+test("a franchise's map answer carries no league-wide venue list: that is its own route, worked out once per league", () => {
+  const map = read("lib/franchiseMap.ts");
+  assert.ok(!/teams\b[^\n]*getVenueTeams\(/.test(map.split("export async function leagueVenueTeams")[0]), "franchiseMapView does not build the league's venue list");
+  assert.ok(read("app/[locale]/s/[league]/rows/venues/route.ts").includes("leagueVenueTeams(lg, say)"));
+  assert.equal(venuesRestPath("/nhl/team/montreal-canadiens"), "/nhl/rows/venues");
+  assert.ok(read("lib/mapView.ts").includes("export interface LeagueVenues"));
 });
 
 /**

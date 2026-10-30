@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.5", date: "2026-10-30", href: "/nhl/team/montreal-canadiens",
+    title: "Team pages open their venue map faster",
+    text: "The list of every club's venues and addresses behind a team page's venue map is the same for all clubs of a league, but it used to be worked out again for each club's page. It is now worked out once per league and shared, so a team page's map fills in quicker the first time. It looks and works the same." },
   { version: "0.170.4", date: "2026-10-30", href: "/city/toronto",
     title: "City pages are lighter and open faster",
     text: "A city page used to draw the timeline of its clubs' seasons before the page was sent, which made the busiest cities (New York was 645 KB) heavy and slow to open the first time. The timeline now draws as you scroll to it. The clubs table above it lists the same clubs and years, and everything looks and works the same." },
