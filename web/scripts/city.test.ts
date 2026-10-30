@@ -3,7 +3,7 @@ import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import { fold } from "../src/lib/fold.ts";
 import { withCupTitles } from "../src/lib/cup.ts";
-import { buildStays, clipStay, MIN_RANKED_SEASONS, rankOf, titlesByDecade, totalsOf, unitOf, unitTotals, winShare, type CityRef, type ClubSeason, type Placement } from "../src/lib/cityModel.ts";
+import { buildStays, clipStay, staysFromRows, MIN_RANKED_SEASONS, rankOf, titlesByDecade, totalsOf, unitOf, unitTotals, winShare, type CityRef, type ClubSeason, type Placement } from "../src/lib/cityModel.ts";
 
 /** Run in web/: pnpm test:city */
 
@@ -130,6 +130,17 @@ test("a stay is a club's seasons in one city; a season the league skipped does n
   // with no season in 2004 anywhere, 2003 and 2005 are neighbours
   const lockout = buildStays(places, seasons.filter((s) => s.year !== 2004));
   assert.deepEqual(lockout.find((s) => s.f === 1 && s.city === "a")!.runs, [[2003, 2005]]);
+});
+
+test("the stays of api.city_stay rows are the stays buildStays adds up from the placements and seasons", () => {
+  const seasons = [season("nhl", 2003, 1, 40, 30), season("nhl", 2005, 1, 41, 31, true), season("nhl", 2006, 1, 20, null), season("nhl", 2004, 3, 1, 1)];
+  const places = [place("nhl", 2003, 1, "a"), place("nhl", 2005, 1, "a"), place("nhl", 2006, 1, "b")];
+  // the rows the view holds for those seasons (the 2004 season of club 3 is in no city, and is a year the league played)
+  const rows = staysFromRows([
+    { league: "nhl", franchise_id: 1, city_slug: "a", name: "T1", names: ["T1"], first_year: 2003, last_year: 2005, active: false, runs: [[2003, 2003], [2005, 2005]], rows: [[2003, 0, 40, 30, 0, 0], [2005, 1, 41, 31, 0, 0]], title_teams: ["T1"] },
+    { league: "nhl", franchise_id: 1, city_slug: "b", name: "T1", names: ["T1"], first_year: 2006, last_year: 2006, active: true, runs: [[2006, 2006]], rows: [[2006, 0, 20, -1, 0, 0]], title_teams: [] },
+  ]);
+  assert.equal(JSON.stringify(rows), JSON.stringify(buildStays(places, seasons)));
 });
 
 test("win share counts a tie as half a win and an overtime loss as a loss", () => {

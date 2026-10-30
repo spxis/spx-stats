@@ -20,6 +20,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   awards: ["league", "year", "award_code", "winner", "source", "franchise_id", "person_id", "note"],
   batted_ball_player_hand: ["person_id", "year", "role", "bat_hand"],
   city: ["slug"],
+  city_stay: ["league", "franchise_id", "city_slug"],
   coach_playoff_record: ["person_id", "team_season_id"],
   country_franchise: ["league", "franchise_id", "stat_group", "country"],
   country_league: ["league", "country"],

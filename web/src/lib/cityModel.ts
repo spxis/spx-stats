@@ -90,6 +90,30 @@ export function buildStays(placements: Placement[], seasons: ClubSeason[]): Stay
   return out.sort((a, b) => a.first - b.first || a.league.localeCompare(b.league) || a.f - b.f);
 }
 
+/** One row of api.city_stay (migration 168): the stays buildStays adds up from the placements and club seasons, worked out in the database. */
+export interface StayRow {
+  league: string; franchise_id: number; city_slug: string; name: string; names: string[]; first_year: number; last_year: number; active: boolean;
+  runs: [number, number][]; rows: [number, number, number, number, number, number][]; title_teams: string[];
+}
+
+/** The stays of api.city_stay rows: what buildStays makes of the same seasons (a test holds the two to the same answer). */
+export function staysFromRows(list: StayRow[]): Stay[] {
+  return list.map((x): Stay => {
+    let w = 0, l = 0, t = 0, otl = 0;
+    for (const r of x.rows) { w += Math.max(0, r[2]); l += Math.max(0, r[3]); t += r[4]; otl += r[5]; }
+    return {
+      league: x.league, f: x.franchise_id, city: x.city_slug,
+      name: x.name,
+      names: x.names,
+      first: x.first_year, last: x.last_year, runs: x.runs,
+      seasons: x.rows.length, titles: x.rows.filter((r) => r[1]).map((r) => r[0]), titleTeams: x.title_teams,
+      rows: x.rows,
+      w, l, t, otl, share: winShare(w, l, t, otl),
+      active: x.active,
+    };
+  }).sort((a, b) => a.first - b.first || a.league.localeCompare(b.league) || a.f - b.f);
+}
+
 export interface Totals { clubs: number; active: number; seasons: number; titles: number; w: number; l: number; t: number; otl: number; share: number | null; first: number | null; last: number | null; leagues: string[] }
 
 export function totalsOf(stays: Stay[]): Totals {

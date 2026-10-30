@@ -91,7 +91,7 @@ export default guard(async function CityPage({ params }: PageProps<"/[locale]/s/
     };
   });
 
-  const pins = await getCityPins([...here, ...around], data.placements, data.byslug, paths, say, slug).catch(() => []);
+  const pins = await getCityPins([...here, ...around], data.byslug, paths, say, slug).catch(() => []);
   const members2 = members.filter((m) => m.slug !== slug).map((m) => ({ m, stays: around.filter((s) => s.city === m.slug) })).filter((x) => x.stays.length);
 
   return (

@@ -790,7 +790,6 @@ const MAX_READS = 25;
  */
 const KNOWN_READ_EXCEPTIONS: Record<string, { reads: number; ticket: string; why: string }> = {
   "/mlb/2024": { reads: 33, ticket: "SPX-808", why: "24 of its reads are whole tables every page shares (brands 3, names 4, summary, venues 3, logo fits, abbreviations...) and it is the first page to ask; the season's own games are 3 reads of 1,000 rows" },
-  "/city/boston": { reads: 41, ticket: "SPX-808", why: "the first city page reads every placement (12) and every club season (18) the city model adds up; one packed view of the stays would make it about 5" },
 };
 const KIND_PAGES = [...Object.values(KIND_SAMPLES), ...KIND_EXTRA].map((path) => {
   const json = /\/rows\/[a-z-]+$|\/rows$|\.(csv|geojson)$/.test(path.split("?")[0]);

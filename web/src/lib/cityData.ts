@@ -3,7 +3,7 @@ import { cache } from "react";
 import { z } from "zod";
 import { ApiError, rows, rowsSlice } from "./api/client";
 import { teamSeasonRows } from "./api/teamSeasons";
-import { buildStays, unitOf, type CityRef, type ClubSeason, type Placement, type Stay } from "./cityModel";
+import { buildStays, staysFromRows, unitOf, type CityRef, type ClubSeason, type Placement, type Stay } from "./cityModel";
 import { withCupTitles } from "./cup";
 import { getCupFinalists, getCupTitles } from "./cupData";
 import { getBrands } from "./data";
@@ -30,9 +30,31 @@ const seasonRow = z.object({
 export interface CityData {
   cities: CityRef[];
   byslug: Map<string, CityRef>;
-  placements: Placement[];
   stays: Stay[];
 }
+
+const stayRow = z.object({
+  league: z.string(), franchise_id: z.number(), city_slug: z.string(), name: z.string(), names: z.array(z.string()), first_year: z.number(), last_year: z.number(), active: z.boolean(),
+  runs: z.array(z.tuple([z.number(), z.number()])), rows: z.array(z.tuple([z.number(), z.number(), z.number(), z.number(), z.number(), z.number()])), title_teams: z.array(z.string()),
+});
+
+/**
+ * The clubs of every city with their seasons there (api.city_stay, migration 168: one request). While the view is a 404 they are added up here from every
+ * placement and every club season (about thirty requests), as the city pages did before.
+ */
+const getCityStays = cache(async (): Promise<Stay[]> => {
+  try {
+    return staysFromRows(await rows("city_stay", "select=league,franchise_id,city_slug,name,names,first_year,last_year,active,runs,rows,title_teams&order=league,franchise_id,city_slug", stayRow));
+  } catch (e) {
+    if (!(e instanceof ApiError) || !e.message.endsWith(": 404")) throw e;
+    const [placements, seasons] = await Promise.all([
+      getPlacements(),
+      teamSeasonRows("select=league,year,franchise_id,team,w,l,t,otl,champion&order=league,year,franchise_id", seasonRow),
+    ]);
+    const club: ClubSeason[] = seasons.map((s) => ({ league: s.league, year: s.year, f: s.franchise_id, team: s.team, w: s.w, l: s.l, t: s.t, otl: s.otl, champion: !!s.champion }));
+    return buildStays(placements, club);
+  }
+});
 
 /**
  * Every city, the city of every club season and the stays they add up to. The views come with migration 062; until it is on the server,
@@ -50,6 +72,14 @@ export const getPlacements = cache(async (): Promise<Placement[]> =>
   (await rows("team_season_city", "select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id", placementRow)).map((p) => ({
     league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
   })));
+
+/** The city of each club season in some cities (api.team_season_city read by city: one request for a city and its metro area, not the whole list). */
+const getPlacementsIn = async (slugs: string[]): Promise<Placement[]> =>
+  slugs.length
+    ? (await rows("team_season_city", `city_slug=in.(${slugs.map(encodeURIComponent).join(",")})&select=league,year,franchise_id,city_slug,basis,latitude,longitude,venue_city_slug&order=league,year,franchise_id`, placementRow)).map((p) => ({
+      league: p.league, year: p.year, f: p.franchise_id, city: p.city_slug, basis: p.basis, venueLat: p.latitude, venueLon: p.longitude, venueCity: p.venue_city_slug,
+    }))
+    : [];
 
 const venueCityRow = z.object({ latitude: z.number(), longitude: z.number(), venue_city_slug: z.string() });
 
@@ -81,15 +111,8 @@ export const getCountryOnly = cache(async (): Promise<CountryOnly[]> =>
   })));
 
 export const getCityData = cache(async (): Promise<CityData> => {
-  const [cities, placements, seasons, cup, finalists] = await Promise.all([
-    getCities(),
-    getPlacements(),
-    teamSeasonRows("select=league,year,franchise_id,team,w,l,t,otl,champion&order=league,year,franchise_id", seasonRow),
-    getCupTitles(),
-    getCupFinalists(),
-  ]);
-  const club: ClubSeason[] = seasons.map((s) => ({ league: s.league, year: s.year, f: s.franchise_id, team: s.team, w: s.w, l: s.l, t: s.t, otl: s.otl, champion: !!s.champion }));
-  return { cities, byslug: new Map(cities.map((c) => [c.slug, c])), placements, stays: withCupTitles(buildStays(placements, club), cup, finalists) };
+  const [cities, stays, cup, finalists] = await Promise.all([getCities(), getCityStays(), getCupTitles(), getCupFinalists()]);
+  return { cities, byslug: new Map(cities.map((c) => [c.slug, c])), stays: withCupTitles(stays, cup, finalists) };
 });
 
 const at5 = (n: number) => n.toFixed(5);
@@ -99,8 +122,8 @@ const at5 = (n: number) => n.toFixed(5);
  * Wikipedia page as the team pages' maps give them (the same venue list, filtered to the venues the database placed those seasons at).
  * With `focus` (a city's slug), the venues in that city are marked `me`, so the small map on its page frames them and not the metro area round it.
  */
-export async function getCityPins(stays: Stay[], placements: Placement[], cities: Map<string, CityRef>, paths: TeamPaths, say: Speaker["say"], focus?: string): Promise<Pin[]> {
-  const brands = await getBrands();
+export async function getCityPins(stays: Stay[], cities: Map<string, CityRef>, paths: TeamPaths, say: Speaker["say"], focus?: string): Promise<Pin[]> {
+  const [brands, placements] = await Promise.all([getBrands(), getPlacementsIn([...new Set(stays.map((s) => s.city))])]);
   const unit = (slug: string | null) => { const c = slug ? cities.get(slug) : null; return c ? unitOf(c) : null; };
   const wanted = new Map<string, { years: number[]; stay: Stay }>();
   const mine = new Map(stays.map((s) => [`${s.league}|${s.f}|${s.city}`, s]));
