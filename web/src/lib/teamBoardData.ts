@@ -4,6 +4,8 @@ import { franchiseNameSchema } from "./api/schemas";
 import { teamIndexSchema } from "./api/teams";
 import { getAlignment } from "./alignmentData";
 import { getCities, getCountryOnly, getPlacements } from "./cityData";
+import { getNamePack } from "./franchiseNames";
+import { nameRowsFromPack } from "./namePack";
 import { getBrands } from "./data";
 import { logoFor } from "./brand";
 import { LEAGUES, PARENT } from "./leagues";
@@ -36,7 +38,7 @@ export async function getTeamBoard(french: boolean): Promise<TeamBoardData> {
     rows("team_index", `select=${TEAM_FIELDS.join(",")}&order=name,league,franchise_id`, teamIndexSchema),
     getAllMembers(),
     getBrands(),
-    rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from.nullsfirst", franchiseNameSchema).catch(() => []),
+    getNamePack().then((pack) => (pack ? nameRowsFromPack(pack, true) : rows("franchise_names", "select=league,franchise_id,name,name_from,name_to&order=league,franchise_id,name_from.nullsfirst", franchiseNameSchema))).catch(() => []),
     getCities().catch(() => []),
     getPlacements().catch(() => []),
     getCountryOnly().catch(() => []),

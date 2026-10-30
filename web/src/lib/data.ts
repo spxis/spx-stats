@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { z } from "zod";
-import { ApiError, rows } from "./api/client";
+import { ApiError, rows, viewMissing } from "./api/client";
 import { standingRows, teamSeasonRows } from "./api/teamSeasons";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
@@ -17,14 +17,28 @@ import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons"
 import { isOutsideConference, isSpx } from "./leagues";
 import { getAllMembers, isMemberRow } from "./leagueMembers";
 import { logoFitSchema, type LogoFit } from "./logoFit";
+import { logoFitPackSchema, logoFitsFromPack } from "./logoFitPack";
+import { brandPackSchema, brandRowsFromPack } from "./brandPack";
+import { summaryPackSchema, summaryRowsFromPack } from "./summaryPack";
 import { seasonOpen, withIdleTeams } from "./idleTeams";
 import type { ClubTeam, GameTuple, Phase } from "./season";
 
 /* ---------- home, leagues -------------------------------------------------------------- */
 
+/** Every season of every league: api.season_summary_pack (migration 178, a league to a row), else the view itself while the pack is a 404. */
+async function readSummarySeasons(): Promise<SeasonSummaryRow[]> {
+  try {
+    return (await rows("season_summary_pack", "select=league,seasons&order=league", summaryPackSchema)).flatMap((p) => summaryRowsFromPack([p]))
+      .map((r) => seasonSummarySchema.parse(r));
+  } catch (e) {
+    if (!viewMissing(e)) throw e;
+    return rows("season_summary", "select=*&order=league,year", seasonSummarySchema);
+  }
+}
+
 export const getSummary = cache(async (): Promise<{ seasons: SeasonSummaryRow[]; totals: TotalsRow }> => {
   const [seasons, totals] = await Promise.all([
-    rows("season_summary", "select=*&order=league,year", seasonSummarySchema),
+    readSummarySeasons(),
     rows("totals", "select=*", totalsSchema),
   ]);
   if (!totals[0]) throw new ApiError("totals: no row");
@@ -57,13 +71,27 @@ export const getAbbrs = cache(async (lg: string): Promise<AbbrMap> => {
 });
 
 export const getBrands = cache(async (): Promise<BrandMap> => {
+  // api.team_brand_pack (migration 176): the same eras in one request; while it is a 404, api.team_brand is read whole as before.
+  try {
+    const packs = await rows("team_brand_pack", "select=franchise_id,logos,eras&order=franchise_id", brandPackSchema);
+    return groupBrands(brandRowsFromPack(packs).map((r) => teamBrandSchema.parse(r)));
+  } catch (e) {
+    if (!viewMissing(e)) return {};
+  }
   const all = await rows("team_brand", "select=*&order=franchise_id,brand_from.nullsfirst", teamBrandSchema).catch(() => []);
   return groupBrands(all);
 });
 
 /** How each logo is fitted into the site's logo boxes (api.logo_fit, migration 107); none while the view or its rows are missing. */
-export const getLogoFits = cache(async (): Promise<LogoFit[]> =>
-  rows("logo_fit", "select=*&order=logo_file", logoFitSchema).catch(() => []));
+export const getLogoFits = cache(async (): Promise<LogoFit[]> => {
+  // api.logo_fit_pack (migration 179): the same rows in one short answer; while it is a 404, api.logo_fit is read as before.
+  try {
+    return logoFitsFromPack(await rows("logo_fit_pack", "select=fits&order=id", logoFitPackSchema)).map((f) => logoFitSchema.parse(f));
+  } catch (e) {
+    if (!viewMissing(e)) return [];
+  }
+  return rows("logo_fit", "select=*&order=logo_file", logoFitSchema).catch(() => []);
+});
 
 /* ---------- a season ------------------------------------------------------------------- */
 

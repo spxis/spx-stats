@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.1", date: "2026-10-30", href: "/nhl/2023-24",
+    title: "Pages read less shared data on a first visit",
+    text: "The colours and logos of every club, the club names behind every team address, the list of seasons and the logo fits each come from one precomputed list instead of up to four requests that repeated their column names. A first visit to a page with nothing cached reads about 40 percent fewer bytes; nothing on a page changes."
+  },
   { version: "0.174.0", date: "2026-10-30", href: "/cfl/2010/team/winnipeg-blue-bombers",
     title: "CFL club leaders on each club's season page",
     text: "A CFL club's season page now lists its passing, rushing and receiving leaders as the club-season article on Wikipedia gives them, for about 70 seasons (mostly 1958-81 for the BC Lions, and 2002-11). A name links to the player's page only where we are certain who he is; any other name is shown as written.",

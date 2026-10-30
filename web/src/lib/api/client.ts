@@ -11,6 +11,9 @@ import { withChecked } from "../turso/checked";
 
 export { ApiError };
 
+/** Whether a read failed because the view is not on the server (a 404): a migration that has not landed yet, so a caller falls back on the reads it made before. */
+export const viewMissing = (e: unknown): boolean => e instanceof ApiError && e.message.endsWith(": 404");
+
 /** Seconds a request may take before it is given up on and tried again. */
 const TIMEOUT_MS = 8000;
 
