@@ -1,23 +1,32 @@
-import { brandFor, teamTone } from "@/lib/brand";
-import { getBrands, getSeasonStandings, getSummary } from "@/lib/data";
-import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { seasonLabel } from "@/lib/leagues";
-import { guard } from "@/lib/loadGuard";
-import { getSeasonRoster, neighbours } from "@/lib/outageData";
-import { getPlayerPaths } from "@/lib/playerLinks";
-import { isComplete, rosterFlow, type FlowGroup, type GroupKind, type Side } from "@/lib/rosterFlow";
-import { nickname } from "@/lib/series";
-import { getPaths } from "@/lib/teamSlugs";
-import type { StandingRow } from "@/lib/api/types";
-import type { SankeyLinkIn, SankeyNodeIn } from "./Sankey";
-import { SankeyView } from "./SankeyView";
+import "server-only";
+import type { SankeyLinkIn, SankeyNodeIn, SankeyRoute } from "@/components/Sankey";
+import type { StandingRow } from "./api/types";
+import { brandFor, teamTone } from "./brand";
+import { getBrands, getSeasonStandings, getSummary } from "./data";
+import type { Speaker } from "./i18n/i18n";
+import { seasonLabel } from "./leagues";
+import { getSeasonRoster, neighbours } from "./outageData";
+import { getPlayerPaths } from "./playerLinks";
+import { isComplete, rosterFlow, type FlowGroup, type GroupKind, type Side } from "./rosterFlow";
+import { nickname } from "./series";
+import { getPaths } from "./teamSlugs";
+
+/** What the roster flow of a club's season shows: a note when there is nothing to draw, else the diagram (its blocks, bands and routes, all words made) and the notes under it. */
+export interface FlowAnswer {
+  /** The only thing to say when no diagram can be drawn. */
+  note?: string;
+  chart?: { lede: string; nodes: SankeyNodeIn[]; links: SankeyLinkIn[]; routes: SankeyRoute[]; columnTitles: string[]; hint: string; aria: string; foot: string[] };
+}
+
+const RESIDUE = { first: "flow.first", last: "flow.last", absent: "flow.absent", unknown: "flow.unknown" } as const satisfies Record<Exclude<GroupKind, "club">, string>;
+const RESIDUE_NOTE = { first: "flow.firstNote", last: "flow.lastNote", absent: "flow.absentNote", unknown: "flow.unknownNote" } as const satisfies Record<Exclude<GroupKind, "club">, string>;
 
 /**
- * Where a club's players of one season came from (the season before) and where they went (the season after), under the roster. Only for
- * seasons the archive holds a roster for; otherwise it says so. A side whose season has no roster in the archive is left out.
+ * Where a club's players of one season came from (the season before) and where they went (the season after). Only for seasons the archive holds a roster for;
+ * otherwise it says so. A side whose season has no roster in the archive is left out. It reads the whole league's rosters of three seasons, so it is fetched
+ * when the reader gets near it (the route `rows/flow`), never drawn with the page.
  */
-export const TeamFlow = guard(async function TeamFlow({ lg, year, f, name }: { lg: string; year: number; f: number; name: string }) {
-  const { say, plural } = await currentSpeaker();
+export async function teamFlowView(lg: string, year: number, f: number, name: string, { say, plural }: Pick<Speaker, "say" | "plural">): Promise<FlowAnswer> {
   const summary = await getSummary();
   const near = neighbours(summary.seasons, lg, year);
   const years = { before: near.before?.year ?? null, after: near.after?.year ?? null };
@@ -31,10 +40,7 @@ export const TeamFlow = guard(async function TeamFlow({ lg, year, f, name }: { l
     getPaths(),
     getPlayerPaths(),
   ]);
-  const heading = <h2>{say("flow.title")}</h2>;
-  if (!cur.some((r) => r.franchise_id === f)) {
-    return <section className="section" id="flow">{heading}<p className="note">{say("flow.noRoster")}</p></section>;
-  }
+  if (!cur.some((r) => r.franchise_id === f)) return { note: say("flow.noRoster") };
 
   const side = (rows: typeof cur, table: StandingRow[]): Side | null => {
     if (!rows.length) return null;
@@ -48,9 +54,7 @@ export const TeamFlow = guard(async function TeamFlow({ lg, year, f, name }: { l
     ...(years.before != null && !before ? [years.before] : []),
     ...(years.after != null && !after ? [years.after] : []),
   ];
-  if (!flow.before && !flow.after) {
-    return <section className="section" id="flow">{heading}<p className="note">{say("flow.noSides")}</p></section>;
-  }
+  if (!flow.before && !flow.after) return { note: say("flow.noSides") };
 
   const hasBefore = !!flow.before;
   const meCol = hasBefore ? 1 : 0;
@@ -68,7 +72,7 @@ export const TeamFlow = guard(async function TeamFlow({ lg, year, f, name }: { l
     items: items({ players: flow.me }),
   }];
   const links: SankeyLinkIn[] = [];
-  const routes: { nodes: string[]; links: string[] }[] = [];
+  const routes: SankeyRoute[] = [];
 
   const add = (dir: "before" | "after", groups: FlowGroup[], y: number, table: StandingRow[]) => {
     const col = dir === "before" ? 0 : meCol + 1;
@@ -121,22 +125,11 @@ export const TeamFlow = guard(async function TeamFlow({ lg, year, f, name }: { l
     season,
     ...(years.after != null && flow.after ? [seasonLabel(lg, years.after)] : []),
   ];
-
-  return (
-    <section className="section" id="flow">
-      {heading}
-      <p className="note">{say("flow.lede")}</p>
-      <SankeyView
-        nodes={nodes} links={links} routes={routes} columnTitles={columnTitles} unitPx={12} minPitch={150} panel
-        hint={say("flow.hint")} aria={say("flow.aria", { team: meName, season })}
-      />
-      {missing.map((y) => <p key={y} className="sk-note">{say("flow.noSide", { season: seasonLabel(lg, y) })}</p>)}
-      {partial ? <p className="sk-note">{say("flow.partial")}</p> : null}
-      {twoClubs ? <p className="sk-note">{say("flow.twoClubs")}</p> : null}
-      <p className="sk-note">{say("flow.noteFirst")}</p>
-    </section>
-  );
-});
-
-const RESIDUE = { first: "flow.first", last: "flow.last", absent: "flow.absent", unknown: "flow.unknown" } as const satisfies Record<Exclude<GroupKind, "club">, string>;
-const RESIDUE_NOTE = { first: "flow.firstNote", last: "flow.lastNote", absent: "flow.absentNote", unknown: "flow.unknownNote" } as const satisfies Record<Exclude<GroupKind, "club">, string>;
+  const foot = [
+    ...missing.map((y) => say("flow.noSide", { season: seasonLabel(lg, y) })),
+    ...(partial ? [say("flow.partial")] : []),
+    ...(twoClubs ? [say("flow.twoClubs")] : []),
+    say("flow.noteFirst"),
+  ];
+  return { chart: { lede: say("flow.lede"), nodes, links, routes, columnTitles, hint: say("flow.hint"), aria: say("flow.aria", { team: meName, season }), foot } };
+}

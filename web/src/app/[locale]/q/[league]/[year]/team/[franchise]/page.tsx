@@ -8,18 +8,18 @@ import { CompareControl } from "@/components/CompareControl";
 import { Flag } from "@/components/Flag";
 import { Credits } from "@/components/Credits";
 import { TeamLogo } from "@/components/TeamLogo";
-import { TeamFlow } from "@/components/TeamFlow";
+import { TeamFlowNear } from "@/components/TeamFlowNear";
 import { TeamCountries } from "@/components/TeamCountries";
 import { TeamPositionsKey } from "@/components/TeamPositionsKey";
 import { TeamRoster } from "@/components/TeamRoster";
 import { TeamStaff } from "@/components/TeamStaff";
 import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
+import { seasonRowsPath } from "@/lib/teamSeasonRows";
 import { TeamPlayoffSeries } from "@/components/TeamPlayoffSeries";
 import { TeamRanks } from "@/components/TeamRanks";
 import { TeamSeasonView } from "@/components/TeamSeasonView";
 import { BadgeCup } from "@/components/TrophyMark";
 import { Figures, NoSeason } from "@/components/ui";
-import { getSeasonAlignment } from "@/lib/alignmentData";
 import { brandFor, logoFor, teamAccent } from "@/lib/brand";
 import { abbrsForYear } from "@/lib/abbr";
 import { countryAt } from "@/lib/country";
@@ -41,7 +41,7 @@ import { parseSelection } from "@/lib/season";
 import { parseSort } from "@/lib/sort";
 import { playedFromRows, regularSeasonOpen, resultsByTeam, teamStreaks, type Run } from "@/lib/streaks";
 import { placeFor } from "@/lib/venue";
-import { deriveTeamGames, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
+import { deriveTeamGames, gameLine, seasonRecord, teamsIn, TEAM_GAME_SORT_KEYS } from "@/lib/teamSeason";
 import { parseSeasonSeg, seasonPath, withQuery } from "@/lib/slug";
 import { getFigureRanks } from "@/lib/teamFigures";
 import { teamRanks } from "@/lib/teamRanks";
@@ -102,7 +102,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const { say, plural, fmt, dt, locale } = await currentSpeaker();
   const sort = parseSort(sp.sort, TEAM_GAME_SORT_KEYS, "date.asc");
   const dateSort = sort.find((s) => s.key === "date");
-  const [d, t, summary, leagueSt, notes, alignment, venuePlaces] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y), getSeasonAlignment(lg, y), getVenuePlaces(lg)]);
+  const [d, t, summary, leagueSt, notes, venuePlaces] = await Promise.all([load(lg, y, f, dateSort?.dir ?? "asc"), getTeam(lg, f), getSummary(), getSeasonStandings(lg, y), getSeasonNotes(lg, y), getVenuePlaces(lg)]);
   const [venueNames, venueFacts] = await Promise.all([getVenueNames(), getVenueFacts()]);
   const hereSeason = summary.seasons.find((x) => x.league === lg && x.year === y);
   if (!d.raw.length && hereSeason && !hereSeason.champion && !leagueSat(hereSeason)) {
@@ -184,11 +184,11 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
   const ranks = teamRanks(leagueSt, f, !!here && here.games > 0 && here.finals < 0.9 * here.games, LG[lg]);
   const figureRanks = await getFigureRanks(lg, y, f);
   const selection = parseSelection(sp);
-  const mapPins = clubPins({
-    year: y, me: f, clubs: [...leagueSt, { franchise_id: f, team: name }], brands, abbrs, alignment, places: venuePlaces, names: venueNames, facts: venueFacts, say,
+  // The page carries the club's own pin; the pins of the other clubs come when the big map is opened (rows/map).
+  const mePin = clubPins({
+    year: y, me: f, clubs: [{ franchise_id: f, team: name }], brands, abbrs, alignment: [], places: venuePlaces, names: venueNames, facts: venueFacts, say,
     href: (c) => paths.teamSeason(lg, c, y), slug: (c) => paths.season(lg, c, y),
-  });
-  const mePin = mapPins.find((p) => p.f === f);
+  }).find((p) => p.f === f);
   const seasonNav = prev != null || next != null || current != null ? (
     <SeasonNav aria={say("tseason.otherSeasons")} prefetch={false}
       prev={prev != null ? { href: paths.teamSeason(lg, f, prev), label: seasonLabel(lg, prev) } : null}
@@ -223,7 +223,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
         {place?.home_venue ? (mePin ? <SeasonVenueLine venue={mePin.venue ?? place.home_venue} /> : <p className="lede">{say("tseason.venue", { venue: place.home_venue })}</p>) : null}
         <CompareControl lg={lg} f={f} name={name} year={y} teamPath={at.path} />
       </section>
-      {mePin ? <SeasonMapDialog pins={mapPins} me={f} clubCount={new Set(leagueSt.map((r) => r.franchise_id)).size || mapPins.length} leagueShort={LG[lg]} seasonLabel={season} /> : null}
+      {mePin ? <SeasonMapDialog dataHref={seasonRowsPath(at.path, "map")} me={f} leagueShort={LG[lg]} seasonLabel={season} /> : null}
       <Figures items={figs} />
       {cupWinners != null ? <p className="note">{say("roster.cupWinnersNote")}</p> : null}
       {streakFigs.length ? <p className="note">{say(streakBreaks ? "streaks.noteBreak" : "streaks.note")}</p> : null}
@@ -232,8 +232,8 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       {st ? <Suspense fallback={null}><TeamStaff lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamCountries lg={lg} year={y} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
-      <Suspense fallback={null}><TeamFlow lg={lg} year={y} f={f} name={name} /></Suspense>
-      <TeamSeasonView lg={lg} abbrs={abbrsForYear(abbrs, [f, ...teamsIn(raw).map((x) => x.f)], y)} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)} meId={me?.id ?? 0} games={games} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
+      <TeamFlowNear dataHref={seasonRowsPath(at.path, "flow")} />
+      <TeamSeasonView lg={lg} abbrs={abbrsForYear(abbrs, [f, ...teamsIn(raw).map((x) => x.f)], y)} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)} meId={me?.id ?? 0} lines={raw.map(gameLine)} f={f} otl={!!st?.otl} tie={!!st?.t} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} teamPath={paths.team(lg, f)}
         head={sp.full === "1" ? undefined : GAMES_HEAD} allHref={queryHref(at.path, sp, { full: "1" })} />
       {st ? <Suspense fallback={null}><TeamPositionsKey lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}

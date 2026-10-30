@@ -23,6 +23,10 @@ import { QUERY_KEYS } from "../src/lib/routing.ts";
 import { trophyTeams } from "../src/lib/trophyTeams.ts";
 import { MLS_MATCHES_HEAD, buildMlsMatches, readMlsMatches, type MlsMatchInput } from "../src/lib/mlsLines.ts";
 import { MLS_CLUB_HEAD, buildMlsClubMatches, readMlsClubMatches, type MlsClubMatchInput } from "../src/lib/mlsClubLines.ts";
+import { deriveTeamGames, gameLine, teamGamesFromLines, teamsIn } from "../src/lib/teamSeason.ts";
+import { seasonRowsPath } from "../src/lib/teamSeasonRows.ts";
+import { wire as rosterWire } from "../src/lib/rosterWire.ts";
+import type { GameRow, StandingRow } from "../src/lib/api/types.ts";
 
 /**
  * Page weight of the league pages: a league page lists every season, champion and award, and sent them all (the NHL's was 970 KB of HTML against a budget
@@ -158,6 +162,61 @@ test("the league page keeps its long lists out of the page and its drawings in t
     assert.ok(!/searchParams|cookies\(|headers\(/.test(s), `${name} reads nothing per request`);
     assert.ok(read(`app/[locale]/q/[league]/${name}/page.tsx`).includes(`s/[league]/${name}/page`), `${name} has its twin in q/`);
   }
+});
+
+test("a club's games travel as short lines and the page works the sides, results and running records out from them", () => {
+  const club = 7, rival = 9;
+  const row = (i: number, over: Partial<GameRow>): GameRow => ({
+    league: "nhl", year: 2025, game_id: 5000 + i, game_date: `2025-10-${String(10 + i).padStart(2, "0")}`, phase: "regular", status: "final",
+    away_id: 700, away: "Visitors", away_score: 2, home_id: 900, home: "Hosts", home_score: 3, overtime: false, source: "spx_database", checked: 1, away_f: club, home_f: rival, ...over,
+  });
+  const games: GameRow[] = [
+    row(0, {}),
+    row(1, { away_id: 900, away: "Hosts", away_f: rival, home_id: 700, home: "Visitors", home_f: club, away_score: 1, home_score: 4 }),
+    row(2, { overtime: true, nhl_id: 2025020003 }),
+    row(3, { status: "scheduled", away_score: null, home_score: null, starts_at: "2025-10-13T23:00:00Z" }),
+    row(4, { phase: "playoffs", away_score: 5, home_score: 1, retro_box: "TOR:0" }),
+  ];
+  const standing = { otl: 4, t: 0 } as StandingRow;
+  const lines = games.map(gameLine);
+  assert.deepEqual(lines[0], ["2025-10-10", 700, 2, 3, 900, "r", "final", "spx_database", 0, 1, 5000], "a game with nothing extra has no tail");
+  assert.deepEqual(lines[2].slice(11), [2025020003], "the tail stops at the last field the game has");
+  assert.deepEqual(lines[3].slice(11), [null, null, null, "2025-10-13T23:00:00Z"]);
+  assert.deepEqual(lines[4].slice(11), [null, null, "TOR:0"]);
+  assert.ok(JSON.stringify(lines).length < games.length * 110, "a game is a few dozen bytes");
+  const teams = new Map(teamsIn(games).map((t) => [t.id, t]));
+  const out = teamGamesFromLines(lines, { f: club, teams, otl: true, tie: false });
+  assert.deepEqual(out.map((g) => [g.loc, g.res, g.rec]), [["Away", "L", "0–1–0"], ["Home", "W", "1–1–0"], ["Away", "OTL", "1–1–1"], ["Away", "", ""], ["Away", "W", "1–0–0"]], "sides, results, and one running record for each part of the season");
+  assert.deepEqual(out.map((g) => g.oppName), ["Hosts", "Hosts", "Hosts", "Hosts", "Hosts"], "the other side's name comes from the team list");
+  assert.deepEqual(out.map((g) => g.oppF), [rival, rival, rival, rival, rival]);
+  assert.equal(out[2].nhlId, 2025020003);
+  assert.ok(!("nhlId" in out[0]) && !("startsAt" in out[0]) && out[3].startsAt === "2025-10-13T23:00:00Z" && out[4].retroBox === "TOR:0");
+  assert.deepEqual(out[0].tuple, ["2025-10-10", 700, 2, 3, 900, "r", "f", "spx_database", 0, 1, 5000], "the calendar's tuple keeps the status initial");
+  assert.deepEqual(deriveTeamGames(games, club, standing).map((g) => g.rec), out.map((g) => g.rec), "the server works them out the same way");
+  assert.equal(deriveTeamGames(games, club, null)[2].res, "L", "without overtime-loss standings an overtime loss is a loss");
+  // the order the lines come in is the order shown; the records follow the order played
+  const reversed = teamGamesFromLines([...lines].reverse(), { f: club, teams, otl: true, tie: false });
+  assert.deepEqual(reversed.map((g) => g.id), [5004, 5003, 5002, 5001, 5000]);
+  assert.deepEqual(reversed.map((g) => g.rec), out.map((g) => g.rec).reverse());
+});
+
+test("a club's season page fetches its roster flow and its big map's pins when they are wanted, and draws the roster tables from lines", () => {
+  const page = read("app/[locale]/q/[league]/[year]/team/[franchise]/page.tsx");
+  assert.ok(page.includes("<TeamFlowNear") && !page.includes("getSeasonRoster") && !page.includes("<TeamFlow "), "the flow's rosters are not read while the page is drawn");
+  assert.ok(page.includes("<SeasonMapDialog dataHref=") && !page.includes("getSeasonAlignment") && !/clubs: \[\.\.\.leagueSt/.test(page), "the page carries the club's own pin, not every club's");
+  assert.ok(page.includes("lines={raw.map(gameLine)}") && !/games=\{games\}/.test(page), "the games travel as lines");
+  assert.equal(seasonRowsPath("/nhl/2024-25/team/boston-bruins", "flow"), "/nhl/2024-25/team/boston-bruins/rows/flow");
+  assert.ok(read("components/TeamFlowNear.tsx").includes("useSeen") && read("components/TeamFlowNear.tsx").includes("useFetchedJson"), "the flow is fetched when the reader gets near it");
+  assert.ok(read("components/SeasonMap.tsx").includes('useFetchedJson<MapAnswer>(dataHref, "map", true)'), "the map's pins are fetched when its dialog opens");
+  for (const name of ["flow", "map"]) {
+    const route = read(`app/[locale]/s/[league]/[year]/team/[franchise]/rows/${name}/route.ts`);
+    assert.ok(route.includes("export const revalidate = 2592000;") && route.includes("isLocale(tag)") && !/searchParams|cookies\(|headers\(/.test(route), `rows/${name} is kept and takes its language from the route`);
+  }
+  const roster = read("components/TeamRoster.tsx");
+  assert.ok(roster.includes("<RosterTable") && !roster.includes("<SortTable") && roster.includes("limit={sp.full === \"1\" ? undefined : ROSTER_HEAD}") && /ROSTER_HEAD = 1\d;/.test(roster), "the roster tables draw their first rows until Show all, a link to the page with every row");
+  assert.equal(rosterWire(0.2984293193717277), 0.2984293);
+  assert.equal(rosterWire(null), null);
+  assert.equal(rosterWire(Number.NaN), null);
 });
 
 /** The HTML budget of a public page, in bytes, as the page is served (no compression). A player with a long career is the heaviest page the site has. */
@@ -621,6 +680,8 @@ const KIND_SAMPLES: Record<string, string> = {
   "[league]/[year]/world": "/nba/2010-11/world",
   "[league]/[year]/team/[franchise]": "/mlb/2007/team/cincinnati-reds",
   "[league]/[year]/team/[franchise]/rows/compare": "/mlb/2007/team/cincinnati-reds/rows/compare",
+  "[league]/[year]/team/[franchise]/rows/flow": "/mlb/2007/team/cincinnati-reds/rows/flow",
+  "[league]/[year]/team/[franchise]/rows/map": "/mlb/2007/team/cincinnati-reds/rows/map",
   "[league]/[year]/game/[game]": "/mlb/2026/game/4887974-milwaukee-brewers-at-tampa-bay-rays",
   "[league]/[year]/series/[pair]": "/nhl/1971-72/series/boston-bruins-vs-new-york-rangers",
   "[league]/[year]/playoffs/round/[n]": "/nfl/1973/playoffs/round/1",
@@ -704,17 +765,14 @@ const KIND_SAMPLES: Record<string, string> = {
 const KIND_EXTRA = ["/nhl/2004-05", "/mlb/head-to-head/baltimore-orioles-vs-detroit-tigers", "/nba/head-to-head/detroit-pistons-vs-golden-state-warriors", "/mlb/1986/team/cincinnati-reds", "/nhl/2002-03/team/new-york-rangers", "/mls/team/real-salt-lake"];
 /**
  * Pages allowed over the budget for now: the most HTML each may send (a ceiling that can only come down) and the work that removes the exception. When a page falls under
- * the budget its line must go (the test says so), so this list only ever gets shorter. Ticket ids are filled in by the coordinating session.
+ * the budget its line must go (the test says so), so this list only ever gets shorter.
  */
 const KNOWN_EXCEPTIONS: Record<string, { kb: number; ticket: string; why: string }> = {
-  "/mlb/2007/team/cincinnati-reds": { kb: 440, ticket: "TBD team-season-flow", why: "club season: roster tables, flow chart, map pins and the games as props (the games table is a head already)" },
-  "/mlb/1986/team/cincinnati-reds": { kb: 370, ticket: "TBD team-season-flow", why: "same as the club seasons above" },
-  "/nhl/2002-03/team/new-york-rangers": { kb: 390, ticket: "TBD team-season-flow", why: "same as the club seasons above" },
-  "/nhl/2004-05": { kb: 420, ticket: "TBD outage-season", why: "a season not played: before-and-after tables of every club and roster" },
-  "/teams/coaches": { kb: 420, ticket: "TBD coaches-data", why: "every coach move of every league travels as props of one chart" },
-  "/teams/lineage": { kb: 340, ticket: "TBD lineage-data", why: "every lineage of every league travels as props" },
-  "/worldcup/2026": { kb: 340, ticket: "TBD worldcup-year", why: "groups, matches, teams and squads drawn on the server" },
-  "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "TBD results-wire", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
+  "/nhl/2004-05": { kb: 420, ticket: "SPX-799 outage seasons", why: "a season not played: before-and-after tables of every club and roster" },
+  "/teams/coaches": { kb: 420, ticket: "SPX-799 coaches", why: "every coach move of every league travels as props of one chart" },
+  "/teams/lineage": { kb: 340, ticket: "SPX-799 lineage", why: "every lineage of every league travels as props" },
+  "/worldcup/2026": { kb: 340, ticket: "SPX-799 worldcup 2026", why: "groups, matches, teams and squads drawn on the server" },
+  "/mlb/team/philadelphia-phillies/rows/results": { kb: 660, ticket: "SPX-800 franchise results", why: "JSON of every game of a 144-season franchise (and 144 reads to make it)" },
 };
 
 /** With READS_URL (the scripts/weightCrawl.ts proxy in front of the PostgREST the site reads) each page may also make only so many database reads while it is drawn. Pages served from the site's cache make none: run it on a fresh build. */

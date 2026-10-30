@@ -13,7 +13,7 @@ import { matchesResult, resultOptions, type ResultFilter } from "@/lib/resultFil
 import { openMonth, resolveSelection, type ClubTeam, type Selection } from "@/lib/season";
 import { tableOf, type ColumnSpec, type SortKey } from "@/lib/sort";
 import { heatGamesFromTeam } from "@/lib/resultHeat";
-import { playedInOrder, type RecordTotals, type TeamGame } from "@/lib/teamSeason";
+import { playedInOrder, teamGamesFromLines, type RecordTotals, type TeamGame, type TeamLine } from "@/lib/teamSeason";
 import { replaceQuery } from "@/lib/urlQuery";
 import { Donut } from "./Donut";
 import { ResultHeatNear } from "./ResultHeatNear";
@@ -48,7 +48,13 @@ interface Props {
   year: number;
   /** The team's id in this season's games (the calendar marks its wins and losses). */
   meId: number;
-  games: TeamGame[];
+  /** The club's games as lines (lib/teamSeason.ts), in the order the page shows them; the view works out sides, results and running records from them. */
+  lines: TeamLine[];
+  /** The club's franchise: which side of each line it is. */
+  f: number;
+  /** The standings count overtime losses / hold ties: the running record's form. */
+  otl: boolean;
+  tie: boolean;
   teams: ClubTeam[];
   record: RecordTotals;
   /** What the address asked for: ?phase=&month=&day= and ?sort=. */
@@ -75,9 +81,10 @@ const PHASE_NAME = { p: "phase.playoffs", s: "phase.preseason", a: "phase.allSta
  * Everything on a team's season that follows its part-of-season switch: the record and game-by-game charts,
  * the sortable table of games, and the calendar of wins and losses. The selection and the sort live in the address.
  */
-export function TeamSeasonView({ lg, abbrs, season, year, meId, games, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav, today, teamPath, head, allHref }: Props) {
+export function TeamSeasonView({ lg, abbrs, season, year, meId, lines, f, otl, tie, teams: teamList, record, initial, initialSort, initialLoc, initialResult, seasonNav, today, teamPath, head, allHref }: Props) {
   const { say, plural, fmt, dt } = useSpeaker();
   const teams = useMemo(() => new Map(teamList.map((t) => [t.id, t])), [teamList]);
+  const games = useMemo(() => teamGamesFromLines(lines, { f, teams, otl, tie }), [lines, f, teams, otl, tie]);
   const logos = useMemo(() => new Map(teamList.map((t) => [t.f, t.logo])), [teamList]);
   const [link] = useState(createRowLink);
   const [want, setWant] = useState<Selection>(initial);

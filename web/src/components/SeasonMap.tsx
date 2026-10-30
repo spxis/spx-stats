@@ -6,6 +6,7 @@ import type { Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { MapViewer } from "./MapViewer";
 import { MapHost } from "./TeamMap";
+import { useFetchedJson } from "./useFetchedJson";
 import "./mapviewer.css";
 
 /* The map on a team's season page. A small map in the corner and the "Home venue" line open a dialog with a large map of every
@@ -71,7 +72,7 @@ export function SeasonVenueLine({ venue }: { venue: string }) {
   );
 }
 
-/** The dialog, mounted only while the address asks for it. `pins` carry no `me`: the chosen club comes from the address. */
+/** The dialog, mounted only while the address asks for it. Its pins (every club of the league) are fetched from `dataHref` when it opens, so the page carries none of them. The chosen club comes from the address. */
 export function SeasonMapDialog(props: DialogProps) {
   // Reading the address' query makes a kept page draw this part in the browser; the boundary keeps that to the dialog alone.
   return <Suspense fallback={null}><DialogGate {...props} /></Suspense>;
@@ -82,16 +83,21 @@ function DialogGate(props: DialogProps) {
   return mode === "open" || mode === "venue" ? <Dialog {...props} mode={mode} /> : null;
 }
 
-interface DialogProps { pins: Pin[]; me: number; clubCount: number; leagueShort: string; seasonLabel: string }
+interface DialogProps { dataHref: string; me: number; leagueShort: string; seasonLabel: string }
+interface MapAnswer { pins: Pin[]; clubCount: number }
+const NO_PINS: Pin[] = [];
 
-function Dialog({ pins, me, clubCount, leagueShort, seasonLabel, mode }: DialogProps & { mode: Mode }) {
+function Dialog({ dataHref, me, leagueShort, seasonLabel, mode }: DialogProps & { mode: Mode }) {
   const { say } = useSpeaker();
+  const { state, data } = useFetchedJson<MapAnswer>(dataHref, "map", true);
+  const pins = data?.pins ?? NO_PINS;
+  const clubCount = data?.clubCount ?? pins.length;
   const team = useSearchParams().get("mapteam");
   const dlg = useRef<HTMLDialogElement>(null);
   const downOnBackdrop = useRef(false);
   const heading = useId();
   const sorted = useMemo(() => [...pins].sort((a, b) => a.name.localeCompare(b.name, "en")), [pins]);
-  const chosen = pins.find((p) => p.slug === team) ?? pins.find((p) => p.f === me) ?? pins[0];
+  const chosen: Pin | undefined = pins.find((p) => p.slug === team) ?? pins.find((p) => p.f === me) ?? pins[0];
   const router = useRouter();
   const latest = useRef(chosen);
   useEffect(() => { latest.current = chosen; });
@@ -102,7 +108,7 @@ function Dialog({ pins, me, clubCount, leagueShort, seasonLabel, mode }: DialogP
     // Closing applies the map's choice: the page moves to the chosen club's season.
     const onClose = () => {
       const c = latest.current;
-      if (c.f !== me && c.href) router.replace(c.href); else closeMap();
+      if (c && c.f !== me && c.href) router.replace(c.href); else closeMap();
     };
     d.addEventListener("close", onClose);
     if (!d.open) d.showModal();
@@ -114,11 +120,11 @@ function Dialog({ pins, me, clubCount, leagueShort, seasonLabel, mode }: DialogP
   }, []);
 
   const label = say("map.label", { league: leagueShort, season: seasonLabel });
-  const bar = (
+  const bar = chosen ? (
     <select aria-label={say("venues.team")} value={chosen.slug ?? ""} onChange={(e) => chooseTeam(pins.find((p) => p.slug === e.target.value)?.f === me ? null : e.target.value)}>
       {sorted.map((p) => <option key={p.f} value={p.slug}>{p.name}</option>)}
     </select>
-  );
+  ) : null;
 
   return (
     <dialog ref={dlg} className="mapdlg" aria-labelledby={heading}
@@ -128,9 +134,11 @@ function Dialog({ pins, me, clubCount, leagueShort, seasonLabel, mode }: DialogP
         <h2 id={heading}>{label}</h2>
         <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
       </div>
-      <MapViewer pins={pins} title={label} bar={bar} selected={chosen.f} zoomToSelected={mode === "venue"}
-        onPick={(f) => { const p = pins.find((x) => x.f === f); if (p) chooseTeam(f === me ? null : p.slug ?? null); }}
-        note={say("tmap.note", { n: pins.length, total: clubCount, season: seasonLabel })} />
+      {chosen ? (
+        <MapViewer pins={pins} title={label} bar={bar} selected={chosen.f} zoomToSelected={mode === "venue"}
+          onPick={(f) => { const p = pins.find((x) => x.f === f); if (p) chooseTeam(f === me ? null : p.slug ?? null); }}
+          note={say("tmap.note", { n: pins.length, total: clubCount, season: seasonLabel })} />
+      ) : <p className="note" role="status">{say(state === "failed" || state === "empty" ? "load.failed" : "load.loading")}</p>}
     </dialog>
   );
 }

@@ -51,6 +51,10 @@ export async function positionBook() {
     list(positions: readonly string[] | null | undefined, main: string | null | undefined, leagues: readonly string[], full?: boolean): ReactNode {
       return <PositionList items={positionCodes(positions, main).map((c) => read(c, leagues))} full={full} />;
     },
+    /** A person's position codes with their names, for a table drawn in the browser (components/PositionCode's PositionList); notes the codes for the key. */
+    items(positions: readonly string[] | null | undefined, main: string | null | undefined, leagues: readonly string[]): { code: string; name: string | null }[] {
+      return positionCodes(positions, main).map((c) => read(c, leagues));
+    },
     /** One bare code (a lineup's, a filter's) as a linked code. */
     code(code: string | null | undefined, leagues: readonly string[]): ReactNode {
       return code ? <PositionList items={[read(code.trim().toUpperCase(), leagues)]} /> : null;
