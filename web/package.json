@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.173.2",
+  "version": "0.174.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -80,6 +80,7 @@
     "test:flow": "node --test scripts/rosterFlow.test.ts",
     "test:coaches": "node --test scripts/coachMoves.test.ts",
     "test:pagedorder": "node --test scripts/pagedOrder.test.ts",
+    "test:clubleaders": "node --test scripts/clubLeaders.test.ts",
     "test:positions": "node --test scripts/positions.test.ts",
     "test:flags": "node --test scripts/flags.test.ts",
     "test:review": "node --test scripts/personReview.test.ts",

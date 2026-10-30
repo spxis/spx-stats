@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.0", date: "2026-10-30", href: "/cfl/2010/team/winnipeg-blue-bombers",
+    title: "CFL club leaders on each club's season page",
+    text: "A CFL club's season page now lists its passing, rushing and receiving leaders as the club-season article on Wikipedia gives them, for about 70 seasons (mostly 1958-81 for the BC Lions, and 2002-11). A name links to the player's page only where we are certain who he is; any other name is shown as written.",
+  },
   { version: "0.173.2", date: "2026-10-30", href: "/city/boston",
     title: "City, club-season and All-Star pages read less from the database",
     text: "A city page, the list of cities and the sitemap take the clubs of every city from one precomputed list instead of adding up thousands of club seasons, a club season's roster comes from one request instead of three, and the All-Star pages ask once for a league's events, games and MVPs. The pages look the same, and a first visit does much less work.",

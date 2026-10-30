@@ -12,6 +12,7 @@ import { TeamFlowNear } from "@/components/TeamFlowNear";
 import { TeamCountries } from "@/components/TeamCountries";
 import { TeamPositionsKey } from "@/components/TeamPositionsKey";
 import { TeamRoster } from "@/components/TeamRoster";
+import { ClubLeaders } from "@/components/ClubLeaders";
 import { TeamStaff } from "@/components/TeamStaff";
 import { SeasonMapDialog, SeasonMapThumb, SeasonVenueLine } from "@/components/SeasonMap";
 import { seasonRowsPath } from "@/lib/teamSeasonRows";
@@ -232,6 +233,7 @@ export default guard(async function TeamSeasonPage({ params, searchParams }: Pag
       {st ? <Suspense fallback={null}><TeamStaff lg={lg} teamSeasonId={st.team_id} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamCountries lg={lg} year={y} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
       {st ? <Suspense fallback={null}><TeamRoster lg={lg} season={season} teamSeasonId={st.team_id} path={at.path} sp={sp} /></Suspense> : null}
+      {st && lg === "cfl" ? <Suspense fallback={null}><ClubLeaders lg={lg} season={season} teamSeasonId={st.team_id} /></Suspense> : null}
       <TeamFlowNear dataHref={seasonRowsPath(at.path, "flow")} />
       <TeamSeasonView lg={lg} abbrs={abbrsForYear(abbrs, [f, ...teamsIn(raw).map((x) => x.f)], y)} season={season} year={y} initialLoc={parseLoc(sp.loc)} initialResult={parseResult(sp.result)} meId={me?.id ?? 0} lines={raw.map(gameLine)} f={f} otl={!!st?.otl} tie={!!st?.t} teams={teamsIn(raw).map((x) => ({ ...x, logo: logoFor(brands, x.f, y) }))} record={rec}
         initial={{ ...selection, team: "" }} initialSort={sort} seasonNav={seasonNav} today={new Date().toISOString().slice(0, 10)} teamPath={paths.team(lg, f)}
