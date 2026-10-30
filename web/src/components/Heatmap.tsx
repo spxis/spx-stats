@@ -1,6 +1,7 @@
 "use client";
 
 import { max, min, range } from "d3";
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import {
@@ -14,10 +15,12 @@ import { TipLines } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
 import { chooseRange, parseRange, releaseRangeHold, saveRange, serverRange, snapshotRange, subscribeRange, writeAddress } from "@/lib/yearRange";
 import { YearRange } from "./YearRange";
+import { useSeen } from "./useSeen";
+import { unpackHeat, type HeatSeason, type HeatWire } from "@/lib/heatWire";
 
-export interface HeatSeason {
-  league: string; year: number; label: string; games: number; finals: number; share: number; champion: string | null;
-}
+export type { HeatSeason };
+
+const HeatRowsLazy = dynamic(() => import("./Heatmap").then((m) => m.HeatRows), { ssr: false });
 
 const shareColor = (s: number) => (s <= 0 ? "transparent" : `color-mix(in srgb, var(--accent-cell) ${Math.round(18 + 82 * s)}%, transparent)`);
 
@@ -26,8 +29,17 @@ const TICK_STEPS = [1, 2, 5, 10, 20, 25, 50];
 const ROW = 26;
 const CHIP = 6;
 
-/** Each square is a season, shaded by how many of its games have a result. A range slider narrows the years shown. */
-export function Heatmap({ seasons }: { seasons: HeatSeason[] }) {
+/** The chart's width the least box is drawn at, and the height of a row and the year labels: the box keeps its size before the squares are drawn, so the page below does not jump. */
+const MIN_W = 640;
+const boxHeight = (rows: number, chips: boolean) => 22 + rows * (chips ? ROW + CHIP + 3 : ROW);
+
+/**
+ * Each square is a season, shaded by how many of its games have a result. A range slider narrows the years shown. The squares are a drawing with no words a
+ * search needs and each is 400 bytes of markup, so the page sends the seasons as short plain data (`wire`, lib/heatWire.ts) and the chart is drawn in the browser.
+ */
+export function Heatmap({ wire }: { wire: HeatWire }) {
+  const seasons = useMemo(() => unpackHeat(wire), [wire]);
+  const [box, drawn] = useSeen<HTMLDivElement>();
   const { grown } = useArchiveGrow();
   const y0 = min(seasons, (s) => s.year) ?? 0, y1 = max(seasons, (s) => s.year) ?? 0;
   const families = useMemo(() => familiesWithData(seasons), [seasons]);
@@ -58,7 +70,9 @@ export function Heatmap({ seasons }: { seasons: HeatSeason[] }) {
   return (
     <div className="yr-hold">
       <YearRange min={y0} max={y1} from={span.from} to={span.to} onChange={onRange} extra={<GrowToggle canGrow={canGrow} />} />
-      <HeatRows seasons={seasons} leagues={leagues} years={years} labels linkFor={linkFor} groups={groups} />
+      <div ref={box} style={drawn ? undefined : { aspectRatio: `${MIN_W} / ${boxHeight(leagues.length, !!groups)}`, maxHeight: boxHeight(leagues.length, !!groups) }}>
+        {drawn ? <HeatRowsLazy seasons={seasons} leagues={leagues} years={years} labels linkFor={linkFor} groups={groups} /> : null}
+      </div>
     </div>
   );
 }
@@ -91,7 +105,7 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
 
   const left = labels ? 58 : 0, top = 18;
   // Few years need less width to read; the full range keeps the old 640 minimum. A lone row has no minimum: its squares shrink to fit.
-  const Wd = labels ? Math.max(W, Math.min(640, left + years.length * 10)) : W;
+  const Wd = labels ? Math.max(W, Math.min(MIN_W, left + years.length * 10)) : W;
   const cw = (Wd - left) / Math.max(1, years.length);
   const x = (y: number) => left + (y - years[0]) * cw;
   const step = TICK_STEPS.find((n) => n * cw >= LABEL_PX) ?? TICK_STEPS[TICK_STEPS.length - 1];

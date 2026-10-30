@@ -1,7 +1,8 @@
-import { Heatmap, type HeatSeason } from "@/components/Heatmap";
+import { Heatmap } from "@/components/Heatmap";
 import { HomeCards } from "@/components/HomeCards";
 import { lineOf, type HomeCardLine, type HomeFamilyCard } from "@/lib/homeCards";
 import { Figures } from "@/components/ui";
+import { packHeat, type HeatSeason } from "@/lib/heatWire";
 import { SOCIAL_IMAGES } from "@/lib/brandAssets";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
@@ -118,7 +119,7 @@ export default guard(async function Home() {
         <h2>{say("home.archiveTitle")}</h2>
         <p className="note">{say("home.archiveNote")}</p>
         <p className="note">{say("home.archiveChips")}</p>
-        <Heatmap seasons={heatSeasons} />
+        <Heatmap wire={packHeat(heatSeasons)} />
       </section>
       <HomeCards families={familyCards} menu={menuCards} />
     </>

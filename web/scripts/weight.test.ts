@@ -13,6 +13,8 @@ import { AT_HEAD, atGrid, atKeys, atPoints, atSort, buildAtList, lineAt, pickAt,
 import { sortRows } from "../src/lib/sort.ts";
 import { COUNTRIES_HEAD } from "../src/lib/countryLines.ts";
 import { FULL_SHARE, leagueSeasonBars, leagueSeasonRows } from "../src/lib/leagueSeasonRows.ts";
+import { packHeat, unpackHeat, type HeatSeason } from "../src/lib/heatWire.ts";
+import { seasonLabel } from "../src/lib/leagues.ts";
 
 /**
  * Page weight of the league pages: a league page lists every season, champion and award, and sent them all (the NHL's was 970 KB of HTML against a budget
@@ -330,6 +332,42 @@ test("a league's world page draws its chart when near and its two long tables fr
   assert.ok(read("app/[locale]/q/[league]/world/tables/page.tsx").includes("s/[league]/world/tables/page"), "the tables page has its twin in q/");
 });
 
+test("the home archive chart's seasons travel as six numbers each and come back whole", () => {
+  const leagues = ["nhl", "nba", "mlb", "nfl", "ahl", "cfl", "soccer", "mls"];
+  const seasons: HeatSeason[] = leagues.flatMap((league, li) => Array.from({ length: 110 }, (_, i): HeatSeason => {
+    const year = 1915 + i;
+    const games = i % 9 === 0 ? 0 : 200 + i;
+    return {
+      league, year, label: league === "soccer" || league === "mls" ? String(year) : year === 1999 && li < 3 ? "1999-00" : seasonLabel(league, year),
+      games, finals: Math.floor(games * 0.97), share: games ? Math.round((0.4 + (i % 7) / 12) * 1000) / 1000 : 0,
+      champion: i % 5 === 0 ? null : `Club ${(li * 7 + i) % 40}`,
+    };
+  }));
+  const wire = packHeat(seasons);
+  assert.equal(wire.r.length, seasons.length * 6);
+  assert.equal(wire.n.length, 40, "each champion's name is sent once");
+  const back = unpackHeat(wire);
+  assert.equal(back.length, seasons.length);
+  for (const [i, s] of seasons.entries()) {
+    const b = back[i];
+    assert.equal(b.league, s.league); assert.equal(b.year, s.year); assert.equal(b.games, s.games); assert.equal(b.finals, s.finals);
+    assert.equal(b.champion, s.champion);
+    assert.ok(Math.abs(b.share - s.share) < 0.0006, "the share keeps the thousandths the shading reads");
+  }
+  const odd = back.filter((s, i) => s.label !== seasons[i].label);
+  assert.equal(odd.length, 0, "labels the league does not write itself are carried, the rest are rebuilt");
+  assert.ok(Object.keys(wire.l ?? {}).length <= 8, "only the odd labels are carried");
+  assert.ok(JSON.stringify(wire).length < 40 * seasons.length, "a season costs a few bytes in the page");
+});
+
+test("the home page sends the archive chart as data and draws it in the browser when near", () => {
+  const page = read("app/[locale]/s/page.tsx");
+  assert.ok(page.includes("packHeat(") && !page.includes("<Heatmap seasons="), "the page sends the packed seasons");
+  const chart = read("components/Heatmap.tsx");
+  assert.ok(chart.includes("useSeen") && chart.includes("ssr: false") && chart.includes("unpackHeat("), "the squares are drawn in the browser, from the packed seasons, when near");
+  assert.ok(!/setInterval|router\.refresh/.test(chart + read("components/HomeCards.tsx")), "nothing on the home page runs on a timer");
+});
+
 /**
  * The real pages, measured. Run against a built site on a port of this project's block (it needs DS1's PostgREST for the data):
  *   PAGES_URL=http://localhost:7705 pnpm test:weight      (PLAYER_PAGES_URL works too)
@@ -346,6 +384,8 @@ const PLAYER_PAGES: { path: string; budget: number }[] = [
 /** The floor every page stands on: the document, header, footer and the sign-in and language scripts, nothing else. A small static page shows what the root layout sends. */
 const ROOT_FLOOR = 45 * 1000;
 const FLOOR_PAGES = [{ path: "/privacy", budget: ROOT_FLOOR }, { path: "/terms", budget: 60 * 1000 }];
+/** The home page: the figures, the archive chart's seasons as packed numbers and a card for each league. It was 471 KB, drawing every square of the chart as markup. */
+const HOME_PAGES = [{ path: "/", budget: 120 * 1000 }];
 
 /** The all-time page of every league (its default view), and the heaviest leagues' table view, which lists every franchise. */
 const ALL_TIME_LEAGUES = ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "ncaaf", "cfl", "nwsl", "afl", "aafc", "nha", "pcha", "wchl", "wha", "ahl", "echl", "na", "aa", "ua", "pl", "fl"];
@@ -366,7 +406,7 @@ const WORLD_PAGES = [
   { path: "/mlb/2025/world", budget: PAGE_BUDGET },
   { path: "/nfl/2024/world", budget: PAGE_BUDGET },
 ];
-for (const { path, budget } of [...FLOOR_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
+for (const { path, budget } of [...FLOOR_PAGES, ...HOME_PAGES, ...PLAYER_PAGES, ...ALL_TIME_PAGES, ...WORLD_PAGES]) {
   test(`${path} stays under ${budget / 1000} KB of HTML`, { skip: LIVE ? false : "set PAGES_URL to measure a running site" }, async () => {
     const res = await fetch(`${LIVE}${path}`, { headers: { "accept-encoding": "identity" } });
     assert.equal(res.status, 200);

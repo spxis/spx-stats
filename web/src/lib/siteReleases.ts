@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.168.6", date: "2026-10-30", href: "/",
+    title: "The home page is lighter",
+    text: "The home page carried the archive chart's squares twice over, which made it about six times heavier than it needed to be. The page now sends the seasons as a short list and the chart is drawn as soon as the page is up. It looks and works the same." },
   { version: "0.168.5", date: "2026-10-30", href: "/about",
     title: "Every page is lighter",
     text: "Every page used to carry every team address and the logo adjustments of every league, teams shown or not. A page now carries only its own leagues', so About sends about 60 KB less and a league page about 50 KB less. Looks and works the same." },
