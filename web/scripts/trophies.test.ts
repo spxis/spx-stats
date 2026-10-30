@@ -17,12 +17,12 @@ test("every league has a titled cup drawn by the package, in line style, and an 
 });
 
 test("a big cup is the full metal drawing for the leagues that have one, and the line cup for the rest", () => {
-  for (const [lg, name] of [["nhl", "Stanley Cup"], ["nba", "Larry O'Brien Trophy"], ["mlb", "Commissioner's Trophy"], ["nfl", "Vince Lombardi Trophy"], ["cfl", "Grey Cup"], ["pcha", "Paterson Cup"], ["nha", "O'Brien Cup"], ["wha", "Avco World Trophy"]]) {
+  for (const [lg, name] of [["nhl", "Stanley Cup"], ["nba", "Larry O'Brien Trophy"], ["mlb", "Commissioner's Trophy"], ["nfl", "Vince Lombardi Trophy"], ["cfl", "Grey Cup"], ["pcha", "Paterson Cup"], ["nha", "O'Brien Cup"], ["wha", "Avco World Trophy"], ["pwhl", "Walter Cup"], ["wnba", "WNBA Championship"]]) {
     assert.match(bigCupSvg(lg), new RegExp(`<title>${name}</title>`));
     assert.doesNotMatch(bigCupSvg(lg), /currentColor/);
     assert.doesNotMatch(bigCupSvg(lg), / width="64"/);
   }
-  for (const lg of ["wnba", "pwhl", "nwsl", "wchl", "unknown"]) assert.equal(bigCupSvg(lg), cupSvg(lg), lg);
+  for (const lg of ["nwsl", "wchl", "unknown"]) assert.equal(bigCupSvg(lg), cupSvg(lg), lg);
 });
 
 test("places 1 to 3 have a titled medal in metal, and no other place has one", () => {
@@ -58,17 +58,33 @@ test("the banner still the server sends is the first frame the browser draws whe
   turner.destroy();
 });
 
-test("the PCHA, NHA and WHA champions are drawn with their own cups, not the Stanley Cup's", () => {
-  for (const lg of ["pcha", "nha", "wha"]) {
+test("the PCHA, NHA, WHA, PWHL and WNBA champions are drawn with their own cups, not the generic ones", () => {
+  for (const lg of ["pcha", "nha", "wha", "pwhl"]) {
     assert.notEqual(cupSvg(lg), cupSvg("nhl"), lg);
     assert.notEqual(bannerCupSvg(lg), bannerCupSvg("nhl"), lg);
     assert.notEqual(bigCupSvg(lg), bigCupSvg("nhl"), lg);
   }
 });
 
+test("the WNBA final is drawn with its own trophy, not the NBA's ball", () => {
+  assert.notEqual(cupSvg("wnba"), cupSvg("nba"));
+  assert.notEqual(bannerCupSvg("wnba"), bannerCupSvg("nba"));
+  assert.notEqual(bigCupSvg("wnba"), bigCupSvg("nba"));
+  assert.notEqual(gameCupSvg("wnba", true), gameCupSvg("nba", true));
+  assert.notEqual(gameCupSvg("wnba", false), gameCupSvg("nba", false));
+});
+
+test("the PWHL final is drawn with the Walter Cup, not the Stanley Cup", () => {
+  assert.notEqual(gameCupSvg("pwhl", true), gameCupSvg("nhl", true));
+  assert.notEqual(gameCupSvg("pwhl", false), gameCupSvg("nhl", false));
+  assert.ok(gameCupSvg("pwhl", false).includes("currentColor"));
+});
+
 test("a big-game banner shows a trophy for the leagues that have a cup, and nothing for the ones that do not", () => {
   const name = (lg: string, year = 2025) => bigGameTrophy(lg, year);
-  for (const lg of ["nhl", "nba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) assert.ok(name(lg), lg);
+  for (const lg of ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) assert.ok(name(lg), lg);
+  assert.equal(name("pwhl"), "trophy.name.pwhl");
+  assert.equal(name("wnba"), "trophy.name.wnba");
   assert.equal(name("mlb"), "trophy.name.mlb");
   assert.equal(name("ahl"), "trophy.name.ahl");
   assert.equal(name("nfl", 1965), null);
@@ -76,7 +92,7 @@ test("a big-game banner shows a trophy for the leagues that have a cup, and noth
 });
 
 test("the big-game cup is untitled and sized by the page: the line cup small, the metal cup large", () => {
-  for (const lg of ["nhl", "nba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) {
+  for (const lg of ["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "ahl", "echl", "ncaaf"]) {
     const small = gameCupSvg(lg, false), large = gameCupSvg(lg, true);
     assert.ok(!small.includes("<title>") && !large.includes("<title>"), lg);
     assert.ok(!small.includes(' width="64"') && !large.includes(' width="64"'), lg);

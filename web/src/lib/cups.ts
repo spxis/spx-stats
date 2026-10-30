@@ -14,6 +14,8 @@ import { TROPHY_OBRIEN_CUP } from "@johnmorrisdotca/dougu-sports/trophy/obrien-c
 import { TROPHY_PATERSON_CUP } from "@johnmorrisdotca/dougu-sports/trophy/paterson-cup";
 import { TROPHY_SOCCER_BALL } from "@johnmorrisdotca/dougu-sports/trophy/soccer-ball";
 import { TROPHY_SOCCER_GLOBE } from "@johnmorrisdotca/dougu-sports/trophy/soccer-globe";
+import { TROPHY_WALTER_CUP } from "@johnmorrisdotca/dougu-sports/trophy/walter-cup";
+import { TROPHY_WNBA_CHAMPIONSHIP_TROPHY } from "@johnmorrisdotca/dougu-sports/trophy/wnba-championship-trophy";
 import { MEDAL_BRONZE } from "@johnmorrisdotca/dougu-sports/medal/bronze";
 import { MEDAL_GOLD } from "@johnmorrisdotca/dougu-sports/medal/gold";
 import { MEDAL_SILVER } from "@johnmorrisdotca/dougu-sports/medal/silver";
@@ -23,9 +25,9 @@ import { TROPHY_TILT } from "./trophyTurn.ts";
 /** Each league's (or tournament's) cup, keyed by the league the page passes in, with the name of the trophy a team won as the drawing's title. */
 const CUPS: Record<string, readonly [Emblem, string]> = {
   nhl: [TROPHY_HOCKEY_CUP, "Stanley Cup"],
-  pwhl: [TROPHY_HOCKEY_CUP, "Walter Cup"],
+  pwhl: [TROPHY_WALTER_CUP, "Walter Cup"],
   nba: [TROPHY_BASKETBALL, "Larry O'Brien Trophy"],
-  wnba: [TROPHY_BASKETBALL, "WNBA Championship"],
+  wnba: [TROPHY_WNBA_CHAMPIONSHIP_TROPHY, "WNBA Championship"],
   nwsl: [TROPHY_SOCCER_BALL, "NWSL Championship"],
   mlb: [TROPHY_BASEBALL, "Commissioner's Trophy"],
   nfl: [TROPHY_FOOTBALL, "Vince Lombardi Trophy"],
@@ -102,7 +104,7 @@ export function gameCupSvg(league: string, large: boolean): string {
 }
 
 /** The leagues whose trophy has its own drawing in the package, so a large cup is drawn in metal for them; the others keep the line cup. */
-const FULL_DRAWING = new Set(["nhl", "nba", "mlb", "nfl", "cfl", "nha", "pcha", "wha"]);
+const FULL_DRAWING = new Set(["nhl", "pwhl", "nba", "wnba", "mlb", "nfl", "cfl", "nha", "pcha", "wha"]);
 
 /** A cup for a large place beside a count: the full metal drawing (titled with the trophy's name) for a league that has one, else the line cup. */
 export function bigCupSvg(league: string): string {

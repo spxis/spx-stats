@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.170.13", date: "2026-10-30", href: "/wnba",
+    title: "The WNBA and PWHL finals show their own trophies",
+    text: "The big-game banner and the champion banners of the WNBA and the PWHL now draw the WNBA championship trophy and the Walter Cup, instead of the basketball and hockey cups they borrowed." },
   { version: "0.170.12", date: "2026-10-30", href: "/mlb/2007/team/cincinnati-reds",
     title: "A club's season page is another third lighter and quicker to open",
     text: "The chart of where a club's players came from and went, and the big map's pins, now load when you scroll to the chart or open the map. The games travel as short lines, and the roster tables show their first fifteen players until Show all (a link to every row without script). Cincinnati 2007 went from 412 to 245 KB." },
