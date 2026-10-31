@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.8", date: "2026-10-30", href: "/worldcup/2023",
+    title: "The World Cup credit now names English Wikipedia for 2023",
+    text: "The credit at the foot of each World Cup page now names English Wikipedia as the source of the 2023 Women's World Cup matches, under its CC BY-SA 4.0 licence.",
+  },
   { version: "0.174.7", date: "2026-10-30", href: "/nhl",
     title: "A page visit asks the server for far fewer files",
     text: "Opening a page used to fetch every page of the top menu in the background (a dozen, up to 150 KB each). Menu pages are now fetched when the pointer rests on a link, and country flags no longer run the server's visitor check one by one. A league page went from 31 requests to the server to 2. Clicking a menu link at once can take a moment longer."

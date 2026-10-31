@@ -906,6 +906,7 @@ export const PHRASES = {
   "address.credit": "Addresses are formatted with {link}.",
   "credit.maps": "Map: {chizu}, from {naturalEarth}.",
   "credit.flags": "Flags: {hata}, with drawings from {commons}.",
+  "credit.wwc2023": "The 2023 Women's World Cup matches are from the group, knockout and final articles of {wikipedia} ({licence}).",
   "address.openMap": "{address} on Google Maps (opens in a new tab)",
   "venues.tabs": "Venue map",
   "venues.tabLeague": "League venues",
