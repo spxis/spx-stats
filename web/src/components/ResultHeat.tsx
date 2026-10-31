@@ -7,10 +7,11 @@ import { gamePath } from "@/lib/gamePath";
 import { RESULT_KEY } from "@/lib/i18n/keys";
 import { seasonLabel, topLeague } from "@/lib/leagues";
 import {
-  HEAT_ROWS, buildHeat, clipHeatGames, heatHover, heatPack, heatRecord, heatSeasons,
+  HEAT_DENSE_FROM, HEAT_ROWS, buildHeat, clipHeatGames, heatHover, heatPack, heatRecord, heatSeasons,
   type GameTone, type HeatCell, type HeatGame,
 } from "@/lib/resultHeat";
 import { useHeatCard } from "./HeatCard";
+import { ResultHeatDense } from "./ResultHeatDense";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { TipLines } from "./Tooltip";
 import { useChartWidth } from "./useChartWidth";
@@ -126,8 +127,11 @@ export function ResultHeat({ lg, games, compact = false, lock, fill = true }: Re
   const marks = year === "all" && seasons.length > 1 ? sparseMarks(grid.marks, Math.max(compact ? 6 : 4, Math.ceil(36 / step))) : [];
   const W = LEFT + grid.cols * step;
   const H = TOP + (grid.rows - 1) * step + cell;
+  const labels = marks.map((m) => (
+    <text key={`m${m.col}`} className="lab" x={LEFT + m.col * step} y={10}>{seasonLabel(lg, m.year)}</text>
+  ));
   const aria = say("rheat.aria", { n: String(grid.games), label });
-  const focusable = grid.games <= 200;
+  const dense = grid.games > HEAT_DENSE_FROM;
 
   return (
     <div className={`rheat${compact ? " compact" : ""}`} ref={box}>
@@ -142,29 +146,32 @@ export function ResultHeat({ lg, games, compact = false, lock, fill = true }: Re
         {legend.map((x) => <span key={x.key}><i className={`sq ${toneClass(x.tone)}`} /><span>{say(x.key)}</span></span>)}
       </div>
       <div className="rheat-scroll">
+        {dense ? (
+          <ResultHeatDense grid={grid} left={LEFT} top={TOP} cell={cell} gap={gap} width={W} height={H} aria={aria} toneClass={toneClass}
+            card={card} bodyOf={bodyOf} open={(c) => open(c)} marks={labels} />
+        ) : (
         <svg viewBox={`0 0 ${W} ${H}`} width={W} height={H} role="img" aria-label={aria} data-games={grid.games} data-rows={grid.rows} data-cell={cell}>
-          {marks.map((m) => (
-            <text key={`m${m.col}`} className="lab" x={LEFT + m.col * step} y={10}>{seasonLabel(lg, m.year)}</text>
-          ))}
+          {labels}
           {/* One flat list, not a list per column: a game keeps its element when the graph is laid out again (the width is measured after the first draw),
-              so a franchise's 20,000 squares move by changing x and y. A list per column made every square a new element each time, and inserting them one by one took seconds. */}
+              so a season's squares move by changing x and y. A graph of more than HEAT_DENSE_FROM games is drawn by ResultHeatDense instead. */}
           {grid.columns.flatMap((col, i) => col.map((c, r) => {
             if (!c) return null;
             const facts = cardOf(c);
             return (
               <rect key={c.game.id} className={`sq ${toneClass(c.tone)} link`} x={LEFT + i * step} y={TOP + r * step}
-                width={cell} height={cell} role="link" tabIndex={focusable ? 0 : undefined}
+                width={cell} height={cell} role="link" tabIndex={0}
                 data-heat={String(c.game.id)}
                 aria-label={[facts.title, ...facts.lines].join(". ")}
                 onClick={(ev) => onClick(ev, c)}
-                onKeyDown={focusable ? (ev) => onKey(ev, c) : undefined}
+                onKeyDown={(ev) => onKey(ev, c)}
                 onPointerDown={onPointerDown}
                 onPointerEnter={(ev) => onEnter(ev, c)} onPointerLeave={onLeave}
-                onFocus={focusable ? (ev) => onFocus(ev, c) : undefined}
-                onBlur={focusable ? onBlur : undefined} />
+                onFocus={(ev) => onFocus(ev, c)}
+                onBlur={onBlur} />
             );
           }))}
         </svg>
+        )}
       </div>
       {card.element}
     </div>

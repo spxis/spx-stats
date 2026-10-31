@@ -141,3 +141,35 @@ test("a page carries the words of the reader's language and no other", async (t)
     await got.browser.close();
   }
 });
+
+// A club's every-game results graph is one square per game: 21,000 for an old MLB club. As one element each the browser spent seconds styling and laying them out on
+// a phone (a blocked main thread of 1.5 to 3.7 s at a 4x slower processor, 0.4 to 0.7 s once the squares became a few paths). Only the season-sized graphs may be
+// one element a square, where every square takes the keyboard; a long one is a few paths. Count the elements of every graph on a franchise page and a team season page.
+for (const path of ["/mlb/team/cincinnati-reds", "/mlb/2007/team/cincinnati-reds"]) {
+  test(`a results graph is drawn with a few elements, not one per game (${path})`, async (t) => {
+    const got = await browserOrReason();
+    if (!got.browser) return t.skip(got.reason);
+    const ctx = await got.browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    try {
+      await ctx.addCookies([{ name: "spxn-in", value: "1", url: BASE! }]);
+      await ctx.addInitScript(() => { try { localStorage.setItem("spxn-probed", "1"); } catch { /* storage may be blocked */ } });
+      const page = await ctx.newPage();
+      await page.goto(`${BASE}${path}`, { waitUntil: "load" });
+      await page.waitForSelector(".rheat svg[data-games]", { state: "attached", timeout: 20000 }).catch(() => {});
+      for (let i = 0; i < 80; i++) {
+        const done = await page.evaluate(() => { window.scrollBy(0, 600); return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2; });
+        await page.waitForTimeout(150);
+        if (done) break;
+      }
+      await page.waitForTimeout(2000);
+      const graphs = await page.evaluate(() => [...document.querySelectorAll<SVGSVGElement>(".rheat svg[data-games]")].map((svg) => ({ games: Number(svg.dataset.games), elements: svg.querySelectorAll("*").length })));
+      assert.ok(graphs.length > 0, "the page drew no results graph");
+      const long = graphs.filter((g) => g.games > 200);
+      assert.ok(long.length > 0, `no graph of more than 200 games was drawn: ${JSON.stringify(graphs)}`);
+      for (const g of long) assert.ok(g.elements <= 80, `a graph of ${g.games} games is ${g.elements} elements (the budget is 80: labels, one path a result and the ring)`);
+      for (const g of graphs.filter((x) => x.games <= 200)) assert.ok(g.elements <= 2 * g.games + 40, `a graph of ${g.games} games is ${g.elements} elements`);
+    } finally {
+      await got.browser.close();
+    }
+  });
+}

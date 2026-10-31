@@ -33,3 +33,6 @@
 .rheat-range { flex: 1 1 160px; min-width: 120px; max-width: 420px; display: flex; align-items: center; }
 .rheat-range input[type="range"] { width: 100%; margin: 0; accent-color: var(--ink); height: var(--control-h); }
 .rheat-pick { flex: none; min-width: 5ch; font: 600 15px/1 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+
+/* The ring that follows the pointer on a long graph (ResultHeatDense), where the squares are paths and cannot take an outline each. */
+.rheat .hi { fill: none; stroke: var(--ink); stroke-width: 2; }

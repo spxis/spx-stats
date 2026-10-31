@@ -278,6 +278,43 @@ export function buildHeat(games: readonly HeatGame[], rows?: number): HeatGrid |
   };
 }
 
+/** Past this many games a graph is drawn as a few paths, not one element per square (the same limit as the squares a keyboard can reach). */
+export const HEAT_DENSE_FROM = 200;
+
+/**
+ * The squares of a grid as one path per tone, each square the rounded box an SVG rect with rx 2 draws, so a club's 20,000 games are
+ * a handful of elements for the browser to style, lay out and paint instead of 20,000. Moves are relative: a closed box leaves the
+ * pen on its own start.
+ */
+export function heatPaths(grid: HeatGrid, left: number, top: number, cell: number, gap: number): { tone: GameTone; d: string }[] {
+  const step = cell + gap;
+  const r = Math.min(2, cell / 2);
+  const a = cell - 2 * r;
+  const box = `${a > 0 ? `h${a}` : ""}a${r} ${r} 0 0 1 ${r} ${r}${a > 0 ? `v${a}` : ""}a${r} ${r} 0 0 1 -${r} ${r}${a > 0 ? `h-${a}` : ""}a${r} ${r} 0 0 1 -${r} -${r}${a > 0 ? `v-${a}` : ""}a${r} ${r} 0 0 1 ${r} -${r}z`;
+  const out = new Map<GameTone, { px: number; py: number; parts: string[] }>();
+  for (let i = 0; i < grid.columns.length; i++) {
+    const col = grid.columns[i]!;
+    for (let j = 0; j < col.length; j++) {
+      const c = col[j];
+      if (!c) continue;
+      let t = out.get(c.tone);
+      if (!t) { t = { px: 0, py: 0, parts: [] }; out.set(c.tone, t); }
+      const sx = left + i * step + r, sy = top + j * step;
+      t.parts.push(`m${sx - t.px} ${sy - t.py}${box}`);
+      t.px = sx; t.py = sy;
+    }
+  }
+  return [...out].map(([tone, t]) => ({ tone, d: t.parts.join("") }));
+}
+
+/** The square under a point of the graph (in the graph's own units) with its column and row, or null off the grid. The gap beside a square counts as the square. */
+export function heatHit(grid: HeatGrid, x: number, y: number, left: number, top: number, step: number): { col: number; row: number; cell: HeatCell } | null {
+  const col = Math.floor((x - left) / step), row = Math.floor((y - top) / step);
+  if (col < 0 || row < 0 || col >= grid.cols || row >= grid.rows) return null;
+  const cell = grid.columns[col]?.[row];
+  return cell ? { col, row, cell } : null;
+}
+
 const RES_CHAR: Record<HeatResult, string> = { W: "W", L: "L", T: "T", OTL: "O" };
 const CHAR_RES: Record<string, HeatResult> = { W: "W", L: "L", T: "T", O: "OTL" };
 const b36 = (n: number | null): string => (n == null ? "" : n.toString(36));

@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.10", date: "2026-10-30", href: "/mlb/team/cincinnati-reds",
+    title: "A club's all-time results graph opens faster on a phone",
+    text: "The graph of every game a club has played, up to 21,000 squares, was drawn as one piece of the page per square, and a phone spent seconds on it. It is now a few shapes: same look, same game card on a hover or a tap, a click opens the game. A phone is free again about 3 seconds sooner on an old baseball club.",
+  },
   { version: "0.174.9", date: "2026-10-30", href: "/mlb/2007/team/cincinnati-reds",
     title: "Pages download about a third less script, and open faster on a phone",
     text: "Every page used to carry French and Japanese wording, sign-in code, form checks and the large map, used or not. A page now downloads only what it draws: 350 to 240 KB on the home page, 530 to 380 KB on a team page, same look. A club's all-time results graph (about 20,000 squares for an old club) also draws far faster on a slow phone.",

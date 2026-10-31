@@ -3,7 +3,7 @@ import { test } from "node:test";
 import type { GameRow } from "../src/lib/api/types.ts";
 import {
   HEAT_ROWS, HEAT_SPAN_ROWS, HEAT_TARGET_COLS, buildHeat, clipHeatGames, gameTone, heatGamesFromFranchise, heatGamesFromRows, heatGamesFromTeam,
-  heatHover, heatPack, heatRecord, heatSeasons, packHeat, tallyHeat, unpackHeat, type HeatCell, type HeatGame,
+  heatHit, heatHover, heatPack, heatPaths, HEAT_DENSE_FROM, heatRecord, heatSeasons, packHeat, tallyHeat, unpackHeat, type HeatCell, type HeatGame,
 } from "../src/lib/resultHeat.ts";
 import type { TeamGame } from "../src/lib/teamSeason.ts";
 
@@ -227,4 +227,35 @@ test("an all-time list of thousands of games still packs to one grid whose squar
   assert.equal(grid!.cols, pack.cols);
   assert.ok(grid!.cols * (pack.cell + pack.gap) <= HEAT_TARGET_COLS * 14);
   assert.ok(grid!.marks.length > 1);
+});
+
+test("a long graph is a few paths, one closed box per game, and a point finds the square it is on", () => {
+  const n = 21_000;
+  const games = Array.from({ length: n }, (_, i) => {
+    const year = 1900 + Math.floor(i / 82);
+    return g({ date: `${year}-10-10`, id: i + 1, year, res: i % 7 === 0 ? "T" : i % 3 === 0 ? "L" : i % 11 === 0 ? "OTL" : i % 500 === 0 ? null : "W" });
+  });
+  assert.ok(n > HEAT_DENSE_FROM);
+  const pack = heatPack(n, { width: 640 });
+  const grid = buildHeat(games, pack.rows)!;
+  const paths = heatPaths(grid, 4, 16, pack.cell, pack.gap);
+  // At most one path per tone (W, L, T, OTL, pending): the page's element count does not grow with the games.
+  assert.ok(paths.length <= 5, `${paths.length} paths`);
+  assert.equal(paths.reduce((a, p) => a + (p.d.match(/z/g) ?? []).length, 0), n);
+  const tones = new Map<string, number>();
+  for (const c of cellsOf(grid)) tones.set(c.tone, (tones.get(c.tone) ?? 0) + 1);
+  for (const p of paths) assert.equal((p.d.match(/z/g) ?? []).length, tones.get(p.tone));
+  // The graph is 4 + cols * step wide; a point inside square (col 3, row 2) finds it, one above the grid or past its end finds nothing.
+  const step = pack.cell + pack.gap;
+  const hit = heatHit(grid, 4 + 3 * step + 1, 16 + 2 * step + 1, 4, 16, step);
+  assert.deepEqual(hit && [hit.col, hit.row, hit.cell.game.id], [3, 2, 3 * pack.rows + 2 + 1]);
+  assert.equal(heatHit(grid, 4 + 3 * step, 5, 4, 16, step), null);
+  assert.equal(heatHit(grid, 4 + grid.cols * step + 1, 20, 4, 16, step), null);
+});
+
+test("a path box is the same size as the rect it replaces", () => {
+  const grid = buildHeat([g({ date: "2024-10-10", id: 1 })], 8)!;
+  const [p] = heatPaths(grid, 4, 16, 11, 3);
+  // starts at x + rx, y; four 2px arcs and four 7px sides; closed.
+  assert.equal(p!.d, "m6 16h7a2 2 0 0 1 2 2v7a2 2 0 0 1 -2 2h-7a2 2 0 0 1 -2 -2v-7a2 2 0 0 1 2 -2z");
 });
