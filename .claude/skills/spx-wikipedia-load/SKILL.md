@@ -5,7 +5,7 @@ description: Fetch, archive, load and build a new English Wikipedia source for s
 
 # spx-wikipedia-load: a Wikipedia dataset, end to end
 
-Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is), [§8 items 1-7](../../../AGENTS.md#8-data-work), [docs/data-flow.md](../../../docs/data-flow.md).
+Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is), [items 1-7 of docs/data-work.md](../../../docs/data-work.md), [docs/data-sources.md](../../../docs/data-sources.md), [docs/data-flow.md](../../../docs/data-flow.md).
 Worked examples: [docs/stanley-cup-finals.md](../../../docs/stanley-cup-finals.md), [docs/all-star-games.md](../../../docs/all-star-games.md),
 [docs/soccer-europe.md](../../../docs/soccer-europe.md). Wikipedia text is CC BY-SA 4.0: keep the credit and the share-alike terms.
 
@@ -34,7 +34,7 @@ Worked examples: [docs/stanley-cup-finals.md](../../../docs/stanley-cup-finals.m
 8. **Build steps** `db/build/NNN_<topic>.sql`: rerunnable, keyed by source keys, ids kept on rerun ([spx-build-step-ids](../spx-build-step-ids/SKILL.md)).
    Disagreements with another source go to `meta.data_issue` as "differs", without the other source's numbers.
    Verification rows where two sources agree.
-9. **After-load steps** (AGENTS.md §8 item 7; the load is not done until these ran on DS1): `165` champions, `166` champions without a final,
+9. **After-load steps** (item 7 of docs/data-work.md; the load is not done until these ran on DS1): `165` champions, `166` champions without a final,
    `172` champion links, `175` team brands and logos, `178` alignment, `183` season notes, `190`, `191`, `192` indexes, `209` venue games,
    then refresh `api.season_summary`. Then `db/checks/051` to `053` must stay at baseline.
 10. **Production** only after DS1 is checked: the migration, then one data release of the tables you name (`release.py prepare`).

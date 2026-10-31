@@ -5,8 +5,8 @@ description: Add or change a rival, predecessor or child league in spx-stats (th
 
 # spx-league-family: rival leagues, families and cups
 
-Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is), [§9 Cups and cities](../../../AGENTS.md#9-the-website) (dougu-sports, taisen-brackets),
-[docs/web-map.md](../../../docs/web-map.md) (`leagues.ts`, `leagueFamilies.ts`). Model data for the NHL's rivals is in the AGENTS.md data list
+Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is), [docs/site-features.md](../../../docs/site-features.md) (dougu-sports, taisen-brackets),
+[docs/web-map.md](../../../docs/web-map.md) (`leagues.ts`, `leagueFamilies.ts`). Model data for the NHL's rivals is in [docs/data-sources.md](../../../docs/data-sources.md)
 ("The NHL's rival and predecessor leagues"); the AFL and AAFC in the same list under "The NFL from 1920".
 
 ## Concepts

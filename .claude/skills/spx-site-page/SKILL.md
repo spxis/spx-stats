@@ -5,7 +5,7 @@ description: Add or change a public page or a section of the spx-stats site (web
 
 # spx-site-page: a public page on spxn.com
 
-Rules: [AGENTS.md §9](../../../AGENTS.md#9-the-website), [§7 sign-in guard](../../../AGENTS.md#7-deploying), [docs/web-map.md](../../../docs/web-map.md).
+Rules: [docs/site-rules.md](../../../docs/site-rules.md) (read it first), [AGENTS.md §9](../../../AGENTS.md#9-the-website), [sign-in guard](../../../docs/deploying.md), [docs/web-map.md](../../../docs/web-map.md).
 Read `web/node_modules/next/dist/docs/` before writing Next.js code (this is Next 16).
 
 ## Checklist

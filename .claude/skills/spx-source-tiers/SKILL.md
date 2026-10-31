@@ -6,7 +6,7 @@ description: Decide whether a data source may be used in spx-stats and under whi
 # spx-source-tiers: may we use this source, and what may we keep?
 
 Rules: [AGENTS.md §3](../../../AGENTS.md#3-what-the-project-is) (source tiers, confirm-only, provenance, never collect),
-[§8 item 1](../../../AGENTS.md#8-data-work) (archive first). The registry is `scripts/daily/sources.py`; read it with
+[item 1 of docs/data-work.md](../../../docs/data-work.md) (archive first). The registry is `scripts/daily/sources.py`; read it with
 `python3 -I scripts/daily/sources.py --json`. The limiter is `scripts/daily/limiter.py`, the wait client `scripts/daily/wikiapi.py`.
 
 ## Step 1: find the tier

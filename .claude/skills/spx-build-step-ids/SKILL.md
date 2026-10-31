@@ -5,8 +5,8 @@ description: Write or change a db/build step in spx-stats so that a rerun keeps 
 
 # spx-build-step-ids: a rerun keeps ids
 
-Rules: [AGENTS.md §8, "A rerun keeps ids"](../../../AGENTS.md#8-data-work) and "A build step deletes only what it owns",
-plus [§8 item 3](../../../AGENTS.md#8-data-work) (build steps are rerunnable SQL). Ids reach production through releases: a changed id is a
+Rules: [AGENTS.md, "A rerun keeps ids"](../../../AGENTS.md#who-may-change-what-every-agent-every-subagent) and "A build step deletes only what it owns",
+plus [item 3 of docs/data-work.md](../../../docs/data-work.md) (build steps are rerunnable SQL). Ids reach production through releases: a changed id is a
 broken game address and a unique-key error.
 
 ## Checklist
@@ -48,4 +48,4 @@ broken game address and a unique-key error.
   A step that cut a club's brand eras by identity range leaves the cut rows behind on a rerun: join them the same way, with a check.
 - Migration 117 gave visitors "permission denied for schema core" and `api.stat_reference` could not be rebuilt on production. New `api`
   objects must work as `anon` (`set role anon` in the test).
-- A view that visitors read must never be left empty: build beside it and swap (AGENTS.md §8, materialized views).
+- A view that visitors read must never be left empty: build beside it and swap ([docs/data-work.md](../../../docs/data-work.md), materialized views).

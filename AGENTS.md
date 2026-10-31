@@ -8,7 +8,7 @@ Working in one of John's npm packages (dougu, kyogijo, meigen, senshu, taisen, h
 
 This is one of exactly two places that hold agent instructions:
 
-1. **This file** (public): rules and commands. It has variable names only, never values.
+1. **This file** (public): rules and commands, with the detail in the `docs/` files it names. It has variable names only, never values.
 2. **Dropbox `/Backups/spx-stats/START-HERE.md`** (private): where things live, how to fetch each credential, current
    status, the ticket ids, open work, lessons. Read it right after this file with the Dropbox MCP `fetch`.
 
@@ -20,6 +20,20 @@ This is one of exactly two places that hold agent instructions:
 
 Status words: **tested** = an agent ran it on 2026-10-11 and saw it work. **untested** = written down, never run end to
 end. **manual** = a person or the coordinating session has to do it.
+
+**Part of the job, not optional reading.** This file holds the rules every agent needs. The detail, the reasons and the examples to copy are in these files; read the one that matches your task before you start it. A short form here leaves out conditions; the doc holds the full rule:
+
+| Before you... | Read |
+|---|---|
+| add or change a page, a component that draws data, a query parameter, a server fetch, a route or picture route, `proxy.ts` or `next.config.ts` | [docs/site-rules.md](docs/site-rules.md) |
+| change or copy a feature that exists (a topic list is in [section 9](#9-the-website)) | [docs/site-features.md](docs/site-features.md) |
+| write a migration, a `db/build` step, a loader or an `api` view, or touch a data release | [docs/data-work.md](docs/data-work.md) |
+| load, rebuild or change a league or a dataset | [docs/data-sources.md](docs/data-sources.md) |
+| run the site on DS1 data or sign in locally | [docs/local-preview.md](docs/local-preview.md) |
+| deploy or roll back (only if your brief says so) | [docs/deploying.md](docs/deploying.md) |
+| set up a machine, a cloud session or a credential | [docs/setup.md](docs/setup.md) |
+
+**Keep this file short.** It loads into every session and every subagent, so what it holds is paid for every time. A new feature's notes go in the matching `docs/` file; a line goes here only when every agent must know it to avoid doing harm.
 
 ## Contents
 
@@ -247,74 +261,7 @@ on production ([section 8](#8-data-work), "Turso"); the site and the release run
 a port in 7740-7749). The Turso connector (or `turso auth login`) is for John's own checks; `spx-check.sh` reports the optional `turso` CLI as info.
 Neon: not used by this project; don't ask John to connect it.
 
-**New machine or instance: connect everything first.** Do this once per Mac or cloud environment, before any
-ticket work. Each row says what breaks without it. Exact commands with private values are in the private file.
-
-| Connect | How | Without it |
-|---|---|---|
-| claude.ai connectors: Dropbox, Vercel, Supabase, GitHub | claude.ai, Settings, Connectors: connect each one (a browser click each). They then appear in every Claude session on that account, cloud or Mac. | no private file over MCP, no MCP deploys, no production reads |
-| Turso CLI (Mac, optional) | `turso auth login` (install: `brew install tursodatabase/tap/turso`) | nothing breaks; the runner and the site use the HTTP API with `TURSO_*` |
-| Vercel CLI (Mac) | `vercel login` (tested 2026-10-11; `vercel whoami` prints `spxis`) | no deploys when the Vercel connector is missing |
-| GitHub CLI (Mac) | `unset GH_TOKEN; gh auth login` (a stale `GH_TOKEN` in the shell breaks `gh`) | no Sumilabu redeploys, no `gh run watch` |
-| Private host mapping (Mac) | `zsh scripts/mac/spx-credentials.sh hosts [--from <private START-HERE file>]` writes `~/.config/spx-stats/hosts.env` (mode 600, outside the repository): the addresses, host names and NAS login behind machine1, machine2 and nas1. Every script reads it through `scripts/mac/lib/hosts.sh`; `setup` runs it first. `hosts --check` lists which names are set, never a value | every DS1, ssh and keychain-parity line says `MISSING` |
-| Tailscale (Mac) | the app, signed in, on (machine2: stays on). Needed only off the home network: on the home LAN (machine1) leave it off | no DS1 when away from home |
-| Keychain: DS1 password, board key (Mac) | the setup block in the private file (`spx-credentials.sh setup`, which then runs `machine`) | no DS1, no `pnpm task` |
-| DS1 Postgres (Mac) | on the home LAN, or with Tailscale on elsewhere, plus the keychain password: `bash scripts/mac/spx-check.sh` prints `DS1 Postgres: ok (home LAN ...)` or `ok (VPN)` | no access to the source of truth |
-| `ds1` hosts name + ssh to DS1 and the other Mac (Mac) | `zsh scripts/mac/spx-credentials.sh machine` (`--check` first; `--link-macs` once to link the two Macs). It adds `ds1` to `/etc/hosts` (home LAN address on a Mac that is always at home, VPN address on a Mac with the VPN always on), makes a passphrase-less key `~/.ssh/id_ed25519_ds1`, adds `Host ds1` to `~/.ssh/config` (home LAN first, Tailscale otherwise) and authorizes the key once. `bash scripts/mac/spx-check.sh` prints `ssh ds1: ok (...)` | no `ssh ds1`, no editing the NAS jobs' env files |
-| Keychain parity (both Macs) | both Macs hold the same required items (`spx-stats-db DS1 55440`, `sumilabu board spx-stats`, `spx-stats SUPABASE_ACCESS_TOKEN`). `zsh scripts/mac/spx-credentials.sh parity` lists present/missing by name; `copy-from <other-mac-alias>` pulls what this Mac lacks from the other, no value shown | `spx-check.sh` prints `keychain: MISSING`; no production count compare |
-| Docker (machine2, optional) | Docker Desktop running; then the working-copy block in [section 8](#8-data-work) | no local working copy |
-| Production Supabase, read-only | nothing to set up: the public URL and key the site uses; `spx-check.sh` and the cloud hook both test it | no way to compare counts against production |
-| Cloud environment variables | the `spx-stats env` note ([section 12](#12-secrets-and-the-environment)) | no tickets, no DS1 restore |
-| Permission rules | Nothing to do: the deploy rules (`vercel deploy`, `link`, `ls`, `whoami`) are in the committed `.claude/settings.json`. The only per-machine step is `vercel login` (or the Vercel connector) | an agent deploy is refused; credential reads are still refused and John runs those blocks himself |
-
-Then check: `cd web && pnpm task` lists tickets, `vercel whoami` prints `spxis`, and the private file's DS1 `psql`
-line answers.
-
-**Rebuilding a wiped Mac:** the ordered checklist, one command per step, is in [scripts/mac/README.md](scripts/mac/README.md).
-
-**Environment.** A cloud session should have these variable names set. Check with `echo ${NAME:+set}`, which never
-prints the value. If one is missing, say which and carry on with what does not need it. Full list: [section 12](#12-secrets-and-the-environment).
-
-| Name | Used for | Needed by |
-|---|---|---|
-| `SUMILABU_BOARD_URL`, `SUMILABU_BOARD_TOKEN` | the ticket board | `pnpm task` |
-| `SPX_DS1_DB_PASSWORD`, `TS_AUTHKEY`, `NAS1_VPN_HOST` | reaching DS1 over the VPN (cloud only: a Mac reads its addresses from the private host mapping instead); `NAS1_VPN_HOST` is DS1's VPN address, private, so it is not in this repository | the session-start hook |
-| `DROPBOX_APP_KEY`, `DROPBOX_APP_SECRET`, `DROPBOX_REFRESH_TOKEN` | archive uploads | `scripts/dropbox_put.py` |
-| `SUPABASE_ACCESS_TOKEN` | data releases and production reads | `scripts/release/release.py`, `scripts/sync/compare.py` |
-
-**MCP servers** a cloud session normally has: Supabase (project `njpvfrceahkvnrduerkk`), Vercel (project
-`prj_MfgGl5vzVccEhmtSyvgze6hhgXJg`), Dropbox, GitHub. Tested read-only: Supabase `execute_sql` and `list_migrations`,
-Vercel `get_project` and `list_deployments`, Dropbox `fetch`, `list_folder` and `search`. Vercel `list_teams` returns
-nothing; pass the team id directly ([section 7](#7-deploying)).
-
-**Cloud working copy.** The cloud session's own Postgres 17 holds much data but is temporary, not the truth: socket
-`/tmp`, port 55432, database `spx_stats`, data dir `/home/user/spxwork/pg17` (owned by the `postgres` user). Check it:
-
-    pg_isready -h /tmp -p 55432
-    psql -h /tmp -p 55432 -U postgres -d spx_stats -Atc "select count(*) from core.game"   # 377384 on 2026-10-11
-
-**Only the coordinating session starts Postgres.** Worktree-isolated agents can't run `su` or `runuser`. If `psql` can't
-connect, report it; don't try to start it. The coordinator starts it with:
-
-    su postgres -c "/usr/lib/postgresql/17/bin/pg_ctl -D /home/user/spxwork/pg17 -l /tmp/pg17.log -o '-p 55432 -k /tmp -c listen_addresses=127.0.0.1' start -w"
-
-**Session-start hook** (`.claude/settings.json` runs `scripts/cloud/session-start.sh`; cloud sessions only, in the
-background). It installs and starts Postgres 17, joins Tailscale in userspace mode with `TS_AUTHKEY`, forwards DS1
-through `scripts/cloud/fwd.py`, and restores DS1's dump into a new `spx_stats`. It does nothing when `spx_stats`
-already has rows, and never drops or overwrites a database. A database that exists but is empty is left alone with a
-message. With no `TS_AUTHKEY` it stops after starting Postgres, leaving no `spx_stats`. Preview, changing nothing:
-`DRY_RUN=1 bash scripts/cloud/session-start.sh` (tested). The real run is **untested**. The restored copy is only as
-current as DS1, and the container is not permanent: push new data to DS1 before the session ends
-([section 8](#8-data-work), item 8).
-
-**On one of John's Macs** (new or existing; no cloud container). One command sets it up:
-`zsh scripts/mac/spx-credentials.sh setup` with the variables the private file gives (tested on machine2,
-keychain path; the Dropbox path is **untested** end to end). It first creates the private host mapping (`hosts`, from `SPX_HOSTS_SOURCE`, a file holding its NAME=value lines, or by asking). It copies the DS1 password and the board key from his
-synced Dropbox into the keychain and prints one ok/FAIL line each for DS1, board, node, pnpm and gh. After that
-`pnpm task` reads the board key from the keychain by itself, and DS1 answers with `psql` on the home LAN or over the VPN (the scripts try both).
-machine2 reaches DS1 over the home LAN or the VPN and runs Docker; machine1 is reached over ssh.
-Agents may not read the Dropbox key files or another Mac's keychain (the permission check refuses it): give John
-the command from the private file instead.
+**Setting up a machine or a cloud session** (connecting everything, the keychain, the cloud working copy, the session-start hook, the environment variables, rebuilding a wiped Mac): [docs/setup.md](docs/setup.md). Only the coordinating session starts Postgres.
 
 **Is it alive?** Four checks, seconds each:
 
@@ -391,31 +338,9 @@ Several sessions run servers in this block at once: stop only your own server by
 
 No `.env` is needed: the defaults point at the live Supabase project's public read-only key.
 
-**Preview with DS1 data** (nothing reaches production): `bash scripts/mac/ds1-preview.sh` runs this checkout's site on the first free port
-from 7702 against a read-only PostgREST on DS1, and stops both on Ctrl-C (`--start` for a production-like build, `--detach` and `--stop` for the background).
-Always on at http://localhost:7700 (Docker, restarts with Docker, pages refresh every 5 minutes): `bash scripts/mac/ds1-preview.sh --install`, then `--update`, `--status`, `--uninstall` (scripts/mac/README.md).
-`--update` also moves an install made on the old ports (3150 and 3180): it stops the compose project `spx-ds1-preview` by name and brings it up on 7700 and 7750.
+**`pnpm build` with no settings reads production** (a parallel build stalled it on 2026-10-14): one at a time, never two at once.
 
-**Signing in on the preview** (so the admin pages and the account menu can be seen locally; the header always has the Sign in link there):
-- **Google, on the always-on site (7700 only).** `zsh scripts/mac/spx-credentials.sh auth` asks once for the Google client id and secret (hidden) and the admin
-  email(s) and stores them in the keychain items `spx-stats AUTH_GOOGLE_ID`, `spx-stats AUTH_GOOGLE_SECRET`, `spx-stats ADMIN_EMAILS`. `ds1-preview.sh --install`
-  or `--update` copies them, with `NEXTAUTH_URL`/`AUTH_URL=http://localhost:7700` and an `AUTH_SECRET` it makes itself once (never printed), into a second 600 file,
-  `~/Library/Application Support/spx-stats/ds1-preview-auth.env`, which only the site container reads. Production keeps the same names as Vercel secrets, which cannot be pulled.
-  Use the address `localhost`, not `127.0.0.1`: that is what the Google client allows.
-- **"Sign in (this Mac)"**, the fallback and the only way on an on-demand port (Google does not allow those). It is a next-auth credentials provider,
-  `web/src/lib/auth/preview.ts`, and exists only when `SPX_PREVIEW=1` (set by the preview image and script, never on Vercel; `VERCEL` set turns it off too) and an
-  `AUTH_SECRET` is present. It answers only a request whose `Host` is `localhost`, `127.0.0.1` or `[::1]` with no forwarding header naming anything else (the published
-  port is bound to 127.0.0.1, and inside Docker the peer address is the bridge, so the host name is what can be checked); the login page shows the button only then,
-  `authorize` checks again, and a session made this way is ignored anywhere else. It signs in as `SPX_PREVIEW_ADMIN`, else the first `ADMIN_EMAILS` entry, else `john@spxis.com`, and
-  that address counts as an admin in the preview only. `pnpm test:auth` covers it (the provider is absent without `SPX_PREVIEW`, and refuses a non-loopback host).
-- **Dev sign-in, for an agent's own `next dev` (7702-7749).** Start the server with `SPXN_DEV_LOGIN=1 NEXTAUTH_URL=http://localhost:<port> pnpm exec next dev -p <port>`
-  (`NEXTAUTH_URL` must name that port, or sign-in redirects to port 3000). Open `http://localhost:<port>/admin/dev` (the page lists the admin pages and signs in via
-  "Sign in (this Mac)" on `/login`; wait a second after the click before the next page load). You are `dev-admin@example.invalid`, an admin who can **read** `/admin/people`, `/admin/tickets`,
-  `/admin/logos` and the release and ops pages, but every admin write (approve, hold, request, file a ticket) throws, because those actions use `requireAdminWrite`
-  (`lib/auth/user.ts`). It exists only when `NODE_ENV=development` (so never in a build or on Vercel), `SPXN_DEV_LOGIN=1` and `VERCEL` is unset, and only for a
-  request to `localhost`, `127.0.0.1` or `[::1]` (`devLogin`, `devPageAllowed` in `lib/auth/preview.ts`; `pnpm test:auth` covers them). Release data needs the
-  release secret, which agents do not have, so `/admin/data` shows no releases here.
-- The header is the same height signed in, signed out or with only the theme switch: the account button, the theme switch and the Sign in link all use `--control-h`.
+**Local preview on DS1 data and signing in** (`bash scripts/mac/ds1-preview.sh`, the always-on site on 7700, "Sign in (this Mac)", dev sign-in for an agent's own `next dev`): [docs/local-preview.md](docs/local-preview.md).
 
 **Checks before every push**, in `web/`, in this order (all tested green, about two minutes in total):
 
@@ -452,106 +377,13 @@ A push to `main` deploys nothing.
 
 ## 7. Deploying
 
-The coordinating session deploys a finished feature and runs `done`. An agent deploys, or marks a ticket done, only when the coordinating session's brief directs it to; then it uses the commands below. Deploy only
+The coordinating session deploys a finished feature and runs `done`. An agent deploys, or marks a ticket done, only when the coordinating session's brief directs it to; then it uses the commands in [docs/deploying.md](docs/deploying.md). Deploy only
 a commit that is on `origin/main` and passed the checks above; a deployment carries everything on `main`, not just
-your commit.
+your commit. Deploy a clean copy of the commit, never the working checkout (worktrees and other agents' files would be uploaded).
 
-**Normal path: `bash scripts/deploy.sh`** (John or the coordinating session; `--dry-run` changes nothing). It reads the waiting hand-offs
-([section 1](#who-may-change-what-every-agent-every-subagent), [`scripts/handoff/README.md`](scripts/handoff/README.md)), confirms every
-migration object a hand-off needs exists on production (`to_regclass` through the Management API, keychain item `spx-stats SUPABASE_ACCESS_TOKEN`)
-and every Turso table, and refuses with the names if not. It then deploys a clean `git archive` of `origin/main` exactly as the CLI block below,
-waits for READY, runs `check-live-auth.sh`, checks each listed page with the Vercel protection-bypass header (keychain item
-`spx-stats VERCEL_AUTOMATION_BYPASS_SECRET`; skipped, and the reply says so, when absent), marks the tickets done, writes `replies/<ticket-id>.json`
-and moves the hand-offs to `done/`. Data steps show the `ds1-apply --dry-run` plan, apply only after a y/N, then `release.py prepare`; John still approves
-at `/admin/data`. Packages get a tag push (after a y/N) instead of a deploy. Tests: `bash scripts/handoff/test/handoff-test.sh`. Untested against real
-Vercel, Supabase and DS1: the stubs cover the logic only. The manual routes below stay as the fallback.
+Every deploy path ends with the sign-in guard: `bash scripts/mac/check-live-auth.sh`. If it fails, roll back and tell John; never mark the ticket done while it fails. If a deploy is refused, stop and report the exact command to the coordinating session; never edit permission settings yourself.
 
-**Preferred on a Mac: build against DS1, deploy prebuilt** (**untested** end to end; its PostgREST and data check are tested
-against a stand-in database). Each `next build` used to read production PostgREST hundreds of times (a parallel build stalled
-production on 2026-10-14). One command from the repo root builds the pages from DS1 instead and uploads the result:
-
-    bash scripts/mac/deploy-prebuilt.sh                  # origin/main; --check-only changes nothing; --sha <commit>; --no-deploy; --no-prune; --force
-
-- It starts a PostgREST in Docker (pinned `postgrest/postgrest:v12.2.12`, `127.0.0.1:7790`, schema `api`, role `anon`, read-only sessions) on DS1
-  Postgres (host from `ds1_host`, password read in-process from the keychain item `spx-stats-db DS1 55440` or `SPX_DS1_DB_PASSWORD`, never printed),
-  checks with `scripts/mac/same-data.py` that it serves what production serves (latest release number, `api.season_summary`, and every
-  published table by row count and the drift check's bucket hashes; the DS1 side of `PUBLISH_FILTER` is filtered) and **stops if not**: DS1 can be
-  ahead (a release waiting for approval, scores loaded since the last release) or have a stale materialized view, and a build from it would publish
-  rows John has not approved. `--force` continues when the data differs. A side that cannot be read (exit 2) always stops, `--force` included.
-  The tables of `TABLES` in `scripts/release/turso.py` (`meta.verification`, `meta.data_issue`, `core.external_id`, `core.batted_ball_player`, `core.batted_ball_player_hand`,
-  `core.betting_line`, the derived `api` tables) are not on production, so they are compared DS1 against Turso (the release runner's own
-  `turso.diff_table`; Turso from `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` or `TURSO_READ_TOKEN`, else the keychain items `spx-stats TURSO_DATABASE_URL`
-  and `spx-stats TURSO_READ_TOKEN`), never counted as production differences; with no Turso credentials they are skipped with a printed `SKIPPED` line.
-- It then does what the fallback below does (clean `git archive`, `vercel link`), plus `vercel pull`, `vercel build --prod` with
-  `SPX_REST_URL=http://127.0.0.1:7790/` and `vercel deploy --prebuilt --prod`, stops the container by name, makes one request to spxn.com, and prunes
-  Vercel to the live deployment and one previous (plus the pinned `spx-stats-1p836thn0`, one `vercel remove --safe` per URL).
-- `SPX_REST_URL` is read by `web/src/lib/api/config.ts` and accepted only for `127.0.0.1`/`localhost` (`pnpm test:resturl`). It is never set on
-  Vercel: pages revalidated at run time (daily ISR, or on demand after a release) still read production, so the data a page shows after its first revalidation is production's.
-- DS1 holds more than production (`PUBLISH_FILTER`: the game rows of `core.external_id`). **No `api` view or function that is in production reads
-  `core.external_id`** (checked in `db/migrations`; only `ingest.report_results`, not installed there, does), and PostgREST exposes only schema
-  `api`, so the DS1 build needs no filter. If a view ever reads that table, filter it in the view or add the same condition to the build.
-- Needs Docker Desktop, so a Mac, not the cloud container. Untested: `vercel build` and `vercel deploy --prebuilt` for this project (project settings:
-  root directory `web`, install `pnpm install --frozen-lockfile`), whether the footer's commit sha survives the first revalidation on Vercel (it reads
-  `VERCEL_GIT_COMMIT_SHA`, which the script sets for the build only). The table check reuses `scripts/sync/compare.py` (`bash scripts/mac/test/same-data-test.sh`).
-
-**Deploy** with the Vercel MCP `create_deployment` (the fallback; the way earlier production deployments were made, and still right when Docker or DS1 is not available):
-
-    teamId: team_3B0yHsuwmVZw2RDT0ar7k07l      (slug spxis-projects-0d6306b4)
-    requestBody:
-      name: "spx-stats"
-      project: "prj_MfgGl5vzVccEhmtSyvgze6hhgXJg"
-      target: "production"
-      gitSource: { type: "github", org: "spxis", repo: "spx-stats", ref: "main", sha: "<full commit sha>" }
-
-**Without the Vercel connector** (on a Mac with `vercel login` done), deploy a clean copy of the commit, never the
-working checkout (worktrees and other agents' files would be uploaded). It waits until the deployment is ready:
-
-    D=$(mktemp -d) && git archive <sha> | tar -x -C "$D" && cd "$D" && \
-    vercel link --yes --project spx-stats --scope spxis-projects-0d6306b4 >/dev/null && \
-    vercel deploy --prod --yes --scope spxis-projects-0d6306b4; cd ~ && rm -rf "$D"
-
-Tested 2026-10-11 (about a minute; it prints nothing until the build is done). `vercel link` writes a short-lived
-token to `.env.local` in that temporary copy; Vercel does not upload it and the last step deletes the copy.
-
-An agent deploys only when its brief directs it to (default: the coordinating session deploys): the connector if present, otherwise the CLI block above, run from
-the temporary copy as shown (or with `--cwd` pointing at it), never from the working checkout. The allow rules are in
-`.claude/settings.json`. If a deploy is still refused, report the exact block to the coordinating session (John runs
-it). Never edit permission settings yourself.
-
-Add `forceNew: "1"` if Vercel reuses an earlier deployment of the same commit. The project is `nextjs`, root
-directory `web`, Node 24.x. The call itself is **untested** (past deployments and the project settings were read and
-match). If the permission check refuses it, stop and report the exact call to the coordinating session.
-
-**Confirm READY.** The build takes a minute or two. Do not poll in a loop; look a few times:
-
-    get_deployment   idOrUrl: <dpl_… id from the create result>   -> readyState READY (ERROR: read the build log)
-    list_deployments projectId: prj_MfgGl5vzVccEhmtSyvgze6hhgXJg, target: production, limit: 3
-                     -> newest entry is READY and meta.githubCommitSha is your commit
-
-**The sign-in guard: every deploy path ends with it.** On 2026-10-15 a prebuilt deploy built every kept page signed-out (no Sign in link, no account menu),
-because the build could not see the sign-in variables, and nothing noticed. Two checks now stand in the way:
-- **Before deploying** (`deploy-prebuilt.sh`, `scripts/mac/lib/build-auth.sh`): the pulled project settings must hold the three sign-in variables, and the built home
-  page (`.vercel/output/functions/en/s.prerender-fallback.html`) must contain the sign-in control (`class="signin-link"`), which is how "sign-in was on at build"
-  shows in the output. Either fails: nothing is deployed.
-- **After deploying**, any path: `bash scripts/mac/check-live-auth.sh [--new <deployment url>]`. One request to `https://spxn.com/api/auth/providers` (must answer 200 and list
-  `google`) and one to `https://spxn.com/` (its HTML must carry the sign-in control). `deploy-prebuilt.sh` runs it itself, **before** it prunes. If it fails it prints the exact
-  rollback command, `vercel promote https://<previous deployment> --scope spxis-projects-0d6306b4 --yes` (the newest READY production deployment that is not the new one),
-  and the deploy stops without pruning, because the previous deployment is the way back. A deploy made with the Vercel connector or the CLI block runs the script by hand
-  right after READY and, on a failure, rolls back (the connector's `request_rollback` also works) and tells John. Never mark the ticket done while it fails.
-  `bash scripts/mac/test/check-live-auth-test.sh` tests both checks against a fake site (nothing reaches production).
-
-**Then check once**, on the real domain (the `*.vercel.app` URLs sit behind Vercel login; `check-live-auth.sh` above already made the two requests for `/` and the auth routes):
-
-    curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/
-    curl -s -o /dev/null -w "%{http_code}\n" https://spxn.com/<the page you changed>
-
-Look at the page itself for anything fetched from the database (a "Couldn't load" message means the fetch failed).
-Then, only if the brief directs it, `pnpm task done <id> --by "<who>" --version "<short sha>"`.
-
-**Roll back.** Find the last good deployment (`list_deployments` with `rollbackCandidate: true`, state READY), then
-`request_rollback` with `projectId: prj_MfgGl5vzVccEhmtSyvgze6hhgXJg`, `deploymentId: <that dpl_ id>`,
-`teamId: team_3B0yHsuwmVZw2RDT0ar7k07l`, `description: "<why>"`. This reverts the site only, never the database.
-Then fix forward on `main`, redeploy, and tell John.
+[docs/deploying.md](docs/deploying.md) has the rest: the normal path (`bash scripts/deploy.sh`), building against DS1 and deploying prebuilt, the Vercel connector and CLI routes, confirming READY, the sign-in guard in full, the checks after a deploy and rolling back.
 
 ## 8. Data work
 
@@ -574,81 +406,8 @@ The short, plain-language version of this section is [`docs/data-flow.md`](docs/
   **working copy**. Its work counts only once it is on DS1.
 - Order: download, archive row and `legacy_<source>` load on DS1, Dropbox copy, `core` build, counts checked on DS1,
   then a data release to production.
-- **Ongoing scores** (the season in progress, all five leagues) come from English Wikipedia's club-season articles, with nflverse
-  as the NFL's second check: `scripts/daily/run.py --apply` writes them to DS1 only (see `scripts/daily/README.md`). The NHL API
-  (no new requests of any kind, section 3) and MLB statsapi are not used for new scores.
-- **The harvest job** (`harvest/`, `scripts/harvest/`, a Docker job on the NAS next to the daily one) reads English Wikipedia and Wikidata around the clock,
-  one request at a time, for what DS1 does not hold yet (gaps first: NBA, NFL and CFL rosters, team statistics, awards, drafts, bios), then re-reads by revision
-  id. It writes `legacy_files.raw_archive` and `legacy_wikipedia_harvest` / `legacy_wikidata_harvest` on DS1 only and builds no `core` rows. State of the queue:
-  `python3 -I scripts/harvest/status.py`; setup, limits and the missing build steps: `harvest/README.md`.
-- **Venue names and facts** (every name a home venue carried with its years, plus capacity, opened, owner, surface, roof, address) come
-  from Wikidata (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA). Refresh once a year (February) or after a
-  rename: the command list is in `scripts/wikidata_venues/README.md`; production gets `core.brand_venue_name` and
-  `core.brand_venue_info` through a data release (item 5), after migration 052 is on production.
-- **Club rosters** (the players of each NBA, NFL and CFL club season, `core.roster_stint`): NBA and CFL from Wikidata P54 and the Roster tables of
-  club-season articles on English Wikipedia, NFL from nflverse's `roster_<season>.csv` (its ESPN and Pro Football Reference id columns are dropped at
-  download and never stored). Fetch, load and build order are in `scripts/rosters/README.md` (build steps 179 and 181; the roster table on a club's
-  season page reads `api.team_season_roster`, migration 093, for leagues with no player statistics).
-- **Player season statistics, NBA and NFL** (`core.player_season_stat`, groups `basketball`, `passing rushing receiving defense kicking punting`): NBA from the
-  "Player statistics" tables of the club-season articles on English Wikipedia (CC BY-SA 4.0; `source_key` is `enwiki:<title>@<revision id>`, `stat_basis` says whether the
-  numbers are totals or averages), NFL from nflverse's `stats_player` files (CC BY 4.0, 1999 on, one line per club). Fetch, load and build steps, the order and the release
-  split are in `scripts/player_stats/README.md`. A line is placed only through a Wikidata number or the NFL's gsis id and a roster stint, never on a name.
-- **The NFL from 1920 (the APFA in 1920-21), the AFL (1960-1969) and the AAFC (1946-1949)** come from English Wikipedia (CC BY-SA 4.0): each season article, its standings templates and every
-  club's season article, fetched and parsed by `scripts/nfl/season.py [--league afl] YEAR` into `legacy_wikipedia_nfl` / `legacy_wikipedia_afl` (migrations 054, 109), the raw wikitext
-  archived first (`wikipedia-<league>/<year>/...`). `db/build/151` builds games, standings, franchises and names, `165` and `166` the champions, `178` the alignment.
-  The AFL is its own league (`afl`: `core.season` is one row per league and year) whose clubs are today's franchises (`core.franchise_league` gives each `afl` to 1970-03-01, `nfl` after);
-  clubs that only existed before today's 32 are franchises of their own (`db/seed/nfl_club.csv` says which name is which franchise in which years). The 1966-69 Super Bowls join two leagues and are not
-  loaded; each league's last playoff game is its own championship game. The AAFC (1946-49, `scripts/nfl/season.py --league aafc` into `legacy_wikipedia_aafc`, migration 111) is a league of its own the same way: the Browns and the 49ers are today's franchises and the original Colts the franchise of the 1950 Colts, each with an `aafc` membership to 1950-03-01; its other clubs are franchises of their own (`AAFC*` keys in the seed), and AAFC records are never added to NFL records. Standings that do not agree with the games
-  (the 1920s tables count games against clubs outside the league) are logged in `meta.data_issue` and left out, as for 1973-98.
-- **The NHL's rival and predecessor leagues** (NHA 1909-10 to 1916-17, PCHA 1911-12 to 1923-24, WCHL and its last season as the WHL 1921-22 to 1925-26, WHA 1972-73 to 1978-79) come from English Wikipedia
-  (CC BY-SA 4.0): the season articles, their standings templates, the league articles' tables of seasons and histories, a few club articles, fetched and parsed by `scripts/hockey/season.py LEAGUE`
-  into `legacy_wikipedia_hockey` (migration 113, one `league` column), the raw wikitext archived first (`wikipedia-hockey/<league>/<year>/...`; `season.py --extras` archives the league and club articles).
-  `db/build/154` builds them: each is a league of its own (`nha`, `pcha`, `wchl`, `wha`), never counted in the NHL's; their clubs that played on are one franchise across leagues (`db/seed/hockey_club.csv`
-  says which club name is which franchise: the Canadiens, Wanderers, Senators and Bulldogs in the NHA, the WHA's Oilers, Whalers, Nordiques and Jets, the Millionaires/Maroons, Aristocrats/Cougars,
-  Metropolitans, Tigers and Eskimos of the PCHA and WCHL). Standings and champions for every season, games where the articles tabulate them (the NHA's and PCHA's regular seasons and playoffs, the WCHL's playoffs),
-  playoff series told as results in `core.series`. A Stanley Cup challenge or final stays in `core.cup_series` and the NHL's own season, and a game between clubs of two leagues (an interlocking PCHA-WCHL game)
-  is in neither league's games (so none is counted twice). The champions come from the league article's table (a season's infobox may name the regular-season winner), not from the games (165 skips these leagues).
-  Step 154 merges the NHL API's two franchises for the Millionaires and Maroons (VMI, VMA): run it again after any rerun of 145. A rival league has a parent (`PARENT` in `web/src/lib/leagues.ts`):
-  no menu entry of its own, the parent's page lists it under "Other leagues", its pages carry the trail "NHL > PCHA > 1919-20", addresses `/pcha/...`.
-- **College football** (NCAA Division I-A, the FBS from 2006; league `ncaaf`, 2000 on; John, 2026-10-28) comes from English Wikipedia (CC BY-SA 4.0): the season articles, their conference
-  standings templates and every team-season article's schedule, fetched and parsed by `scripts/ncaaf/season.py` into `legacy_wikipedia_ncaaf` (migration 159), the raw wikitext archived first
-  (`wikipedia-ncaaf/<year>/...`). `db/build/230` builds games (regular season, conference championship games, bowls as `playoffs`), standings, conferences, divisions, the national champion and
-  the programs as franchises; games against FCS teams are kept (the opponent is a franchise outside the league's membership). CollegeFootballData is a cross-check only (`db/build/231`,
-  `meta.verification` and `meta.data_issue`, no value copied, no ESPN id stored). The site shows Wikipedia's data. See `scripts/ncaaf/README.md`.
-  On the site (0.164.0) it is its own menu entry after the NFL (a family of one in `leagueFamilies.ts`, not a PARENT child), never added to the NFL's records. The FCS opponents are teams of no list: `OUTSIDE_CONFERENCE` (`lib/leagues.ts`) names the pseudo conference, `lib/leagueMembers.ts` keeps them out of /teams, the search, `/api/teams`, the sitemap and the lineage, and standings, alignment, leaders and all-time leave that conference out; a link to one lands on a page that says plainly it is outside the league. The postseason is told as games (`NO_SERIES`: no series or bracket pages), each with the name `api.game_round` gives (migration 161, `core.game.round_label`); `lib/postseason.ts` groups them. Every page of the league carries the Wikipedia credit (`components/NcaafCredit.tsx`). No player data: `NO_PLAYERS`.
-- **CFL club leaders** (the Passing, Rushing and Receiving tables of about 70 club-season articles, mostly 2002-11 and 1960-86, and the BC Lions' 1958-81 "Offensive leaders" table; John, 2026-10-29) come from English
-  Wikipedia (CC BY-SA 4.0), fetched by `scripts/cfl_leaders/fetch.py` (`scan` the cached club articles, `articles`, `titles`: the Wikidata item of every linked player article), read as the articles write them by
-  `scripts/cfl_leaders/parse.py` into `legacy_wikipedia_cfl_leaders` (migration 174, DS1 only; raw archived first under `wikipedia-cfl-leaders/`). `db/build/238` writes `core.team_season_leader` (migration 175,
-  `api.team_season_leader`; the source key is `enwiki:<title>@<revision id>`). **A name links to a player only where the match is certain**: the article it links to is a Wikidata item that is a person of
-  `core.external_id` (a merged item followed), or exactly one player of that club's roster that season has the name and he is not another item than the one linked; never the name alone. Every other name stays
-  text, in its place, and each club season with such names is one `meta.data_issue` row (`cfl_leaders`). `bash db/tests/cfl-leaders.sh` tests it on scratch. The site draws the section on a CFL club's season
-  page (`components/ClubLeaders.tsx`) and hides it while the view is missing or empty.
-- **MLB's rival and predecessor leagues** (the National Association 1871-75, the American Association 1882-91, the Union Association 1884, the Players' League 1890, the Federal League 1914-15;
-  `na`, `aa`, `ua`, `pl`, `fl`; John, 2026-10-26, `docs/baseball-family.md`) come from the Retrosheet game logs, which carry each game's league. `db/build/139` adds the leagues (parent `mlb`), `db/build/140`
-  puts every game and team season in the season of its own league and gives each franchise one `core.franchise_league` row per league, never counted in MLB's records. The National Association is
-  not recognised by MLB as a major league (a note on its pages). A club that played on is one franchise across leagues: `db/seed/baseball_club.csv` folds a second Retrosheet team id into the first
-  (the Cardinals' AA years are logged as SL4 beside SLN, then Louisville, Washington, the Cleveland Spiders, the Boston Reds, Baltimore) and gives BR4 from 1890 its own club (the Brooklyn Gladiators,
-  not the Dodgers). The pennant of a league of its own is its championship (`mlb_pennant_na` ... `mlb_pennant_fl`, step 167); the World's Championship Series 1884-90 stay in MLB's season.
-  A database built before this is split in place by `db/build/pending/baseball_family_repair.sql` (every id stays), then 140 is rerun; `db/checks/102` watches it.
-- **Minor-league hockey** (the AHL, 1936-37 to 2025-26, `ahl`; John, 2026-10-28: every Canadian and American league, one league at a time) comes from English Wikipedia (CC BY-SA 4.0): each
-  season article's standings (with the NHL club(s) each club was affiliated with), its Calder Cup bracket or sentences, and the playoffs article's {{NHLPlayoffs}} games, fetched and parsed by
-  `scripts/hockey_minor/season.py LEAGUE` into `legacy_wikipedia_hockey_minor` (migration 158; one `league` column, so the next league needs no migration), the raw wikitext archived first
-  (`wikipedia-hockey-minor/<league>/<year>/...`). `db/build/229` builds the seasons, franchises (`db/seed/hockey_minor_club.csv`: a renamed or relocated club is one franchise, as the league
-  article's list of teams tells it), standings, playoff series (core.series, as a result), the games an article writes out and the Calder Cup champions (the infobox; none in 2019-20 and
-  2020-21); divisions and conferences come from step 178, and step 165 leaves the league alone. The AHL is a league of its own, not a child of the NHL (no `PARENT`), and none of its clubs is
-  the franchise of its NHL affiliate. No article tabulates a regular season, so no regular-season game exists. `bash db/tests/ahl-from-wikipedia.sh`; parser tests
-  `python3 -I -m unittest discover -s scripts/hockey_minor -p 'test_*.py'`. The link to the NHL is `core.team_season_affiliation` (migration 160, `api.team_season_affiliation`), built by
-  `db/build/232` from the standings' affiliation column: a code is placed on an NHL franchise only when exactly one NHL franchise's identity carries that abbreviation that season, else it keeps its
-  label with no parent and is logged in `meta.data_issue` (`bash db/tests/ahl-affiliation.sh`, `db/checks/104`). The site shows the league on `/more-hockey` ("More hockey": minor and junior leagues by
-  level, `MORE_HOCKEY_LEVEL` in `web/src/lib/leagues.ts`; one link under the NHL in the menu; no menu entry and no `PARENT` for the leagues on it), a club's NHL parent on its pages and in the season's
-  standings, and an NHL club's farm teams on its page. The next league is one more line in `MORE_HOCKEY_LEVEL`.
-  **The ECHL** (`echl`, 1988-89 to 2025-26, the East Coast Hockey League until 2002-03; the second league) is the same pipeline: `season.py echl`, `db/build/233` (franchises from the league article's
-  timelines and list of defunct teams: the first Cincinnati Cyclones became the Birmingham Bulls and the Atlantic City Boardwalk Bullies, the second began as the Louisville RiverFrogs), `178` and `234`.
-  The articles give the champion in an infobox only from 1999-2000 (the league's list of seasons names the others), the bracket as a template, a template page (`{{2013 Kelly Cup Playoffs}}`), game blocks
-  or game tables, so the series come from whichever the season has; the column the 1996-97 to 2000-01 tables head T counts overtime losses (the league had no ties) and is read so. The champion is the
-  Riley Cup's until 1995-96 (one award, `echl_kelly_cup`). 234 places the NHL parent from the article the standings cell links to (`affiliation_links`, migration 163), the label of a placed club being
-  its abbreviation that season; the AHL parent is not loaded (the articles name it only where it changed; the table can hold it after the NHL clubs with `parent_league_code` `ahl`).
-  `bash db/tests/echl-from-wikipedia.sh` (it builds an NHL from `db/tests/echl-nhl-fixture.sql`).
+**Read [docs/data-sources.md](docs/data-sources.md) before you load or change a dataset.** It has one entry for each: ongoing scores, the harvest job, venue names and facts, club rosters, NBA and NFL player statistics, the NFL from 1920 with the AFL and AAFC, the NHL's rival and predecessor leagues, college football, CFL club leaders, MLB's rival and predecessor leagues, minor-league hockey (AHL, ECHL).
+
 - **The rule: DS1 first, then production.** Production is a copy of DS1 and never holds a row DS1 lacks. The nightly
   drift check (item 5) compares them by primary key and row hash; `scripts/sync/compare.py` (see `scripts/sync/README.md`)
   is the same comparison by hand. Rows found only in production are removed only by a release John approved.
@@ -659,199 +418,25 @@ steps (SQL files under `db/`). The coordinating session applies them with `bash 
 applying to production (item 4) before the release that fills it. DS1 has the nologin roles `anon` and `authenticated`, so
 migrations with grants apply unchanged.
 
-**Turso (second release target).** Production is on the 500 MB plan, so six admin and bulky objects live in Turso instead: `api.person_admin`,
-`meta.verification`, `meta.data_issue`, `core.external_id`, `core.batted_ball_player`, `core.batted_ball_player_hand`, `core.betting_line`, plus three small derived tables
-(`api_totals`, `api_quality`, `api_provenance`) that replace what production's matviews computed from them. The list is `TABLES` in
-`scripts/release/turso.py`; `release.py` publishes those tables to Turso (preview, checks, snapshot, batches, exact read-back, rollback,
-drift: [`scripts/release/README.md`](scripts/release/README.md), "Turso as a second target") and never to production. One release goes to
-one place, so `prepare` refuses a mix; the runner (NAS) needs `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` and a rebuild at the commit that
-has `turso.py`. Create the Turso tables with `release.py turso-schema --apply` (from DS1's catalog; idempotent). The site reads them through
-`web/src/lib/turso` (server side, cached like the api views, tags `turso:<table>`; "Couldn't load" when Turso is down; without
-`TURSO_DATABASE_URL` it falls back to the api views, which is how a local preview of DS1 runs). `api.games.checked` and
-`api.soccer_matches.checked` are filled in from `meta_verification` by `lib/turso/checked.ts`. Removing the old copies from production is
-`db/migrations/131_drop_turso_tables_production.sql` (production only, after its checklist).
-
-**The run log and the admin alerts** live in Turso too (tables `run_log`, `run_log_item`, `alert`; [`scripts/runlog/README.md`](scripts/runlog/README.md)). Every
-automated job and every deploy, release step, approval and `ds1-apply` writes one entry through `scripts/runlog/runlog.py` (a write that fails never fails the job;
-`RUNLOG=0` in a test), `/admin/runs` shows the timeline and a "did it run today" view (an expected job that did not run is MISSED), and the banner on every admin
-page lists the open alerts until an admin dismisses them. A job that fails calls `alert_raise`, its next success `alert_resolve`; stale scores are found by the site
-itself. Names only: `TURSO_RUNLOG_TOKEN` (a token that can write) on the NAS jobs, the runner and, to dismiss alerts, the site.
-
 **Schemas:** `legacy_*` raw, one per source; `core` the curated history; `meta` sources, verification, data issues;
 `ref` sports, leagues, countries; `api` read-only views served by PostgREST (`api.refresh()` refreshes the
 materialised ones, including `api.player_index`, the players list; `db/build/190_player_index.sql` refreshes it after a
 core rebuild; the release runner runs `select api.refresh();` after each release).
 
-**Materialized views never block reads** (migration 097; on 2026-10-13 a rebuild of `api.player_index` locked its reads for about 4 minutes,
-and production's anon role times out at 8 s). A plain `refresh materialized view`, and a `drop` + `create` in place, both hold an ACCESS
-EXCLUSIVE lock for the whole rebuild. So:
-- **Every `api` materialized view has a unique index on its natural key** (`db/checks/081_matview_unique_index.sql` returns one row per view
-  without one; baseline 0). Create the unique index in the same migration that creates the view.
-- **Refresh only with `refresh materialized view concurrently`**, or through `api.refresh()`, which does exactly that for every `api` view
-  (found from the catalog, so a new view needs no edit), one at a time, dependencies first then smallest first. A failed view is a WARNING and
-  does not stop the rest; `select api.refresh_all()` returns the per-view jsonb (mode, ms, ok or failed). A statement_timeout set inside a
-  function is not applied (tested), so to limit each view call `api.refresh_one('api.<name>')` per view under its own `set statement_timeout`.
-  A `concurrently` refresh takes 1 to 4 times a plain one and writes only the rows that changed; that is the price of open reads.
-- **Changing a view's definition: build beside it, then swap.** Never `drop materialized view` + `create materialized view` in place.
-  1. `create materialized view api.<name>_new as <new query>;` then `create unique index <name>_new_key on api.<name>_new (<key>);` and the
-     other indexes, all named `<name>_new_*`; `analyze api.<name>_new;`. This can be slow: it locks only `<name>_new`. Do it in its own file or
-     transaction, and not while a release is running.
-  2. In a second, short transaction: `select api.swap_matview('<name>', '<name>_new');`. It renames, drops the old copy, renames the
-     `_new_` indexes, copies the comment and grants select to `anon` and `authenticated`. It takes its locks for milliseconds, gives up after
-     5 s (`lock_timeout`) instead of queueing behind a refresh, and refuses if a view is built from the old one (drop and recreate those after).
-  3. Apply to DS1 first, then production, like any migration. Add the migration number to the view's comment. `api.refresh()` needs no change.
-- A step in `db/build` that refreshes a view uses `concurrently` (190, 191, 192, 194 do).
-- **Packed views hang on the views they read.** The packs the site reads first on a visit (`api.team_brand_pack`, `franchise_name_pack`, `season_summary_pack`,
-  `logo_fit_pack`, `team_home_city`, `city_stay`, `city_stay_pack`, `venue_pack`, `standing_league_pack`, `award_league_pack`, `alignment_pack`, `player_league_pack`,
-  `team_abbr_pack`; migrations 168 and 176 to 187) are materialized views built from api views (`team_brand`, `franchise_names`, `team_season_name_run`, `season_summary`,
-  `logo_fit`, `team_season_city`, `team_season_index`, `venue_place`, `venue_info`, `venue_name`, `standing_index`, `awards`, `alignment`, `player_multi_league`,
-  `person_season_teams`, `team_abbr`). Postgres refuses `drop view`, `drop materialized view` and a `create or replace view` that changes the columns of anything a
-  materialized view reads, so a rebuild of one of those views by drop and create now fails with "other objects depend on it". Do this instead:
-  1. List what depends on it: `select distinct c.relname from pg_depend d join pg_rewrite r on r.oid = d.objid join pg_class c on c.oid = r.ev_class
-     join pg_class s on s.oid = d.refobjid where s.relnamespace = 'api'::regnamespace and s.relname = '<view>' and c.oid <> s.oid;` (and again for each pack it lists).
-  2. A view whose columns stay as they are (same names and types in the same order, new ones only at the end) is changed with `create or replace view`; nothing else is needed.
-     A materialized view is changed by the build-beside-and-swap above (`api.swap_matview` refuses while a view is built from the old one, so do 3 first).
-  3. A change that cannot be done in place: in one transaction `drop materialized view` for each pack of step 1 (a pack is derived and holds nothing the view does not), change the
-     view, then create the packs again from their migration files, in the order of their dependencies, with their unique index, `analyze` and grant. While a pack is missing the
-     site falls back on the whole-table reads it made before (each reader treats a 404 so), which are correct and heavier, so there is no outage; every other statement of the file must still
-     finish in about 40 s, so a pack on a big view is built beside (`<name>_new`) in its own file, then swapped. Never `drop ... cascade` on an api view: it drops the packs without saying so.
-  4. A new pack goes in `UNIQUE_KEYS` (`web/src/lib/api/pagedOrder.ts`) with its unique index, gets a decoder test in `scripts/sharedReads.test.ts` that rebuilds the view's rows
-     exactly, and is read with the 404 fallback. `api.refresh()` finds it from the catalog and rebuilds it after the views it reads.
-- A plain `create unique index` on a view takes a SHARE lock (it blocks a refresh, not reads), which is fine for small views in a migration
-  file; `create index concurrently` cannot run in the transaction `ds1-apply.sh` and the Supabase query API wrap a file in.
+**Read [docs/data-work.md](docs/data-work.md) before you write a migration, a build step, a loader or a view, or touch a release.** Short forms, with the same numbers that comments across the repository cite as "section 8, item N":
 
-1. **Archive first.** Every raw download goes into DS1's `legacy_files.raw_archive` (name, saved_on, sha256, data bytea)
-   before it is loaded, and a hard copy goes to Dropbox, both before anything is loaded to production. The Mac export
-   script (`scripts/mac/spx-raw-export.sh`, section 12) copies DS1's archive rows into the local Dropbox folder;
-   `scripts/dropbox_put.py` uploads directly:
-   `python3 scripts/dropbox_put.py <file> <source> [<date>]` writes `/Backups/spx-stats/raw/<source>/<date>/<file>`
-   (any size, binary included, create only, never overwrites, hash verified). `--from-archive` uploads archived rows
-   Dropbox does not hold yet (`--dry-run` lists them; `--min-bytes 0` includes small ones). It needs the three
-   `DROPBOX_*` variables (**untested**); if they are missing, say so and keep going, because the archive row is still
-   the record. The Dropbox MCP is not an alternative for data: it takes inline text only (no binary, no big files; a
-   truncated upload has happened), and an agent write through it needs John's own confirmation in chat, not a relayed
-   one.
-2. **Load season by season** (or award by award), so the database shows progress as it goes, into a `legacy_<source>`
-   schema with a script under `scripts/<source>/`. Raw is kept as it came.
-3. **Build `core`** from raw with rerunnable steps in `db/build/NNN_*.sql`, matched by stable keys.
-   - `scripts/build_core.sh` runs them all. Step 100 recreates franchises and team seasons, so every enrichment must
-     be a build step, never a one-off update.
-   - Unfinished steps go in `db/build/pending/`, which the build ignores.
-   - Never run `build_core.sh` while another agent is loading.
-4. **Migrations** (a new table or column): write `db/migrations/NNN_name.sql`, apply it to the working copy, then to
-   DS1 (item 8), then to production with the Supabase MCP `apply_migration` (`project_id` above, `name` in snake_case, `query` the file),
-   **before** any load. `list_migrations` shows what production has. Numbers 030 and 031 are each used by two files:
-   apply by file name and check `list_migrations` first. Take the next free number after `git fetch && git rebase origin/main`;
-   `scripts/check_migration_numbers.sh` must pass before push (it allows only the 030 and 031 duplicates).
-5. **Production changes only through data releases.** DS1 is the only place data is written; a release makes production
-   match DS1 for the tables you name. Never load, update or delete production by hand.
-   - **Prepare:** `python3 -I scripts/release/release.py prepare --title "<what>" --tables core.game,core.team_season [--ticket ..]
-     [--replace]` (needs DS1 and `SUPABASE_ACCESS_TOKEN`). It runs `db/checks/*.sql` on DS1, compares the tables by key and
-     writes a pending numbered release (for example `2026.10.12-1`) with a preview: rows to add, change and remove,
-     size change, blockers. Fix every blocker first. A table shrinking by more than 5 percent needs `--replace`.
-   - **Approve:** John approves or rejects at `/admin/data` on his phone. Nothing else can approve.
-   - **Apply:** the runner on the NAS (`runner/README.md`) runs approved releases within a minute: it re-checks, snapshots
-     the rows it will change (gzip TSV on the NAS and schema `backup_release_<id>` on DS1, never in production), applies
-     all tables in one transaction, verifies production equals DS1 and marks the release done or failed (production is
-     then unchanged if the apply itself failed). Once an apply has committed, `api.refresh()` always runs, even when verification
-     fails and the snapshot is restored; the result records `refresh`. `release.py rollback --release <number>` prepares an undo that John approves the same way.
-   - A schema change (new table or column) is a `ds1_step` release (`prepare --kind ds1_step --file db/migrations/NNN.sql`,
-     committed and pushed first), then the same migration on production (item 4) before the release that fills it.
-   - A nightly drift check compares every table, shows the result at `/admin/data` and proposes a fix release when
-     production differs from DS1; it never approves anything.
-   - Emergency only, with John's OK in chat: fix DS1 first, then make the hand fix through the Supabase MCP
-     `execute_sql`, then run the drift check (`release.py drift`) and confirm it is clean. Never `truncate`, never
-     `load.py --replace`, never a full load.
-   - `scripts/sync/compare.py` is still the read-only comparison (and what the release code reuses).
-   - **Daily scores** (`scripts/daily`, later live scores) are reported to DS1, never written to `core.game` directly: they call
-     `ingest.report_results(jsonb)` (migrations 044 and 046; login role `ingest_writer` can execute that one function and nothing
-     else; the game state machine and "final is terminal" live in it). History, rebuilds and new seasons stay bulk. A Docker job on the
-     NAS (`daily/README.md`) runs `run.py --apply` once a day at 10:00 ET and leaves a heartbeat row in `ingest.daily_run` (DS1 only).
-     The function is not installed on production: production gets those results like any other data, in a release. The job's hook
-     (`scripts/daily/release_hook.py`, off unless `DAILY_PREPARE_RELEASE=1`) prepares that release (the auto lane when only scores tables changed and `DAILY_RELEASE_KIND=daily_scores`, else a normal release "(needs review)"); otherwise the nightly drift check
-     proposes it.
-   - **Automatic approval (daily scores only):** the daily job prepares with
-     `python3 -I scripts/release/release.py --by daily-job prepare --kind daily_scores [--title ".."]` (tables default to
-     `core.game,meta.verification,meta.data_issue`). The runner approves it as `auto:daily-scores`, 10 minutes after it was
-     prepared, only if games change just in status, score, overtime/shootout and the scheduled start, only on games not final in production,
-     no inserts or deletes, at most 500 games, verification/data issue rows are new rows about those games (the one exception: an existing `wikipedia_daily` game issue
-     about a changed game may change only `resolution` and `resolved_at`), and all checks pass;
-     it re-checks the policy before applying. Anything else stays pending for John, with the reasons at `/admin/data`. John can
-     Hold a release, or "Hold all auto-approvals" (migration 047); the runner also sets that switch itself when an automatic
-     release fails or the drift check finds rows an automatic release wrote changed. Never approve a release yourself.
-   - **Requests from `/admin/data`** (migration 053, `scripts/release/README.md`): an admin's "Request scores update" (Settings) or
-     "Check now" (Drift) writes one row in `meta.score_update_request`; the runner's once-a-minute run does the work. A scores request
-     runs `scripts/daily/run.py --apply` on DS1 under the shared lock (`scripts/release/daily_lock.py`) and approves the release it
-     prepares as `request:<admin>` only if the auto-approval policy passes and Hold is off. Never write to that table by hand.
-     The same table carries an admin's **Refresh** of the unofficial live scores (migration 156; buttons on every scoreboard and the scope/sources choices of
-     the same dialog): `scope` game, day, league, main5 or all, plus the ticked `sources` (only green or grey sources with a score parser; a confirm-only or
-     forbidden one is greyed out in the dialog and refused by the site and again by the runner). `kind live` runs `run.py --live-only` on the runner
-     (DS1 read-only, Turso only, shared limiter, no release); a scoped `scores` request runs it first and then the usual job. One run log entry per click, with who pressed it.
-   - **`/admin/ops`** (migrations 104 on production, 105 on DS1; `runner/README.md`, "Ops snapshot and controls"): the DS1 side on one admin page. Vercel
-     cannot reach DS1, so `scripts/release/ops.py` (runner container, `OPS_SNAPSHOT=0` switches it off) pushes one small status snapshot to
-     `meta.ops_status` every 15 minutes (only when it changed, else hourly; ring of 96) and the page reads the latest through `api.ops_dashboard`.
-     Buttons write `meta.ops_request` rows (Snapshot now, Pause or Resume harvester via the DS1 flag `ingest.harvest_state` key `ops_pause`) that the
-     runner acts on within a minute; "Check drift now" is the drift request above. `spx-raw-export.sh` reports each run to `ingest.raw_export_run`.
-     Never write `meta.ops_*` by hand. Tests: `scripts/release/test/test_ops.py`, `pnpm test:ops`.
-6. **After every release:** the runner verifies, refreshes `api` (`api.refresh()`), re-compares that release's tables into
-   `meta.sync_status` and makes one POST to the site's `/api/revalidate` (`REVALIDATE_URL`, `REVALIDATE_SECRET`) so the changed pages
-   refresh now; look at one affected page on spxn.com.
-7. **Season notes** (why a season was short, cancelled games, anything a reader should know) live in `core.season_note`,
-   read by the site from `api.season_note`. To add or edit one: edit `db/seed/season_note.csv` (one row; `franchise_key`
-   empty for the whole league, else `<source code>:<source key>`; EN required, FR and JA when known; `source` is a
-   `meta.source` code, `source_url` the page), run `scripts/build_core.sh` or just `psql -f db/build/183_season_notes.sql`
-   from the repo root, then publish `core.season_note` to production with a data release (item 5). Check one page on
-   spxn.com (pages are kept a day, refreshed on demand after the release). Migration `033` creates the table.
-   **After loading new seasons** (a new league, a new year, a backfill like the NFL before 1999) the load is not done until these
-   rerunnable steps have run on DS1, each through `scripts/mac/ds1-apply.sh`, and the load's report names each one that ran:
-   `165` champions from the games (`166` the champions of the NFL seasons without a final and the check of the rest, from the season articles), `172` champion links, `175` team brands and logos, `178` alignment (conferences and divisions; a
-   new season needs its standings templates in `legacy_alignment`, fetched by `scripts/alignment/`), `179_abbreviations` (the fan's team codes; it also reruns after ANY step that rewrites `core.franchise_identity`, such as 140 and 145: rerunning 140 on 2026-10-27 reset MLB's codes to LAN, NYA and CHN and nobody noticed until a bracket showed them; `db/checks/106` lists the baseball identities still holding a Retrosheet code, baseline 0), `183` season notes (add a row to
-   `db/seed/season_note.csv` for a short or cancelled season), `190`, `191` and `192` the indexes, `209` the games and finals held at each venue (`core.venue_game_season`, `core.venue_final_game`; release both tables), then `refresh materialized view api.season_summary`
-   (`select api.refresh()` on production; on DS1 `select api.refresh()` also rebuilds `api.alignment_changes`, which is precomputed from the places `178` writes). Then run `db/checks/051` to `053` (finished season without a champion, team seasons without
-   a conference or division, a stale season summary): each must stay at its baseline. A load that skips one is how the NFL 1973-1998
-   seasons went live with no champions and no conferences.
-   **People who might be one person.** `db/build/185_person_merge.sql` merges two records only with a confirming fact (same birth date,
-   a team season in common, or a club Wikidata lists that the other record has within his lifetime); every other fitting pair is
-   logged as `possible-duplicate:` in `meta.data_issue` and never merged on the name. `db/review/person_review.sql` (read-only,
-   `ds1-apply.sh --dry-run`) lists them as `db/seed/person_review.csv`; `python3 -I scripts/people/review_to_ts.py` copies the list
-   to the admin page `/admin/people` (admin only, a snapshot in the code, not read from the database). Rerun both after a merge.
-   **Venues of games.** `db/build/198_home_venue.sql` (where each club played, `core.franchise_home_venue`) and then `199_game_venue.sql`
-   (`core.game_venue`: the games of the five leagues whose venue is not the home club's venue that day; `core.game.venue_id` stays empty, read `api.game_venue` and `api.venue_game`) rerun after any step that writes games (120 to 156) or home venues
-   (175, 176, 193). Sources, seeds and the load order: `scripts/game_venue/README.md`. A Wikidata item that is a city is never a venue.
-8. **DS1 and working copies.** DS1 is permanent; cloud and Mac copies are temporary. Work done on a working copy
-   (the cloud agent holds a lot of it) is pushed to DS1 before the production load and before the copy is discarded.
-   Migrations and `db/build` steps are rerunnable SQL. Never apply anything over an existing DS1 database without
-   asking John. The DS1 commands below are all **untested**.
-   - **Cloud to DS1** (the sync direction stays): a cloud session pushes its new data to DS1 before its container is
-     discarded. With the VPN up and the `scripts/cloud/fwd.py` forwarder running (the session-start hook shows the
-     paths), dump the changed schemas or tables and restore them into a **new** database on DS1 (or apply the
-     rerunnable steps in a transaction, below); check counts, and ask John before replacing anything. The cloud
-     container cannot be reached from outside, so this is always a push from the cloud.
-   - **Apply to DS1** (from a session that reaches it: the cloud forwarder, or John's Mac): the coordinating session
-     uses `bash scripts/mac/ds1-apply.sh <file.sql> [--dry-run]` (one file, one transaction, stops at the first error,
-     prints row counts before and after; it reads `SPX_DS1_HOST` or finds DS1, and the password from the keychain).
-     By hand, one step or migration
-     in a single transaction, `psql -h <DS1 host> -p 55440 -U postgres -d spx_stats -1 -v ON_ERROR_STOP=1 -f <file>`.
-     A full `build_core.sh` or a big load goes into a NEW database on DS1 (restore a dump of `spx_stats` into
-     `spx_stats_new`, run there); compare counts, then ask John before swapping names. If your session cannot reach
-     DS1, report the exact command as `NEED FROM YOU:`.
-   - **Compare counts** for each table you touched (`select count(*) from core.game`, and so on): working copy, DS1,
-     then production with the Supabase MCP `execute_sql`.
-   - **machine2 working copy** (Docker, **untested**: the restore is in progress and not yet confirmed done):
+1. **Archive first.** Every raw download goes into DS1's `legacy_files.raw_archive` and a hard copy to Dropbox, both before anything is loaded to production.
+2. **Load season by season** (or award by award) into a `legacy_<source>` schema with a script under `scripts/<source>/`. Raw is kept as it came.
+3. **Build `core`** from raw with rerunnable steps in `db/build/NNN_*.sql`, matched by stable keys. Every enrichment is a build step, never a one-off update. Unfinished steps go in `db/build/pending/`. Never run `build_core.sh` while another agent is loading.
+4. **Migrations:** `db/migrations/NNN_name.sql`, the next free number after `git fetch && git rebase origin/main`; `scripts/check_migration_numbers.sh` must pass before push. On the working copy, then DS1, then production, before any load.
+5. **Production changes only through data releases.** Prepare from DS1, John approves at `/admin/data`, the runner applies. Never approve a release yourself, and never load, update or delete production by hand. Never `truncate`, never `load.py --replace`, never a full load. A nightly drift check compares every table and proposes a fix release; it never approves anything.
+6. **After every release** the runner verifies, refreshes `api`, re-compares and refreshes the changed pages; look at one affected page on spxn.com.
+7. **Season notes** live in `core.season_note` (`db/seed/season_note.csv`). **A load of new seasons is not done** until the after-load steps have run on DS1 and its report names each one: the list is in this item of the doc.
+8. **DS1 is permanent; cloud and Mac copies are temporary.** Work on a copy counts only once it is on DS1. Never apply anything over an existing DS1 database without asking John. The commands for applying to DS1 and for machine2's Docker copy are in this item of the doc.
 
-         docker run -d --name spx-stats-local --restart unless-stopped -e POSTGRES_HOST_AUTH_METHOD=trust \
-           -e POSTGRES_DB=spx_stats -p 127.0.0.1:55432:5432 -v spx-stats-pgdata:/var/lib/postgresql/data postgres:17-alpine
+**Materialized views never block reads.** Every `api` materialized view has a unique index on its natural key, created in the same migration. Refresh only with `concurrently` or through `api.refresh()`. To change a materialized view's definition, build `<name>_new` beside it and swap with `api.swap_matview`, never `drop` + `create` in place, and never `drop ... cascade` on an `api` view: packed views hang on the views they read. No `api` view or function that is in production reads `core.external_id` (production holds a filtered copy and a build from DS1 applies no filter); if a view ever reads it, filter it in the view or add the same condition to the build ([docs/deploying.md](docs/deploying.md)).
 
-     `btree_gist` is included. Restore from DS1 with the dump piped from inside the container; the password comes
-     from the keychain item `spx-stats-db DS1 55440` and is never printed. Agents may not read the keychain, so John
-     runs this (the DS1 host is in the private file):
-
-         docker exec -e PGPASSWORD="$(security find-generic-password -s 'spx-stats-db DS1 55440' -w)" spx-stats-local \
-           pg_dump -h <DS1 host> -p 55440 -U postgres -d spx_stats -Fc | \
-           docker exec -i spx-stats-local pg_restore -U postgres -d spx_stats --no-owner
-
-     Connect with `psql -h 127.0.0.1 -p 55432 -U postgres -d spx_stats`. To refresh, apply any unsynced work to DS1
-     first, then remove the container and the `spx-stats-pgdata` volume and run both blocks again.
+**Turso** holds the admin and bulky tables that no longer fit on production (`TABLES` in `scripts/release/turso.py`), plus the run log and the admin alerts. `release.py` publishes those tables to Turso and never to production, and one release goes to one place. The site reads them through `web/src/lib/turso`. Every automated job and every deploy, release step, approval and `ds1-apply` writes one run-log entry through `scripts/runlog/runlog.py`.
 
 Ask John before deleting or overwriting data. Production changes only through approved data releases; anything else needs John's OK.
 
@@ -860,55 +445,18 @@ Ask John before deleting or overwriting data. Production changes only through ap
 - **`web/`** is the site: Next.js 16 App Router, React 19, TypeScript strict, Tailwind v4, Zod 4, d3, pnpm.
   - Read `web/node_modules/next/dist/docs/` before writing Next.js code: this version differs from older ones.
   - Data comes from PostgREST (`Accept-Profile: api`) through server fetches with `next: { revalidate: REVALIDATE }` (one day, 86400; every fetch carries cache tags, `lib/api/tags.ts`),
-    validated with Zod. A failed fetch shows an inline "Couldn't load" message.
-  - **A read the database could not answer** (5xx, timeout, network; `ApiError.transient`) makes the page throw in production, not draw "Couldn't load": Next keeps the last good copy of a kept page when its regeneration throws and retries on the next request (a build fails instead of baking the note). A path with no copy yet gets `error.tsx`, the same note with a retry button. 4xx answers and schema errors keep the inline note, as does `next dev` (`lib/api/failure.ts`, `pnpm test:failure`). Next cannot tell a first render from a regeneration, hence this rule.
-  - **Every view the site reads has its unique key in `web/src/lib/api/pagedOrder.ts`.** A read is cut into requests of 1000 rows (`rows`) or windows (`rowsSlice`, `rowsWindow`), and PostgREST sorts each request on its own: rows that tie in the `order=` may swap between requests, so one is read twice and another never (the coaches chart gave a different number of moves on each visit). The client ends every order with the columns of that key, so a call keeps the order it asks for and only its ties are settled; a view with no key listed fails `pnpm test:pagedorder`. Add the columns that tell the view's rows apart, from its migration (a unique index, a primary key or the `group by`), and check on a DS1 read that two rows never share them.
-  - **Every read of `games` carries a season** (`year=eq.`): `api.games` reaches its league only through a join, so one without it scans all ~386k games and outlasts the 8 s limit. `getGameDay`, `getGameBounds` and `getGamesBetween` take the seasons from `season_summary` (`lib/gameSeasons.ts`, `pnpm test:seasons`).
-  - **A season's games are read as CSV, only the columns the pages use** (`lib/seasonGameRows.ts`, `rowsCsv` in `lib/api/client.ts`, `lib/api/csv.ts`, `pnpm test:csv`): PostgREST writes the column names once instead of on every row, a third of the JSON size, and a boolean comes as `t`/`f`. The scheduled start, NHL id, week and Retrosheet box are read by the game page and a club's season, which read whole rows. A long read of a few columns of another view can use `rowsCsv` the same way.
-  - `next build` draws pages in ~19 worker processes that do not share Next's data cache while it is cold, so each read used to
-    go out once per worker. `web/src/lib/api/buildShare.ts` makes the workers queue per read (lock files under `.next/cache`) so
-    it goes out once per build; it only acts while `NEXT_PHASE` is the production build (`SPX_BUILD_QUEUE=off` disables it).
-    A new server `fetch` to the database should go through `queuedAtBuild` the same way (`lib/api/client.ts` already does).
-- **Kept pages (no server work per view).** Every public page is static and kept a day (`revalidate = 86400`, a literal
-  in each segment; `pnpm test:revalidate` checks them), and the release runner refreshes the changed tables' cache tags right after each release
-  (POST `/api/revalidate`), so a visit costs no server render and almost no database egress (Supabase Free: 5 GB a month). Two things used to force a render per request,
-  and both are part of the route now (`web/src/lib/routing.ts` explains it; `web/next.config.ts` builds the rewrites):
-  - **Language** is the first route segment, `app/[locale]` (read anywhere with `currentLocale()`, which uses
-    `next/root-params`). The address a reader sees has no language: rewrites pick `/en`, `/fr` or `/ja` from the
-    `spxn-locale` cookie, then `Accept-Language`, then English.
-  - **Query.** An address with none of `QUERY_KEYS` (`routing.ts`) is served from `app/[locale]/s`, kept. One with a key
-    is drawn per request from `app/[locale]/q`. A page that reads `searchParams` lives in `q/` and has a thin twin in `s/`
-    that passes it `NO_QUERY` (copy an existing twin); a page that reads none lives in `s/` and has a twin in `q/`.
-  - **Rules for a page in `s/`:** no `cookies()`, `headers()`, `searchParams` or `useSearchParams` outside a
-    `<Suspense>` of its own, and nothing from the browser's address at render (a kept page is drawn once for everyone; read
-    `location` in an effect or `useSyncExternalStore` with a server value). A new query parameter goes into `QUERY_KEYS`.
-    `pnpm test:routing` checks the rewrites and scans the source for both mistakes.
-  - **Who is signed in** is learned in the browser: the header, footer and admin bar fetch `/api/me`, only for a browser
-    that carries the `spxn-in` hint cookie (or has never been asked; `lib/auth/hint.ts`). The signed-in pages (`/me`,
-    `/admin`, `/login`, `/tickets`) live in `app/(dyn)`, drawn per request. `/api/me` also carries `waiting`, the count in the
-    menu's "Data releases (N)" (pending releases plus failed ones, from the same cached admin summary the banner reads;
-    `waitingCount` in `lib/releases/rules.ts`). A page drawn per request passes `initial` to `AccountProvider`, which takes a changed
-    `initial` over, so an approval on `/admin/data` (which expires the summary) updates the banner and the count at once.
-  - **Times on admin pages** are shown in the reader's own time zone and language: draw a time with `<LocalTime iso=...>`
-    (`components/LocalTime.tsx`), or put `mark(iso)` (`lib/localTime.ts`) in a sentence and draw it with `<Stamped text=...>`. The
-    server and the first browser render show UTC (no hydration mismatch), the browser then swaps in the local form, the tooltip
-    keeps the UTC value. Never write "UTC" after a time by hand. `pnpm test:localtime`.
-  - Check a change with `pnpm build` (the route table shows `●` for kept pages, `ƒ` for `q/` and `(dyn)`) and `pnpm start`:
-    a second request to the same address answers with `x-nextjs-cache: HIT`.
-- **Page weight: every public page stays under about 300 KB of HTML (about 50 KB gzipped).** Next sends each server-rendered element twice (in the
-  markup and in the payload), so a long table or a big chart costs double. Measure with `pnpm start` against the DS1 PostgREST (`curl -s -H 'Accept-Encoding: identity' <url> | wc -c`),
-  never against production. The patterns, each with an example to copy:
-  - **A long table shows its newest rows and fetches the rest.** The page sends the first rows as plain data (a short line type in `lib/standLines.ts`, `lib/awardLines.ts`), the client table builds its cells
-    (`components/StandingsTable.tsx`, `AwardsTable.tsx`, over `SortTable`'s `partial` prop and `useMoreLines`), and "Show all" (or sorting by another column) fetches the older rows from a kept JSON route
-    (`app/[locale]/s/[league]/team/[franchise]/rows/standings`, revalidate a day, no query). The "Show all" link is a real link to the full list as a page of its own (`.../seasons`), so a reader without script and a crawler reach every row.
-    Repeated long strings (logo addresses) go in one list the lines point into.
-  - **A league page** (`/nhl`) sends the newest 12 champions (`CHAMP_HEAD`, `lib/champLines.ts`) and the newest 10 seasons of awards (`AWARD_GRID_HEAD`, `lib/awardGrid.ts`) as short data lines, the rest from `/<league>/rows/champions` and `/rows/awards`, and "Show all" links to `/<league>/champions` and `/<league>/awards`. The season chips, the heat strip and the bar chart read one short list (`lib/leagueSeasonRows.ts`); the strip and the bars are drawn in the browser when near. HTML went from 970 KB to 207 KB for the NHL (`pnpm test:weight`).
-  - **A section far down loads when the reader gets near it:** `useSeen` (an IntersectionObserver) then `useFetchedJson` from a kept route (`rows/countries`, `rows/map`), or a client chunk drawn in the browser only
-    (`TeamChartsLazy`, charts with no words a search needs). The page keeps the heading and one sentence. A menu or a dialog that needs a big list fetches it when first opened (`CompareMenu` `dataHref`, `TeamMapCorner`).
-  - Props for a client component are plain data and as short as the component allows (a chart takes `ChartRow`, not the whole standings row).
-  - **Thousands of marks are a few paths, not thousands of elements:** a club's every-game graph (`ResultHeat`, up to 21,000 squares) cost a phone 1.5 to 3.7 s of blocked main thread at a 4x slower processor, most of it styling and laying out 21,000 `rect`s that fewer script bytes cannot save. Past `HEAT_DENSE_FROM` (200) games `ResultHeatDense` draws one `path` per result colour (`heatPaths`), one ring that follows the pointer, and finds the square from the pointer's position (`heatHit`), making its card only then (blocked time 0.4 to 0.7 s). Graphs of a season keep one `rect` each, so every square takes the keyboard. `pnpm test:pagescripts` counts the elements. A new chart with more than a few hundred marks does the same.
-- **Page script: what a phone downloads and runs** (`pnpm test:pagescripts`, run like `pnpm test:pagecalls` against a built site on one of this block's ports). Each main kind of page has a budget of gzipped bytes, raw bytes and script files for one view, load and scroll to the bottom (home 240 kB gzipped, a team page about 380); about 70 kB of it is React, 70 kB the English words and 59 kB the world outline under a corner map. Rules that keep it there: a Client Component reads only its own language (`LocaleProvider` loads `FrDictionary` or `JaDictionary` as a chunk of their own; client code never imports `DICTIONARIES`, `speaker()` is for the server, `useSpeaker()` for the browser); a module a Client Component imports holds no zod schema (put the schema in a server file beside it, as `alignmentSchema.ts`, `liveRowSchema.ts` and the parsers in `queryParam.ts` do); nothing imports `next-auth/react` at the top of a file the header loads; a dialog's content (the large map, `MapViewerLazy`) is a dynamic import; a long list of keyed elements (the results squares) is one flat array, not a list per column, so a new layout moves nodes instead of creating them. To see what a chunk holds: `next analyze --output --snapshot x` then `next analyze export --snapshot x`, with `NEXT_DIST_DIR` set so it does not touch the build you serve.
-- **Server calls per page view (a budget).** Every request that passes the proxy matcher (`web/src/proxy.ts`) is a Vercel function run (1M a month, shared by all of John's projects), so a page view costs its document plus everything the browser asks for: prefetches, `rows` routes, `/api/me`, picture files. Measured 2026-10-30 on a production build, one view of a franchise page was 60 runs, a league page 31 (24 of them prefetches of the header menu, 25 to 150 KB each). Rules: **no `<Link>` fetches on load**: `Link` (`components/Link.tsx`) prefetches nothing, and the header menu uses `IntentLink`, which fetches a page (two requests) only after the pointer has rested on the link for 120 ms, or on focus or touch; never write `prefetch` or `prefetch={true}` (`pnpm test:routing` scans for it). The site's own picture files that hold no archive data and no third-party mark (`/flag/`, `/soccer-flag/`, `/brand/`, `/mascot/`) are left out of the matcher and exempt in the gate (`lib/invite/rules.ts`, kept in step by `pnpm test:invite`); a page, a `rows` route, an API, a drawing built from archive data, the hosted club logos (`/team-logos/`, third-party marks) and the sprites (they read the archive) are never left out. A flag is a route kept by the cache, so only its first draw (and a name that is not a flag, with no database read) is a function run. `pnpm test:pagecalls` opens one page of each main kind in Chromium and fails when its requests through the proxy exceed the budget at the top of `scripts/pageCalls.test.ts`, or when a page prefetches by itself or a body link fetches on hover: `PAGES_URL=http://localhost:77xx pnpm test:pagecalls` against `pnpm start` on the preview PostgREST (build with `SPX_AUTH_CONFIGURED=1`). A new picture route goes in both lists only if it holds no data.
+    validated with Zod. A failed fetch shows an inline "Couldn't load" message, except a read the database could not answer (5xx, timeout, network), which makes the page throw in production so Next keeps the last good copy (`lib/api/failure.ts`, `pnpm test:failure`).
+- **Read [docs/site-rules.md](docs/site-rules.md) before you add or change a page, a component that draws data, a query parameter or a server fetch.** Short forms:
+  - **Kept pages (no server work per view).** Every public page is static and kept a day (`revalidate = 86400`, a literal in each segment). A page that reads `searchParams` lives in `app/[locale]/q` with a thin twin in `s/`; one that reads none lives in `s/` with a twin in `q/`. A page in `s/` uses no `cookies()`, `headers()`, `searchParams` or `useSearchParams` outside a `<Suspense>` of its own and nothing from the browser's address at render. A new query parameter goes into `QUERY_KEYS` (`routing.ts`). `pnpm test:routing`, `pnpm test:revalidate`.
+  - **Reads.** Every view the site reads has its unique key in `web/src/lib/api/pagedOrder.ts` (`pnpm test:pagedorder`). Every read of `games` carries a season (`year=eq.`). A new server `fetch` to the database goes through `queuedAtBuild`.
+  - **Page weight.** Every public page stays under about 300 KB of HTML (about 50 KB gzipped), measured against the DS1 PostgREST, never production. A long table sends its newest rows and fetches the rest; a section far down loads when the reader gets near it. `pnpm test:weight`.
+  - **Page script.** Each kind of page has a budget (`pnpm test:pagescripts`). Client code never imports `DICTIONARIES`; a module a Client Component imports holds no zod schema; nothing imports `next-auth/react` at the top of a file the header loads; a dialog's content is a dynamic import; a chart with more than a few hundred marks draws paths, not elements.
+  - **Server calls.** Each request through the proxy is a billed function run, and each kind of page has a budget (`pnpm test:pagecalls`). No `<Link>` fetches on load: never write `prefetch` or `prefetch={true}`. A new picture route is left out of the proxy matcher and exempt in the gate only if it holds no data.
+  - **The site is invite only while closed:** `src/proxy.ts` gates every request, so a new route that must stay reachable goes on the gate's list (`lib/invite`, `pnpm test:invite`).
+  - **Times on admin pages** are drawn with `<LocalTime>` or `mark()`; never write "UTC" after a time by hand.
+  - **Positions** are drawn only through `positionBook()`; **left and right** are decided only in `web/src/lib/sides.ts`, so never order two teams by hand.
+- **Read the entry in [docs/site-features.md](docs/site-features.md) before you change or copy a feature:** John's packages (Chizu, Hata, address-plus, Kuni, taisen-brackets, dougu-sports), list APIs, the teams list, one record per person, cities, where the players come from, a game's page, the plays on a game's field, a player's spray charts, the invite-only gate, the player page's statistics board, a World Cup year's teams, venue addresses, logos (logo fit, logos Wikidata lacks, the site's own small copies, the local library), the SPXIS marks.
+
 - **`site/`** is the retired plain-JS site; don't add to it.
 - **Languages:** EN, FR and JA through `web/src/lib/i18n` (`say('key')`, `currentSpeaker()` / `useSpeaker()`, cookie
   `spxn-locale`).
@@ -923,101 +471,13 @@ Ask John before deleting or overwriting data. Production changes only through ap
     JA entries are added from a batch result (`scripts/i18n/README.md`), not written by hand or by an agent. Note doubts in
     `web/I18N_TODO.md`. Translated text is never a source of facts.
   - Proper names (teams, players, venues, award names, league codes) are not translated.
-- **John's packages,** pinned at exact versions:
-  - `@johnmorrisdotca/chizu`: maps; pass `style: true`.
-  - `@johnmorrisdotca/hata`: flags.
-  - `@johnmorrisdotca/address-plus`: addresses.
-  - `@johnmorrisdotca/kuni`: ISO codes.
-  - `@johnmorrisdotca/taisen-brackets`: every knockout bracket (the season playoffs of the five leagues, `/worldcup/<year>`) and the World Cup's road to the final. The site's glue is `lib/bracketLayout.ts` (ties and teams in, the package's layout out), `lib/bracketDraw.ts` (the desk's and the phone's drawing, in the road look, each box a link; `components/Knockout.tsx` shows one by width) and `lib/soccerRoadChart.ts` (the road, a file at `/soccer-road/<year>.<language>.svg`). Drawn on the server as plain SVG; a page does not carry the drawings (the server writes an SVG string into the HTML and Next sends it again as data, which made the NBA season page 880 KB): the whole bracket, a play-in and a World Cup's knockout are files at `/bracket-svg/<nba-2023|soccer-2022>.<wide|phone|inwide|inphone>.<language>.svg` (`app/bracket-svg`, `lib/seasonBracket.ts`, `lib/soccerKnockoutDraw.ts`; a day's cache) that `components/KnockoutFile.tsx` loads through `RoadArt` when the box comes into view (only the desk's or the phone's, by width; a box's links open through the router). A conference or division chosen in the address (`q/`) is still drawn inline by `components/Knockout.tsx`. Budget for a season page or a World Cup year: HTML under about 300 KB (check with the dev server, `curl | wc -c`); the games list reaches the client packed (`lib/gamesCodec.ts`) and the server draws only its first 16 rows (the rest follow once the page is live). Flags are the site's own files (`/soccer-flag/<CODE>.svg`) given as marks, never Hata's inline drawings (Spain's is 80 KB); the trophy is the precomputed dougu string (`lib/trophies.ts`). Credited with `Credits use={["brackets"]}`.
-  - `@johnmorrisdotca/dougu-sports`: every cup and medal (no copies of its drawings in this repo). `lib/cups.ts` (server-only) draws them from each emblem's own module when a page is built (line style where small, metal where large); a client table gets the markup as data through `CupsProvider` and `BoardCup` (`components/TrophyIcon.tsx`), so no drawing code is in the browser. The champion banners turn with the package's light `bindTurn` and the one cup (`lib/turnCup.ts`). `pnpm test:trophies` holds it. Credited on /terms. A trophy that changed or began in a season is chosen by season in `lib/trophyEra.ts` (the NBA's Larry O'Brien Trophy in two designs, none before 1977-78; conference trophies of the NBA from 2000-01 and the NFL from 1984, drawn smaller on a conference final's banner); never draw a trophy before it existed.
-- **List APIs** (public, read-only JSON, cached an hour; the contract is the comment at the top of each route file): `GET /api/players`
-  and `GET /api/teams` take `league`, `q` (accents ignored; teams also match former names), `status=active|defunct` (teams), `position` (players; a position code such as LW or SS, older words read as codes; matches any position a player holds, rows carry `position` and `positions` as codes), `nat` (players; a two-letter country code, matched against the row's `country`), `letter` (players; one letter A to Z, accents ignored: the first letter of the LAST name, the last word with a trailing Jr, Sr, II, III or IV set aside; `letter_by=first` takes the first name; it is the A to Z row of `/players` and combines with every other filter; `api.player_letters`, migration 091, counts the letters for the greyed ones),
-  `from` and `to` (whole years 1800 to 2100, from not after to: keeps rows whose first..last season overlaps the range; the same `?from=&to=` drives the year slider on `/players` (and on `/teams`, which filters in the browser), remembered per page in `spxn-range-players` and `spxn-range-teams`),
-  `sort=col.dir` (allow-list), `limit` (50, max 200), `fields`, and page either by `offset` or by `after=<page.next>` (keyset cursor, opaque; `total` only
-  with offset); `GET /api/players/suggest?q=` and `/api/teams/suggest?q=` return up to 10 for autocomplete. A bad parameter is a 400 naming it. The routes
-  only read `api.player_index`, `api.player_search` and `api.team_index` through `lib/api/client.ts` using `lib/listQuery.ts`, which also serves the
-  `/players` page: never build a query from caller text any other way. Each player row carries `country` (capitals code of the birth country, else of the nationality; null when unknown): `/players` draws it as a flag that links to `?nat=`. The views need migration `037`, and `country` needs `063`; until that has run `country` reads null and the page draws no country column.
-- **The teams list** (`/teams`) is one kept page in `ALWAYS_STATIC`: `lib/teamBoardData.ts` sends every franchise once (about 270, with country and home from `api.team_season_city`, else the country alone from `api.team_season_country`, conferences and divisions from `api.alignment`, former names with their era logos from `lib/nameEras.ts`) and `components/TeamsBoard.tsx` filters, sorts and pages in the browser. The choices live in the address and `TEAMS_CLIENT_KEYS` (`lib/teamBoard.ts`) lists them (`league`, `q`, `status`, `from`, `to`, `conf`, `div`, `titles`, `sort`, `page`); `/api/teams` is unchanged. The country flags are written once as an in-page sprite (`PageFlagSprite`), not per row.
-- **Positions are codes from a fixed list per league** (`ref.position`, served by `api.position`; the raw-value map is `ref.position_alias`,
-  seeded by `db/build/185_ref_position.sql`; `db/build/186_person_positions.sql` applies it to `core.person`). A raw value no map row covers is
-  logged in `meta.data_issue` (`entity_kind = 'position'`), never guessed: complete the map in one place. Tables show the code, the player page the name.
-  **Draw a position only through `positionBook()` (`components/PositionKey.tsx`)**: `book.list(...)` / `book.code(...)` give upper-case `PositionCode`s
-  (hover name, link to `#positions-key`) joined by the one `POSITION_SEP` ("RW/LW", the order the database gives, main first), and `book.key()` at the
-  bottom of the page draws the key of exactly the codes drawn, grouped by league so colliding codes (C, G, P) are each explained. Never join positions by
-  hand or render a bare code; `pnpm test:positions` scans for both. Soccer's names are in `SOCCER_POSITIONS` (`lib/positions.ts`), not in `api.position`.
-- **One record per person:** `db/build/185_person_merge.sql` merges records that are the same human (never on name alone) and keeps
-  `core.person_redirect`, which the player page uses to redirect an old id. Pairs it will not merge are logged as `possible-duplicate:` in `meta.data_issue`.
-- **Cities:** `/cities` (search, year-range slider, sortable table and map, all filtered in the browser) and `/city/<slug>` (every club that
-  played there, its venues on a small corner map that opens the large one in a dialog, a year-range slider, timeline, titles by decade, how the
-  city ranks). Both are kept pages that read no query on the server (`cities` is in `ALWAYS_STATIC`, `city` in `PAGE_ROOTS`, `q/city/[slug]` is
-  the twin for an address with another page's query key). On a city page `?from=&to=` (`CITY_CLIENT_KEYS` in `routing.ts`) is read in the browser
-  by `CityBoard`, which narrows the figures, clubs table, timeline and titles with `clipStay` and remembers the range per city
-  (`spxn-range-c:<path>`); the rank table and win-share bars stay all-time. Which city a club season
-  belongs to, the metro areas and the rank method are data and documented in `scripts/city/README.md` (tables `ref.city`, `ref.city_alias`,
-  `ref.metro`, `core.team_season_city`, built by `db/build/197_city.sql`); the site only adds up (`web/src/lib/cityModel.ts`, `pnpm test:city`).
-- **Where the players come from:** `/countries` (league against league: mix bars, table, trend by decade, firsts, cards), `/country/<code>` (one country in every league),
-  `/<league>/world` (world map of the league's players with a season slider, by team) and `/<league>/<season>/world` (one season, club by club); a club's season page and
-  a franchise page carry a "Where the players come from" section (donut, map dialog, ranker; the franchise also the countries over the seasons). A player's country is
-  `api.player_index.country` (birth country, else nationality; `ZZ` = unknown, never guessed). The aggregates are migration 068's four materialized views
-  (`api.country_team_season`, `country_season`, `country_league`, `country_franchise`, refreshed by `api.refresh()`); every page hides its country section while a view is
-  missing, and a club's roster section needs no view. The numbers are worked out in `web/src/lib/countryModel.ts` (`pnpm test:countries`). Where a league's countries are known
-  for under half of its players (NHL on 2026-10-13) the pages say so and hold back shares and comparisons.
-- **A game's page:** `/<league>/<season>/game/<id>-<away>-at-<home>` (`app/[locale]/s/[league]/[year]/game/[game]`, twin in `q/`; address builder `lib/gamePath.ts`, sums
-  in `lib/gameView.ts`, tests `pnpm test:game`). Nothing is drawn at build time; each game is drawn on its first visit. The number decides the game, a wrong name is
-  redirected for good. Every score on the scoreboard, in a team's season table and calendar and on a series tile links to it. The archive holds no box score
-  (periods, innings, players) for any game yet, so the page carries the teams' records going in, form, the games either side, the meetings, the franchises and the
-  club leaders. Read games by `league` and `game_id`, or by team-season id: filtering the games view on `away_f` or `home_f` scans the league.
-- **The plays on a game's field** (`components/FieldPlays.tsx`, `lib/fieldPlays.ts`, `lib/fieldPlaysFile.ts`, `pnpm test:fieldplays`): a finished MLB game draws every ball in play where Retrosheet's hit-location zone puts it (a mark is a zone, not a landing spot: balls in one zone are fanned out round its centre, a home run is set just past the fence), on the park of that season, one mark for each result, ringed in the batting club's colour; a finished NFL game draws each drive as a bar from where it started to where it ended on the field (the visitors going right, the home team left, each end zone in the colour of the club that defends it), a dot for each play and a mark for how it ended, a turnover returned for a score as a dashed path back to the goal line. The rows are `core.game_field` (migration 164, `db/build/235` and `236`; **a Turso table**, never production; the site reads Turso, or `api.game_field` on a local preview of DS1), text of a few hundred bytes to a few KB a game. NFL drives come from `legacy_nflverse.pbp_drive`, loaded by `scripts/nflverse/pbp_drive.py` from the same raw files as `pbp_location` (its table has no drive columns). The drawing is a file, `/field-plays/mlb-<id>.<park or std>.<language>.svg` or `/field-plays/nfl-<id>.<wide|phone>.<language>.svg` (`app/field-plays`), loaded when it comes into view (`RoadArt`), so the page's HTML holds only the key and the sums. A season with no data says why in a line: MLB after `RETROSHEET_THROUGH` (2025) is "not published yet"; before 1986 (MLB) and 1999 (NFL) the section is left out. Credit: Retrosheet's notice and nflverse CC BY 4.0. Source tiers: both green. No NHL shot maps or NBA shot charts (their sources are red).
-- **A player's spray charts** (`components/PlayerSpray.tsx`, `lib/playerSpray.ts`, `lib/battedBall.ts`, `lib/playerSprayData.ts`, `pnpm test:spray`): the section of an MLB player's page (inside the board, 1986 on; partial before 1989) draws, for the seasons the slider chose, the balls he hit (a pitcher: the balls hit against him; a player who did both gets a toggle) as the game page draws them, in Retrosheet's hit-location zones and the same colours (hits only, outs and errors on request), his home runs as discs by zone past the fence (no distances: Retrosheet has none and the trackers' terms forbid reuse, and the page says so), the share of balls pulled, up the middle and the opposite way (thirds of fair ground, by the side the batter hit from in that at-bat, so a switch hitter and every pitcher are counted correctly) and the shares of ground balls, line drives, fly balls, pop-ups and bunts. The rows are `core.batted_ball_player_hand` (migration 165, `db/build/237`, `db/checks/105`, `bash db/tests/player-spray.sh`: batted-ball counts for each player, season, role and batter's side, packed like `core.batted_ball_player`, the two sides adding up to it; **a Turso table**, never production; the site reads Turso, or `api.batted_ball_player_hand` on a local preview of DS1). The section is fetched when it comes into view as one kept JSON answer, `/api/players/<id>/spray` (the packed rows, a few KB a career), unpacked and drawn in the browser as the slider moves, over the standard field's file `/field-plays/std.<language>.svg`; the page's HTML holds only the heading. Regular seasons and all clubs, whatever the board's phase and club choices. A player with no row leaves the section out. Credit: Retrosheet's notice.
-- **The site is invite only while closed** (`web/src/lib/invite`, ticket "invite-only site"; `pnpm test:invite`). One setting, `SITE_ACCESS`: `invite` or `open`; unset it is `invite` on Vercel and `open` everywhere else (next dev, local builds, the DS1 preview), so reopening is `SITE_ACCESS=open` and a redeploy, never a code change. While closed, `src/proxy.ts` (`lib/invite/gate.ts` decides) lets a request through only with a session cookie whose verified Google address is in `ADMIN_EMAILS` or on the invite list (Turso tables `invite` and `site_signin`, created by the first write, no migration; read with `TURSO_AUTH_TOKEN`, written with `TURSO_RUNLOG_TOKEN`; each instance keeps the list for a minute). The cookie is decoded in the proxy with no database, so a signed-out request reads nothing: a browser page request is drawn the small `/invite-only` page (`app/(dyn)/invite-only`), anything else gets a few bytes (401, or 403 for a signed-in stranger); kept pages stay kept behind the gate. Always reachable: `/api/revalidate` (its own secret), `/api/auth/*`, `/api/me`, `/login` (redirects to `/invite-only`), `/invite-only`, the icons and the manifest, the country flags (`/flag/*`, `/soccer-flag/*`), the brand marks (`/brand/*`) and the error mascot (`/mascot/*`) (all of these but the first four also skip the proxy: `matcher` in `src/proxy.ts`), and `robots.txt` (Disallow all). The hosted club logos (`/team-logos/*`) and the sprites (`/soccer-flags.svg`, `/soccer-flags-round.svg`, `/trophy-sprite.svg`) stay gated. Every response carries `X-Robots-Tag: noindex`. Deploy checks pass with the `x-vercel-protection-bypass` header (`VERCEL_AUTOMATION_BYPASS_SECRET`, or `SITE_GATE_BYPASS` with `x-spxn-gate-bypass`); `scripts/mac/check-live-auth.sh` sends it when the keychain holds it and otherwise reports the gate page as a skip, not a failure. Admins manage the list at `/admin/invites` (menu: "Invite list"). A removal takes effect within a minute. If Turso cannot be read the sign-in claim (`token.invited`) decides, so nobody invited is locked out and nobody new comes in.
 - **Selections live in the URL,** with RESTful paths and query params such as `?sort=col.dir`, `?phase=`, `?loc=`,
   `?month=`, `?view=`, `?date=`.
-- **The player page's statistics board** (`components/PlayerBoard.tsx`, maths in `lib/playerBoard.ts`, tests `pnpm test:player`) is drawn in the
-  browser from the stat rows the page sends once: the season slider (`?from=&to=`), `?phase=p` and `?teams=` are read there (`lib/playerRange.ts`,
-  `PLAYER_CLIENT_KEYS` in `lib/routing.ts`), so the page stays the one static copy and a drag costs no request. The league figures behind the league
-  line, ranks and radar are `api.stat_reference` (migration 064); the board hides them until it exists. Hockey and baseball have statistics;
-  NBA, NFL and CFL players show the career path only until their statistics are loaded (add a group to `GROUPS` when they are).
 - **Shared components:**
   - `Flag` (`components/Flag.tsx`, over `FlagIcon`) for every country flag: one fixed 24x16 box, styled nowhere else (`scripts/flags.test.ts` checks it in a browser).
   - `SortTable` for every table.
   - `NoSeason` (grey box, compact "–") for years with no games.
   - `DatePicker` for date choices.
-- **Left and right** are decided in one place, `web/src/lib/sides.ts` (constant `SIDE_RULE`, tested by `pnpm test:sides`); never order two teams by hand. A single game
-  follows its sport's own listing: the five leagues (NHL, NBA, MLB, NFL, CFL) put the visitor on the left and the home team on the right ("Bruins at Canadiens"); soccer puts
-  the home side on the left (Arsenal 2–1 Chelsea; the stored `home` is FIFA's designated Team A, who is listed first even at a neutral ground: "Argentina v France"), in the
-  heading, the title, the banner, the pageant surface, the panels and the knockout ties (`sport: "soccer"` / `HOME_FIRST` in `sides.ts`; a new sport says which it is); a series has the team that had home advantage
-  (the home side of its first game: the archive holds no seeds) on the left, and a series of one game is a game. The series page and the champion's surface put the deciding game's
-  teams in the series' order, not the game's own, so the banner and the surface under it never swap sides (kyogijo is always told the left team as its `away`, `homeSide: "right"`). It
-  covers the series and game banners, the surfaces, the team panels and the bracket boxes (`seriesTies`, `matchSides`; a later round's top row is the team from the top feeder, which the
-  package decides). The words of a series keep the winner first ("A beat B") and the addresses are unchanged. "winner on the left" is `SIDE_RULE = "winner"`.
-- **A World Cup year's teams** (`/worldcup/<year>`, men's and women's): a strip under the heading (`components/TeamStrip.tsx`) lists every team as a round flag and its FIFA code, ringed in the colour of how far it went, and a small world map in the heading's corner (`components/TournamentMap.tsx`, Chizu, the same corner pattern as /city and /teams) colours each team's country the same way; the large map's hover shows the stage reached, matches, W-D-L and goals, and a press goes to the team's squad. Both lead to `#squad-<code>` (the lowercase FIFA code; `lib/soccerStrip.ts` builds the anchors, tiers and map regions, `pnpm test:soccer`): the squad lists are `LazySquad`s whose `id` is that anchor, and an address naming one opens it (no script: the address still scrolls there). A tournament with no squads on the page leads to the team's page. A team whose country the map has no outline for (a team that is gone, a small island) is named under the map; the home nations of the United Kingdom share one region.
-- **Venue addresses** are written one way everywhere: `placeAddress` (`web/src/lib/venueName.ts`) calls `formatVenueAddress`
-  (`web/src/lib/venueAddress.ts`, built on address-plus), which shows only the parts the archive holds and never works out a
-  postal code. A page that shows one carries the `AddressCredit` line (`address.credit`); `pnpm test:address` covers it.
-- **Logos** are shown small, under fair use, explained on `/logos`. A logo in a table row or beside a name is drawn in one standard box (`TeamLogo`,
-  `teamlogo.css`: 20 px high, 20 to 36 px wide, picture contained), so a wordmark never widens a row.
-  - **Logo fit** (`db/seed/logo_fit.csv`, migration 107, `db/build/175_team_logo_fit.sql`, `api.logo_fit`, `lib/logoFit.ts`): per logo file (key `commons:File.svg`
-    or `en:File.svg`) a wordmark flag, the club's primary mark for circles, squares and table cells (`mark_url`, with its licence and file page; Commons first,
-    else the English Wikipedia infobox file the site's other fair-use logos already use), scale, nudge and tile colour. No row means drawn as always.
-    `status` is `proposed` (shown only on `/admin/logos`, admin only), `approved` (shown on the site) or `rejected`; John approves on that page by telling an
-    agent, who edits the CSV. Needs migration 107 on production, then a data release of `core.logo_fit`; the site draws nothing differently until then.
-  - **Logos Wikidata lacks** (migrations 108 and 110, `scripts/logos/`, `db/build/175_team_logo_extra.sql`, assignments in `db/seed/logo_extra.csv`, the review record in
-    `db/seed/logo_extra_review.csv`): public-domain files found on Wikimedia Commons by `commons_sweep.py` (Commons API only, 1.5 s apart; `commons_report.py --plan`
-    proposes, a person looks at every one, `plan_finalize.py` writes the seed) are hotlinked from Commons like the others, source `wikimedia_commons`; marks Commons
-    does not hold come from SportsLogos.Net (source `sportslogos`; `sportslogos_fetch.py`, one request at a time and at least 5 s apart, only for marks we lack; terms: credit
-    and link back, no commercial use). Those images are kept byte for byte in `legacy_files.raw_archive` (`legacy_sportslogos`, DS1 only), shown small and as received (no
-    upscaling, no vectorising, no enhancement; a redraw only of a mark published before 1931 in the US or a simple text mark, credited as a redraw), and served from
-    our own `/team-logos/sl/<key>.<ext>`: not in git (git-ignored), written from DS1 into `web/public` by `scripts/logos/export_hosted.py` at the start of
-    `deploy-prebuilt.sh` and `ds1-preview.sh --install/--update` (sha256 checked; the run stops when a logo a brand row names is missing; `bash scripts/mac/test/hosted-logos-test.sh`).
-    A new SportsLogos.Net file alone does not move the preview's commit: `ds1-preview.sh --update --force`. Their logo_fit key is `sl:<key>.<ext>`.
-  - **The site's own small logo copies** (`scripts/logos/render_site.py`, `lib/logoFiles.ts`, `docs/logos-serving.md`): 1x and 2x WebP of every logo the API names, written into git-ignored `web/public/team-logos/` (about 910 files, 2.4 MB, 89 s with a warm source cache and no Wikimedia request). `deploy-prebuilt.sh` and the preview render them; the normal `bash scripts/deploy.sh` does so only with `SPX_LOGO_COPIES=1` (default off, reads the preview PostgREST on 7750, fails soft and says so in the reply). They are off by default because every file under `/team-logos/` is one proxy run (the invite gate): a season page would make about 30 more, over the `pnpm test:pagecalls` budgets, until John decides whether they leave the gate. The SportsLogos.Net files under `team-logos/sl/` are only read (shown small, never enlarged), the copies are separate downscaled files.
-  - **Local logo library** (`scripts/logos/library.py`; from `web/`, `pnpm logos:library`): copies every logo already collected into `~/Projects/backups/spx-stats/logo-library/` and writes one `index.html` to open in a browser. It only runs `select` or `with` through `scripts/daily/ds1.sh`. It does not write DS1 or production.
-- **The SPXIS marks** (the swoosh, the star, the shields, the lockups; John's own corporate logos, © SportsInteractive, not under the site's data licences)
-  live in `web/public/brand/` as small minified SVGs in a light and a `-dark` file, cut from his Illustrator sheets by `web/scripts/brand/extractBrand.ts`
-  (originals stay in his Dropbox; the script also writes `lib/brandMarks.ts`, `brandSwoosh.ts`, `brandShield.ts`); `scripts/brand/rasterize.ts` draws the favicon,
-  apple-touch, app and social-preview PNGs. The header swoosh (`BrandSwoosh`, inline, themed by the `--mk-*` tokens), the footer line, About's marks section
-  (`BrandHistory`) and the favicon/OG head (`lib/brandAssets.ts`) use them; `BrandShield` (the empty shield as a container for a logo or abbreviation) is a preview
-  on About and `/admin/logos` only. Never put these marks into an MIT package. `pnpm test:brand`.
 - Never build a public endpoint that runs SQL.
 
 ## 10. Git
@@ -1048,48 +508,4 @@ that fetches it are in the private file. John keeps one unlocked private note ca
 be read by `scripts/mac/spx-note-copy.sh`, which copies the whole note to the clipboard) and pastes it into the cloud
 environment's settings. Do not ask John to dig for a value: give him the one command.
 
-Template for the note (replace each `<value>`):
-
-    ## (1) Cloud environment settings. Set ONCE per environment; every new session in it inherits them.
-    SUMILABU_BOARD_URL=https://api.sumilabu.com       # required, fixed value
-    SUMILABU_BOARD_TOKEN=<value>                      # required for tickets: the spx-stats board key
-    SPX_DS1_DB_PASSWORD=<value>                       # required for the working copy to come up: DS1 Postgres password
-    TS_AUTHKEY=<value>                                # required for the working copy to come up; expires every 90 days
-    NAS1_VPN_HOST=<value>                             # required for the working copy to come up: DS1's address over the VPN (private; the private file has it)
-    DROPBOX_APP_KEY=<value>                           # optional: archive uploads (scripts/dropbox_put.py)
-    DROPBOX_APP_SECRET=<value>
-    DROPBOX_REFRESH_TOKEN=<value>
-    SUPABASE_ACCESS_TOKEN=<value>                     # optional: bulk production loads only
-
-    ## (2) Vercel only (project "Sumilabu", not the cloud environment). Agents never see it.
-    BOARD_TOKENS_JSON=<value>                         # write-only: saving REPLACES the whole map; rebuild, then redeploy
-
-    ## (2b) Vercel project "spx-stats" (the site) and the runner's release-runner.env on the NAS; not the cloud environment.
-    TURSO_DATABASE_URL=<value>                        # the Turso database (section 8, "Turso")
-    TURSO_AUTH_TOKEN=<value>                          # a read-only token is enough for the site; the runner needs one that can write
-    TURSO_RUNLOG_TOKEN=<value>                        # a token that can write: the run log (NAS jobs, runner) and, on Vercel, dismissing alerts
-
-    ## (3) Tell the agent in chat (not secret)
-    Repo https://github.com/spxis/spx-stats . "Read AGENTS.md, then Dropbox /Backups/spx-stats/START-HERE.md."
-    Production Supabase project ref: njpvfrceahkvnrduerkk . Vercel project: spx-stats (prj_MfgGl5vzVccEhmtSyvgze6hhgXJg).
-
-**Two credentials need a browser the first time**, then one command each on the Mac, in the repo checkout. Neither
-prints a secret; both put the `NAME=value` lines on the clipboard:
-
-- **Dropbox.** Create a Scoped-access, Full Dropbox app at https://www.dropbox.com/developers/apps/create. On its
-  Permissions tab tick `files.content.write`, `files.content.read` and `files.metadata.read`, and Submit. Then
-  `zsh scripts/mac/spx-credentials.sh dropbox` asks for the app key and secret, opens the Allow page
-  (`token_access_type=offline`), asks for the access code and saves three keychain services. John's Dropbox root is his
-  home namespace, so plain paths work; only if it ever becomes a team namespace, also set `DROPBOX_ROOT_NAMESPACE`.
-- **Tailscale.** At https://login.tailscale.com/admin/settings/keys generate a key with Reusable on, Ephemeral on,
-  Expiry 90 days (the maximum, so repeat every quarter), no tags. Then `zsh scripts/mac/spx-credentials.sh tailscale`.
-
-**Checklist for a new cloud agent:** open the `spx-stats env` note and fill any missing value; paste the lines into the
-cloud environment's settings and start the session; then in the session run `echo ${SUMILABU_BOARD_TOKEN:+ok}`,
-`pg_isready -h /tmp -p 55432` (the cloud working copy), `psql -h /tmp -p 55432 -U postgres -d spx_stats -c 'select 1'`, and `cd web && pnpm task`.
-Raw downloads: `python3 scripts/dropbox_put.py <file> <source>`; the backlog:
-`python3 scripts/dropbox_put.py --from-archive`. On John's Mac,
-`~/bin/spx-raw-export.sh` (`scripts/mac/spx-raw-export.sh`; `--check` first, `--install-schedule` for an hourly run) copies
-every `legacy_files.raw_archive` row from DS1 into `~/Library/CloudStorage/Dropbox/Backups/spx-stats/raw/<name>`: it finds
-DS1 on the home network or Tailscale, skips files already there with the same sha256, never overwrites a different one,
-and reports problems. Its stub tests are `scripts/mac/test/spx-raw-export-test.sh` (run them after any change to it).
+The template for that note, the two credentials that need a browser the first time and the checklist for a new cloud agent are in [docs/setup.md](docs/setup.md).
