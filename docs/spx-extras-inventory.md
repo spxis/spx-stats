@@ -113,6 +113,8 @@ registrar notes and anything that looks like a login (`GoDaddy.txt`, `IXWebHosti
 
 ## Decisions for John
 
+**Decided 2026-10-28, repeated 2026-10-29 (ticket SPX-602): option A.** Every keep-only area and every "John decides" area below, including the ESPN, BBC and other third-party pages SPX saved, is archived as raw bytes to DS1 `legacy_files.raw_archive` and Dropbox `raw/spx-extras`, and nothing is built: no `legacy_spx_extras` load, no migration 140 on DS1, no `core` rows, no ESPN data in any table. Skip-verdict files (member data, credentials, GeoIP, forum and site messages) are never copied. The tool is `scripts/spx_extras/archive_keep.py` (allow list, name-based refusals, rerunnable); how to run it is in `scripts/spx_extras/README.md`. Loading anything later (the EFL scores, the weekly player snapshots) is a new decision. The questions below are kept as the record.
+
 1. **ESPN-origin soccer** (`Data/efl/`, `Data/fifa/espn_*`, the Soccernet dailies): load as SPX's archive (`legacy_spx_extras`, flagged ESPN), use only to confirm, or leave as raw bytes? Recommended: raw bytes now; load the EFL capture as confirm-only (it fills 962 scores but stores an ESPN page's facts); never build from the Soccernet dailies.
 2. **BBC Sport dailies** (2005 to 2008-09): the only wide football score source of those years in the folder. Terms unchecked; recommend checking BBC's terms once, and until then raw bytes only.
 3. **SPX download packages and scraped stat pages** (all sports): raw bytes to DS1 and Dropbox now (one `archive_raw.py` run per folder, about 1 GB), nothing built.
