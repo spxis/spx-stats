@@ -24,7 +24,7 @@ and [docs/agent-quickstart.md](../../../docs/agent-quickstart.md). This skill is
 
 1. Identify yourself: a subagent writes `subagent of <name>, ticket <id> (title)` at the start of every report.
 2. Read the ticket: `cd web && pnpm task` (board on Sumilabu, not GitHub). Work only on the ticket you were given.
-3. Fresh worktree from the latest main, never the checkout you were given: `git fetch origin && git worktree add ../<name> -b <type>/<slug> origin/main`
+3. Fresh worktree from the latest main, never the checkout you were given: `git fetch origin && git worktree add ~/Projects/worktrees/spx-stats/<name> -b <type>/<slug> origin/main`
    (type `feat|fix|refactor|chore|docs|test`, ASCII slug). [§6](../../../AGENTS.md#6-doing-the-work)
 4. Check replies: `python3 -I scripts/handoff/handoff.py replies`. Act on `failed`, `needs-change`, `blocked`, then `handoff.py read <id>`.
 5. Coordination: `python3 -I scripts/handoff/coord.py start --as <your name>` (roles, freeze, inbox).

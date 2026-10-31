@@ -320,7 +320,7 @@ coordinating session, put the ticket in a new create-only Dropbox file
 
 ## 6. Doing the work
 
-    git worktree add ../<name> -b work/<name> origin/main     # or use your harness's worktree
+    git worktree add ~/Projects/worktrees/spx-stats/<name> -b work/<name> origin/main     # never inside this checkout
     cd web && pnpm install --frozen-lockfile                  # about 10 seconds (tested)
     pnpm dev                                                  # http://localhost:7701, no .env needed
 

@@ -57,7 +57,7 @@ Full page: [coordination.md](coordination.md).
 
 ## Worktree and commits
 
-- **Worktree first:** `git worktree add ../<name> -b work/<name> origin/main`, then `cd web && pnpm install --frozen-lockfile`.
+- **Worktree first:** `git worktree add ~/Projects/worktrees/spx-stats/<name> -b work/<name> origin/main`, then `cd web && pnpm install --frozen-lockfile`.
   [§6](../AGENTS.md#6-doing-the-work)
 - **Commit as John Morris <john@johnmorris.ca>**, Conventional Commits, subject 50 characters or less.
   [§10](../AGENTS.md#10-git)
