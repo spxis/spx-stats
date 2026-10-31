@@ -119,3 +119,30 @@ pwhl,Seattle Torrent,2025,fill,PWHL_Seattle_Logo.webp,dated,0,reject,,"the place
 wnba,Portland Fire,2026,fill,Rose_City_SportsNet_Logo.png,undated,1,reject,,"a television network's logo, not the club"
 wnba,Las Vegas Aces,2018,fill,Las_Vegas_Aces_logo.svg,dated,0,accept,,"Commons tags it Public domain (text logo); the claim is not checked, the site shows it small as it shows every logo"
 wnba,Connecticut Sun,2021,fill,Connecticut_Sun_wordmark_logo_2021.png,dated,1,accept,,"a wordmark: the only free file; the era's sun mark has none"
+nfl,Baltimore Colts,1947,fill,Indianapolis_Colts_logo.svg,undated,0,reject,,"the Indianapolis Colts' horseshoe, a different club and era"
+nfl,Buffalo Bills,1947,fill,Buffalo_Bills_blue.png,undated,0,reject,,"the modern Bills wordmark, not the AAFC club's mark"
+nfl,Brooklyn Dodgers,1946,fill,"Brooklyn_Dodgers_Cap_Logo_(1934_to_1936,_1938_to_1955).svg",dated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Dallas Texans,1960,fill,Dallas_Texans_logo.webp,undated,0,accept,,
+cfl,Ottawa Rough Riders,1958,fill,Ottawa_Rough_Riders_logo_1950s.jpg,dated,0,reject,,"CC BY-SA, not public domain (a self-made recreation); SportsLogos.Net holds every mark of the era"
+mlb,Boston Braves,1912,fill,TonyCuccinelloGoudeycard.jpg,dated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nba,Vancouver Grizzlies,1995,fill,Vancouver-Grizzlies-program-inductee-fotor-2025032991215-preview-rev-1.png,undated,0,reject,,"a drawing of a bear from a program, not the Grizzlies logo"
+nfl,Pittsburgh Pirates,1933,fill,Pittsburgh_Pirates_Jolly_Roger.svg,undated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Washington Redskins,1937,fill,Washington_Football_Team_logo_formerly_known_as_the_Washington_Redskins.png,undated,0,reject,,"the 2020 Washington Football Team crest, not a mark of the Redskins eras"
+nfl,Washington Redskins,1999,fill,Washington_Football_Team_logo_formerly_known_as_the_Washington_Redskins.png,undated,0,reject,,"the 2020 Washington Football Team crest, not a mark of the Redskins eras"
+nfl,Portsmouth Spartans,1930,fill,Portsmouth-Spartans-Logo-1929-1933.png,dated,0,accept,,
+nfl,Chicago Cardinals,1920,fill,Chicago_Cardinals_logo.png,dated,0,accept,,
+nfl,Chicago Cardinals,1945,fill,Chicago_Cardinals_wordmark.png,undated,1,reject,,"a wordmark circa 1958; SportsLogos.Net holds the era's primary mark, which is used instead"
+nfl,St. Louis Cardinals,1960,fill,Logo_of_the_St._Louis_Cardinals_(1948–1964).webp,dated,0,reject,,"the baseball Cardinals' logo, not the football club"
+nfl,Dallas Texans,1952,fill,Dallas_Texans_logo.webp,undated,0,reject,,"the 1960 AFL Texans mark, not the 1952 NFL club of that name"
+nfl,Dayton Triangles,1920,fill,Dayton_Triangles_(AFPA)_logo.png,dated,0,accept,,
+nfl,Brooklyn Dodgers,1930,fill,"Brooklyn_Dodgers_Cap_Logo_(1934_to_1936,_1938_to_1955).svg",dated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Card-Pitt,1944,fill,Card-Pitt_logo.gif,dated,0,accept,,
+nfl,Cincinnati Reds,1933,fill,Cincinnati_Reds_logo.svg,undated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Cleveland Indians,1931,fill,Cleveland_Indians_Insignia.gif,undated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Detroit Tigers,1921,fill,Detroit_Tigers_logo1.svg,undated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Washington Senators,1921,fill,"Washington_Senators_Cap_Logo_(1916_to_1925,_1928_to_1932,_1935,_1938_to_1948).svg",dated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+nfl,Cleveland Indians,1923,fill,Cleveland_Indians_Insignia.gif,undated,0,reject,,"a baseball club's mark (or a baseball card), not the football club of that name"
+other:hockey,Ottawa Senators,1912,fill,Original_Ottawa_Senators_Logo.png,dated,0,accept,,
+nhl,Colorado Rockies,1976,fill,Colorado_Rockies_logo1.svg,undated,0,reject,,"the baseball Rockies' CR, not the hockey club"
+other:hockey,Vancouver Millionaires,1911,fill,Vancouver_Millionaires_blue_logo.svg,undated,0,accept,,
+mlb,St. Paul Saints,1884,fill,St._Paul_Saints_logo.svg,undated,0,reject,,"the modern minor-league Saints, not the 1884 Union Association club"

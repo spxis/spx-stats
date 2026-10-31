@@ -72,8 +72,9 @@ create table legacy_game_venue.venue (qid text, label text, latitude numeric(9,6
 create table legacy_sportslogos.logo (sl_logo_key text primary key, hosted_path text, page_url text);
 
 -- the clubs (franchise ids 1 to 6); the leagues
-insert into core.franchise values (1), (2), (3), (4), (5), (6);
-insert into core.franchise_league values (1, 'nba', null), (2, 'mlb', null), (3, 'nba', null), (4, 'nba', null), (5, 'nba', null), (6, 'nba', null);
+insert into core.franchise values (1), (2), (3), (4), (5), (6), (7), (8), (9), (10), (11);
+insert into core.franchise_league values (1, 'nba', null), (2, 'mlb', null), (3, 'nba', null), (4, 'nba', null), (5, 'nba', null), (6, 'nba', null),
+  (7, 'nfl', null), (8, 'nfl', null), (8, 'afl', null), (9, 'nfl', null), (10, 'wha', null), (11, 'wha', null);
 
 -- Wikidata: a free logo and dated venues (Pistons, Padres); the Trail Blazers have only the English Wikipedia picture (non-free)
 insert into legacy_team_brand.team values ('nba', 'Q1', 'Detroit Pistons', '1941-01-01', null), ('mlb', 'Q2', 'San Diego Padres', '1968-01-01', null),
@@ -122,6 +123,9 @@ stage1() {
     ident 5 '[1988-07-01,2002-07-01)' 'Charlotte Hornets'; ident 5 '[2004-07-01,2012-04-27)' 'Charlotte Bobcats'; ident 5 '[2012-04-27,2014-07-01)' 'Charlotte Bobcats'
     ident 5 '[2014-07-01,)' 'Charlotte Hornets'
     ident 6 '[1977-07-01,2002-10-09)' 'New Jersey Nets'; ident 6 '[2002-10-09,2012-07-01)' 'New Jersey Nets'; ident 6 '[2012-07-01,)' 'Brooklyn Nets'
+    ident 7 '[1920-07-01,1944-07-01)' 'Chicago Cardinals'; ident 7 '[1944-07-01,1945-07-01)' 'Card-Pitt'; ident 7 '[1945-07-01,1960-07-01)' 'Chicago Cardinals'
+    ident 8 '[1960-07-01,1963-07-01)' 'Dallas Texans'; ident 9 '[1952-07-01,1953-07-01)' 'Dallas Texans'
+    ident 10 '[1972-07-01,1976-07-01)' 'Minnesota Fighting Saints'; ident 11 '[1976-07-01,1977-07-01)' 'Minnesota Fighting Saints'
   } | psql_ -o /dev/null
 }
 stage2() {
@@ -132,6 +136,9 @@ stage2() {
     ident 4 '[2002-07-01,2013-07-01)' 'New Orleans Hornets'; ident 4 '[2013-07-01,)' 'New Orleans Pelicans'
     ident 5 '[1988-07-01,2002-07-01)' 'Charlotte Hornets'; ident 5 '[2004-07-01,2014-07-01)' 'Charlotte Bobcats'; ident 5 '[2014-07-01,)' 'Charlotte Hornets'
     ident 6 '[1977-07-01,2012-07-01)' 'New Jersey Nets'; ident 6 '[2012-07-01,)' 'Brooklyn Nets'
+    ident 7 '[1920-07-01,1944-07-01)' 'Chicago Cardinals'; ident 7 '[1944-07-01,1945-07-01)' 'Card-Pitt'; ident 7 '[1945-07-01,1960-07-01)' 'Chicago Cardinals'
+    ident 8 '[1960-07-01,1963-07-01)' 'Dallas Texans'; ident 9 '[1952-07-01,1953-07-01)' 'Dallas Texans'
+    ident 10 '[1972-07-01,1976-07-01)' 'Minnesota Fighting Saints'; ident 11 '[1976-07-01,1977-07-01)' 'Minnesota Fighting Saints'
   } | psql_ -o /dev/null
 }
 
@@ -188,9 +195,23 @@ cmp -s "$T/c" "$T/e" && ok "after a run of 175_team_brand.sql alone, the four st
 [ "$(psql_ -c "select count(*) from core.franchise_brand where source_id = 1 and franchise_id = 2 and home_venue = 'Petco Park'")" = 1 ] \
   && ok "the Petco Park row keeps its venue" || bad "Petco Park row lost"
 
+# SPX-556: clubs of the early NFL, the AFL and the WHA. A name worn by two eras of one club (the Chicago Cardinals), by a club of two leagues beside
+# another club of the same name (the AFL's Dallas Texans and the NFL's of 1952), and by two clubs of one league (the Fighting Saints) each get their own mark.
+[ "$(psql_ -c "select count(*) from core.franchise_brand where franchise_id = 7 and logo_url is not null")" = 3 ] \
+  && ok "the Chicago Cardinals: one logo for each of the two eras and for Card-Pitt" || bad "Chicago Cardinals logos: $(rows 7)"
+[ "$(psql_ -c "select count(*) from core.franchise_brand where franchise_id = 7 and logo_url like '%Chicago_Cardinals_logo.png' and valid_during = daterange(null, '1944-07-01')")" = 1 ] \
+  && ok "the 1920 era's Commons mark covers exactly that era" || bad "Chicago Cardinals first era: $(rows 7)"
+[ "$(psql_ -c "select count(*) from core.franchise_brand where franchise_id = 8 and logo_url like '%Dallas_Texans_logo.webp'")" = 1 ] \
+  && ok "the AFL's Dallas Texans get their mark" || bad "Dallas Texans (AFL): $(rows 8)"
+[ "$(psql_ -c "select count(*) from core.franchise_brand where franchise_id = 9 and logo_url is not null")" = 0 ] \
+  && ok "the NFL's Dallas Texans of 1952 do not get the AFL club's mark" || bad "Dallas Texans (NFL) reached: $(rows 9)"
+[ "$(psql_ -c "select count(*) from core.franchise_brand where franchise_id in (10, 11) and logo_url is not null")" = 2 ] \
+  && [ "$(psql_ -c "select count(distinct logo_url) from core.franchise_brand where franchise_id in (10, 11) and logo_url is not null")" = 2 ] \
+  && ok "each Minnesota Fighting Saints club has its own logo" || bad "Fighting Saints logos: $(rows 10) $(rows 11)"
+
 echo
-echo "-- brand rows of the six clubs after the last run"
-for f in 1 2 3 4 5 6; do rows $f; done
+echo "-- brand rows of the clubs after the last run"
+for f in 1 2 3 4 5 6 7 8 9 10 11; do rows $f; done
 echo
 echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

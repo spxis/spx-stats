@@ -21,7 +21,8 @@ logos = json.load(open(f"{fetch}/logos.json"))
 images = json.load(open(f"{fetch}/images.json")) if os.path.exists(f"{fetch}/images.json") else {}
 # SportsLogos.Net league ids (the number in /teams/list_by_league/<id>/) and their names
 leagues = {"1": "National Hockey League", "4": "Major League Baseball", "6": "National Basketball Association", "7": "National Football League",
-           "8": "Canadian Football League", "147": "Pacific Coast Hockey Association", "172": "Federal League", "197": "Western Canada Hockey League"}
+           "8": "Canadian Football League", "147": "Pacific Coast Hockey Association", "172": "Federal League", "197": "Western Canada Hockey League",
+           "12": "World Hockey Association", "61": "National Hockey Association", "99": "American Football League", "237": "All-America Football Conference"}
 page_ids = {fn.split(".")[0] for fn in os.listdir(f"{fetch}/teams")} if os.path.isdir(f"{fetch}/teams") else set()
 used = sorted({str(l["team_id"]) for k, l in logos.items() if k in images})
 

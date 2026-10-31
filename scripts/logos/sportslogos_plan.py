@@ -10,7 +10,14 @@ to its end), so a season shows the mark of its own years. Columns first are thos
 import csv, json, re, sys, collections
 
 ident_f, cand_f, review_f, fetch, out = sys.argv[1:6]
-LEAGUE_IDS = {"nhl": {1}, "nba": {6}, "mlb": {4, 172}, "nfl": {7}, "cfl": {8}, "other:hockey": {147, 197}}
+# SportsLogos.Net league ids: 1 NHL, 4 MLB, 6 NBA, 7 NFL, 8 CFL, 12 WHA, 61 NHA, 99 AFL, 147 PCHA, 172 Federal League, 197 WCHL, 237 AAFC.
+# A club that was in a rival league and later the NHL or NFL answers to both (the Winnipeg Jets of the WHA, a club of the AFL).
+LEAGUE_IDS = {"nhl": {1, 12}, "nba": {6}, "mlb": {4, 172}, "nfl": {7, 99, 237}, "cfl": {8}, "other:hockey": {12, 61, 147, 197}}
+# An identity name our history writes differently from SportsLogos.Net's titles: the names its logos go under.
+ALIAS = {"Michigan Stags / Baltimore Blades": ["Michigan Stags", "Baltimore Blades"],
+         "New York Golden Blades / Jersey Knights": ["New York Golden Blades", "Jersey Knights"],
+         "Denver Spurs / Ottawa Civics": ["Denver Spurs", "Ottawa Civics"],
+         "Baltimore CFLers": ["Baltimore Stallions"], "Seattle": ["Seattle SuperSonics"], "Ottawa Hockey Club": ["Ottawa Senators"]}
 PREFER = ["Primary", "Primary Dark"]
 FALLBACK = ["Secondary", "Alternate", "Wordmark"]
 
@@ -43,7 +50,8 @@ for r in idents:
     lg = r["lg"]
     pool = []
     for lid in LEAGUE_IDS[lg]:
-        pool += by_name.get((lid, norm(r["name"])), [])
+        for nm in ALIAS.get(r["name"], [r["name"]]):
+            pool += by_name.get((lid, norm(nm)), [])
     y0, y1 = r["y0"], (r["y1"] or 9999)
     # SportsLogos.Net dates a winter sport's logo by the year its season ends ("1947" is 1946-47: its Toronto Huskies of 1946-47 are "1947");
     # our years are the seasons' first years. Baseball and football seasons sit in one calendar year.
@@ -66,7 +74,7 @@ for r in idents:
     for i, (s, l) in enumerate(segs):
         e = segs[i + 1][0] - 1 if i + 1 < len(segs) else (r["y1"] - 1 if r["y1"] else None)   # years are the seasons' start years, inclusive
         first, last = i == 0, i + 1 == len(segs)
-        rows.append({"league": lg.split(":")[0] if lg.startswith("other") else lg, "team": r["name"],
+        rows.append({"league": r.get("league") or (lg.split(":")[0] if lg.startswith("other") else lg), "team": r["name"],
                      "from_year": s if (shared or not first) else "", "to_year": (e if e is not None else "") if (shared or not last) else "", "source": "sportslogos", "file_key": l["key"], "replaces": "",
                      "note": f"SportsLogos.Net {l['kind']} logo {l['sl_from']}-{l['sl_to']}, fair use",
                      "kind": l["kind"], "logo_from": l["sl_from"], "logo_to": l["sl_to"], "era_from": r["y0"], "era_to": r["y1"] or "",
