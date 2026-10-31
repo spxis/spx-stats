@@ -13,17 +13,17 @@ import { test } from "node:test";
  * Skipped, with the reason, when PAGES_URL is not set or there is no Chromium for playwright-core. Never point it at production.
  *
  * Measured 2026-10-30 (signed-in hint, so /api/me is included). The first column is the budget; the next two are what the page did before and after the change that
- * made the header menu fetch on intent, left the picture files out of the matcher and stopped the 404 mascot being preloaded on every page.
+ * made the header menu fetch on intent, left the country flags and brand files out of the matcher and stopped the 404 mascot being preloaded on every page.
  *   kind          budget  before  after     (requests through the proxy: load, then scroll to the bottom)
  *   home               3      25      2
  *   league             3      31      2
  *   season             6      33      5
  *   team season        5      44      4
- *   franchise         21      60     19   (12 of them are jersey and title banners, still behind the gate: a decision for John)
+ *   franchise         22      60     20   (12 of them are jersey and title banners, still behind the gate: a decision for John)
  *   game               3      30      2
- *   player             7      37      5
- *   players            4      40      2
- *   teams              4      30      2
+ *   player             8      37      6
+ *   players            6      40      4   (hosted club logos, /team-logos/, stay behind the gate)
+ *   teams              9      30      7   (the same: a first-draw logo is 404 on a Mac without the exported files)
  *   cities             4      28      2
  * A page that goes over its budget has added a request per page view: look at what it fetches (the list in the failure message) before raising the number.
  */
@@ -40,11 +40,11 @@ const KINDS: Kind[] = [
   { kind: "league", path: "/nhl", budget: 3 },
   { kind: "season", path: "/mlb/2024", budget: 6 },
   { kind: "team season", path: "/mlb/2007/team/cincinnati-reds", budget: 5 },
-  { kind: "franchise", path: "/mlb/team/cincinnati-reds", budget: 21 },
+  { kind: "franchise", path: "/mlb/team/cincinnati-reds", budget: 22 },
   { kind: "game", path: "/mlb/2026/game/4887974-milwaukee-brewers-at-tampa-bay-rays", budget: 3 },
-  { kind: "player", path: "/nhl/player/wayne-gretzky-1866", budget: 7 },
-  { kind: "players list", path: "/players", budget: 4 },
-  { kind: "teams list", path: "/teams", budget: 4 },
+  { kind: "player", path: "/nhl/player/wayne-gretzky-1866", budget: 8 },
+  { kind: "players list", path: "/players", budget: 6 },
+  { kind: "teams list", path: "/teams", budget: 9 },
   { kind: "cities list", path: "/cities", budget: 4 },
 ];
 

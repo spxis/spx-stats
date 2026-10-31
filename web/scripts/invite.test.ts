@@ -45,7 +45,7 @@ test("signed out: no session, no list read, a browser is drawn the invite page a
   assert.match(crawler.answer.action === "refuse" ? crawler.answer.body : "", /data-site-gate="closed"/);
   assert.doesNotMatch(crawler.answer.action === "refuse" ? crawler.answer.body : "", /<script/);
 
-  for (const pathname of ["/api/players", "/api/teams/suggest", "/nhl/team/montreal-canadiens/rows/standings", "/surface/nfl.en.svg", "/venues.csv", "/field-plays/mlb-1.std.en.svg", "/jersey-banner/1467/4235", "/title-banner/mlb/1467/pennant", "/soccer-road/2022.en.svg", "/bracket-svg/nba-2023.wide.en.svg", "/sitemap.xml"]) {
+  for (const pathname of ["/api/players", "/api/teams/suggest", "/nhl/team/montreal-canadiens/rows/standings", "/surface/nfl.en.svg", "/venues.csv", "/field-plays/mlb-1.std.en.svg", "/jersey-banner/1467/4235", "/title-banner/mlb/1467/pennant", "/team-logos/sl/7269.gif", "/team-logos/abc-123456.webp", "/soccer-flags.svg", "/soccer-flags-round.svg", "/trophy-sprite.svg", "/soccer-road/2022.en.svg", "/bracket-svg/nba-2023.wide.en.svg", "/sitemap.xml"]) {
     const d = await decide(req({ pathname, headers: navigation }), null);
     assert.equal(d.answer.action, "refuse", pathname);
     assert.equal(d.answer.action === "refuse" && d.answer.status, 401, pathname);
@@ -81,7 +81,7 @@ test("what stays reachable while closed", async () => {
   const revalidate = await decide(req({ pathname: "/api/revalidate", method: "POST" }), null);
   assert.equal(revalidate.answer.action, "pass", "the release runner's POST (it checks its own secret)");
   assert.deepEqual([revalidate.reads.session, revalidate.reads.list], [0, 0]);
-  for (const pathname of ["/api/auth/session", "/api/auth/callback/google", "/api/auth/providers", "/api/me", "/login", "/invite-only", "/favicon.ico", "/_next/static/chunks/a.js", "/brand/logo.svg", "/mascot/x.png", "/flag/CA.svg", "/flag/CA.round.svg", "/soccer-flag/ES.svg", "/soccer-flags.svg", "/trophy-sprite.svg", "/team-logos/sl/7269.gif", "/manifest.webmanifest"]) {
+  for (const pathname of ["/api/auth/session", "/api/auth/callback/google", "/api/auth/providers", "/api/me", "/login", "/invite-only", "/favicon.ico", "/_next/static/chunks/a.js", "/brand/logo.svg", "/mascot/x.png", "/flag/CA.svg", "/flag/CA.round.svg", "/soccer-flag/ES.svg", "/manifest.webmanifest"]) {
     assert.equal((await decide(req({ pathname }), null)).answer.action, "pass", pathname);
   }
   for (const pathname of ["/", "/nhl", "/api/players", "/admin", "/admin/invites", "/me", "/api/revalidates", "/api/authx/session", "/login/x", "/invite-only/x"]) {
@@ -99,7 +99,7 @@ test("the proxy matcher leaves out the picture files the gate exempts, and keeps
   const found = /matcher:\s*\[\s*"([^"]+)"/.exec(text);
   assert.ok(found, "the matcher is one literal string");
   const matcher = new RegExp(`^${found[1].replace(/\\\\/g, "\\")}$`);
-  const outside = ["/_next/static/chunks/a.js", "/favicon.ico", "/manifest.webmanifest", "/flag/CA.svg", "/flag/GB-ENG.square.svg", "/soccer-flag/ES.svg", "/soccer-flags.svg", "/soccer-flags-round.svg", "/trophy-sprite.svg", "/brand/sportsinteractive.svg", "/mascot/mascot-404-colour.svg", "/team-logos/sl/7269.gif", "/team-logos/abc-123456.webp"];
+  const outside = ["/_next/static/chunks/a.js", "/favicon.ico", "/manifest.webmanifest", "/flag/CA.svg", "/flag/GB-ENG.square.svg", "/soccer-flag/ES.svg", "/brand/sportsinteractive.svg", "/mascot/mascot-404-colour.svg"];
   for (const path of outside) {
     assert.equal(matcher.test(path), false, `${path} is left out of the proxy`);
     assert.equal(gateExempt(path) || path.startsWith("/_next/static/") || path === "/favicon.ico", true, `${path} is left out of the proxy, so the gate must exempt it: keep rules.ts in step`);
@@ -108,11 +108,11 @@ test("the proxy matcher leaves out the picture files the gate exempts, and keeps
     "/", "/nhl", "/mlb/2024", "/players", "/teams", "/cities", "/login", "/invite-only", "/admin", "/admin/data", "/me", "/robots.txt", "/sitemap.xml",
     "/api/me", "/api/players", "/api/auth/session", "/api/revalidate", "/nhl/team/montreal-canadiens/rows/standings", "/venues.csv", "/venues.geojson",
     "/surface/nhl_1997.en.svg", "/bracket-svg/nba-2023.wide.en.svg", "/field-plays/mlb-1.std.en.svg", "/soccer-road/2022.en.svg", "/jersey-banner/1467/4235", "/title-banner/mlb/1467/pennant",
-    "/_next/image", "/flags", "/flagship", "/brands", "/team-logos", "/flag", "/mascots/x.svg", "/en/flag/CA.svg",
+    "/_next/image", "/soccer-flags.svg", "/soccer-flags-round.svg", "/trophy-sprite.svg", "/team-logos/sl/7269.gif", "/team-logos/abc-123456.webp", "/flags", "/flagship", "/brands", "/team-logos", "/flag", "/mascots/x.svg", "/en/flag/CA.svg",
   ];
   for (const path of inside) assert.equal(matcher.test(path), true, `${path} goes through the proxy`);
   // No data route of isDataPath may be exempt unless it is a picture file listed above.
-  for (const path of ["/rows/x", "/api/players", "/surface/x.svg", "/field-plays/x.svg", "/bracket-svg/x.svg", "/soccer-road/x.svg", "/jersey-banner/1/2", "/title-banner/a/b/c"]) assert.equal(gateExempt(path), false, `${path} stays behind the gate`);
+  for (const path of ["/rows/x", "/api/players", "/surface/x.svg", "/field-plays/x.svg", "/bracket-svg/x.svg", "/soccer-road/x.svg", "/jersey-banner/1/2", "/title-banner/a/b/c", "/team-logos/sl/1.gif", "/soccer-flags.svg", "/soccer-flags-round.svg", "/trophy-sprite.svg"]) assert.equal(gateExempt(path), false, `${path} stays behind the gate`);
 });
 
 test("robots.txt says Disallow all, to anyone, with no reads", async () => {

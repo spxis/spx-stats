@@ -19,7 +19,7 @@ export type SiteRelease = {
 export const SITE_RELEASES: readonly SiteRelease[] = [
   { version: "0.174.7", date: "2026-10-30", href: "/nhl",
     title: "A page visit asks the server for far fewer files",
-    text: "Opening a page used to fetch every page of the top menu in the background (a dozen, up to 150 KB each). Menu pages are now fetched when the pointer rests on a link, and flags and logos are plain files. A league page went from 31 requests to the server to 2. Clicking a menu link at once can take a moment longer."
+    text: "Opening a page used to fetch every page of the top menu in the background (a dozen, up to 150 KB each). Menu pages are now fetched when the pointer rests on a link, and country flags no longer run the server's visitor check one by one. A league page went from 31 requests to the server to 2. Clicking a menu link at once can take a moment longer."
   },
   { version: "0.174.6", date: "2026-10-30", href: "/cfl/2026",
     title: "Clubs with the same record keep the same order",
