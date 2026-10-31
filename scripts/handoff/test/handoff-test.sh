@@ -74,10 +74,15 @@ cat > "$B/turso" <<'EOF'
 #!/bin/sh
 echo '{"results":[{"response":{"result":{"rows":[[{"value":"api_totals"}],[{"value":"api_quality"}]]}}}]}'
 EOF
+cat > "$B/logos" <<EOF
+#!/bin/sh
+echo "logos \$*" >> "$LOG"
+[ "\${STUB_LOGOS:-}" != fail ]
+EOF
 chmod +x "$B"/*
 export LOGFILE="$LOG"
 export SPX_REPO="$R" SPX_NO_FETCH=1 SPX_TASK_CMD="$B/task" SPX_VERCEL_CMD="$B/vercel" SPX_DS1_APPLY_CMD="$B/ds1" SPX_RELEASE_CMD="$B/release" \
-  SPX_CHECK_LIVE_AUTH="$B/liveauth" SPX_PROD_QUERY_CMD="$B/prod" SPX_TURSO_QUERY_CMD="$B/turso" SPX_SITE_URL="http://127.0.0.1:$PORT" SPX_ACTOR="test-actor"
+  SPX_CHECK_LIVE_AUTH="$B/liveauth" SPX_HOSTED_LOGOS_CMD="$B/logos" SPX_PROD_QUERY_CMD="$B/prod" SPX_TURSO_QUERY_CMD="$B/turso" SPX_SITE_URL="http://127.0.0.1:$PORT" SPX_ACTOR="test-actor"
 export PATH="$B:$PATH"
 
 # the fake site: 401 without the bypass header, 200 with it; /broken says Couldn't load
@@ -152,12 +157,18 @@ export SPX_VERCEL_BYPASS=stubtoken
 out="$($D 2>&1)"; rc=$?
 expect "exit 0" "[ $rc = 0 ]"
 expect "clean archive deploy ran" "grep -q 'vercel link --yes --project spx-stats' $LOG && grep -q 'vercel deploy --prod --yes' $LOG"
+expect "the hosted logos are written into the copy before the deploy" "[ \$(grep -n '^logos .*/web\$' $LOG | cut -d: -f1) -lt \$(grep -n 'vercel deploy --prod' $LOG | cut -d: -f1) ]"
 expect "sign-in check ran with the new url" "grep -q 'liveauth --new https://spx-stats-new.vercel.app' $LOG"
 expect "ticket marked done with the short sha" "grep -q \"task done $T1 --by test-actor --version $SHA\" $LOG"
 expect "hand-off moved to done/" "[ -f $SPX_HANDOFF_DIR/done/$T1.json ] && [ ! -f $SPX_HANDOFF_DIR/$T1.json ]"
 expect "reply says deployed with version and deployment" "[ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ] && [ \$(jq -r '.history[-1].deployment' $SPX_HANDOFF_DIR/replies/$T1.json) = dpl_StubDeploy1 ]"
 expect "pages were checked with the header" "jq -e '.history[-1].checked | index(\"/nhl/2012 200\")' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
 expect "summary printed" "printf '%s' \"\$out\" | grep -q -- '---- summary'"
+
+echo "deploy.sh: the hosted logos cannot be written"
+reset; mk $T1 '.' site-ready
+out="$(STUB_LOGOS=fail $D 2>&1)"; rc=$?
+expect "no deploy, no ticket closed, hand-off kept" "! grep -qE '^vercel deploy|^task done' $LOG && [ -f $SPX_HANDOFF_DIR/$T1.json ]"
 
 echo "deploy.sh: vercel prints a JSON block (the last line is a closing brace)"
 reset; mk $T1 '.' site-ready

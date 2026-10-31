@@ -22,7 +22,7 @@
 #
 # Settings (all optional; tests stub them): SPX_REPO, SPX_GIT_REF (origin/main), SPX_NO_FETCH=1, SPX_ACTOR (board name, default deploy.sh),
 # SPX_SITE_URL (https://spxn.com), SPX_VERCEL_CMD, SPX_VERCEL_SCOPE, SPX_TASK_CMD, SPX_DS1_APPLY_CMD, SPX_RELEASE_CMD, SPX_CHECK_LIVE_AUTH,
-# SPX_PROD_QUERY_CMD (reads SQL on stdin), SPX_TURSO_QUERY_CMD, SPX_VERCEL_BYPASS, SPX_HANDOFF_DIR.
+# SPX_PROD_QUERY_CMD (reads SQL on stdin), SPX_TURSO_QUERY_CMD, SPX_VERCEL_BYPASS, SPX_HANDOFF_DIR, SPX_HOSTED_LOGOS_CMD (given the web directory of the copy).
 # Keychain item names (values are never printed): 'spx-stats SUPABASE_ACCESS_TOKEN', 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET',
 # 'spx-stats TURSO_DATABASE_URL', 'spx-stats TURSO_AUTH_TOKEN' (Turso: also read from TURSO_DATABASE_URL / TURSO_AUTH_TOKEN).
 set -u
@@ -330,9 +330,15 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
   else
     D="$(mktemp -d)"; TMPS+=("$D")
     git -C "$REPO" archive "$SHA" | tar -x -C "$D"
+    # The hosted club logos (/team-logos/sl) are not in git: without this step a deploy ships none of them and those clubs draw a broken picture.
+    logos_ok=1
+    say "  writing the hosted logos from DS1"
+    if [ -n "${SPX_HOSTED_LOGOS_CMD:-}" ]; then $SPX_HOSTED_LOGOS_CMD "$D/web" || logos_ok=0
+    else ( say() { printf '  %s\n' "$*"; }; die() { printf '  %s\n' "$*" >&2; exit 1; }; . "$REPO/scripts/mac/lib/hosted-logos.sh"; hosted_logos_export "$D/web" ) || logos_ok=0
+    fi
     say "  deploying $SHORT (about a minute; nothing prints until the build is done)"
     url="" dpl="" dout=""
-    if (cd "$D" && $VERCEL link --yes --project spx-stats --scope "$SCOPE" >/dev/null 2>&1); then
+    if [ "$logos_ok" = 1 ] && (cd "$D" && $VERCEL link --yes --project spx-stats --scope "$SCOPE" >/dev/null 2>&1); then
       dout="$(cd "$D" && $VERCEL deploy --prod --yes --scope "$SCOPE" 2>/dev/null)"
       url="$(vercel_url "$dout")"; dpl="$(vercel_dpl "$dout")"
     fi
