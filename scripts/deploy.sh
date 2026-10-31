@@ -22,7 +22,8 @@
 #
 # Settings (all optional; tests stub them): SPX_REPO, SPX_GIT_REF (origin/main), SPX_NO_FETCH=1, SPX_ACTOR (board name, default deploy.sh),
 # SPX_SITE_URL (https://spxn.com), SPX_VERCEL_CMD, SPX_VERCEL_SCOPE, SPX_TASK_CMD, SPX_DS1_APPLY_CMD, SPX_RELEASE_CMD, SPX_CHECK_LIVE_AUTH,
-# SPX_PROD_QUERY_CMD (reads SQL on stdin), SPX_TURSO_QUERY_CMD, SPX_VERCEL_BYPASS, SPX_HANDOFF_DIR, SPX_HOSTED_LOGOS_CMD (given the web directory of the copy).
+# SPX_PROD_QUERY_CMD (reads SQL on stdin), SPX_TURSO_QUERY_CMD, SPX_VERCEL_BYPASS, SPX_HANDOFF_DIR, SPX_HOSTED_LOGOS_CMD (given the web directory of the copy),
+# SPX_LOGO_COPIES (1 renders the small logo copies; default 0), SPX_LOGO_REST (read-only PostgREST for it, default the preview on 7750), SPX_LOGO_RENDER_CMD (stub: web directory, rest url).
 # Keychain item names (values are never printed): 'spx-stats SUPABASE_ACCESS_TOKEN', 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET',
 # 'spx-stats TURSO_DATABASE_URL', 'spx-stats TURSO_AUTH_TOKEN' (Turso: also read from TURSO_DATABASE_URL / TURSO_AUTH_TOKEN).
 set -u
@@ -37,6 +38,8 @@ TASK="${SPX_TASK_CMD:-node scripts/task.ts}"
 DS1APPLY="${SPX_DS1_APPLY_CMD:-bash $REPO/scripts/mac/ds1-apply.sh}"
 RELEASE="${SPX_RELEASE_CMD:-python3 -I $REPO/scripts/release/release.py}"
 LIVEAUTH="${SPX_CHECK_LIVE_AUTH:-bash $REPO/scripts/mac/check-live-auth.sh}"
+LOGOCOPIES="${SPX_LOGO_COPIES:-0}"   # 1 renders the site's own small logo copies into the deploy (default off: they sit behind the invite gate)
+LOGOREST="${SPX_LOGO_REST:-http://127.0.0.1:7750/}"   # a read-only PostgREST of the api schema (the always-on preview)
 PROJECT_REF="njpvfrceahkvnrduerkk"
 UA="Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/129.0.0.0 Safari/537.36"
 export PATH="/opt/homebrew/bin:/usr/local/bin:$PATH"
@@ -336,6 +339,23 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
     if [ -n "${SPX_HOSTED_LOGOS_CMD:-}" ]; then $SPX_HOSTED_LOGOS_CMD "$D/web" || logos_ok=0
     else ( say() { printf '  %s\n' "$*"; }; die() { printf '  %s\n' "$*" >&2; exit 1; }; . "$REPO/scripts/mac/lib/hosted-logos.sh"; hosted_logos_export "$D/web" ) || logos_ok=0
     fi
+    # The site's own small logo copies (docs/logos-serving.md): OFF unless SPX_LOGO_COPIES=1. Each file under /team-logos/ passes the proxy (the invite gate), one function run per
+    # logo per view, so switching them on before John decides whether they leave the gate would put about 30 runs on a season page. It never stops the deploy: with no
+    # Pillow, no read-only PostgREST or a failed render the logos keep their hot links, and the summary says so.
+    logo_note="logo copies: off (SPX_LOGO_COPIES=1 turns them on; waits for John's decision on the invite gate, docs/logos-serving.md)"
+    if [ "$LOGOCOPIES" = 1 ] && [ "$logos_ok" = 1 ]; then
+      say "  rendering the site's own small logo copies (read-only PostgREST at $LOGOREST)"
+      if [ -n "${SPX_LOGO_RENDER_CMD:-}" ]; then
+        if $SPX_LOGO_RENDER_CMD "$D/web" "$LOGOREST"; then logo_note="logo copies: rendered"; else logo_note="logo copies: NOT rendered (the render failed); the logos keep their hot links"; fi
+      elif ! curl -s -f -m 8 -o /dev/null -H "Accept-Profile: api" "${LOGOREST%/}/team_brand?limit=1" 2>/dev/null; then
+        logo_note="logo copies: NOT rendered (no read-only PostgREST answered at $LOGOREST; bash scripts/mac/ds1-preview.sh --install starts one); the logos keep their hot links"
+      else
+        ( say() { printf '  %s\n' "$*"; }; die() { printf '  %s\n' "$*" >&2; exit 1; }; . "$REPO/scripts/mac/lib/hosted-logos.sh"; hosted_logos_render "$D/web" "$LOGOREST" ) || true
+        if [ -f "$D/web/public/team-logos/manifest.json" ]; then logo_note="logo copies: rendered ($(ls "$D/web/public/team-logos" | wc -l | tr -d ' ') files in web/public/team-logos)"
+        else logo_note="logo copies: NOT rendered (see above); the logos keep their hot links"; fi
+      fi
+      say "  $logo_note"
+    fi
     say "  deploying $SHORT (about a minute; nothing prints until the build is done)"
     url="" dpl="" dout=""
     if [ "$logos_ok" = 1 ] && (cd "$D" && $VERCEL link --yes --project spx-stats --scope "$SCOPE" >/dev/null 2>&1); then
@@ -351,7 +371,7 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
       bad "site: deploy FAILED (no URL); see AGENTS.md section 7"
     else
       say "  deployed $url"
-      problems=() checked=("deployment READY: $dep")
+      problems=() checked=("deployment READY: $dep" "$logo_note")
       la="$(umask 077; mktemp)"; TMPS+=("$la")
       if $LIVEAUTH --new "$url" > "$la" 2>&1; then checked+=("sign-in check ok"); else problems+=("sign-in check failed: $(tail -3 "$la" | tr '\n' ' ')"); fi
       tok="${SPX_VERCEL_BYPASS:-$(kc 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET')}"

@@ -79,6 +79,11 @@ cat > "$B/logos" <<EOF
 echo "logos \$*" >> "$LOG"
 [ "\${STUB_LOGOS:-}" != fail ]
 EOF
+cat > "$B/logocopies" <<EOF
+#!/bin/sh
+echo "logocopies \$*" >> "$LOG"
+[ "\${STUB_LOGOCOPIES:-}" != fail ]
+EOF
 chmod +x "$B"/*
 export LOGFILE="$LOG"
 export SPX_REPO="$R" SPX_NO_FETCH=1 SPX_TASK_CMD="$B/task" SPX_VERCEL_CMD="$B/vercel" SPX_DS1_APPLY_CMD="$B/ds1" SPX_RELEASE_CMD="$B/release" \
@@ -169,6 +174,22 @@ echo "deploy.sh: the hosted logos cannot be written"
 reset; mk $T1 '.' site-ready
 out="$(STUB_LOGOS=fail $D 2>&1)"; rc=$?
 expect "no deploy, no ticket closed, hand-off kept" "! grep -qE '^vercel deploy|^task done' $LOG && [ -f $SPX_HANDOFF_DIR/$T1.json ]"
+
+echo "deploy.sh: the site's own small logo copies (off by default: they sit behind the invite gate)"
+reset; mk $T1 '.' site-ready
+out="$($D 2>&1)"; rc=$?
+expect "default: the logo render is not run, the deploy goes on" "[ $rc = 0 ] && ! grep -q '^logocopies' $LOG && grep -q 'vercel deploy --prod' $LOG"
+expect "default: the reply says the copies are off" "jq -e '.history[-1].checked | map(select(startswith(\"logo copies: off\"))) | length == 1' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
+reset; mk $T1 '.' site-ready
+out="$(SPX_LOGO_COPIES=1 SPX_LOGO_RENDER_CMD="$B/logocopies" SPX_LOGO_REST=http://127.0.0.1:7750/ $D 2>&1)"; rc=$?
+expect "on: the render runs on the copy's web directory with the PostgREST, after the hosted logos and before the deploy" "[ \$(grep -n '^logos .*/web\$' $LOG | cut -d: -f1) -lt \$(grep -n '^logocopies .*/web http://127.0.0.1:7750/\$' $LOG | cut -d: -f1) ] && [ \$(grep -n '^logocopies' $LOG | cut -d: -f1) -lt \$(grep -n 'vercel deploy --prod' $LOG | cut -d: -f1) ]"
+expect "on: the reply says the copies were rendered" "jq -e '.history[-1].checked | index(\"logo copies: rendered\")' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
+reset; mk $T1 '.' site-ready
+out="$(STUB_LOGOCOPIES=fail SPX_LOGO_COPIES=1 SPX_LOGO_RENDER_CMD="$B/logocopies" $D 2>&1)"; rc=$?
+expect "on, render fails: the deploy still goes ahead and the reply says so" "[ $rc = 0 ] && grep -q 'vercel deploy --prod' $LOG && grep -q 'task done' $LOG && jq -e '.history[-1].checked | map(select(startswith(\"logo copies: NOT rendered\"))) | length == 1' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
+reset; mk $T1 '.' site-ready
+out="$(SPX_LOGO_COPIES=1 SPX_LOGO_RENDER_CMD= SPX_LOGO_REST=http://127.0.0.1:1/ $D 2>&1)"; rc=$?
+expect "on, no PostgREST answers: the deploy goes ahead and the reply says so" "[ $rc = 0 ] && grep -q 'vercel deploy --prod' $LOG && jq -e '.history[-1].checked | map(select(startswith(\"logo copies: NOT rendered (no read-only PostgREST\"))) | length == 1' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
 
 echo "deploy.sh: vercel prints a JSON block (the last line is a closing brace)"
 reset; mk $T1 '.' site-ready

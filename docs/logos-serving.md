@@ -1,6 +1,6 @@
 # Serving team logos: measurement and proposal
 
-Status: proposal, nothing built. Ticket cmv99sy290000l606fpdcpjf4. Measured 2026-10-18 with the dev server (`next dev`, kept pages
+Status: built (2026-10-19) and measured on 2026-10-31: the normal deploy can render them (`SPX_LOGO_COPIES=1`, default off) but they stay off until John decides whether `/team-logos/` leaves the invite gate. Ticket cmv99sy290000l606fpdcpjf4 and SPX-819. Measured 2026-10-18 with the dev server (`next dev`, kept pages
 drawn against production's public API; spxn.com itself is behind a bot check) and by fetching every logo URL the pages name.
 Each page was fetched once, images fetched from Wikimedia 1.2 s apart with the project User-Agent.
 
