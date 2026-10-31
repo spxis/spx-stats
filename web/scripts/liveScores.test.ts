@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { afterEach, beforeEach, test } from "node:test";
-import { LIVE_POLL_MS, byGame, confidence, inLiveWindow, liveCandidates, liveRowSchema, liveView, shouldPoll } from "../src/lib/liveScores.ts";
+import { LIVE_POLL_MS, byGame, confidence, inLiveWindow, liveCandidates, liveView, shouldPoll } from "../src/lib/liveScores.ts";
+import { liveRowSchema } from "../src/lib/liveRowSchema.ts";
 import { LIVE_SHARE_SECONDS, getLiveScores } from "../src/lib/turso/live.ts";
 
 /** Run in web/: pnpm test:live */

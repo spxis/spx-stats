@@ -5,7 +5,8 @@ import { alignmentFromPack, alignmentPackSchema } from "./alignmentPack";
 import { standingSchema } from "./api/schemas";
 import type { StandingRow } from "./api/types";
 import { isOutsideConference } from "./leagues";
-import { alignmentChangeSchema, alignmentSchema, type AlignmentChangeRow, type AlignmentRow } from "./alignment";
+import type { AlignmentChangeRow, AlignmentRow } from "./alignment";
+import { alignmentChangeSchema, alignmentSchema } from "./alignmentSchema";
 
 /**
  * Alignment is read from views a database may not have yet (db/migrations/028_api_alignment.sql): a missing view, or

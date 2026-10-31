@@ -1,7 +1,7 @@
 import { ApiError } from "@/lib/api/client";
 import { getAbbrs, getBrands, getSummary, getTeam, getTeamStandings } from "@/lib/data";
 import { franchiseSeasonRows, standLines } from "@/lib/franchiseRows";
-import { speaker } from "@/lib/i18n/i18n";
+import { speaker } from "@/lib/i18n/speaker";
 import { isLeague } from "@/lib/leagues";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/locale";
 import { STAND_HEAD } from "@/lib/standLines";

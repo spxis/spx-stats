@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.174.8",
+  "version": "0.174.9",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -23,6 +23,7 @@
     "test:families": "node --test scripts/leagueFamilies.test.ts",
     "test:weight": "node --test scripts/weight.test.ts",
     "test:pagecalls": "node --test scripts/pageCalls.test.ts",
+    "test:pagescripts": "node --test scripts/pageScripts.test.ts",
     "test:allstar": "node --test scripts/allStar.test.ts",
     "test:trophypages": "node --test scripts/trophies.pages.test.ts",
     "test:trophies": "node --conditions=react-server --test scripts/trophies.test.ts",

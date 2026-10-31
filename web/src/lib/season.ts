@@ -2,8 +2,8 @@
  * Pure logic shared by the server (first render) and the client (the calendar): types for a
  * season's compact game list, the URL search params, and how a selection resolves against the games.
  */
-import { z } from "zod";
 import { LEAGUE_CODES, type LeagueCode } from "./leagues.ts";
+import { oneOf, shaped } from "./queryParam.ts";
 
 export type Phase = "r" | "p" | "s" | "a";
 
@@ -41,20 +41,16 @@ export interface Selection {
   week?: string;
 }
 
-const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-
 /** ?phase=&team=&month=&day=&week= : anything that is not a well-formed value falls back to the default. */
-export const selectionSchema = z.object({
-  phase: z.preprocess(first, z.enum(["r", "p", "s", "a", ""])).catch("r"),
-  team: z.preprocess(first, z.string().regex(/^\d{1,9}$/)).catch(""),
-  month: z.preprocess(first, z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/)).catch(""),
-  day: z.preprocess(first, z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/)).catch(""),
-  week: z.preprocess(first, z.string().regex(/^(all|\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$/)).catch(""),
-});
-
 export function parseSelection(raw: Record<string, string | string[] | undefined>): Selection {
   // An absent phase means the regular season; `?phase=` (present, empty) means all of it.
-  return selectionSchema.parse({ phase: raw.phase, team: raw.team, month: raw.month, day: raw.day, week: raw.week });
+  return {
+    phase: oneOf(raw.phase, ["r", "p", "s", "a", ""] as const) ?? "r",
+    team: shaped(raw.team, /^\d{1,9}$/) ?? "",
+    month: shaped(raw.month, /^\d{4}-(0[1-9]|1[0-2])$/) ?? "",
+    day: shaped(raw.day, /^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/) ?? "",
+    week: shaped(raw.week, /^(all|\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))$/) ?? "",
+  };
 }
 
 export const ymOf = (date: string): string => date.slice(0, 7);

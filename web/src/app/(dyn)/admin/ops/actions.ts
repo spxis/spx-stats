@@ -4,7 +4,7 @@ import { cookies, headers } from "next/headers";
 import { sameOrigin } from "@/lib/auth/origin";
 import { requireAdminWrite } from "@/lib/auth/user";
 import { isConfirmed } from "@/lib/confirm";
-import { speaker } from "@/lib/i18n/i18n";
+import { speaker } from "@/lib/i18n/speaker";
 import { effectiveLocale, LOCALE_COOKIE_NAME } from "@/lib/locale";
 import { opsDashboard, requestLeagueUpdate, requestOps } from "@/lib/ops/client";
 import { requestBlock, scoreBlock } from "@/lib/ops/rules";

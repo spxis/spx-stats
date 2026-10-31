@@ -3,7 +3,7 @@ import { placeOf } from "@/lib/gamePlace";
 import { getGame } from "@/lib/gameData";
 import { getGameField } from "@/lib/gameField";
 import { drawMlbBalls, drawNflDrives, drawStdField, playWire } from "@/lib/fieldPlaysFile";
-import { speaker } from "@/lib/i18n/i18n";
+import { speaker } from "@/lib/i18n/speaker";
 import { isLocale } from "@/lib/locale";
 
 // What a game's page draws on its field, as a file the page loads when the drawing comes into view (components/FieldPlays.tsx), so the page's HTML does not hold it:

@@ -1,7 +1,7 @@
 import { ApiError } from "@/lib/api/client";
 import { getTeam } from "@/lib/data";
 import { franchiseCountryView } from "@/lib/franchiseCountryData";
-import { speaker } from "@/lib/i18n/i18n";
+import { speaker } from "@/lib/i18n/speaker";
 import { isLeague } from "@/lib/leagues";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/locale";
 import { teamOf } from "@/lib/teamSlugs";

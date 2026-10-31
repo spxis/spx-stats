@@ -1,4 +1,3 @@
-import { z } from "zod";
 
 /**
  * The live score layer as the page sees it: provisional results the allowed sources have given before the archive settles the game
@@ -16,35 +15,24 @@ const addDay = (iso: string, n: number): string => new Date(Date.parse(`${iso}T0
 
 export const LIVE_STATES = ["in_progress", "final"] as const;
 
-const flag = z.number().int().transform((n) => n !== 0);
-const maybe = z.number().int().nullable();
-
-export const liveRowSchema = z.object({
-  game_id: z.number().int(),
-  status: z.enum(LIVE_STATES),
-  home_score: maybe,
-  away_score: maybe,
-  overtime: maybe.transform((n) => (n === null ? null : n !== 0)),
-  period: z.string().nullable(),
-  disputed: flag,
-  ready: flag,
-  n_sources: z.number().int(),
-  n_agree: z.number().int(),
-  confirm_agree: z.number().int(),
-  confirm_differ: z.number().int(),
-  sources: z.string().transform((s, ctx): LiveSource[] => {
-    try {
-      return z.array(z.object({ s: z.string(), h: z.number().int(), a: z.number().int(), at: z.string() })).parse(JSON.parse(s));
-    } catch {
-      ctx.addIssue({ code: "custom", message: "sources" });
-      return z.NEVER;
-    }
-  }),
-  fetched_at: z.string(),
-});
-
 export interface LiveSource { s: string; h: number; a: number; at: string }
-export type LiveRow = z.infer<typeof liveRowSchema>;
+/** One live row as the route and the page hold it. The zod schema that reads it from Turso is in ./liveRowSchema.ts (zod stays out of the browser). */
+export interface LiveRow {
+  game_id: number;
+  status: (typeof LIVE_STATES)[number];
+  home_score: number | null;
+  away_score: number | null;
+  overtime: boolean | null;
+  period: string | null;
+  disputed: boolean;
+  ready: boolean;
+  n_sources: number;
+  n_agree: number;
+  confirm_agree: number;
+  confirm_differ: number;
+  sources: LiveSource[];
+  fetched_at: string;
+}
 
 /** What the route sends: the rows of one league and day, nothing else. */
 export interface LiveAnswer { rows: LiveRow[] }

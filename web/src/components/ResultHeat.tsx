@@ -146,7 +146,9 @@ export function ResultHeat({ lg, games, compact = false, lock, fill = true }: Re
           {marks.map((m) => (
             <text key={`m${m.col}`} className="lab" x={LEFT + m.col * step} y={10}>{seasonLabel(lg, m.year)}</text>
           ))}
-          {grid.columns.map((col, i) => col.map((c, r) => {
+          {/* One flat list, not a list per column: a game keeps its element when the graph is laid out again (the width is measured after the first draw),
+              so a franchise's 20,000 squares move by changing x and y. A list per column made every square a new element each time, and inserting them one by one took seconds. */}
+          {grid.columns.flatMap((col, i) => col.map((c, r) => {
             if (!c) return null;
             const facts = cardOf(c);
             return (

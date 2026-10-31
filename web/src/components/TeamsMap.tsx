@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapViewer } from "./MapViewer";
+import { MapViewerLazy } from "./MapViewerLazy";
 import { MapHost } from "./TeamMap";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { Pin } from "./mapDraw";
@@ -41,7 +41,7 @@ export function TeamsMapCorner({ pins, text }: { pins: Pin[]; text?: { title: st
             <h2>{title}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          <MapViewer pins={pins} title={title} total={pins.length} note={text?.note ?? say("teams.mapNote", { n: fmt(pins.length) })} onNavigate={() => dlg.current?.close()} />
+          <MapViewerLazy pins={pins} title={title} total={pins.length} note={text?.note ?? say("teams.mapNote", { n: fmt(pins.length) })} onNavigate={() => dlg.current?.close()} />
         </dialog>
       ) : null}
     </div>

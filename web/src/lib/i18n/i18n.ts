@@ -1,5 +1,5 @@
 import { LOCALE_TAG, type Locale } from "@/lib/locale";
-import { DICTIONARIES } from "./dictionaries";
+import type { Dictionary } from "./dictionaries";
 import { formatsFor, type DateFormats } from "./formats";
 import { PHRASES, type PhraseKey } from "./phrases.constants";
 
@@ -33,8 +33,11 @@ export interface Speaker {
   dt: DateFormats;
 }
 
-export function speaker(locale: Locale): Speaker {
-  const dictionary = DICTIONARIES[locale];
+/**
+ * The site talking in one language, given that language's dictionary. A Client Component gets the dictionary from `LocaleProvider`, which
+ * loads only the reader's language: this file must not import the other languages (`speaker()` in ./speaker.ts does, for the server).
+ */
+export function speakerWith(locale: Locale, dictionary: Dictionary): Speaker {
   const say = (key: PhraseKey, vars?: Vars) => fill(dictionary[key] ?? PHRASES[key], vars);
   const { fmt, dt } = formatsFor(locale);
   const rules = new Intl.PluralRules(LOCALE_TAG[locale]);

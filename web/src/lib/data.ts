@@ -17,7 +17,7 @@ import { mergeSpans } from "./nameEras";
 import { edgeSteps, playedYears, seasonSteps, windowSteps } from "./gameSeasons";
 import { isOutsideConference, isSpx } from "./leagues";
 import { getAllMembers, isMemberRow } from "./leagueMembers";
-import { logoFitSchema, type LogoFit } from "./logoFit";
+import type { LogoFit } from "./logoFit";
 import { logoFitPackSchema, logoFitsFromPack } from "./logoFitPack";
 import { brandPackSchema, brandRowsFromPack } from "./brandPack";
 import { summaryPackSchema, summaryRowsFromPack } from "./summaryPack";
@@ -93,6 +93,22 @@ export const getBrands = cache(async (): Promise<BrandMap> => {
   const all = await rows("team_brand", "select=*&order=franchise_id,brand_from.nullsfirst", teamBrandSchema).catch(() => []);
   return groupBrands(all);
 });
+
+const logoFitSchema = z.object({
+  logo_file: z.string(),
+  league: z.string().nullable(),
+  team: z.string(),
+  wordmark: z.boolean(),
+  mark_url: z.string().nullable(),
+  mark_licence: z.string().nullable(),
+  mark_page: z.string().nullable(),
+  scale: z.number(),
+  dx: z.number(),
+  dy: z.number(),
+  bg: z.string(),
+  status: z.enum(["proposed", "approved", "rejected"]),
+  note: z.string().nullable(),
+}) satisfies z.ZodType<LogoFit>;
 
 /** How each logo is fitted into the site's logo boxes (api.logo_fit, migration 107); none while the view or its rows are missing. */
 export const getLogoFits = cache(async (): Promise<LogoFit[]> => {

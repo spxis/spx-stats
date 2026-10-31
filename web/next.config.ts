@@ -39,6 +39,9 @@ const nextConfig: NextConfig = {
   // Lets a second build (e.g. against a stand-in API) sit beside the real one while testing.
   distDir: process.env.NEXT_DIST_DIR || ".next",
   poweredByHeader: false,
+  // d3 has no "sideEffects" field, so one `import { scaleLinear } from "d3"` also pulled in d3-selection, d3-transition and their dependencies (37 kB of script on every
+  // page). This reads each name from the d3 package that holds it.
+  experimental: { optimizePackageImports: ["d3"] },
   // The public pages sit under app/[locale]/{s,q}; the address a reader sees has neither (lib/routing.ts). Rewrites run after files, so
   // /api, /sitemap.xml, /robots.txt, /_next and the signed-in pages (app/(dyn)) are never touched. src/proxy.ts applies the same
   // destinations for client navigations (Vercel minimal mode skips afterFiles inside the Next server).

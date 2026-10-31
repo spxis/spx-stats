@@ -1,5 +1,5 @@
 import { ApiError } from "@/lib/api/client";
-import { speaker } from "@/lib/i18n/i18n";
+import { speaker } from "@/lib/i18n/speaker";
 import { isLeague } from "@/lib/leagues";
 import { DEFAULT_LOCALE, isLocale } from "@/lib/locale";
 import { seasonPathView } from "@/lib/seasonPathData";

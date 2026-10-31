@@ -1,6 +1,7 @@
 import "server-only";
 import { ApiError } from "../api/error.ts";
-import { type LiveAnswer, inLiveWindow, liveRowSchema } from "../liveScores.ts";
+import { type LiveAnswer, inLiveWindow } from "../liveScores.ts";
+import { liveRowSchema } from "../liveRowSchema.ts";
 import { tursoConfigured, tursoRows } from "./client.ts";
 
 /** Seconds one answer is shared by every visitor (Next's data cache, then the CDN in front of the route). */

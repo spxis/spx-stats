@@ -1,7 +1,7 @@
 import "server-only";
 import { z } from "zod";
 import { rows, rowsSlice } from "./api/client";
-import { alignmentSchema } from "./alignment";
+import { alignmentSchema } from "./alignmentSchema";
 import { getVenueCityAt, placeKey } from "./cityData";
 import { countryAt } from "./country";
 import { logoFor } from "./brand";

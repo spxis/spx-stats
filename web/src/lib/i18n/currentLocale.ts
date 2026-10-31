@@ -3,7 +3,8 @@ import { cookies, headers } from "next/headers";
 import { locale as routeLocale } from "next/root-params";
 import { cache } from "react";
 import { effectiveLocale, isLocale, LOCALE_COOKIE_NAME, type Locale } from "@/lib/locale";
-import { speaker, type Speaker } from "./i18n";
+import type { Speaker } from "./i18n";
+import { speaker } from "./speaker";
 
 /**
  * The language this request is answered in.

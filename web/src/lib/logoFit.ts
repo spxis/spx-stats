@@ -1,27 +1,25 @@
-import { z } from "zod";
-
 /**
  * How a team logo is fitted into the site's logo boxes (db/migrations/107_logo_fit.sql, seed db/seed/logo_fit.csv).
  * A logo with no row is drawn as it always was. Only rows with status "approved" reach the public pages;
  * /admin/logos draws the proposed ones too, so they can be looked at before anyone approves them.
  */
 
-export const logoFitSchema = z.object({
-  logo_file: z.string(),
-  league: z.string().nullable(),
-  team: z.string(),
-  wordmark: z.boolean(),
-  mark_url: z.string().nullable(),
-  mark_licence: z.string().nullable(),
-  mark_page: z.string().nullable(),
-  scale: z.number(),
-  dx: z.number(),
-  dy: z.number(),
-  bg: z.string(),
-  status: z.enum(["proposed", "approved", "rejected"]),
-  note: z.string().nullable(),
-});
-export type LogoFit = z.infer<typeof logoFitSchema>;
+/** A row of `api.logo_fit`. Its zod schema is in lib/data.ts: this file reaches the browser, and zod would come with it. */
+export interface LogoFit {
+  logo_file: string;
+  league: string | null;
+  team: string;
+  wordmark: boolean;
+  mark_url: string | null;
+  mark_licence: string | null;
+  mark_page: string | null;
+  scale: number;
+  dx: number;
+  dy: number;
+  bg: string;
+  status: "proposed" | "approved" | "rejected";
+  note: string | null;
+}
 
 /** The fit a logo with no row gets: today's drawing. */
 export const NO_FIT = { wordmark: false, mark_url: null, scale: 1, dx: 0, dy: 0, bg: "auto" } as const;

@@ -7,31 +7,34 @@
  * for more than one: `w.desc,l.asc`. A second table on a page uses `sort_<name>`.
  */
 import type { ReactNode } from "react";
-import { z } from "zod";
 
 export type SortDir = "asc" | "desc";
 export interface SortKey { key: string; dir: SortDir }
 export type SortValue = string | number | null | undefined;
 
-const part = z.object({ key: z.string().regex(/^[a-z][a-z0-9_]{0,31}$/), dir: z.enum(["asc", "desc"]) });
+const SORT_KEY = /^[a-z][a-z0-9_]{0,31}$/;
 
-/** A raw query value ("w.desc,l.asc", or a list when the key repeats) to a list of sort keys; anything malformed is dropped whole. */
-export const sortParamSchema = z
-  .preprocess((v) => (Array.isArray(v) ? v[0] : v), z.string().max(300))
-  .transform((text) =>
-    text.split(",").map((p) => p.trim()).filter(Boolean).map((p) => {
-      const [key, dir] = p.split(".");
-      return { key, dir: dir === "desc" ? "desc" : "asc" };
-    }),
-  )
-  .pipe(z.array(part).max(6))
-  .catch([]);
+/**
+ * A raw query value ("w.desc,l.asc", or a list when the key repeats) to a list of sort keys; anything malformed is dropped whole: not a string, over 300
+ * characters, more than 6 keys, or a key that is not lower-case letters, digits and underscores starting with a letter (at most 32).
+ */
+export function parseSortParam(raw: unknown): SortKey[] {
+  const text = Array.isArray(raw) ? raw[0] : raw;
+  if (typeof text !== "string" || text.length > 300) return [];
+  const out: SortKey[] = [];
+  for (const p of text.split(",").map((x) => x.trim()).filter(Boolean)) {
+    const [key, dir] = p.split(".");
+    if (!SORT_KEY.test(key)) return [];
+    out.push({ key, dir: dir === "desc" ? "desc" : "asc" });
+  }
+  return out.length > 6 ? [] : out;
+}
 
 /** The sort a request asks for: its keys that name a column, else the table's default. */
 export function parseSort(raw: unknown, known: readonly string[], def?: string | null): SortKey[] {
-  const fromUrl = sortParamSchema.parse(raw).filter((s) => known.includes(s.key));
+  const fromUrl = parseSortParam(raw).filter((s) => known.includes(s.key));
   if (fromUrl.length) return fromUrl;
-  return def ? sortParamSchema.parse(def).filter((s) => known.includes(s.key)) : [];
+  return def ? parseSortParam(def).filter((s) => known.includes(s.key)) : [];
 }
 
 export const formatSort = (spec: readonly SortKey[]): string => spec.map((s) => `${s.key}.${s.dir}`).join(",");

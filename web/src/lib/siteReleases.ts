@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.9", date: "2026-10-30", href: "/mlb/2007/team/cincinnati-reds",
+    title: "Pages download about a third less script, and open faster on a phone",
+    text: "Every page used to carry French and Japanese wording, sign-in code, form checks and the large map, used or not. A page now downloads only what it draws: 350 to 240 KB on the home page, 530 to 380 KB on a team page, same look. A club's all-time results graph (about 20,000 squares for an old club) also draws far faster on a slow phone.",
+  },
   { version: "0.174.8", date: "2026-10-30", href: "/worldcup/2023",
     title: "The World Cup credit now names English Wikipedia for 2023",
     text: "The credit at the foot of each World Cup page now names English Wikipedia as the source of the 2023 Women's World Cup matches, under its CC BY-SA 4.0 licence.",

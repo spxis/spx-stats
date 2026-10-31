@@ -1,4 +1,4 @@
-import { speaker } from "@/lib/i18n/i18n";
+import { speaker } from "@/lib/i18n/speaker";
 import { isLocale } from "@/lib/locale";
 import { type BracketPart, seasonBracketFile } from "@/lib/seasonBracket";
 import { getTournamentMatches, tournamentOfYear } from "@/lib/soccer";

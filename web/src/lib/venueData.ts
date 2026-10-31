@@ -1,5 +1,5 @@
 import "server-only";
-import { speaker } from "./i18n/i18n";
+import { speaker } from "./i18n/speaker";
 import { afterValues, BadParams, parseListParams } from "./listParams";
 import { searchWords } from "./listQuery";
 import { memo } from "./memo";

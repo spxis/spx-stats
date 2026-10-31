@@ -2,7 +2,6 @@
 
 import Link from "@/components/Link";
 import { useRouter } from "next/navigation";
-import { signOut } from "next-auth/react";
 import { useEffect, useRef, useState } from "react";
 import { setHint } from "@/lib/auth/hint";
 import { useSpeaker } from "../i18n/LocaleProvider";
@@ -88,7 +87,7 @@ export function UserMenu({ user, version, waiting = 0, alerts = 0 }: { user: Men
             <span className="note">Version {version}</span>
             {user.admin ? <Link role="menuitem" href="/admin/tickets?status=done">What is new</Link> : null}
           </div>
-          <button type="button" role="menuitem" onClick={() => { setHint(false); void signOut({ callbackUrl: "/" }); }}>Sign out</button>
+          <button type="button" role="menuitem" onClick={() => { setHint(false); void import("next-auth/react").then(({ signOut }) => signOut({ callbackUrl: "/" })); }}>Sign out</button>
         </div>
       ) : null}
     </div>

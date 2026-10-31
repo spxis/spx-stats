@@ -2,18 +2,11 @@
  * Two clubs compared side by side, for one season or all-time. Pure: the page fetches, this adds up.
  * Side "a" is the club on the left of the address.
  */
-import { z } from "zod";
 import type { StandingRow } from "./api/types";
 import { byRank, type Placed } from "./alignment";
+import { shaped } from "./queryParam.ts";
 import { parseSeasonSeg, type TeamPaths } from "./slug";
 import { playedInOrder, type TeamGame } from "./teamSeason";
-
-const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-
-/** ?season= : a season label (2022-23, or 2019 for a one-year league) or `all` for every season. */
-export const compareQuery = z.object({
-  season: z.preprocess(first, z.string().regex(/^(\d{4}(-\d{2})?|all)$/)).optional().catch(undefined),
-});
 
 export interface CompareQuery {
   /** True when the address asks for all-time. */
@@ -25,9 +18,10 @@ export interface CompareQuery {
 }
 
 export function parseCompareQuery(sp: Record<string, string | string[] | undefined>, lg: string): CompareQuery {
-  const q = compareQuery.parse({ season: sp.season });
-  if (q.season === "all") return { all: true, year: null, canonicalSeason: true };
-  const ys = q.season ? parseSeasonSeg(lg, q.season) : null;
+  // ?season= : a season label (2022-23, or 2019 for a one-year league) or `all` for every season; anything else is none.
+  const season = shaped(sp.season, /^(\d{4}(-\d{2})?|all)$/);
+  if (season === "all") return { all: true, year: null, canonicalSeason: true };
+  const ys = season ? parseSeasonSeg(lg, season) : null;
   return { all: false, year: ys ? ys.y : null, canonicalSeason: ys ? ys.canonical : true };
 }
 

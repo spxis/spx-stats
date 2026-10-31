@@ -4,7 +4,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Suspense, useEffect, useId, useMemo, useRef, useState } from "react";
 import type { Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
-import { MapViewer } from "./MapViewer";
+import { MapViewerLazy } from "./MapViewerLazy";
 import { MapHost } from "./TeamMap";
 import { useFetchedJson } from "./useFetchedJson";
 import "./mapviewer.css";
@@ -135,7 +135,7 @@ function Dialog({ dataHref, me, leagueShort, seasonLabel, mode }: DialogProps & 
         <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
       </div>
       {chosen ? (
-        <MapViewer pins={pins} title={label} bar={bar} selected={chosen.f} zoomToSelected={mode === "venue"}
+        <MapViewerLazy pins={pins} title={label} bar={bar} selected={chosen.f} zoomToSelected={mode === "venue"}
           onPick={(f) => { const p = pins.find((x) => x.f === f); if (p) chooseTeam(f === me ? null : p.slug ?? null); }}
           note={say("tmap.note", { n: pins.length, total: clubCount, season: seasonLabel })} />
       ) : <p className="note" role="status">{say(state === "failed" || state === "empty" ? "load.failed" : "load.loading")}</p>}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MapViewer } from "./MapViewer";
+import { MapViewerLazy } from "./MapViewerLazy";
 import { MapHost } from "./TeamMap";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import type { Pin } from "./mapDraw";
@@ -32,7 +32,7 @@ export function CityMapCorner({ pins, name }: { pins: Pin[]; name: string }) {
             <h2>{title}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          <MapViewer tight pins={pins} title={title} total={pins.length} note={say("city.mapNote", { n: fmt(pins.length) })} />
+          <MapViewerLazy tight pins={pins} title={title} total={pins.length} note={say("city.mapNote", { n: fmt(pins.length) })} />
         </dialog>
       ) : null}
     </div>

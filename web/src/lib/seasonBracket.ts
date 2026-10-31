@@ -1,6 +1,6 @@
 import "server-only";
 import { drawKnockoutFiles, knockoutLook, type KnockoutOptions } from "./bracketDraw";
-import { speaker } from "./i18n/i18n";
+import { speaker } from "./i18n/speaker";
 import type { Locale } from "./locale";
 import { loadPlayoffs } from "./playoffs";
 import { roundSay } from "./roundWords";

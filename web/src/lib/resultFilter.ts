@@ -1,15 +1,12 @@
 /** The Wins / Losses / Ties / OT losses filter of a team's games table: the shape of ?result= in the address. */
-import { z } from "zod";
 import type { PhraseKey } from "./i18n/phrases.constants";
+import { oneOf } from "./queryParam.ts";
 import type { Result } from "./teamSeason";
 
 export type ResultFilter = "all" | "win" | "loss" | "tie" | "otl";
 
-const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-
 /** ?result=win|loss|tie|otl|all : anything else is all. */
-export const resultSchema = z.preprocess(first, z.enum(["all", "win", "loss", "tie", "otl"])).catch("all");
-export const parseResult = (raw: unknown): ResultFilter => resultSchema.parse(raw);
+export const parseResult = (raw: unknown): ResultFilter => oneOf(raw, ["all", "win", "loss", "tie", "otl"] as const) ?? "all";
 
 export const RESULTS: readonly (readonly [ResultFilter, Result, PhraseKey])[] = [
   ["all", "", "result.all"], ["win", "W", "result.win"], ["loss", "L", "result.loss"], ["tie", "T", "result.tie"], ["otl", "OTL", "result.lostOt"],

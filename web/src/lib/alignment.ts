@@ -1,15 +1,12 @@
 /**
  * League alignment: which conference and division a club sat in, season by season (db/migrations/028_api_alignment.sql).
- * Pure and shared by the server pages and the client components: row shapes and their Zod schemas, the standings views
+ * Pure and shared by the server pages and the client components: row shapes (their Zod schemas are in alignmentSchema.ts), the standings views
  * (?view=league|conference|division|wildcard), how a season's standings are grouped for each, and how a club's
  * seasons fold into runs.
  */
-import { z } from "zod";
 import type { Speaker } from "@/lib/i18n/i18n";
 
 type Say = Speaker["say"];
-
-const strN = z.string().nullable();
 
 /* ---------- api.alignment, api.alignment_changes ----------------------------------------------------- */
 
@@ -24,10 +21,7 @@ export interface AlignmentRow {
   division_short: string | null;
   team_id: number;
 }
-export const alignmentSchema = z.object({
-  league: z.string(), year: z.number(), conference: strN, division: strN, franchise_id: z.number(), team: strN,
-  conference_short: strN, division_short: strN, team_id: z.number(),
-}) satisfies z.ZodType<AlignmentRow>;
+
 
 export interface AlignmentChangeRow {
   league: string;
@@ -44,26 +38,13 @@ export interface AlignmentChangeRow {
   to_conference_short: string | null;
   to_division_short: string | null;
 }
-export const alignmentChangeSchema = z.object({
-  league: z.string(), year: z.number(), franchise_id: z.number(), team: strN,
-  from_conference: strN, from_division: strN, to_conference: strN, to_division: strN, from_year: z.number().nullable(),
-  from_conference_short: strN, from_division_short: strN, to_conference_short: strN, to_division_short: strN,
-}) satisfies z.ZodType<AlignmentChangeRow>;
+
 
 /* ---------- the standings views ---------------------------------------------------------------------- */
 
 export const VIEW_IDS = ["league", "conference", "division", "wildcard"] as const;
 export type ViewId = (typeof VIEW_IDS)[number];
 
-const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-
-/** ?view= : anything that is not one of the four falls back to the whole league. */
-export const viewSchema = z.preprocess(first, z.enum(VIEW_IDS)).catch("league");
-/** ?date=YYYY-MM-DD, a real calendar day; anything else is no date. */
-export const dateSchema = z.preprocess(first, z.string().regex(/^\d{4}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01])$/)
-  .refine((s) => { const t = Date.parse(`${s}T00:00:00Z`); return !Number.isNaN(t) && new Date(t).toISOString().slice(0, 10) === s; })).catch("");
-/** ?season= on the alignment browser. */
-export const yearSchema = z.preprocess(first, z.string().regex(/^\d{4}$/).transform(Number)).catch(0);
 
 export interface Placed {
   conference?: string | null;

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { MapHost } from "@/components/TeamMap";
-import { MapViewer } from "@/components/MapViewer";
+import { MapViewerLazy } from "@/components/MapViewerLazy";
 import { useSpeaker } from "@/components/i18n/LocaleProvider";
 import type { Pin } from "@/components/mapDraw";
 
@@ -32,7 +32,7 @@ export function BirthMap({ home, pins, name }: { home: Pin; pins: Pin[]; name: s
             <h2>{title}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          <MapViewer pins={pins} title={title} selected={picked} onPick={setPicked} note={say("player.mapNote")} />
+          <MapViewerLazy pins={pins} title={title} selected={picked} onPick={setPicked} note={say("player.mapNote")} />
         </dialog>
       ) : null}
     </div>

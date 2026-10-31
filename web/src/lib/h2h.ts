@@ -3,10 +3,10 @@
  * A franchise is the unit (a renamed club is the same side); each game keeps the names the clubs wore that season.
  * Side 0 ("a") is the franchise whose address comes first alphabetically; every record here is from its point of view.
  */
-import { z } from "zod";
 import type { GameRow } from "./api/types";
 import { parseLoc, type Loc, type Rec } from "./loc";
-import { resultSchema, type ResultFilter } from "./resultFilter";
+import { oneOf, shaped } from "./queryParam.ts";
+import { parseResult, type ResultFilter } from "./resultFilter";
 import { meetingsOf, type PlayoffGame, type Series } from "./series";
 import { parseSeasonSeg, type TeamPaths } from "./slug";
 
@@ -164,21 +164,18 @@ export function playoffMeetings(lg: string, games: readonly GameRow[], a: number
 
 /* ---------- the address ---------------------------------------------------------------- */
 
-const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-
 /** ?season= (a season label, or all), ?phase=, ?loc=, ?result= (the games list only) and ?list=all (every game, not the latest ones). Anything malformed is the default. */
-export const h2hQuery = z.object({
-  season: z.preprocess(first, z.string().regex(/^\d{4}(-\d{2})?$/)).optional().catch(undefined),
-  phase: z.preprocess(first, z.enum(["all", "regular", "playoffs"])).catch("all"),
-  loc: z.unknown().transform(parseLoc),
-  list: z.preprocess(first, z.enum(["all"])).optional().catch(undefined),
-  result: resultSchema,
-});
-
 export function parseH2hQuery(sp: Record<string, string | string[] | undefined>, lg: string): { phase: H2hPhase; loc: Loc; result: ResultFilter; list: boolean; year: number | null; canonicalSeason: boolean } {
-  const q = h2hQuery.parse({ season: sp.season, phase: sp.phase, loc: sp.loc, list: sp.list, result: sp.result });
-  const ys = q.season ? parseSeasonSeg(lg, q.season) : null;
-  return { phase: q.phase, loc: q.loc, result: q.result, list: q.list === "all", year: ys ? ys.y : null, canonicalSeason: ys ? ys.canonical : true };
+  const season = shaped(sp.season, /^\d{4}(-\d{2})?$/);
+  const ys = season ? parseSeasonSeg(lg, season) : null;
+  return {
+    phase: oneOf(sp.phase, ["all", "regular", "playoffs"] as const) ?? "all",
+    loc: parseLoc(sp.loc),
+    result: parseResult(sp.result),
+    list: oneOf(sp.list, ["all"] as const) === "all",
+    year: ys ? ys.y : null,
+    canonicalSeason: ys ? ys.canonical : true,
+  };
 }
 
 /** The address of a pair: `/nhl/head-to-head/boston-bruins-vs-montreal-canadiens`, the franchises in alphabetical order of their slugs. */

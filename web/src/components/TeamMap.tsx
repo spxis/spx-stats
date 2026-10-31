@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Locale } from "@/lib/locale";
 import { chizu, frame, NS, pinText, type Pin } from "./mapDraw";
 import { useSpeaker } from "./i18n/LocaleProvider";
-import { MapViewer } from "./MapViewer";
+import { MapViewerLazy } from "./MapViewerLazy";
 import { useFetchedJson } from "./useFetchedJson";
 import type { FranchiseMapView } from "@/lib/mapView";
 
@@ -98,7 +98,7 @@ export function TeamMapCorner({ me, dataHref, seasonLabel, leagueShort, name }: 
             <h2>{label}</h2>
             <button type="button" className="theme" onClick={() => dlg.current?.close()}>{say("map.close")}</button>
           </div>
-          {data ? <MapViewer pins={all} title={label} total={data.clubCount} selected={picked} onPick={setPicked} /> : <p className="note" role="status">{say("load.loading")}</p>}
+          {data ? <MapViewerLazy pins={all} title={label} total={data.clubCount} selected={picked} onPick={setPicked} /> : <p className="note" role="status">{say("load.loading")}</p>}
         </dialog>
       ) : null}
     </>

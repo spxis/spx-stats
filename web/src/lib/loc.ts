@@ -2,16 +2,13 @@
  * The Home / Road / All filter of the team charts: the shape of ?loc= in the address, how it is validated, and the
  * records worked out from a standings row's home and road strings ("20-10-2").
  */
-import { z } from "zod";
 import type { StandingRow } from "./api/types";
+import { oneOf } from "./queryParam.ts";
 
 export type Loc = "all" | "home" | "road";
 
-const first = (v: unknown) => (Array.isArray(v) ? v[0] : v);
-
 /** ?loc=home|road|all : anything else is all. */
-export const locSchema = z.preprocess(first, z.enum(["all", "home", "road"])).catch("all");
-export const parseLoc = (raw: unknown): Loc => locSchema.parse(raw);
+export const parseLoc = (raw: unknown): Loc => oneOf(raw, ["all", "home", "road"] as const) ?? "all";
 
 export const LOCS = [["all", "loc.all"], ["home", "loc.home"], ["road", "loc.road"]] as const;
 

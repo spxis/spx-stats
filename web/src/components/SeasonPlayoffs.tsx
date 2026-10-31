@@ -8,7 +8,7 @@ import { logoFor } from "@/lib/brand";
 import { drawKnockout, drawKnockoutFiles, shapeOf } from "@/lib/bracketDraw";
 import type { Bracket } from "@/lib/bracketLayout";
 import { confGroup, divGroup, type BracketMark } from "@/lib/bracketGroups";
-import { dateSchema } from "@/lib/alignment";
+import { dateSchema } from "@/lib/alignmentSchema";
 import { loadPlayoffs } from "@/lib/playoffs";
 import { seasonPath, type TeamPaths } from "@/lib/slug";
 import { getPaths } from "@/lib/teamSlugs";
