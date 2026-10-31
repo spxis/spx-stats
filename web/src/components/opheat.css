@@ -1,6 +1,6 @@
 /* The record-against-each-opponent heat map on a team page. Win and loss are a blue-red pair around a neutral middle, not the team's colour. Tokens come from globals.css. */
 
-.oh { --oh-name: 150px; --oh-life: 136px; --oh-cell: 15px; --oh-row: 24px; --hm-mid: var(--soft); --hm-win: #2f6fb3; --hm-loss: #c0502f; }
+.oh { --oh-name: 150px; --oh-life: 136px; --oh-cell: 15px; --oh-row: 24px; --oh-none: color-mix(in srgb, var(--paper) 70%, var(--panel)); --hm-mid: var(--soft); --hm-win: #2f6fb3; --hm-loss: #c0502f; }
 @media (max-width: 640px) { .oh { --oh-name: 112px; --oh-life: 100px; } .oh .ohlife .rec span { display: none; } }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .oh { --hm-win: #5aa0e6; --hm-loss: #e8785a; } }
 :root[data-theme="dark"] .oh { --hm-win: #5aa0e6; --hm-loss: #e8785a; }
@@ -41,7 +41,14 @@
 .oh .ohhead .ohlife { cursor: default; font: 600 12px/1 var(--display); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); justify-content: center; }
 
 .oh .ohc { flex: 0 0 var(--oh-cell); width: var(--oh-cell); box-sizing: border-box; border-right: 1px solid color-mix(in srgb, var(--panel) 70%, transparent); }
-.oh .ohc.n { background: color-mix(in srgb, var(--paper) 70%, var(--panel)); }
+/* A season the two did not meet is not an element: the row paints that ground itself, a cell wide with the cell's right edge line, from the end of the life column across
+   the seasons (--oh-years is set on the grid); a square that was met sits on it with a left margin for the seasons before it. */
+.oh .ohrow:not(.ohhead) {
+  background-image: repeating-linear-gradient(to right, transparent 0 calc(var(--oh-cell) - 1px), color-mix(in srgb, var(--panel) 70%, transparent) calc(var(--oh-cell) - 1px) var(--oh-cell)), linear-gradient(var(--oh-none), var(--oh-none));
+  background-repeat: no-repeat;
+  background-size: calc(var(--oh-years, 0) * var(--oh-cell)) 100%;
+  background-position: calc(var(--oh-name) + var(--oh-life)) 0;
+}
 .oh .ohc.y { cursor: pointer; }
 .oh .ohhead .ohc { position: relative; border-right: 0; font-size: 11px; color: var(--muted); }
 .oh .ohhead .ohc span { position: absolute; left: 0; bottom: 5px; white-space: nowrap; font-variant-numeric: tabular-nums; }
@@ -49,7 +56,7 @@
 
 .oh .ohc.y:hover, .oh .ohc.y:focus-visible, .oh .ohlife:hover, .oh .ohlife:focus-visible { outline: 2px solid var(--ink); outline-offset: -2px; position: relative; z-index: 1; }
 .oh .ohrow.hl .ohname { background: color-mix(in srgb, var(--ink) 8%, var(--panel)); }
-.oh .ohrow.hl .ohc.n { background: color-mix(in srgb, var(--ink) 7%, var(--paper)); }
+.oh .ohrow.hl { --oh-none: color-mix(in srgb, var(--ink) 7%, var(--paper)); }
 .oh .ohhead .ohc.hl { color: var(--ink); font-weight: 700; }
 
 .oh .ohnote { margin-top: 8px; }

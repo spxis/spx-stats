@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.174.11", date: "2026-10-30", href: "/mlb/team/cincinnati-reds",
+    title: "A club's opponent and country sections open faster on a phone",
+    text: "The record against each opponent drew a grey box for every season two clubs never met, and the country chart carried its closed table. A club page now has about 4,000 fewer pieces to style and lay out: same look, same hover, keys and click.",
+  },
   { version: "0.174.10", date: "2026-10-30", href: "/mlb/team/cincinnati-reds",
     title: "A club's all-time results graph opens faster on a phone",
     text: "The graph of every game a club has played, up to 21,000 squares, was drawn as one piece of the page per square, and a phone spent seconds on it. It is now a few shapes: same look, same game card on a hover or a tap, a click opens the game. A phone is free again about 3 seconds sooner on an old baseball club.",

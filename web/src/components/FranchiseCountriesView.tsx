@@ -29,7 +29,7 @@ export function FranchiseCountriesView({ lg, view }: { lg: string; view: Franchi
       </div>
       <h3>{say("country.areaTitle")}</h3>
       <p className="note">{say("country.areaNote")}</p>
-      <CountryArea stack={view.stack} league={lg} label={say("country.areaAria", { name: view.name })} tableLabel={say("country.showTable")} />
+      <CountryArea stack={view.stack} league={lg} label={say("country.areaAria", { name: view.name })} tableLabel={say("country.showTable")} deferTable />
       {view.limited ? <p className="note cnote-cov">{say("country.lowRoster", { known: fmt(view.known), total: fmt(view.total) })}</p> : null}
       {view.ranked.length ? (
         <>

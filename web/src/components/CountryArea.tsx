@@ -20,13 +20,14 @@ interface Layer { key: string; slice: Slice; values: number[] }
  * the biggest countries in their own colours, the rest together, and the players with no country known on top. Hovering names the season's figures;
  * the table under the chart ("Show as a table") holds them all (`table` false leaves it out: the league world page draws its own, WorldTables.tsx).
  */
-export function CountryArea({ stack: s, league, label, tableLabel, allowShare = true, table = true }: { stack: Stack; league: string; label: string; tableLabel: string; allowShare?: boolean; table?: boolean }) {
+export function CountryArea({ stack: s, league, label, tableLabel, allowShare = true, table = true, deferTable = false }: { stack: Stack; league: string; label: string; tableLabel: string; allowShare?: boolean; table?: boolean; deferTable?: boolean }) {
   const { say, fmt, locale } = useSpeaker();
   const [mode, setMode] = useState<"count" | "share">("count");
   const [ref, W] = useChartWidth(720, 280);
   const box = useRef<HTMLDivElement | null>(null);
   const tip = useTooltip(box);
   const [at, setAt] = useState<number | null>(null);
+  const [opened, setOpened] = useState(false);
   const layers: Layer[] = [
     ...s.keep.map((c, i) => ({ key: c, slice: { code: c, n: 0, slot: i } as Slice, values: s.counts[c] })),
     { key: "other", slice: { code: "other", n: 0, kind: "other" } as Slice, values: s.other },
@@ -54,7 +55,9 @@ export function CountryArea({ stack: s, league, label, tableLabel, allowShare = 
     const total = layers.reduce((a, l) => a + l.values[i], 0);
     tip.show(ev, <TipLines title={seasonLabel(league, years[i])} lines={[...layers.filter((l) => l.values[i] > 0).map((l) => `${nameOf(l)}: ${fmt(l.values[i])} (${pctText(l.values[i] / Math.max(total, 1), locale, 0)})`), `${say("country.total")}: ${fmt(total)}`]} />);
   };
-  const tbl = tableOf(rows.map((r, i) => ({ r, i })), [
+  // `deferTable`: for a chart that is drawn in the browser only (so no search engine reads its table), the table's thousand cells are made when the reader opens it.
+  const showTable = table && (!deferTable || opened);
+  const tbl = !showTable ? null : tableOf(rows.map((r, i) => ({ r, i })), [
     { key: "season", label: say("col.season"), num: true, get: (d) => d.r.year, cell: (d) => seasonLabel(league, d.r.year) },
     ...layers.map((l) => ({ key: `k_${l.key.toLowerCase()}`, label: nameOf(l), num: true, get: (d: { i: number }) => l.values[d.i], cell: (d: { i: number }) => fmt(l.values[d.i]) })),
   ], (d) => d.r.year);
@@ -80,9 +83,9 @@ export function CountryArea({ stack: s, league, label, tableLabel, allowShare = 
       </div>
       <div className="legend">{layers.map((l) => <span key={l.key}><i style={{ background: slotColor(l.slice) }} />{nameOf(l)}</span>)}</div>
       {table ? (
-        <details className="ctable">
+        <details className="ctable" onToggle={deferTable ? (ev) => { if (ev.currentTarget.open) setOpened(true); } : undefined}>
           <summary>{tableLabel}</summary>
-          <div className="tablebox"><SortTable {...tbl} param="sort_stack" def="season.desc" label={label} /></div>
+          {tbl ? <div className="tablebox"><SortTable {...tbl} param="sort_stack" def="season.desc" label={label} /></div> : null}
         </details>
       ) : null}
     </div>

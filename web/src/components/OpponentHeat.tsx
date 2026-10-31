@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
+import { useCallback, useMemo, useRef, useState, useSyncExternalStore, type CSSProperties, type KeyboardEvent, type MouseEvent, type PointerEvent, type ReactNode } from "react";
 import Link from "@/components/Link";
 import { fmt3 } from "@/lib/format";
 import { LG, seasonLabel, seasonSeg, type LeagueCode } from "@/lib/leagues";
@@ -181,6 +181,24 @@ export function OpponentHeat({ view }: { view: OpponentHeatView }) {
     ? picked
     : rows[0] ? cellKey(rows[0].key, 0) : null;
 
+  // Only the seasons the two met are elements: a gap before a square is the square's left margin, and the row paints the "did not meet" ground itself (opheat.css),
+  // so a club with 30 opponents over 130 seasons is about 1,500 squares and not 4,500 cells.
+  const cellsOf = (row: HeatRow) => {
+    const out: ReactNode[] = [];
+    let gap = 0;
+    for (const y of grid.years) {
+      const r = row.by.get(y);
+      if (!r) { gap++; continue; }
+      const k = cellKey(row.key, y);
+      out.push(
+        <div role="gridcell" className="ohc y" key={y} data-oc={k} data-r={row.key} data-y={y} tabIndex={k === stop ? 0 : -1}
+          style={{ background: tone(winShare(r) ?? 0.5), marginLeft: gap ? `calc(${gap} * var(--oh-cell))` : undefined }} aria-label={labels.get(k)} />,
+      );
+      gap = 0;
+    }
+    return out;
+  };
+
   const sortBy = (s: HeatSort) => set(c.sort === s ? { dir: c.dir === "asc" ? "desc" : "asc" } : { sort: s, dir: defaultDir(s) });
   const phases: [HeatPhase, string][] = [["all", "phase.all"], ["regular", "phase.regular"], ["playoffs", "phase.playoffs"]];
   const sorts: [HeatSort, string][] = [["pct", "opheat.sort.pct"], ["games", "opheat.sort.games"], ["name", "opheat.sort.name"]];
@@ -222,7 +240,7 @@ export function OpponentHeat({ view }: { view: OpponentHeatView }) {
       </div>
       {rows.length ? (
         <div className="ohscroll">
-          <div className="ohgrid" role="grid" aria-label={say("opheat.aria")} aria-rowcount={rows.length + 1}
+          <div className="ohgrid" style={{ "--oh-years": grid.years.length } as CSSProperties} role="grid" aria-label={say("opheat.aria")} aria-rowcount={rows.length + 1}
             onPointerOver={onOver} onPointerLeave={onLeave} onPointerDown={(ev) => { touched.current = ev.pointerType === "touch"; }}
             onClick={onClick} onKeyDown={onKey} onFocus={onFocus} onBlur={onBlur}>
             <div role="row" className="ohrow ohhead">
@@ -247,15 +265,7 @@ export function OpponentHeat({ view }: { view: OpponentHeatView }) {
                     <div className="rec"><b>{recText(row.life)}</b><span>{fmt3(share)}</span></div>
                     <div className="bar"><i style={{ left: `${Math.min(share, 0.5) * 100}%`, width: `${Math.abs(share - 0.5) * 100}%`, background: tone(share) }} /></div>
                   </div>
-                  {grid.years.map((y) => {
-                    const r = row.by.get(y);
-                    if (!r) return <div role="gridcell" className="ohc n" key={y} aria-hidden="true" />;
-                    const k = cellKey(row.key, y);
-                    return (
-                      <div role="gridcell" className="ohc y" key={y} data-oc={k} data-r={row.key} data-y={y} tabIndex={k === stop ? 0 : -1}
-                        style={{ background: tone(winShare(r) ?? 0.5) }} aria-label={labels.get(k)} />
-                    );
-                  })}
+                  {cellsOf(row)}
                 </div>
               );
             })}

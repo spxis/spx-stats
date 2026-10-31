@@ -173,3 +173,45 @@ for (const path of ["/mlb/team/cincinnati-reds", "/mlb/2007/team/cincinnati-reds
     }
   });
 }
+
+// A franchise page's two heaviest sections, "Record against each opponent" and "Where the players come from", were about 5,000 and 2,400 elements (measured 2026-10-30 on the
+// Reds and the Canadiens: 10,900 elements in the page, and at a 4x slower processor about 0.2 s of script, 0.1 s of style and layout, 0.2 s of blocked time more than the page
+// without them). A season the two clubs did not meet is no longer a cell (the row paints that ground, and the squares that were met take a left margin), and the country
+// chart's table, closed under "Show as a table", is made when it is opened. Now about 2,000 (Reds 2,029, Canadiens 2,148) and 970 (972, 884). Budget: the measure plus about 10 percent.
+for (const { path, opp, cty } of [{ path: "/mlb/team/cincinnati-reds", opp: 2250, cty: 1070 }, { path: "/nhl/team/montreal-canadiens", opp: 2370, cty: 980 }]) {
+  test(`the opponent and country sections are drawn with few elements (${path}: at most ${opp} and ${cty})`, async (t) => {
+    const got = await browserOrReason();
+    if (!got.browser) return t.skip(got.reason);
+    const ctx = await got.browser.newContext({ viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
+    try {
+      await ctx.addCookies([{ name: "spxn-in", value: "1", url: BASE! }]);
+      await ctx.addInitScript(() => { try { localStorage.setItem("spxn-probed", "1"); } catch { /* storage may be blocked */ } });
+      const page = await ctx.newPage();
+      await page.goto(`${BASE}${path}`, { waitUntil: "load" });
+      for (let i = 0; i < 80; i++) {
+        const done = await page.evaluate(() => { window.scrollBy(0, 600); return window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2; });
+        await page.waitForTimeout(150);
+        if (done) break;
+      }
+      await page.waitForSelector(".oh .ohc.y", { state: "attached", timeout: 20000 }).catch(() => {});
+      await page.waitForSelector("#countries .carea", { state: "attached", timeout: 20000 }).catch(() => {});
+      await page.waitForTimeout(1500);
+      const n = await page.evaluate(() => ({
+        opp: document.querySelector(".oh")?.querySelectorAll("*").length ?? 0,
+        met: document.querySelectorAll(".oh .ohc.y").length,
+        notMet: document.querySelectorAll(".oh .ohc.n").length,
+        cty: document.querySelector("#countries")?.querySelectorAll("*").length ?? 0,
+        area: document.querySelectorAll("#countries .carea").length,
+        table: document.querySelectorAll("#countries .ctable table").length,
+      }));
+      assert.ok(n.met > 100, `the opponent chart drew ${n.met} squares: ${JSON.stringify(n)}`);
+      assert.equal(n.notMet, 0, "a season the two did not meet is drawn as a cell again");
+      assert.ok(n.opp <= opp, `the opponent chart is ${n.opp} elements (the budget is ${opp})`);
+      assert.ok(n.area > 0, `the country chart was not drawn: ${JSON.stringify(n)}`);
+      assert.equal(n.table, 0, "the country chart's table is made before it is opened");
+      assert.ok(n.cty <= cty, `the country section is ${n.cty} elements (the budget is ${cty})`);
+    } finally {
+      await got.browser.close();
+    }
+  });
+}
