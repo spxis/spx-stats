@@ -26,7 +26,7 @@ Anthropic's Message Batches API, with `scripts/i18n/batch.py`. Not by interactiv
 Run from anywhere (`python3 /path/to/scripts/i18n/batch.py ...`). Needs Node 22.18+ (`dump.ts` reads the phrase tables) and no pip package:
 plain `urllib`, no `anthropic` SDK. Work files go to `~/Projects/backups/spx-stats/i18n-batch/<date>/`, outside the repository.
 
-    batch.py build  [--lang fr,ja] [--only phrases,seeds] [--exact]   # requests.jsonl, estimate; submits nothing
+    batch.py build  [--lang fr,ja] [--only phrases,seeds] [--keys a,b] [--exact]   # requests.jsonl, estimate; submits nothing; --keys for one phrase
     batch.py check                                                    # one tiny normal Messages call: model id and request shape
     batch.py submit [--cap 10]                                        # saves batch.json (the batch id)
     batch.py status

@@ -5,7 +5,7 @@ Translating, drafting and reviewing Japanese, German, Spanish and French text is
 with this script and nowhere else (README.md in this folder). It talks to the API with
 plain urllib (the `anthropic` SDK is not required, and is not installed on the Macs).
 
-    python3 scripts/i18n/batch.py build  [--lang fr,ja] [--only phrases,seeds] [--cap 10]
+    python3 scripts/i18n/batch.py build  [--lang fr,ja] [--only phrases,seeds] [--keys a,b] [--cap 10]
     python3 scripts/i18n/batch.py check        # one tiny normal Messages call (needs a key)
     python3 scripts/i18n/batch.py submit       # refuses above the spend cap
     python3 scripts/i18n/batch.py status
@@ -396,6 +396,12 @@ def cmd_build(args) -> dict:
             sys.exit(f"unknown language {lang}; choose from {','.join(LANGS)}")
     only = set(args.only.split(","))
     items, info = collect(langs, only)
+    if args.keys:
+        keys = set(args.keys.split(","))
+        items = [it for it in items if it["key"] in keys]
+        missing = keys - {it["key"] for it in items}
+        if missing:
+            sys.exit(f"no such key: {','.join(sorted(missing))}")
     if args.limit:
         items = items[: args.limit]
     groups = group(items)
@@ -733,6 +739,7 @@ def main() -> None:
             p.add_argument("--lang", default="fr,ja", help="comma list from fr,ja,de,es (fr and ja are reviewed; de and es are drafted)")
             p.add_argument("--only", default="phrases,seeds", help="phrases, seeds, positions (drafts the names in POSITION_DRAFTS) or a comma list")
             p.add_argument("--limit", type=int, default=0, help="only the first N items (a test)")
+            p.add_argument("--keys", default="", help="only these keys, comma separated (one new phrase need not pay for reviewing every phrase)")
             p.add_argument("--exact", action="store_true", help="count user tokens with the API's free count_tokens endpoint (needs a key)")
 
     for name, fn, b in (("build", cmd_build, True), ("check", cmd_check, False), ("submit", cmd_submit, False),
