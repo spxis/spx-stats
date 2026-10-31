@@ -137,7 +137,7 @@ def test_gate():
     check(asked == [], "gate: a confirm-only source sends nothing from a fetcher")
     check(SRC.get("wnba_stats")["tier"] == "red-confirm" and "wnba_stats" not in C.HOLDS, "gate: wnba_stats is red-confirm, not a held grey source")
     check(not hasattr(wnba, "load_sql"), "gate: the wnba reader has no load SQL (confirm-only, never stored)")
-    for src in ("fangraphs", "transfermarkt"):
+    for src in ("fangraphs", "transfermarkt", "cfl_api", "ncaa_stats"):
         check(src in C.HOLDS, "gate: %s is on hold" % src)
     f, asked = fetcher("hockeytech", "manual", [(200, b"{}")])
     refused(lambda: f.get("https://lscluster.hockeytech.com/feed/index.php?feed=modulekit&client_code=pwhl&view=schedule"), SRC.SourceRefused, "the PWHL feed")

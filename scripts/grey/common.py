@@ -23,7 +23,9 @@ CTX = ssl.create_default_context(cafile=_ca) if _ca and os.path.exists(_ca) else
 # Sources whose own terms (read 2026-10-25) may bar what we would do; the fetcher refuses until John decides and this entry is removed.
 HOLDS = {
     "fangraphs": "The FanGraphs Terms of Service (section 17) bar access other than through their own interface. John decides whether it is red.",
-    "transfermarkt": "Its terms were not read yet. A person reads them and John decides before any request.",
+    "transfermarkt": "Its terms page is unread (bot challenge); a second-hand quote of section 11.1 bars bots, spiders and screen scraping. A person reads them and John decides before any request.",
+    "cfl_api": "The API's public licence is non-commercial and share-alike, its key is for individuals, and the host does not resolve (2026-10-30). John decides whether it is red.",
+    "ncaa_stats": "The NCAA.org terms (sections 4 and 9) bar robots, scraping and harvesting; stats.ncaa.org answers 403 to a plain request. John decides whether it is red.",
 }
 
 

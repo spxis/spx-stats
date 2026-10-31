@@ -194,14 +194,14 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "selectable": true,
     "default": false,
     "reason": "No terms found; backup or cross-check only, once a day and on manual request.",
-    "notes": "Tier set by John on 2026-10-19 (no terms found). Check 2026-10-25: the host does not answer (its DNS name points at a CloudFront name with no address); the CFL's API has needed a key issued by the CFL. The cfl.ca website terms forbid automated collection (cfl_ca is red). No parser until John has a working key and endpoint.",
+    "notes": "Tier set by John on 2026-10-19 (no terms found). Check 2026-10-25: the host does not answer; checked again 2026-10-30: its name does not resolve at all. Terms check 2026-10-30 (the api.cfl.ca pages could not be read, so this is from search results of those pages and needs a person to confirm): the API is for non-commercial individual developers with a key the CFL approves, 30 requests a minute, no product the CFL thinks competes with its own, and the data is under the \"CFL Public Licence\" (non-commercial, share-alike, revocable). The cfl.ca Terms of Use (cfl.ca/terms-of-use, read through a search result because the site answers 403) bar systematic retrieval of content to compile a database and bots or spiders for commercial purposes (cfl_ca is red). John to decide whether this makes it red; no request is sent until he does, and no parser while the host is gone.",
     "leagues": [
       "cfl"
     ],
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
-    "evidence": null,
+    "evidence": "https://api.cfl.ca/key-request/public-licence",
     "checkedOn": null
   },
   {
@@ -211,12 +211,12 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "selectable": true,
     "default": false,
     "reason": "No terms found; backup or cross-check only, once a day and on manual request.",
-    "notes": "No terms of use found for automated collection. Tier set by John on 2026-10-19; the clause and an evidence link are to be added by the terms check.",
+    "notes": "Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-30: stats.ncaa.org has no terms page of its own that could be read; the NCAA.org Terms of Service (section 4) bar \"unauthorized robots, spiders, offline readers, or like devices, scraping, or harvesting of content or information\" and more requests than a typical human would make, and section 9 bars capturing, harvesting or collecting any part of the Site or Content without advance written consent. Those terms cover NCAA.ORG \"together with its subpages and microsites\"; whether that includes stats.ncaa.org is not stated. The site's edge answers 403 Access Denied to a plain request, even for robots.txt, so robots.txt could not be read. John to decide whether this makes it red; no request is sent until he does. CollegeFootballData (green) already covers college football.",
     "leagues": [],
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
-    "evidence": null,
+    "evidence": "https://www.ncaa.org/terms-of-service/",
     "checkedOn": null
   },
   {
@@ -243,12 +243,12 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "selectable": true,
     "default": false,
     "reason": "No terms found; backup or cross-check only, once a day and on manual request.",
-    "notes": "Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the terms page could not be read by the checking tool (fetch blocked); a person must read them before any request is sent.",
+    "notes": "Tier set by John on 2026-10-19 (no terms found). Terms check 2026-10-25: the terms page could not be read by the checking tool (fetch blocked). Check 2026-10-30: still blocked (the site answers a plain request with a bot challenge and the checking tool may not fetch it), so the page itself is unread; a proxy vendor's article quotes section 11.1 as \"not permitted to access or copy the Digital Content using bots, spiders, screen scraping\" and says it reserves text and data mining. That is second-hand: a person must read https://www.transfermarkt.com/intern/anb. John to decide whether this makes it red; no request is sent until he does.",
     "leagues": [],
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
-    "evidence": null,
+    "evidence": "https://www.transfermarkt.com/intern/anb",
     "checkedOn": null
   },
   {
