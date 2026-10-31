@@ -31,8 +31,16 @@ const EXEMPT_EXACT = new Set([
   "/invite-only", // the page itself (it is also where a rewrite lands)
   "/favicon.ico",
   "/manifest.webmanifest",
+  "/soccer-flags.svg", // the site's own picture files, below: no data in them
+  "/soccer-flags-round.svg",
+  "/trophy-sprite.svg",
 ]);
-const EXEMPT_PREFIX = ["/api/auth/", "/_next/static/", "/brand/", "/mascot/"];
+/**
+ * The last five prefixes are picture files that hold no archive data (flags, the club logos the site hosts, the brand marks, the error mascot). They are also left out of the
+ * proxy's matcher (proxy.ts, kept in step by scripts/invite.test.ts), so a page with a dozen flags is not a dozen function runs. Page, data and drawing routes
+ * (rows, surface, field-plays, jersey-banner ...) are not here: they stay behind the gate.
+ */
+const EXEMPT_PREFIX = ["/api/auth/", "/_next/static/", "/brand/", "/mascot/", "/flag/", "/soccer-flag/", "/team-logos/"];
 
 /** True for the addresses that stay reachable while the site is closed. robots.txt is answered by the gate itself (`robotsClosed`). */
 export function gateExempt(pathname: string): boolean {

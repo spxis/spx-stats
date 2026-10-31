@@ -21,7 +21,6 @@ export function SignInLink() {
     <Link
       className="signin-link"
       href="/login"
-      prefetch
       onClick={(e) => {
         const path = location.pathname;
         if (path === "/login" || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;

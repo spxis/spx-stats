@@ -93,7 +93,9 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  // Every path except the build's own static files and the icon: the gate must see pages, data routes and the public/ files alike.
+  // Every path except the build's own static files, the icon and the site's picture files (flags, hosted club logos, brand marks, the error mascot, the sprites; the
+  // same list as EXEMPT_* in lib/invite/rules.ts, and scripts/invite.test.ts keeps the two in step): the gate must see pages, data routes and drawings.
+  // A picture file that passes the proxy is one function run for a file the CDN would have served; a page with a dozen flags was a dozen runs.
   // (The page destinations no longer need a list of excluded roots here: resolvePageDestination leaves the reserved first segments alone.)
-  matcher: ["/((?!_next/static/|favicon\\.ico$).*)"],
+  matcher: ["/((?!_next/static/|favicon\\.ico$|manifest\\.webmanifest$|flag/|soccer-flag/|soccer-flags\\.svg$|soccer-flags-round\\.svg$|trophy-sprite\\.svg$|brand/|mascot/|team-logos/).*)"],
 };

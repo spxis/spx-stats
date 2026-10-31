@@ -10,7 +10,7 @@ export default function ErrorScene({ art, title, lede, small, role, children }: 
   return (
     <section className={small ? "errscene small" : "errscene"} role={role}>
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={`/mascot/mascot-${art}-colour.svg`} alt="" width={1024} height={1024} decoding="async" />
+      <img src={`/mascot/mascot-${art}-colour.svg`} alt="" width={1024} height={1024} decoding="async" loading="lazy" />
       <Title className="errtitle">{title}</Title>
       {lede ? <p className="errlede">{lede}</p> : null}
       {children ? <div className="erract">{children}</div> : null}

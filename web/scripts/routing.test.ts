@@ -373,13 +373,21 @@ test("the proxy rewrites public pages and leaves reserved first segments alone",
   for (const root of RESERVED_ROOTS) assert.equal(resolvePageDestination(`/${root}/x`, new URLSearchParams(), null, null), null, root);
 });
 
-test("Link prefetch is off by default so a long table stays under the firewall; the header menu turns it on", () => {
+test("Link prefetch is off by default; the header menu fetches on intent (hover, focus, touch), never on load", () => {
   const link = readFileSync(join(SRC, "components", "Link.tsx"), "utf8");
-  assert.match(link, /prefetch=\{prefetch \?\? false\}/);
+  assert.match(link, /prefetch=\{prefetch === undefined \? false : prefetch\}/);
+  const intent = readFileSync(join(SRC, "components", "IntentLink.tsx"), "utf8");
+  assert.match(intent, /prefetch=\{active \? true : false\}/);
+  assert.match(intent, /onMouseEnter/);
+  assert.match(intent, /onFocus/);
+  assert.match(intent, /onTouchStart/);
   const header = readFileSync(join(SRC, "components", "SiteChrome.tsx"), "utf8");
-  assert.match(header, /<header[\s\S]*prefetch/);
-  assert.match(header, /href="\/teams" prefetch/);
+  assert.match(header, /<IntentLink href="\/teams">/);
+  assert.match(header, /<IntentLink className="brand" href="\/">/);
   const nav = readFileSync(join(SRC, "components", "LeagueNav.tsx"), "utf8");
-  assert.match(nav, /prefetch onClick/);
-  assert.match(nav, /menuEntries\(say\("nav\.soccer"\)\)\.map\(\(m\) => \(\s*<Link key=\{m\.id\} href=\{m\.href\} prefetch/);  // every family entry, Soccer too
+  assert.match(nav, /<IntentLink key=\{m\.id\} href=\{m\.href\}/);  // every family entry, Soccer too
+  // Nothing under src draws a Link that fetches on load: prefetch, prefetch={true} and prefetch="true" are all a fetch per link per page view.
+  const walk = (dir: string): string[] => readdirSync(dir, { withFileTypes: true }).flatMap((e) => (e.isDirectory() ? walk(join(dir, e.name)) : /\.tsx$/.test(e.name) ? [join(dir, e.name)] : []));
+  const eager = walk(SRC).filter((f) => /<(?:Link|NextLink|IntentLink)\b[^>]*\sprefetch(?:=\{true\}|\s|>|\/)/.test(readFileSync(f, "utf8")));
+  assert.deepEqual(eager.map((f) => f.slice(SRC.length)), [], "a Link with prefetch on fetches its page on every page view; use IntentLink");
 });

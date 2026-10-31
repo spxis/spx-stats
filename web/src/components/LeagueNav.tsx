@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "@/components/Link";
+import IntentLink from "@/components/IntentLink";
 import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import type { MouseEvent } from "react";
 import { menuEntries, menuFamilyOf, MORE_HOCKEY_PATH } from "@/lib/leagueFamilies";
@@ -28,20 +28,20 @@ export function LeagueNav() {
   return (
     <nav className={family === "nhl" ? "leagues withmore" : "leagues"} id="league-nav" aria-label={say("nav.leagues")}>
       {menuEntries(say("nav.soccer")).map((m) => (
-        <Link key={m.id} href={m.href} prefetch onClick={(e) => { if (m.id !== "soccer") go(e, m.href.slice(1)); }} aria-current={family === m.id ? "page" : undefined}>
+        <IntentLink key={m.id} href={m.href} onClick={(e) => { if (m.id !== "soccer") go(e, m.href.slice(1)); }} aria-current={family === m.id ? "page" : undefined}>
           {m.label}
-        </Link>
+        </IntentLink>
       ))}
       {current && isLeague(current) ? (
         <>
-          <Link className="sub" href={`/${current}/scores`} prefetch aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</Link>
-          <Link className="sub" href={`/${current}/all-time`} prefetch aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</Link>
+          <IntentLink className="sub" href={`/${current}/scores`} aria-current={parts[2] === "scores" ? "page" : undefined}>{say("nav.scores")}</IntentLink>
+          <IntentLink className="sub" href={`/${current}/all-time`} aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</IntentLink>
         </>
       ) : null}
       {family === "nhl" ? (
         <>
           <span className="leaguebreak" aria-hidden="true" />
-          <Link className="sub more" href={MORE_HOCKEY_PATH} prefetch aria-current={current === MORE_HOCKEY_PATH.slice(1) ? "page" : undefined}>{say("hockey.more")}</Link>
+          <IntentLink className="sub more" href={MORE_HOCKEY_PATH} aria-current={current === MORE_HOCKEY_PATH.slice(1) ? "page" : undefined}>{say("hockey.more")}</IntentLink>
         </>
       ) : null}
     </nav>
