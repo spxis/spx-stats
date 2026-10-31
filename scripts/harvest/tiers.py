@@ -8,6 +8,12 @@ REFRESH_TOP = 399          # a re-read never outranks a gap job (every gap prior
 
 ROSTER = {"nba": 9000, "nfl": 8000, "cfl": 7000, "nhl": 6600, "mlb": 6500}
 SEASON = {"nba": 6000, "cfl": 5900, "nfl": 5800, "nhl": 5700, "mlb": 5600}     # team statistics, awards, drafts of seasons with none
+# Pages named rather than measured (planner.static_page_rows, rival leagues): gaps too, below the five leagues' own, above the bios
+RIVAL = 5450               # club seasons of MLB's rival leagues
+POSTSEASON = 5350          # playoffs, finals and championship games
+LISTS = 5300               # a franchise's list of seasons, head coaches, managers
+DRAFT_LATER = 5250         # WNBA, NWSL, PWHL drafts
+MINOR = 5150               # the AHL and ECHL clubs that have a season article
 BIOS = 5000
 LABELS = 4900              # place and country names the bios name
 

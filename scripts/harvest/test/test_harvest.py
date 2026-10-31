@@ -739,10 +739,156 @@ class Planner(unittest.TestCase):
 
 # ---------------------------------------------------------------- the worker against the scratch DS1 with fake APIs
 
+class LoadFailures(unittest.TestCase):
+    """Why six NBA articles failed for two weeks (2026-10-31): the 1968-69 Lakers roster prints `DOB = 1941-12-33`, DS1 refused the date, and the six
+    other pages that shared its batch were failed with it, twenty times each."""
+
+    def test_a_date_that_does_not_exist_is_not_a_date(self):
+        self.assertEqual(W._date("1941-12-33"), None)
+        self.assertEqual(W._date("1962-02-29"), None)
+        self.assertEqual(W._date("1964-02-29"), "1964-02-29")
+        self.assertEqual(W._date(" 1941-12-23 (age 26)"), "1941-12-23")
+        self.assertEqual(W._date(None), None)
+
+    def test_a_roster_with_a_bad_date_keeps_the_player_and_the_raw_text(self):
+        text = ("==Roster==\n{{player2 | num = 12 | first = Freddie | last = Crawford | pos = SG | ft = 6 | in = 4 | lbs = 189 | DOB = 1941-12-33 | "
+                "college = St. Bonaventure}}\n{{player2 | num = 31 | first = Mel | last = Counts | pos = PF | ft = 7 | in = 0 | lbs = 230 | "
+                "DOB = 1941-10-16 | college = Oregon State}}\n")
+        rows = W.roster_nba(text)
+        self.assertEqual([(r["name"], r["born"]) for r in rows], [("Freddie Crawford", None), ("Mel Counts", "1941-10-16")])
+        self.assertIn("DOB = 1941-12-33", rows[0]["raw"])
+
+    def test_one_page_ds1_refuses_does_not_fail_the_others_in_its_batch(self):
+        w = worker.Worker(cfg=Config(), wp=object(), wd=object(), wdqs=object(), utcnow=lambda: NOW)
+        batch = [{"job_id": i, "kind": "wp_team_season", "target": "T%d" % i, "league": "nba", "season": 1968, "last_revision": None,
+                  "attempts": 0, "gap": True, "priority": 9000} for i in (1, 2, 3)]
+        pages = {j["target"]: {"missing": False, "resolved": j["target"], "page": {"revisions": [{"revid": 5}]}} for j in batch}
+        w.wp_query = lambda titles, content: (pages, 10)
+        stored, settled = [], []
+
+        def store(job, _page):
+            if job["target"] == "T2":
+                raise worker.db.DbError("date/time field value out of range")
+            stored.append(job["target"])
+            return 1
+        w.store_page = store
+        w.settle = lambda job, new, what: settled.append((job["target"], new["state"], what))
+        with patch.object(w, "fetch_log"):
+            w.do_wp(batch)
+        self.assertEqual(stored, ["T1", "T3"])                      # the page after the bad one was still stored
+        self.assertEqual(settled, [("T2", "queued", "errors")])     # only the bad one is put back (with a wait), the others are settled by store_page itself
+
+
+class BeyondCore(unittest.TestCase):
+    """The pages named rather than measured, and the title rules found by reading the 269 `gone` rows (2026-10-31)."""
+
+    def test_club_names_follow_the_article_not_the_identity(self):
+        t = planner.team_title
+        self.assertEqual(t("nhl", 1930, "Chicago Blackhawks"), "1930\u201331 Chicago Black Hawks season")
+        self.assertEqual(t("nhl", 1985, "Chicago Blackhawks"), "1985\u201386 Chicago Black Hawks season")
+        self.assertEqual(t("nhl", 1986, "Chicago Blackhawks"), "1986\u201387 Chicago Blackhawks season")          # one word from 1986-87
+        self.assertEqual(t("nfl", 1999, "St Louis Rams"), "1999 St. Louis Rams season")
+        self.assertEqual(t("nfl", 1925, "Buffalo Bisons"), "1925 Buffalo Bisons (NFL) season")
+        self.assertEqual(t("nba", 2005, "Seattle"), "2005\u201306 Seattle SuperSonics season")
+        self.assertEqual(t("nba", 1972, "Kansas City\u2013Omaha Kings"), "1972\u201373 Kansas City-Omaha Kings season")       # the dash is kept (it redirects)
+        self.assertEqual(t("mlb", 1883, "Cleveland Spiders"), "1883 Cleveland Blues season")
+        self.assertEqual(t("mlb", 1889, "Cleveland Spiders"), "1889 Cleveland Spiders season")                   # the name starts in 1889
+        self.assertEqual(t("mlb", 1962, "Houston Colt .45's"), "1962 Houston Colt .45s season")
+        self.assertEqual(t("mlb", 1932, "Brooklyn Dodgers"), "1932 Brooklyn Dodgers season")                      # the NFL alias is for the NFL only
+        self.assertEqual(t("mlb", 2025, "Sacramento Athletics"), "2025 Athletics season")                         # the earlier alias still holds
+        self.assertEqual(t("wha", 1973, "New York Golden Blades / Jersey Knights"), "1973\u201374 New York Golden Blades/New Jersey Knights season")
+
+    def test_a_redirect_to_another_page_is_missing_not_a_second_copy(self):
+        ok = jobs.redirect_ok
+        self.assertTrue(ok("wp_team_season", "1883 Louisville Colonels season", "1883 Louisville Eclipse season"))      # renamed club: the same page
+        self.assertTrue(ok("wp_team_season", "1884 Washington Nationals season", "1884 Washington Nationals (UA) season"))
+        self.assertFalse(ok("wp_team_season", "2013\u201314 Portland Pirates season", "2013\u201314 AHL season"))               # no article: the league's
+        self.assertFalse(ok("wp_team_season", "1884 Philadelphia Keystones season", "Philadelphia Keystones"))
+        self.assertFalse(ok("wp_team_season", "2014 Seattle Storm season", "List of Seattle Storm seasons"))
+        self.assertFalse(ok("wp_playoffs", "1920 Stanley Cup playoffs", "1919\u201320 NHL season"))
+        self.assertFalse(ok("wp_list", "List of Baltimore Colts seasons", "List of Indianapolis Colts seasons"))
+        self.assertTrue(ok("wp_draft", "2021 NWSL College Draft", "2021 NWSL Draft"))
+        self.assertFalse(ok("wp_draft", "2027 Major League Baseball draft", "Major League Baseball draft"))         # a year with no draft article yet
+        self.assertFalse(ok("wp_league_season", "2026 NWSL season", "National Women's Soccer League"))
+        self.assertTrue(ok("wp_list", "List of Boston Celtics seasons", "List of Boston Celtics seasons"))
+
+    def test_two_titles_that_were_wrong_for_one_season(self):
+        self.assertEqual(planner.historic_league_title("wchl", 1925), "1925\u201326 WHL season")          # the league's last season carries its new name
+        self.assertEqual(planner.historic_league_title("wchl", 1924), "1924\u201325 WCHL season")
+        self.assertEqual({r["year"]: r["title"] for r in planner.historic_draft_rows() if r["league"] == "aba"}[1976], "1976 ABA dispersal draft")
+
+    def test_static_pages_are_named_by_the_year_the_season_began(self):
+        rows = {r["title"]: r for r in planner.static_page_rows()}
+        self.assertEqual((rows["2023 NBA playoffs"]["season"], rows["2023 NBA Finals"]["league"], rows["2023 NBA playoffs"]["kind"]), (2022, "nba", "wp_playoffs"))
+        self.assertEqual(rows["Super Bowl LVII"]["season"], 2022)
+        self.assertEqual(rows["Super Bowl I"]["season"], 1966)
+        self.assertEqual(rows["111th Grey Cup"]["season"], 2023)
+        self.assertEqual(rows["8th Grey Cup"]["season"], 1920)                   # no Grey Cup 1916-19: the numbers skip with the years
+        self.assertEqual(rows["7th Grey Cup"]["season"], 1915)
+        self.assertEqual(rows["2022\u201323 NFL playoffs"]["season"], 2022)
+        self.assertEqual(rows["1947 BAA playoffs"]["season"], 1946)
+        self.assertEqual(rows["2013 NWSL College Draft"]["kind"], "wp_draft")
+        self.assertEqual(rows["2020 NWSL Draft"]["league"], "nwsl")
+        self.assertEqual(rows["1997 WNBA draft"]["league"], "wnba")
+        self.assertEqual(len(rows), len(planner.static_page_rows()), "no title twice")
+        self.assertNotIn("1904 World Series", rows)
+        # what dedicated pipelines archived already is not asked for again
+        self.assertFalse([t for t, r in rows.items() if r["kind"] == "wp_team_season" and r["league"] in ("wnba", "nwsl", "pwhl", "ncaaf")])
+        self.assertEqual({r["league"] for r in rows.values() if r["kind"] == "wp_team_season"}, {"ahl", "echl"})
+        self.assertEqual(sum(1 for r in rows.values() if r["kind"] == "wp_team_season"), 42)
+
+    def test_rival_league_clubs_and_franchise_lists_become_gap_targets(self):
+        club = lambda lg, y, n: dict(league=lg, season=y, name=n, no_roster=False, no_stat=False)
+        fr = [dict(league="nba", name="Boston Celtics"), dict(league="mlb", name="Cleveland Guardians"), dict(league="nhl", name=None)]
+        out = planner.build_targets(Config(), NOW, [club("aa", 1884, "Columbus Colts"), club("na", 1875, "New Haven New Havens"), club("nfl", 2020, "Kansas City Chiefs")],
+                                    [], [], [], static_pages=[dict(kind="wp_playoffs", league="nba", season=2022, title="2023 NBA playoffs", tier=tiers.POSTSEASON)],
+                                    franchises=fr)
+        by = {(t["kind"], t["target"]): t for t in out}
+        self.assertTrue(by[("wp_team_season", "1884 Columbus Buckeyes season")]["gap"])
+        self.assertIn(("wp_team_season", "1875 New Haven Elm Citys season"), by)
+        self.assertNotIn(("wp_team_season", "2020 Kansas City Chiefs season"), by)                  # nothing missing for it
+        self.assertEqual(by[("wp_playoffs", "2023 NBA playoffs")]["season"], 2022)
+        self.assertEqual(sorted(t for k, t in by if k == "wp_list"),
+                         ["List of Boston Celtics head coaches", "List of Boston Celtics seasons", "List of Cleveland Guardians managers", "List of Cleveland Guardians seasons"])
+        self.assertEqual(by[("wp_list", "List of Boston Celtics seasons")]["refresh_days"], planner.LIST_REFRESH_DAYS)
+        self.assertNotIn(("wp_list", "List of None seasons"), by)
+        # below every roster gap of the five leagues, above the bios
+        low = max(t["priority"] for t in out if t["kind"] in ("wp_playoffs", "wp_list") or t["league"] in ("aa", "na"))
+        self.assertLess(low, tiers.gap_priority(min(tiers.ROSTER.values()), 1800))
+        self.assertGreater(min(t["priority"] for t in out), tiers.BIOS + 150)
+
+    def test_static_pages_sql_lists_only_what_is_not_read_yet(self):
+        sql = planner.static_pages_sql()
+        self.assertIn("parser_version >=", sql)
+        self.assertIn("'2023 NBA playoffs'", sql)
+
+    def test_a_list_article_is_parsed_as_tables_only(self):
+        text = ("{{Infobox}}\n==Season-by-season==\n{| class=\"wikitable\"\n! Season !! Record\n|-\n| [[1946\u201347 Boston Celtics season|1946\u201347]] || 22\u201338\n|}\n")
+        for kind in ("wp_list", "wp_playoffs"):
+            out = parse.parse_page(kind, text, "nba")
+            self.assertEqual(out["status"], "ok", out)
+            self.assertEqual((len(out["tables"]), len(out["tables"][0].rows), out["roster"], out["draft"]), (1, 1, [], []))
+
+    def test_a_list_that_redirects_to_another_club_is_not_stored(self):
+        w = worker.Worker(cfg=Config(), wp=object(), wd=object(), wdqs=object(), utcnow=lambda: NOW)
+        job = {"job_id": 1, "kind": "wp_list", "target": "List of Baltimore Colts seasons", "league": "nfl", "season": None, "last_revision": None,
+               "attempts": 0, "gap": True, "priority": 5300}
+        pages = {job["target"]: {"missing": False, "resolved": "List of Indianapolis Colts seasons", "page": {"revisions": [{"revid": 5}]}}}
+        w.wp_query = lambda titles, content: (pages, 10)
+        stored, settled = [], []
+        w.store_page = lambda *_: stored.append(1) or 1
+        w.settle = lambda j, new, what: settled.append((new["state"], what))
+        with patch.object(w, "fetch_log"):
+            w.do_wp([job])
+        self.assertEqual((stored, settled), ([], [("gone", "gone")]))
+
+
 class FakeWikipedia:
     """Answers revisions queries from the fixtures. rvprop without content gives ids and timestamps only."""
     PAGES = {"2023–24 Boston Celtics season": "nba_team", "2023 Kansas City Chiefs season": "nfl_team", "2023 Toronto Argonauts season": "cfl_team",
-             "2023 NBA draft": "nba_draft", "2023 NFL draft": "nfl_draft", "2023 CFL draft": "cfl_draft", "2023–24 NBA season": "nba_season"}
+             "2023 NBA draft": "nba_draft", "2023 NFL draft": "nfl_draft", "2023 CFL draft": "cfl_draft", "2023–24 NBA season": "nba_season",
+             # stand-ins with the right shape (a page with tables, a page with a roster) for the kinds read beyond core
+             "2023 NBA playoffs": "nba_season", "List of Boston Celtics seasons": "nba_season", "1884 Columbus Buckeyes season": "nba_team"}
 
     def __init__(self):
         self.requests, self.last_status, self.bytes = 0, 200, 0
@@ -826,6 +972,52 @@ def one(sql):
 class Ds1(unittest.TestCase):
     def setUp(self):
         reset_db()
+
+    def test_pages_beyond_core_are_read_stored_and_marked_done(self):
+        t = lambda kind, target, lg, y, prio: dict(kind=kind, target=target, league=lg, season=y, priority=prio, gap=True, refresh_days=30)
+        db.run(jobs.enqueue_sql([
+            t("wp_playoffs", "2023 NBA playoffs", "nba", 2022, tiers.gap_priority(tiers.POSTSEASON, 2022)),
+            t("wp_list", "List of Boston Celtics seasons", "nba", None, tiers.gap_priority(tiers.LISTS)),
+            t("wp_list", "List of Nobody seasons", "nba", None, tiers.gap_priority(tiers.LISTS)),
+            t("wp_team_season", "1884 Columbus Buckeyes season", "aa", 1884, tiers.gap_priority(tiers.RIVAL, 1884)),
+        ]))
+        w, c = make_worker()
+        self.assertEqual(w.run(once=True, plan=False), 0)
+        states = {r["target"]: r["state"] for r in db.rows("select target, state from ingest.harvest_job where kind like 'wp\\_%'")}     # the roster names it found are queued as bios
+        self.assertEqual(states, {"2023 NBA playoffs": "done", "List of Boston Celtics seasons": "done", "List of Nobody seasons": "gone",
+                                  "1884 Columbus Buckeyes season": "done"})
+        pages = {r["title"]: (r["kind"], r["league"], r["season"], r["parse_status"]) for r in db.rows("select * from legacy_wikipedia_harvest.page")}
+        self.assertEqual(pages["2023 NBA playoffs"], ("wp_playoffs", "nba", 2022, "ok"))
+        self.assertEqual(pages["List of Boston Celtics seasons"], ("wp_list", "nba", None, "ok"))
+        self.assertEqual(pages["1884 Columbus Buckeyes season"][:2], ("wp_team_season", "aa"))
+        self.assertGreater(one("select count(*) from legacy_wikipedia_harvest.wikitable_row r join legacy_wikipedia_harvest.page p using (page_id) where p.kind = 'wp_list'"), 0)
+        self.assertEqual(one("select count(*) from legacy_wikipedia_harvest.roster_row r join legacy_wikipedia_harvest.page p using (page_id) where p.kind = 'wp_playoffs'"), 0)
+        self.assertGreater(one("select count(*) from legacy_wikipedia_harvest.roster_row r join legacy_wikipedia_harvest.page p using (page_id) where p.league = 'aa'"), 0)
+        self.assertEqual(one("select refresh_days from ingest.harvest_job where kind = 'wp_list' and state = 'done' limit 1"), 30)
+
+    def test_one_bad_page_does_not_hold_back_the_others_in_ds1(self):
+        """The live failure, end to end: a roster with a date that does not exist loads (born is NULL), and its neighbours load too."""
+        text = wikitext_of("nba_team").replace("DOB = 1996-10-24", "DOB = 1941-12-33")
+        self.assertIn("DOB = 1941-12-33", text)
+        page = json.loads(fixture("nba_team"))
+        page["query"]["pages"][0]["revisions"][0]["slots"]["main"]["content"] = text
+        wp = FakeWikipedia()
+        original = wp.get
+
+        def get(params):
+            body = json.loads(original(params))
+            for p in body["query"]["pages"]:
+                if p["title"] == "2023–24 Boston Celtics season":
+                    p["revisions"][0]["slots"]["main"]["content"] = text
+            return json.dumps(body, ensure_ascii=False).encode()
+        wp.get = get
+        t = lambda target, lg, y: dict(kind="wp_team_season", target=target, league=lg, season=y, priority=9000, gap=True, refresh_days=120)
+        db.run(jobs.enqueue_sql([t("2023–24 Boston Celtics season", "nba", 2023), t("2023 Kansas City Chiefs season", "nfl", 2023)]))
+        w, c = make_worker(wp=wp)
+        self.assertEqual(w.run(once=True, plan=False), 0)
+        self.assertEqual({r["target"]: r["state"] for r in db.rows("select target, state from ingest.harvest_job where kind = 'wp_team_season'")},
+                         {"2023–24 Boston Celtics season": "done", "2023 Kansas City Chiefs season": "done"})
+        self.assertEqual(one("select count(*) from legacy_wikipedia_harvest.roster_row where name = 'Jaylen Brown' and born is null"), 1)
 
     def test_gap_queue_is_read_biggest_first_and_loaded(self):
         seed_jobs()
@@ -991,7 +1183,8 @@ class Ds1(unittest.TestCase):
         self.assertEqual(before["pass"], 1)
         order = [r["target"] for r in db.rows("select target from ingest.harvest_job where kind = 'wp_team_season' order by priority desc, job_id")]
         self.assertEqual({r["league"] for r in db.rows("select league from ingest.harvest_job where kind = 'wp_team_season' order by priority desc limit 3")}, {"nba"})
-        self.assertNotIn("2023–24 Montreal Canadiens season", order)                      # has a roster and team statistics in the seed
+        # has a roster and team statistics in the seed, but an NHL or MLB season outside 1997-2013 is still read once for its player statistics tables
+        self.assertIn("2023–24 Montreal Canadiens season", order)
         # fill a gap in core: the Celtics 2023 roster appears
         db.run("insert into core.roster_stint (person_id, team_season_id, role) select 1, ts.team_season_id, 'player' from core.team_season ts "
                "join core.season s using (season_id) where ts.franchise_id = 1 and s.start_year = 2023;")
@@ -1008,6 +1201,11 @@ class Ds1(unittest.TestCase):
         # pass 2 only when the gap queue is drained
         self.assertGreater(planner.gap_jobs_left(), 0)
         db.run("update ingest.harvest_job set state = 'done', gap = false, priority = 150;")
+        # a done team-season job whose page was never archived is opened once more (by design): give every one its archived page, as a real run does
+        db.run("insert into legacy_files.raw_archive (name, saved_on, sha256, data) values ('x-page', current_date, 'x', 'x') on conflict do nothing;"
+               "insert into legacy_wikipedia_harvest.page (kind, league, season, title, resolved_title, revision, sha256, bytes, archive_name, fetched_at, parser_version, parse_status) "
+               "select kind, league, season, target, target, 1, 'x', 1, 'x-page', now(), %d, 'ok' from ingest.harvest_job where kind = 'wp_team_season' "
+               "on conflict do nothing;" % planner.PARSER_VERSION)
         after = planner.plan(Config(), NOW)
         self.assertEqual(after["pass"], 2)
         self.assertGreater(one("select count(*) from ingest.harvest_job where not gap and state = 'queued'"), 0)

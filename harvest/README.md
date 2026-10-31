@@ -48,6 +48,8 @@ The same numbers from SQL: `select ingest.harvest_progress();`. The heartbeat is
 | `wp_team_season` | a team-season article, e.g. `2023–24 Boston Celtics season` | `action=query&prop=revisions` (10 titles per request, wikitext) | `page`, `roster_row` (NBA `{{player2}}`, NFL `{{NFL final roster}}`, CFL `{{CFL player}}`, or a roster wikitable), `infobox_field`, `wikitable_row` for standings / statistics / leaders sections |
 | `wp_league_season` | `2023–24 NBA season`, `2023 NFL season`, `2023 Major League Baseball season` ... | same | `page`, `infobox_field` (champion, MVP, leaders ...), `wikitable_row` for every table (awards, standings written as tables, playoffs) |
 | `wp_draft` | `2023 NBA draft`, `2023 NFL draft`, `1970 NHL amateur draft` ... | same | `page`, `draft_pick` (wikitables and `{{NFLDraft-row}}`; the round from the section when the table has none) |
+| `wp_playoffs` | `2023 NBA playoffs`, `2023 NBA Finals`, `2022–23 NFL playoffs`, `Super Bowl LVII`, `111th Grey Cup`, `2023 World Series`, `2023 Major League Baseball postseason` ... | same | `page`, `infobox_field`, `wikitable_row` for every table (brackets, series and game results where they are tables; games told with a template stay in the archived wikitext) |
+| `wp_list` | `List of Boston Celtics seasons`, `List of Boston Celtics head coaches`, `List of Boston Red Sox managers` | same | `page`, `wikitable_row` (a record for every season; coaches with their years) |
 | `wd_person_title` | an exact Wikipedia roster article title | Wikipedia `pageprops.wikibase_item` lookup with redirects, then Wikidata item check (up to 25 titles) | a filtered identity-resolution archive; queues `wd_person` only when the exact canonical sitelink has a non-deprecated P31=Q5 statement |
 | `wd_team_members` | a team's Q-number (`legacy_team_brand.team`) | one SPARQL query (`P54` with `P580` / `P582` and their precision), ordered so an unchanged answer has the same sha256 | `team_member`; every member not in `core` is queued as a bio |
 | `wd_person` | a person's Q-number | `wbgetentities`, 25 per request, pruned before it is archived | `item`, `claim` for P569 birth, P570 death, P19 birth place, P27 citizenship, P413 position, P2048 height, P2067 mass, P641 sport, P106 occupation |
@@ -61,13 +63,55 @@ request) and replaces their rows. Nothing about ethnicity, religion, health, sex
 
 `wp_team_season` also writes explicit `staff_head_coach` and `staff_captain` keys to the existing `infobox_field` table when the article's infobox has those fields. Original field names, raw markup and linked titles remain present. These are article claims, not identity-verified personnel assignments. Roster names are resolved through exact enwiki sitelinks, never a label/name search; only an unambiguous canonical title with non-deprecated P31=Q5 is sent to the existing bio reader.
 
-Historical planning seeds league-season pages independently of `core.season` for NFL 1920–71, AFL 1960–69, AAFC 1946–49, NHA 1910–17, PCHA 1912–24, WCHL 1921–26, WHA 1972–79, ABA 1967–76, NBL 1937–49, WFL 1974–75 and USFL 1983–85. Club-season planning now also measures `core.team_season` for those historical league codes, rather than limiting its query to the five current SPX leagues. Within the listed seasons, it targets team articles that have no current-parser archive yet, even when core roster/stat rows already exist. NHL and MLB team-season pages outside 1997–2013 follow the same rule so their player statistics can be captured. Existing current-parser archives are skipped; archives made by an older parser version are explicitly requeued once for reparsing, without resetting running or missing-page jobs. The similarly named `WHL` is not seeded: its alias needs league disambiguation. Historical club-season articles are generated only for rows represented in `core.team_season`; a team or season absent there is not covered and needs an explicit, reviewed title catalogue. No claim of comprehensive league/team coverage is made.
+Historical planning seeds league-season pages independently of `core.season` for NFL 1920–71, AFL 1960–69, AAFC 1946–49, NHA 1910–17, PCHA 1912–24, WCHL 1921–26, WHA 1972–79, ABA 1967–76, NBL 1937–49, WFL 1974–75 and USFL 1983–85. Club-season planning now also measures `core.team_season` for those historical league codes, rather than limiting its query to the five current SPX leagues. Within the listed seasons, it targets team articles that have no current-parser archive yet, even when core roster/stat rows already exist. NHL and MLB team-season pages outside 1997–2013 follow the same rule so their player statistics can be captured. Existing current-parser archives are skipped; archives made by an older parser version are explicitly requeued once for reparsing, without resetting running or missing-page jobs. The similarly named `WHL` is not seeded as a league, except that the WCHL's last season (1925–26) is the article `1925–26 WHL season`. Historical club-season articles are generated only for rows represented in `core.team_season`; a team or season absent there is not covered and needs an explicit, reviewed title catalogue. No claim of comprehensive league/team coverage is made.
 
 The historical target titles use season labels across calendar years for NHL, NBA, NHA, PCHA, WCHL, WHA, ABA and NBL, and single years for leagues with calendar-year naming. These patterns remain a reviewed first pass; unsupported title aliases or missing franchise identities still need explicit coverage review. `status.py --measure` shows team-season rows and planned team-article targets by league, so the coordinator can compare actual counts after the code reaches the worker.
 
 The historic draft seed currently covers AFL 1960–69, ABA 1967–76, USFL 1983–85, the 1974 WFL draft page and the 1972 WHA general player draft. It does not cover AAFC or NBL draft articles; ambiguous or unverified titles remain gaps. League-season pages retain their tables (including awards tables when present), but separate award article lists are still sourced only for the leagues in `scripts/wikipedia_awards/titles.py`.
 
 The enabled static seeds total 125 historic league-season pages and 25 historic draft targets (150 pages, about 15 Wikipedia content batches at 10 titles each). Using the existing planning estimate of roughly 50–170 KB per season page and 100 KB per draft page, the addition is about 9–24 MB of uncompressed source payload before Wikidata title resolutions. The actual count/bytes are unknown until the coordinating session reads queue and fetch metrics through its authorized path; the separate ticket estimate of about 584 MB/day is not remeasured here. Roster-title lookups scale with new parsed roster links and are not included in the estimate.
+
+## Why the queue ran dry, and what was added (2026-10-31, SPX-425)
+
+John, 2026-10-16: "see why it doesn't continuously collect data. so much data to collect." On 2026-10-30 the worker was alive, the queue empty and 0 requests that day:
+
+- **Because everything it was told to read has been read.** Pass 1 queues only what `core` lacks (the five leagues' club seasons, league seasons, drafts, people) plus the historic leagues'
+  fixed lists; both are finished (9,544 club seasons, 595 league seasons, 393 drafts, 75,338 people). Pass 2 re-reads are not due: a page of an older season is asked about every 120 days,
+  one of the current season every 2 days (revision id only). Nothing is stuck and nothing leaks; the planner simply knew of no more pages. The leagues loaded into `core` since the planner was
+  written (AHL, ECHL, WNBA, NWSL, PWHL, NCAA football, MLB's rival leagues) were never measured, and some kinds of page (playoffs, lists) were never asked for.
+- **Six jobs failed twenty times each, one bad date.** The 1968-69 Lakers roster prints `DOB = 1941-12-33`; the parser read it as a date, DS1 refused the page's rows (`date/time field value out of range`),
+  and the worker failed every job that shared its batch of ten: 1967-68 and 1968-69 Celtics, 1967-68 Lakers, 1968-69 Rockets and the 1968 NBA draft. Fixed twice: `wikitext._date` checks the date
+  exists (the text stays in `raw`; `born` is NULL), and `do_wp` settles a page whose rows DS1 refuses by itself, so one page can never fail its neighbours again. `LoadFailures` in the tests.
+- **269 "gone" club seasons, in three kinds** (counted from the queue on 2026-10-31, each title asked of Wikipedia's `prop=info`):
+  about 115 were a wrong title (the corrected title is queued unless that page was already read), now `NAME_ALIAS` in `planner.py` (the Black Hawks were two words until 1986: 38 seasons; `St Louis Rams`; `Seattle` for the SuperSonics; the fold that dropped the dash of
+  `Kansas City–Omaha Kings`; the Cleveland Blues, Columbus Buckeyes, Pittsburgh Alleghenys and the other 19th-century names; the NFL's `Buffalo Bisons (NFL)` and `Brooklyn Dodgers (NFL)`; three WHA clubs
+  with a slash; `Houston Colt .45s`); 154 do not exist (64 CFL seasons of 1958-86, 75 NHA, PCHA and WCHL club seasons, 11 NHL-era western clubs of 1917-26, a few 1870s clubs) and stay gone, looked at again in 90 days.
+  Also: `1925–26 WHL season` (the WCHL's last season has its new name), `1976 ABA dispersal draft`.
+- **A redirect is not a page.** `jobs.redirect_ok`: Wikipedia sends `2013–14 Portland Pirates season` to `2013–14 AHL season`, `1920 Stanley Cup playoffs` to `1919–20 NHL season`, `List of Baltimore Colts seasons`
+  to the Indianapolis list. Such an answer is the page already read under its own title, so the job counts as gone. A renamed club (`1883 Louisville Colonels season` -> `... Eclipse season`) is still read.
+
+### Added beyond `core` (all gaps: nothing of it is in DS1 or in another pipeline's archive)
+
+Checked title by title against English Wikipedia on 2026-10-31 (`prop=info`, 50 titles a request, 1 s apart, the job's User-Agent; about 180 requests in all). Sizes are the wikitext length Wikipedia reports.
+
+| Family | Kind | Titles | Pages that exist | Wikitext | Source of the title |
+|---|---|---|---|---|---|
+| Playoffs and finals: NBA/BAA 1947-2026 (`2023 NBA playoffs`, `2023 NBA Finals`), Stanley Cup playoffs 1918-2026 (51 before 1967 redirect to the season: gone), NFL playoffs 1967-2025, NFL, AFL and AAFC championship games, Super Bowls I-LXI, MLB postseason and World Series, Grey Cups, WNBA playoffs and Finals | `wp_playoffs` | 790 | 725 | 34.3 MB | `planner.postseason_rows` |
+| A franchise's `List of X seasons`, `... head coaches` (NBA, NHL, NFL, CFL), `... managers` (MLB): each club's latest name | `wp_list` | 450 | 275 | 8.3 MB | `planner.FRANCHISES` (measured from `core`) |
+| Club seasons of MLB's rival leagues (NA, AA, UA, PL, FL) not read yet (39 of the 171; the rest were read earlier under MLB), and the corrected titles above (about 90 new jobs) | `wp_team_season` | ~130 | ~125 | ~8 MB | `core.team_season`, `NAME_ALIAS` |
+| The 42 AHL and ECHL club seasons that have an article of their own (a reviewed list: 2,263 other club seasons redirect to the league's article) | `wp_team_season` | 42 | 42 | 1.7 MB | `planner.MINOR_CLUB_SEASONS` |
+| Drafts of the leagues loaded later: WNBA 1997-2026, NWSL 2013-2024, PWHL 2023-25 | `wp_draft` | 45 | 43 | 0.8 MB | `planner.LATER_DRAFTS` |
+
+**Not asked for, because another pipeline holds it** (`legacy_files.raw_archive`): WNBA (385 club seasons, 30 seasons), NWSL (135, 13, the championships), PWHL (25, 4, playoffs), NCAA football (every FBS season and club),
+AHL and ECHL seasons and their playoffs (`wikipedia-hockey-minor/`), the Stanley Cup finals, all-star games, awards. **Not asked for, on purpose:** the players' own articles (75,338 people, about 4 GB of
+wikitext): they carry prose about family, health and politics that AGENTS.md section 3 says never to collect, and the allowed fields are already read from Wikidata. John's call if he ever wants them.
+
+**Honest totals** (measured with `prop=info` on every title, not guessed): about 1,460 new jobs, about 1,300 pages that exist, **about 52 MB of wikitext** (about 55 MB received, about 25 MB on DS1 with the parsed rows), about 150 content requests
+at 10 titles each, plus about 150 for the Wikipedia titles and Wikidata items of the roster names those pages show (the club seasons of 1879-1986 name players DS1 may not hold). **About 300 requests, so under an
+hour at the same one request a second.** After that the queue is empty again; what is left is the revision-id checks: 2 days for the current season's pages (about 40 titles, one request), 30 days for the lists
+(275 titles, 6 requests a month), 120 days for the rest, roughly **3 requests a day** on top of the old ones. That is the truthful size of "24/7": the pages that exist and that no other pipeline holds
+are now queued, and a job that sat idle for lack of work will again. There is no loop that re-reads for its own sake. More work appears when `core` gains a league or season (the planner measures it every 6 hours)
+or when John decides on a new family (the players' articles above; Wikipedia's award articles for the later leagues).
 
 ## Being polite
 

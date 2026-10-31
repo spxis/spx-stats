@@ -36,8 +36,8 @@ def parse_page(kind, text, league=None):
             out["roster"], out["how"] = W.parse_roster(text, league)
             out["tables"] = [t for t in W.parse_tables(text)
                              if t.section and STAT_SECTIONS.search(t.section) and not re.search(r"game log|schedule|roster", t.section, re.I)]
-        elif kind == "wp_league_season":
-            out["tables"] = W.parse_tables(text)
+        elif kind in ("wp_league_season", "wp_playoffs", "wp_list"):
+            out["tables"] = W.parse_tables(text)      # a playoffs article, a franchise's list of seasons or head coaches: every table, as printed
         elif kind == "wp_draft":
             out["draft"] = W.parse_draft(text)
         out["tables"] = [t for t in out["tables"] if t.rows and len(t.rows) <= MAX_TABLE_ROWS]

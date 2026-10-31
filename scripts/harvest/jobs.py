@@ -6,17 +6,38 @@ The transitions are pure functions of (job, now, outcome) so they are tested wit
 Everything that touches DS1 builds one SQL statement from them. One worker claims jobs with `for update skip locked` and a lease; a worker that
 dies leaves `running` rows whose lease passes, and the next claim takes them again, so a restart loses nothing and repeats at most one batch.
 """
+import re
 from datetime import timedelta
 
 import db
 from netapi import backoff_delay  # noqa: F401  (re-exported for the tests)
 from tiers import refresh_priority
 
-WP_KINDS = ("wp_team_season", "wp_league_season", "wp_draft")
+WP_KINDS = ("wp_team_season", "wp_league_season", "wp_draft", "wp_playoffs", "wp_list")
 FAMILIES = {k: WP_KINDS for k in WP_KINDS}      # kinds that share one API request; every other kind is its own family
 GONE_RECHECK_DAYS = 90
 FAILED_RECHECK_DAYS = 7
 EXHAUSTED_RECHECK_DAYS = 1
+
+
+LEAGUE_WIDE_SEASON = re.compile(r" (?:NHL|NBA|BAA|AHL|ECHL|NFL|CFL|WNBA|NWSL|PWHL|WHA|ABA|NBL|NHA|PCHA|WCHL|AFL|AAFC|USFL|MLB|Major League Baseball) season$")
+
+
+def redirect_ok(kind, target, resolved):
+    """Wikipedia answers a title that is a redirect with the page it points to. Often that is the same page under its right name (a club renamed:
+    '1883 Louisville Colonels season' -> '1883 Louisville Eclipse season'), and the page is read. Often it is something else: a club with no season
+    article of its own sends '2013-14 Portland Pirates season' to '2013-14 AHL season', and '1920 Stanley Cup playoffs' goes to '1919-20 NHL season'.
+    That is a page we already read under its own title, so the job counts as missing, not as a second copy."""
+    if resolved == target:
+        return True
+    if kind in ("wp_list", "wp_playoffs"):
+        return False
+    if kind in ("wp_draft", "wp_league_season"):
+        return target.split(" ", 1)[0] == resolved.split(" ", 1)[0]          # '2027 Major League Baseball draft' -> 'Major League Baseball draft': no such year yet
+    if kind == "wp_team_season":
+        a, b = target.split(" ", 1)[0], resolved.split(" ", 1)[0]
+        return a == b and bool(re.search(r" season(?: \(\w+\))?$", resolved)) and not LEAGUE_WIDE_SEASON.search(resolved)
+    return True
 
 
 def family(kind):

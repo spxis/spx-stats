@@ -21,7 +21,8 @@ import planner  # noqa: E402
 from config import Config  # noqa: E402
 
 # raw bytes archived per item when there is no history yet (measured 2026-10-14 on real articles; Wikidata items are pruned before archiving)
-DEFAULT_BYTES = {"wp_team_season": 70_000, "wp_league_season": 170_000, "wp_draft": 100_000, "wd_team_members": 150_000, "wd_person": 2_500, "wd_label": 800}
+DEFAULT_BYTES = {"wp_team_season": 70_000, "wp_league_season": 170_000, "wp_draft": 100_000, "wd_team_members": 150_000, "wd_person": 2_500, "wd_label": 800,
+                 "wp_playoffs": 55_000, "wp_list": 30_000}      # measured 2026-10-31 on the titles themselves (prop=info length): 46.5 MB for 1,247 pages
 STORED_FRACTION = 0.45      # bytea is compressed by the database; the parsed rows add to it, so about this share of the raw bytes lands on DS1 (to be checked against real growth)
 
 

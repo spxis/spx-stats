@@ -230,6 +230,11 @@ class Worker:
         self._last_bytes = len(body)
         return resolve_pages(titles, json.loads(body)), len(body)
 
+    @staticmethod
+    def unusable(job, r):
+        """No such page, or a redirect to a page that is not this job's (jobs.redirect_ok): it counts as missing."""
+        return r["missing"] or not jobs.redirect_ok(job["kind"], job["target"], r.get("resolved") or job["target"])
+
     def do_wp(self, batch):
         cfg, now = self.cfg, self.utcnow()
         todo = [j for j in batch if not j.get("last_revision")]
@@ -243,7 +248,7 @@ class Worker:
             self.fetch_log("wp_check", len(checks), self.wp, nb, 0)
             for j in checks:
                 r = res[j["target"]]
-                if r["missing"]:
+                if self.unusable(j, r):
                     self.settle(j, jobs.after_missing(j, cfg, now), "gone")
                 elif int(r["page"]["revisions"][0]["revid"]) == int(j["last_revision"]):
                     if versions.get(j["target"], 0) < PARSER_VERSION:
@@ -258,10 +263,16 @@ class Worker:
             new = 0
             for j in part:
                 r = res[j["target"]]
-                if r["missing"]:
+                if self.unusable(j, r):
                     self.settle(j, jobs.after_missing(j, cfg, now), "gone")
                     continue
-                new += self.store_page(j, r)
+                try:
+                    new += self.store_page(j, r)
+                except db.DbError as e:
+                    # One page DS1 refuses must not take the rest of its batch with it: a bad date in one 1968 Lakers roster failed
+                    # six other articles for two weeks (20 attempts each). The page is archived already; it is tried again later by itself.
+                    self.log("%s: DS1 refused the rows of %r (%s); the rest of the batch goes on" % (j["kind"], j["target"], e))
+                    self.settle(j, jobs.after_error(j, cfg, self.utcnow(), "load: %s" % e), "errors")
             self.fetch_log("wp_content", len(part), self.wp, nb, new)
 
     def store_page(self, job, r):

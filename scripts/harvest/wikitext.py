@@ -3,6 +3,7 @@
 Nothing is guessed. A cell that cannot be read is kept as printed (markup removed) and a field that is not there is None. The parsers are
 tested on small excerpts of real articles (scripts/harvest/fixtures); when one is improved, `harvest.py reparse` re-reads the archived pages.
 """
+import datetime
 import re
 import unicodedata
 
@@ -302,8 +303,15 @@ def _int(s):
 
 
 def _date(s):
+    """An ISO date the article prints, or None. A date that does not exist (Wikipedia printed `1941-12-33` for a 1968 Lakers player) is not a date:
+    it was read as one once and DS1 refused the whole page, so the page's batch failed for weeks. The text stays in `raw`."""
     m = re.match(r"\s*(\d{4})-(\d{2})-(\d{2})", s or "")
-    return "%s-%s-%s" % m.groups() if m else None
+    if not m:
+        return None
+    try:
+        return datetime.date(int(m.group(1)), int(m.group(2)), int(m.group(3))).isoformat()
+    except ValueError:
+        return None
 
 
 def roster_nba(text):
