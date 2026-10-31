@@ -95,17 +95,16 @@ async function pageOf<S extends z.ZodType>(view: string, query: string, from: nu
  * data cache for REVALIDATE seconds, so a page request normally costs no round trip at all.
  *
  * Every page is a request of its own, so the order must put each row in one place or a row near a page boundary is read twice or lost
- * (pagedOrder.ts): the order asked for is ended with the view's key. A query with no order at all that fits in one page is read as asked;
- * one that does not is read again, page by page, in the order of the view's key.
+ * (pagedOrder.ts): the order asked for is ended with the view's key. A query with no order gets the view's key as its order, even when it
+ * fits in one page: without it, rows that tie (two clubs with the same record) come back in whatever order the database picks, which
+ * differs from read to read.
  */
 export async function rows<S extends z.ZodType>(view: string, query: string, schema: S): Promise<z.infer<S>[]> {
   const ask = withUniqueOrder(view, query);
-  if (!hasOrder(query)) {
-    const first = await pageOf(view, query, 0, PAGE_SIZE, schema);
-    if (first.length < PAGE_SIZE) return withChecked(view, first);
-  }
-  const out: z.infer<S>[] = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
+  const first = await pageOf(view, ask, 0, PAGE_SIZE, schema);
+  if (first.length < PAGE_SIZE) return withChecked(view, first);
+  const out: z.infer<S>[] = [...first];
+  for (let from = PAGE_SIZE; ; from += PAGE_SIZE) {
     const part = await pageOf(view, ask, from, PAGE_SIZE, schema);
     out.push(...part);
     if (part.length < PAGE_SIZE) return withChecked(view, out);

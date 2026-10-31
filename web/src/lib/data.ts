@@ -3,6 +3,7 @@ import { cache } from "react";
 import { z } from "zod";
 import { ApiError, checkRows, rows, viewMissing } from "./api/client";
 import { standingRows, teamSeasonRows } from "./api/teamSeasons";
+import { compareSeasonTable } from "./standingOrder";
 import {
   awardSchema, awardSourceSchema, franchiseNameSchema, gameSchema, gamesBySourceSchema, qualitySchema,
   seasonNoteSchema, seasonSummarySchema, sourceSchema, standingSchema, teamAbbrSchema, teamBrandSchema, teamSeasonSchema, totalsSchema,
@@ -172,7 +173,7 @@ export const getSeason = cache(async (lg: string, y: number): Promise<SeasonData
     year: y,
     label: summary[0].label,
     teams: [...teams.values()].sort((a, b) => (a.name || "").localeCompare(b.name || "")),
-    standings: standings.sort((a, b) => (b.pct ?? -1) - (a.pct ?? -1) || (b.w ?? 0) - (a.w ?? 0)),
+    standings: standings.sort(compareSeasonTable),
     awards: awards.sort((a, b) => (a.kind < b.kind ? -1 : a.kind > b.kind ? 1 : 0)),
     games: games.map((g): GameTuple => [
       g.game_date, g.away_id, g.away_score, g.home_score, g.home_id, PHASE[g.phase] || "r", g.status[0] ?? "", g.source,
