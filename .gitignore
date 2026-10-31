@@ -15,3 +15,6 @@ hosts.env
 daily/data/
 harvest/harvest.env
 harvest/data/
+.DS_Store
+/node_modules/
+/.pnpm-store/
