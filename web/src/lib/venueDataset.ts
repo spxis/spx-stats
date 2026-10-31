@@ -49,6 +49,13 @@ export interface VenueRecord {
   roof: string | null;
   surface: string | null;
   wikipedia_title: string | null;
+  /**
+   * Home venues only: the facts taken from the English Wikipedia infobox (CC BY-SA 4.0), a comma list of surface, roof, opened, closed, capacity.
+   * Null on a home venue means none of them were: its facts are Wikidata (CC0) or absent. Null on a spring, future or soccer row means nothing: those rows carry no per-fact mark.
+   */
+  wikipedia_fields: string | null;
+  /** enwiki:<article title>@<revision id> of the infobox wikipedia_fields names. Null when wikipedia_fields is null, or when the stored key is not that shape. */
+  wikipedia_key: string | null;
   /** home: a venue a club played its home games at; spring: a spring training park; future: a venue planned for a club (not built yet); soccer: a stadium that staged World Cup or MLS matches and is not a home venue of the five leagues. */
   kind: VenueKind;
   /** A future venue's status: proposed, approved or under_construction; null for every other kind. */
@@ -64,7 +71,29 @@ export interface VenueRecord {
 export const RECORD_FIELDS = [
   "wikidata_id", "name", "former_names", "latitude", "longitude", "city", "region", "country", "leagues", "clubs", "first_year", "last_year", "current",
   "opened", "closed", "capacity", "roof", "surface", "wikipedia_title", "kind", "status", "spring_league", "planned_open_year", "games",
+  "wikipedia_fields", "wikipedia_key",
 ] as const satisfies readonly (keyof VenueRecord)[];
+
+/**
+ * The facts of a record that the infobox mark can name. The database also marks an address that came from the infobox, but the dataset publishes no address,
+ * so that mark is dropped here: a venue is marked only for a fact the record carries.
+ */
+const WIKI_FACTS = ["surface", "roof", "opened", "closed", "capacity"] as const;
+
+/** What api.venue_info says about where a home venue's facts came from: the stored list and the article revision. */
+export interface WikiCite { fields: string | null; key: string | null }
+
+/**
+ * Which facts came from the English Wikipedia infobox, and the article revision (`enwiki:<title>@<revision>`).
+ * A stored list that names none of the facts, or a missing one, is null: the venue's facts are Wikidata (CC0) or absent.
+ * The key is kept only in the shape the database writes, so a malformed one is never published as a citation.
+ */
+export function wikiCite(cite: WikiCite | undefined): { wikipedia_fields: string | null; wikipedia_key: string | null } {
+  const listed = (cite?.fields ?? "").split(",").map((x) => x.trim()).filter((x) => (WIKI_FACTS as readonly string[]).includes(x));
+  if (listed.length === 0) return { wikipedia_fields: null, wikipedia_key: null };
+  const key = cite?.key != null && /^enwiki:[^@]+@\d+$/.test(cite.key) ? cite.key : null;
+  return { wikipedia_fields: [...new Set(listed)].join(","), wikipedia_key: key };
+}
 
 const WIKI = "https://en.wikipedia.org/wiki/";
 const at5 = (n: number) => n.toFixed(5);
@@ -80,7 +109,7 @@ export function wikipediaTitle(url: string | null): string | null {
 }
 
 /** The records, in the list's order, from the rows of /venues and what the dataset adds to them. */
-export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<string, VenueDetail>): VenueRecord[] {
+export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<string, VenueDetail>, cites: ReadonlyMap<string, WikiCite> = new Map()): VenueRecord[] {
   return rows.map((r) => {
     const d = detail.get(r.id);
     const wid = d?.wid ?? null;
@@ -105,6 +134,7 @@ export function venueRecords(rows: readonly VenueRow[], detail: ReadonlyMap<stri
       roof: r.roof,
       surface: r.surface,
       wikipedia_title: wikipediaTitle(r.wiki),
+      ...wikiCite(r.kind === "home" && wid ? cites.get(wid.toUpperCase()) : undefined),
       kind: r.kind,
       status: r.kind === "future" ? r.tag : null,
       spring_league: r.kind === "spring" ? r.tag : null,
@@ -121,7 +151,7 @@ export const DATASET = {
   description: "Every home venue of the NHL, NBA, MLB, NFL and CFL clubs on record, current and former, with its clubs, former names, place and basic facts, and with it the spring training parks of the major-league clubs (kind spring), the venues planned for a club (kind future) and the other stadiums that staged World Cup or MLS matches (kind soccer).",
   url: "https://spxn.com/venues",
   licence:
-    "Venue identifiers, names, coordinates, places and facts from Wikidata are CC0 1.0. Surface and roof may come from the infobox of the venue's English Wikipedia article and are then CC BY-SA 4.0: credit Wikipedia and its authors (wikipedia_title names the article) and share alike. Clubs, leagues and years of use come from the SPX Stats archive; each source's licence is on https://spxn.com/sources.",
+    "Venue identifiers, names, coordinates, places and facts from Wikidata are CC0 1.0. For a home venue (kind home), wikipedia_fields lists the facts taken from the infobox of its English Wikipedia article (any of surface, roof, opened, closed, capacity) and wikipedia_key names the article and revision (enwiki:<title>@<revision>): those facts are CC BY-SA 4.0, so credit Wikipedia and its authors (wikipedia_title names the article) and share alike. A home venue whose wikipedia_fields is empty took none of those facts from Wikipedia: they are CC0, or absent. Names are not marked: a venue's name and former_names can come from the infobox's \"Former names\" where Wikidata has no dated names, so treat them as possibly CC BY-SA 4.0. Rows of kind spring, future and soccer carry no such mark, and some of their facts come from English Wikipedia: treat them as possibly CC BY-SA 4.0. Clubs, leagues and years of use come from the SPX Stats archive; each source's licence is on https://spxn.com/sources.",
   attribution: "SPX Network (https://spxn.com), with data from Wikidata and English Wikipedia.",
   sources: [
     { name: "Wikidata", url: "https://www.wikidata.org", licence: "CC0 1.0", licenceUrl: "https://creativecommons.org/publicdomain/zero/1.0/" },
@@ -153,6 +183,7 @@ export function venuesCsv(records: readonly VenueRecord[]): string {
     lines.push([
       r.wikidata_id, r.name, formerNamesText(r.former_names), r.latitude, r.longitude, r.city, r.region, r.country, r.leagues.join(";"), clubsText(r.clubs),
       r.first_year, r.last_year, r.current, r.opened, r.closed, r.capacity, r.roof, r.surface, r.wikipedia_title, r.kind, r.status, r.spring_league, r.planned_open_year, r.games,
+      r.wikipedia_fields, r.wikipedia_key,
     ].map(csvField).join(","));
   }
   return `${lines.join("\r\n")}\r\n`;

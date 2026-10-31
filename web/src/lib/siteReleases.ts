@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.175.0", date: "2026-10-30", href: "/venues",
+    title: "The venue dataset says which facts came from Wikipedia",
+    text: "The open venue list (CSV, GeoJSON and API) used to say only that surface and roof might come from Wikipedia. A home venue now carries wikipedia_fields and wikipedia_key: the facts taken from its English Wikipedia article (CC BY-SA 4.0) and the revision read. Every other fact of that venue is CC0 or absent.",
+  },
   { version: "0.174.11", date: "2026-10-30", href: "/mlb/team/cincinnati-reds",
     title: "A club's opponent and country sections open faster on a phone",
     text: "The record against each opponent drew a grey box for every season two clubs never met, and the country chart carried its closed table. A club page now has about 4,000 fewer pieces to style and lay out: same look, same hover, keys and click.",

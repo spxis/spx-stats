@@ -138,8 +138,8 @@ test("the dataset says what kind each record is, and the API can ask for one kin
   const records = venueRecords([...s, ...f], new Map<string, VenueDetail>([...sd, ...fd]));
   assert.deepEqual(records.map((r) => [r.kind, r.status, r.spring_league, r.planned_open_year, r.games]), [["spring", null, "grapefruit", null, null], ["future", "under_construction", null, 2027, null]]);
   const csv = venuesCsv(records).split("\r\n");
-  assert.equal(csv[0].split(",").slice(-5).join(","), "kind,status,spring_league,planned_open_year,games");
-  assert.ok(csv[1].endsWith(",spring,,grapefruit,,") && csv[2].endsWith(",future,under_construction,,2027,"));
+  assert.equal(csv[0].split(",").slice(-7).join(","), "kind,status,spring_league,planned_open_year,games,wikipedia_fields,wikipedia_key");
+  assert.ok(csv[1].endsWith(",spring,,grapefruit,,,,") && csv[2].endsWith(",future,under_construction,,2027,,,"));
   assert.ok((RECORD_FIELDS as readonly string[]).includes("kind"));
   const q = (kind?: VenueQuery["kind"]) => queryVenues(records, { kind, words: [], status: "all" }, { order: venueOrder([{ key: "name", dir: "asc" }]), sortText: "name.asc", fields: null, limit: 50, offset: 0, after: null });
   assert.equal(q().page.total, 2);

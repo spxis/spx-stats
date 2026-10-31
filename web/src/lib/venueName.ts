@@ -105,6 +105,19 @@ export const getVenueFacts = cache(async (): Promise<Map<string, VenueFacts>> =>
   return out;
 });
 
+const citeRow = z.object({ wikidata_id: z.string(), wikipedia_fields: z.string().nullable(), wikipedia_key: z.string().nullable() });
+
+/**
+ * Where the facts of each home venue came from (api.venue_info.wikipedia_fields and wikipedia_key, migration 189), by upper-case Wikidata id; a venue with none
+ * of its facts from the English Wikipedia infobox has no entry worth marking. It is read for the open dataset only, which says outright which facts are CC BY-SA:
+ * while the columns are not on the server, or if the read fails, this throws instead of answering "none", because "none came from Wikipedia" would then be a claim nobody checked.
+ * api.venue_pack does not carry the two columns, so the team and season pages are not touched.
+ */
+export async function getVenueWikiCites(): Promise<Map<string, { fields: string | null; key: string | null }>> {
+  const list = await rows("venue_info", "select=wikidata_id,wikipedia_fields,wikipedia_key&order=wikidata_id", citeRow);
+  return new Map(list.map((r) => [r.wikidata_id.toUpperCase(), { fields: r.wikipedia_fields, key: r.wikipedia_key }]));
+}
+
 /** The name a venue had in a year: the latest name that had begun by then and not ended; `fallback` (today's name) where none applies. */
 export function nameIn(spans: VenueSpan[] | undefined, year: number | null | undefined, fallback: string): string {
   if (!spans?.length || year == null) return fallback;

@@ -12,9 +12,11 @@ import { listVenues } from "@/lib/venueData";
  *   limit=1..200 (50)   offset=n   after=<page.next of the previous page>   fields=name,city,... (id is always there)
  * Response: { data: [{ id (the Wikidata id, else geo:<lat>,<lon>), wikidata_id, name, former_names [{ name, from, until }], latitude, longitude, city, region (ISO 3166-2), country (ISO 3166-1 alpha-2),
  *   leagues, clubs [{ league, franchise_id, name, from, to }], first_year, last_year, current, opened, closed, capacity, roof (open|dome|retractable), surface (grass|artificial|hybrid|ice|wood|multi|other), wikipedia_title,
- *   kind (home|spring|future), status (a future venue's: proposed|approved|under_construction), spring_league (cactus|grapefruit), planned_open_year (as the source says; null if none), games (played there, on record) }], page: { limit, offset, sort, next, total } }.
+ *   kind (home|spring|future), status (a future venue's: proposed|approved|under_construction), spring_league (cactus|grapefruit), planned_open_year (as the source says; null if none), games (played there, on record),
+ *   wikipedia_fields (home venues: the facts taken from the English Wikipedia infobox, a comma list of surface|roof|opened|closed|capacity; null on a home venue means none), wikipedia_key (enwiki:<title>@<revision> of that infobox, else null) }], page: { limit, offset, sort, next, total } }.
  * Page with offset (total is counted) or follow page.next with after= (keyset: steady while the data changes, total is null).
- * Licence: Wikidata-derived fields are CC0 1.0; surface and roof may come from English Wikipedia (CC BY-SA 4.0, credit the article in wikipedia_title); see https://spxn.com/sources.
+ * Licence: Wikidata-derived fields are CC0 1.0. On a home venue a fact is CC BY-SA 4.0 only when wikipedia_fields names it (credit the article in wikipedia_title, at wikipedia_key); an empty wikipedia_fields means none of those facts came from Wikipedia. Names can come from the infobox's Former names (not marked): treat them as possibly CC BY-SA 4.0.
+ * Rows of kind spring, future and soccer carry no such mark: treat their facts as possibly CC BY-SA 4.0. See https://spxn.com/sources.
  * The whole list is also a download: /venues.csv and /venues.geojson, which are complete files (every kind, with a kind column), not filtered. Cached an hour. 429 and 502 carry Retry-After.
  */
 export const GET = (request: Request) => respond(() => listVenues(new URL(request.url).searchParams));

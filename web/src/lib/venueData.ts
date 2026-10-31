@@ -5,6 +5,7 @@ import { searchWords } from "./listQuery";
 import { memo } from "./memo";
 import { getPaths } from "./teamSlugs";
 import { getVenueList } from "./venueList";
+import { getVenueWikiCites } from "./venueName";
 import { queryVenues, readKinds, RECORD_FIELDS, venueOrder, venueRecords, VENUE_SORTS, type VenuePage, type VenueQuery, type VenueRecord } from "./venueDataset";
 
 /* The open dataset of home venues: the same list /venues draws (venueList.ts), in English, as records. The downloads and GET /api/venues only read it. */
@@ -15,10 +16,13 @@ const en = speaker("en");
 /** The list /venues draws, in English, kept a few minutes per server instance (the routes are also kept an hour by the CDN). */
 const getEnglishList = memo(HOLD, async () => getVenueList(await getPaths(), en.say));
 
+/** Which facts of each home venue came from the English Wikipedia infobox, kept like the list. */
+const getCites = memo(HOLD, getVenueWikiCites);
+
 /** Every venue as a record. */
 export const getVenueRecords = async (): Promise<VenueRecord[]> => {
-  const { rows, detail } = await getEnglishList();
-  return venueRecords(rows, detail);
+  const [{ rows, detail }, cites] = await Promise.all([getEnglishList(), getCites()]);
+  return venueRecords(rows, detail, cites);
 };
 
 /** The address of every venue's page (/venue/<slug>), for the sitemap. */

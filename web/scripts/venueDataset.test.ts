@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { existsSync, readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
-  clubsText, compareVals, csvField, DATASET, formerNamesText, queryVenues, RECORD_FIELDS, venueOrder, venueRecords, venuesCsv, venuesGeoJson, wikipediaTitle,
+  clubsText, compareVals, csvField, DATASET, formerNamesText, queryVenues, RECORD_FIELDS, venueOrder, venueRecords, venuesCsv, venuesGeoJson, wikiCite, wikipediaTitle,
   type VenueDetail, type VenueQuery, type VenueRecord,
 } from "../src/lib/venueDataset.ts";
 import { readCursor, type Order } from "../src/lib/listQuery.ts";
@@ -25,7 +25,7 @@ const sortOf = (text: string) => ({ order: venueOrder(text.split(",").map((p) =>
 const rec = (o: Partial<VenueRecord>): VenueRecord => ({
   id: "Q1", wikidata_id: "Q1", name: "A", former_names: [], latitude: 40, longitude: -75, city: null, region: null, country: "US", leagues: ["nhl"], clubs: [],
   first_year: 1950, last_year: null, current: true, opened: null, closed: null, capacity: null, roof: null, surface: null, wikipedia_title: null,
-  kind: "home", status: null, spring_league: null, planned_open_year: null, games: null, ...o,
+  wikipedia_fields: null, wikipedia_key: null, kind: "home", status: null, spring_league: null, planned_open_year: null, games: null, ...o,
 });
 
 /** A small RFC 4180 reader, to check that what the CSV writes is what a program reads back. */
@@ -67,6 +67,57 @@ test("a record takes its ids, place and names from the row and its detail", () =
   assert.equal(b.id, "geo:40.00000,-75.00000");
   assert.equal(b.wikidata_id, null);
   assert.deepEqual(b.former_names, []);
+});
+
+test("a home venue says which facts came from Wikipedia, with the revision; every other row says none", () => {
+  const detail = new Map<string, VenueDetail>([
+    ["Q1", { wid: "Q1", city: null, iso: null, names: [] }],
+    ["Q2", { wid: "Q2", city: null, iso: null, names: [] }],
+    ["Q3", { wid: "Q3", city: null, iso: null, names: [] }],
+    ["Q4", { wid: "Q4", city: null, iso: null, names: [] }],
+  ]);
+  const rows = [row({ id: "Q1", name: "A" }), row({ id: "Q2", name: "B" }), row({ id: "Q3", name: "C", kind: "spring" }), row({ id: "Q4", name: "D" })];
+  const cites = new Map([
+    ["Q1", { fields: "surface,roof", key: "enwiki:A Stadium@123456" }],
+    ["Q2", { fields: null, key: null }],
+    ["Q3", { fields: "capacity", key: "enwiki:C Park@9" }],
+  ]);
+  const [a, b, c, d] = venueRecords(rows, detail, cites);
+  assert.deepEqual([a.wikipedia_fields, a.wikipedia_key], ["surface,roof", "enwiki:A Stadium@123456"]);
+  assert.deepEqual([b.wikipedia_fields, b.wikipedia_key], [null, null], "a home venue with nothing from Wikipedia is CC0");
+  assert.deepEqual([c.wikipedia_fields, c.wikipedia_key], [null, null], "only a home venue is marked: a spring park's row is never read from venue_info");
+  assert.deepEqual([d.wikipedia_fields, d.wikipedia_key], [null, null], "a home venue with no entry is not marked");
+  assert.equal(venueRecords(rows, detail)[0].wikipedia_fields, null, "no marks given, none made up");
+});
+
+test("wikiCite keeps only the facts it can name and a key only in the shape the database writes", () => {
+  assert.deepEqual(wikiCite({ fields: "surface,roof", key: "enwiki:Bell Centre@1100" }), { wikipedia_fields: "surface,roof", wikipedia_key: "enwiki:Bell Centre@1100" });
+  assert.deepEqual(wikiCite({ fields: " roof , surface ,roof", key: "enwiki:X (1968)@7" }), { wikipedia_fields: "roof,surface", wikipedia_key: "enwiki:X (1968)@7" });
+  assert.deepEqual(wikiCite({ fields: "address,opened,closed,capacity", key: "enwiki:X@1" }), { wikipedia_fields: "opened,closed,capacity", wikipedia_key: "enwiki:X@1" }, "an address mark is dropped: the dataset has no address");
+  assert.deepEqual(wikiCite({ fields: "address", key: "enwiki:X@1" }), { wikipedia_fields: null, wikipedia_key: null });
+  assert.deepEqual(wikiCite({ fields: "surface", key: "https://en.wikipedia.org/wiki/X" }), { wikipedia_fields: "surface", wikipedia_key: null }, "a malformed key is not published");
+  assert.deepEqual(wikiCite({ fields: "surface", key: null }), { wikipedia_fields: "surface", wikipedia_key: null });
+  assert.deepEqual(wikiCite({ fields: "owner,colour", key: "enwiki:X@1" }), { wikipedia_fields: null, wikipedia_key: null }, "nothing it can name: not marked");
+  assert.deepEqual(wikiCite({ fields: "", key: "enwiki:X@1" }), { wikipedia_fields: null, wikipedia_key: null });
+  assert.deepEqual(wikiCite({ fields: null, key: null }), { wikipedia_fields: null, wikipedia_key: null });
+  assert.deepEqual(wikiCite(undefined), { wikipedia_fields: null, wikipedia_key: null });
+});
+
+test("the licence names the two columns and no longer says a surface or roof 'may' be Wikipedia's", () => {
+  assert.match(DATASET.licence, /wikipedia_fields/);
+  assert.match(DATASET.licence, /wikipedia_key/);
+  assert.match(DATASET.licence, /empty/);
+  assert.doesNotMatch(DATASET.licence, /Surface and roof may come/);
+  assert.ok((RECORD_FIELDS as readonly string[]).slice(-2).join() === "wikipedia_fields,wikipedia_key", "the new columns are last, so a program reading by position keeps working");
+});
+
+test("the dataset reads the marks from a read of its own, which fails rather than answer 'none' when it cannot be made", () => {
+  const data = read("../src/lib/venueData.ts");
+  assert.match(data, /getVenueWikiCites/);
+  const name = read("../src/lib/venueName.ts");
+  const fn = name.slice(name.indexOf("export async function getVenueWikiCites"));
+  assert.match(fn, /rows\("venue_info", "select=wikidata_id,wikipedia_fields,wikipedia_key/);
+  assert.doesNotMatch(fn.slice(0, fn.indexOf("\n}\n")), /catch/, "no catch: a failed read must not become 'no marks'");
 });
 
 test("a Wikipedia title is read back from the address", () => {
