@@ -11,7 +11,8 @@
 #   ready, site:   every migration object the hand-off needs exists on production (to_regclass, Supabase Management API, keychain token)
 #                  and every Turso table exists; refuses clearly if not. Then ONE deploy of a clean git archive of origin/main (AGENTS.md
 #                  section 7), READY wait, sign-in check, the listed pages (Vercel protection-bypass header; skipped with a note when no
-#                  token), then `task done`, status deployed, a reply, the file moves to done/.
+#                  token), then `task done`, status deployed, a reply, the file moves to done/. A skipped or UNVERIFIED check
+#                  (check-live-auth.sh exit 3, HTTP 429) makes the reply headline "deployed <sha>, checks skipped: <what>", never "checks passed".
 #   ready, data:   shows the ds1-apply --dry-run plan, asks y/N, applies the steps in order, then release.py prepare. John still approves
 #                  at /admin/data. Status becomes data-applied-not-released; a later run sees the release finish (released) and, when the
 #                  hand-off says deploy_after_release, deploys it.
@@ -373,16 +374,25 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
       say "  deployed $url"
       problems=() checked=("deployment READY: $dep" "$logo_note")
       la="$(umask 077; mktemp)"; TMPS+=("$la")
-      if $LIVEAUTH --new "$url" > "$la" 2>&1; then checked+=("sign-in check ok"); else problems+=("sign-in check failed: $(tail -3 "$la" | tr '\n' ' ')"); fi
+      skipped=()
+      $LIVEAUTH --new "$url" > "$la" 2>&1; larc=$?
+      if [ "$larc" = 0 ]; then checked+=("sign-in check ok")
+      elif [ "$larc" = 3 ]; then
+        skipped+=("sign-in NOT verified (HTTP 429, a bot-protection challenge or the invite gate; add the keychain item 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' on this Mac)")
+        checked+=("sign-in UNVERIFIED: $(tail -4 "$la" | tr '\n' ' ')")
+        say "  sign-in check UNVERIFIED (exit 3)"
+      else problems+=("sign-in check failed: $(tail -3 "$la" | tr '\n' ' ')"); fi
       tok="${SPX_VERCEL_BYPASS:-$(kc 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET')}"
       if [ -z "$tok" ]; then
         checked+=("pages NOT checked (no Vercel protection-bypass token: set SPX_VERCEL_BYPASS or keychain item 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET')")
+        skipped+=("pages NOT checked (no bypass token; add the keychain item 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' on this Mac)")
         say "  page checks skipped: no bypass token"
       else
         cfg="$(umask 077; mktemp)"; TMPS+=("$cfg"); printf 'header = "x-vercel-protection-bypass: %s"\n' "$tok" > "$cfg"
         for p in "${PAGES[@]+"${PAGES[@]}"}"; do
           body="$(curl -s -m 40 -A "$UA" -K "$cfg" -w '\n%{http_code}' "$SITE$p" 2>/dev/null)"; code="${body##*$'\n'}"
-          if [ "$code" != 200 ]; then problems+=("$p answered HTTP ${code:-none}")
+          if [ "$code" = 429 ]; then skipped+=("$p NOT checked (HTTP 429, bot-protection challenge)")
+          elif [ "$code" != 200 ]; then problems+=("$p answered HTTP ${code:-none}")
           elif printf '%s' "$body" | grep -q "Couldn't load"; then problems+=("$p shows a Couldn't load message")
           else checked+=("$p 200"); fi
         done
@@ -396,12 +406,15 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
         for t in "${SITE_T[@]}"; do reply "$t" failed "deployed $SHORT but checks failed: ${problems[*]}" --version "$SHORT" --deployment "$dep" "${CARGS[@]}"; done
         bad "site: $SHORT deployed but CHECKS FAILED: ${problems[*]} (roll back: AGENTS.md section 7; tickets not closed)"
       else
+        if [ "${#skipped[@]}" -gt 0 ]; then headline="deployed $SHORT to production, checks skipped: $(printf '%s; ' "${skipped[@]}")"
+        else headline="deployed $SHORT to production; checks passed"; fi
         for t in "${SITE_T[@]}"; do
-          reply "$t" deployed "deployed $SHORT to production; checks passed" --version "$SHORT" --deployment "$dep" "${CARGS[@]}"
+          reply "$t" deployed "$headline" --version "$SHORT" --deployment "$dep" "${CARGS[@]}"
           setstatus "$t" deployed
           close_ticket "$t" "$SHORT" "$dep"; archive "$t"
         done
         sum "site: $SHORT deployed ($dep); ${SITE_T[*]} closed; ${checked[*]}"
+        [ "${#skipped[@]}" -eq 0 ] || sum "site: CHECKS SKIPPED, not verified: ${skipped[*]}"
       fi
     fi
   fi

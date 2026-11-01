@@ -381,7 +381,7 @@ The coordinating session deploys a finished feature and runs `done`. An agent de
 a commit that is on `origin/main` and passed the checks above; a deployment carries everything on `main`, not just
 your commit. Deploy a clean copy of the commit, never the working checkout (worktrees and other agents' files would be uploaded).
 
-Every deploy path ends with the sign-in guard: `bash scripts/mac/check-live-auth.sh`. If it fails, roll back and tell John; never mark the ticket done while it fails. If a deploy is refused, stop and report the exact command to the coordinating session; never edit permission settings yourself.
+Every deploy path ends with the sign-in guard: `bash scripts/mac/check-live-auth.sh`. If it fails, roll back and tell John; never mark the ticket done while it fails. Exit 3 is UNVERIFIED (HTTP 429 or a bot-protection challenge, or the invite gate, with no bypass secret): nothing was checked, so say "checks skipped", never "checks passed"; the fix is the keychain item `spx-stats VERCEL_AUTOMATION_BYPASS_SECRET` on that Mac. If a deploy is refused, stop and report the exact command to the coordinating session; never edit permission settings yourself.
 
 [docs/deploying.md](docs/deploying.md) has the rest: the normal path (`bash scripts/deploy.sh`), building against DS1 and deploying prebuilt, the Vercel connector and CLI routes, confirming READY, the sign-in guard in full, the checks after a deploy and rolling back.
 

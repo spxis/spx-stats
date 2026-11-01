@@ -73,8 +73,7 @@ Folder override: `SPX_HANDOFF_DIR`. Tests (no network): `bash scripts/handoff/te
     bash scripts/deploy.sh --ticket <id>  # one hand-off          bash scripts/deploy.sh --list   # only list hand-offs and replies
 
 Needs a Mac with `vercel login`, `jq`, the keychain item `spx-stats SUPABASE_ACCESS_TOKEN` (or `SUPABASE_ACCESS_TOKEN`), DS1 for data
-steps. Optional keychain items: `spx-stats VERCEL_AUTOMATION_BYPASS_SECRET` (without it the page checks are skipped and the reply says
-so; create the secret in the Vercel project's Deployment Protection settings, "Protection Bypass for Automation"),
+steps. Optional keychain items: `spx-stats VERCEL_AUTOMATION_BYPASS_SECRET` (without it the page checks are skipped, `check-live-auth.sh` exits 3 UNVERIFIED on a 429 or the invite gate, and the reply headline says "checks skipped: <what>", never "checks passed"; create the secret in the Vercel project's Deployment Protection settings, "Protection Bypass for Automation"),
 `spx-stats TURSO_DATABASE_URL` and `spx-stats TURSO_AUTH_TOKEN` (without them Turso tables are not checked and the reply says so).
 
 What it checks before a site deploy, per hand-off: its commits are on `origin/main`; every `migrations[].objects` exists on production

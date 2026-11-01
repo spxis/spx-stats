@@ -56,6 +56,7 @@ EOF
 cat > "$B/liveauth" <<EOF
 #!/bin/sh
 echo "liveauth \$*" >> "$LOG"
+[ "\${STUB_AUTH_UNVERIFIED:-}" = 1 ] && { echo "live-auth: UNVERIFIED: sign-in was NOT checked (HTTP 429)"; exit 3; }
 [ -z "\${STUB_AUTH_FAIL:-}" ]
 EOF
 cat > "$B/prod" <<'EOF'
@@ -167,6 +168,7 @@ expect "sign-in check ran with the new url" "grep -q 'liveauth --new https://spx
 expect "ticket marked done with the short sha" "grep -q \"task done $T1 --by test-actor --version $SHA\" $LOG"
 expect "hand-off moved to done/" "[ -f $SPX_HANDOFF_DIR/done/$T1.json ] && [ ! -f $SPX_HANDOFF_DIR/$T1.json ]"
 expect "reply says deployed with version and deployment" "[ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ] && [ \$(jq -r '.history[-1].deployment' $SPX_HANDOFF_DIR/replies/$T1.json) = dpl_StubDeploy1 ]"
+expect "headline says checks passed when everything was checked" "jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks passed'"
 expect "pages were checked with the header" "jq -e '.history[-1].checked | index(\"/nhl/2012 200\")' $SPX_HANDOFF_DIR/replies/$T1.json >/dev/null"
 expect "summary printed" "printf '%s' \"\$out\" | grep -q -- '---- summary'"
 
@@ -207,7 +209,15 @@ echo "deploy.sh: no bypass token"
 reset; mk $T1 '.' site-ready; unset SPX_VERCEL_BYPASS
 out="$(HOME="$TMP/nohome" $D 2>&1)"
 expect "pages skipped with a clear note" "jq -r '.history[-1].checked[]' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'pages NOT checked'"
+expect "headline says checks skipped and what, never checks passed" "jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks skipped: pages NOT checked' && ! jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks passed'"
+expect "status stays deployed" "[ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ]"
 export SPX_VERCEL_BYPASS=stubtoken
+
+echo "deploy.sh: sign-in check UNVERIFIED (exit 3)"
+reset; mk $T1 '.' site-ready
+out="$(STUB_AUTH_UNVERIFIED=1 $D 2>&1)"; rc=$?
+expect "exit 0, deployed, but the headline says sign-in not verified" "[ $rc = 0 ] && [ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ] && jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks skipped: sign-in NOT verified' && ! jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks passed'"
+expect "the summary says CHECKS SKIPPED" "printf '%s' \"\$out\" | grep -q 'CHECKS SKIPPED'"
 
 echo "deploy.sh: missing migration object"
 reset; mk $T1 '.' site-ready
