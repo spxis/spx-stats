@@ -10,13 +10,14 @@
 # Both pass: prints "live auth: ok" and exits 0. Either fails: says which, prints the exact rollback command for the previous production
 # deployment (found with one `vercel list`; --new names the deployment just made so it is not offered as its own rollback; --skip-list skips
 # that lookup) and exits 1. A caller must then NOT prune old deployments: the previous one is the way back.
-# A browser User-Agent is sent: Vercel bot protection answers 429 to bare curl, which is not a missing sign-in control. HTTP 429 is skipped,
-# never treated as a rollback.
+# A browser User-Agent is sent: Vercel bot protection answers 429 to bare curl, which is not a missing sign-in control. HTTP 429 (or an
+# x-vercel-mitigated: challenge answer) is never a rollback, but it is not ok either: nothing was verified, so it prints UNVERIFIED and exits 3.
+# Exit codes: 0 verified ok, 1 failed (roll back), 2 bad option, 3 UNVERIFIED (429, challenge page or the invite gate with no bypass secret).
 # The site is invite only while closed (web/src/lib/invite): a request without a session gets a short refusal page marked data-site-gate="closed". With
 # the protection-bypass secret (env VERCEL_AUTOMATION_BYPASS_SECRET, else the keychain item `spx-stats VERCEL_AUTOMATION_BYPASS_SECRET`; sent only to
-# --url) the gate lets the request through and check 2 runs as before. Without it, the marker proves the gate answered and check 2 is reported as
-# skipped, not failed.
-# Settings for tests: SPX_LIVE_URL (the default for --url), SPX_VERCEL_SCOPE.
+# --url) the gate lets the request through and check 2 runs as before. Without it, the marker proves the gate answered and check 2 is reported
+# as UNVERIFIED (exit 3), not ok and not failed.
+# Settings for tests: SPX_LIVE_URL (the default for --url), SPX_VERCEL_SCOPE, SPX_NO_KEYCHAIN=1 (do not read the keychain).
 
 SCOPE="${SPX_VERCEL_SCOPE:-spxis-projects-0d6306b4}"
 PROJECT="spx-stats"
@@ -26,7 +27,7 @@ while [ $# -gt 0 ]; do
     --url) URL="${2:-}"; shift ;;
     --new) NEW="${2:-}"; shift ;;
     --skip-list) LIST=0 ;;
-    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}"; exit 0 ;;
+    -h|--help) sed -n '2,22p' "${BASH_SOURCE[0]}"; exit 0 ;;
     *) echo "unknown option: $1"; exit 2 ;;
   esac
   shift
@@ -48,35 +49,46 @@ previous_url() {
 }
 
 problems=()
-skipped=0
+unverified=()
 
 # The gate's bypass header, when a secret is at hand (never printed).
 BYPASS="${VERCEL_AUTOMATION_BYPASS_SECRET:-}"
-[ -z "$BYPASS" ] && command -v security >/dev/null 2>&1 && BYPASS="$(security find-generic-password -s 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' -w 2>/dev/null)"
+[ -z "$BYPASS" ] && [ "${SPX_NO_KEYCHAIN:-}" != 1 ] && command -v security >/dev/null 2>&1 && BYPASS="$(security find-generic-password -s 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' -w 2>/dev/null)"
 bypass_args=()
 [ -n "$BYPASS" ] && bypass_args=(-H "x-vercel-protection-bypass: $BYPASS")
 
-providers="$(curl -s -m 20 -A "$UA" -w '\n%{http_code}' "$URL/api/auth/providers" 2>/dev/null)"
-code="${providers##*$'\n'}"; body="${providers%$'\n'*}"
-if [ "$code" = 429 ]; then say "skip $URL/api/auth/providers HTTP 429 (rate limit; not a sign-in failure)"; skipped=1
+HDR="$(mktemp)"; trap 'rm -f "$HDR"' EXIT
+# fetch <path> <timeout>: sets code, body and challenged (HTTP 429 or a Vercel challenge page is not an answer from the site)
+fetch() {
+  local r
+  r="$(curl -s -m "$2" -A "$UA" -D "$HDR" ${bypass_args[@]+"${bypass_args[@]}"} -w '\n%{http_code}' "$URL$1" 2>/dev/null)"
+  code="${r##*$'\n'}"; body="${r%$'\n'*}"; challenged=0
+  if [ "$code" = 429 ] || grep -qi '^x-vercel-mitigated: *challenge' "$HDR" 2>/dev/null; then challenged=1; fi
+}
+
+fetch /api/auth/providers 20
+if [ "$challenged" = 1 ]; then unverified+=("$URL/api/auth/providers: HTTP ${code:-none}, blocked by Vercel bot protection (challenge)")
 elif [ "$code" != 200 ]; then problems+=("$URL/api/auth/providers answered HTTP ${code:-none} (expected 200: the sign-in routes are off)")
 elif ! printf '%s' "$body" | grep -q '"google"'; then problems+=("$URL/api/auth/providers answered 200 but does not list google")
 fi
 
-home="$(curl -s -m 30 -A "$UA" ${bypass_args[@]+"${bypass_args[@]}"} -w '\n%{http_code}' "$URL/" 2>/dev/null)"
-code="${home##*$'\n'}"; body="${home%$'\n'*}"
-if [ "$code" = 429 ]; then say "skip $URL/ HTTP 429 (rate limit; not a sign-in failure)"; skipped=1
+fetch / 30
+if [ "$challenged" = 1 ]; then unverified+=("$URL/: HTTP ${code:-none}, blocked by Vercel bot protection (challenge)")
 elif [ "$code" != 200 ]; then problems+=("$URL/ answered HTTP ${code:-none}")
 elif printf '%s' "$body" | grep -q 'data-site-gate="closed"' && ! printf '%s' "$body" | grep -q 'class="signin-link"'; then
-  say "skip $URL/ answered the invite-only gate (no bypass secret here, so the home page's sign-in control was not checked)"; skipped=1
+  unverified+=("$URL/ answered the invite-only gate (no bypass secret, so the home page's sign-in control was not checked)")
 elif ! printf '%s' "$body" | grep -q 'class="signin-link"'; then problems+=("$URL/ has no sign-in control in its HTML (the pages were built signed-out)")
 fi
 
 if [ "${#problems[@]}" = 0 ]; then
-  if [ "$skipped" = 1 ]; then say "ok ($URL: some checks skipped after HTTP 429; none failed)"
-  else say "ok ($URL lists google and the home page carries the sign-in control)"
+  if [ "${#unverified[@]}" = 0 ]; then
+    say "ok ($URL lists google and the home page carries the sign-in control)"
+    exit 0
   fi
-  exit 0
+  say "UNVERIFIED: sign-in was NOT checked on the live site (this is not ok and not a failure):"
+  for u in "${unverified[@]}"; do say "  - $u"; done
+  say "fix: add the keychain item 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' on this Mac (or set VERCEL_AUTOMATION_BYPASS_SECRET), then run this script again"
+  exit 3
 fi
 
 say "FAILED: sign-in is not working on the live site:"

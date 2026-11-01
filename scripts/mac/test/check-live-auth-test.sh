@@ -24,16 +24,20 @@ chmod +x "$TMP/bin/vercel"
 # serve <providers status> <providers body> <home html> [home status]: a fake site on $PORT
 serve() {
   [ -z "$PID" ] || { kill "$PID" 2>/dev/null; wait "$PID" 2>/dev/null; }
-  python3 -I - "$PORT" "$1" "$2" "$3" "${4:-200}" >/dev/null 2>&1 <<'EOF' &
+  python3 -I - "$PORT" "$1" "$2" "$3" "${4:-200}" "${5:-}" >/dev/null 2>&1 <<'EOF' &
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
-port, pstatus, pbody, home, hstatus = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3], sys.argv[4], int(sys.argv[5])
+port, pstatus, pbody, home, hstatus, extra = int(sys.argv[1]), int(sys.argv[2]), sys.argv[3], sys.argv[4], int(sys.argv[5]), sys.argv[6]
 class H(BaseHTTPRequestHandler):
     def log_message(self, *a): pass
     def do_GET(self):
         if self.path == "/api/auth/providers": status, body = pstatus, pbody
         elif self.path == "/": status, body = hstatus, home
         else: status, body = 404, ""
+        if extra == "bypass-only" and self.headers.get("x-vercel-protection-bypass") != "testsecret":
+            status, body = 429, "challenge"
+            self.send_response(status); self.send_header("x-vercel-mitigated", "challenge"); self.end_headers(); self.wfile.write(body.encode()); return
+        if extra == "challenge-200": self.send_response(status); self.send_header("x-vercel-mitigated", "challenge"); self.end_headers(); self.wfile.write(body.encode()); return
         self.send_response(status); self.send_header("content-type", "text/html"); self.end_headers(); self.wfile.write(body.encode())
 HTTPServer(("127.0.0.1", port), H).serve_forever()
 EOF
@@ -41,6 +45,7 @@ EOF
   for _ in $(seq 1 30); do curl -s -m 2 -o /dev/null "http://127.0.0.1:$PORT/" && return 0; sleep 0.2; done
   echo "the fake site did not start"; exit 1
 }
+export SPX_NO_KEYCHAIN=1
 run() { PATH="$TMP/bin:$PATH" bash "$CHECK" --url "http://127.0.0.1:$PORT" "$@" 2>&1; }
 
 GOOD_HOME='<header><a class="signin-link" href="/login">Sign in</a></header>'
@@ -65,17 +70,36 @@ out="$(run --skip-list)"; rc=$?
 
 serve 429 '{"google":{"id":"google"}}' "$GOOD_HOME"
 out="$(run --skip-list)"; rc=$?
-[ $rc = 0 ] && echo "$out" | grep -q "429" && echo "$out" | grep -q "ok" && ok "HTTP 429 is skipped, not a rollback" || bad "HTTP 429 skip ($rc): $out"
+[ $rc = 3 ] && echo "$out" | grep -q "UNVERIFIED" && echo "$out" | grep -q "429" && ok "providers HTTP 429 is UNVERIFIED (exit 3), not ok" || bad "providers 429 ($rc): $out"
 echo "$out" | grep -q "roll back" && bad "429 must not print rollback: $out" || ok "429 does not print rollback"
+echo "$out" | grep -q "VERCEL_AUTOMATION_BYPASS_SECRET" && ok "UNVERIFIED names the fix (a name, not a value)" || bad "no fix named: $out"
 
 serve 200 '{"google":{"id":"google"}}' "$GOOD_HOME" 429
 out="$(run --skip-list)"; rc=$?
-[ $rc = 0 ] && echo "$out" | grep -q "ok" && ok "home HTTP 429 is skipped, not a rollback" || bad "home 429 skip ($rc): $out"
+[ $rc = 3 ] && echo "$out" | grep -q "UNVERIFIED" && ! echo "$out" | grep -q "live-auth: ok" && ok "home HTTP 429 is UNVERIFIED (exit 3)" || bad "home 429 ($rc): $out"
 
-# The invite-only gate answers with its marked refusal page: the site is closed, which is not a missing sign-in control.
+serve 200 '{"google":{"id":"google"}}' "$GOOD_HOME" 200 challenge-200
+out="$(run --skip-list)"; rc=$?
+[ $rc = 3 ] && echo "$out" | grep -q "challenge" && ok "a 200 challenge page (x-vercel-mitigated) is UNVERIFIED" || bad "challenge 200 ($rc): $out"
+
+serve 404 '' "$GOOD_HOME" 429
+out="$(run --skip-list)"; rc=$?
+[ $rc = 1 ] && ok "a real failure beats an UNVERIFIED (exit 1)" || bad "failure beats unverified ($rc): $out"
+
+# With the bypass secret the challenge is passed and the check is real.
+serve 200 '{"google":{"id":"google"}}' "$GOOD_HOME" 200 bypass-only
+out="$(VERCEL_AUTOMATION_BYPASS_SECRET=testsecret run --skip-list)"; rc=$?
+[ $rc = 0 ] && echo "$out" | grep -q "lists google and the home page" && ok "bypass header passes the challenge and verifies (exit 0)" || bad "bypass path ($rc): $out"
+out="$(VERCEL_AUTOMATION_BYPASS_SECRET=wrong run --skip-list)"; rc=$?
+[ $rc = 3 ] && ok "a wrong bypass secret stays UNVERIFIED" || bad "wrong bypass ($rc): $out"
+serve 200 '{"google":{}}' '<header><button class="theme">Dark</button></header>' 200 bypass-only
+out="$(VERCEL_AUTOMATION_BYPASS_SECRET=testsecret run --skip-list)"; rc=$?
+[ $rc = 1 ] && echo "$out" | grep -q "no sign-in control" && ok "bypass path still fails a signed-out build" || bad "bypass + signed-out ($rc): $out"
+
+# The invite-only gate answers with its marked refusal page: nothing about the sign-in control was checked.
 serve 200 '{"google":{"id":"google"}}' '<!doctype html><html lang="en" data-site-gate="closed"><body><a href="/invite-only">Sign in</a></body></html>'
 out="$(run --skip-list)"; rc=$?
-[ $rc = 0 ] && echo "$out" | grep -q "invite-only gate" && ok "the closed site's gate page is skipped, not a rollback" || bad "gate page skip ($rc): $out"
+[ $rc = 3 ] && echo "$out" | grep -q "invite-only gate" && ok "the closed site's gate page is UNVERIFIED (exit 3), not a rollback" || bad "gate page ($rc): $out"
 
 # The build assertion of deploy-prebuilt.sh: the kept home page in the build output must carry the sign-in control.
 mkdir -p "$TMP/out/.vercel/output/functions/en"
