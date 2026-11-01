@@ -111,6 +111,8 @@ def games_from_lines(cell, tournament):
     """Each line of a result cell that holds two scores is one game (the NHL 2016 to 2024 mini-tournaments and the two Soviet series have three or two lines)."""
     out = []
     for ln in lines_of(cell):
+        if re.search(r"\bon aggregate\b|\bwins\b", plain(ln), re.I):
+            continue
         r = parse_result(ln)
         if r:
             out.append(r)

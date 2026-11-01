@@ -23,6 +23,9 @@ NHL = """==Results==
 |-
 | [[1986 National Hockey League All-Star Game|1986]] || '''Wales''' 4 – Campbell 3 (OT) || [[Hartford Whalers]] || [[Hartford Civic Center]] || [[Hartford, Connecticut]] || [[Grant Fuhr]], [[Edmonton Oilers]]
 |-
+|-bgcolor="#cfecec"
+| [[Rendez-vous '87]] (1987) || '''NHL All-Stars''' 4 – Soviet Union 3<br>'''Soviet Union''' 5 – NHL All-Stars 3<br>'''''Soviet Union wins 8–7 on aggregate''''' || [[Quebec Nordiques]] || [[Colisée Pepsi|Le Colisée]] || [[Quebec City, Quebec]] || {{n/a|Not awarded}}
+|-
 | (1995) || colspan="5" style="text-align:center;"|'''Game canceled''' due to the [[1994–95 NHL lockout]].<br>Game was originally set to play at the [[San Jose Arena]].
 |-
 | [[2024 National Hockey League All-Star Game|2024]] || '''Team McDavid''' 4 – Team MacKinnon 3<br>'''Team Matthews''' 6 – Team Hughes 5<br>'''Team Matthews''' 7 – Team McDavid 4 || Toronto Maple Leafs (9) || [[Scotiabank Arena]] (2) || Toronto, Ontario (9) || [[Auston Matthews]], Toronto Maple Leafs
@@ -309,7 +312,7 @@ def ev_by(evs, year, no=1):
 
 def test_nhl():
     evs, iss = lists.read_list("nhl", NHL, TODAY)
-    check("nhl years", [e["year"] for e in evs], [1947, 1962, 1986, 1995, 2024])
+    check("nhl years", [e["year"] for e in evs], [1947, 1962, 1986, 1987, 1995, 2024])
     e = ev_by(evs, 1947)
     check("nhl 1947 article", e["article"], "1st National Hockey League All-Star Game")
     check("nhl 1947 game", (e["games"][0]["side1"], e["games"][0]["score1"], e["games"][0]["side2"], e["games"][0]["score2"]), ("All–Stars", 4, "Maple Leafs", 3))
@@ -319,6 +322,8 @@ def test_nhl():
     check("nhl counter dropped", (e["venue_name"], e["city_text"], e["host_name"]), ("Maple Leaf Gardens", "Toronto, Ontario", "Toronto Maple Leafs"))
     check("nhl mvp", [(m["name"], m["title"], m["team_name"]) for m in e["mvps"]], [("Eddie Shack", "Eddie Shack", "Toronto Maple Leafs")])
     check("nhl overtime", ev_by(evs, 1986)["games"][0]["decided_by"], "OT")
+    check("nhl 1987 two games, no aggregate row", [(g["game_no"], g["stage"], g["side1"], g["score1"], g["side2"], g["score2"]) for g in ev_by(evs, 1987)["games"]], [(1, "game 1", "NHL All-Stars", 4, "Soviet Union", 3), (2, "game 2", "Soviet Union", 5, "NHL All-Stars", 3)])
+    check("nhl 1987 no issue", [x for x in iss if x[0] == 1987], [])
     e = ev_by(evs, 1995)
     check("nhl cancelled", (e["status"], e["status_reason"], e["games"]), ("cancelled", "lockout", []))
     e = ev_by(evs, 2024)
@@ -418,7 +423,7 @@ def test_sql():
         check("sql deletes first", text.split("\n")[1].startswith("delete from legacy_wikipedia_all_star.unparsed"), True)
         check("sql quotes", "'it''s odd'" in text, True)
         check("sql cancelled event", "insert into legacy_wikipedia_all_star.event" in text and "'cancelled', 'lockout'" in text, True)
-        check("sql rows", text.count("insert into legacy_wikipedia_all_star.event"), 5)
+        check("sql rows", text.count("insert into legacy_wikipedia_all_star.event"), 6)
 
 
 def main():
