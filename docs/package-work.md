@@ -10,7 +10,7 @@ agent can then be short: who you are, the ticket ids, and "follow docs/package-w
     cd ~/Projects/spx-stats && git pull --ff-only
     python3 -I scripts/handoff/coord.py start --as <you>        # machine2, grok, ...
     python3 -I scripts/handoff/coord.py inbox --as <you>
-    python3 -I scripts/handoff/handoff.py replies
+    SPX_HANDOFF_PROJECT=<repo> python3 -I scripts/handoff/handoff.py replies   # your package's replies, not spx-stats'
 
 Board: `cd ~/Projects/spx-stats/web && pnpm task`. Claim with `pnpm task claim <id> "<actor>"` (the actor is the machine's
 board name from the private START-HERE file, or "John Morris"; never an AI name). Read the ticket's full detail before starting. Never run
@@ -114,7 +114,7 @@ Tests passing is not enough: John judges by looking. Before any push that change
 ## Hand-off (every finished ticket, packages included)
 
 Run the tool with the package's project set (`SPX_HANDOFF_PROJECT=<repo> python3 -I ...`, on the same command line) so the
-file lands in Dropbox `/Projects/Handoff/<repo>/`. The id is the ticket's cuid. A board without cuids (hako, hotaru, fuda) uses
+file lands in Dropbox `/Projects/Handoff/<repo>/` (on a Mac `~/Library/CloudStorage/Dropbox/Projects/Handoff/<repo>/`; replies come back in its `replies/` folder). The id is the ticket's cuid. A board without cuids (hako, hotaru, fuda) uses
 a name of 20 to 40 lowercase letters made from the ticket.
 
 Write `<ticket-id>.json` (`kind: "package"`, `status: "ready"`, `written_by`, the commits, the release-commit sha,
