@@ -19,6 +19,7 @@
     "test:ticketstatus": "node --test scripts/ticketStatus.test.ts",
     "test:boardkey": "node --test scripts/boardKey.test.ts",
     "test:football": "node --test scripts/football.test.ts",
+    "test:earlyfootball": "node --test scripts/earlyFootball.test.ts",
     "test:rivals": "node --test scripts/rivalLeagues.test.ts",
     "test:morehockey": "node --test scripts/moreHockey.test.ts",
     "test:ncaaf": "node --test scripts/ncaaf.test.ts",
