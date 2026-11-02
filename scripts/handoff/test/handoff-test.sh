@@ -57,6 +57,7 @@ cat > "$B/liveauth" <<EOF
 #!/bin/sh
 echo "liveauth \$*" >> "$LOG"
 [ "\${STUB_AUTH_UNVERIFIED:-}" = 1 ] && { echo "live-auth: UNVERIFIED: sign-in was NOT checked (HTTP 429)"; exit 3; }
+[ "\${STUB_AUTH_UNVERIFIED:-}" = long ] && { echo "UNVERIFIED: sign-in was NOT checked on the live site (this is not ok and not a failure):"; echo "  - the live site answered HTTP 429 to the sign-in page, a bot-protection challenge with no way through"; echo "  - the invite gate answered and there is no protection-bypass secret on this machine"; echo "fix: add the keychain item 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' on this Mac (or set VERCEL_AUTOMATION_BYPASS_SECRET), then run this script again"; exit 3; }
 [ -z "\${STUB_AUTH_FAIL:-}" ]
 EOF
 cat > "$B/prod" <<'EOF'
@@ -218,6 +219,11 @@ reset; mk $T1 '.' site-ready
 out="$(STUB_AUTH_UNVERIFIED=1 $D 2>&1)"; rc=$?
 expect "exit 0, deployed, but the headline says sign-in not verified" "[ $rc = 0 ] && [ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ] && jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks skipped: sign-in NOT verified' && ! jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'checks passed'"
 expect "the summary says CHECKS SKIPPED" "printf '%s' \"\$out\" | grep -q 'CHECKS SKIPPED'"
+reset; mk $T1 '.' site-ready
+out="$(STUB_AUTH_UNVERIFIED=long $D 2>&1)"; rc=$?
+expect "long live-auth output: the reply is still written (no 'could not write the reply')" "[ $rc = 0 ] && ! printf '%s' \"\$out\" | grep -q 'could not write the reply' && [ \$(jq -r '.history[-1].status' $SPX_HANDOFF_DIR/replies/$T1.json) = deployed ]"
+expect "no checked line is over 300 characters" "[ \$(jq '[.history[-1].checked[] | length] | max' $SPX_HANDOFF_DIR/replies/$T1.json) -le 300 ]"
+expect "the sign-in note stays in the headline" "jq -r '.history[-1].detail' $SPX_HANDOFF_DIR/replies/$T1.json | grep -q 'sign-in NOT verified'"
 
 echo "deploy.sh: missing migration object"
 reset; mk $T1 '.' site-ready

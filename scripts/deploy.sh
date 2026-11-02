@@ -103,6 +103,7 @@ HJ() { jq -r "$2" "$DIR/$1.json"; }
 reply() { # ticket status detail [extra handoff.py reply args...]
   local t="$1" st="$2" d="$3"; shift 3
   if [ "$DRY" = 1 ]; then say "  would reply to $t: $st: $d"; return 0; fi
+  d="${d:0:1990}" # the reply schema allows 2000 characters in detail and 300 in each checked line
   H reply "$t" --status "$st" --by "$ACTOR" --detail "$d" "$@" >/dev/null || say "  (could not write the reply for $t)"
 }
 setstatus() { if [ "$DRY" = 1 ]; then say "  would set $1 to $2"; else H set-status "$1" "$2" ${3:+--release "$3"} >/dev/null; fi; }
@@ -378,8 +379,8 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
       $LIVEAUTH --new "$url" > "$la" 2>&1; larc=$?
       if [ "$larc" = 0 ]; then checked+=("sign-in check ok")
       elif [ "$larc" = 3 ]; then
-        skipped+=("sign-in NOT verified (HTTP 429, a bot-protection challenge or the invite gate; add the keychain item 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET' on this Mac)")
-        checked+=("sign-in UNVERIFIED: $(tail -4 "$la" | tr '\n' ' ')")
+        skipped+=("sign-in NOT verified (429, challenge or invite gate; add the bypass keychain item)")
+        checked+=("sign-in UNVERIFIED: $(tail -4 "$la" | tr '\n' ' ' | cut -c1-250)")
         say "  sign-in check UNVERIFIED (exit 3)"
       else problems+=("sign-in check failed: $(tail -3 "$la" | tr '\n' ' ')"); fi
       tok="${SPX_VERCEL_BYPASS:-$(kc 'spx-stats VERCEL_AUTOMATION_BYPASS_SECRET')}"
@@ -397,7 +398,7 @@ if [ "${#SITE_T[@]}" -gt 0 ]; then
           else checked+=("$p 200"); fi
         done
       fi
-      CARGS=(); for c in "${checked[@]}"; do CARGS+=(--checked "$c"); done
+      CARGS=(); for c in "${checked[@]}"; do CARGS+=(--checked "${c:0:299}"); done
       TJ="$(printf '%s\n' "${SITE_T[@]}" | jq -R . | jq -sc .)"; CJ="$(printf '%s\n' "${checked[@]}" | jq -R . | jq -sc .)"
       PJ="$( [ "${#problems[@]}" -gt 0 ] && printf '%s\n' "${problems[@]}" | jq -R . | jq -sc . || echo '[]')"
       if [ "${#problems[@]}" -gt 0 ]; then log_deploy failed "deployed $SHORT but the checks failed" "$TJ" "$CJ" "$PJ" "$dep" "$url"
