@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.175.2", date: "2026-11-02", needsReview: true,
+    title: "The admin sources page can show the grey-only counts",
+    text: "The admin sources page now reads the counts of rows held only by a grey source from the second database, where they can be published. Readers see no change.",
+  },
   { version: "0.175.1", date: "2026-11-02", needsReview: true,
     title: "The admin run log now expects the nightly database backup",
     text: "An admin page now shows when the nightly backup of the source database did not run. Readers see no change.",

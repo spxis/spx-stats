@@ -186,6 +186,7 @@ export const TURSO_TABLES: readonly string[] = [
   "api.totals",
   "api.quality",
   "api.provenance",
+  "api.grey_only_rows",
 ];
 
 export type ReleaseTarget = "ds1" | "turso" | "production";

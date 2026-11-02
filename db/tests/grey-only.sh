@@ -62,6 +62,11 @@ eq "the review query lists the same rows" "$(psql_ -F, -c "$review" | cut -d, -f
 psql_ -o /dev/null -c "insert into meta.verification values ('game', 3, 'confirmed', 1)"
 eq "a confirmation from a green source takes the row off the list" "$(psql_ -c "select n_rows from api.grey_only_rows where source = 'transfermarkt' and entity_kind = 'game'")" 2
 eq "anon can read the view" "$(psql_ -c "set role anon; select count(*) from api.grey_only_rows")" "$(psql_ -c "select count(*) from api.grey_only_rows")"
+# The release runner publishes the counts to Turso (api_grey_only_rows) with the select in scripts/release/turso.py: it must run on DS1 and give the view's rows, columns in the declared order
+spec() { python3 -I -c "import sys; sys.path.insert(0, '$REPO/scripts/release'); import turso; s = turso.SPECS['api.grey_only_rows']; $1"; }
+turso_sql="$(spec "print(s['select'])")"
+eq "the Turso spec declares source, entity_kind, n_rows, keyed on the first two" "$(spec "print(','.join(c for c, _ in s['columns']) + ' pk=' + ','.join(s['pk']))")" "source,entity_kind,n_rows pk=source,entity_kind"
+eq "the Turso select returns the view's rows" "$(psql_ -F, -c "$turso_sql order by 1, 2")" "$(psql_ -F, -c 'select source, entity_kind, n_rows from api.grey_only_rows order by 1, 2')"
 
 before="$(psql_ -c "select md5(string_agg(code || coalesce(tier, '') || coalesce(terms_note, '') || coalesce(evidence_url, ''), '|' order by code)) from meta.source")"
 psql_ -o /dev/null < "$REPO/db/build/225_source_tier.sql"

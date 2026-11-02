@@ -3,7 +3,7 @@ import { readdirSync, readFileSync, statSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { afterEach, beforeEach, test } from "node:test";
 import { getLiveScores } from "../src/lib/turso/live.ts";
-import { tursoProvenance, tursoQuality, tursoTotals } from "../src/lib/turso/aggregates.ts";
+import { tursoGreyOnly, tursoProvenance, tursoQuality, tursoTotals } from "../src/lib/turso/aggregates.ts";
 import { withChecked } from "../src/lib/turso/checked.ts";
 import { TURSO_ANSWER_BUDGET } from "../src/lib/turso/client.ts";
 import { QUALITY_ISSUES_SHOWN, QUALITY_ISSUES_SQL } from "../src/lib/turso/qualitySql.ts";
@@ -154,6 +154,18 @@ test("provenance and totals are counts that stay far under the budget", async ()
   assert.ok(biggest() < TURSO_ANSWER_BUDGET, `largest answer ${biggest()} bytes`);
 });
 
+test("the grey-only counts are one row per source and kind of row, read in order and far under the budget", async () => {
+  db.exec("drop table if exists api_grey_only_rows; create table api_grey_only_rows (source text, entity_kind text, n_rows integer, primary key (source, entity_kind))");
+  const ins = db.prepare("insert into api_grey_only_rows values (?, ?, ?)");
+  // Today the view is empty (no grey data is loaded). This is 20 grey sources by 6 kinds, 120 rows.
+  for (let s = 19; s >= 0; s--) for (const kind of ["venue", "team_season", "season", "person", "game", "franchise"]) ins.run(`source${String(s).padStart(2, "0")}`, kind, 1 + rnd(400000));
+  const got = await tursoGreyOnly();
+  assert.equal(got.length, 120);
+  assert.deepEqual(got.slice(0, 2).map((r) => [r.source, r.entity_kind]), [["source00", "franchise"], ["source00", "game"]]);
+  assert.ok(got.every((r) => Number.isInteger(r.n_rows)));
+  assert.ok(biggest() < TURSO_ANSWER_BUDGET, `largest answer ${biggest()} bytes`);
+});
+
 test("the live scores of one league and day stay small", async () => {
   db.exec(
     "drop table if exists live_score; create table live_score (league text, game_date text, game_id integer, status text, home_score integer, away_score integer, overtime integer, period text, disputed integer, ready integer, n_sources integer, n_agree integer, confirm_agree integer, confirm_differ integer, sources text, fetched_at text)",
@@ -181,7 +193,7 @@ const walk = (dir: string): string[] =>
  * The largest answers measured on DS1's rows on 2026-10-29 (bytes as Turso would send them) are in the hand-off of ticket SPX-764.
  */
 const BOUNDS: Record<string, { why: string; keeps: RegExp }> = {
-  "lib/turso/aggregates.ts": { why: "totals: one row; quality: check lines plus the QUALITY_ISSUES_SHOWN top issues; provenance: one row per league, source and outcome (158 rows)", keeps: /QUALITY_CHECKS_SQL, QUALITY_ISSUES_SQL/ },
+  "lib/turso/aggregates.ts": { why: "totals: one row; quality: check lines plus the QUALITY_ISSUES_SHOWN top issues; provenance: one row per league, source and outcome (158 rows); grey-only: one row per grey source and kind, limit 500", keeps: /QUALITY_CHECKS_SQL, QUALITY_ISSUES_SQL/ },
   "lib/turso/checked.ts": { why: "at most CHUNK (1,000) entity ids a query", keeps: /const CHUNK = 1000;/ },
   "lib/turso/live.ts": { why: "one league and one day of live rows", keeps: /where league = \? and game_date = \?/ },
   "lib/gameField.ts": { why: "one game and one kind: one row, 2.5 KB at most on 97,631 rows", keeps: /where game_id = \? and kind = \?/ },

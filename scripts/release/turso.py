@@ -74,6 +74,12 @@ SPECS = {
                   "order by entity_kind, entity_id, (status = 'disputed') desc, (status = 'confirmed') desc, verification_id) v on v.entity_kind = r.kind and v.entity_id = r.id "
                   "left join meta.source vs on vs.source_id = v.source_id "
                   "group by r.kind, r.league, ps.code, vs.code, coalesce(v.status, 'single')"},
+    # Rows held only by a grey source, per source and kind (migration 153's api.grey_only_rows, which reads meta.verification and so cannot
+    # exist on production since that table moved here). DS1 works it out from its own view; /admin/sources reads api_grey_only_rows.
+    "api.grey_only_rows": {
+        "pk": ["source", "entity_kind"],
+        "columns": [("source", "text"), ("entity_kind", "text"), ("n_rows", "bigint")],
+        "select": "select source, entity_kind, n_rows from api.grey_only_rows"},
 }
 # Test hook: RELEASE_TURSO_TABLES=none (or a comma list) narrows which tables go to Turso, so tests that use these names as plain
 # production tables still run. Unset in every real run.

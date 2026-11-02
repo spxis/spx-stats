@@ -5,6 +5,7 @@ import { SOURCE_REGISTRY } from "@/data/sourceRegistry";
 import { byTier, greyOnlyBySource, isGrey } from "@/lib/adminSources";
 import { greyOnlyRows } from "@/lib/api/greyOnly";
 import { requireAdmin } from "@/lib/auth/user";
+import { tursoConfigured } from "@/lib/turso/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { PhraseKey } from "@/lib/i18n/phrases.constants";
 
@@ -37,7 +38,7 @@ export default async function SourcesPage() {
         <p className="lede">{say("asrc.lede")}</p>
       </section>
       <section className="section ops-section" aria-labelledby="src-report">
-        <h2 id="src-report">{say("asrc.report.title")} <DbChip db="production" /></h2>
+        <h2 id="src-report">{say("asrc.report.title")} <DbChip db={tursoConfigured() ? "turso" : "production"} /></h2>
         <p className="note">{say("asrc.report.lede")}</p>
         {problem ? <p className="note" role="alert">{problem.slice(0, 160)}</p> : null}
         {!problem && report === null ? <p className="note">{say("asrc.report.missing")}</p> : null}

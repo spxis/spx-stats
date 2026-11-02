@@ -3,6 +3,8 @@
 -- api.grey_only_rows counts the rows held ONLY by a grey source (no confirmation from a non-grey source), which /admin/sources shows.
 -- A row of core.game, team_season, season, person, venue or franchise counts when its source_id is a grey source and meta.verification holds no
 -- 'confirmed' line for it from a source that is not grey. Rerunnable; adds columns and one view, changes no row. Production too (meta and api only).
+-- Production gets only the three meta.source columns: the view reads meta.verification, which lives in Turso since migration 131, so it exists on DS1 alone
+-- and the release runner publishes its counts to Turso as api_grey_only_rows (scripts/release/turso.py), which /admin/sources reads.
 -- db/build/225_source_tier.sql fills the tier (generated from the registry); db/review/grey_only_rows.sql lists the rows themselves (DS1).
 alter table meta.source
   add column if not exists tier text check (tier in ('green', 'grey', 'red-confirm', 'red')),

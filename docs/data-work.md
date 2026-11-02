@@ -3,8 +3,8 @@
 Moved word for word from [AGENTS.md](../AGENTS.md) on 2026-10-30, so that file stays short enough to load in every session. Read this before you write a migration, a `db/build` step, a loader or an `api` view, and before anything to do with a data release. AGENTS.md section 8 keeps where data lives, who may write it and a short form of each rule. A comment elsewhere that cites "AGENTS.md section 8, item 5" means item 5 here. The steps for each source and league are in [data-sources.md](data-sources.md).
 
 **Turso (second release target).** Production is on the 500 MB plan, so six admin and bulky objects live in Turso instead: `api.person_admin`,
-`meta.verification`, `meta.data_issue`, `core.external_id`, `core.batted_ball_player`, `core.batted_ball_player_hand`, `core.betting_line`, plus three small derived tables
-(`api_totals`, `api_quality`, `api_provenance`) that replace what production's matviews computed from them. The list is `TABLES` in
+`meta.verification`, `meta.data_issue`, `core.external_id`, `core.batted_ball_player`, `core.batted_ball_player_hand`, `core.betting_line`, plus four small derived tables
+(`api_totals`, `api_quality`, `api_provenance`, `api_grey_only_rows`) that replace what production's matviews computed from them (the last is DS1's `api.grey_only_rows`, which `/admin/sources` reads). The list is `TABLES` in
 `scripts/release/turso.py`; `release.py` publishes those tables to Turso (preview, checks, snapshot, batches, exact read-back, rollback,
 drift: [`scripts/release/README.md`](../scripts/release/README.md), "Turso as a second target") and never to production. One release goes to
 one place, so `prepare` refuses a mix; the runner (NAS) needs `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` and a rebuild at the commit that
