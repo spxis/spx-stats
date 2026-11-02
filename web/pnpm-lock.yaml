@@ -23,6 +23,9 @@ importers:
       '@johnmorrisdotca/kyogijo-stadiums':
         specifier: 0.10.2
         version: 0.10.2(@johnmorrisdotca/hata@1.5.0)
+      '@johnmorrisdotca/meigen-sports':
+        specifier: 0.19.2
+        version: 0.19.2
       '@johnmorrisdotca/senshu-jerseys':
         specifier: 0.5.2
         version: 0.5.2
@@ -417,6 +420,10 @@ packages:
         optional: true
       '@resvg/resvg-js':
         optional: true
+
+  '@johnmorrisdotca/meigen-sports@0.19.2':
+    resolution: {integrity: sha512-HaMIZg/xgCQnbJTbRLsHLrp+lF7bdLAWumH3AlL3YmsU85+OC4DzwLnUWoTgctrl2IBfsQzO5JxYK9jsjEYMpA==}
+    engines: {node: '>=22'}
 
   '@johnmorrisdotca/senshu-jerseys@0.5.2':
     resolution: {integrity: sha512-MkrENjkprSDI8nTnAv7F18JUWQTMS9lxzlvvmdfIN5MvFNeZ9EXdYGfrQ5mgAs72aMzIUpwDek11opJbRB+iBw==}
@@ -2731,6 +2738,8 @@ snapshots:
   '@johnmorrisdotca/kyogijo-stadiums@0.10.2(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:
       '@johnmorrisdotca/hata': 1.5.0
+
+  '@johnmorrisdotca/meigen-sports@0.19.2': {}
 
   '@johnmorrisdotca/senshu-jerseys@0.5.2': {}
 

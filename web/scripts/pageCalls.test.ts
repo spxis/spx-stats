@@ -16,7 +16,7 @@ import { test } from "node:test";
  * made the header menu fetch on intent, left the country flags and brand files out of the matcher and stopped the 404 mascot being preloaded on every page.
  *   kind          budget  before  after     (requests through the proxy: load, then scroll to the bottom)
  *   home               3      25      2
- *   league             3      31      2
+ *   league             4      31      2   (4 since "Today in history": the block asks for its day's small kept answer, /<league>/rows/today/MM-DD, one run per view; the document, /api/me and the champion's logo are the others)
  *   season             6      33      5
  *   team season        5      44      4
  *   franchise         22      60     20   (12 of them are jersey and title banners, still behind the gate: a decision for John)
@@ -37,7 +37,7 @@ const MATCHER = (() => {
 type Kind = { kind: string; path: string; budget: number };
 const KINDS: Kind[] = [
   { kind: "home", path: "/", budget: 3 },
-  { kind: "league", path: "/nhl", budget: 3 },
+  { kind: "league", path: "/nhl", budget: 4 },
   { kind: "season", path: "/mlb/2024", budget: 6 },
   { kind: "team season", path: "/mlb/2007/team/cincinnati-reds", budget: 5 },
   { kind: "franchise", path: "/mlb/team/cincinnati-reds", budget: 22 },

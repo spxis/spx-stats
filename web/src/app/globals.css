@@ -354,6 +354,30 @@
   .banner .who { font: 700 34px/1.05 var(--display); text-transform: uppercase; grid-column: 1 / -1; }
   .banner .who .logo { vertical-align: middle; margin-right: 12px; }
   .banner .how { color: var(--muted); grid-column: 1 / -1; }
+  /* "Today in history" on a league's home page (components/TodayInHistory.tsx). The calendar page is the meigen-sports `line` theme as the package draws it; its three colours are
+     recoloured here from the site's tokens, so it follows light and dark and the league's accent: the page's white and ink, and the day in the accent. */
+  .hist { display: flex; align-items: flex-start; gap: 18px; background: var(--panel); border: 1px solid var(--rule); border-left: 8px solid var(--accent); padding: 16px 20px; }
+  .hist-cal { flex: none; width: 64px; margin-top: 2px; }
+  .hist-cal svg { display: block; width: 100%; height: auto; }
+  .hist-cal [fill="#ffffff"] { fill: var(--panel); }
+  .hist-cal [stroke="#080808"] { stroke: var(--ink); }
+  .hist-cal [fill="#2f78bd"] { fill: var(--accent-text); }
+  .hist-body { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+  .hist-title { font: 700 15px/1.2 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent-text); }
+  .hist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+  .hist-list li { display: flex; gap: 12px; align-items: baseline; }
+  .hist-y { flex: none; min-width: 3.2ch; font: 700 17px/1.4 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .hist-list a { color: inherit; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
+  .hist-list a:hover { text-decoration-color: currentColor; }
+  .hist-src { margin: 2px 0 0; font-size: 13px; }
+  /* On a phone the calendar page sits beside the title and the facts take the whole width. */
+  @media (max-width: 480px) {
+    .hist { display: grid; grid-template-columns: 48px 1fr; align-items: center; gap: 10px 12px; padding: 14px 14px; }
+    .hist-cal { margin-top: 0; width: 48px; }
+    .hist-body { display: contents; }
+    .hist-list, .hist-src { grid-column: 1 / -1; }
+    .hist-list li { gap: 10px; }
+  }
   .banner.withcup { display: flex; align-items: center; gap: 14px 22px; }
   .banner .bbody { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; }
   .bigcup { margin: 0; flex: none; width: clamp(96px, 22vw, 136px); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: var(--accent); }

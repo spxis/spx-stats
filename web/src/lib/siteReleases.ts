@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.176.0", date: "2026-11-02", href: "/nhl",
+    title: "Today in history on each league's home page",
+    text: "The NHL, NBA, MLB, NFL and CFL home pages now show a small calendar page for your own day with up to three things that happened on this day in that league: a title-winning game, an All-Star Game, a retired number, a famous birthday. A day with nothing shows nothing. Each fact is checked against the archive.",
+  },
   { version: "0.175.2", date: "2026-11-02", needsReview: true,
     title: "The admin sources page can show the grey-only counts",
     text: "The admin sources page now reads the counts of rows held only by a grey source from the second database, where they can be published. Readers see no change.",

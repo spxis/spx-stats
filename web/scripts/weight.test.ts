@@ -716,6 +716,7 @@ const KIND_SAMPLES: Record<string, string> = {
   "[league]/rows/awards": "/nhl/rows/awards",
   "[league]/rows/champions": "/mlb/rows/champions",
   "[league]/rows/venues": "/nba/rows/venues",
+  "[league]/rows/today/[day]": "/nhl/rows/today/11-02",
   "[league]/team/[franchise]/rows/awards": "/mlb/team/arizona-diamondbacks/rows/awards",
   "[league]/team/[franchise]/rows/compare": "/ncaaf/team/air-force-falcons/rows/compare",
   "[league]/team/[franchise]/rows/countries": "/mlb/team/arizona-diamondbacks/rows/countries",

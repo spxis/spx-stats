@@ -10,6 +10,7 @@ import { LeagueChampions } from "@/components/LeagueChampions";
 import { SortTable } from "@/components/SortTable";
 import { AccentStyle } from "@/components/AccentStyle";
 import { TeamLabel } from "@/components/TeamLabel";
+import { TodayInHistory } from "@/components/TodayInHistory";
 import { TrophyBanner } from "@/components/TrophyBanner";
 import { leagueSat } from "@/lib/noSeason";
 import { withCoverage } from "@/lib/coverage";
@@ -28,6 +29,7 @@ import { FamilyNav } from "@/components/FamilyNav";
 import { familyOf } from "@/lib/leagueFamilies";
 import { familyOtherLeagues } from "@/lib/otherLeagues";
 import { pageMeta } from "@/lib/meta";
+import { hasHistory } from "@/lib/todayHistory/types";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -98,6 +100,7 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           {lg === "nhl" ? <Link href="/more-hockey">{say("hockey.more")}</Link> : null}
         </nav>
       </section>
+      {hasHistory(lg) ? <TodayInHistory league={lg} short={info.short} /> : null}
       {others.length ? (
         <section className="section">
           <h2>{say("league.otherLeagues")}</h2>

@@ -320,6 +320,8 @@ export const PHRASES = {
   "league.heldNoResult": "Held, no result",
   "league.champions": "Champions",
   "league.noChampions": "No champions recorded yet.",
+  "history.title": "Today in {league} history",
+  "history.sources": "Sources: {list}.",
   "champs.aria": "Recent champions, most titles and latest repeat champion",
   "champs.recent": "{season} champion",
   "champs.most": "Most titles",
