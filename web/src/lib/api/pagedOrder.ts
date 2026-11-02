@@ -106,6 +106,7 @@ export const UNIQUE_KEYS: Readonly<Record<string, readonly string[]>> = {
   sources: ["code"],
   spring_training_venue: ["wikidata_id"],
   standing_index: ["team_id"],
+  standing_seed: ["league", "year", "team_id"],
   standing_league_pack: ["league"],
   standings: ["team_id"],
   stat_reference: ["league", "year", "stat_group", "bucket", "phase", "metric"],

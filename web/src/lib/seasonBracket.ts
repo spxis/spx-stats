@@ -19,6 +19,8 @@ export function seasonBracketOptions(p: {
   keep?: readonly number[] | null; dims?: (s: Series) => boolean; finalSeries?: Series | null; lastRound?: number;
   /** The postseason picture (a whole bracket only): the same ties as logo tiles with the result beside each pair. */
   picture?: boolean;
+  /** The season has stated playoff seeds (`loadPlayoffs`): the drawing writes them as tags beside the marks. */
+  seeded?: boolean;
 }): KnockoutOptions {
   const { lg, year, series, keep = null } = p;
   const tieAt = (k: number) => series[keep ? keep[k] : k];
@@ -27,6 +29,7 @@ export function seasonBracketOptions(p: {
     href: (t: { index: number }) => seriesPath(p.paths, lg, year, tieAt(t.index)),
     tieClass: (t: { index: number }) => (p.dims?.(tieAt(t.index)) && tieAt(t.index) !== p.finalSeries ? "ko-dim" : null),
     ...(keep ? { champion: false } : { trophy: cupSvg(lg) }),
+    ...(p.seeded ? { seeds: true } : {}),
     ...knockoutLook(lg, p.picture && !keep),
   };
   return options;
@@ -43,10 +46,10 @@ export type BracketPart = "wide" | "phone" | "inwide" | "inphone" | "picwide" | 
  */
 export async function seasonBracketFile(lg: string, year: number, locale: Locale, part: BracketPart): Promise<string | null> {
   const sp = speaker(locale);
-  const [{ series, names, bracket, picture, playIn }, paths] = await Promise.all([loadPlayoffs(lg, year, roundSay(sp)), getPaths()]);
+  const [{ series, names, bracket, picture, playIn, seeded }, paths] = await Promise.all([loadPlayoffs(lg, year, roundSay(sp)), getPaths()]);
   if (!series.length) return null;
-  if (part === "wide" || part === "phone") return drawKnockoutFiles(bracket, seasonBracketOptions({ lg, year, locale, paths, series, names }))[part];
-  if (part === "picwide" || part === "picphone") return drawKnockoutFiles(picture, seasonBracketOptions({ lg, year, locale, paths, series, names, picture: true }))[part === "picwide" ? "wide" : "phone"];
+  if (part === "wide" || part === "phone") return drawKnockoutFiles(bracket, seasonBracketOptions({ lg, year, locale, paths, series, names, seeded }))[part];
+  if (part === "picwide" || part === "picphone") return drawKnockoutFiles(picture, seasonBracketOptions({ lg, year, locale, paths, series, names, picture: true, seeded }))[part === "picwide" ? "wide" : "phone"];
   const layout = await playIn();
   if (!layout) return null;
   const art = drawKnockoutFiles(layout.layout, playInOptions(locale));

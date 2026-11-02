@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.179.0", date: "2026-11-02", href: "/nfl/1985",
+    title: "Playoff seeds on NFL brackets",
+    text: "The playoff brackets of the NFL seasons from 1975 to 1998 now show each club's seed beside its mark (1 to 5, or 1 to 6 later), where a source states it. A club or a season with no stated seed gets no tag; nothing is worked out.",
+  },
   { version: "0.178.3", date: "2026-11-02", href: "/worldcup/2022#squads",
     title: "World Cup squads: pick a team",
     text: "The squads of a World Cup used to be a stack of 32 closed lists, opened one at a time. They are now a grid of the teams with the chosen team's squad right under it, on one screen. The team you pick is in the address, so a link to a squad (also from the flag strip and the map at the top) opens it.",

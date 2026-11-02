@@ -4,6 +4,7 @@ import { buildBracket, halvesOf, type SideLook } from "./bracketLayout";
 import { logoFor } from "./brand";
 import { officialAbbr } from "./abbr";
 import { getAbbrs, getBrands, getLogoFits } from "./data";
+import { getStandingSeeds } from "./standingSeed";
 import { logoKey } from "./logoFit";
 import { buildPlayIn, findPlayInGames, PLAY_IN_FROM, PLAY_IN_WINDOW_DAYS, type PlayIn } from "./nbaPlayIn";
 import type { Say } from "./seriesCopy";
@@ -12,13 +13,13 @@ import { getGamesBetween, getPastMeetingGames, getPlayoffGames } from "./seriesD
 
 /** A season's playoff series, their rounds and the shape of the bracket (halves by conference where the alignment gives them). */
 export async function loadPlayoffs(lg: string, year: number, say: Say) {
-  const [games, brands, align, abbrs, fits] = await Promise.all([getPlayoffGames(lg, year), getBrands(), getSeasonAlignment(lg, year), getAbbrs(lg), getLogoFits()]);
+  const [games, brands, align, abbrs, fits, seeds] = await Promise.all([getPlayoffGames(lg, year), getBrands(), getSeasonAlignment(lg, year), getAbbrs(lg), getLogoFits(), getStandingSeeds(lg, year)]);
   const series = deriveSeries(lg, year, games);
   const { round, names, final } = describeRounds(lg, year, series, say);
   const conf = halvesOf(lg, align);
   const ties = seriesTies(series);
   const name = new Map(series.flatMap((s) => s.sides.map((t) => [t.f, nickname(t.name)] as const)));
-  const look = (f: number): SideLook => ({ name: name.get(f) ?? String(f), ...(officialAbbr(abbrs, f, year) ? { abbr: officialAbbr(abbrs, f, year)! } : {}), ...(logoFor(brands, f, year) ? { mark: logoFor(brands, f, year)! } : {}) });
+  const look = (f: number): SideLook => ({ name: name.get(f) ?? String(f), ...(officialAbbr(abbrs, f, year) ? { abbr: officialAbbr(abbrs, f, year)! } : {}), ...(logoFor(brands, f, year) ? { mark: logoFor(brands, f, year)! } : {}), ...(seeds.has(f) ? { seed: seeds.get(f)! } : {}) });
   const bracket = buildBracket(ties, round, (f) => conf.get(f) ?? null, look);
   // The postseason picture draws every club as a square tile, where a wordmark is unreadable: a logo with an approved fit (lib/logoFit.ts) is drawn there as its primary mark, as in the site's other squares.
   const primary = new Map(fits.filter((r) => r.status === "approved" && r.wordmark && r.mark_url).map((r) => [r.logo_file, r.mark_url!] as const));
@@ -44,7 +45,8 @@ export async function loadPlayoffs(lg: string, year: number, say: Say) {
     const lookIn = (f: number): SideLook => ({ name: named.get(f) ?? String(f), ...(officialAbbr(abbrs, f, year) ? { abbr: officialAbbr(abbrs, f, year)! } : {}), ...(logoFor(brands, f, year) ? { mark: logoFor(brands, f, year)! } : {}) });
     return buildPlayIn(found, series, round, (f) => conf.get(f) ?? null, lookIn);
   };
-  return { series, round, names, final, bracket, picture, layoutOf, brands, align, playIn };
+  /** `seeded`: a source states a seed for at least one club of the season, so the drawings write the seed tags (a club with none gets no tag). */
+  return { series, round, names, final, bracket, picture, layoutOf, brands, align, playIn, seeded: seeds.size > 0 };
 }
 
 export interface PastMeeting { year: number; s: Series; round: string; n: number }
