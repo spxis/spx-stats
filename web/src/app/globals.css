@@ -135,6 +135,7 @@
   .hockeyleagues { list-style: none; padding-left: 0; }
   .hockeyleagues li { padding: 10px 0; border-top: 1px solid var(--rule); }
   .hockeyleagues li:first-child { border-top: 0; }
+  .hockeyleagues li li { padding: 0; border-top: 0; }
   .hockeyleagues .latest { display: block; margin-top: 2px; font-size: 14px; }
   .affillist { list-style: none; margin: 8px 0 0; padding: 0; line-height: 1.9; }
   .affil .tm, .affillist .tm { white-space: nowrap; }
@@ -177,9 +178,11 @@
   @container hdr (min-width: 660px) { :lang(en) .aux { order: 2; flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; } :lang(en) .aux-links { display: contents; } }
   @container hdr (min-width: 710px) { :lang(fr) .aux { order: 2; flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; } :lang(fr) .aux-links { display: contents; } }
   @container hdr (min-width: 780px) { :lang(ja) .aux { order: 2; flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; } :lang(ja) .aux-links { display: contents; } }
-  @container hdr (min-width: 1150px) { :lang(en) .leagues { order: 2; flex: 1 1 auto; } :lang(en) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
-  @container hdr (min-width: 1200px) { :lang(fr) .leagues { order: 2; flex: 1 1 auto; } :lang(fr) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
-  @container hdr (min-width: 1290px) { :lang(ja) .leagues { order: 2; flex: 1 1 auto; } :lang(ja) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
+  /* `.long` marks the football pages, whose second line (Scores, All-time and the three leagues) is the longest and needs about 130px more than the others. French and Japanese never fit it on one row. */
+  @container hdr (min-width: 990px) { :lang(en) .top:not(:has(.long)) .leagues { order: 2; flex: 1 1 auto; } :lang(en) .top:not(:has(.long)) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
+  @container hdr (min-width: 1120px) { :lang(en) .top:has(.long) .leagues { order: 2; flex: 1 1 auto; } :lang(en) .top:has(.long) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
+  @container hdr (min-width: 1050px) { :lang(fr) .top:not(:has(.long)) .leagues { order: 2; flex: 1 1 auto; } :lang(fr) .top:not(:has(.long)) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
+  @container hdr (min-width: 1125px) { :lang(ja) .top:not(:has(.long)) .leagues { order: 2; flex: 1 1 auto; } :lang(ja) .top:not(:has(.long)) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
   /* Signed-out controls on a kept page: gone before the first paint for a browser that carries the sign-in hint (lib/auth/hint.ts). */
   .anon { display: contents; }
   html[data-in] .anon { display: none; }

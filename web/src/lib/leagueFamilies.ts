@@ -56,13 +56,21 @@ export function familyTitle(family: LeagueFamily, soccerWord = "Soccer"): string
   return family.plus ? `${base}+` : base;
 }
 
+/** The header menu's own ids: the families, except that NFL, college football and the CFL share one "football" entry (John, 2026-11-02). */
+export type MenuId = FamilyId | "football";
+
+/** The football hub (a kept page, like /soccer) and the leagues it groups, in the order the menu's second line shows them. The AFL and the AAFC stay under the NFL. */
+export const FOOTBALL_PATH = "/football";
+export const FOOTBALL_FAMILIES = ["nfl", "ncaaf", "cfl"] as const satisfies readonly FamilyId[];
+export const FOOTBALL_LEAGUES = ["nfl", "ncaaf", "cfl"] as const;
+
 /**
- * The site's top menu, header and footer: one entry per family, in FAMILIES order, so the menu cannot drift from the
+ * The site's footer: one entry per family, in FAMILIES order, so the menu cannot drift from the
  * archive chart and the home cards. Women's, rival and predecessor leagues (PWHL, WNBA, NWSL, NHA, AFL, MLS, ...) are not
  * entries: they are members of a family and are reached from its page (FamilyNav, "Other leagues") and from the chart.
  */
 export interface MenuEntry {
-  id: FamilyId;
+  id: MenuId;
   /** The family's main page (`/nhl`, `/soccer`). */
   href: string;
   /** NHL+, NBA+, MLB+, NFL+, CFL, Soccer: "+" when the family has siblings, but never on Soccer in the menu. */
@@ -76,7 +84,7 @@ export function menuLabel(family: LeagueFamily, soccerWord = "Soccer"): string {
   return family.id === "soccer" ? soccerWord : familyTitle(family, soccerWord);
 }
 
-export function menuEntries(soccerWord = "Soccer"): MenuEntry[] {
+export function familyEntries(soccerWord = "Soccer"): MenuEntry[] {
   return FAMILIES.map((f) => ({
     id: f.id,
     href: familyHref(f),
@@ -85,12 +93,26 @@ export function menuEntries(soccerWord = "Soccer"): MenuEntry[] {
   }));
 }
 
-/** The family a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer, the More hockey page and its leagues -> nhl): the menu entry to light. */
-export function menuFamilyOf(segment: string | undefined): FamilyId | undefined {
+/**
+ * The header's menu: the families of `familyEntries`, with the NFL, college football and the CFL as the one entry "Football" (no plus, as Soccer has none), at the place the NFL held.
+ * Every league keeps its own address and its own pages; the footer still lists them one by one.
+ */
+export function menuEntries(soccerWord = "Soccer", footballWord = "Football"): MenuEntry[] {
+  const football = (id: MenuId): boolean => (FOOTBALL_FAMILIES as readonly string[]).includes(id);
+  return familyEntries(soccerWord).flatMap((e) => {
+    if (!football(e.id)) return [e];
+    return e.id === FOOTBALL_FAMILIES[0] ? [{ id: "football" as const, href: FOOTBALL_PATH, label: footballWord, allTime: null }] : [];
+  });
+}
+
+/** The family a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer, `nfl`, `afl`, `ncaaf`, `cfl` and `football` -> football, the More hockey page and its leagues -> nhl): the menu entry to light. */
+export function menuFamilyOf(segment: string | undefined): MenuId | undefined {
   if (!segment) return undefined;
   if (segment === "worldcup") return "soccer";
+  if (segment === FOOTBALL_PATH.slice(1)) return "football";
   if (segment === MORE_HOCKEY_PATH.slice(1) || isMoreHockey(segment)) return "nhl";
-  return familyOf(segment)?.id;
+  const id = familyOf(segment)?.id;
+  return id && (FOOTBALL_FAMILIES as readonly string[]).includes(id) ? "football" : id;
 }
 
 export function familyHref(family: LeagueFamily): string {

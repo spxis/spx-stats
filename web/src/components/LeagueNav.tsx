@@ -3,7 +3,7 @@
 import IntentLink from "@/components/IntentLink";
 import { useRouter, useSelectedLayoutSegments } from "next/navigation";
 import type { MouseEvent } from "react";
-import { menuEntries, menuFamilyOf, MORE_HOCKEY_PATH } from "@/lib/leagueFamilies";
+import { codeLabel, familyOf, FOOTBALL_LEAGUES, menuEntries, menuFamilyOf, MORE_HOCKEY_PATH } from "@/lib/leagueFamilies";
 import { isLeague } from "@/lib/leagues";
 import { useSpeaker } from "./i18n/LocaleProvider";
 
@@ -19,7 +19,7 @@ export function LeagueNav() {
   const parts = ["", ...(segments[0] === "s" || segments[0] === "q" ? segments.slice(1) : segments)];
   const current = parts[1];
   const family = menuFamilyOf(current);
-  const hasSub = Boolean((current && isLeague(current)) || family === "nhl");
+  const hasSub = Boolean((current && isLeague(current)) || family === "nhl" || family === "football");
   const keep = SHARED.has(parts[2] ?? "");
   const go = (e: MouseEvent, code: string) => {
     if (!keep || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
@@ -27,10 +27,10 @@ export function LeagueNav() {
     router.push(`/${[code, ...parts.slice(2)].join("/")}${location.search}`);
   };
   return (
-    <nav className="leagues" id="league-nav" aria-label={say("nav.leagues")}>
+    <nav className={family === "football" ? "leagues long" : "leagues"} id="league-nav" aria-label={say("nav.leagues")}>
       <div className="lg-main">
-        {menuEntries(say("nav.soccer")).map((m) => (
-          <IntentLink key={m.id} href={m.href} onClick={(e) => { if (m.id !== "soccer") go(e, m.href.slice(1)); }} aria-current={family === m.id ? "page" : undefined}>
+        {menuEntries(say("nav.soccer"), say("nav.football")).map((m) => (
+          <IntentLink key={m.id} href={m.href} onClick={(e) => { if (m.id !== "soccer" && m.id !== "football") go(e, m.href.slice(1)); }} aria-current={family === m.id ? "page" : undefined}>
             {m.label}
           </IntentLink>
         ))}
@@ -43,6 +43,9 @@ export function LeagueNav() {
               <IntentLink className="sub" href={`/${current}/all-time`} aria-current={parts[2] === "all-time" ? "page" : undefined}>{say("nav.allTime")}</IntentLink>
             </>
           ) : null}
+          {family === "football" ? FOOTBALL_LEAGUES.map((code) => (
+            <IntentLink key={code} className="sub" href={`/${code}`} onClick={(e) => go(e, code)} aria-current={familyOf(current ?? "")?.primary === code ? "page" : undefined}>{codeLabel(code)}</IntentLink>
+          )) : null}
           {family === "nhl" ? (
             <IntentLink className="sub" href={MORE_HOCKEY_PATH} aria-current={current === MORE_HOCKEY_PATH.slice(1) ? "page" : undefined}>{say("hockey.more")}</IntentLink>
           ) : null}

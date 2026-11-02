@@ -13,7 +13,7 @@ import { test } from "node:test";
  */
 const BASE = process.env.PAGES_URL;
 const WIDTHS = [320, 390, 768, 870, 1024, 1280, 1440, 1920];
-const PATHS = ["/nhl", "/nba", "/"];
+const PATHS = ["/nhl", "/nba", "/nfl", "/football", "/"];
 const LOCALES = ["en", "fr", "ja"];
 
 async function browserOrReason() {
@@ -63,10 +63,20 @@ for (const locale of LOCALES) {
                 items: [...header.querySelectorAll(".brand, .lg-main > a, .lg-sub > a, .aux a, .aux button")].map(rect),
                 sub: [...header.querySelectorAll(".lg-sub > a")].map(rect),
                 main: [...header.querySelectorAll(".lg-main > a")].map(rect),
+                current: {
+                  main: [...header.querySelectorAll(".lg-main > a[aria-current='page']")].map((e) => (e.textContent ?? "").trim()),
+                  sub: [...header.querySelectorAll(".lg-sub > a[aria-current='page']")].map((e) => (e.textContent ?? "").trim()),
+                },
                 aux: [...header.querySelectorAll(".aux a, .aux button")].map(rect),
               };
             });
             heights.push(m.height);
+            if (path === "/nfl" || path === "/football") {
+              assert.deepEqual(m.current.main, [locale === "en" ? "Football" : m.current.main[0]], `${where}: Football is the lit entry of the menu`);
+              assert.equal(m.current.main.length, 1, `${where}: exactly one menu entry is lit`);
+              if (path === "/nfl") assert.deepEqual(m.current.sub, ["NFL"], `${where}: the NFL is the lit league of the second line`);
+              assert.deepEqual(m.sub.map((b) => b.text).filter((x) => ["NFL", "College football", "CFL"].includes(x)), ["NFL", "College football", "CFL"], `${where}: the three leagues are reachable`);
+            }
             assert.ok(m.scrollWidth <= m.clientWidth, `${where}: the page scrolls sideways (${m.scrollWidth} > ${m.clientWidth})`);
             for (const b of m.items) assert.ok(b.left >= -0.5 && b.right <= width + 0.5, `${where}: "${b.text}" runs off the page (${Math.round(b.left)} to ${Math.round(b.right)})`);
             for (let i = 0; i < m.items.length; i++) {
@@ -76,8 +86,8 @@ for (const locale of LOCALES) {
                 assert.ok(!overlap, `${where}: "${a.text}" and "${b.text}" overlap`);
               }
             }
-            // The open sport's links stay together on one line, at the widths people use (the narrowest phone may break a long French or Japanese line).
-            if (m.sub.length > 1 && width >= 390) {
+            // The open sport's links stay together on one line, at the widths people use (the narrowest phone may break a long line; football's holds the three leagues too).
+            if (m.sub.length > 1 && width >= (path === "/nfl" || path === "/football" ? 768 : 390)) {
               const tops = m.sub.map((b) => Math.round(b.top));
               assert.ok(Math.max(...tops) - Math.min(...tops) <= 2, `${where}: the sport's links are on more than one line (${m.sub.map((b) => `${b.text}@${Math.round(b.top)}`).join(", ")})`);
             }

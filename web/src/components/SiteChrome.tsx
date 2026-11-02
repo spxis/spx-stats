@@ -10,7 +10,7 @@ import { SoccerFooterLinks } from "./SoccerFooterLinks";
 import { authEnabled } from "@/lib/auth/config";
 import { latestDataVersion } from "@/lib/releases/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { menuEntries } from "@/lib/leagueFamilies";
+import { familyEntries } from "@/lib/leagueFamilies";
 import pkg from "../../package.json";
 
 export async function SiteHeader() {
@@ -38,7 +38,7 @@ export async function SiteHeader() {
 export async function SiteFooter() {
   const [{ say }, dataVersion] = await Promise.all([currentSpeaker(), latestDataVersion()]);
   const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
-  const menu = menuEntries(say("nav.soccer"));
+  const menu = familyEntries(say("nav.soccer"));
   return (
     <footer className="foot">
       <div className="foot-cols">

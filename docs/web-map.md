@@ -65,6 +65,7 @@ behind them, read [AGENTS.md §9](../AGENTS.md#9-the-website). Start with [agent
 
 - **`sides.ts`**: `SIDE_RULE` and `HOME_FIRST`. The one place that decides left and right; never order two teams by hand.
 - **`leagues.ts`**: `LEAGUE_CODES` and each league's parent (rival leagues have one). `OUTSIDE_CONFERENCE`, `NO_SERIES` and `NO_PLAYERS` mark a league with outside opponents, a postseason told as games (college football) and no player data; `leagueMembers.ts` lists a league's real teams. **`leagueFamilies.ts`**, **`otherLeagues.ts`**.
+- **`leagueFamilies.ts`**, **`football.ts`**: the families; `menuEntries()` is the header menu (the NFL, college football and the CFL are the one "Football" entry, page `/football`), `familyEntries()` the footer's list of every family. The header is a container (`.top`, `hdr`) laid out by its own width, per language (`globals.css`, `pnpm test:header`).
 - **`season.ts`**, **`seasonRows.ts`**, **`seasonBoxes.ts`**, **`gameSeasons.ts`**: season helpers; every read of games carries a season.
 - **`series.ts`**, **`seriesData.ts`**, **`playoffs.ts`**, **`playoffPath.ts`**: playoff series and paths.
 

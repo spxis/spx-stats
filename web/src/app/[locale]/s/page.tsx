@@ -106,7 +106,7 @@ export default guard(async function Home() {
   return (
     <>
       <section className="head fade">
-        <span className="eyebrow">{menuEntries(say("nav.soccer")).map((m) => m.label).join(" · ")}</span>
+        <span className="eyebrow">{menuEntries(say("nav.soccer"), say("nav.football")).map((m) => m.label).join(" · ")}</span>
         <h1>{say("home.title")}</h1>
         <p className="lede">{say("home.lede")}</p>
       </section>

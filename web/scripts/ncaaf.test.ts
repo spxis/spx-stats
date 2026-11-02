@@ -1,21 +1,19 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { menuEntries, menuFamilyOf } from "../src/lib/leagueFamilies.ts";
+import { familyEntries, menuEntries, menuFamilyOf } from "../src/lib/leagueFamilies.ts";
 import { ALL_LEAGUES, hasPlayers, hasSeries, isOutsideConference, LG, LEAGUES, OUTSIDE_CONFERENCE, PARENT, seasonLabel, seasonSeg } from "../src/lib/leagues.ts";
 import { bowlName, ncaafChampNote, groupOf, isVacated, playoffRound, roundTag, titleGame, titleGameOf, type PostGame } from "../src/lib/postseason.ts";
 
 /** Run in web/: pnpm test:ncaaf. College football: its place in the menu, its seasons, what a team outside the league is, and how the postseason is told. */
 
-test("college football is a league of its own, in the menu right after the NFL and under no parent", () => {
+test("college football is a league of its own, under no parent, listed with the NFL and the CFL by the Football entry", () => {
   assert.ok(ALL_LEAGUES.some((l) => l.code === "ncaaf"));
   assert.equal(PARENT.ncaaf, undefined);
   assert.ok(LEAGUES.some((l) => l.code === "ncaaf"));
-  const menu = menuEntries();
-  const i = menu.findIndex((m) => m.id === "ncaaf");
-  assert.equal(menu[i - 1].id, "nfl");
-  assert.deepEqual([menu[i].label, menu[i].href], ["College football", "/ncaaf"]);
-  assert.equal(menuFamilyOf("ncaaf"), "ncaaf");
-  assert.equal(menuFamilyOf("nfl"), "nfl");
+  assert.ok(!menuEntries().some((m) => m.href === "/ncaaf" || m.href === "/nfl" || m.href === "/cfl"), "the header menu has the one Football entry instead");
+  assert.deepEqual(familyEntries().filter((m) => m.id === "nfl" || m.id === "ncaaf" || m.id === "cfl").map((m) => [m.label, m.href]), [["NFL+", "/nfl"], ["College football", "/ncaaf"], ["CFL", "/cfl"]]);
+  assert.equal(menuFamilyOf("ncaaf"), "football");
+  assert.equal(menuFamilyOf("nfl"), "football");
   assert.equal(LG.ncaaf, "College football");
 });
 

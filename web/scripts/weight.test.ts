@@ -733,6 +733,7 @@ const KIND_SAMPLES: Record<string, string> = {
   "countries/versus": "/countries/versus",
   "countries/rows/trend": "/countries/rows/trend",
   "country/[code]": "/country/PL",
+  "football": "/football",
   "help-wikipedia": "/help-wikipedia",
   "logos": "/logos",
   "mls": "/mls",

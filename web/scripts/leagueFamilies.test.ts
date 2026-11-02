@@ -16,6 +16,8 @@ import {
   heatCellColor,
   indexSeasons,
   memberHref,
+  familyEntries,
+  FOOTBALL_FAMILIES,
   menuEntries,
   menuFamilyOf,
   seasonHref,
@@ -171,21 +173,25 @@ test("Grow is a per-session choice: a stored localStorage Grow never expands a n
   assert.match(src, /useState\(false\)/);
 });
 
-test("the top menu is the families: NHL+, NBA+, MLB+, NFL+, CFL, Soccer", () => {
+test("the top menu is the families, football as one entry: NHL+, NBA+, MLB+, Football, Soccer", () => {
   const menu = menuEntries("Soccer");
-  assert.deepEqual(menu.map((m) => m.label), ["NHL+", "NBA+", "MLB+", "NFL+", "College football", "CFL", "Soccer"]);
-  assert.deepEqual(menu.map((m) => m.href), ["/nhl", "/nba", "/mlb", "/nfl", "/ncaaf", "/cfl", SOCCER_PATH]);
+  assert.deepEqual(menu.map((m) => m.label), ["NHL+", "NBA+", "MLB+", "Football", "Soccer"]);
+  assert.deepEqual(menu.map((m) => m.href), ["/nhl", "/nba", "/mlb", "/football", SOCCER_PATH]);
   assert.equal(menuEntries("サッカー").at(-1)!.label, "サッカー");
+  assert.equal(menuEntries("Soccer", "Fútbol americano")[3].label, "Fútbol americano");
+  // the footer still lists every family on its own
+  assert.deepEqual(familyEntries("Soccer").map((m) => m.label), ["NHL+", "NBA+", "MLB+", "NFL+", "College football", "CFL", "Soccer"]);
+  assert.deepEqual(familyEntries("Soccer").map((m) => m.allTime), ["nhl", "nba", "mlb", "nfl", "ncaaf", "cfl", null]);
   // no woman's, rival or predecessor league is an entry of its own
   const hrefs = new Set(menu.map((m) => m.href));
   for (const lg of ["pwhl", "wnba", "nwsl", "nha", "pcha", "wchl", "wha", "afl", "aafc"]) assert.ok(!hrefs.has(`/${lg}`), `${lg} is not a menu entry`);
-  assert.deepEqual(menu.map((m) => m.allTime), ["nhl", "nba", "mlb", "nfl", "ncaaf", "cfl", null]);
+  assert.deepEqual(menu.map((m) => m.allTime), ["nhl", "nba", "mlb", null, null]);
 });
 
 test("every league and virtual member lights its family's menu entry and is linked from the family page", () => {
   for (const f of FAMILIES) {
     for (const m of f.members) {
-      assert.equal(menuFamilyOf(m), f.id, `${m} lights ${f.id}`);
+      assert.equal(menuFamilyOf(m), FOOTBALL_FAMILIES.includes(f.id as never) ? "football" : f.id, `${m} lights ${f.id}`);
       if (m !== f.primary) assert.ok(familySiblings(f.primary).includes(m), `${m} is linked from the ${f.id} page (FamilyNav)`);
     }
   }
@@ -193,6 +199,7 @@ test("every league and virtual member lights its family's menu entry and is link
   assert.equal(menuFamilyOf("pwhl"), "nhl");
   assert.equal(menuFamilyOf("nwsl"), "soccer");
   assert.equal(menuFamilyOf("worldcup"), "soccer");
-  assert.equal(menuFamilyOf("afl"), "nfl");
+  assert.equal(menuFamilyOf("afl"), "football");
+  for (const code of ["nfl", "aafc", "ncaaf", "cfl", "football"]) assert.equal(menuFamilyOf(code), "football", `${code} lights Football`);
   assert.equal(menuFamilyOf("teams"), undefined);
 });
