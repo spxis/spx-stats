@@ -121,10 +121,13 @@ Tests passing is not enough: John judges by looking. Before any push that change
 2. Fetch and rebase on `origin/main`, push fast-forward to `main`. A push starts CI (kyogijo: about 16 minutes).
 3. Make a release commit: bump `package.json` (and `src/version.ts` where it exists) from the highest tag, regenerate
    version-dependent fixtures and snapshots, move the CHANGELOG's Unreleased block under the version. Push it.
-4. **Do not tag and do not publish.** When CI on the release commit is green, John runs the repo's Release workflow
-   (`gh workflow run release.yml -R johnmorrisdotca/<repo> --ref main`), or the coordinating session pushes the tag `v<version>`.
-   The workflow publishes to npm by trusted publishing. Never publish from a Mac or with a token. The one exception is a
-   package with no trusted publisher yet (fuda-cards today): John publishes it by hand from a clean copy of the release commit.
+4. **Agents do not tag and do not publish.** When CI on the release commit is green, a coordinating session (machine1 or
+   machine2) or John starts the repo's Release workflow (`gh workflow run release.yml -R johnmorrisdotca/<repo> --ref main`);
+   it publishes by trusted publishing and tags `v<version>`. Never publish from a Mac or with a token. **Coordinate:** the
+   session whose agent wrote the hand-off starts that release (John may start any). Before starting, check that no Release
+   run is already going (`gh run list -R johnmorrisdotca/<repo> --workflow release.yml -L 1`) and that the version is not
+   on npm yet; right after, log it (`coord.py log --as <you> --kind release --ticket <id> --text "<pkg> <version>"`) so the
+   other session does not start a second run.
 5. Ask John first for a new package name, a first publish, a major version, a deprecation or a licence change.
 
 ## Moving a repo to the shared release workflow
