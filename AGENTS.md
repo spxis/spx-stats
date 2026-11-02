@@ -151,8 +151,9 @@ data repair. If you start a subagent, copy this section into its instructions (t
 - **John's reference images and resources** (photos, examples, design references) live in Dropbox under
   `/Projects/Resources/<project>/<topic>/` with descriptive file names, never in a machine-only folder. Tickets and briefs point to
   that path. Agents read from it and add files only when John supplies them. Never commit them (photo licences are unknown).
-- **Nothing on GitHub but pushes to `main`.** No issues, pull requests, discussions, releases or comments on any of John's
+- **On GitHub, only pushes and version tags.** Never post an issue, pull request, discussion or comment on any of John's
   repositories: the `gh` login is John's own account, so they appear publicly under his name. The queue is the Sumilabu board.
+  The Release page a package's publish makes by itself is fine (John, 2026-11-02); nobody writes one by hand.
   *Broken:* four issues appeared on a package repository on 2026-10-15.
 - **Stop only your own processes, by PID.** Never `pkill`, `killall` or a pattern kill: other sessions' servers run on the same Mac.
 - **Next writes `web/AGENTS.md` and may edit `tsconfig.json` on `next dev`.** Delete that file and revert the edit; never commit them.

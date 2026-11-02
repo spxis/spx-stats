@@ -120,8 +120,8 @@ From the repo root:
 
 ## GitHub
 
-- **Nothing on GitHub but pushes to `main`.** No issues, pull requests, discussions, releases or comments: the `gh` login
-  is John's own account. [§1](../AGENTS.md#1-rules-in-one-breath)
+- **On GitHub, only pushes and version tags.** Never post an issue, pull request, discussion or comment: the `gh` login
+  is John's own account. A publish's automatic Release page is fine. [§1](../AGENTS.md#1-rules-in-one-breath)
 
 ## Talking to John
 

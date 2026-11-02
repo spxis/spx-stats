@@ -211,6 +211,6 @@ Log milestones with `coord.py log --as <you> --kind commit|handoff|claim|done|bl
 
 ## Never
 
-GitHub issues, pull requests, releases or comments (the `gh` login is John's own account); DS1, production or Supabase; AI
+GitHub issues, pull requests, discussions or comments (the `gh` login is John's own account; a publish's automatic Release page is fine); DS1, production or Supabase; AI
 attribution anywhere (commits as John Morris <john@johnmorris.ca>, Conventional Commits, subject 50 characters or less,
 files by name); anything that bills. If you get stuck, blocked or stop, say so at once with your name and the ticket.
