@@ -10,7 +10,7 @@
     "actor": {"type": "string", "pattern": "^[a-z][a-z0-9 -]{1,60}$"},
     "role": {"type": "string", "maxLength": 80},
     "kind": {"type": "string", "enum": ["commit", "handoff", "claim", "release-ticket", "ds1-step", "release", "deploy", "decision", "note", "blocked", "done"]},
-    "ticket": {"type": "string", "pattern": "^([a-z0-9]{20,40}|SPX-[0-9]+|none)$"},
+    "ticket": {"type": "string", "pattern": "^([a-z0-9]{20,40}|[A-Z][A-Z0-9]*(-[A-Z][A-Z0-9]*)*-[0-9]+|none)$"},
     "text": {"type": "string", "minLength": 3, "maxLength": 300},
     "refs": {"type": "array", "maxItems": 20, "items": {"type": "string", "maxLength": 120}}
   }

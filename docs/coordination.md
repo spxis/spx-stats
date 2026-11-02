@@ -61,7 +61,7 @@ deploy action: run it, and check you hold `release-master`. If you are not the h
 
 Log one line at each milestone, so the release-master can read what happened during an absence. Kinds: `commit` (pushed), `handoff` (written),
 `claim`, `release-ticket`, `ds1-step` (applied), `release` (prepared, approved, applied), `deploy`, `decision` (from John), `blocked`, `done`, `note`.
-`--text` is one short line (3 to 300 characters); `--refs` are shas, release numbers, file paths (comma separated); `--ticket` is the id, `SPX-123` or `none`.
+`--text` is one short line (3 to 300 characters); `--refs` are shas, release numbers, file paths (comma separated); `--ticket` is the id, a board number of any board (`SPX-123`, `MODULES-112`, `KYOGIJO-STADIUMS-18`) or `none`.
 
 `coord.py since 2h` (or `1d`, `90m`, `2026-10-19`) prints a digest grouped by actor, newest last, one line each:
 `<time ago> <actor>: <text> (<refs>)`. It merges the journal with what can be read automatically, so nothing depends on memory: hand-off and

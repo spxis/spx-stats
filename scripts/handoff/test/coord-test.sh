@@ -102,6 +102,8 @@ $C log --as "subagent of machine2" --kind handoff --ticket cmvtest00000000000000
 expect "subagent resolves to its parent's role" "grep 'wrote the hand-off' $D/log/*.machine2.jsonl | jq -e '.role == \"builder\" and .actor == \"subagent of machine2\"' >/dev/null"
 expect "unknown kind refused" "[ \$(rc $C log --as machine1 --kind party --text hello) = 2 ]"
 expect "bad ticket refused" "[ \$(rc $C log --as machine1 --kind note --ticket zz --text hello) = 2 ]"
+expect "a ticket of another board is accepted" "[ \$(rc $C log --as machine1 --kind note --ticket MODULES-112 --text hello) = 0 ] && [ \$(rc $C status write --as other-agent --ticket KYOGIJO-STADIUMS-18 --text hi) = 0 ]"
+expect "a lower-case or half-made number is refused" "[ \$(rc $C log --as machine1 --kind note --ticket modules-112 --text hello) = 2 ] && [ \$(rc $C log --as machine1 --kind note --ticket MODULES- --text hello) = 2 ]"
 expect "secret refused in log" "[ \$(rc $C log --as machine1 --kind note --text 'password=abcdefgh1234') = 1 ]"
 frag=/Us; expect "home path refused in log" "[ \$(rc $C log --as machine1 --kind note --text 'in ${frag}ers/x') = 1 ]"
 expect "actor from SPX_COORD_ACTOR" "SPX_COORD_ACTOR=grok $C log --kind note --text 'from env' >/dev/null"
