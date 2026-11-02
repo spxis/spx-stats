@@ -8,7 +8,7 @@ private `START-HERE.md` in Dropbox. This repository is public, so machines are n
 | **machine1** | the main desktop Mac: on the home LAN all day, VPN off |
 | **machine2** | the laptop Mac: VPN always on |
 | **nas1** | the always-on NAS that hosts the source database. Code, docs and keychain item names call it **DS1**; that name is a stable code, not a model name |
-| **nas2** | a second NAS with no spx database: nothing here talks to it |
+| **nas2** | a second NAS with no spx database. It keeps DS1's nightly backups (`backup/README.md`); only the coordinating session logs in to it |
 
 Both Macs must be able to do the same things:
 
@@ -34,7 +34,11 @@ cloud session gets `NAS1_VPN_HOST` and how the tests swap in stand-ins.
 | `NAS1_DB_PORT` | the database port on nas1 (default 55440, which the keychain item names also carry) |
 | `NAS1_DOCKER_DIR` | the folder on nas1 that holds the job folders (`spx-daily-scores`, `spx-release-runner`, `spx-harvest`) |
 | `NAS1_DOCKER_BIN` | the docker command on nas1 (default `docker`; a NAS may need a full path) |
-| `NAS2_LAN_HOST` | optional: nas2's address. No script uses it; the repository guard refuses it in a committed file |
+| `NAS2_LAN_HOST` | nas2's address on the home network. `spx-check.sh` probes its ssh port; the repository guard refuses it in a committed file |
+| `NAS2_SSH_ALIAS`, `NAS2_SSH_USER` | the ssh name (default `nas2`) and login for nas2 |
+| `NAS2_DOCKER_DIR` | the **absolute** folder on nas2 for job folders (`spx-ds1-backup`). Every path on nas2 is absolute: rsync and scp resolve a relative one against a different home than the ssh shell |
+| `NAS2_DOCKER_BIN` | the docker command on nas2 (default `docker`; a NAS may need a full path) |
+| `NAS2_BACKUP_DIR` | the **absolute** folder on nas2 that holds the dumps (`daily/` and `weekly/` inside) |
 | `MACHINE1_LOCALNAME`, `MACHINE2_LOCALNAME` | each Mac's LocalHostName: how a script knows which Mac it runs on |
 | `MACHINE1_HOST`, `MACHINE2_HOST` | each Mac's network name for ssh from the other one |
 | `MACHINE1_SSH_ALIAS`, `MACHINE2_SSH_ALIAS` | the ssh alias the other Mac uses (defaults `machine1`, `machine2`; a Mac linked earlier may already use other aliases, set them here and nothing changes) |

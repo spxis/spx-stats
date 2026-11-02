@@ -52,7 +52,7 @@ run "home folder path (use ~ or a placeholder)" "$HOME_RE"
 # the private mapping's own values: addresses, host names, folders, and extra guard words. Skipped when the mapping is absent.
 if [ "$SPX_HOSTS_LOADED" = 1 ]; then
   vals=""
-  for v in $NAS1_LAN_HOSTS $NAS1_LAN_PRIMARY $NAS1_VPN_HOST ${NAS2_LAN_HOST:-} ${MACHINE1_LOCALNAME:-} ${MACHINE2_LOCALNAME:-} ${MACHINE1_HOST:-} ${MACHINE2_HOST:-} ${NAS1_DOCKER_DIR:-} ${HOSTS_GUARD_WORDS:-}; do
+  for v in $NAS1_LAN_HOSTS $NAS1_LAN_PRIMARY $NAS1_VPN_HOST ${NAS2_LAN_HOST:-} ${NAS2_DOCKER_DIR:-} ${NAS2_BACKUP_DIR:-} ${MACHINE1_LOCALNAME:-} ${MACHINE2_LOCALNAME:-} ${MACHINE1_HOST:-} ${MACHINE2_HOST:-} ${NAS1_DOCKER_DIR:-} ${HOSTS_GUARD_WORDS:-}; do
     case "$v" in ''|ds1|machine1|machine2|docker|/) continue ;; esac
     [ "${#v}" -ge 5 ] || continue
     vals="$vals $v"

@@ -242,6 +242,44 @@ bash "$GUARD" "$G" >"$ROOT/o" 2>&1; check "…and clean again" test "$?" = 0
 printf 'hosts.env\n' > "$G/.gitignore"; printf 'NAS1_LAN_PRIMARY=192.168.%s.1\n' 1 > "$G/hosts.env"
 bash "$GUARD" "$G" >"$ROOT/o" 2>&1; check "a git-ignored hosts.env is not scanned" test "$?" = 0
 rm -f "$CFG"; clean
+echo "(i) nas2 names and the nas2 line of spx-check.sh"
+write_cfg "$FULL
+NAS2_LAN_HOST=127.0.0.1
+NAS2_SSH_USER=nas2user
+NAS2_DOCKER_DIR=/abs/nas2/docker
+NAS2_BACKUP_DIR=/abs/nas2/spx-stats-backups
+"; clean
+for sh in bash zsh; do
+  command -v $sh >/dev/null || continue
+  out=$($sh -c ". '$MAC/lib/hosts.sh'; echo \"\$NAS2_LAN_HOST|\$NAS2_SSH_ALIAS|\$NAS2_DOCKER_BIN|\$NAS2_DOCKER_DIR|\$NAS2_BACKUP_DIR|\$NAS2_SSH_USER\"" 2>&1)
+  check "$sh: NAS2 names read, alias and docker defaults nas2 / docker" test "$out" = "127.0.0.1|nas2|docker|/abs/nas2/docker|/abs/nas2/spx-stats-backups|nas2user"
+done
+cat > "$ROOT/nas2line.sh" <<EOT
+SPX_CHECK_LIB_ONLY=1
+HERE='$MAC'
+. '$MAC/spx-check.sh'
+check_nas2
+cat "\$OUT/15"
+EOT
+clean; rm -f "$CFG"
+bash "$ROOT/nas2line.sh" >"$ROOT/o" 2>&1
+check "no NAS2_LAN_HOST: says not in the mapping yet" has "$ROOT/o" '^nas2 (DS1 backups): not in the host mapping yet'
+check "…and is not a MISSING line" hasnt "$ROOT/o" MISSING
+python3 -I -c '
+import socket
+s = socket.socket(); s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1); s.bind(("127.0.0.1", 7747)); s.listen(1)
+s.settimeout(30)
+c, _ = s.accept(); c.sendall(b"SSH-2.0-stand-in\r\n"); c.close()
+' &
+LP=$!
+sleep 1
+NAS2_LAN_HOST=127.0.0.1 SPX_NAS2_SSH_PORT=7747 bash "$ROOT/nas2line.sh" >"$ROOT/o" 2>&1
+check "an ssh banner on the port: ok" has "$ROOT/o" '^nas2 (DS1 backups): ok'
+kill $LP 2>/dev/null; wait $LP 2>/dev/null
+NAS2_LAN_HOST=127.0.0.1 SPX_NAS2_SSH_PORT=7748 bash "$ROOT/nas2line.sh" >"$ROOT/o" 2>&1
+check "nothing listening: MISSING with a reason" has "$ROOT/o" '^nas2 (DS1 backups): MISSING: no ssh answer'
+rm -f "$CFG"; clean
+
 echo "(h) the repository itself"
 bash "$GUARD" "$REPO" >"$ROOT/o" 2>&1; rc=$?
 check "the repository holds no private address or name" test "$rc" = 0

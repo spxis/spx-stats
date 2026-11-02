@@ -193,7 +193,7 @@ Host $peer
 # ---------- hosts: the private host mapping file ----------
 # Names the file may hold (scripts/mac/lib/hosts.sh explains each). REQUIRED ones have no default.
 HOSTS_REQUIRED="NAS1_LAN_HOSTS NAS1_LAN_PRIMARY NAS1_VPN_HOST NAS1_SSH_USER NAS1_DOCKER_DIR MACHINE1_LOCALNAME MACHINE2_LOCALNAME MACHINE1_HOST MACHINE2_HOST MACHINE_SSH_USER"
-HOSTS_OPTIONAL="NAS2_LAN_HOST NAS1_SSH_ALIAS NAS1_DB_PORT NAS1_DOCKER_BIN MACHINE1_SSH_ALIAS MACHINE2_SSH_ALIAS HOSTS_GUARD_WORDS"
+HOSTS_OPTIONAL="NAS2_LAN_HOST NAS2_SSH_ALIAS NAS2_SSH_USER NAS2_DOCKER_DIR NAS2_DOCKER_BIN NAS2_BACKUP_DIR NAS1_SSH_ALIAS NAS1_DB_PORT NAS1_DOCKER_BIN MACHINE1_SSH_ALIAS MACHINE2_SSH_ALIAS HOSTS_GUARD_WORDS"
 # hosts_parse <file>: KEY<TAB>value for each known name found as NAME=value in the file (a plain env file, or a START-HERE
 # file with the block pasted in a code fence). Quotes around the value are removed; other text is ignored.
 hosts_parse() {

@@ -9,7 +9,7 @@ if [ -n "${BASH_VERSION:-}" ]; then _SPX_CK_DIR="$(cd "$(dirname "${BASH_SOURCE[
 # DS1 (nas1) has two routes from a Mac: the home LAN (it may answer on several addresses; a .local name may not resolve: macOS
 # cannot look up a NAS that answers unicast mDNS only) and the VPN. Try both, never one. `ds1` (NAS1_SSH_ALIAS) is a hosts-file
 # name set per Mac; where it is not set it fails fast and is skipped.
-# nas2 is a different NAS with no spx database: never add its address to the mapping.
+# nas2 is a different NAS with no spx database; it keeps DS1's nightly backups (NAS2_* names in the mapping, scripts/mac/lib/hosts.sh).
 SPX_DS1_LAN_HOSTS="${SPX_DS1_LAN_HOSTS:-$NAS1_SSH_ALIAS ${NAS1_LAN_HOSTS:-}}"
 SPX_DS1_VPN_HOST="${SPX_DS1_VPN_HOST:-${NAS1_VPN_HOST:-}}"
 SPX_DS1_PORT="${SPX_DS1_PORT:-$NAS1_DB_PORT}"

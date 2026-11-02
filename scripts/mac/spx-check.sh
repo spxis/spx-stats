@@ -123,6 +123,16 @@ check_repo_private() {
   else line 14 "repository holds private host data: MISSING: remove it before any push ($(echo "$out" | head -n 1 | cut -c1-160))"; fi
 }
 
+# nas2 keeps DS1's nightly backups (backup/README.md). Only the network is probed here: the ssh banner on the home LAN. Whether last
+# night's dump exists is `bash scripts/backup/backup-status.sh --nas2`, which only the coordinating session runs (it alone logs in to nas2).
+check_nas2() {
+  local banner
+  if [ -z "${NAS2_LAN_HOST:-}" ]; then line 15 "nas2 (DS1 backups): not in the host mapping yet (NAS2_LAN_HOST; scripts/mac/README.md)"; return; fi
+  banner=$(limited 6 nc -w 4 "$NAS2_LAN_HOST" "${SPX_NAS2_SSH_PORT:-22}" </dev/null 2>/dev/null | head -c 4)
+  if [ "$banner" = "SSH-" ]; then line 15 "nas2 (DS1 backups): ok (answers on the home LAN)"
+  else line 15 "nas2 (DS1 backups): MISSING: no ssh answer on the home LAN; the nightly backup job there cannot be reached or checked (is nas2 on? only the coordinating session fixes it)"; fi
+}
+
 check_migrations() {
   local out
   if out=$(bash "$HERE/../check_migration_numbers.sh" 2>&1); then line 10 "$out"
@@ -132,12 +142,12 @@ check_migrations() {
 # Tests source this file with SPX_CHECK_LIB_ONLY=1 to call one check without running them all (nothing is requested).
 [ -z "${SPX_CHECK_LIB_ONLY:-}" ] || return 0 2>/dev/null || exit 0
 
-for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations check_ssh check_keychain check_hosts check_repo_private; do "$c" & done
+for c in check_prod check_ds1 check_board check_vercel check_gh check_tailscale check_tools check_turso check_counts check_migrations check_ssh check_keychain check_hosts check_repo_private check_nas2; do "$c" & done
 wait
 
 echo "[spx-check] connections on this Mac (claude.ai connectors: the agent checks its own tool list)"
 n=0
-for i in 13 14 1 2 3 4 5 6 7 8 9 10 11 12; do
+for i in 13 14 1 2 3 4 5 6 7 8 9 10 11 12 15; do
   l=$(cat "$OUT/$i" 2>/dev/null || echo "check $i: MISSING: check did not finish")
   echo "[spx-check] $l"
   case "$l" in *MISSING*) n=$((n + 1));; esac

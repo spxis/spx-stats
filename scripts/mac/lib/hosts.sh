@@ -4,7 +4,7 @@
 #   machine1  the main desktop Mac (on the home network all day)
 #   machine2  the laptop Mac (reaches the NAS over the VPN)
 #   nas1      the always-on NAS that hosts the source database (called DS1 in code, docs and keychain item names)
-#   nas2      a second NAS with no spx database (nothing here ever talks to it)
+#   nas2      a second NAS with no spx database: it keeps DS1's nightly backups (backup/README.md). Only the coordinating session logs in to it
 # What each role really is (addresses, host names, the NAS login, folders) lives in ONE private file outside the repo:
 #   $SPX_HOSTS_CONFIG, default ~/.config/spx-stats/hosts.env (directory 700, file 600, never committed).
 # Create it with: zsh scripts/mac/spx-credentials.sh hosts   (the values are in the private START-HERE file).
@@ -21,7 +21,13 @@
 #   NAS1_DB_PORT          the database port on nas1 (default 55440; it is also in the keychain item names)
 #   NAS1_DOCKER_DIR       the folder on nas1 that holds the job folders (spx-daily-scores, spx-release-runner, spx-harvest)
 #   NAS1_DOCKER_BIN       the docker command on nas1 (default docker; a NAS may need a full path)
-#   NAS2_LAN_HOST         optional: nas2's address. No script uses it; it is there so the repository guard can refuse it in a file
+#   NAS2_LAN_HOST         nas2's address on the home network (spx-check.sh probes its ssh port; the repository guard refuses it in a file)
+#   NAS2_SSH_ALIAS        the ssh name for nas2 (default nas2)
+#   NAS2_SSH_USER         the login on nas2
+#   NAS2_DOCKER_DIR       the ABSOLUTE folder on nas2 that holds the job folder spx-ds1-backup (rsync and scp resolve a relative path
+#                         against a different home than the ssh shell does, so every path on nas2 is absolute)
+#   NAS2_DOCKER_BIN       the docker command on nas2 (default docker; a NAS may need a full path)
+#   NAS2_BACKUP_DIR       the ABSOLUTE folder on nas2 that holds the dumps (daily/ and weekly/ inside it)
 #   MACHINE1_LOCALNAME    machine1's macOS LocalHostName (how a script knows which Mac it is on)
 #   MACHINE2_LOCALNAME    the same for machine2
 #   MACHINE1_HOST         machine1's network name for ssh from the other Mac (e.g. <LocalHostName>.local)
@@ -65,9 +71,9 @@ spx_hosts_load() {
       if eval "[ -z \"\${$k+x}\" ]"; then export "$k=$v"; fi
     done < "$SPX_MAP_FILE"
   fi
-  : "${NAS1_SSH_ALIAS:=ds1}" "${NAS1_DB_PORT:=55440}" "${NAS1_DOCKER_BIN:=docker}"
+  : "${NAS1_SSH_ALIAS:=ds1}" "${NAS1_DB_PORT:=55440}" "${NAS1_DOCKER_BIN:=docker}" "${NAS2_SSH_ALIAS:=nas2}" "${NAS2_DOCKER_BIN:=docker}"
   : "${MACHINE1_SSH_ALIAS:=machine1}" "${MACHINE2_SSH_ALIAS:=machine2}"
-  export NAS1_SSH_ALIAS NAS1_DB_PORT NAS1_DOCKER_BIN MACHINE1_SSH_ALIAS MACHINE2_SSH_ALIAS
+  export NAS1_SSH_ALIAS NAS1_DB_PORT NAS1_DOCKER_BIN NAS2_SSH_ALIAS NAS2_DOCKER_BIN MACHINE1_SSH_ALIAS MACHINE2_SSH_ALIAS
 }
 
 # spx_hosts_need NAME...: every NAME must be set and non-empty; otherwise one line says which and what to run.
