@@ -12,7 +12,7 @@ AGENTS.md disagree, AGENTS.md wins.
 
 | Role | Holder now | May | Must not |
 |---|---|---|---|
-| `release-master` | machine1 | the ONLY role that writes DS1 or production, prepares, withdraws and watches data releases, deploys the site, rebuilds the release runner (`RELEASE_REF`), uses ssh to nas1, tags package releases, and decides the order of landings | |
+| `release-master` | machine1 | the ONLY role that writes DS1 or production, prepares, withdraws and watches data releases, deploys the site, rebuilds the release runner (`RELEASE_REF`), uses ssh to nas1, and decides the order of landings. Package releases are not exclusive to it (John, 2026-11-02): either Mac may start one, and the session whose agent wrote the hand-off starts it (docs/package-work.md, "Checks, push, release") | |
 | `builder` | machine2 | write code on `main` in its own worktree, test on a scratch Postgres, write hand-offs | touch DS1, releases, the runner or deploys |
 | `outside-builder` | Grok (`grok`), GPT | same as `builder` | same as `builder` |
 | `reviewer` | nobody yet | read-only reviews | push anything |
