@@ -29,7 +29,8 @@ import { FamilyNav } from "@/components/FamilyNav";
 import { familyOf } from "@/lib/leagueFamilies";
 import { familyOtherLeagues } from "@/lib/otherLeagues";
 import { pageMeta } from "@/lib/meta";
-import { hasHistory } from "@/lib/todayHistory/types";
+import { hasHistory, historyHost, sportLeagues } from "@/lib/todayHistory/types";
+import { leagueEnded } from "@/lib/leagueEnded";
 import { tableOf } from "@/lib/sort";
 import { seasonPath } from "@/lib/slug";
 import { guard, guardMeta } from "@/lib/loadGuard";
@@ -80,10 +81,13 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
   const boxes = championRow(list, lg);
   const latest = boxes.find((b) => b.kind === "recent");
   const most = boxes.find((b) => b.kind === "most");
+  const ended = leagueEnded(lg, list.at(-1)?.year ?? null, Math.max(0, ...s.seasons.map((x) => x.year)));
+  const champLabel = ended ? "trophy.final" : "trophy.latest";
+  const showHistory = hasHistory(lg) && !!fam;
   return (
     <>
       <AccentStyle league={lg} />
-      <section className="head fade">
+      <section className="head fade tight">
         <span className="eyebrow">{lg === "ncaaf" ? say("ncaaf.eyebrow") : info.short}</span>
         <h1>{info.name}</h1>
         <FamilyNav code={lg} />
@@ -100,32 +104,20 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           {lg === "nhl" ? <Link href="/more-hockey">{say("hockey.more")}</Link> : null}
         </nav>
       </section>
-      {hasHistory(lg) ? <TodayInHistory league={lg} short={info.short} /> : null}
-      {others.length ? (
-        <section className="section">
-          <h2>{say("league.otherLeagues")}</h2>
-          <p className="note">{say("league.otherNote", { league: info.short })}{lg === "nhl" ? <>{" "}{say("hockey.moreNote")}{" "}<Link href="/more-hockey">{say("hockey.more")}</Link></> : null}</p>
-          <ul className="otherleagues">
-            {others.map((o) => (
-              <li key={o.code}>
-                <Link href={`/${o.code}`}>{o.name} ({o.short})</Link>
-                {" · "}{o.first === o.last ? o.first : `${o.first}–${o.last}`}
-                {" · "}{plural("count.seasons", o.seasons)}
-                {" · "}{plural("count.champions", o.champions)}
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-      {latest ? (
-        <TrophyBanner lg={lg}>
-          <span className="cup">{CHAMPIONSHIP_CODE[lg] ? <Link href={trophyPath(CHAMPIONSHIP_CODE[lg])} prefetch={false}>{say("trophy.latest")}</Link> : say("trophy.latest")}</span>
-          <span className="who"><TeamLabel lg={lg} f={latest.f} name={latest.name} year={withGames.some((x) => x.year === latest.year) ? latest.year : undefined} logo={logoFor(brands, latest.f, latest.year)} size={40} shape="circle" /></span>
-          <span className="how">
-            <Link href={seasonPath(lg, latest.year)} prefetch={false}>{say("season.title", { label: latest.label })}</Link>
-            {most ? ` · ${say("trophy.mostTitles", { team: most.name, count: plural("count.championships", most.n) })}` : ""}
-          </span>
-        </TrophyBanner>
+      {latest || showHistory ? (
+        <div className="toprow">
+          {latest ? (
+            <TrophyBanner lg={lg}>
+              <span className="cup">{CHAMPIONSHIP_CODE[lg] ? <Link href={trophyPath(CHAMPIONSHIP_CODE[lg])} prefetch={false}>{say(champLabel)}</Link> : say(champLabel)}</span>
+              <span className="who"><TeamLabel lg={lg} f={latest.f} name={latest.name} year={withGames.some((x) => x.year === latest.year) ? latest.year : undefined} logo={logoFor(brands, latest.f, latest.year)} size={40} shape="circle" /></span>
+              <span className="how">
+                <Link href={seasonPath(lg, latest.year)} prefetch={false}>{say("season.title", { label: latest.label })}</Link>
+                {most ? ` · ${say("trophy.mostTitles", { team: most.name, count: plural("count.championships", most.n) })}` : ""}
+              </span>
+            </TrophyBanner>
+          ) : null}
+          {showHistory ? <TodayInHistory host={historyHost(lg)!} sport={say(`league.sport.${fam!.sport}`)} labelled={sportLeagues(lg).length > 1} /> : null}
+        </div>
       ) : null}
       <SeasonSync>
         <LeagueSeasonRows league={lg} rows={leagueSeasonRows(list)}>
@@ -147,6 +139,22 @@ export default guard(async function LeaguePage({ params }: PageProps<"/[locale]/
           ) : null}
         </LeagueSeasonRows>
       </SeasonSync>
+      {others.length ? (
+        <section className="section">
+          <h2>{say("league.otherLeagues")}</h2>
+          <p className="note">{say("league.otherNote", { league: info.short })}{lg === "nhl" ? <>{" "}{say("hockey.moreNote")}{" "}<Link href="/more-hockey">{say("hockey.more")}</Link></> : null}</p>
+          <ul className="otherleagues">
+            {others.map((o) => (
+              <li key={o.code}>
+                <Link href={`/${o.code}`}>{o.name} ({o.short})</Link>
+                {" · "}{o.first === o.last ? o.first : `${o.first}–${o.last}`}
+                {" · "}{plural("count.seasons", o.seasons)}
+                {" · "}{plural("count.champions", o.champions)}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : null}
       <section className="section">
         <h2>{say("league.champions")}</h2>
         <LeagueChampions lg={lg} />

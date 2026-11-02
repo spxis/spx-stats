@@ -42,7 +42,11 @@ export function LeagueSeasons({ family, familySeasons }: { family?: LeagueFamily
   const groups = !grown && family && canGrow ? [family] : undefined;
   const leagues = groups ? [family!.id] : (family && grown && canGrow ? expandedLeagues(family, strip) : [league]);
   const [stripBox, drawn] = useSeen<HTMLDivElement>();
-  const y0 = min(strip, (s) => s.year) ?? 0, y1 = max(strip, (s) => s.year) ?? 0;
+  // The slider runs over the years of the strip. On the family's own page (the NHL's) that is the whole family, so the years before the league existed can be chosen; on a sibling's page (the WCHL's,
+  // 1921 to 1926) it is the league's own years, and the strip shows the family only within them.
+  const ownRange = !!family && family.primary !== league;
+  const bounds = ownRange && own.length ? own : strip;
+  const y0 = min(bounds, (s) => s.year) ?? 0, y1 = max(bounds, (s) => s.year) ?? 0;
   const raw = useSyncExternalStore(subscribeAddress, addressRange, serverRange);
   const span = useMemo(() => parseRange(raw, y0, y1) ?? { from: y0, to: y1 }, [raw, y0, y1]);
   useLayoutEffect(() => { if (raw === addressRange()) releaseRangeHold(); }, [raw]);

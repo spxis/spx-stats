@@ -1,6 +1,6 @@
 {
   "name": "spxn-web",
-  "version": "0.176.0",
+  "version": "0.177.0",
   "private": true,
   "type": "module",
   "packageManager": "pnpm@10.28.0",
@@ -24,6 +24,7 @@
     "test:ncaaf": "node --test scripts/ncaaf.test.ts",
     "test:families": "node --test scripts/leagueFamilies.test.ts",
     "test:todayhistory": "node --conditions=react-server --test scripts/todayHistory.test.ts",
+    "test:leaguetop": "node --test scripts/leagueTop.test.ts",
     "test:weight": "node --test scripts/weight.test.ts",
     "test:pagecalls": "node --test scripts/pageCalls.test.ts",
     "test:pagescripts": "node --test scripts/pageScripts.test.ts",

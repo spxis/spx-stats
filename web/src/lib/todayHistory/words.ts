@@ -53,3 +53,14 @@ export function cupFinalText(f: CupFinalRow): string {
 
 /** A name with its accents, case and punctuation taken off: how a person of the data is matched with a person of the database. */
 export const plainName = (s: string): string => s.normalize("NFD").replace(/\p{M}/gu, "").toLowerCase().replace(/[^a-z0-9]+/g, " ").trim();
+
+/** An All-Star Game's sentence for a small block: the building without its city, and without who was named most valuable ("... played at Xcel Energy Center, Saint Paul, Minnesota; East beat West 6–4; Joe Sakic was named most valuable player."). */
+export function compactAllStar(text: string, city: string | undefined): string {
+  const t = city ? text.replace(`, ${city}`, "") : text;
+  return t.replace(/; [^;]* (?:was|were) named most valuable players?\.$/, ".");
+}
+
+/** A line is drawn about this many characters to a row in the block on a desktop's half-width panel; a day's lines are chosen to fit `MAX_ROWS` rows, never more than three lines, so the block stays about as tall as the champion's panel beside it. */
+export const ROW_CHARS = 58;
+export const MAX_ROWS = 4;
+export const rowsOf = (text: string): number => Math.max(1, Math.ceil(text.length / ROW_CHARS));

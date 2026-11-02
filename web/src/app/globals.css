@@ -354,30 +354,37 @@
   .banner .who { font: 700 34px/1.05 var(--display); text-transform: uppercase; grid-column: 1 / -1; }
   .banner .who .logo { vertical-align: middle; margin-right: 12px; }
   .banner .how { color: var(--muted); grid-column: 1 / -1; }
-  /* "Today in history" on a league's home page (components/TodayInHistory.tsx). The calendar page is the meigen-sports `line` theme as the package draws it; its three colours are
+  /* The league home page's top row: the latest champion on the left and "Today in history" on the right, one height, as one panel look (the banner's: panel, rule, the league's colour down the left side).
+     Without a block (a league with no history, or a day with none) the champion takes the row. On a phone they stack, champion first. */
+  .head.tight { gap: 8px; }
+  .head.tight .lede { font-size: 17px; line-height: 1.4; }
+  .toprow { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: stretch; margin-top: -8px; }
+  .toprow:not(:has(.hist)) { grid-template-columns: minmax(0, 1fr); }
+  .toprow:has(.hist) { min-height: 200px; }
+  /* The league page's quick links use the whole width (the family chips sit higher, beside the title), so the NHL's seven buttons are one row. */
+  @media (min-width: 1000px) { .head.tight:has(.familynav) .quicklinks { margin-right: -420px; } }
+  .toprow > .banner { margin: 0; }
+  @media (max-width: 760px) { .toprow { grid-template-columns: minmax(0, 1fr); gap: 12px; margin-top: 0; } }
+  /* "Today in history" (components/TodayInHistory.tsx). The calendar page is the meigen-sports `line` theme as the package draws it; its three colours are
      recoloured here from the site's tokens, so it follows light and dark and the league's accent: the page's white and ink, and the day in the accent. */
-  .hist { display: flex; align-items: flex-start; gap: 18px; background: var(--panel); border: 1px solid var(--rule); border-left: 8px solid var(--accent); padding: 16px 20px; }
-  .hist-cal { flex: none; width: 64px; margin-top: 2px; }
+  .hist { display: flex; flex-direction: column; gap: 6px; min-width: 0; background: var(--panel); border: 1px solid var(--rule); border-left: 8px solid var(--accent); padding: 12px 18px; }
+  .hist { min-height: 200px; }
+  .hist-head { display: flex; align-items: center; gap: 12px; }
+  .hist-cal { flex: none; width: 36px; }
   .hist-cal svg { display: block; width: 100%; height: auto; }
   .hist-cal [fill="#ffffff"] { fill: var(--panel); }
   .hist-cal [stroke="#080808"] { stroke: var(--ink); }
   .hist-cal [fill="#2f78bd"] { fill: var(--accent-text); }
-  .hist-body { flex: 1 1 0; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
   .hist-title { font: 700 15px/1.2 var(--display); text-transform: uppercase; letter-spacing: .12em; color: var(--accent-text); }
-  .hist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-  .hist-list li { display: flex; gap: 12px; align-items: baseline; }
-  .hist-y { flex: none; min-width: 3.2ch; font: 700 17px/1.4 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .hist-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+  .hist-list li { display: flex; gap: 10px; align-items: baseline; font-size: 16px; line-height: 1.3; }
+  .hist-list li > span:last-child { min-width: 0; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; overflow: hidden; }
+  .hist-y { flex: none; min-width: 3.2ch; font: 700 16px/1.3 var(--display); letter-spacing: .04em; font-variant-numeric: tabular-nums; }
+  .hist-l { flex: none; align-self: center; font: 700 12px/1 var(--display); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); border: 1px solid var(--rule); padding: 3px 5px 2px; }
   .hist-list a { color: inherit; text-decoration: underline; text-decoration-color: var(--rule); text-underline-offset: 3px; }
   .hist-list a:hover { text-decoration-color: currentColor; }
-  .hist-src { margin: 2px 0 0; font-size: 13px; }
-  /* On a phone the calendar page sits beside the title and the facts take the whole width. */
-  @media (max-width: 480px) {
-    .hist { display: grid; grid-template-columns: 48px 1fr; align-items: center; gap: 10px 12px; padding: 14px 14px; }
-    .hist-cal { margin-top: 0; width: 48px; }
-    .hist-body { display: contents; }
-    .hist-list, .hist-src { grid-column: 1 / -1; }
-    .hist-list li { gap: 10px; }
-  }
+  .hist-src { margin: 0; font-size: 12px; line-height: 1.3; }
+  @media (max-width: 760px) { .toprow:has(.hist) { min-height: 0; } .hist { padding: 12px 14px; min-height: 270px; } }
   .banner.withcup { display: flex; align-items: center; gap: 14px 22px; }
   .banner .bbody { flex: 1 1 0; min-width: 0; display: grid; grid-template-columns: auto 1fr; gap: 6px 18px; align-items: center; }
   .bigcup { margin: 0; flex: none; width: clamp(96px, 22vw, 136px); display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; color: var(--accent); }

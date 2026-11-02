@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.177.0", date: "2026-11-02", href: "/nhl",
+    title: "A league's page leads with its champion and today in history",
+    text: "A league's home page now runs: heading, then the latest champion beside \"Today in hockey (basketball, baseball, football) history\", then the seasons, with the other leagues below. History is by sport (football shows the NFL and the CFL together), newest year first, checked so each club is named as it was that day. An ended league says Final champion.",
+  },
   { version: "0.176.0", date: "2026-11-02", href: "/nhl",
     title: "Today in history on each league's home page",
     text: "The NHL, NBA, MLB, NFL and CFL home pages now show a small calendar page for your own day with up to three things that happened on this day in that league: a title-winning game, an All-Star Game, a retired number, a famous birthday. A day with nothing shows nothing. Each fact is checked against the archive.",
