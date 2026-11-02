@@ -22,7 +22,7 @@ Most packages share the spx-stats board, but not all. Find your package here bef
 
 | Package | Board | Ticket names |
 |---|---|---|
-| dougu, kyogijo, meigen, senshu, taisen, hata, chizu, kuni, address-plus, chikyu-earth | spx-stats board (`pnpm task`) | title starts with the package, e.g. `meigen: ...` |
+| dougu, kyogijo, meigen, senshu, taisen, hata, chizu, kuni, address-plus, chikyu-earth | spx-stats board (`pnpm task`) | title starts with the full npm name, e.g. `meigen-sports: ...`, `dougu-sports: ...` |
 | kazoku-ui, and anything shared by the whole family | spx-stats board | title starts with `kazoku-ui: ...` |
 | hako-devices | its own Sumilabu board (project key `hako-devices`) | `HAKO-DEVICES-<n>` |
 | uchusen-rockets | the hotaru board | title starts with `Rockets: ...` |
@@ -34,7 +34,7 @@ board, ask the session that started you; never guess a ticket.
 **Filing a ticket.** File it before you start the work. Do the same for anything you find that is outside your ticket: file it
 and name the new id in your report, rather than widening your ticket.
 
-    pnpm task add "<package>: <what>" --detail "<what and why, John's words with the date, reference paths>" --by "<actor>" [--bug|--chore]
+    pnpm task add "<npm name>: <what>" --detail "<what and why, John's words with the date, reference paths>" --by "<actor>" [--bug|--chore]
 
 The title is 8 to 120 characters. The detail says what done looks like. Reference images are linked by their Dropbox path
 (`/Projects/Resources/<project>/<topic>/`) and never attached. A gap in a shared kazoku-ui part gets its own `kazoku-ui:` ticket
