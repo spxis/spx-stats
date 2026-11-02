@@ -218,8 +218,13 @@ test("football's lines are shared fairly: neither league fills the block while t
   assert.ok(days.some((d) => d.length === 3 && d.every((x) => x.l === "cfl")), "a CFL-only day fills the block");
 });
 
-test("the package is pinned to one exact version", () => {
+test("the packages are pinned to one exact version, and the page comes from the one Koyomi design on the server", () => {
   assert.match(pkg.dependencies["@johnmorrisdotca/meigen-sports"], /^\d+\.\d+\.\d+$/);
+  assert.match(pkg.dependencies["@johnmorrisdotca/koyomi-calendars"], /^\d+\.\d+\.\d+$/);
+  const day = read("../src/lib/todayHistory/day.ts");
+  assert.match(day, /^import "server-only";/, "the calendar code stays on the server");
+  assert.match(day, /from "@johnmorrisdotca\/koyomi-calendars\/themes\/line"/, "only the Line design is imported");
+  assert.doesNotMatch(day, /from "@johnmorrisdotca\/(?:meigen-sports|koyomi-calendars)"/, "no package entry that holds every design");
 });
 
 test("a day's answer: the page and the lines, in the reader's language, or nothing", () => {
@@ -253,11 +258,12 @@ test("a kept page: the block is drawn in the browser from the reader's own day",
   assert.match(comp, /useSyncExternalStore\(subscribe, \(\) => localDay\(\), \(\) => null\)/, "the server and the first render know no day");
   assert.match(comp, /newestFirst\(data\.facts\)/, "the block draws newest first");
   assert.match(comp, /labelled \? <span className="hist-l">/, "the league label only where the sport has more than one league");
-  assert.match(comp, /<Rich text=\{say\("history\.credit"\)\} parts=\{\{ meigen: <LibCredit lib="meigen-sports" \/> \}\} \/>/, "the block credits Meigen Sports with its npm and GitHub links");
+  assert.match(comp, /<Rich text=\{say\("history\.credit"\)\} parts=\{\{ meigen: <LibCredit lib="meigen-sports" \/>, koyomi: <LibCredit lib="koyomi-calendars" \/> \}\} \/>/, "the block credits Meigen Sports and Koyomi Calendars with their npm and GitHub links");
   const credits = read("../src/components/Credits.tsx");
   assert.match(credits, /"meigen-sports": "Meigen Sports"/);
-  assert.match(credits, /\| "meigen-sports";/);
-  assert.match(read("../src/lib/i18n/phrases.constants.ts"), /"history\.credit": "Calendar page and facts: \{meigen\}\."/);
+  assert.match(credits, /"koyomi-calendars": "Koyomi Calendars"/);
+  assert.match(credits, /\| "meigen-sports" \| "koyomi-calendars";/);
+  assert.match(read("../src/lib/i18n/phrases.constants.ts"), /"history\.credit": "Facts: \{meigen\}\. Calendar page: \{koyomi\}\."/);
   assert.doesNotMatch(comp, /setInterval|setTimeout|cookies\(|headers\(|searchParams/);
   const route = read("../src/app/[locale]/s/[league]/rows/today/[day]/route.ts");
   assert.match(route, /export const revalidate = 2592000;/);

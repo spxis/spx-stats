@@ -61,7 +61,7 @@ export function TodayInHistory({ host, sport, labelled }: { host: string; sport:
         <h2 id="hist-title" className="hist-title">{say("history.title", { sport })}</h2>
       </div>
       <ul className="hist-list">{facts.map((f) => <Line key={`${f.l}-${f.y}-${f.t}`} f={f} labelled={labelled} />)}</ul>
-      <p className="note hist-src">{say("history.sources", { list })} <Rich text={say("history.credit")} parts={{ meigen: <LibCredit lib="meigen-sports" /> }} /></p>
+      <p className="note hist-src">{say("history.sources", { list })} <Rich text={say("history.credit")} parts={{ meigen: <LibCredit lib="meigen-sports" />, koyomi: <LibCredit lib="koyomi-calendars" /> }} /></p>
     </section>
   );
 }

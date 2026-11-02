@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.178.1", date: "2026-11-02", href: "/nhl", needsReview: true,
+    title: "Today in history now comes straight from its libraries",
+    text: "The facts of \"Today in history\" now come from Meigen Sports 0.20.0 as they are, with the club and the building named as on the day, and the calendar page is drawn by Koyomi Calendars. The page looks the same; three days show a different All-Star Game line than before.",
+  },
   { version: "0.178.0", date: "2026-11-02", href: "/football",
     title: "One Football entry in the top menu",
     text: "The NFL, college football and the CFL now share one Football entry in the top menu, with no plus, as Soccer has none. It leads to a Football page listing each league, the AFL and the AAFC under the NFL. On any of those leagues the entry is lit and the three leagues are one click away. Every league keeps its own address and its own records.",

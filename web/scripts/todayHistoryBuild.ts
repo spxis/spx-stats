@@ -4,14 +4,14 @@
  *   node scripts/todayHistoryBuild.ts [--store <dir of the meigen-sports facts store>] [--rest http://127.0.0.1:7750/] [--audit <report.json>]
  *
  * Facts come from the meigen-sports data (the package's Pages feed, `facts/store/NN.json`; Wikidata CC0, Wikipedia CC BY-SA 4.0, Retrosheet, nflverse CC BY 4.0), and from
- * the database's own Stanley Cup finals for the NHL, whose games the data lacks. Every fact is checked against the read-only preview PostgREST (the DS1 copy, never production),
- * and what it says is made to agree with the database, or the fact (or the clause) is left out:
+ * the database's own Stanley Cup finals for the NHL, whose games the data lacks. Since meigen-sports 0.19.3 the data names a club and a building as of the date of the fact, so
+ * nothing is corrected here any more: every fact is checked against the read-only preview PostgREST (the DS1 copy, never production), and a fact the database disagrees with is
+ * left out and counted in the audit (the one rewrite left is the accent of a club's name, "Montreal" to the database's "Montréal"):
  *  - a game, final or feat: a game on that day with that score between exactly those two clubs, under the names the database gave them;
- *  - a retired number: the database's own retirement, worded with the club's name ON THAT DAY (`ClubNames`: the data wrote the franchise's first name, "the Quebec Nordiques
- *    retired Adam Foote's No. 52" in 2013, when it was the Colorado Avalanche);
- *  - an All-Star Game: the day; a building is named as it was called in that year (`VenueNames`), and a fact or clause whose building has no name for that year is left out;
+ *  - a retired number: the database's own retirement, with the club named as the database names it ON THAT DAY (`ClubNames`);
+ *  - an All-Star Game: the day; the building must be what the database says it was called in that year (`VenueNames`), else the fact is left out (a final never shows its building);
  *  - a birthday or a death: the person's own day, age and death year; a club in the sentence must be a name its franchise carried while he played for it (his stints).
- * A person is linked only when the database knows the same id with the same name. `--audit` writes what was checked, changed and dropped. Reads only; run it by hand when
+ * A person is linked only when the database knows the same id with the same name. `--audit` writes what was checked and dropped. Reads only; run it by hand when
  * the data package or the database has moved, then commit the JSON.
  */
 import { mkdirSync, readdirSync, readFileSync, writeFileSync } from "node:fs";
@@ -81,7 +81,7 @@ interface Person { person_id: number; name: string; birth_date: string | null; d
 interface Stint { person_id: number; league: string; franchise_id: number; from_year: number; to_year: number }
 interface Game { league: string; year: number; game_date: string; phase: string; home: string; away: string; home_score: number | null; away_score: number | null }
 interface Retired { league: string; franchise_id: number | null; jersey_number: number; person_id: number | null; name: string | null; retired_on: string | null }
-type Verdict = { t: string; changed?: string; cosmetic?: boolean } | { why: string };
+type Verdict = { t: string } | { why: string };
 
 async function main() {
   const latest = (await (await fetch(`${PAGES}/latest.json`)).json()) as { package: string; build: string };
@@ -129,18 +129,16 @@ async function main() {
     return gameCache.get(key)!;
   };
 
-  /** A sentence's building clause ` at <venue>, <city>` made to say the building's name in that year: unchanged, renamed, removed (`null` text part) or, for a fact that cannot do without it, a refusal. */
-  function venueClause(text: string, venue: string | undefined, city: string | undefined, year: number, lead: string): { t: string; note?: string } | { why: string } {
-    if (!venue || !city) return { t: text };
-    const clause = `${lead}${venue}, ${city}`;
-    if (!text.includes(clause)) return { why: "sentence does not hold the building clause" };
+  /** Why a sentence's building clause ` at <venue>, <city>` cannot be shown, or null: the building must be what the database says it was called in that year (the data names it as of the date). */
+  function whyBuilding(text: string, venue: string | undefined, city: string | undefined, year: number): string | null {
+    if (!venue || !city) return null;
+    if (!text.includes(` at ${venue}, ${city}`)) return "sentence does not hold the building clause";
     const v = venues.in(venue, year);
-    if (v && "keep" in v) return { t: text };
-    if (v) return { t: text.replace(clause, `${lead}${v.name}, ${city}`), note: `building ${venue} -> ${v.name}` };
-    return { why: `no name of ${venue} for ${year}` };
+    if (v && "keep" in v) return null;
+    return v ? `${venue} was called ${v.name} in ${year}` : `no name of ${venue} for ${year}`;
   }
 
-  /** The verdict on one fact of the data: its sentence as it may be shown (maybe changed), or why not. */
+  /** The verdict on one fact of the data: its sentence as it may be shown, or why not. */
   async function verify(lg: string, r: Rec): Promise<Verdict> {
     const kind = r.category as HistoryKind;
     const base = withoutDate(kind, r.text ?? "");
@@ -157,14 +155,13 @@ async function main() {
       const club = clubs.at(lg, mine.franchise_id, r.eventDate);
       if (!club) return { why: `franchise ${mine.franchise_id} has no name on ${r.eventDate}` };
       const t = `The ${club} retired ${mine.name ?? r.person?.name}'s No. ${mine.jersey_number}.`;
-      return { t, changed: t === base ? undefined : "club named as on that day", cosmetic: plainName(t) === plainName(base) };
+      return plainName(t) === plainName(base) ? { t } : { why: `the data names ${base.slice(0, 40)}, the database ${club} on that day` };
     }
 
     if (kind === "all-star") {
       if (!allStarDays.has(`${lg}|${r.eventDate}`)) return { why: "no such All-Star Game on that day" };
-      const v = venueClause(base, r.venueName, r.venueCity, year, " at ");
-      if ("why" in v) return v;
-      return { t: compactAllStar(v.t, r.venueCity), changed: v.note };
+      const why = whyBuilding(base, r.venueName, r.venueCity, year);
+      return why ? { why } : { t: compactAllStar(base, r.venueCity) };
     }
 
     if (kind === "player-birthday" || kind === "player-death") {
@@ -195,14 +192,12 @@ async function main() {
     const want = sides.map((s) => plainName(s!)).sort().join("|");
     if (!games.some((g) => [g.home, g.away].map(plainName).sort().join("|") === want)) return { why: "no game that day between exactly these clubs with that score" };
     if (kind !== "championship-final") return { t: base };
-    // The building is checked (the data names today's), and then left out of the sentence: a small block has no room for it, and the result stands without it.
-    const v = venueClause(base, r.venueName, r.venueCity, year, " at ");
-    const t = base.replace(` at ${r.venueName}, ${r.venueCity}`, "");
-    return { t, changed: "why" in v ? `building clause removed: ${v.why}` : v.note };
+    // The building is left out of the sentence: a small block has no room for it, and the result stands without it.
+    return { t: base.replace(` at ${r.venueName}, ${r.venueCity}`, "") };
   }
 
   // The Stanley Cup finals: the game that decided each one.
-  const cup: { md: string; f: HistoryFact; note?: string }[] = [];
+  const cup: { md: string; f: HistoryFact }[] = [];
   for (const c of cups) {
     const games = cupGames.filter((g) => g.year === c.year);
     const last = games.at(-1);
@@ -212,47 +207,23 @@ async function main() {
     if (won !== c.winner_side || wins !== games.filter((g) => (c.winner_side === 1 ? g.team1_score > g.team2_score : g.team2_score > g.team1_score)).length) { console.log(`cup ${c.year}: the last game does not decide the series, left out`); continue; }
     const row: CupFinalRow = { year: c.year, winnerSide: c.winner_side, team1: c.team1_name, team2: c.team2_name, team1Games: c.team1_games, team2Games: c.team2_games,
       game: { no: last.game_no, playedOn: last.played_on, team1Score: last.team1_score, team2Score: last.team2_score, venue: last.venue_name, city: last.venue_city } };
-    let note: string | undefined;
-    if (last.venue_name && last.venue_city) {
-      const v = venueClause(cupFinalText(row), last.venue_name, last.venue_city, Number(last.played_on.slice(0, 4)), " at ");
-      note = "why" in v ? `building clause removed: ${v.why}` : v.note;
-    }
     const t = cupFinalText({ ...row, game: { ...row.game, venue: null } });
-    cup.push({ md: last.played_on.slice(5), f: { l: "nhl", y: Number(last.played_on.slice(0, 4)), t, s: "wikipedia", k: "championship-final" }, note });
+    cup.push({ md: last.played_on.slice(5), f: { l: "nhl", y: Number(last.played_on.slice(0, 4)), t, s: "wikipedia", k: "championship-final" } });
   }
-  console.log(`${cup.length} Stanley Cup finals (${cup.filter((c) => c.note).length} with a building changed)`);
+  console.log(`${cup.length} Stanley Cup finals`);
 
   // The whole data of the five leagues, checked.
-  const audit: Record<string, { checked: number; changed: number; cosmetic: number; dropped: number; why: Record<string, number> }> = {};
-  const examples: { before: string; after: string; lg: string; date: string; kind: string; note: string }[] = [];
+  const audit: Record<string, { checked: number; dropped: number; why: Record<string, number> }> = {};
   const dropped: { lg: string; date: string; kind: string; why: string; text: string }[] = [];
   const verdicts = new Map<string, Verdict>();
   const mineAll = store.filter((r) => r.league && (HISTORY_LEAGUES as readonly string[]).includes(r.league) && isKind(r.category) && r.text);
   await pool(mineAll, 8, async (r) => {
     const v = await verify(r.league!, r);
     verdicts.set(r.recordId, v);
-    const a = (audit[`${r.league}/${r.category}`] ??= { checked: 0, changed: 0, cosmetic: 0, dropped: 0, why: {} });
+    const a = (audit[`${r.league}/${r.category}`] ??= { checked: 0, dropped: 0, why: {} });
     a.checked++;
     if ("why" in v) { a.dropped++; const k = v.why.replace(/\d+/g, "N").slice(0, 70); a.why[k] = (a.why[k] ?? 0) + 1; dropped.push({ lg: r.league!, date: r.eventDate, kind: r.category, why: v.why, text: r.text! }); }
-    else if (v.changed && v.cosmetic) a.cosmetic++;
-    else if (v.changed) { a.changed++; examples.push({ before: withoutDate(r.category as HistoryKind, r.text!)!, after: v.t, lg: r.league!, date: r.eventDate, kind: r.category, note: v.changed }); }
   });
-
-  const norm = (t: string) => t.replace(/ \([^)]*\)/g, "");
-  const byKey = new Map(mineAll.map((r) => [`${r.league}|${r.eventDate.slice(5)}|${Number(r.eventDate.slice(0, 4))}|${norm(withoutDate(r.category as HistoryKind, r.text!) ?? "")}`, r.recordId]));
-  // The earlier league files (`--old <dir of <league>.json>`): each old line against the verdict on the same fact.
-  const shipped: Record<string, { facts: number; changed: number; dropped: number }> = {};
-  const oldDir = arg("old");
-  if (oldDir) for (const lg of HISTORY_LEAGUES) {
-    const sh = (shipped[lg] = { facts: 0, changed: 0, dropped: 0 });
-    const old = JSON.parse(readFileSync(join(oldDir, `${lg}.json`), "utf8")) as { days: Record<string, { y: number; t: string }[]> };
-    for (const [md, fs] of Object.entries(old.days)) for (const f of fs) {
-      sh.facts++;
-      const id = byKey.get(`${lg}|${md}|${f.y}|${norm(f.t)}`);
-      const v = id ? verdicts.get(id) : undefined;
-      if (v && "why" in v) sh.dropped++; else if (v?.changed && !v.cosmetic) sh.changed++;
-    }
-  }
 
   mkdirSync(OUT, { recursive: true });
   const kindOrder = new Map(KINDS.map((k, i) => [k, i]));
@@ -305,10 +276,9 @@ async function main() {
     writeFileSync(join(OUT, `${sport}.json`), JSON.stringify(file) + "\n");
     console.log(`${sport} (${leagues.join(", ")}): ${Object.keys(days).length} days, ${kept} facts, ${linked} linked; days by how many leagues had lines: ${JSON.stringify(both)}`);
   }
-  console.log("\nchecked / changed (substantive) / cosmetic / dropped by league and kind");
-  for (const [k, a] of Object.entries(audit).sort()) console.log(`  ${k.padEnd(28)} ${String(a.checked).padStart(6)} ${String(a.changed).padStart(5)} ${String(a.cosmetic).padStart(5)} ${String(a.dropped).padStart(5)}  ${Object.entries(a.why).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([w, n]) => `${n}x ${w}`).join("; ")}`);
-  console.log("earlier files, lines the new checks change or drop:", JSON.stringify(shipped));
+  console.log("\nchecked / dropped by league and kind");
+  for (const [k, a] of Object.entries(audit).sort()) console.log(`  ${k.padEnd(28)} ${String(a.checked).padStart(6)} ${String(a.dropped).padStart(5)}  ${Object.entries(a.why).sort((x, y) => y[1] - x[1]).slice(0, 2).map(([w, n]) => `${n}x ${w}`).join("; ")}`);
   const report = arg("audit");
-  if (report) writeFileSync(report, JSON.stringify({ audit, shipped, examples, dropped }, null, 1));
+  if (report) writeFileSync(report, JSON.stringify({ audit, dropped }, null, 1));
 }
 await main();

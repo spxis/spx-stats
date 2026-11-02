@@ -10,7 +10,7 @@ import { Rich } from "./i18n/Rich";
  */
 
 /** John's libraries. */
-export type Lib = "chizu" | "hata" | "address-plus" | "kyogijo-stadiums" | "dougu-sports" | "taisen-brackets" | "senshu-jerseys" | "meigen-sports";
+export type Lib = "chizu" | "hata" | "address-plus" | "kyogijo-stadiums" | "dougu-sports" | "taisen-brackets" | "senshu-jerseys" | "meigen-sports" | "koyomi-calendars";
 
 const SCOPE = "@johnmorrisdotca";
 export const npmUrl = (lib: Lib) => `https://www.npmjs.com/package/${SCOPE}/${lib}`;
@@ -25,8 +25,8 @@ export const CC_BY_SA_URL = "https://creativecommons.org/licenses/by-sa/4.0/";
 
 const link = (href: string, text: string) => <a href={href} target="_blank" rel="noopener noreferrer">{text}</a>;
 
-/** How a library is named in a credit: its package name, except Kyogijo Stadiums, Dougu Sports, Taisen Brackets, Senshu Jerseys and Meigen Sports, which are product names. */
-const LIB_NAME: Partial<Record<Lib, string>> = { "kyogijo-stadiums": "Kyogijo Stadiums", "dougu-sports": "Dougu Sports", "taisen-brackets": "Taisen Brackets", "senshu-jerseys": "Senshu Jerseys", "meigen-sports": "Meigen Sports" };
+/** How a library is named in a credit: its package name, except Kyogijo Stadiums, Dougu Sports, Taisen Brackets, Senshu Jerseys, Meigen Sports and Koyomi Calendars, which are product names. */
+const LIB_NAME: Partial<Record<Lib, string>> = { "kyogijo-stadiums": "Kyogijo Stadiums", "dougu-sports": "Dougu Sports", "taisen-brackets": "Taisen Brackets", "senshu-jerseys": "Senshu Jerseys", "meigen-sports": "Meigen Sports", "koyomi-calendars": "Koyomi Calendars" };
 
 /** One library as "name (npm · GitHub)". The link labels are the names of those sites, so they are the same in every language. */
 export function LibCredit({ lib }: { lib: Lib }) {

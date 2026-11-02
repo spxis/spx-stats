@@ -20,12 +20,15 @@ importers:
       '@johnmorrisdotca/hata':
         specifier: 1.5.0
         version: 1.5.0
+      '@johnmorrisdotca/koyomi-calendars':
+        specifier: 0.1.0
+        version: 0.1.0
       '@johnmorrisdotca/kyogijo-stadiums':
         specifier: 0.10.2
         version: 0.10.2(@johnmorrisdotca/hata@1.5.0)
       '@johnmorrisdotca/meigen-sports':
-        specifier: 0.19.2
-        version: 0.19.2
+        specifier: 0.20.0
+        version: 0.20.0
       '@johnmorrisdotca/senshu-jerseys':
         specifier: 0.5.2
         version: 0.5.2
@@ -409,6 +412,10 @@ packages:
     resolution: {integrity: sha512-CAzssK6RXy0rRlCP+v5XLNSr1A+RK7dESqyzB/hz/VRNUySlESSiNsAO+6r5DAQ2oi7iII5ruI79BqJA7X5wCA==}
     engines: {node: '>=24'}
 
+  '@johnmorrisdotca/koyomi-calendars@0.1.0':
+    resolution: {integrity: sha512-4qlLnno5OS6wcnBEgyFUwjQYOtrctL5wyTArS9SWYyasxsLCcaxBiaoriwG6c8L1UwIoSF/iumqyW125m+YZbQ==}
+    engines: {node: '>=22'}
+
   '@johnmorrisdotca/kyogijo-stadiums@0.10.2':
     resolution: {integrity: sha512-puzQ9B89kqDCJF52ZTjvbOGP5nUxuS8sRtgKsNQd+nX7PL4oRhSWZqimw3SSPvLwSQB+aErqhM6zj4Bebl+uDQ==}
     engines: {node: '>=22'}
@@ -421,8 +428,8 @@ packages:
       '@resvg/resvg-js':
         optional: true
 
-  '@johnmorrisdotca/meigen-sports@0.19.2':
-    resolution: {integrity: sha512-HaMIZg/xgCQnbJTbRLsHLrp+lF7bdLAWumH3AlL3YmsU85+OC4DzwLnUWoTgctrl2IBfsQzO5JxYK9jsjEYMpA==}
+  '@johnmorrisdotca/meigen-sports@0.20.0':
+    resolution: {integrity: sha512-Hn2K8neYKfvsitx+3dVol45g8Gk8vyx3T6LarPqFtEKCC7LrqCCmKDbgusRZe70fI9bwXchVXnY7tp6sBSUTeQ==}
     engines: {node: '>=22'}
 
   '@johnmorrisdotca/senshu-jerseys@0.5.2':
@@ -2735,11 +2742,15 @@ snapshots:
 
   '@johnmorrisdotca/hata@1.5.0': {}
 
+  '@johnmorrisdotca/koyomi-calendars@0.1.0': {}
+
   '@johnmorrisdotca/kyogijo-stadiums@0.10.2(@johnmorrisdotca/hata@1.5.0)':
     optionalDependencies:
       '@johnmorrisdotca/hata': 1.5.0
 
-  '@johnmorrisdotca/meigen-sports@0.19.2': {}
+  '@johnmorrisdotca/meigen-sports@0.20.0':
+    dependencies:
+      '@johnmorrisdotca/koyomi-calendars': 0.1.0
 
   '@johnmorrisdotca/senshu-jerseys@0.5.2': {}
 

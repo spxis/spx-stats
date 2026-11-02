@@ -2,7 +2,7 @@ import { plainName } from "./words.ts";
 
 /**
  * Who a club, or a building, was on a given day. A dated fact names a club by what it was called THEN: "the Colorado Avalanche retired Adam Foote's No. 52" in 2013, never "the Quebec
- * Nordiques" (the franchise's first name, which the meigen-sports data wrote for a retired number). The identities are the database's: `api.franchise_names` (each name with the
+ * Nordiques". Since meigen-sports 0.19.3 the data does that itself; these names are the build's guard that it did (scripts/todayHistoryBuild.ts). The identities are the database's: `api.franchise_names` (each name with the
  * day it began and ended) and, where those leave a gap, `api.team_season_index` (the name each season was played under). A name that cannot be settled gives `null`, and the
  * build drops the fact (or the clause) rather than guess. Pure functions over rows passed in, so a test can use a handful of rows.
  */
