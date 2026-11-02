@@ -19,6 +19,7 @@ export const PAGE_SIZE = 50;
 export type Expected = { job: string; label: string } & ({ cadence: "daily"; dueUtc: string } | { cadence: "every"; hours: number });
 export const EXPECTED: readonly Expected[] = [
   { job: "daily-scores", label: "Daily scores", cadence: "daily", dueUtc: "16:00" },      // 10:00 Eastern, three tries an hour apart
+  { job: "ds1-backup", label: "DS1 backup", cadence: "daily", dueUtc: "12:00" },           // 05:30 Toronto on nas2, about 11 minutes
   { job: "drift-check", label: "Nightly drift check", cadence: "daily", dueUtc: "06:00" }, // runs after 03:00 UTC, retried hourly
   { job: "harvest", label: "Harvester", cadence: "every", hours: 3 },                      // a cycle is about an hour, then a short wait
   { job: "raw-export", label: "Dropbox export", cadence: "every", hours: 3 },              // hourly on a Mac; asleep or off the network skips runs

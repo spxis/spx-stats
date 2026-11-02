@@ -62,11 +62,13 @@ Log in the container: `data/logs/` next to the compose file on nas2, kept 60 day
 Restores a dump into a scratch Postgres and compares the row count of every table with DS1. Run it from machine1 with a scratch container on
 a port in 7740-7749 (dump copied from nas2 first, with a checksum check):
 
-    docker run -d --name spx-drill -e POSTGRES_PASSWORD=drill -p 127.0.0.1:7742:5432 postgres:17-alpine   # check the port is free first
+    docker run -d --name spx-drill --shm-size=2g -e POSTGRES_PASSWORD=drill -p 127.0.0.1:7742:5432 postgres:17 -c max_parallel_workers_per_gather=0 -c max_parallel_maintenance_workers=0 -c shared_buffers=1GB -c fsync=off   # check the port is free first. With the defaults the server crashed refreshing a materialized view on 2026-11-02 (no root cause found); these settings passed.
     # copy <dump> from nas2's daily/ to ~/Projects/backups/spx-stats/ and compare cksum on both ends
     DRILL_PGHOST=127.0.0.1 DRILL_PGPORT=7742 DRILL_PGUSER=postgres DRILL_PGPASSWORD=drill \
       bash scripts/backup/restore-drill.sh ~/Projects/backups/spx-stats/<dump> --tolerance-pct 1
     docker rm -f -v spx-drill
+
+The DS1 password for the drill is the backup role: PGHOST, PGPORT, PGUSER=spx_backup, PGDATABASE and PGPASSWORD from the keychain item `spx-stats spx_backup DS1 55440`. First full drill, 2026-11-02: 1,896 tables, 1,894 equal, 2 within tolerance (rows written after the dump), restored in 187 s.
 
 The source side uses `PGHOST PGPORT PGUSER PGPASSWORD` (the same names as the backup, with the `spx_backup` login). DS1 keeps changing after
 the dump, so a table may differ by 1 percent or 10 rows (reported as "drift"); `--strict` allows no difference (use it only on a quiet source).

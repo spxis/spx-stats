@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.175.1", date: "2026-11-02", needsReview: true,
+    title: "The admin run log now expects the nightly database backup",
+    text: "An admin page now shows when the nightly backup of the source database did not run. Readers see no change.",
+  },
   { version: "0.175.0", date: "2026-10-30", href: "/venues",
     title: "The venue dataset says which facts came from Wikipedia",
     text: "The open venue list (CSV, GeoJSON and API) used to say only that surface and roof might come from Wikipedia. A home venue now carries wikipedia_fields and wikipedia_key: the facts taken from its English Wikipedia article (CC BY-SA 4.0) and the revision read. Every other fact of that venue is CC0 or absent.",
