@@ -1,6 +1,5 @@
-import { LazySquad } from "@/components/LazySquad";
 import type { PositionBook } from "@/components/PositionKey";
-import { SoccerTeamName } from "@/components/SoccerTeamName";
+import { SquadPicker, type PickerTeam } from "@/components/SquadPicker";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import type { Speaker } from "@/lib/i18n/i18n";
 import type { Squad } from "@/lib/soccer";
@@ -13,23 +12,16 @@ export const squadLabels = (say: Speaker["say"]): SquadLabels => ({
 });
 
 /**
- * One closed list per team of a tournament. A list holds only the team's name: its squad (shirt number, player, position, matches played, started,
- * goals, cards) is loaded when the list is opened (LazySquad, from /worldcup/<year>/squad/<team>/rows), and without script it links to the squad's
- * page. `flags` maps a team id to its flag code, `anchors` a team id to the anchor of its list (`squad-<code>`, from lib/soccerStrip.ts). The positions the squads use are noted for the page's key, which they are not drawn through here.
+ * The squads of a tournament as a grid of its teams with the chosen team's squad under it (SquadPicker). A team is only a short line here: its squad (shirt number,
+ * player, position, matches played, started, goals, cards) is loaded when it is chosen, from /worldcup/<year>/squad/<team>/rows, and without script each team links to the
+ * squad's page. `flags` maps a team id to its flag code, `anchors` a team id to the fragment that names it (`squad-<code>`, from lib/soccerStrip.ts). The positions the
+ * squads use are noted for the page's key, which they are not drawn through here.
  */
-export async function SoccerSquads({ squads, flags, book, anchors }: { squads: Squad[]; flags: Map<string, string | null>; book: PositionBook; anchors?: Map<string, string> }) {
+export async function SoccerSquads({ squads, flags, book, anchors, title }: { squads: Squad[]; flags: Map<string, string | null>; book: PositionBook; anchors?: Map<string, string>; title: string }) {
   const { say } = await currentSpeaker();
-  const teams = [...new Map(squads.map((s) => [s.team_id, s])).values()];
+  const list = [...new Map(squads.map((s) => [s.team_id, s])).values()];
   for (const code of squadCodes(squads)) book.note(null, code, ["soccer"]);
-  const texts = { loading: say("wc.squad.loading"), failed: say("wc.squad.failed"), open: say("wc.squad.open") };
-  const labels = squadLabels(say);
-  return (
-    <>
-      {teams.map((tm) => (
-        <LazySquad key={tm.team_id} id={anchors?.get(tm.team_id)} year={tm.year} slug={tm.team_slug} labels={labels} texts={texts}>
-          <SoccerTeamName slug={tm.team_slug} name={tm.team} flag={flags.get(tm.team_id)} link={false} />
-        </LazySquad>
-      ))}
-    </>
-  );
+  const texts = { loading: say("wc.squad.loading"), failed: say("wc.squad.failed"), open: say("wc.squad.open"), choose: say("wc.squad.choose"), aria: say("wc.squad.aria", { title }) };
+  const picks: PickerTeam[] = list.map((tm) => [anchors?.get(tm.team_id) ?? `squad-${tm.team_slug}`, tm.team_slug, tm.team, flags.get(tm.team_id) ?? null]);
+  return <SquadPicker year={list[0].year} teams={picks} labels={squadLabels(say)} texts={texts} />;
 }

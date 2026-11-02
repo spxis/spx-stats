@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.178.3", date: "2026-11-02", href: "/worldcup/2022#squads",
+    title: "World Cup squads: pick a team",
+    text: "The squads of a World Cup used to be a stack of 32 closed lists, opened one at a time. They are now a grid of the teams with the chosen team's squad right under it, on one screen. The team you pick is in the address, so a link to a squad (also from the flag strip and the map at the top) opens it.",
+  },
   { version: "0.178.2", date: "2026-11-02", href: "/nhl",
     title: "More corrections in Today in history",
     text: "\"Today in history\" now comes from Meigen Sports 0.20.2: more retired numbers name the club as it was called that day, and finals played before 2021 no longer name a building by the name it took later. Administrators can also ask NHL.com to confirm a score from the Refresh dialog; nothing it answers is saved.",

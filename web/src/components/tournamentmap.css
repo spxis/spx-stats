@@ -15,9 +15,16 @@
 .wcchip.t5 { border-color: var(--tier); }
 @media (max-width: 640px) { .wcstrip ul { gap: 5px; } }
 
-/* A squad the strip or the map jumps to keeps clear of the top of the screen. */
-details.sc-squad { scroll-margin-top: 12px; }
-details.sc-squad:target { background: color-mix(in srgb, var(--soccer) 8%, transparent); }
+/* The squads section (SquadPicker.tsx): a grid of the teams, the chosen one marked, its squad under it; a jump from the strip or the map keeps clear of the screen's top. */
+.sqpick ul { list-style: none; margin: 0 0 14px; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr)); gap: 6px; }
+.sqpick a { display: flex; align-items: center; gap: 8px; padding: 6px 10px; border: 1px solid var(--rule); border-radius: 8px; background: var(--panel, var(--soft)); color: var(--ink); text-decoration: none; font-size: 14px; min-height: 36px; }
+.sqpick a span:last-child { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sqpick a:hover, .sqpick a:focus-visible { border-color: var(--ink); }
+.sqpick a:focus-visible { outline: 2px solid var(--accent, var(--ink)); outline-offset: 2px; }
+.sqpick a[aria-current="true"] { border-color: var(--ink); background: color-mix(in srgb, var(--soccer) 12%, transparent); font-weight: 600; }
+.sqpanel { scroll-margin-top: 12px; min-height: 4rem; }
+.sqpanel h3 { display: flex; align-items: center; gap: 8px; margin: 0 0 6px; font: 600 20px/1.2 var(--display); }
+.sqpanel table { margin: 8px 0 12px; }
 
 /* The small map in the top-right corner of the heading, as on a city page (city.css). */
 .wcmap { position: absolute; top: 0; right: 0; width: 220px; display: flex; flex-direction: column; gap: 4px; }

@@ -179,7 +179,7 @@ export default guard(async function TournamentPage({ params }: PageProps<"/[loca
       {squads.length ? (
         <section className="section" id="squads">
           <h2>{say("wc.t.squads")}</h2>
-          <SoccerSquads squads={squads} flags={new Map(allTeams.map((x) => [x.team_id, x.flag_code]))} book={book} anchors={squadAnchors} />
+          <SoccerSquads squads={squads} flags={new Map(allTeams.map((x) => [x.team_id, x.flag_code]))} book={book} anchors={squadAnchors} title={title} />
         </section>
       ) : null}
       {book.key()}
