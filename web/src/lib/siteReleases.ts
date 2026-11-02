@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.179.1", date: "2026-11-02", href: "/nhl", needsReview: true,
+    title: "Today in history takes Meigen Sports 0.21.0",
+    text: "\"Today in history\" now comes from Meigen Sports 0.21.0, with a few of each day's facts changed by that data.",
+  },
   { version: "0.179.0", date: "2026-11-02", href: "/nfl/1985",
     title: "Playoff seeds on NFL brackets",
     text: "The playoff brackets of the NFL seasons from 1975 to 1998 now show each club's seed beside its mark (1 to 5, or 1 to 6 later), where a source states it. A club or a season with no stated seed gets no tag; nothing is worked out.",
