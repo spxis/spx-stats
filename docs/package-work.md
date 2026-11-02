@@ -18,6 +18,8 @@ board name from the private START-HERE file, or "John Morris"; never an AI name)
 
 ## Boards, filing and reporting
 
+When John asks for ticket status, run `cd ~/Projects/spx-stats/web && pnpm task status` and show its output as it is (every board, stale holds, releases waiting for John).
+
 Most packages share the spx-stats board, but not all. Find your package here before you look for a ticket:
 
 | Package | Board | Ticket names |

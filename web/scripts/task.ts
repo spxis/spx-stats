@@ -20,6 +20,7 @@ import {
  * The shared ticket board, from a terminal (run in web/).
  *
  *   pnpm task                                     what is open and who holds it
+ *   pnpm task status [--json]                     every board in one summary (scripts/ticketStatus.ts)
  *   pnpm task add "<title>" [--detail "…"] [--bug|--chore] [--by "<who>"]
  *   pnpm task claim <id> "<who>"                  check one out (six-hour lease)
  *   pnpm task release <id> --by "<who>"           put it back
@@ -61,6 +62,7 @@ function usage(): never {
     [
       "usage:",
       "  pnpm task",
+      "  pnpm task status [--json]",
       '  pnpm task add "<title>" [--detail "…"] [--bug|--chore] [--by "<who>"]',
       '  pnpm task claim <id> "<who>"',
       '  pnpm task release <id> --by "<who>"',
@@ -111,6 +113,9 @@ async function main(): Promise<void> {
   const [command = "list", ...rest] = process.argv.slice(2);
   if (rest[0] && ID_COMMANDS.includes(command)) rest[0] = await boardResolveId(rest[0]);
   switch (command) {
+    case "status":
+      await (await import("./ticketStatus.ts")).runStatus(rest);
+      break;
     case "list": {
       const tasks = await boardList({ unfinished: true });
       const held = tasks.filter((t) => isHeldNow(t));

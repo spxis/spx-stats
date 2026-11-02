@@ -272,6 +272,8 @@ Neon: not used by this project; don't ask John to connect it.
 
 ## 5. Tickets
 
+When John asks for ticket status, run `cd web && pnpm task status` and show its output as it is.
+
 The queue is the spx-stats board on Sumilabu (`api.sumilabu.com`, project key `spx-stats`), the same board UmaKuma and
 Itsutsu use. Run from `web/`. It needs Node 22.18 or newer (it runs the `.ts` file directly) and **no** `pnpm install`
 (tested). `SUMILABU_BOARD_URL` and `SUMILABU_BOARD_TOKEN` come from the environment and are never written to a file, a
