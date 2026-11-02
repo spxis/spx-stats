@@ -22,16 +22,40 @@ test("the picker's registry is the registry: web/src/lib/liveSources.ts is what 
 });
 
 test("only green or grey sources with a score parser can be ticked; a confirm-only or forbidden source is greyed with its terms note", () => {
-  const { tickable, greyed } = sourceChoices();
+  const { tickable, confirmable, greyed } = sourceChoices();
   assert.deepEqual(tickable.map((s) => s.id).sort(), ["balldontlie", "nflverse", "wikipedia"]);
   assert.ok(tickable.every((s) => s.tier === "green" || s.tier === "grey"));
-  for (const id of ["nhl_api", "yahoo_sports", "usatoday", "espn", "nba_com"]) {
+  assert.deepEqual(confirmable.map((s) => s.id), ["nhl_api"], "NHL.com is the one confirm-only choice on a click");
+  assert.ok(!greyed.some((s) => s.id === "nhl_api") && !confirmable.some((s) => tickable.includes(s)));
+  for (const id of ["mlb_statsapi", "yahoo_sports", "usatoday", "espn", "nba_com"]) {
     const row = greyed.find((s) => s.id === id);
     assert.ok(row, `${id} is listed, greyed out`);
     assert.ok(!row.selectable && row.reason.length > 20, `${id} carries its terms note`);
   }
   assert.ok(!greyed.some((s) => tickable.includes(s)));
   assert.match(greyed.find((s) => s.id === "yahoo_sports")!.reason, /automated means/);
+});
+
+test("NHL.com is asked only on a click, for one game or one day, beside a score source; nothing else may carry it", () => {
+  const ok = (raw: unknown) => parseLiveRequest(raw, TODAY);
+  const day = ok({ scope: "day", league: "nhl", day: "2026-10-25", sources: ["wikipedia", "nhl_api"] });
+  assert.ok(day.ok && day.value.sources.join() === "nhl_api,wikipedia");
+  assert.ok(ok({ scope: "game", game: "123", sources: ["wikipedia", "nhl_api"] }).ok);
+  for (const raw of [
+    { scope: "league", league: "nhl", sources: ["wikipedia", "nhl_api"], settle: true },
+    { scope: "main5", sources: ["wikipedia", "nhl_api"], settle: true },
+    { scope: "all", sources: ["wikipedia", "nhl_api"], settle: true },
+    { scope: "day", league: "nba", day: "2026-10-25", sources: ["wikipedia", "nhl_api"] },
+    { scope: "day", league: "nhl", day: "2026-10-25", sources: ["nhl_api"] },
+    { scope: "game", game: "5", sources: ["nhl_api"] },
+  ]) assert.equal(ok(raw).ok, false, JSON.stringify(raw));
+  const costs = estimate({ scope: "day", league: "nhl", sources: ["wikipedia", "nhl_api"] }, 6);
+  assert.deepEqual(costs.filter((c) => c.source === "nhl_api").map((c) => [c.min, c.max]), [[1, 1]], "one request to NHL.com for the day");
+  assert.equal(estimate({ scope: "day", league: "nba", sources: ["nhl_api"] }).length, 0, "none for a league it does not cover");
+  // the picker offers it only in the dialog's confirm mode, never ticked by default
+  assert.match(read("components/SourcePicker.tsx"), /defaultChecked: false/);
+  assert.match(read("components/LiveRefreshDialog.tsx"), /confirm=\{target\.scope === "game" \|\| target\.scope === "day"\}/);
+  assert.doesNotMatch(read("lib/liveRequest.ts"), /nhl_api/, "no source id is written into the request rules: the registry decides");
 });
 
 test("a request is checked as if forged: scope, league, day, game and every source", () => {
@@ -43,10 +67,10 @@ test("a request is checked as if forged: scope, league, day, game and every sour
   assert.ok(ok({ scope: "main5", sources: ["wikipedia"], settle: true }).ok);
   assert.ok(ok({ scope: "all", sources: ["wikipedia"] }).ok);
   assert.ok(ok({ scope: "league", league: "cfl", sources: ["wikipedia"], settle: true }).ok);
-  for (const source of ["nhl_api", "mlb_statsapi", "yahoo_sports", "usatoday", "espn", "sports_reference", "nhl_com", "wikidata", "retrosheet", "wnba_stats", "nope", "Wikipedia", "x", 7, null]) {
+  for (const source of ["mlb_statsapi", "yahoo_sports", "usatoday", "espn", "sports_reference", "nhl_com", "wikidata", "retrosheet", "wnba_stats", "nope", "Wikipedia", "x", 7, null]) {
     assert.equal(ok({ scope: "main5", sources: ["wikipedia", source] }).ok, false, `${String(source)} is refused`);
   }
-  const red = ok({ scope: "main5", sources: ["nhl_api"] });
+  const red = ok({ scope: "main5", sources: ["mlb_statsapi"] });
   assert.ok(!red.ok && /cannot be ticked/.test(red.error) && /Confirm-only/.test(red.error), "the refusal gives the terms note");
   assert.equal(ok({ scope: "main5", sources: [] }).ok, false, "at least one source");
   assert.equal(ok({ scope: "main5" }).ok, false);

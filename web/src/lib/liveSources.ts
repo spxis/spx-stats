@@ -13,6 +13,7 @@ export interface SourceRow {
   spacing: number | null;
   keyNeeded: boolean;
   confirmOnly: boolean;
+  onClick: boolean;
   evidence: string | null;
   checkedOn: string | null;
 }
@@ -36,6 +37,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 1.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.mediawiki.org/wiki/API:Etiquette",
     "checkedOn": "2026-10-12"
   },
@@ -55,6 +57,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 13.0,
     "keyNeeded": true,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://docs.balldontlie.io",
     "checkedOn": "2026-10-12"
   },
@@ -72,6 +75,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 2.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://github.com/nflverse/nflverse-data",
     "checkedOn": "2026-10-12"
   },
@@ -87,6 +91,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 1.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.wikidata.org/wiki/Wikidata:Licensing",
     "checkedOn": "2026-10-19"
   },
@@ -104,6 +109,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.retrosheet.org/notice.txt",
     "checkedOn": "2026-10-19"
   },
@@ -121,6 +127,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://sabr.org/lahman-database/",
     "checkedOn": "2026-10-19"
   },
@@ -136,6 +143,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.openstreetmap.org/copyright",
     "checkedOn": "2026-10-19"
   },
@@ -151,6 +159,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 1.5,
     "keyNeeded": true,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://collegefootballdata.com/terms",
     "checkedOn": "2026-10-28"
   },
@@ -166,6 +175,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 1.0,
     "keyNeeded": true,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://the-odds-api.com/terms-and-conditions.html",
     "checkedOn": "2026-10-19"
   },
@@ -184,6 +194,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -201,6 +212,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://api.cfl.ca/key-request/public-licence",
     "checkedOn": null
   },
@@ -216,6 +228,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.ncaa.org/terms-of-service/",
     "checkedOn": null
   },
@@ -233,6 +246,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.fangraphs.com/about/terms-of-service",
     "checkedOn": null
   },
@@ -248,6 +262,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.transfermarkt.com/intern/anb",
     "checkedOn": null
   },
@@ -259,10 +274,13 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "default": false,
     "reason": "NHL.com's terms bar spidering, scraping and entering NHL content into a database.",
     "notes": "NHL.com's terms bar spidering, scraping and entering NHL content into a database. Confirm-only (John, 2026-10-19): read to confirm a result, never stored.",
-    "leagues": [],
+    "leagues": [
+      "nhl"
+    ],
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": true,
     "evidence": null,
     "checkedOn": null
   },
@@ -278,6 +296,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": false,
     "evidence": "http://gdx.mlb.com/components/copyright.txt",
     "checkedOn": null
   },
@@ -293,6 +312,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -310,6 +330,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": false,
     "evidence": "https://www.wnba.com/terms-of-use",
     "checkedOn": null
   },
@@ -325,6 +346,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 5.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -345,6 +367,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 8.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": false,
     "evidence": "https://legal.yahoo.com/us/en/yahoo/terms/otos/index.html",
     "checkedOn": null
   },
@@ -365,6 +388,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": 8.0,
     "keyNeeded": false,
     "confirmOnly": true,
+    "onClick": false,
     "evidence": "https://cm.usatoday.com/terms/",
     "checkedOn": null
   },
@@ -380,6 +404,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -395,6 +420,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "http://gdx.mlb.com/components/copyright.txt",
     "checkedOn": null
   },
@@ -410,6 +436,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -425,6 +452,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -440,6 +468,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -455,6 +484,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://disneytermsofuse.com/",
     "checkedOn": null
   },
@@ -470,6 +500,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": "https://www.sports-reference.com/data_use.html",
     "checkedOn": null
   },
@@ -485,6 +516,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -500,6 +532,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   },
@@ -515,6 +548,7 @@ export const SOURCE_REGISTRY: readonly SourceRow[] = [
     "spacing": null,
     "keyNeeded": false,
     "confirmOnly": false,
+    "onClick": false,
     "evidence": null,
     "checkedOn": null
   }

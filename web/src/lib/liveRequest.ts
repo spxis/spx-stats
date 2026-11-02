@@ -35,15 +35,19 @@ export const sourceRow = (id: string): SourceRow | undefined => SOURCE_REGISTRY.
 /** Whether a source may be ticked: green or grey in the registry (the terms gate) and it has a score parser. */
 export const isTickable = (s: SourceRow): boolean => s.selectable && (SCORE_PARSERS as readonly string[]).includes(s.id);
 
+/** Whether a confirm-only source may be asked on a click (the registry's CLICK_CONFIRM, John 2026-11-02): one game or one day's list, nothing stored but the outcome. */
+export const isClickConfirm = (s: SourceRow): boolean => s.confirmOnly && s.onClick;
+
 /** Whether a source reads a league's scores. A source with no league list reads any. */
 export const covers = (s: SourceRow, league: string | null): boolean => league === null || s.leagues.length === 0 || s.leagues.includes(league);
 
-/** The sources to show in the picker: the ones that can be ticked, and every other one greyed out with why. */
-export function sourceChoices(): { tickable: SourceRow[]; greyed: SourceRow[] } {
+/** The sources to show in the picker: the ones that can be ticked, the confirm-only ones that may be asked on a click, and every other one greyed out with why. */
+export function sourceChoices(): { tickable: SourceRow[]; confirmable: SourceRow[]; greyed: SourceRow[] } {
   const tickable = SOURCE_REGISTRY.filter(isTickable);
+  const confirmable = SOURCE_REGISTRY.filter(isClickConfirm);
   // data sources with no league (Wikidata, OpenStreetMap, Retrosheet...) give no scores and are not listed at all
-  const greyed = SOURCE_REGISTRY.filter((s) => !isTickable(s) && (s.leagues.length > 0 || s.tier === "red" || s.tier === "red-confirm"));
-  return { tickable, greyed };
+  const greyed = SOURCE_REGISTRY.filter((s) => !isTickable(s) && !isClickConfirm(s) && (s.leagues.length > 0 || s.tier === "red" || s.tier === "red-confirm"));
+  return { tickable, confirmable, greyed };
 }
 
 /** Why a source is greyed out, in a sentence: its terms note for a red or confirm-only one, else why it cannot be read yet. */
@@ -87,12 +91,20 @@ export function parseLiveRequest(raw: unknown, today: string): Parsed {
   const ticked = Array.isArray(r.sources) ? r.sources : null;
   if (ticked === null || ticked.length === 0 || ticked.length > 8) return bad("Tick at least one source.");
   const ids = [...new Set(ticked)];
+  let confirms = 0;
   for (const id of ids) {
     if (typeof id !== "string" || !/^[a-z0-9_]{2,30}$/.test(id)) return bad("That request was not valid.");
     const s = sourceRow(id);
     if (!s) return bad(`${id} is not a source this site knows.`);
+    if (isClickConfirm(s)) {
+      // a confirm-only source on a person's click: one game or one day's list of its league, never a league or a season
+      if (scope !== "game" && !(scope === "day" && league !== null && covers(s, league))) return bad(`${s.name} can only confirm one game or one day's list, as a manual request.`);
+      confirms += 1;
+      continue;
+    }
     if (!isTickable(s)) return bad(`${s.name} cannot be ticked: ${whyGreyed(s)}`);
   }
+  if (confirms > 0 && confirms === ids.length) return bad("Tick at least one score source to compare the confirm-only source with.");
   return { ok: true, value: { scope: scope as LiveScope, league, day, game, sources: (ids as string[]).sort(), settle } };
 }
 
@@ -138,6 +150,11 @@ export function estimate(req: Pick<LiveRequest, "scope" | "league" | "sources">,
       const n = req.scope === "game" ? 1 : leagues.filter((l) => covers(s, l)).length;
       min = n === 0 ? 0 : n;
       max = n === 0 ? 0 : n * 3;
+    } else if (isClickConfirm(s)) {
+      // one request for the day's scoreboard, asked once per click (a game's day or the list's day), only when the NHL plays in it
+      const n = req.scope === "game" || leagues.some((l) => covers(s, l)) ? 1 : 0;
+      min = n;
+      max = n;
     } else if (id === "nflverse") {
       const n = req.scope === "game" || leagues.includes("nfl") ? 1 : 0;
       min = n;

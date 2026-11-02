@@ -260,6 +260,12 @@ def main():
         import release as RL
         import run as DAILY
         check("run.py and release.py name the same live sources and daily leagues", tuple(DAILY.LIVE_SOURCES) == RL.LIVE_SOURCES and tuple(DAILY.LEAGUES) == RL.DAILY_LEAGUES, (DAILY.LIVE_SOURCES, RL.LIVE_SOURCES))
+        import sources as SRCS
+        check("run.py, release.py and the registry name the same click-confirm sources", tuple(SRCS.CLICK_CONFIRM) == RL.CLICK_CONFIRM, (SRCS.CLICK_CONFIRM, RL.CLICK_CONFIRM))
+        argv, words, why = RL.live_plan(dict(scope="day", league="nhl", game_day="2026-11-01", sources=["wikipedia", "nhl_api"]))
+        check("a day with a confirm-only click passes --confirm and keeps the score sources apart", why is None and argv[argv.index("--sources") + 1] == "wikipedia" and argv[argv.index("--confirm") + 1] == "nhl_api", (argv, why))
+        check("a confirm-only click is refused for a league, and without a score source", RL.live_plan(dict(scope="league", league="nhl", sources=["wikipedia", "nhl_api"]))[2] is not None and RL.live_plan(dict(scope="game", game_id=5, sources=["nhl_api"]))[2] is not None)
+        check("any other confirm-only source is still not a score source", RL.live_plan(dict(scope="game", game_id=5, sources=["wikipedia", "mlb_statsapi"]))[2] is not None)
     finally:
         if mock:
             mock.terminate()

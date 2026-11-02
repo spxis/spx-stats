@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import { type LiveScope, type MainLeague, estimate, estimateText, leaguesOf } from "@/lib/liveRequest";
+import { type LiveScope, type MainLeague, estimate, estimateText, leaguesOf, sourceRow } from "@/lib/liveRequest";
 import { SourcePicker, defaultSources } from "./SourcePicker";
 
 /** What an admin pressed: the scope, where it points and the words for the title. */
@@ -66,13 +66,13 @@ export default function LiveRefreshDialog({ target, onQueued, onClose }: { targe
           Asks the runner next to DS1 to read the sources you tick and update the unofficial scores (it looks for requests once a minute). The permanent
           record is not changed; the daily job settles it later.
         </p>
-        <SourcePicker leagues={leagues} checked={ticked} onChange={setTicked} />
+        <SourcePicker leagues={leagues} checked={ticked} onChange={setTicked} confirm={target.scope === "game" || target.scope === "day"} />
         <p className="note">{estimateText(costs)}</p>
-        <p className="note">The NHL and CFL can only be as fresh as the Wikipedia edits. Confirm-only sources are never read here.</p>
+        <p className="note">The NHL and CFL can only be as fresh as the Wikipedia edits. A confirm-only source is read only when you tick it under Confirm only (one game or one day): a manual request, nothing from it is saved.</p>
         {error ? <p className="dr-alert" role="alert">{error}</p> : null}
         <div className="cf-actions">
           <button type="button" className="signin-btn cf-cancel" onClick={() => dialog.current?.close()}>Cancel</button>
-          <button type="submit" className="signin-btn cf-go" disabled={busy || ticked.length === 0}>{busy ? "Working…" : "Refresh"}</button>
+          <button type="submit" className="signin-btn cf-go" disabled={busy || ticked.every((id) => sourceRow(id)?.confirmOnly)}>{busy ? "Working…" : "Refresh"}</button>
         </div>
       </form>
     </dialog>

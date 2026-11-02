@@ -49,6 +49,7 @@ def _http(url):
             return json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         if e.code == 429: raise Throttled(max(int(e.headers.get("Retry-After") or 0), 60))
+        if e.code == 403: raise Throttled(3600)         # a refusal: stop at once and leave it alone for an hour at least
         raise RuntimeError("HTTP %d" % e.code)
 
 
@@ -111,6 +112,31 @@ def confirm(games, limiter=None, http=None, env=None, now=None, log=print):
             if g["source_key"] in outcome: rows.append(row(g, outcome[g["source_key"]], now))
     n = lambda o: sum(1 for r in rows if r["outcome"] == o)
     return rows, dict(requests=requests, checked=len(rows), agrees=n("agrees"), disagrees=n("disagrees"), unavailable=n("unavailable"), left_out=len(todo) - len(rows))
+
+
+def confirm_click(games, day, fids, fid_of, limiter=None, http=None, now=None, log=print):
+    """An admin's click (the Refresh dialog, John 2026-11-02): confirm the final NHL games of ONE day whose clubs are in `fids`, a request for a game or a day's list.
+    Not the daily switch: a person asked. One request at most, through the limiter, in memory, nothing cached, stored or logged but the outcome rows.
+    `day` is YYYY-MM-DD, `fid_of(club name)` -> franchise id or None. -> (outcome rows, summary counts). A 403 or 429 stops it at once and the limiter keeps the source quiet."""
+    want = [g for g in games if g.get("league") == "nhl" and g["status"] == "final" and g["date"].isoformat() == day and fid_of(g.get("home")) in fids and fid_of(g.get("away")) in fids]
+    if not want: return [], dict(requests=0, checked=0)
+    lim, http, now = limiter or LM.default(), http or _http, now or datetime.datetime.now(datetime.timezone.utc)
+    outcome, requests = {}, 0
+    try:
+        requests = 1
+        payload = lim.confirm(SOURCE, "score " + day, lambda: http(URL % day))
+        for g in want: outcome[g["source_key"]] = judge(g, payload)
+        del payload
+    except Throttled as e:
+        lim.penalize(SOURCE, e.wait, SRC.CONFIRM_PURPOSE)
+        log("NHL.com answered with a refusal or a limit: no more requests to it for %d s" % e.wait)
+        outcome = {g["source_key"]: "unavailable" for g in want}
+    except Exception as e:
+        log("confirm-only check of %s failed: %s" % (day, str(e)[:120]))
+        outcome = {g["source_key"]: "unavailable" for g in want}
+    rows = [row(g, outcome[g["source_key"]], now) for g in want]
+    n = lambda o: sum(1 for r in rows if r["outcome"] == o)
+    return rows, dict(requests=requests, checked=len(rows), agrees=n("agrees"), disagrees=n("disagrees"), unavailable=n("unavailable"))
 
 
 def save(rows, cache_dir):

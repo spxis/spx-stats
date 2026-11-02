@@ -1590,6 +1590,8 @@ SUMMARY_MAX = 590   # meta.score_update_request.summary allows 600 characters (m
 DAILY_LEAGUES = ("nhl", "nba", "mlb", "nfl", "cfl")
 # The sources an admin's refresh may tick (run.py LIVE_SOURCES; test_live_request.py checks they are the same) and the scopes a request row may carry (migration 156).
 LIVE_SOURCES = ("wikipedia", "balldontlie", "nflverse")
+# The confirm-only sources an admin may tick on the click, for one game or one day (sources.py CLICK_CONFIRM; test_live_request.py checks they are the same).
+CLICK_CONFIRM = ("nhl_api",)
 LIVE_SCOPES = ("game", "day", "league", "main5", "all")
 LIVE_TIMEOUT = int(os.environ.get("RELEASE_LIVE_TIMEOUT", "900"))
 
@@ -1713,6 +1715,11 @@ def live_plan(req):
         return None, "", "The request names no scope the live refresh knows (%s)." % scrub(scope)[:20]
     if league and league not in DAILY_LEAGUES:
         return None, "", "The live refresh does not load \"%s\". It loads %s." % (scrub(league)[:20], ", ".join(x.upper() for x in DAILY_LEAGUES))
+    confirm = [x for x in (sources or []) if x in CLICK_CONFIRM]
+    if confirm:
+        sources = [x for x in sources if x not in CLICK_CONFIRM] or None
+    if confirm and (scope not in ("game", "day") or not sources):
+        return None, "", "A confirm-only check is for one game or one day's list, with at least one score source ticked."
     bad = [x for x in (sources or []) if x not in LIVE_SOURCES]
     if bad:
         return None, "", "Not a source a score can be read from: %s. The choices are %s." % (", ".join(scrub(x)[:30] for x in bad[:3]), ", ".join(LIVE_SOURCES))
@@ -1733,7 +1740,9 @@ def live_plan(req):
         argv, words = ["--league", ",".join(DAILY_LEAGUES)], "the main five" if scope == "main5" else "all sports"
     if sources:
         argv += ["--sources", ",".join(sources)]
-    return argv, words + (" from " + ", ".join(sources) if sources else ""), None
+    if confirm:
+        argv += ["--confirm", ",".join(confirm)]
+    return argv, words + (" from " + ", ".join(sources) if sources else "") + (" and " + ", ".join(confirm) + " (confirm only)" if confirm else ""), None
 
 
 def run_live_job(ctx, req, who, argv):

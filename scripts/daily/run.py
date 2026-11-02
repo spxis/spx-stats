@@ -190,6 +190,7 @@ def main():
     ap.add_argument("--day", help="with --live-only: only the games of this day (YYYY-MM-DD) of --league, and only the clubs playing that day are fetched")
     ap.add_argument("--game", type=int, help="with --live-only: one core game id; only its two clubs are fetched")
     ap.add_argument("--sources", help="with --live-only: the score sources to read, from %s (default: all)" % ",".join(LIVE_SOURCES))
+    ap.add_argument("--confirm", help="with --live-request and --day or --game: confirm-only sources an admin ticked on the click, from %s: read once, compared in memory, nothing stored but the outcome" % ",".join(SRC.CLICK_CONFIRM))
     ap.add_argument("--live-request", type=int, help="the admin request id: its progress and result are written to Turso's live_request")
     ap.add_argument("--by", default="", help="who pressed the button (with --live-request)")
     ap.add_argument("--scope", default="", help="the request's scope (with --live-request): game, day, league, main5 or all")
@@ -203,7 +204,10 @@ def main():
     if a.live_only:
         if a.apply or a.rehearse: sys.exit("--live-only never writes DS1: drop --apply / --rehearse")
         a.live = True
-    elif a.day or a.game or a.sources or a.live_request: sys.exit("--day, --game, --sources and --live-request go with --live-only")
+    elif a.day or a.game or a.sources or a.live_request or a.confirm: sys.exit("--day, --game, --sources, --confirm and --live-request go with --live-only")
+    if a.confirm:
+        bad = [x for x in a.confirm.split(",") if x not in SRC.CLICK_CONFIRM]
+        if bad or not (a.live_request and (a.day or a.game)): sys.exit("--confirm takes some of %s, for an admin's request about one game or one day (got %r)" % (",".join(SRC.CLICK_CONFIRM), a.confirm))
     if a.live_request: return request_run(a)
     if not a.apply: return run(a, {})
     # --apply leaves a heartbeat row on DS1 (ingest.daily_run): 'running' now, 'ok' or 'failed' at the end
@@ -230,7 +234,7 @@ def request_run(a):
     except Exception as e:
         t = None; print("live request: no progress row (%s)" % str(e)[:100])
     req = dict(id=a.live_request, by=a.by or "admin", scope=a.scope or "league", league=a.league if a.day else None, day=a.day, game=a.game,
-               sources=[x for x in (a.sources or "").split(",") if x])
+               sources=[x for x in (a.sources or "").split(",") if x] + [x for x in (getattr(a, "confirm", None) or "").split(",") if x])
     if t: live.request_start(t, req)
     result = {}
     try:
@@ -247,6 +251,9 @@ def request_run(a):
         c = collections.Counter(o for _, o, _ in lv["items"])
         text = "%d game(s) asked: %s." % (len(lv["items"]), ", ".join("%d %s" % (c[k], k) for k in live.OUTCOMES if c[k]))
         status = "done"
+    cc = result.get("click_confirm")
+    if cc and status != "failed":
+        text += " NHL.com (manual request, nothing saved): %d agree, %d differ, %d unavailable." % (cc.get("agrees", 0), cc.get("disagrees", 0), cc.get("unavailable", 0))
     if t: live.request_finish(t, a.live_request, status, text, lv.get("items"))
     print("live request: %s: %s" % (status, text))
     return rc
@@ -427,6 +434,13 @@ def run(a, result):
             print("confirm-only sources agree on %d of %d games asked about (two or more agree, none disagrees)" % (early, len(comb)))
             result.update(confirm_early=early, confirm_asked=len(comb))
             if writing: CR.save(rows, CACHE)
+    if getattr(a, "confirm", None) and not a.offline and scope and "nhl" in all_games and "nhl_api" in a.confirm.split(","):
+        # an admin ticked NHL.com on the Refresh dialog: one manual request, never the daily switch; the outcome rows only (flags on the live rows, no NHL value)
+        x = scope["nhl"]
+        rows, summary = CR.confirm_click(all_games["nhl"], x["date"], x["fids"], lambda n: (rosters["nhl"].resolve(n) or {}).get("fid"))
+        print("\n== Confirm-only check of NHL results, on an admin's click (manual request, nothing is saved but the outcome) ==\n%s" % ", ".join("%s %s" % (k.replace("_", " "), v) for k, v in summary.items()))
+        result.update(click_confirm=summary)
+        confirm_rows = confirm_rows + rows
     if (a.live or os.environ.get("DAILY_LIVE") == "1") and not a.offline:
         import live
         print("\n== Live score layer (Turso only) ==")

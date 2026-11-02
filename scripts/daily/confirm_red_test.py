@@ -136,6 +136,30 @@ def run_unit():
     rows = {r["id"]: r for r in SRC.listing()}
     check(rows["nhl_api"]["confirm_only"] and not rows["nhl_api"]["selectable"] and not rows["nhl_api"]["default"] and rows["nhl_api"]["cache_seconds"] is None and not rows["espn"]["confirm_only"],
           "listing: confirm-only is marked, never selectable, never a default, never cached; ESPN is not confirm-only")
+    # ---- an admin's click (confirm_click): one day, the chosen clubs only, one request, no switch, outcomes only
+    fid = {"Boston Bruins": 1, "Montreal Canadiens": 2, "Utah Mammoth": 3, "Vegas Golden Knights": 4, "Calgary Flames": 5, "Edmonton Oilers": 6}
+    fid_of = fid.get
+    seen2 = []
+
+    def http2(url):
+        seen2.append(url)
+        return day17
+
+    L, c = limiter()
+    rows, summ = CR.confirm_click([g1, g2, g3, g4, done], "2026-10-17", {1, 2, 3, 4}, fid_of, L, http2, now)
+    check(seen2 == ["https://api-web.nhle.com/v1/score/2026-10-17"], "click: exactly one request, for the day asked: %r" % seen2)
+    check(sorted(r["outcome"] for r in rows) == ["agrees", "disagrees"] and summ == dict(requests=1, checked=2, agrees=1, disagrees=1, unavailable=0), "click: only the chosen clubs, outcomes %r" % summ)
+    check(SECRET not in json.dumps(rows) and all(set(r) == set(CR.row(g1, "agrees", now)) for r in rows) and all("score" not in r and "their_value" not in r for r in rows), "click: no value of theirs in a row")
+    check(not os.environ.get("DAILY_CONFIRM_RED"), "click: the daily switch was not needed")
+    L, c = limiter()
+    rows, summ = CR.confirm_click([g4], "2026-10-17", {1, 2}, fid_of, L, http2, now)
+    check(rows == [] and summ == dict(requests=0, checked=0) and len(seen2) == 1, "click: no game of the day, no request")
+    for code in (403, 429):
+        L, c = limiter()
+        def refuse(url, code=code): raise CR.Throttled(3600 if code == 403 else 60)
+        rows, summ = CR.confirm_click([g1], "2026-10-17", {1, 2}, fid_of, L, refuse, now, log=lambda m: None)
+        check([r["outcome"] for r in rows] == ["unavailable"] and summ["requests"] == 1, "click: a %d stops it, outcome unavailable" % code)
+    check(SRC.CLICK_CONFIRM == ("nhl_api",) and {r["id"]: r["on_click"] for r in SRC.listing()}["nhl_api"] and not {r["id"]: r["on_click"] for r in SRC.listing()}["mlb_statsapi"], "click: only NHL.com is on the click list")
     return list(FAILS)
 
 
