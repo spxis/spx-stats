@@ -79,7 +79,7 @@ say so at once. Work committed in your worktree is kept, and the session that st
 Only one agent works in a package repo at a time. Work in a new git worktree from `origin/main`
 (`~/Projects/<repo>-worktrees/<name>`), never in the main checkout (some are stale), never in another agent's worktree.
 Ports: only the repo's block in John's port table (dougu 7200-7299, kyogijo 6900-6999, senshu 7300-7399, taisen 7100-7199,
-meigen 7400-7499, hako-devices 7800-7899; a repo with no block yet asks John for one); check `lsof -iTCP:<port> -sTCP:LISTEN` first, stop only your own processes by PID, never `pkill`.
+meigen 7400-7499, hako-devices 7800-7899, chikyu-earth 8200-8299; a repo with no block yet asks John for one); check `lsof -iTCP:<port> -sTCP:LISTEN` first, stop only your own processes by PID, never `pkill`.
 
 ## What John expects of the packages
 
@@ -115,6 +115,23 @@ Tests passing is not enough: John judges by looking. Before any push that change
 - **Real proportions and detail, never cartoon.** Soft shading and folds where cloth is drawn, crisp edges, true ratios (a puck
   is 3:1, a floor slab has thickness), nothing that reads as a blob.
 
+## The must-have list: no first release without it (John, 2026-11-02)
+
+chikyu-earth shipped 0.3.0, 0.4.0 and 0.5.0 with no published demo, no embed page, no documentation site and no guide to using it, and nothing said no: this page had no list of what a package must have, and the release checks only built and tested the code. The list is below; **a package's first release is refused** (by the session that starts the Release workflow) unless every item is there, and a later release is refused if an item has gone. A package that cannot have an item says so in `package.json`, with the reason, and a reviewer reads it (`"family": { "notApplicable": { "angular": "a data package: there is no element to put in a template" } }`).
+
+| Item | What it is |
+|---|---|
+| A demo on GitHub Pages | `demo/index.html` made with the family's header (kazoku-ui language picker and theme switch) and footer, published by `.github/workflows/pages.yml` on every push to `main`. Pages switched on for the repo (`gh api -X POST repos/johnmorrisdotca/<repo>/pages -f build_type=workflow`), the URL `https://johnmorrisdotca.github.io/<repo>/` set as the repo's homepage (`gh repo edit ... --homepage`) and as `homepage` in `package.json`, and linked from the README. |
+| An embed page | `demo/embed.html`: a page made for an `<iframe>`, drawing what its address says, with nothing else on it. Light by the 3D rules below. |
+| A documentation site, English and Japanese | `scripts/docs-site.mjs` (the family's), `docs/site.json`, TSDoc with an `@example` on every export, guides in `docs/guides/` and a Japanese twin of each in `docs/guides/ja/`: one language to a page. |
+| The family files, unedited | `scripts/family-template.mjs` (listing the package), `scripts/family-readme.mjs`, `demo/family.css`, and the README's "The family" block. |
+| Usage, written and tested | The README or a guide shows, as copy-paste examples: a script tag from a CDN (jsDelivr or unpkg), an ES module import, a bundler (Vite or webpack), React, Vue, Svelte, Angular, an iframe of the embed page, TypeScript types, and Node or a server where it makes sense. Each example is a file in `examples/` that `pnpm test:usage` builds, type-checks or runs against the package as npm packs it, opens in a browser where it has a page, and the guides hold word for word. CI runs it. |
+| Current pictures | The README's screenshots are of the demo as it is now. |
+
+**The check.** kazoku-ui's `templates/check-standard.mjs` is copied unchanged into a repo as `scripts/check-standard.mjs`, and a test in the repo (`test/standard.test.ts`, which also holds the file to its recorded hash) fails `pnpm check`, so the release workflow's check fails, when an item is missing. `docs/package-standard.md` in kazoku-ui says how to adopt it. chikyu-earth has every item and is the model: its `examples/`, `scripts/check-usage.ts`, `docs/guides/`, `demo/embed.html`, `.github/workflows/pages.yml`. Adopt the check when a repo is next touched, and fill what it says is missing; each repo's gaps are a ticket on its board.
+
+**The release session checks too.** Before starting a Release, the session reads the package's `node scripts/check-standard.mjs` output (or, for a repo that has not adopted it, the list above against its repo and `https://johnmorrisdotca.github.io/<repo>/`); a missing item is a ticket and no release.
+
 ## No 3D release without a freeze test (CRITICAL, John 2026-11-02)
 
 A test run on machine1 panicked the kernel in the graphics driver (Chrome's GPU process, 2026-11-02). It must not happen again. Every package and app with **live 3D (WebGL)** has both of these, and its release does not go out without them. CSS 3D transforms and SVG are not WebGL and need neither.
@@ -138,7 +155,7 @@ Sweep and file: when you touch a demo or site page, count its folds first. A pag
 
 ## Checks, push, release
 
-1. All green locally before every push: `pnpm check`, `pnpm test:readme`, the demo e2e (in kyogijo: `pnpm test:demo`), and the freeze test where the package has live 3D (`pnpm test:freeze`).
+1. All green locally before every push: `pnpm check` (which includes the must-have check), `pnpm test:readme`, `pnpm test:usage` (every way to use the package), the demo e2e (in kyogijo: `pnpm test:demo`), and the freeze test where the package has live 3D (`pnpm test:freeze`).
 2. Fetch and rebase on `origin/main`, push fast-forward to `main`. A push starts CI (kyogijo: about 16 minutes).
 3. Make a release commit: bump `package.json` (and `src/version.ts` where it exists) from the highest tag, regenerate
    version-dependent fixtures and snapshots, move the CHANGELOG's Unreleased block under the version. Push it.
