@@ -249,7 +249,9 @@ select m.source_key, 'mls' || m.year, m.stage_key, m.stage_order, m.group_name, 
        case when m.shootout then (case when m.hp > m.ap then m.home_id else m.away_id end)
             when m.hg > m.ag then m.home_id when m.hg < m.ag then m.away_id
             when m.so_winner_club = m.home_club then m.home_id when m.so_winner_club = m.away_club then m.away_id end,
-       m.stadium, nullif(btrim(split_part(m.location, ',', 1)), ''),
+       -- a box whose stadium is blank (not missing) gives it in the location instead ("Dick's Sporting Goods Park, Commerce City"): stadium first, then the place
+       case when btrim(m.stadium) = '' then nullif(btrim(split_part(m.location, ',', 1)), '') else m.stadium end,
+       case when btrim(m.stadium) = '' then nullif(btrim(split_part(m.location, ',', 2)), '') else nullif(btrim(split_part(m.location, ',', 1)), '') end,
        case when (select country_code from core.soccer_team where team_id = m.home_id) = 'CA' then 'Canada' else 'United States' end,
        m.stadium_qid, m.attendance, case when m.mls_so then 'mls' end,
        case when m.base = 'of' then (select ofb from mls_src) else (select wp from mls_src) end
