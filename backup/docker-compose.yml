@@ -1,0 +1,16 @@
+services:
+  ds1-backup:
+    build:
+      context: .
+      network: host
+    network_mode: host
+    container_name: spx-ds1-backup
+    init: true
+    restart: unless-stopped
+    env_file: ./backup.env
+    volumes:
+      - ./data:/data
+      # the dumps: an absolute path on nas2 set in a file named .env next to this one (BACKUP_HOST_DIR=...), never a relative one
+      - ${BACKUP_HOST_DIR:?set BACKUP_HOST_DIR in .env}:/backups
+    tmpfs:
+      - /var/lib/postgresql/data   # the base image declares a volume here; keep it from leaving an anonymous one behind

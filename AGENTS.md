@@ -31,6 +31,7 @@ end. **manual** = a person or the coordinating session has to do it.
 | load, rebuild or change a league or a dataset | [docs/data-sources.md](docs/data-sources.md) |
 | run the site on DS1 data or sign in locally | [docs/local-preview.md](docs/local-preview.md) |
 | deploy or roll back (only if your brief says so) | [docs/deploying.md](docs/deploying.md) |
+| touch the DS1 backup job, its role or the restore drill | [docs/backups.md](docs/backups.md) |
 | set up a machine, a cloud session or a credential | [docs/setup.md](docs/setup.md) |
 
 **Keep this file short.** It loads into every session and every subagent, so what it holds is paid for every time. A new feature's notes go in the matching `docs/` file; a line goes here only when every agent must know it to avoid doing harm.
@@ -68,7 +69,7 @@ end. **manual** = a person or the coordinating session has to do it.
   and a cloud session pushes its new data to DS1 before its container is discarded.
 - **Machines are named by role, never by model, host name or address** (the repository is public): **machine1** is the main
   desktop Mac (on the home LAN all day), **machine2** is the laptop Mac, **nas1** is the always-on NAS that hosts the source
-  database (written DS1 in code, docs and keychain item names), **nas2** is a second, smaller NAS on the home LAN: from 2026-10-21 (John) it holds DS1's nightly backups and a read-only production mirror (what production serves, for builds, troubleshooting, release dry runs and disaster recovery); the live site stays on Supabase, DS1 stays the only place data is written, and only the coordinating session sets up or changes anything on nas2.
+  database (written DS1 in code, docs and keychain item names), **nas2** is a second, smaller NAS on the home LAN: John approved it on 2026-10-21 for DS1's nightly backups and a read-only production mirror. The backups are built (the Docker job in `backup/`, SPX-689, [docs/backups.md](docs/backups.md)); the mirror (SPX-690: what production serves, for builds, troubleshooting, release dry runs and disaster recovery) is **not built yet**. The live site stays on Supabase, DS1 stays the only place data is written, and only the coordinating session sets up or changes anything on nas2.
   What each role really is (addresses, host names, the NAS login, folders) is in ONE private file outside the repository,
   `~/.config/spx-stats/hosts.env`, created by `zsh scripts/mac/spx-credentials.sh hosts` ([section 4](#4-cold-start)). Never write
   a real address, host name, model name or login into a file, a commit, a ticket or a comment: `bash scripts/check_private_hosts.sh` fails on it.

@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- machine1 fallback: DS1 backup every night at 05:30 (a Mac that was asleep runs it on wake). __REPO__ is replaced by the install command
+     in backup/README.md. Load: launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/net.spxn.ds1-backup.plist -->
+<plist version="1.0">
+<dict>
+  <key>Label</key><string>net.spxn.ds1-backup</string>
+  <key>ProgramArguments</key>
+  <array><string>/bin/bash</string><string>__REPO__/scripts/backup/mac-backup.sh</string></array>
+  <key>StartCalendarInterval</key><dict><key>Hour</key><integer>5</integer><key>Minute</key><integer>30</integer></dict>
+  <key>StandardOutPath</key><string>__LOGDIR__/launchd.log</string>
+  <key>StandardErrorPath</key><string>__LOGDIR__/launchd.log</string>
+  <key>Nice</key><integer>10</integer>
+  <key>LowPriorityIO</key><true/>
+</dict>
+</plist>
