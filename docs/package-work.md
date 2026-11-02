@@ -20,26 +20,37 @@ board name from the private START-HERE file, or "John Morris"; never an AI name)
 
 When John asks for ticket status, run `cd ~/Projects/spx-stats/web && pnpm task status` and show its output as it is (every board, stale holds, releases waiting for John).
 
-Most packages share the spx-stats board, but not all. Find your package here before you look for a ticket:
+Every project has exactly one home board. Find yours here before you look for a ticket (the project key is the board's name):
 
-| Package | Board | Ticket names |
+| Project | Board (project key) | Ticket names |
 |---|---|---|
-| dougu, kyogijo, meigen, senshu, taisen, hata, chizu, kuni, address-plus, chikyu-earth | spx-stats board (`pnpm task`) | title starts with the full npm name, e.g. `meigen-sports: ...`, `dougu-sports: ...` |
-| kazoku-ui, and anything shared by the whole family | spx-stats board | title starts with `kazoku-ui: ...` |
-| hako-devices | its own Sumilabu board (project key `hako-devices`) | `HAKO-DEVICES-<n>` |
-| uchusen-rockets | the hotaru board | title starts with `Rockets: ...` |
-| fuda-cards | `docs/task-board.md` in its own repo | `F<n>`; claim by committing your name on the row |
+| the spxn.com site, data, releases, ops tooling | `spx-stats` | no prefix needed |
+| WazaDB (web + API monorepo) | `wazadb` | `wazadb: ...` (its key is not on every machine) |
+| hako-devices | `hako-devices` | `HAKO-DEVICES-<n>` |
+| hotaru, the box and TV app | `hotaru` | `HOTARU-<n>` |
+| kyogijo-stadiums | `kyogijo-stadiums` | `kyogijo-stadiums: ...` |
+| senshu-jerseys | `senshu-jerseys` | `senshu-jerseys: ...` |
+| kazoku-ui, and chores shared by the whole family | `kazoku-ui` | `kazoku-ui: ...`, or `kazoku-ui: family: ...` |
+| every other module or one-off tool: meigen-sports, dougu-sports, uchusen-rockets, fuda-cards, taisen-brackets, chizu, hata, kuni, address-plus, chikyu-earth, meet-prompter | `modules` ("Modules and misc") | `<full npm or repo name>: ...` |
 
-The commands for the hako-devices and hotaru boards are in the private START-HERE file ("Other boards"). If you can't reach a
-board, ask the session that started you; never guess a ticket.
+**Filing rule.** A ticket goes to its project's board. On `modules` and `kazoku-ui` the title must start with the project's full npm or repo name and a colon
+(`meigen-sports: ...`, `uchusen-rockets: ...`, `fuda-cards: F12 ...`), and the ticket's area is set to the same word (`--area <name>`), so
+counts per project stay true. A non-package item uses a clear project word (`family: ...` for work across several packages, `meet-prompter: ...`).
+No ticket on a shared board may be without a project prefix. A project that passes 40 tickets, or that John calls major, gets its own board and its tickets move by prefix.
+Nothing that is a package goes on `spx-stats`, and no site or data work goes anywhere else.
+
+**Using a board.** `cd ~/Projects/spx-stats/web && pnpm task --board <key> <command>` works on any board whose key is in this Mac's keychain
+(`sumilabu board <key>`): `pnpm task --board modules`, `pnpm task --board kyogijo-stadiums claim <id> "<who>"`. Without `--board` it is `spx-stats`.
+`pnpm task status` shows every board at once. The hako-devices and hotaru keys are only on machine1 (private START-HERE, "Other boards"); fuda-cards no longer has its own board: its tasks are `fuda-cards: F<n> ...` on `modules`.
+If you can't reach a board, ask the session that started you; never guess a ticket.
 
 **Filing a ticket.** File it before you start the work. Do the same for anything you find that is outside your ticket: file it
 and name the new id in your report, rather than widening your ticket.
 
-    pnpm task add "<npm name>: <what>" --detail "<what and why, John's words with the date, reference paths>" --by "<actor>" [--bug|--chore]
+    pnpm task --board <key> add "<npm name>: <what>" --area <npm name> --detail "<what and why, John's words with the date, reference paths>" --by "<actor>" [--bug|--chore]
 
 The title is 8 to 120 characters. The detail says what done looks like. Reference images are linked by their Dropbox path
-(`/Projects/Resources/<project>/<topic>/`) and never attached. A gap in a shared kazoku-ui part gets its own `kazoku-ui:` ticket
+(`/Projects/Resources/<project>/<topic>/`) and never attached. A gap in a shared kazoku-ui part gets its own `kazoku-ui:` ticket on the `kazoku-ui` board
 with the repo and case that found it. Don't work around it in your repo; say in your report that you are blocked on it.
 
 **Reporting.** The first line is `<your name>, ticket <id> (<title>)`, and a subagent writes `subagent of <name>`. Keep the

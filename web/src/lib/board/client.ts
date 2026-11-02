@@ -16,6 +16,11 @@ import { looksLikeShortId, type BoardEffort, type BoardKind, type BoardPriority,
 
 export const BOARD_PROJECT_KEY = "spx-stats";
 
+/** `pnpm task --board <key>` (or SUMILABU_BOARD_PROJECT) reads another project's board; the site always uses spx-stats. */
+function projectKey(): string {
+  return (process.env.SUMILABU_BOARD_PROJECT ?? "").trim() || BOARD_PROJECT_KEY;
+}
+
 export class BoardError extends Error {
   readonly status: number;
   constructor(message: string, status: number) {
@@ -46,7 +51,7 @@ async function call(path: string, init: { method?: string; body?: unknown; actor
   const headers: Record<string, string> = { authorization: `Bearer ${token}`, accept: "application/json" };
   if (init.actor) headers["x-board-actor"] = init.actor;
   if (init.body !== undefined) headers["content-type"] = "application/json";
-  const response = await fetch(`${url}/api/v1/projects/${BOARD_PROJECT_KEY}${path}`, {
+  const response = await fetch(`${url}/api/v1/projects/${projectKey()}${path}`, {
     method: init.method ?? "GET",
     headers,
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
@@ -79,8 +84,8 @@ export async function boardGet(id: string): Promise<Ticket | null> {
 
 export type Draft = { title: string; detail: string | null; kind: BoardKind; askedBy: string | null };
 
-export async function boardCreate(draft: Draft, actor: string | null): Promise<{ ok: true; ticket: Ticket } | { ok: false; problems: string[] }> {
-  const { status, body } = await call("/tickets", { method: "POST", actor, body: { title: draft.title, detail: draft.detail, area: null, kind: draft.kind, askedBy: draft.askedBy } });
+export async function boardCreate(draft: Draft & { area?: string | null }, actor: string | null): Promise<{ ok: true; ticket: Ticket } | { ok: false; problems: string[] }> {
+  const { status, body } = await call("/tickets", { method: "POST", actor, body: { title: draft.title, detail: draft.detail, area: draft.area ?? null, kind: draft.kind, askedBy: draft.askedBy } });
   if (status === 201) return { ok: true, ticket: asTicket(body) };
   return { ok: false, problems: (body.problems as string[]) ?? [String(body.error ?? "refused")] };
 }

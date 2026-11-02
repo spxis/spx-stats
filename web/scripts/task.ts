@@ -20,8 +20,9 @@ import {
  * The shared ticket board, from a terminal (run in web/).
  *
  *   pnpm task                                     what is open and who holds it
+ *   pnpm task --board <key> ...                   any other board (modules, wazadb, kyogijo-stadiums, ...), key from the keychain
  *   pnpm task status [--json]                     every board in one summary (scripts/ticketStatus.ts)
- *   pnpm task add "<title>" [--detail "…"] [--bug|--chore] [--by "<who>"]
+ *   pnpm task add "<title>" [--detail "…"] [--area <project>] [--bug|--chore] [--by "<who>"]
  *   pnpm task claim <id> "<who>"                  check one out (six-hour lease)
  *   pnpm task release <id> --by "<who>"           put it back
  *   pnpm task done <id> --by "<who>" --version "<v>" [--entry "<commit or note>"]
@@ -38,9 +39,18 @@ import {
  * keychain item "sumilabu board spx-stats".
  */
 
+{
+  const at = process.argv.indexOf("--board");
+  if (at > -1) {
+    process.env.SUMILABU_BOARD_PROJECT = process.argv[at + 1] ?? "";
+    process.argv.splice(at, 2);
+  }
+}
+const BOARD_KEY = process.env.SUMILABU_BOARD_PROJECT?.trim() || "spx-stats";
+
 if (process.platform === "darwin" && !process.env.SUMILABU_BOARD_TOKEN) {
   try {
-    process.env.SUMILABU_BOARD_TOKEN = execFileSync("security", ["find-generic-password", "-s", "sumilabu board spx-stats", "-w"], {
+    process.env.SUMILABU_BOARD_TOKEN = execFileSync("security", ["find-generic-password", "-s", `sumilabu board ${BOARD_KEY}`, "-w"], {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"],
     }).trim();
@@ -63,7 +73,7 @@ function usage(): never {
       "usage:",
       "  pnpm task",
       "  pnpm task status [--json]",
-      '  pnpm task add "<title>" [--detail "…"] [--bug|--chore] [--by "<who>"]',
+      '  pnpm task add "<title>" [--detail "…"] [--area <project>] [--bug|--chore] [--by "<who>"]',
       '  pnpm task claim <id> "<who>"',
       '  pnpm task release <id> --by "<who>"',
       '  pnpm task done <id> --by "<who>" --version "<v>" [--entry "<commit or note>"]',
@@ -138,7 +148,8 @@ async function main(): Promise<void> {
       const askedBy = flag("by", rest) ?? null;
       const problems = draftProblems({ title, detail: detail ?? "", askedBy: askedBy ?? "" });
       if (problems.length > 0) fail(problems.join("\n"));
-      const created = await boardCreate({ title: title.trim(), detail, kind, askedBy }, askedBy);
+      const area = flag("area", rest)?.trim().slice(0, 40) || null;
+      const created = await boardCreate({ title: title.trim(), detail, kind, askedBy, area }, askedBy);
       if (!created.ok) fail(created.problems.join("\n"));
       console.log(`added ${created.ticket.shortId ? `${created.ticket.shortId} (${created.ticket.id})` : created.ticket.id} on ${boardHost()}`);
       break;
