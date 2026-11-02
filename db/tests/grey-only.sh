@@ -80,6 +80,9 @@ python3 -I "$REPO/scripts/grey/cfbd.py" parse "$REPO/scripts/grey/samples/cfbd_g
 python3 -I "$REPO/scripts/grey/hockeytech.py" parse "$REPO/scripts/grey/samples/hockeytech_schedule.json" --client ahl --fetched-on 2026-10-25 --out "$S/ht.sql" >/dev/null
 psql_ -o /dev/null < "$REPO/db/migrations/154_legacy_grey_sources.sql"
 psql_ -o /dev/null < "$REPO/db/migrations/154_legacy_grey_sources.sql"
+# the CFBD load writes columns that migration 157 adds (start_time_tbd and the rest)
+psql_ -o /dev/null < "$REPO/db/migrations/157_legacy_cfbd_tables.sql"
+psql_ -o /dev/null < "$REPO/db/migrations/157_legacy_cfbd_tables.sql"
 for f in cfbd ht cfbd ht; do psql_ -o /dev/null < "$S/$f.sql"; done
 eq "154: the two loaded sources have a tier" "$(psql_ -c "select string_agg(code || '=' || tier, ',' order by code) from meta.source where code in ('cfbd', 'hockeytech')")" "cfbd=green,hockeytech=grey"
 psql_ -o /dev/null < "$REPO/db/build/225_source_tier.sql"
