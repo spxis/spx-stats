@@ -20,6 +20,7 @@ import tempfile
 import time
 import urllib.request
 
+os.environ.setdefault("RELEASE_CHECKS_SKIP_MISSING", "1")   # the template may be a copy older than DS1: a check of a table it lacks is skipped (release.py run_checks)
 os.environ.setdefault("RELEASE_TURSO_TABLES", "none")   # these tests use the Turso table names as plain production tables; test_turso.py covers Turso
 
 HERE = os.path.dirname(os.path.abspath(__file__))

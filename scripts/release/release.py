@@ -246,8 +246,16 @@ def run_checks(ds1):
         body = "\n".join(x for x in text.splitlines() if not x.lstrip().startswith("--")).strip().rstrip(";")
         sql = ("with q as (%s) select (select count(*) from q) as n, "
                "(select coalesce(json_agg(x), '[]'::json) from (select * from q limit 5) x) as sample" % body)
-        r = ds1.run(sql)[0]
         base = int(m.group(1)) if m else 0
+        try:
+            r = ds1.run(sql)[0]
+        except Exception as e:
+            # Only the release tests set this, on a template copied from a database older than DS1 (no ref.city, no ingest.row_id_map): a check of a table the copy lacks
+            # is skipped there. On DS1 and production it is never set, and a missing table is a failed check like any other error.
+            if os.environ.get("RELEASE_CHECKS_SKIP_MISSING") == "1" and re.search(r"(relation|schema|function|column) .* does not exist", str(e)):
+                out.append({"name": fn[:-4], "what": "skipped: " + str(e).strip().splitlines()[0][:120], "baseline": base, "rows": 0, "ok": True, "sample": []})
+                continue
+            raise
         out.append({"name": fn[:-4], "what": w.group(1).strip() if w else "", "baseline": base, "rows": r["n"],
                     "ok": r["n"] <= base, "sample": r["sample"]})
     return out
