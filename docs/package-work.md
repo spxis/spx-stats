@@ -79,7 +79,7 @@ say so at once. Work committed in your worktree is kept, and the session that st
 Only one agent works in a package repo at a time. Work in a new git worktree from `origin/main`
 (`~/Projects/<repo>-worktrees/<name>`), never in the main checkout (some are stale), never in another agent's worktree.
 Ports: only the repo's block in John's port table (dougu 7200-7299, kyogijo 6900-6999, senshu 7300-7399, taisen 7100-7199,
-meigen 7400-7499, hako-devices 7800-7899, chikyu-earth 8200-8299; a repo with no block yet asks John for one); check `lsof -iTCP:<port> -sTCP:LISTEN` first, stop only your own processes by PID, never `pkill`.
+meigen 7400-7499, hako-devices 7800-7899, chikyu-earth 8200-8299, wakusei-planets 8300-8399; a repo with no block yet asks John for one); check `lsof -iTCP:<port> -sTCP:LISTEN` first, stop only your own processes by PID, never `pkill`.
 
 ## What John expects of the packages
 
