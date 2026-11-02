@@ -76,6 +76,13 @@ EXCLUSIVE lock for the whole rebuild. So:
      be a build step, never a one-off update.
    - Unfinished steps go in `db/build/pending/`, which the build ignores.
    - Never run `build_core.sh` while another agent is loading.
+   - **Final is terminal.** A rerun of a step must not take a finished game back: its source file can be older than a result the daily job
+     reported since (`ingest.report_results`). `145` (NHL, updates its own games in place) and `150` (NFL, deletes and re-adds its own) keep a
+     game core holds as final; a different final score from the file still corrects it. A step that writes `core.game` from a file (other than
+     the Wikipedia ones, which write finals only) does the same, or is followed by `153`. After ANY single step that writes `core.game`, applied
+     alone through `ds1-apply.sh`: run `db/build/153_replay_daily_observations.sql` (a full `build_core.sh` already does), then
+     `db/checks/107_final_game_not_final.sql` must stay at 0 (it compares the newest applied final in `ingest.game_observation`, which a rerun
+     does not touch, with `core.game.status`). `bash db/tests/final-games.sh` reproduces the reset and proves the fix.
 4. **Migrations** (a new table or column): write `db/migrations/NNN_name.sql`, apply it to the working copy, then to
    DS1 (item 8), then to production with the Supabase MCP `apply_migration` (`project_id` from AGENTS.md section 8, `name` in snake_case, `query` the file),
    **before** any load. `list_migrations` shows what production has. Numbers 030 and 031 are each used by two files:

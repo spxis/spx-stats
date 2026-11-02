@@ -15,7 +15,10 @@ delete from meta.verification where source_id = (select source_id from src);
 delete from meta.data_issue where source_id = (select source_id from src);
 -- A rerun keeps the number of every game it adds again (the site's game addresses carry it): remembered by source_key before the delete, given back
 -- on insert. Child rows (game_league_id, game_venue, ...) cascade with the delete: rerun 212, 198, 199 and 209 afterwards.
-create temp table old_game_id as select source_key, game_id from core.game where source_id = (select source_id from src);
+-- A game that was final stays final (final is terminal): nflverse's file can be older than a result the daily job has since reported
+-- (ingest.report_results, replayed by 153), so its result, date and original date are remembered too and put back below when the file has no result yet.
+create temp table old_game_id as select source_key, game_id, status, home_score, away_score, went_to_overtime, game_date, original_date
+from core.game where source_id = (select source_id from src);
 delete from core.game where source_id = (select source_id from src);
 delete from core.external_id where source_id = (select source_id from src);
 
@@ -25,7 +28,7 @@ insert into nmap values ('BUF',130),('MIA',131),('NE',132),('NYJ',133),('CIN',13
   ('PHI',148),('WAS',149),('CHI',150),('DET',151),('GB',152),('MIN',153),('ATL',154),('NO',155),('TB',156),('CAR',157),('STL',158),
   ('LA',158),('ARI',159),('SF',160),('SEA',161);
 create temp table fr as
-select n.code, e.entity_id as franchise_id from nmap n join core.external_id e on e.entity_kind = 'franchise' and e.external_key = 'team:' || n.spx_team_id;
+select n.code, e.entity_id::integer as franchise_id from nmap n join core.external_id e on e.entity_kind = 'franchise' and e.external_key = 'team:' || n.spx_team_id;
 
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'franchise', franchise_id, (select source_id from src), 'team:' || code from fr;
@@ -104,10 +107,15 @@ select (select source_id from src), 'game', (select source_key from core.game wh
 from matched m where m.status = 'final' and m.r_h is not null and (m.home_score <> m.r_h or m.away_score <> m.r_a);
 
 insert into core.game (game_id, season_id, phase, game_date, home_team_season_id, away_team_season_id, is_neutral_site, status,
-                       home_score, away_score, went_to_overtime, source_id, source_key)
+                       home_score, away_score, went_to_overtime, original_date, source_id, source_key)
 overriding system value
-select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase, n.gameday, hts.team_season_id, ats.team_season_id, coalesce(n.location = 'Neutral', false),
-       case when n.home_score is not null then 'final' else 'scheduled' end::core.game_status, n.home_score, n.away_score, n.overtime,
+select coalesce(o.game_id, nextval(pg_get_serial_sequence('core.game', 'game_id'))), s.season_id, n.phase,
+       case when n.home_score is null and o.status = 'final' then o.game_date else n.gameday end, hts.team_season_id, ats.team_season_id, coalesce(n.location = 'Neutral', false),
+       case when n.home_score is not null or o.status = 'final' then 'final' else 'scheduled' end::core.game_status,
+       case when n.home_score is null and o.status = 'final' then o.home_score else n.home_score end,
+       case when n.home_score is null and o.status = 'final' then o.away_score else n.away_score end,
+       case when n.home_score is null and o.status = 'final' then o.went_to_overtime else n.overtime end,
+       case when n.home_score is null and o.status = 'final' then o.original_date end,
        (select source_id from src), 'nflverse:' || n.game_id
 from ng n join core.season s on s.league_code = 'nfl' and s.start_year = n.season
 join core.team_season hts on hts.franchise_id = n.home_f and hts.season_id = s.season_id

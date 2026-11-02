@@ -289,6 +289,13 @@ join core.team_season ats on ats.franchise_id = n.away_f and ats.season_id = s.s
 where n.nhl_game_id not in (select key from matched);
 -- A score without a final state (a game still on) is no result.
 update api_game set home_score = null, away_score = null where status <> 'final';
+-- Final is terminal: a game core already holds as final stays final. The API data loaded here can be older than a result the daily job has since
+-- reported (ingest.report_results, replayed by 153), so a game that reads scheduled, live or postponed there must not take a finished game back
+-- (a rerun on 2026-10-18 reset 67). A different final score from the API still corrects it: that is a final against a final, and is untouched.
+update api_game a set status = g.status, home_score = g.home_score, away_score = g.away_score, went_to_overtime = g.went_to_overtime,
+       decided_by_shootout = g.decided_by_shootout, game_date = g.game_date
+from core.game g
+where g.source_id = (select source_id from src) and g.source_key = a.source_key and g.status = 'final' and a.status <> 'final';
 delete from core.game g where g.source_id = (select source_id from src) and not exists (select 1 from api_game a where a.source_key = g.source_key);
 update core.game g set season_id = a.season_id, phase = a.phase, game_date = a.game_date, starts_at = a.starts_at, home_team_season_id = a.home_ts,
        away_team_season_id = a.away_ts, is_neutral_site = a.is_neutral_site, status = a.status, home_score = a.home_score, away_score = a.away_score,
