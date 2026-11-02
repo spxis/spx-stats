@@ -17,6 +17,7 @@
     "logos:library": "python3 ../scripts/logos/library.py",
     "test:board": "node --test scripts/board.test.ts",
     "test:ticketstatus": "node --test scripts/ticketStatus.test.ts",
+    "test:boardkey": "node --test scripts/boardKey.test.ts",
     "test:football": "node --test scripts/earlyFootball.test.ts",
     "test:rivals": "node --test scripts/rivalLeagues.test.ts",
     "test:morehockey": "node --test scripts/moreHockey.test.ts",

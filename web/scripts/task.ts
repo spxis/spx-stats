@@ -1,4 +1,4 @@
-import { execFileSync } from "node:child_process";
+import { boardKey } from "./boardKey.ts";
 import { boardCreate, boardEdit, boardGet, boardGrade, boardHistory, boardHost, boardList, boardMove, boardResolveId, boardShip, type MoveOutcome } from "../src/lib/board/client.ts";
 import {
   BOARD_EFFORTS,
@@ -35,8 +35,9 @@ import {
  * <id> is the whole cuid the board prints, never a prefix, or the short id
  * (SPX-142) once Sumilabu has them. The board is on
  * Sumilabu; SUMILABU_BOARD_URL and SUMILABU_BOARD_TOKEN come from the
- * environment (never a file in this repository), or on a Mac from the
- * keychain item "sumilabu board spx-stats".
+ * environment (never a file in this repository), else on a Mac from the
+ * keychain item "sumilabu board <key>", else from the file named <key> in the
+ * .config/sumilabu-board folder of the home directory (scripts/boardKey.ts).
  */
 
 {
@@ -48,15 +49,11 @@ import {
 }
 const BOARD_KEY = process.env.SUMILABU_BOARD_PROJECT?.trim() || "spx-stats";
 
-if (process.platform === "darwin" && !process.env.SUMILABU_BOARD_TOKEN) {
-  try {
-    process.env.SUMILABU_BOARD_TOKEN = execFileSync("security", ["find-generic-password", "-s", `sumilabu board ${BOARD_KEY}`, "-w"], {
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"],
-    }).trim();
+if (!process.env.SUMILABU_BOARD_TOKEN) {
+  const key = boardKey(BOARD_KEY);
+  if (key) {
+    process.env.SUMILABU_BOARD_TOKEN = key;
     process.env.SUMILABU_BOARD_URL ||= "https://api.sumilabu.com";
-  } catch {
-    delete process.env.SUMILABU_BOARD_TOKEN;
   }
 }
 

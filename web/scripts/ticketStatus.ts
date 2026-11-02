@@ -1,4 +1,5 @@
 import { execFileSync } from "node:child_process";
+import { boardKey } from "./boardKey.ts";
 import { isHeldNow } from "../src/lib/board/rules.ts";
 
 /**
@@ -9,7 +10,8 @@ import { isHeldNow } from "../src/lib/board/rules.ts";
  *
  * Keys: SUMILABU_BOARD_TOKEN for spx-stats (as pnpm task), and
  * SUMILABU_BOARD_TOKEN_<KEY> (upper case, - as _) for the others, else on a Mac
- * the keychain item "sumilabu board <key>". A key is never printed. A board
+ * the keychain item "sumilabu board <key>", else the file named <key> in the
+ * .config/sumilabu-board folder of the home directory (scripts/boardKey.ts). A key is never printed. A board
  * with no key or no answer says so and the rest still print.
  */
 
@@ -191,13 +193,7 @@ export function realVersions(): Waiting[] {
 
 export function realToken(board: string): string | null {
   const env = board === "spx-stats" ? process.env.SUMILABU_BOARD_TOKEN : process.env[`SUMILABU_BOARD_TOKEN_${board.toUpperCase().replace(/-/g, "_")}`];
-  if (env?.trim()) return env.trim();
-  if (process.platform !== "darwin") return null;
-  try {
-    return execFileSync("security", ["find-generic-password", "-s", `sumilabu board ${board}`, "-w"], { encoding: "utf8", stdio: ["ignore", "pipe", "ignore"] }).trim() || null;
-  } catch {
-    return null;
-  }
+  return boardKey(board, { env });
 }
 
 export async function runStatus(args: string[]): Promise<void> {

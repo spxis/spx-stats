@@ -289,7 +289,8 @@ Project: this repository keeps its Issues and Projects empty on purpose, so an e
          "$SUMILABU_BOARD_URL/api/v1/projects/spx-stats/tickets?unfinished=1"
 
 The token comes from the environment, or on a Mac from the keychain item `sumilabu board spx-stats`
-(`security find-generic-password -s "sumilabu board spx-stats" -w`); never print it, log it or write it
+(`security find-generic-password -s "sumilabu board spx-stats" -w`); `pnpm task --board <key>` and `pnpm task status` also read the file named
+after the board in the home directory's `.config/sumilabu-board` folder when the environment and the keychain have none. Never print a key, log it or write it
 anywhere. A `200` with a `tickets` array means the board is healthy.
 
     pnpm task                                                   # list: waiting, in progress, stale holds
