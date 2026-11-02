@@ -27,8 +27,8 @@ importers:
         specifier: 0.10.2
         version: 0.10.2(@johnmorrisdotca/hata@1.5.0)
       '@johnmorrisdotca/meigen-sports':
-        specifier: 0.20.0
-        version: 0.20.0
+        specifier: 0.20.2
+        version: 0.20.2
       '@johnmorrisdotca/senshu-jerseys':
         specifier: 0.5.2
         version: 0.5.2
@@ -428,8 +428,8 @@ packages:
       '@resvg/resvg-js':
         optional: true
 
-  '@johnmorrisdotca/meigen-sports@0.20.0':
-    resolution: {integrity: sha512-Hn2K8neYKfvsitx+3dVol45g8Gk8vyx3T6LarPqFtEKCC7LrqCCmKDbgusRZe70fI9bwXchVXnY7tp6sBSUTeQ==}
+  '@johnmorrisdotca/meigen-sports@0.20.2':
+    resolution: {integrity: sha512-J9SYBbJwd8nV/K10qwyLCkh/DfpGf5VVbWIsKg3jJEyljNx/BFkYWyUfkJSSigpqHPMkFmy4JblcESx8bYeBNA==}
     engines: {node: '>=22'}
 
   '@johnmorrisdotca/senshu-jerseys@0.5.2':
@@ -2748,7 +2748,7 @@ snapshots:
     optionalDependencies:
       '@johnmorrisdotca/hata': 1.5.0
 
-  '@johnmorrisdotca/meigen-sports@0.20.0':
+  '@johnmorrisdotca/meigen-sports@0.20.2':
     dependencies:
       '@johnmorrisdotca/koyomi-calendars': 0.1.0
 

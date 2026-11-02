@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.178.2", date: "2026-11-02", href: "/nhl",
+    title: "More corrections in Today in history",
+    text: "\"Today in history\" now comes from Meigen Sports 0.20.2: more retired numbers name the club as it was called that day, and finals played before 2021 no longer name a building by the name it took later. Administrators can also ask NHL.com to confirm a score from the Refresh dialog; nothing it answers is saved.",
+  },
   { version: "0.178.1", date: "2026-11-02", href: "/nhl", needsReview: true,
     title: "Today in history now comes straight from its libraries",
     text: "The facts of \"Today in history\" now come from Meigen Sports 0.20.0 as they are, with the club and the building named as on the day, and the calendar page is drawn by Koyomi Calendars. The page looks the same; three days show a different All-Star Game line than before.",
