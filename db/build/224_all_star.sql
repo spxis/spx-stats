@@ -25,7 +25,7 @@ select e.league, e.year, e.event_no, e.article, e.status, e.status_reason, e.for
        e.attendance,
        coalesce(p.revision_id, (select revision_id from legacy_wikipedia_all_star.page l where l.kind = 'list' and l.league = e.league limit 1)) as revision_id,
        case when e.league in ('nhl', 'nba') then coalesce(extract(year from e.first_day)::int - case when extract(month from e.first_day) < 9 then 1 else 0 end, e.year - 1)
-            when e.league = 'nfl' then coalesce(extract(year from e.first_day)::int - case when extract(month from e.first_day) < 6 then 1 else 0 end, e.year)
+            when e.league = 'nfl' then coalesce(extract(year from e.first_day)::int - case when extract(month from e.first_day) < 6 then 1 else 0 end, e.year - 1)   -- a Pro Bowl with no day (cancelled) is held in January or February: the season before
             else coalesce(extract(year from e.first_day)::int, e.year) end as start_year
 from legacy_wikipedia_all_star.event e
 left join legacy_wikipedia_all_star.page p on p.title = e.article;

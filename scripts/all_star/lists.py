@@ -285,6 +285,12 @@ def mlb(text, today):
     return events, issues
 
 
+def cancel_sentence(text, year):
+    """The sentence of the article that says the Pro Bowl of `year` was cancelled and why ('The [[2021 Pro Bowl]] game was canceled due to the [[COVID-19 pandemic]]'), or ''."""
+    m = re.search(r"\[\[%d Pro Bowl\]\][^.\n]*?\bcancel+ed\b[^.\n]*" % year, text)
+    return plain(m.group(0)) if m else ""
+
+
 def nfl(text, today):
     """The Pro Bowl: every table of the 'Game results' section; the columns are found by their headers."""
     events, issues = [], []
@@ -305,6 +311,14 @@ def nfl(text, today):
                 continue
             d0, d1 = wiki.date_range(cells[ci["date"]])
             if d0 is None:
+                continue
+            if any("esports" in h.lower() for h in t.path):
+                # a Madden game played in place of a Pro Bowl that was not held: the Pro Bowl itself is cancelled, with no day, venue, score or MVP
+                ls = links(cells[ci["score"]]) or links(cells[ci["date"]])
+                # the article stays (the roster was still voted and named), but its infobox is not read for a day or a venue
+                ev = new_event("nfl", d0.year, ls[0][0] if ls and re.search(r"(Pro Bowl|All-Star Game)", ls[0][0]) else None)
+                ev["status"], ev["status_reason"] = "cancelled", reason_of(cancel_sentence(text, d0.year))
+                events.append(ev)
                 continue
             sc = cells[ci["score"]]
             ls = links(sc) or links(cells[ci["date"]])

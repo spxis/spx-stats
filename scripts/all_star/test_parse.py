@@ -375,6 +375,34 @@ def test_nfl():
     check("nfl two-day event", (e["played_on"], e["last_day"]), (datetime.date(2024, 2, 1), datetime.date(2024, 2, 4)))
 
 
+NFL_ESPORTS = """The [[2021 Pro Bowl]] game was canceled due to the [[COVID-19 pandemic]], and new host [[Allegiant Stadium]] was held over to the [[2022 Pro Bowl]].<ref>x</ref>
+
+==Game results==
+===AFC–NFC eSports Pro Bowl (2020)===
+{|class="wikitable"
+|-
+! Season !! Date !! Score !! Series !! Most Valuable Player
+|- style="background:#d0e7ff"
+| {{nfly|2020}} || January 31, 2021 ||[[2021 Pro Bowl|NFC 32–12]] || AFC, 25–23 || [[Kyler Murray]], [[2020 Arizona Cardinals season|Arizona]], Quarterback
+|}
+
+===AFC–NFC Pro Bowl (2021)===
+{|class="wikitable"
+|-
+! Season !! Date !! Score !! Series !! Most Valuable Player(s) !! Venue !! Attendance
+|- style="background:#fcc"
+| {{nfly|2021}} || February 6, 2022 || [[2022 Pro Bowl|AFC 41–35]] || AFC, 26–23 || [[Justin Herbert]], [[Los Angeles Chargers]], Quarterback || [[Allegiant Stadium]] || 56,206
+|}
+"""
+
+
+def test_nfl_esports():
+    evs, iss = lists.read_list("nfl", NFL_ESPORTS, TODAY)
+    check("the eSports game is not the Pro Bowl: 2021 is cancelled, 2022 played", [(e["year"], e["status"]) for e in evs], [(2021, "cancelled"), (2022, "played")])
+    c = ev_by(evs, 2021)
+    check("the cancelled Pro Bowl has no day, venue, score or MVP, keeps its article for the roster, and the page's reason", (c["status_reason"], c["played_on"], c["venue_name"], c["article"], c["games"], c["mvps"]), ("pandemic", None, None, "2021 Pro Bowl", [], []))
+
+
 def test_cfl_wnba():
     evs, iss = lists.read_list("cfl", CFL, TODAY)
     check("cfl", [(e["year"], e["played_on"], e["games"][0]["side1"], e["games"][0]["score1"], e["games"][0]["score2"], e["attendance"]) for e in evs],
@@ -427,7 +455,7 @@ def test_sql():
 
 
 def main():
-    for t in (test_results, test_dates, test_nhl, test_nba, test_mlb, test_nfl, test_cfl_wnba, test_game, test_sql):
+    for t in (test_results, test_dates, test_nhl, test_nba, test_mlb, test_nfl, test_nfl_esports, test_cfl_wnba, test_game, test_sql):
         try:
             t()
         except Exception as e:  # noqa: BLE001

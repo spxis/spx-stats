@@ -55,7 +55,8 @@ def build(raw, today=None):
                 if ev["played_on"] is None and ev["status"] == "played":
                     ev["played_on"], ev["last_day"] = info.get("first_day"), info.get("last_day")
                 for k in ("venue_name", "venue_title", "city_text", "city_title", "attendance"):
-                    if ev[k] is None and info.get(k) is not None:
+                    # a cancelled event has no venue: its article's infobox holds the note that it was cancelled
+                    if ev[k] is None and info.get(k) is not None and ev["status"] == "played":
                         ev[k] = info[k]
                 if ev["status"] == "played" and ev["played_on"] is None:
                     unparsed.append(dict(league=lg, year=ev["year"], what="date", detail="no day found in the list or the game article"))
