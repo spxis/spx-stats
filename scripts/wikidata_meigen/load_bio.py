@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Load meigen-sports priority bio CSVs into legacy_wikidata_meigen.
 
-One command from the repo root (after migrations 121 and 190):
+One command from the repo root (after migrations 121, 190 and 191):
 
   python3 -I scripts/wikidata_meigen/load_bio.py
 

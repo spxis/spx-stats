@@ -1,5 +1,5 @@
 #!/bin/bash
-# Scratch Postgres for the bio step (migration 190, db/build/239, load_bio.py) on top of 121 and 215.
+# Scratch Postgres for the bio step (migrations 190 and 191, db/build/239, load_bio.py) on top of 121 and 215.
 # Removes the container by name when done. Never talks to DS1 or production.
 set -euo pipefail
 HERE="$(cd "$(dirname "$0")" && pwd)"
@@ -21,9 +21,10 @@ for _ in $(seq 1 30); do pg_isready -h 127.0.0.1 -p "$PORT" -U postgres >/dev/nu
 
 psql -v ON_ERROR_STOP=1 -q -f "$HERE/scratch_schema.sql"
 psql -v ON_ERROR_STOP=1 -q -f db/migrations/121_legacy_wikidata_meigen.sql
-psql -v ON_ERROR_STOP=1 -q -f db/migrations/190_meigen_person_bio.sql
-# a second run of the migration changes nothing
-psql -v ON_ERROR_STOP=1 -q -f db/migrations/190_meigen_person_bio.sql
+for m in 190_legacy_wikidata_meigen_bio 191_meigen_person_bio; do
+  psql -v ON_ERROR_STOP=1 -q -f db/migrations/$m.sql
+  psql -v ON_ERROR_STOP=1 -q -f db/migrations/$m.sql 2>/dev/null   # a second run changes nothing
+done
 python3 -I scripts/wikidata_meigen/load.py
 python3 -I scripts/wikidata_meigen/load_bio.py
 

@@ -4,7 +4,7 @@
 -- replaced (sources wikidata_meigen and wikipedia_meigen). 182 deletes only
 -- source wikidata career rows, so these stay. Exact-day dates only (prec 11).
 -- Citizenship is not birthplace. No begin/commit: ds1-apply.sh wraps one
--- transaction. Run after 121, 190, 215 and scripts/wikidata_meigen/load_bio.py.
+-- transaction. Run after 121, 190, 191, 215 and scripts/wikidata_meigen/load_bio.py.
 
 create temp table mg on commit drop as
 select source_id from meta.source where code = 'wikidata_meigen';
