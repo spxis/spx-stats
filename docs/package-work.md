@@ -115,9 +115,30 @@ Tests passing is not enough: John judges by looking. Before any push that change
 - **Real proportions and detail, never cartoon.** Soft shading and folds where cloth is drawn, crisp edges, true ratios (a puck
   is 3:1, a floor slab has thickness), nothing that reads as a blob.
 
+## No 3D release without a freeze test (CRITICAL, John 2026-11-02)
+
+A test run on the Mac Studio panicked the kernel in the graphics driver (Chrome's GPU process, 2026-11-02). It must not happen again. Every package and app with **live 3D (WebGL)** has both of these, and its release does not go out without them. CSS 3D transforms and SVG are not WebGL and need neither.
+
+1. **A freeze test in its release**: `e2e/freeze.demo.*` and a `pnpm test:freeze` script, run by CI and by the release (the repo's `release.yml` passes `freeze-command: pnpm test:freeze` to kazoku-ui's `reusable-release.yml`, 0.9.1 and later). It plays the page and fails on: more than one animation frame asked for at a time, a draw when nothing moves or the view is out of sight, **live** WebGL contexts or GPU objects (buffers, vertex arrays, textures, programs) that grow over a run of changes (count live ones: a context let go takes what it held with it), and a canvas past 6 million pixels or 4096 a side on a 5K screen at a pixel ratio of 2. Copy `e2e/freeze.demo.ts` from uchusen-rockets or hako-devices, or `e2e/freeze.demo.mjs` from senshu-jerseys; kazoku-ui's `/testing` kit has the counters.
+2. **Tests draw in software, never on the machine's graphics card.** Every Chromium project in `playwright.config` has `launchOptions: { args: [...SOFTWARE_GL_ARGS] }` (`--use-gl=angle --use-angle=swiftshader --enable-unsafe-swiftshader --ignore-gpu-blocklist`; kazoku-ui's `/testing` exports it). WebKit has no software switch: off CI its projects skip (`testIgnore`) the pages that draw WebGL, and CI plays them. One headless browser at a time on a Mac, closed when finished; never leave a browser or dev server running; never open Chrome with dozens of tabs on a WebGL demo.
+
+Who has live WebGL (swept 2026-11-02 on origin/main): hako-devices and uchusen-rockets (both done), senshu-jerseys (the judogi designer: done in 0.33.3), kazoku-ui (the shared renderer: done in 0.9.1), hotaru (its own ticket) and chikyu-earth (on machine2). fuda-cards has no WebGL. A new package that adds WebGL adds the freeze test in the same change.
+
+## No long pages of fold-open sections (John, 2026-11-02)
+
+John: "I hate having to scroll all the way down to see stuff." In every package demo, docs site and app (spxn.com, hotaru included), a stack or loop of sections that fold open and are scrolled through to find things is not allowed. How to choose and show options instead:
+
+- **Clicks in a row**: kind, then family, then model; the chosen thing and its options sit on one screen. A tile or chip row, a segmented picker or a small grid.
+- **Tabs**, a **grid** of pictures, or a **search box** with the matches below it, for a long list.
+- Where two packages need the same picker, it is a `kazoku-ui` part (a ticket on that board), not a copy.
+- Allowed: **one** small "More options" fold, or one "The call that draws it" / "Show table" fold beside the demo it explains, closed by default. Not allowed: several folds stacked in one panel, a fold per item in a list, a fold open by default that pushes the demo down, or a gallery built from folds by script (a `details` element is not the only way: check `aria-expanded` and hand-built toggles too).
+- A page that has a gallery of many items shows a grid you can see at once, with the selected item big beside or above it.
+
+Sweep and file: when you touch a demo or site page, count its folds first. A page with the pattern gets a ticket on its project's board (one per page, naming the file), or you fix it when it is small and you own the repo that session. Check with `git grep -nE "<details|createElement\(.details|aria-expanded" origin/main -- demo site docs`.
+
 ## Checks, push, release
 
-1. All green locally before every push: `pnpm check`, `pnpm test:readme`, the demo e2e (in kyogijo: `pnpm test:demo`).
+1. All green locally before every push: `pnpm check`, `pnpm test:readme`, the demo e2e (in kyogijo: `pnpm test:demo`), and the freeze test where the package has live 3D (`pnpm test:freeze`).
 2. Fetch and rebase on `origin/main`, push fast-forward to `main`. A push starts CI (kyogijo: about 16 minutes).
 3. Make a release commit: bump `package.json` (and `src/version.ts` where it exists) from the highest tag, regenerate
    version-dependent fixtures and snapshots, move the CHANGELOG's Unreleased block under the version. Push it.
