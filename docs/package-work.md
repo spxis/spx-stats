@@ -68,8 +68,11 @@ say so at once. Work committed in your worktree is kept, and the session that st
 - Planned parts (SPX-844): the light/dark switch, the language picker, choices kept in the address, and a save-as-image button.
 - Add it as a devDependency for a demo. Make it a dependency only when the package's own element imports it, and say so in the
   hand-off. A plain HTML page needs an import map; the kazoku-ui README shows one.
-- A shared release workflow (SPX-843) and one AGENTS.md template for package repos (SPX-845) are coming. Until then, follow
-  each repo's own release.yml and AGENTS.md.
+- **Shared release workflow** (kazoku-ui 0.7.2): `reusable-release.yml` does the whole release; a repo's `release.yml` calls it. See
+  "Moving a repo to the shared release workflow" below. A repo that has not moved keeps following its own release.yml.
+- **AGENTS.md template** (kazoku-ui 0.7.3): `templates/AGENTS.md` in kazoku-ui holds the family rules above a marker and the
+  repo's own facts (board, prefix, ports, checks, release, hand-off project) below it; `docs/agents-template.md` there says how to
+  adopt it and which repos would. Adopt it when a repo is next touched, not as a sweep.
 
 ## One agent per repo
 
@@ -123,6 +126,31 @@ Tests passing is not enough: John judges by looking. Before any push that change
    The workflow publishes to npm by trusted publishing. Never publish from a Mac or with a token. The one exception is a
    package with no trusted publisher yet (fuda-cards today): John publishes it by hand from a clean copy of the release commit.
 5. Ask John first for a new package name, a first publish, a major version, a deprecation or a licence change.
+
+## Moving a repo to the shared release workflow
+
+npm trusted publishing accepts a called workflow. Source: https://docs.npmjs.com/trusted-publishers, Troubleshooting (read 2026-11-02):
+for `workflow_call`, "validation checks the calling workflow's name instead of the workflow that actually contains the publish
+command", and "The `id-token: write` permission must also be given to both parent and child workflows." So the trusted-publisher entry
+on npmjs.com keeps naming the repo's own `release.yml` (the caller), never the shared file. This is from the documentation; the first
+real release through it is the proof.
+
+Do it when the repo is being touched anyway, one agent per repo, and tell John in the hand-off:
+
+1. Keep the file name `release.yml` and replace its steps with the call (pin to a released kazoku-ui tag, not `@main`; a tag exists only after John's release run):
+
+       name: Release
+       on: { push: { tags: ["v*"] }, workflow_dispatch: }
+       permissions: { contents: write, id-token: write }
+       jobs:
+         release:
+           uses: johnmorrisdotca/kazoku-ui/.github/workflows/reusable-release.yml@v0.7.2
+           # with: { check-command: pnpm check, node-version: "24", github-release: true }
+
+2. The repo needs pnpm with a `packageManager` field, and a check script that builds and tests what is published (the default is `pnpm check`).
+3. A repo with no trusted-publisher entry yet (fuda-cards) needs John to add it first: workflow filename `release.yml`.
+4. Do not run it. John runs the Release workflow; it checks the tag against `package.json`, runs the check, skips a version already on npm,
+   tags `v<version>` if missing, and publishes with provenance. Details: kazoku-ui `docs/release-workflow.md`.
 
 ## Hand-off (every finished ticket, packages included)
 
