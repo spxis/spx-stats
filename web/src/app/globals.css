@@ -117,19 +117,20 @@
   .seg { box-sizing: border-box; min-height: var(--control-h); }
   .seg > button, .seg > a { box-sizing: border-box; align-self: stretch; display: inline-flex; align-items: center; justify-content: center; min-height: calc(var(--control-h) - 2px); padding-block: 0; line-height: 1; }
   /* The header is a layer of its own, one above --z-pop: the user menu opens from it and must paint over every page block, including one lifted for an open popover (the rule on .page below). */
-  .top { position: relative; z-index: calc(var(--z-pop) + 1); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding-block: 18px 14px; border-bottom: 2px solid var(--ink); max-width: 1180px; margin-inline: auto; }
-  .brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  /* The header is a container (hdr) so its layout follows its own width, not the window's: wide, one row (brand, the menu in two lines, the account controls beside its top line); narrower, the brand and the account controls share the first row and the menu takes the full row under them. The switch width is per language below (the words differ in length). */
+  .top { container: hdr / inline-size; position: relative; z-index: calc(var(--z-pop) + 1); display: flex; flex-wrap: wrap; align-items: center; gap: 12px 28px; padding-block: 18px 14px; border-bottom: 2px solid var(--ink); max-width: 1180px; margin-inline: auto; }
+  .brand { order: 1; display: flex; align-items: center; gap: 10px; text-decoration: none; }
   .brand-mark { font: 700 28px/1 var(--display); letter-spacing: .04em; background: var(--ink); color: var(--paper); padding: 2px 8px 0; }
   .brand-name { font: 600 22px/1 var(--display); letter-spacing: .03em; text-transform: uppercase; }
-  .leagues, .aux { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  .leagues, .aux, .lg-main, .lg-sub { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+  /* The league menu is two lines that never run into each other: the sports, then the open sport's own links (Scores, All-time, More hockey) together on one line. */
+  .leagues { order: 3; flex: 1 1 100%; min-width: 0; flex-direction: column; flex-wrap: nowrap; gap: 4px; }
+  .lg-main, .lg-sub { align-items: center; }
+  .leagues a, .aux a { white-space: nowrap; }
   .leagues a, .aux a { font: 600 17px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; text-decoration: none; padding-block: 6px; border-bottom: 3px solid transparent; }
   .leagues a[aria-current="page"] { border-bottom-color: var(--accent); }
   .leagues a.sub { color: var(--muted); font-size: 15px; padding-left: 18px; border-left: 1px solid var(--rule); }
   .leagues a.sub[aria-current="page"] { color: var(--ink); }
-  /* "More hockey": one link on a line of its own, under the NHL tab, on every hockey page. */
-  .leagues .leaguebreak { flex-basis: 100%; height: 0; }
-  .leagues.withmore { max-width: min(100%, 500px); }
-  .leagues a.sub.more { border-left: 0; padding-left: 0; }
   .otherleagues { margin: 8px 0 0; padding-left: 18px; line-height: 1.7; }
   .hockeyleagues { list-style: none; padding-left: 0; }
   .hockeyleagues li { padding: 10px 0; border-top: 1px solid var(--rule); }
@@ -165,11 +166,20 @@
   .crumbs.wide ~ .head > .eyebrow, .crumbs.wide ~ * > .head > .eyebrow { padding-inline-start: 8.2em; }
   /* on a phone the heading rows differ from page to page, so the long crumb would overlap them: the More hockey link of the menu is right above */
   @media (max-width: 640px) { .crumbs.wide { display: none; } .crumbs.wide ~ .head > .eyebrow, .crumbs.wide ~ * > .head > .eyebrow { padding-inline-start: 0; } }
-  .aux { margin-left: auto; }
+  /* A phone: the links and the account controls are the last two lines of the header, in that order whatever the language or who is signed in. */
+  .aux { order: 4; flex: 1 1 100%; }
+  .aux-links { display: flex; flex: 1 1 100%; flex-wrap: wrap; gap: 4px 18px; }
   .aux a { color: var(--muted); }
   .theme { font: 600 14px/1 var(--display); text-transform: uppercase; letter-spacing: .06em; padding: 0 10px; border: 1px solid var(--rule); background: var(--panel); color: var(--ink); cursor: pointer; }
   .theme:hover { border-color: var(--ink); }
   .aux { align-items: center; }
+  /* The account controls move up beside the brand (one line, right-aligned) once the header is wider than the brand plus the widest controls, and sit level with the menu's top line when it is wide enough for everything on one row. The widths are the brand, the longest menu line, the widest account controls and the gaps, per language: the words differ in length, the controls most (French, Japanese). `pnpm test:header` checks every width. */
+  @container hdr (min-width: 660px) { :lang(en) .aux { order: 2; flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; } :lang(en) .aux-links { display: contents; } }
+  @container hdr (min-width: 710px) { :lang(fr) .aux { order: 2; flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; } :lang(fr) .aux-links { display: contents; } }
+  @container hdr (min-width: 780px) { :lang(ja) .aux { order: 2; flex: 0 0 auto; flex-wrap: nowrap; margin-left: auto; } :lang(ja) .aux-links { display: contents; } }
+  @container hdr (min-width: 1150px) { :lang(en) .leagues { order: 2; flex: 1 1 auto; } :lang(en) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
+  @container hdr (min-width: 1200px) { :lang(fr) .leagues { order: 2; flex: 1 1 auto; } :lang(fr) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
+  @container hdr (min-width: 1290px) { :lang(ja) .leagues { order: 2; flex: 1 1 auto; } :lang(ja) .aux { order: 3; align-self: flex-start; margin-top: -4px; } }
   /* Signed-out controls on a kept page: gone before the first paint for a browser that carries the sign-in hint (lib/auth/hint.ts). */
   .anon { display: contents; }
   html[data-in] .anon { display: none; }
@@ -603,7 +613,6 @@
     @keyframes fade { from { opacity: .4; transform: translateY(4px); } }
   }
   @media (max-width: 640px) {
-    .aux { margin-left: 0; }
     .figure b { font-size: 30px; }
     .cell { min-height: 46px; padding: 3px 4px; }
     .cell .ct { font-size: 16px; }

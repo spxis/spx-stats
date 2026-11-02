@@ -24,9 +24,11 @@ export async function SiteHeader() {
       </IntentLink>
       <LeagueNav />
       <nav className="aux" aria-label={say("nav.about")}>
-        <IntentLink href="/teams">{say("nav.teams")}</IntentLink>
-        <IntentLink href="/players">{say("nav.players")}</IntentLink>
-        <IntentLink href="/about">{say("nav.aboutPage")}</IntentLink>
+        <span className="aux-links">
+          <IntentLink href="/teams">{say("nav.teams")}</IntentLink>
+          <IntentLink href="/players">{say("nav.players")}</IntentLink>
+          <IntentLink href="/about">{say("nav.aboutPage")}</IntentLink>
+        </span>
         <HeaderAccount version={pkg.version} signIn={authEnabled()} />
       </nav>
     </header>

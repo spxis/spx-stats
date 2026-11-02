@@ -17,6 +17,9 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.177.1", date: "2026-11-02", href: "/nhl",
+    title: "The menu at the top no longer wraps apart",
+    text: "More hockey no longer sits alone on a third line, away from Scores and All-time, and Teams, Players, About and the sign-in controls no longer drop to a row of their own. The header is shorter, the same height signed in or out, in English, French and Japanese.",
   { version: "0.177.0", date: "2026-11-02", href: "/nhl",
     title: "A league's page leads with its champion and today in history",
     text: "A league's home page now runs: heading, then the latest champion beside \"Today in hockey (basketball, baseball, football) history\", then the seasons, with the other leagues below. History is by sport (football shows the NFL and the CFL together), newest year first, checked so each club is named as it was that day. An ended league says Final champion.",
