@@ -132,8 +132,8 @@ Tests passing is not enough: John judges by looking. Before any push that change
 npm trusted publishing accepts a called workflow. Source: https://docs.npmjs.com/trusted-publishers, Troubleshooting (read 2026-11-02):
 for `workflow_call`, "validation checks the calling workflow's name instead of the workflow that actually contains the publish
 command", and "The `id-token: write` permission must also be given to both parent and child workflows." So the trusted-publisher entry
-on npmjs.com keeps naming the repo's own `release.yml` (the caller), never the shared file. This is from the documentation; the first
-real release through it is the proof.
+on npmjs.com keeps naming the repo's own `release.yml` (the caller), never the shared file. It is also proved: kazoku-ui 0.7.2 was
+released through it on 2026-11-02 (npm, with provenance).
 
 Do it when the repo is being touched anyway, one agent per repo, and tell John in the hand-off:
 
