@@ -1,0 +1,78 @@
+{{Infobox Olympic event
+|event = Men's 100 metres
+|games = 2008 Summer
+|venue = [[Beijing National Stadium]]
+|dates = {{ubl|15 August (heats and quarterfinals)|16 August (semifinals and final)}}
+|competitors = 80
+|nations = 64
+|win_value = 9.69 '''[[Men's 100 metres world record progression|WR]]'''
+|gold = [[Usain Bolt]]
+|goldNOC = JAM
+}}
+==Records==
+{| class="wikitable"
+! Record !! Athlete !! Time
+|-
+| World record || Bolt || 9.72
+|}
+==Results==
+===Heats===
+The first round was held on 15 August.
+
+====Heat 1====
+
+{| class="wikitable sortable" style="text-align:center"
+|-
+! Rank !! Lane !! Athlete !! Nation !! Reaction !! Time !! Notes
+|-bgcolor=bbf3bb
+| 1 || 3 ||align="left"| [[Usain Bolt]] ||align="left"| {{flagIOC|JAM|2008 Summer}} ||0.186|| 10.20 || {{abbr|Q|Qualified for quarterfinals by place}}
+|-bgcolor=bbf3bb
+| 3 || 6 ||align="left"| [[Vicente de Lima]] ||align="left"| {{flagIOC|BRA|2008 Summer}} ||0.168|| 10.26 || {{abbr|Q|Qualified for quarterfinals by place}}, {{abbr|SB|Season best}}
+|-
+| 5 || 4 ||align="left"| Unlinked Runner ||align="left"| {{flagIOC|ITA|2008 Summer}} || 0.136|| 10.49 || 
+|-
+| 8 || 7 ||align="left"| [[Francis Manioru]] ||align="left"| {{flagIOC|SOL|2008 Summer}} || || {{AthAbbr|DNS}} || 
+|-
+|colspan=4| || colspan=4 align=left| Wind: -0.2&nbsp;m/s
+|}
+
+====Heat 2====
+
+{| class="wikitable sortable" style="text-align:center"
+|-
+! Rank !! Lane !! Athlete !! Nation !! Reaction !! Time !! Notes
+|-bgcolor=bbf3bb
+| 1 || 5 ||align="left"| [[Richard Thompson (athlete)|Richard Thompson]] ||align="left"| {{flagIOC|TRI|2008 Summer}} ||0.133|| 10.18 || {{abbr|Q|Qualified for quarterfinals by place}}
+|-
+|colspan=4| || colspan=4 align=left| Wind: +1.1&nbsp;m/s
+|}
+
+===Semifinals===
+====Semifinal 1====
+Wind: +0.3 m/s
+
+{| class="wikitable sortable" style="text-align:center"
+|-
+! Rank !! Lane !! Athlete !! Nation !! Reaction !! Time !! Notes
+|-
+| 1 || 4 ||align="left"| [[Usain Bolt]] ||align="left"| {{flagIOC|JAM|2008 Summer}} ||0.150|| 9.85 || Q
+|}
+
+===Final===
+{{Wikinews|Usain Bolt sets new world record in 100m sprint}}
+The final was held on 16 August.
+
+{| class="wikitable sortable" style="text-align:center"
+|-
+! Rank !! Lane !! Athlete !! Nation !! Reaction !! Time !! Notes
+|-
+| {{Gold1}} || 4 ||align="left"| [[Usain Bolt]] ||align="left"| {{flagIOC|JAM|2008 Summer}} ||0.165|| 9.69 || {{WR|athletics}}
+|-
+| {{Silver2}} || 5 ||align="left"| [[Richard Thompson (athlete)|Richard Thompson]] ||align="left"| {{flagIOC|TRI|2008 Summer}} ||0.133|| 9.89 || {{abbr|PB|Personal best}}
+|-
+| {{Bronze3}} || 6 ||align="left"| [[Walter Dix]] ||align="left"| {{flagIOC|USA|2008 Summer}} || 0.133||9.91 || {{abbr|PB|Personal best}}
+|-
+|colspan=4| || colspan=4 align=left| Wind: 0.0&nbsp;m/s
+|}
+
+==References==

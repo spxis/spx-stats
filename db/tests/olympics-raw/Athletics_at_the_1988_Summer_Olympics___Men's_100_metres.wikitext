@@ -1,0 +1,32 @@
+{{Infobox Olympic event
+|event = Men's 100 metres
+|games = 1988 Summer
+|gold = [[Carl Lewis]]
+|goldNOC = USA
+}}
+==Results==
+===Final===
+{| class="wikitable sortable" style="text-align:center"
+! Rank
+! Athlete !! Nation
+! Time !! Notes
+|-
+| {{gold01}}
+|align=left| [[Carl Lewis]] ||align=left| {{flagIOC|USA|1988 Summer}}
+| 9.92
+| WR
+|-
+| {{silver02}}
+|align=left| [[Linford Christie]] ||align=left| {{flagIOC|GBR|1988 Summer}}
+| 9.97
+| NR
+|-
+| {{abbr|DQ|Disqualified}}
+|align=left| [[Ben Johnson (Canadian sprinter)|Ben Johnson]] ||align=left| {{flagIOC|CAN|1988 Summer}}
+| <s>9.79</s>
+|
+|-
+|- class="sortbottom"
+|colspan=3| || colspan="3" style="text-align:left;"| Wind: +1.1&nbsp;m/s
+|}
+==References==

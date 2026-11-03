@@ -1,0 +1,45 @@
+{
+ "fetched_on": "2026-11-03",
+ "articles": [
+  {
+   "event": "100m-m",
+   "year": 2008,
+   "requested": "Athletics at the 2008 Summer Olympics – Men's 100 metres",
+   "title": "Athletics at the 2008 Summer Olympics – Men's 100 metres",
+   "revid": 1001,
+   "timestamp": "2026-10-01T00:00:00Z",
+   "file": "Athletics_at_the_2008_Summer_Olympics___Men's_100_metres.wikitext",
+   "qid": "Q754844"
+  },
+  {
+   "event": "100m-m",
+   "year": 1988,
+   "requested": "Athletics at the 1988 Summer Olympics – Men's 100 metres",
+   "title": "Athletics at the 1988 Summer Olympics – Men's 100 metres",
+   "revid": 1002,
+   "timestamp": "2026-10-01T00:00:00Z",
+   "file": "Athletics_at_the_1988_Summer_Olympics___Men's_100_metres.wikitext",
+   "qid": "Q488601"
+  },
+  {
+   "event": "100m-m",
+   "year": 1968,
+   "requested": "Athletics at the 1968 Summer Olympics – Men's 100 metres",
+   "title": "Athletics at the 1968 Summer Olympics – Men's 100 metres",
+   "revid": 1003,
+   "timestamp": "2026-10-01T00:00:00Z",
+   "file": "Athletics_at_the_1968_Summer_Olympics___Men's_100_metres.wikitext",
+   "qid": "Q2093825"
+  },
+  {
+   "event": "100m-w",
+   "year": 2008,
+   "requested": "Athletics at the 2008 Summer Olympics – Women's 100 metres",
+   "title": "Athletics at the 2008 Summer Olympics – Women's 100 metres",
+   "revid": 1004,
+   "timestamp": "2026-10-01T00:00:00Z",
+   "file": "Athletics_at_the_2008_Summer_Olympics___Women's_100_metres.wikitext",
+   "qid": "Q853040"
+  }
+ ]
+}

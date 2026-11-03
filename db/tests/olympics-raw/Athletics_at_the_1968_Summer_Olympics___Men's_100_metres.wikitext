@@ -1,0 +1,30 @@
+{{Infobox Olympic event
+|event = Men's 100 metres
+|games = 1968 Summer
+}}
+==Results==
+===Heats===
+====Heat 1====
+
+Wind: +2.8 m/s . The strong tailwind made this heat ineligible for records.
+
+{|class="wikitable sortable" style="text-align:center"
+! Rank !! Athlete !! Nation !! Time !! Notes
+|-bgcolor=bbf3bb
+| 1 ||align=left| [[Charles Greene (athlete)|Charles Greene]] ||align=left| {{flagIOC|USA|1968 Summer}} || 10.09 || {{abbr|Q|Qualified for quarterfinals by place}}
+|-
+| 4 ||align=left|[[Wiesław Maniak]]||align=left|{{flagIOC|POL|1968 Summer}} || 10.49 ||
+|}
+
+===Final===
+Wind: {{convert|+0.3|m/s|mph|abbr=on}}
+{| class="wikitable sortable" style="text-align:center"
+|-
+! Rank !! Lane !! Athlete !! Nation !! Time ({{abbr|h|Hand timing}}) !! Time ({{abbr|a|Automatic timing}})  !! Notes
+|-
+|{{gold1}} || 3 ||align=left|[[Jim Hines]] || align=left| {{FlagIOC|USA|1968 Summer}} || 9.9 || 9.95 || {{WR|athletics|eq=y}} (h), {{WR|athletics}} (a)
+|-
+| 8 || 8 ||align=left| [[Jean-Louis Ravelomanantsoa]] ||align=left| {{FlagIOC|MAD|1968 Summer}} || 10.2 || 10.28 || Photo-finish shows 10.275
+|-
+|}
+==References==

@@ -1,0 +1,120 @@
+{
+ "requested": [
+  "Usain Bolt",
+  "Vicente de Lima",
+  "Francis Manioru",
+  "Richard Thompson (athlete)",
+  "Walter Dix",
+  "Carl Lewis",
+  "Linford Christie",
+  "Ben Johnson (Canadian sprinter)",
+  "Charles Greene (athlete)",
+  "Wiesław Maniak",
+  "Jim Hines",
+  "Jean-Louis Ravelomanantsoa",
+  "Oludamola Osayomi",
+  "Debbie Ferguson",
+  "Evgeniya Polyakova",
+  "Shelly-Ann Fraser"
+ ],
+ "normalized": [],
+ "redirects": [],
+ "pages": [
+  {
+   "title": "Usain Bolt",
+   "missing": false,
+   "qid": "Q1189",
+   "disambiguation": false
+  },
+  {
+   "title": "Vicente de Lima",
+   "missing": false,
+   "qid": "Q90001",
+   "disambiguation": false
+  },
+  {
+   "title": "Francis Manioru",
+   "missing": false,
+   "qid": "Q90002",
+   "disambiguation": false
+  },
+  {
+   "title": "Richard Thompson (athlete)",
+   "missing": false,
+   "qid": "Q90003",
+   "disambiguation": false
+  },
+  {
+   "title": "Walter Dix",
+   "missing": false,
+   "qid": "Q331093",
+   "disambiguation": false
+  },
+  {
+   "title": "Carl Lewis",
+   "missing": false,
+   "qid": "Q131237",
+   "disambiguation": false
+  },
+  {
+   "title": "Linford Christie",
+   "missing": false,
+   "qid": "Q90006",
+   "disambiguation": false
+  },
+  {
+   "title": "Ben Johnson (Canadian sprinter)",
+   "missing": false,
+   "qid": "Q52614",
+   "disambiguation": false
+  },
+  {
+   "title": "Charles Greene (athlete)",
+   "missing": false,
+   "qid": "Q90008",
+   "disambiguation": false
+  },
+  {
+   "title": "Wiesław Maniak",
+   "missing": false,
+   "qid": "Q90009",
+   "disambiguation": false
+  },
+  {
+   "title": "Jim Hines",
+   "missing": false,
+   "qid": "Q90010",
+   "disambiguation": false
+  },
+  {
+   "title": "Jean-Louis Ravelomanantsoa",
+   "missing": false,
+   "qid": "Q90011",
+   "disambiguation": false
+  },
+  {
+   "title": "Oludamola Osayomi",
+   "missing": false,
+   "qid": "Q90012",
+   "disambiguation": false
+  },
+  {
+   "title": "Debbie Ferguson",
+   "missing": false,
+   "qid": "Q90013",
+   "disambiguation": false
+  },
+  {
+   "title": "Evgeniya Polyakova",
+   "missing": false,
+   "qid": "Q90014",
+   "disambiguation": false
+  },
+  {
+   "title": "Shelly-Ann Fraser",
+   "missing": false,
+   "qid": "Q2253",
+   "disambiguation": false
+  }
+ ]
+}

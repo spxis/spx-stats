@@ -1,0 +1,26 @@
+{{Infobox Olympic event
+|event = Women's 100 metres
+|games = 2008 Summer
+}}
+==Results==
+===Heats===
+Qualification: First 3 in each heat ('''Q''') and the next 10 fastest ('''q''') advance to the quarterfinals.
+
+{| class="wikitable sortable" style="text-align:center"
+! Rank !! Heat !! Athlete !!Country !!Time || Notes
+|- bgcolor=bbf3bb
+|1||8||align=left| [[Oludamola Osayomi]] ||align=left| {{flagIOC|NGR|2008 Summer}}  || 11.13 || {{abbr|Q|Qualified for quarterfinals by place}}
+|- bgcolor=bbf3bb
+|2||8||align=left| [[Debbie Ferguson]] ||align=left| {{flagIOC|BAH|2008 Summer}}  || 11.17 || {{abbr|Q|Qualified for quarterfinals by place}}
+|- bgcolor=bbf3bb
+|3||9||align=left| [[Evgeniya Polyakova]] ||align=left| {{flagIOC|RUS|2008 Summer}}  || 11.24 || {{abbr|Q|Qualified for quarterfinals by place}}
+|}
+
+===Final===
+Wind readings- Heat 1: -0.1&nbsp;m/s
+{| class="wikitable sortable" style="text-align:center"
+! Rank !! Lane !! Athlete !! Nation !! Time !! Notes
+|-
+| {{Gold1}} || 5 || [[Shelly-Ann Fraser]] || {{flagIOC|JAM|2008 Summer}} || 10.78 || PB
+|}
+==References==
