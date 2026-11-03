@@ -38,6 +38,7 @@ cleanup() {
      delete from meta.data_issue where issue like '%Zzqtest%' or entity_key = 'zzqtest-keep';
      delete from core.external_id where entity_kind = 'person' and external_key like 'zzqtest%';
      delete from core.roster_stint where person_id in (select person_id from core.person where full_name like 'Zzqtest%');
+     delete from legacy_nflverse.roster where full_name like 'Zzqtest%';
      delete from core.person where full_name like 'Zzqtest%'" >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
@@ -67,6 +68,14 @@ begin
   -- an All-Star roster line that points at the Wikidata record (the one merged away): the merge must move it to the record kept
   insert into core.all_star_selection (league_code, year, event_no, seq, name, person_id, source_id, source_key)
   select 'nfl', 2026, 1, 999999, 'Zzqtest Eller', b, (select source_id from meta.source where code = 'spx_stats_derived'), 'zzqtest-allstar';
+  -- 1b. the date more independent sources agree on wins: nflverse's roster holds the date of the nflverse record, the Wikidata record has the other
+  a := pg_temp.mk('Zzqtest Voted', '1950-02-02', 'wikidata', 'wikidata', 'zzqtest-q1b');          perform pg_temp.st(a, 'nfl', 1968); perform pg_temp.st(a, 'nfl', 1972);
+  b := pg_temp.mk('Zzqtest Voted', '1950-02-12', 'nflverse', 'nflverse', 'zzqtest-n1b');           perform pg_temp.st(b, 'nfl', 1973); perform pg_temp.st(b, 'nfl', 1975);
+  insert into legacy_nflverse.roster (season, row_no, team, full_name, birth_date) values (1973, 999991, 'ZZZ', 'Zzqtest Voted', '1950-02-12');
+  -- 1c. a source that holds both dates contradicts itself and votes for neither: the Wikidata record's date stays
+  a := pg_temp.mk('Zzqtest Bothdates', '1951-03-03', 'wikidata', 'wikidata', 'zzqtest-q1c');       perform pg_temp.st(a, 'nfl', 1968); perform pg_temp.st(a, 'nfl', 1972);
+  b := pg_temp.mk('Zzqtest Bothdates', '1951-03-13', 'nflverse', 'nflverse', 'zzqtest-n1c');        perform pg_temp.st(b, 'nfl', 1973); perform pg_temp.st(b, 'nfl', 1975);
+  insert into legacy_nflverse.roster (season, row_no, team, full_name, birth_date) values (1973, 999992, 'ZZZ', 'Zzqtest Bothdates', '1951-03-13'), (1974, 999993, 'ZZZ', 'Zzqtest Bothdates', '1951-03-03');
   -- 2. spaced initials: "L. C." and "L.C."
   a := pg_temp.mk('Zzqtest L. C. Hill', '1950-03-04', 'wikidata', 'wikidata', 'zzqtest-q2');      perform pg_temp.st(a, 'nfl', 1968); perform pg_temp.st(a, 'nfl', 1972);
   b := pg_temp.mk('Zzqtest L.C. Hill', '1950-03-14', 'nflverse', 'nflverse', 'zzqtest-n2');       perform pg_temp.st(b, 'nfl', 1973); perform pg_temp.st(b, 'nfl', 1976);
@@ -108,6 +117,9 @@ echo "--- run 1"
 "${PSQL[@]}" -f "$S185" >/dev/null
 check "typo pair (Eller) is one record"            1 "$(n 'Zzqtest Eller')"
 check "typo pair keeps the Wikidata date"          1942-01-25 "$(bd 'Zzqtest Eller')"
+check "a source's date beats the Wikidata record's"  1950-02-12 "$(bd 'Zzqtest Voted')"
+check "the vote is logged with the reason"        1 "$(q "select count(*) from meta.data_issue where entity_key like 'merge:%' and issue like '%Zzqtest Voted%' and issue like '%1 source(s) against 0%' and issue like '%nflverse%'")"
+check "a source holding both dates votes for none" 1951-03-03 "$(bd 'Zzqtest Bothdates')"
 check "typo pair: the SPX record is the one kept"  1 "$(q "select count(*) from core.person where full_name = 'Zzqtest Eller' and source_id = (select source_id from meta.source where code = 'spx_database')")"
 check "typo pair: the stints all moved"            4 "$(q "select count(*) from core.roster_stint s join core.person p using (person_id) where p.full_name = 'Zzqtest Eller'")"
 check "typo pair: both external ids on the kept"   2 "$(q "select count(*) from core.external_id x join core.person p on p.person_id = x.entity_id where x.entity_kind = 'person' and p.full_name = 'Zzqtest Eller'")"

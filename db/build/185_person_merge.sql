@@ -25,8 +25,8 @@
 --
 -- Which record is kept: an SPX record where one exists, else the Wikidata record (the build keeps rewriting those from Wikidata), else
 -- the one with more data. The kept record fills its empty fields from the other. Where the two birth dates were a typo, the kept
--- record takes the birth date of the record that is keyed by Wikidata (Wikidata's date wins); when neither is keyed by Wikidata it
--- keeps its own date (the record kept by the rule above: SPX's, else the one with more data), and the merge log names both dates. Everything that pointed at the old record is moved:
+-- record takes the date more independent sources agree on (the vote is described where it is counted below); on a tie the date of the
+-- record keyed by Wikidata, else its own; the merge log names both dates, their sources and the reason. Everything that pointed at the old record is moved:
 -- every table with a foreign key to core.person (found in pg_constraint at run time), id arrays such as core.game_event.person_ids, external ids.
 -- Where the old record's row would clash with one the kept record has on a unique key, the kept record's row stays. Each merge is logged in meta.data_issue
 -- ('merge:...') and the old id goes to core.person_redirect (migration 061).
@@ -224,17 +224,72 @@ create temp table m on commit drop as
 select case when sa.sc > sb.sc or (sa.sc = sb.sc and o.a < o.b) then o.a else o.b end as kept,
        case when sa.sc > sb.sc or (sa.sc = sb.sc and o.a < o.b) then o.b else o.a end as loser, o.why, o.bconf
 from ok_pair o join score sa on sa.person_id = o.a join score sb on sb.person_id = o.b;
--- a birth date typo: the record keyed by Wikidata gives the date; if neither is, the kept record's own date stays (both cannot be:
--- two Wikidata ids are two different ids of one source, which vetoes the pair)
+-- A birth date typo: keep the date that more independent sources agree on. A source votes for a date when it holds a row for this person
+-- with exactly that date: Wikidata (the current P569 of either record's item from the Wikidata dump, else the harvested claims), Lahman (the record's Lahman id), and by name (spaced initials joined) the
+-- nflverse rosters, SPX's rosters and Wikipedia's rosters. Each source counts once. On a tie, or when no source holds either date, the date of the
+-- record keyed by Wikidata stays; if neither is keyed by Wikidata, the kept record's own date stays (both cannot be keyed: two Wikidata ids are
+-- two ids of one source, which vetoes the pair). The merge log names both dates, who holds each, and the reason.
+create function pg_temp.jn(t text) returns text language sql immutable as
+$$ select regexp_replace(core.fold_text(t), '\m([a-z]) (?=[a-z]\M)', '\1', 'g') $$;
+create temp table tp on commit drop as
+select m.kept, m.loser, ka.birth_date as dk, la.birth_date as dl, ka.jn,
+       exists (select 1 from keys where person_id = m.kept and source = 'wikidata') as k_wd,
+       exists (select 1 from keys where person_id = m.loser and source = 'wikidata') as l_wd
+from m join np ka on ka.person_id = m.kept join np la on la.person_id = m.loser where m.bconf;
+create temp table tdates on commit drop as select dk as d from tp union select dl from tp;
+create temp table vote (kept bigint, src text, d date) on commit drop;
+insert into vote
+select tp.kept, 'wikidata', w.d
+from tp join pq on pq.person_id in (tp.kept, tp.loser)
+  join lateral (
+    select case when e ->> 't' ~ '^\+[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T' then substr(e ->> 't', 2, 10)::date end as d
+    from legacy_wikidata_dump.person du, jsonb_array_elements(coalesce(du.doc -> 'P569', '[]'::jsonb)) e
+    where du.qid = pq.qid and (e ->> 'p')::int >= 11
+    union all
+    select c.value_on from legacy_people.claim c
+    where c.qid = pq.qid and c.prop = 'P569' and c.value_prec >= 11 and not exists (select 1 from legacy_wikidata_dump.person du where du.qid = pq.qid)) w on w.d in (tp.dk, tp.dl);
+insert into vote
+select tp.kept, 'lahman', make_date(l.birthyear::int, l.birthmonth::int, l.birthday::int)
+from tp join keys k on k.person_id in (tp.kept, tp.loser) and k.source = 'lahman'
+  join legacy_lahman.people l on l.playerid = k.external_key
+where l.birthyear is not null and l.birthmonth is not null and l.birthday is not null
+  and make_date(l.birthyear::int, l.birthmonth::int, l.birthday::int) in (tp.dk, tp.dl);
+insert into vote
+select tp.kept, 'nflverse', r.birth_date from tp join legacy_nflverse.roster r on r.birth_date in (tp.dk, tp.dl) and pg_temp.jn(r.full_name) = tp.jn;
+insert into vote
+select tp.kept, 'spx', x.d::date from tp join (
+    select player_name as n, player_birth_date as d from legacy_spx.tbl_nfl_rosters union all select player_name, player_birth_date from legacy_spx.tbl_mlb_rosters
+    union all select player_name, player_birth_date from legacy_spx.tbl_nba_rosters union all select player_name, player_birth_date from legacy_spx.tbl_nhl_rosters
+    union all select player_name, player_birthdate from legacy_spx.tbl_nfl_rosters_raw_yahoo union all select player_name, player_birthdate from legacy_spx.tbl_mlb_rosters_raw_yahoo) x
+  on x.d::date in (tp.dk, tp.dl) and pg_temp.jn(x.n) = tp.jn;
+insert into vote
+select tp.kept, 'wikipedia', x.d from tp join (
+    select name as n, dob as d from legacy_rosters.wp_roster union all select name, born from legacy_wikipedia_harvest.roster_row) x
+  on x.d in (tp.dk, tp.dl) and pg_temp.jn(x.n) = tp.jn;
+-- a source that holds both dates (a Wikidata item with two birth claims) contradicts itself and votes for neither
+create temp table tally on commit drop as
+select tp.kept,
+       (select count(distinct src) from vote v where v.kept = tp.kept and v.d = tp.dk
+           and not exists (select 1 from vote w where w.kept = v.kept and w.src = v.src and w.d = tp.dl)) as nk,
+       (select count(distinct src) from vote v where v.kept = tp.kept and v.d = tp.dl
+           and not exists (select 1 from vote w where w.kept = v.kept and w.src = v.src and w.d = tp.dk)) as nl,
+       coalesce((select string_agg(distinct src, ', ') from vote v where v.kept = tp.kept and v.d = tp.dk
+           and not exists (select 1 from vote w where w.kept = v.kept and w.src = v.src and w.d = tp.dl)), 'none') as sk,
+       coalesce((select string_agg(distinct src, ', ') from vote v where v.kept = tp.kept and v.d = tp.dl
+           and not exists (select 1 from vote w where w.kept = v.kept and w.src = v.src and w.d = tp.dk)), 'none') as sl,
+       coalesce((select string_agg(distinct src, ', ') from vote v where v.kept = tp.kept and v.d = tp.dk
+           and exists (select 1 from vote w where w.kept = v.kept and w.src = v.src and w.d = tp.dl)), '') as sboth
+from tp;
 alter table m add column bd date, add column bd_note text;
-update m set bd = case when exists (select 1 from keys where person_id = m.loser and source = 'wikidata')
-                        and not exists (select 1 from keys where person_id = m.kept and source = 'wikidata')
-                       then (select birth_date from core.person where person_id = m.loser) else (select birth_date from core.person where person_id = m.kept) end
- where bconf;
-update m set bd_note = format('birth dates %s and %s; %s is kept, %s', (select birth_date from core.person where person_id = m.kept), (select birth_date from core.person where person_id = m.loser), m.bd,
-                              case when exists (select 1 from keys where person_id = m.kept and source = 'wikidata') or exists (select 1 from keys where person_id = m.loser and source = 'wikidata')
-                                   then 'the date of the record Wikidata keys' else 'neither record is keyed by Wikidata, so the date of the record kept' end)
- where bconf;
+update m set bd = case when t.nk > t.nl then tp.dk when t.nl > t.nk then tp.dl
+                       when tp.l_wd and not tp.k_wd then tp.dl else tp.dk end,
+             bd_note = format('birth dates %s (kept record; held by: %s) and %s (old record; held by: %s)%s; %s is kept: %s', tp.dk, t.sk, tp.dl, t.sl,
+                              case when t.sboth <> '' then format(', %s holds both and counts for neither', t.sboth) else '' end,
+                              case when t.nk > t.nl then tp.dk when t.nl > t.nk then tp.dl when tp.l_wd and not tp.k_wd then tp.dl else tp.dk end,
+                              case when t.nk > t.nl then format('%s source(s) against %s', t.nk, t.nl) when t.nl > t.nk then format('%s source(s) against %s', t.nl, t.nk)
+                                   when tp.k_wd or tp.l_wd then format('%s source(s) each, so the date of the record Wikidata keys', t.nk)
+                                   else format('%s source(s) each and neither record is keyed by Wikidata, so the date of the record kept', t.nk) end)
+from tp join tally t using (kept) where m.kept = tp.kept;
 
 create temp table people_before on commit drop as select count(*) as n from core.person;
 
