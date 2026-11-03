@@ -132,6 +132,16 @@ chikyu-earth shipped 0.3.0, 0.4.0 and 0.5.0 with no published demo, no embed pag
 
 **The release session checks too.** Before starting a Release, the session reads the package's `node scripts/check-standard.mjs` output (or, for a repo that has not adopted it, the list above against its repo and `https://johnmorrisdotca.github.io/<repo>/`); a missing item is a ticket and no release.
 
+## A drag moves the object with the pointer (John, 2026-11-03)
+
+chikyu-earth 0.9.1 turned the opposite way to the drag (MODULES-200), and the shared drag constants (180 degrees across the width, 60 down the height) moved a globe's ground about 1.5 pixels for each pixel sideways. The rule for every 3D or turnable view, in every package and app:
+
+- **The surface under the pointer follows the pointer**: drag right and it moves right; drag up and it moves up.
+- **The arrow keys agree** (Arrow Right moves the surface right, Arrow Up moves it up), and **Auto-turn goes the object's real way** (a globe's surface moves left to right, as the Earth turns west to east).
+- **On a globe, or any piece with a known on-screen radius, the touched point stays under the pointer** (exact grab): set `grab-radius` on `<kazoku-view-controls>` (kazoku-ui, after 0.10.1) to the radius in pixels at Fit, or `fit`. The default is unchanged.
+- **Every package with a turnable view runs the shared check** in its e2e: kazoku-ui's `templates/e2e-ground.mjs`, copied unchanged as `e2e/ground.mjs` (`checkFollowsTheHand`, `checkExactGrab`). The sign is fixed in the package's drawing, never in the controls. The rule, the option and the helper are in kazoku-ui's `docs/drag-rule.md`.
+- A package that fails the check gets a ticket on its board that says which part fails.
+
 ## No 3D release without a freeze test (CRITICAL, John 2026-11-02)
 
 A test run on machine1 panicked the kernel in the graphics driver (Chrome's GPU process, 2026-11-02). It must not happen again. Every package and app with **live 3D (WebGL)** has both of these, and its release does not go out without them. CSS 3D transforms and SVG are not WebGL and need neither.
