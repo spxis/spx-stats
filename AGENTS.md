@@ -203,7 +203,7 @@ John reads on his phone with little attention to spare, and the phone cannot cha
 
 ## 3. What the project is
 
-- **Base:** the SPX (SportsInteractive.com) archive, 1997–2013. Where SPX holds a value, SPX's value wins.
+- **Base:** the SPX (SportsInteractive.com) archive, 1997–2013. Where SPX holds a value, SPX's value wins, with one exception that is John's (2026-11-02/03, "use the other sites as gospel"): where Retrosheet gives an MLB game another date than SPX, Retrosheet's date is set on SPX's game in place (id kept, each change logged in `meta.data_issue`, `db/build/140`); a suspended game SPX dates by the day it was finished keeps that date.
   A second source that agrees confirms it (`meta.verification`); one that disagrees is logged
   (`meta.data_issue`) and SPX is kept.
 - **Gaps** are filled from allowed open sources, growing outward from SPX's seasons:

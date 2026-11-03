@@ -58,6 +58,11 @@ Moved word for word from [AGENTS.md](../AGENTS.md) on 2026-10-30, so that file s
   (the Cardinals' AA years are logged as SL4 beside SLN, then Louisville, Washington, the Cleveland Spiders, the Boston Reds, Baltimore) and gives BR4 from 1890 its own club (the Brooklyn Gladiators,
   not the Dodgers). The pennant of a league of its own is its championship (`mlb_pennant_na` ... `mlb_pennant_fl`, step 167); the World's Championship Series 1884-90 stay in MLB's season.
   A database built before this is split in place by `db/build/pending/baseball_family_repair.sql` (every id stays), then 140 is rerun; `db/checks/102` watches it.
+  **Dates (John, 2026-11-02/03, "use the other sites as gospel"):** in the seasons SPX holds (2002-2011) step 140 pairs an SPX game that no date matched with the Retrosheet game of the same two clubs, season, phase and
+  score (nearest date, one to one) at any distance, because SPX dates a game that was rained out and played later by the day it was first scheduled and now and then mistypes a month (MIN@CHA 2007-07-06 game 2 sat at 2007-04-06).
+  The SPX row keeps its game id and its date is set to Retrosheet's in place, each change logged once in `meta.data_issue` (issue "SPX (spx_database) dates this game X, Retrosheet Y", resolution "Moved to Retrosheet's date ..."; the
+  log is not deleted by a rerun, which finds the dates equal). The one exception is a suspended game: when Retrosheet's `completion` field names the day SPX has, SPX's date (the finish) stays, as for the 2008 World Series game 5 on
+  2008-10-29. A Retrosheet game with no SPX counterpart is added as before. After a rerun of 140 rerun `199_game_venue`, `209_venue_game_summary`, `235_game_field_mlb` and `179_abbreviations`; `db/checks/108` must read 0.
 - **Minor-league hockey** (the AHL, 1936-37 to 2025-26, `ahl`; John, 2026-10-28: every Canadian and American league, one league at a time) comes from English Wikipedia (CC BY-SA 4.0): each
   season article's standings (with the NHL club(s) each club was affiliated with), its Calder Cup bracket or sentences, and the playoffs article's {{NHLPlayoffs}} games, fetched and parsed by
   `scripts/hockey_minor/season.py LEAGUE` into `legacy_wikipedia_hockey_minor` (migration 158; one `league` column, so the next league needs no migration), the raw wikitext archived first

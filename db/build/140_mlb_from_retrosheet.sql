@@ -3,6 +3,9 @@
 -- SPX stays the base: Retrosheet fills a result SPX never entered, confirms a
 -- result that agrees (meta.verification) and flags one that does not. Every
 -- other season comes from Retrosheet alone. Runs after 100-130 and 139, before 155.
+-- Dates: where Retrosheet and SPX disagree on a game's date, Retrosheet's date wins (John, 2026-11-02/03: "use the other sites as gospel"). The SPX row is
+-- paired with the Retrosheet game, keeps its game id, and its date is updated in place; each change is logged in meta.data_issue and the log survives a rerun.
+-- The one exception is a game Retrosheet records as suspended and completed on the day SPX has: SPX dates it by the day it was finished and that stays.
 -- A game belongs to the season of its own league: the National Association (na, 1871-75), the American Association (aa), the Union Association (ua),
 -- the Players' League (pl) and the Federal League (fl) are leagues of their own under MLB (step 139); every other game, the American and National
 -- Leagues, is mlb. A club that played on is one franchise across leagues: db/seed/baseball_club.csv folds the second Retrosheet team id of a club into
@@ -34,11 +37,18 @@ begin
   end if;
 end $$;
 
-delete from meta.verification where source_id = (select source_id from src);
-delete from meta.data_issue where source_id = (select source_id from src);
+-- Only this step's own rows (entity_kind 'game'): step 178 also files its alignment checks (team_season, conference) under source retrosheet.
+delete from meta.verification where source_id = (select source_id from src) and entity_kind = 'game';
+-- The log of the dates this step moved is kept: after the first run the SPX game already has Retrosheet's date, so a rerun cannot write it again.
+delete from meta.data_issue where source_id = (select source_id from src) and entity_kind = 'game' and resolution not like 'Moved to Retrosheet''s date%';
 -- A rerun keeps the number of every Retrosheet game it adds again (the site's game addresses carry it): remembered by source_key before the delete, given
 -- back on insert. Child rows (game_league_id, game_venue, ...) cascade with the delete: rerun 212, 198, 199 and 209 afterwards.
-create temp table old_game_id as select source_key, game_id from core.game where source_id = (select source_id from src);
+-- It also remembers created_at, updated_at and the content of each row: a game that comes back unchanged gets its timestamps back, so a rerun leaves
+-- 211,000 rows of core.game byte for byte as they were and a data release carries only the games that really changed.
+create temp table old_game_id as
+select source_key, game_id, created_at, updated_at,
+       md5(row(season_id, phase, game_date, home_team_season_id, away_team_season_id, status, home_score, away_score, went_to_overtime, notes)::text) as sig
+from core.game where source_id = (select source_id from src);
 delete from core.game where source_id = (select source_id from src);
 delete from core.external_id where source_id = (select source_id from src);
 
@@ -168,49 +178,77 @@ update core.team_season ts set franchise_identity_id = (
   order by upper(i.valid_during) desc nulls first limit 1)
 where ts.franchise_id in (select franchise_id from fr);
 
--- The SPX games of the seasons SPX holds, matched to Retrosheet's: same date,
--- same home and away franchise, doubleheaders in order.
-create temp table spx_g as
-select g.game_id, g.game_date, g.status, g.home_score, g.away_score, g.phase, h.franchise_id home_f, a.franchise_id away_f,
-       row_number() over (partition by g.game_date, h.franchise_id, a.franchise_id order by g.starts_at nulls last, g.game_id) as n
-from core.game g join core.season s using (season_id)
-join core.team_season h on h.team_season_id = g.home_team_season_id join core.team_season a on a.team_season_id = g.away_team_season_id
-where s.league_code = 'mlb' and g.source_id <> (select source_id from src) and g.status <> 'cancelled';
+-- The SPX games of the seasons SPX holds, matched to Retrosheet's: same date, same home and away franchise, doubleheaders in order.
 create temp table rg_n as
 select rg.*, row_number() over (partition by game_date, home_f, away_f order by game_number) as n from rg where home_f is not null and away_f is not null;
--- First the games with the same score, then what is left in order, so a doubleheader whose games SPX lists in another order still pairs right.
-create temp table matched as
-select r.key, r.home_score r_h, r.visitor_score r_a, s.game_id, s.status, s.home_score, s.away_score
-from (select rg_n.*, row_number() over (partition by game_date, home_f, away_f, home_score, visitor_score order by game_number) k from rg_n) r
-join (select spx_g.*, row_number() over (partition by game_date, home_f, away_f, home_score, away_score order by n) k from spx_g where status = 'final') s
-  on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.home_score = r.home_score and s.away_score = r.visitor_score and s.k = r.k;
-insert into matched
-select r.key, r.home_score, r.visitor_score, s.game_id, s.status, s.home_score, s.away_score
-from (select rg_n.*, row_number() over (partition by game_date, home_f, away_f order by game_number) k from rg_n
-      where key not in (select key from matched)) r
-join (select spx_g.*, row_number() over (partition by game_date, home_f, away_f order by n) k from spx_g
-      where game_id not in (select game_id from matched)) s
-  on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.k = r.k;
 
--- A game SPX dates differently from Retrosheet (suspended or postponed, then played on a later day: SPX dates it by the day it was completed or
--- rescheduled, Retrosheet by the day it began). Same two clubs, same season and phase, same final score, neither side matched above, nearest dates in both
--- directions: one game. SPX's row, id and date are kept. db/build/140_mlb_resumed_games.sql repairs a database built before this.
-create temp table late as
-with c as (
-  select r.key, r.game_date rd, r.home_score r_h, r.visitor_score r_a, r.completion, s.game_id, s.game_date sd, s.status, s.home_score, s.away_score
-  from rg_n r join spx_g s on s.home_f = r.home_f and s.away_f = r.away_f and s.phase = r.phase and s.status = 'final'
-   and s.home_score = r.home_score and s.away_score = r.visitor_score and extract(year from s.game_date) = r.yr
-  where r.phase <> 'all_star' and r.key not in (select key from matched) and s.game_id not in (select game_id from matched)
-), ranked as (
-  select c.*, row_number() over (partition by key order by abs(sd - rd), game_id) rk_r,
-         row_number() over (partition by game_id order by abs(sd - rd), key) rk_s from c
-)
-select * from ranked where rk_r = 1 and rk_s = 1;
+-- A game SPX dates differently from Retrosheet: same two clubs, same season and phase, same final score, neither side matched by date, nearest dates in both
+-- directions: one game (any distance within the season: SPX dates a game that was rained out and played later in a doubleheader, or months later, by the
+-- day it was first scheduled, and now and then mistypes a month). SPX's row and id are kept; the date is Retrosheet's, because Retrosheet is the better
+-- source for it. The exception is a suspended game: Retrosheet's `completion` field names the day it was finished, and when that is the day SPX has,
+-- SPX's date stays (SPX dates it by the day it was completed, Retrosheet by the day it began; the 2008 World Series game 5 is on 2008-10-29).
+-- db/build/140_mlb_resumed_games.sql repairs a database built before the pairing existed.
+-- The dates are moved first and the games matched again on the new dates, so a rerun (which finds the dates already equal) pairs the games of a doubleheader
+-- exactly as the first run did, also when both games ended with the same score.
+create function pg_temp.settle_dates() returns void language plpgsql as $f$
+declare moved integer;
+begin
+  for i in 1..5 loop
+    drop table if exists late; drop table if exists matched; drop table if exists spx_g;
+    create temp table spx_g as
+    select g.game_id, g.game_date, g.status, g.home_score, g.away_score, g.phase, h.franchise_id home_f, a.franchise_id away_f,
+           row_number() over (partition by g.game_date, h.franchise_id, a.franchise_id order by g.starts_at nulls last, g.game_id) as n
+    from core.game g join core.season s using (season_id)
+    join core.team_season h on h.team_season_id = g.home_team_season_id join core.team_season a on a.team_season_id = g.away_team_season_id
+    where s.league_code = 'mlb' and g.source_id <> (select source_id from src) and g.status <> 'cancelled';
+    -- First the games with the same score, then what is left in order, so a doubleheader whose games SPX lists in another order still pairs right.
+    create temp table matched as
+    select r.key, r.home_score r_h, r.visitor_score r_a, s.game_id, s.status, s.home_score, s.away_score
+    from (select rg_n.*, row_number() over (partition by game_date, home_f, away_f, home_score, visitor_score order by game_number) k from rg_n) r
+    join (select spx_g.*, row_number() over (partition by game_date, home_f, away_f, home_score, away_score order by n) k from spx_g where status = 'final') s
+      on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.home_score = r.home_score and s.away_score = r.visitor_score and s.k = r.k;
+    insert into matched
+    select r.key, r.home_score, r.visitor_score, s.game_id, s.status, s.home_score, s.away_score
+    from (select rg_n.*, row_number() over (partition by game_date, home_f, away_f order by game_number) k from rg_n
+          where key not in (select key from matched)) r
+    join (select spx_g.*, row_number() over (partition by game_date, home_f, away_f order by n) k from spx_g
+          where game_id not in (select game_id from matched)) s
+      on s.game_date = r.game_date and s.home_f = r.home_f and s.away_f = r.away_f and s.k = r.k;
+    create temp table late as
+    with c as (
+      select r.key, r.game_date rd, r.home_score r_h, r.visitor_score r_a, r.completion, s.game_id, s.game_date sd, s.status, s.home_score, s.away_score
+      from rg_n r join spx_g s on s.home_f = r.home_f and s.away_f = r.away_f and s.phase = r.phase and s.status = 'final'
+       and s.home_score = r.home_score and s.away_score = r.visitor_score and extract(year from s.game_date) = r.yr
+      where r.phase <> 'all_star' and r.key not in (select key from matched) and s.game_id not in (select game_id from matched)
+    ), ranked as (
+      select c.*, row_number() over (partition by key order by abs(sd - rd), game_id) rk_r,
+             row_number() over (partition by game_id order by abs(sd - rd), key) rk_s from c
+    )
+    select ranked.*, coalesce(split_part(completion, ',', 1) ~ '^[0-9]{8}$' and to_date(split_part(completion, ',', 1), 'YYYYMMDD') = sd, false) as kept
+    from ranked where rk_r = 1 and rk_s = 1;
+    select count(*) into moved from late where not kept;
+    raise notice 'step 140: round %: % game dates moved to Retrosheet''s', i, moved;
+    exit when moved = 0;
+    -- The date moves in place, so the game keeps its id (the site's game addresses carry it). Logged once: the first run moves it, a rerun finds the date equal.
+    insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
+    select (select source_id from src), 'game', (select source_key from core.game where game_id = l.game_id),
+           format('SPX (spx_database) dates this game %s, Retrosheet %s', l.sd, l.rd), 'Moved to Retrosheet''s date (John, 2026-11-03); kept SPX''s row and game id'
+    from late l
+    where not l.kept and not exists (select 1 from meta.data_issue d where d.source_id = (select source_id from src) and d.entity_kind = 'game'
+                                       and d.entity_key = (select source_key from core.game where game_id = l.game_id)
+                                       and d.issue = format('SPX (spx_database) dates this game %s, Retrosheet %s', l.sd, l.rd));
+    update core.game g set game_date = l.rd, starts_at = g.starts_at + (l.rd - l.sd) * interval '1 day', updated_at = now()
+    from late l where g.game_id = l.game_id and not l.kept;
+    if i = 5 then raise exception 'step 140: SPX game dates still moving after 5 rounds'; end if;
+  end loop;
+end $f$;
+select pg_temp.settle_dates();
+-- What is left in `late` is the suspended games that stay on the day SPX has.
 insert into matched select key, r_h, r_a, game_id, status, home_score, away_score from late;
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from src), 'game', (select source_key from core.game where game_id = l.game_id),
-       format('Retrosheet dates this game %s, SPX %s', l.rd, l.sd), 'Same teams and score: one game; kept SPX''s row and date'
-from late l;
+       format('Retrosheet dates this game %s, SPX %s', l.rd, l.sd), 'Suspended game, completed on SPX''s date: one game; kept SPX''s row and date'
+from late l where l.kept;
 update core.game g set notes = format('Suspended on %s; completed on %s', l.rd, to_date(split_part(l.completion, ',', 1), 'YYYYMMDD'))
 from late l where g.game_id = l.game_id and g.notes is null and split_part(l.completion, ',', 1) ~ '^[0-9]{8}$';
 
@@ -249,13 +287,19 @@ join core.team_season ats on ats.franchise_id = r.away_f and ats.season_id = s.s
 left join old_game_id o on o.source_key = r.key
 where r.phase <> 'all_star' and r.key not in (select key from matched) and r.home_f <> r.away_f;
 
+update core.game g set created_at = o.created_at, updated_at = o.updated_at
+from old_game_id o
+where g.source_id = (select source_id from src) and g.source_key = o.source_key and g.game_id = o.game_id
+  and md5(row(g.season_id, g.phase, g.game_date, g.home_team_season_id, g.away_team_season_id, g.status, g.home_score, g.away_score, g.went_to_overtime, g.notes)::text) = o.sig;
+
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', g.game_id, g.source_id, substring(g.source_key from 7) from core.game g where g.source_id = (select source_id from src);
 insert into core.external_id (entity_kind, entity_id, source_id, external_key)
 select 'game', m.game_id, (select source_id from src), substring(m.key from 7) from matched m;
 
 select 'matched', count(*) from matched
-union all select 'dated differently', count(*) from late
+union all select 'dated differently (suspended, SPX date kept)', count(*) from late
+union all select 'date moves logged', count(*) from meta.data_issue where source_id = (select source_id from src) and resolution like 'Moved to Retrosheet''s date%'
 union all select 'filled', count(*) from matched where status <> 'final'
 union all select 'confirmed', count(*) from matched where status = 'final' and home_score = r_h and away_score = r_a
 union all select 'disputed', count(*) from matched where status = 'final' and (home_score <> r_h or away_score <> r_a)
