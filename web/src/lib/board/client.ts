@@ -31,6 +31,51 @@ export class BoardError extends Error {
 
 type Json = Record<string, unknown>;
 
+/**
+ * A client's last answer to one read, kept so the next read can send
+ * `If-None-Match` and an unchanged board answers 304 with no body (and, on
+ * Sumilabu, no database query). Keyed by board and address; the key never
+ * goes in. `pnpm task` keeps these on disk (scripts/boardReadCache.ts); the
+ * site installs none, so its server reads exactly as before.
+ */
+export type ReadCacheEntry = { etag: string; body: unknown };
+export type ReadCache = {
+  get(board: string, url: string): ReadCacheEntry | null;
+  put(board: string, url: string, entry: ReadCacheEntry): void;
+};
+
+let readCache: ReadCache | null = null;
+
+export function installBoardReadCache(cache: ReadCache | null): void {
+  readCache = cache;
+}
+
+/**
+ * One GET through a read cache: the saved ETag goes out as `If-None-Match`,
+ * a 304 answers with the saved body, and a 200 with an ETag is saved. Any
+ * other answer is passed through and nothing is saved.
+ */
+export async function readThrough(
+  board: string,
+  url: string,
+  headers: Record<string, string>,
+  cache: ReadCache | null,
+): Promise<{ status: number; text: string; fromCache: boolean }> {
+  const saved = cache?.get(board, url) ?? null;
+  const response = await fetch(url, { method: "GET", headers: saved ? { ...headers, "if-none-match": saved.etag } : headers, cache: "no-store" });
+  if (response.status === 304 && saved) return { status: 200, text: JSON.stringify(saved.body), fromCache: true };
+  const text = await response.text();
+  const etag = response.headers.get("etag");
+  if (cache && response.status === 200 && etag) {
+    try {
+      cache.put(board, url, { etag, body: JSON.parse(text) });
+    } catch {
+      /* not JSON: not kept */
+    }
+  }
+  return { status: response.status, text, fromCache: false };
+}
+
 function settings(): { url: string; token: string } {
   const url = (process.env.SUMILABU_BOARD_URL ?? "").trim().replace(/\/+$/, "");
   const token = (process.env.SUMILABU_BOARD_TOKEN ?? "").trim();
@@ -51,22 +96,26 @@ async function call(path: string, init: { method?: string; body?: unknown; actor
   const headers: Record<string, string> = { authorization: `Bearer ${token}`, accept: "application/json" };
   if (init.actor) headers["x-board-actor"] = init.actor;
   if (init.body !== undefined) headers["content-type"] = "application/json";
-  const response = await fetch(`${url}/api/v1/projects/${projectKey()}${path}`, {
-    method: init.method ?? "GET",
-    headers,
-    body: init.body === undefined ? undefined : JSON.stringify(init.body),
-    cache: "no-store",
-  });
-  const text = await response.text();
+  const address = `${url}/api/v1/projects/${projectKey()}${path}`;
+  const method = init.method ?? "GET";
+  let status: number;
+  let text: string;
+  if (method === "GET" && init.body === undefined) {
+    ({ status, text } = await readThrough(projectKey(), address, headers, readCache));
+  } else {
+    const response = await fetch(address, { method, headers, body: init.body === undefined ? undefined : JSON.stringify(init.body), cache: "no-store" });
+    status = response.status;
+    text = await response.text();
+  }
   let body: Json = {};
   try {
     body = text ? (JSON.parse(text) as Json) : {};
   } catch {
     body = { error: text.slice(0, 200) };
   }
-  if (response.status === 401) throw new BoardError("Sumilabu refused the board key: check SUMILABU_BOARD_TOKEN.", 401);
-  if (response.status >= 500) throw new BoardError(`Sumilabu's board answered ${response.status}.`, response.status);
-  return { status: response.status, body };
+  if (status === 401) throw new BoardError("Sumilabu refused the board key: check SUMILABU_BOARD_TOKEN.", 401);
+  if (status >= 500) throw new BoardError(`Sumilabu's board answered ${status}.`, status);
+  return { status, body };
 }
 
 const asTicket = (body: Json): Ticket => body.ticket as Ticket;
@@ -77,7 +126,15 @@ export async function boardList(filter: { unfinished?: boolean } = {}): Promise<
   return (body.tickets as Ticket[]) ?? [];
 }
 
+/* A ticket this process has just read while resolving its short id, so `claim` does not ask for it twice. */
+const justRead = new Map<string, Ticket>();
+
 export async function boardGet(id: string): Promise<Ticket | null> {
+  const fresh = justRead.get(id);
+  if (fresh) {
+    justRead.delete(id);
+    return fresh;
+  }
   const { status, body } = await call(`/tickets/${encodeURIComponent(id)}`);
   return status === 200 ? asTicket(body) : null;
 }
@@ -127,13 +184,23 @@ export async function boardGrade(id: string, grade: { priority?: BoardPriority |
 }
 
 /**
- * A short id (SPX-142) or a cuid, as the whole cuid. The board takes both on
- * a newer Sumilabu, but this resolves a short id here from the list, so it
- * works against any Sumilabu that returns `shortId` on its tickets and says
- * plainly when it does not yet. A cuid is returned as typed.
+ * A short id (SPX-142) or a cuid, as the whole cuid. Sumilabu answers
+ * `GET tickets/<short id>` itself, so that is one small read; listing the
+ * whole board to find one ticket was most of the board's traffic in
+ * November 2026 (spx-stats' list is over a megabyte). Only a Sumilabu that
+ * does not know the short id falls back to the list, which says plainly when
+ * that Sumilabu has no short ids yet. A cuid is returned as typed.
  */
 export async function boardResolveId(id: string): Promise<string> {
   if (!looksLikeShortId(id)) return id;
+  const direct = await call(`/tickets/${encodeURIComponent(id.trim().toUpperCase())}`);
+  if (direct.status === 200) {
+    const found = asTicket(direct.body);
+    if (found?.id && found.shortId?.toUpperCase() === id.trim().toUpperCase()) {
+      justRead.set(found.id, found);
+      return found.id;
+    }
+  }
   const tickets = await boardList();
   const wanted = id.trim().toUpperCase();
   const found = tickets.find((t) => t.shortId?.toUpperCase() === wanted);

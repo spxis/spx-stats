@@ -294,6 +294,11 @@ The token comes from the environment, or on a Mac from the keychain item `sumila
 after the board in the home directory's `.config/sumilabu-board` folder when the environment and the keychain have none. Never print a key, log it or write it
 anywhere. A `200` with a `tickets` array means the board is healthy.
 
+**Use `pnpm task`, not your own calls, and never in a loop** (SUMILABU-15). It keeps each answer in the home directory's
+`.cache/sumilabu-board` (mode 600, no key) and asks again with its ETag, so an unchanged board is a `304` with no body and
+no database query on Sumilabu; a short id (`SPX-142`) is looked up as one ticket, never by listing the board.
+`SUMILABU_BOARD_CACHE=off` turns the cache off.
+
     pnpm task                                                   # list: waiting, in progress, stale holds
     pnpm task add "<title>" --detail "<what and why>" --by "<who>" [--bug|--chore]
     pnpm task claim <id> "<who>"                                # the whole cuid, never a prefix

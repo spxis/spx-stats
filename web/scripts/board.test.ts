@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, test } from "node:test";
-import { boardEdit, boardHistory, boardResolveId } from "../src/lib/board/client.ts";
+import { boardEdit, boardGet, boardHistory, boardResolveId } from "../src/lib/board/client.ts";
 import { appendedDetail, editProblems, looksLikeShortId, ticketLine, type Ticket } from "../src/lib/board/rules.ts";
 
 /** Run in web/: pnpm test:board */
@@ -53,16 +53,26 @@ test("the list line leads with the short id when there is one", () => {
   assert.match(ticketLine(ticket()), /^cmvaaaa/);
 });
 
-test("a short id resolves through the list to the whole cuid", async () => {
-  answer = () => ({ status: 200, body: { tickets: [ticket({ shortId: "SPX-1" }), ticket({ id: "cmvbbbbbbbbbbbbbbbbbbbbbb", shortId: "SPX-2" })] } });
+test("a short id resolves with one read of that ticket, never the whole board", async () => {
+  answer = (url) =>
+    url.endsWith("/tickets/SPX-2")
+      ? { status: 200, body: { ok: true, ticket: ticket({ id: "cmvbbbbbbbbbbbbbbbbbbbbbb", shortId: "SPX-2" }) } }
+      : { status: 500, body: { error: "the list must not be asked" } };
   assert.equal(await boardResolveId("spx-2"), "cmvbbbbbbbbbbbbbbbbbbbbbb");
-  assert.equal(await boardResolveId("SPX-9"), "SPX-9");
+  assert.deepEqual(calls.map((c) => c.url), ["https://board.test/api/v1/projects/spx-stats/tickets/SPX-2"]);
+  assert.equal((await boardGet("cmvbbbbbbbbbbbbbbbbbbbbbb"))?.shortId, "SPX-2");
+  assert.equal(calls.length, 1, "claim reads the ticket it just resolved without asking again");
   assert.equal(await boardResolveId("cmvcccccccccccccccccccccc"), "cmvcccccccccccccccccccccc");
-  assert.equal(calls.length, 2, "a cuid never asks the board");
+  assert.equal(calls.length, 1, "a cuid never asks the board");
+});
+
+test("a short id nobody has is returned as typed, after the list is checked", async () => {
+  answer = (url) => (url.endsWith("/tickets") ? { status: 200, body: { tickets: [ticket({ shortId: "SPX-1" })] } } : { status: 404, body: { ok: false, error: "missing" } });
+  assert.equal(await boardResolveId("SPX-9"), "SPX-9");
 });
 
 test("an older Sumilabu without short ids says so", async () => {
-  answer = () => ({ status: 200, body: { tickets: [ticket()] } });
+  answer = (url) => (url.endsWith("/tickets") ? { status: 200, body: { tickets: [ticket()] } } : { status: 404, body: { ok: false, error: "missing" } });
   await assert.rejects(boardResolveId("SPX-1"), /no short ids yet/);
 });
 

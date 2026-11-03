@@ -1,5 +1,7 @@
 import { execFileSync } from "node:child_process";
 import { boardKey } from "./boardKey.ts";
+import { diskReadCache } from "./boardReadCache.ts";
+import { readThrough } from "../src/lib/board/client.ts";
 import { isHeldNow } from "../src/lib/board/rules.ts";
 
 /**
@@ -198,12 +200,19 @@ export function realToken(board: string): string | null {
 
 export async function runStatus(args: string[]): Promise<void> {
   const url = (process.env.SUMILABU_BOARD_URL ?? "https://api.sumilabu.com").replace(/\/+$/, "");
+  const cache = diskReadCache();
   const s = await gatherStatus({
     token: realToken,
     versions: realVersions,
+    /* Every board, done tickets too (the 7-day count needs them): each read asks with its last ETag, so an unchanged board is a 304. */
     fetchTickets: async (board, token) => {
-      const r = await fetch(`${url}/api/v1/projects/${board}/tickets`, { headers: { authorization: `Bearer ${token}`, accept: "application/json" }, cache: "no-store" });
-      const body = (await r.json().catch(() => ({}))) as { tickets?: Row[] };
+      const r = await readThrough(board, `${url}/api/v1/projects/${board}/tickets`, { authorization: `Bearer ${token}`, accept: "application/json" }, cache);
+      let body: { tickets?: Row[] } = {};
+      try {
+        body = JSON.parse(r.text) as { tickets?: Row[] };
+      } catch {
+        /* not JSON: counted by its status */
+      }
       return { status: r.status, tickets: body.tickets ?? [] };
     },
   });

@@ -1,5 +1,6 @@
 import { boardKey } from "./boardKey.ts";
-import { boardCreate, boardEdit, boardGet, boardGrade, boardHistory, boardHost, boardList, boardMove, boardResolveId, boardShip, type MoveOutcome } from "../src/lib/board/client.ts";
+import { diskReadCache } from "./boardReadCache.ts";
+import { boardCreate, boardEdit, boardGet, boardGrade, boardHistory, boardHost, boardList, boardMove, boardResolveId, boardShip, installBoardReadCache, type MoveOutcome } from "../src/lib/board/client.ts";
 import {
   BOARD_EFFORTS,
   BOARD_PRIORITIES,
@@ -38,6 +39,12 @@ import {
  * environment (never a file in this repository), else on a Mac from the
  * keychain item "sumilabu board <key>", else from the file named <key> in the
  * .config/sumilabu-board folder of the home directory (scripts/boardKey.ts).
+ *
+ * Every read keeps its answer in the home directory's .cache/sumilabu-board
+ * and asks again with its ETag, so an unchanged board costs Sumilabu a 304
+ * and no database query (scripts/boardReadCache.ts; SUMILABU_BOARD_CACHE=off
+ * turns it off). Run it when you need the board, never in a loop: a 304 is
+ * still a call on the shared Vercel account.
  */
 
 {
@@ -56,6 +63,9 @@ if (!process.env.SUMILABU_BOARD_TOKEN) {
     process.env.SUMILABU_BOARD_URL ||= "https://api.sumilabu.com";
   }
 }
+
+/* Reads send the last answer's ETag and an unchanged board answers 304 (scripts/boardReadCache.ts, SUMILABU-15). */
+installBoardReadCache(diskReadCache());
 
 const ID_COMMANDS = ["claim", "release", "done", "drop", "reopen", "grade", "edit", "history"];
 
