@@ -2,13 +2,12 @@
 -- scripts/olympics/) into migration 194's tables. Run from the repo root (it reads db/seed/olympic_games.csv and olympic_event.csv), after db/build/179 and 185
 -- (the people and the Wikidata ids it matches against). Rerunnable, ids kept: every table is upserted on its natural key (Games: season and year; event: Games
 -- and event key; race: event, round order and race number; result: race and row order) and a row is deleted only when it is this source's and the legacy
--- tables no longer hold it. No begin or commit of its own beyond the one transaction below, so ds1-apply.sh --dry-run rolls it back.
+-- tables no longer hold it. No begin or commit of its own (ds1-apply.sh wraps the file in one transaction and a dry run rolls it back; run it by hand with psql -1).
 --
 -- A name is tied to a person ONLY through a Wikidata id (match by source ids; John, 2026-10-29: "don't do anything like linking unless you're absolutely
 -- positive on the match"): the article the name links to is a Wikidata item (a merged item is followed: legacy_rosters.redirect) and that item is the
 -- Wikidata id of a person in core.external_id (source wikidata, entity_kind person), who was not born after the Games less 10 years or dead before them.
 -- Every other name stays text, with its qid kept for a later match. Never the name alone.
-begin;
 
 create temp table src on commit drop as select source_id from meta.source where code = 'wikipedia';
 create temp table wd on commit drop as select source_id from meta.source where code = 'wikidata';
@@ -109,4 +108,3 @@ having count(*) filter (where x.person_id is null) > 0;
 select g.year, e.event_key, count(distinct r.race_id) as races, count(*) as lines, count(x.person_id) as linked, count(x.athlete_qid) as with_qid
 from core.olympic_result x join core.olympic_race r using (race_id) join core.olympic_event e using (event_id) join core.olympic_games g using (games_id)
 where x.source_id = (select source_id from src) group by rollup (g.year, e.event_key) order by 1, 2;
-commit;

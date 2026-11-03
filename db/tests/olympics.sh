@@ -40,7 +40,7 @@ LOAD="$(mktemp)"
 python3 -I "$REPO/scripts/olympics/parse.py" "$RAW" "$LOAD" >/dev/null
 psql_ -o /dev/null < "$LOAD"
 q() { psql_ -F ' ' -c "$1"; }
-step() { psql_ -f db/build/241_olympic_results.sql >/dev/null; }
+step() { psql_ -1 -f db/build/241_olympic_results.sql >/dev/null; }
 ids() { q "select md5(string_agg(g.year || e.event_key || e.event_id || r.race_id || r.round_ord || r.race_no || x.row_ord, ',' order by g.year, e.event_key, r.round_ord, r.race_no, x.row_ord)) || ' ' || count(*) from core.olympic_result x join core.olympic_race r using (race_id) join core.olympic_event e using (event_id) join core.olympic_games g using (games_id)"; }
 
 if [ "$RAW" != "$HERE/olympics-raw" ]; then
