@@ -2679,7 +2679,7 @@ export const PHRASES = {
   "runs.item.col.summary": "What happened",
   "runs.alert.title": "Alerts for the admins",
   "runs.alert.open": "Open",
-  "runs.alert.resolved": "Fixed since; stays until dismissed",
+  "runs.alert.resolved": "Fixed since; drops off after 3 days",
   "runs.alert.when": "First {first}, last {last}, reported {repeats}×.",
   "runs.alert.resolvedAt": "Fixed {time}.",
   "runs.alert.dismiss": "Dismiss",

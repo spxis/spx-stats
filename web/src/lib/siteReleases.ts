@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.180.1", date: "2026-11-03", needsReview: true,
+    title: "Admin alerts clear themselves",
+    text: "The red alerts on the admin pages now work out for themselves when the problem is gone: a refused release once a later one of the same tables is applied, a drift report once a clean check or its fix releases are done, and a failed job once it runs clean. They show as fixed and drop off after three days.",
+  },
   { version: "0.180.0", date: "2026-11-03", href: "/",
     title: "Five categories everywhere",
     text: "The home page now lists the same five categories as the top of every page: NHL+, NBA+, MLB+, Football and Soccer (no \"+\"). Football holds the NFL family, college football and the CFL, each still shown inside it: as three thin rows in the archive chart and as its leagues in the Football card. The footer follows the same five.",

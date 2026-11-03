@@ -9,8 +9,9 @@ import { dismissAlerts } from "./actions";
 
 /**
  * The alerts of the background jobs, on every admin page (app/(dyn)/admin/layout.tsx): job, league or table, what failed and when. An alert
- * stays until an admin dismisses it; a job's next success marks it "fixed since" but leaves it here, and a repeat failure after a dismissal
- * opens it again (scripts/runlog/runlog.py). Admin only: the layout draws it for an admin and nobody else reaches these pages.
+ * stays until the problem is gone or an admin dismisses it. The run log says when it is gone (lib/runlog/rules.ts `fixedBy`, checked whenever the
+ * alerts are read): the alert then shows as "fixed since" and drops off after three days. A repeat failure after a dismissal opens it again
+ * (scripts/runlog/runlog.py). Admin only: the layout draws it for an admin and nobody else reaches these pages.
  */
 export async function AlertBanner() {
   const s = await currentSpeaker();

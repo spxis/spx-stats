@@ -2,7 +2,7 @@ import "server-only";
 import { unstable_cache, revalidateTag } from "next/cache";
 import { z } from "zod";
 import { tursoConfigured, tursoRows, type Arg } from "../turso/client.ts";
-import { PAGE_SIZE, withStale, openCount, type AlertRow, type Filters, type RunLite, type Stale } from "./rules.ts";
+import { PAGE_SIZE, resolveAlerts, withStale, openCount, type AlertRow, type Filters, type RunFull, type RunLite, type Stale } from "./rules.ts";
 import { staleLeagues } from "./stale.ts";
 
 /**
@@ -141,6 +141,25 @@ async function syncStale(stale: readonly Stale[], stored: readonly AlertRow[], n
   if (statements.length) await write(statements);
 }
 
+/**
+ * The runs the resolution rules read (rules.ts `fixedBy`), from a little before the oldest open alert: one small read of the run log, made only
+ * when an alert is open and only when the alerts are read (the 60 second cache below), never on a timer. A log that cannot be read leaves the
+ * alerts as they are stored.
+ */
+async function runsForAlerts(alerts: readonly AlertRow[]): Promise<RunFull[]> {
+  const open = alerts.filter((a) => a.state === "open" && !a.dismissed_at && a.id > 0);
+  if (!open.length) return [];
+  const since = new Date(Math.min(...open.map((a) => Date.parse(a.first_at) || Date.now())) - 3_600_000).toISOString().replace(/\.\d+Z$/, "Z");
+  try {
+    return await tursoRows(
+      "select uid, kind, job, scope, outcome, started_at, finished_at, summary, detail, links from run_log where started_at >= ? and kind in ('job', 'ops', 'release') and outcome != 'running' order by started_at desc limit 600",
+      [since], z.object({ uid: text, kind: text, job: text, scope: textN, outcome: text, started_at: text, finished_at: textN, summary: textN, detail: textN, links: textN }),
+      { tables: ["run_log"], ...LIVE });
+  } catch {
+    return [];
+  }
+}
+
 export type AlertView = { alerts: AlertRow[]; open: number; staleChecked: boolean };
 
 const readAlerts = unstable_cache(async (): Promise<AlertView> => {
@@ -153,10 +172,10 @@ const readAlerts = unstable_cache(async (): Promise<AlertView> => {
   } catch {
     staleChecked = false;
   }
-  let all = withStale(stored, stale, now);
+  let all = withStale(resolveAlerts(stored, await runsForAlerts(stored)), stale, now);
   try {
     await syncStale(stale, stored, now);
-    if (canWriteLog() && stale.length) all = withStale(await storedAlerts(), stale, now);
+    if (canWriteLog() && stale.length) { const again = await storedAlerts(); all = withStale(resolveAlerts(again, await runsForAlerts(again)), stale, now); }
   } catch {
     /* the rows could not be kept; the stale leagues are still shown */
   }

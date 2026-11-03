@@ -110,15 +110,90 @@ export type AlertRow = {
   first_at: string; last_at: string; repeats: number; state: string; resolved_at: string | null; dismissed_at: string | null; dismissed_by: string | null;
 };
 
-/** What the banner lists: every alert nobody dismissed (an open one, and a resolved one until somebody dismisses it). Open ones first, newest first. */
-export function shown(alerts: readonly AlertRow[]): AlertRow[] {
+/** A fixed alert stays on the banner this many days after the fix, then drops off by itself. */
+export const FIXED_SHOW_DAYS = 3;
+
+/** What the banner lists: every alert nobody dismissed (an open one, and a fixed one for `FIXED_SHOW_DAYS` days after the fix). Open ones first, newest first. */
+export function shown(alerts: readonly AlertRow[], now: number = Date.now()): AlertRow[] {
   return alerts
-    .filter((a) => !a.dismissed_at)
+    .filter((a) => !a.dismissed_at && (a.state === "open" || now - ms(a.resolved_at ?? a.last_at) < FIXED_SHOW_DAYS * 86_400_000))
     .sort((a, b) => Number(b.state === "open") - Number(a.state === "open") || ms(b.last_at) - ms(a.last_at));
 }
 
 /** The number beside "Data releases (N)" in the account menu: alerts still open and not dismissed. */
 export const openCount = (alerts: readonly AlertRow[]): number => alerts.filter((a) => a.state === "open" && !a.dismissed_at).length;
+
+// ---------------------------------------------------------------------------------------------------- alerts that clear themselves
+
+/** A run of the log with what the resolution rules read: its `detail` and `links` are the stored JSON text. */
+export type RunFull = RunLite & { kind: string; scope: string | null; detail: string | null; links: string | null };
+
+/** Release numbers look like 2026.11.03-9. */
+const RELEASE_NUMBER = /\d{4}\.\d{2}\.\d{2}-\d+/g;
+const endOf = (r: RunFull): string => r.finished_at ?? r.started_at;
+const objectOf = (value: unknown): Record<string, unknown> => {
+  const v = typeof value === "string" ? parseJson(value) : value;
+  return v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {};
+};
+const tablesOf = (r: RunFull): string[] | null => {
+  const t = objectOf(r.detail).tables;
+  return Array.isArray(t) && t.length ? t.map(String) : null;
+};
+
+/**
+ * The run that fixed an alert, or null while nothing has. Every rule looks only at runs that started after the alert was last raised, and is
+ * read from the log, so the site needs no write to show an alert as fixed (and no timer: it is checked whenever the alerts are read).
+ *  - release:<number> (a refused or failed release): a later release of the same tables was applied (every table of the refused one is in it);
+ *    a refused release whose tables the log no longer holds is never judged.
+ *  - drift: a later drift check found no difference, or every fix release the last difference named has been applied since.
+ *  - daily:<league>, daily-left-out:<league>: a later daily-scores run saved that league (cleanly, for "left out").
+ *  - daily:run: a later daily-scores run that did not fail.
+ *  - any other alert (raw-export, harvest, watchdog, ops-snapshot, deploy): a later run of the same job that finished ok.
+ */
+export function fixedBy(a: AlertRow, runs: readonly RunFull[]): RunFull | null {
+  const since = ms(a.last_at);
+  const later = runs.filter((r) => ms(r.started_at) > since && r.outcome !== "running").sort((x, y) => ms(x.started_at) - ms(y.started_at));
+  const first = (list: readonly RunFull[]): RunFull | null => list[0] ?? null;
+  if (a.key.startsWith("release:")) {
+    const number = a.key.slice("release:".length);
+    const refused = runs.filter((r) => r.job === "release-apply" && r.scope === number && r.outcome === "failed").sort((x, y) => ms(y.started_at) - ms(x.started_at))[0];
+    const tables = refused ? tablesOf(refused) : null;
+    if (!refused || !tables) return null;
+    return first(runs.filter((r) => r.job === "release-apply" && r.outcome === "ok" && ms(r.started_at) > ms(refused.started_at))
+      .filter((r) => { const t = tablesOf(r); return !!t && tables.every((x) => t.includes(x)); })
+      .sort((x, y) => ms(x.started_at) - ms(y.started_at)));
+  }
+  if (a.key === "drift") {
+    const clean = first(later.filter((r) => r.job === "drift-check" && r.outcome === "ok"));
+    if (clean) return clean;
+    const differed = runs.filter((r) => r.job === "drift-check" && r.outcome !== "ok" && ms(r.started_at) <= since).sort((x, y) => ms(y.started_at) - ms(x.started_at))[0];
+    if (!differed) return null;
+    const named = new Set<string>([...(differed.summary ?? "").match(RELEASE_NUMBER) ?? [], ...(typeof objectOf(differed.links).release === "string" ? [objectOf(differed.links).release as string] : [])]);
+    if (!named.size) return null;
+    const applied = [...named].map((n) => first(runs.filter((r) => r.job === "release-apply" && r.outcome === "ok" && r.scope === n && ms(r.started_at) > ms(differed.started_at))));
+    return applied.every((r) => r) ? applied.reduce((x, y) => (ms(endOf(y!)) > ms(endOf(x!)) ? y : x)) : null;
+  }
+  if (a.key.startsWith("daily:") || a.key.startsWith("daily-left-out:")) {
+    const daily = later.filter((r) => r.job === "daily-scores");
+    if (a.key === "daily:run") return first(daily.filter((r) => r.outcome !== "failed"));
+    const league = a.key.slice(a.key.indexOf(":") + 1);
+    const clean = a.key.startsWith("daily-left-out:") ? ["ok"] : ["ok", "warning"];
+    return first(daily.filter((r) => {
+      const x = objectOf(objectOf(r.detail).league_results)[league] as { outcome?: string } | undefined;
+      return !!x && clean.includes(String(x.outcome));
+    }));
+  }
+  return first(later.filter((r) => r.job === a.job && r.outcome === "ok"));
+}
+
+/** The open alerts with the ones the log shows fixed turned to "resolved" (at the end of the run that fixed them). Stored states are never read back as open again. */
+export function resolveAlerts(alerts: readonly AlertRow[], runs: readonly RunFull[]): AlertRow[] {
+  return alerts.map((a) => {
+    if (a.state !== "open" || a.dismissed_at || a.id <= 0) return a;
+    const by = fixedBy(a, runs);
+    return by ? { ...a, state: "resolved", resolved_at: endOf(by) } : a;
+  });
+}
 
 // ---------------------------------------------------------------------------------------------------- stale data
 
