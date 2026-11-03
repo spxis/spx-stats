@@ -60,6 +60,9 @@ if [ "$RAW" != "$HERE/olympics-raw" ]; then
   check "2008 men's semifinal 2: Sullivan 47.05 WR" "$(q "select concat_ws(' ', place, athlete_name, time_s, marks) from api.olympic_result where games_year = 2008 and event_key = '100free-m' and round_code = 'semifinals' and place = 1")" "1 Eamon Sullivan 47.050 {Q,WR}"
   check "2024 men's final: Pan Zhanle 46.40 WR with 15 m and 50 m splits" "$(q "select concat_ws(' ', place, lane, athlete_name, time_s, marks, splits -> 1 ->> 's') from api.olympic_result where games_year = 2024 and event_key = '100free-m' and round_code = 'final' and place = 1")" "1 4 Pan Zhanle 46.400 {WR} 22.28"
   fi
+  if have 1500free-m; then
+  check "2024 men's 1500 m freestyle final: Finke 14:30.67 WR with 500 m split 289.1" "$(q "select concat_ws(' ', place, athlete_name, time_s, marks, splits -> 0 ->> 's') from api.olympic_result where games_year = 2024 and event_key = '1500free-m' and round_code = 'final' and place = 1")" "1 Bobby Finke 870.670 {WR} 289.1"
+  fi
   A="$(ids)"; step; check "rerun keeps every id" "$(ids)" "$A"
   echo "passed $pass, failed $fail"; [ "$fail" = 0 ]; exit
 fi

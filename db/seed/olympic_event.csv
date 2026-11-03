@@ -3,3 +3,13 @@ event_key,sport,gender,distance_m,stroke
 100m-w,athletics,women,100,
 100free-m,swimming,men,100,freestyle
 100free-w,swimming,women,100,freestyle
+50free-m,swimming,men,50,freestyle
+50free-w,swimming,women,50,freestyle
+200free-m,swimming,men,200,freestyle
+200free-w,swimming,women,200,freestyle
+400free-m,swimming,men,400,freestyle
+400free-w,swimming,women,400,freestyle
+800free-m,swimming,men,800,freestyle
+800free-w,swimming,women,800,freestyle
+1500free-m,swimming,men,1500,freestyle
+1500free-w,swimming,women,1500,freestyle
