@@ -51,71 +51,121 @@ export function codeLabel(code: string, internationalWord = "International"): st
 }
 
 /** NHL+, Soccer+, CFL, College football. */
-export function familyTitle(family: LeagueFamily, soccerWord = "Soccer"): string {
+export function familyTitle(family: Pick<LeagueFamily, "id" | "primary" | "plus" | "name">, soccerWord = "Soccer"): string {
   const base = family.id === "soccer" ? soccerWord : family.name ?? LG[family.primary as LeagueCode] ?? family.primary.toUpperCase();
   return family.plus ? `${base}+` : base;
 }
-
-/** The header menu's own ids: the families, except that NFL, college football and the CFL share one "football" entry (John, 2026-11-02). */
-export type MenuId = FamilyId | "football";
 
 /** The football hub (a kept page, like /soccer) and the leagues it groups, in the order the menu's second line shows them. The AFL and the AAFC stay under the NFL. */
 export const FOOTBALL_PATH = "/football";
 export const FOOTBALL_FAMILIES = ["nfl", "ncaaf", "cfl"] as const satisfies readonly FamilyId[];
 export const FOOTBALL_LEAGUES = ["nfl", "ncaaf", "cfl"] as const;
 
+/** What a chart row or a card draws: a category, or (on a league's own page) one league family. */
+export type Group = Pick<LeagueFamily, "primary" | "members" | "plus" | "name" | "chart"> & {
+  id: string;
+  /** A group of several league families (Football) is drawn as one thin lane per family inside its row. */
+  lanes?: readonly Group[];
+};
+
+/** The five categories of the site (John, 2026-11-03: "the top is the template"). */
+export type CategoryId = "nhl" | "nba" | "mlb" | "football" | "soccer";
+
 /**
- * The site's footer: one entry per family, in FAMILIES order, so the menu cannot drift from the
- * archive chart and the home cards. Women's, rival and predecessor leagues (PWHL, WNBA, NWSL, NHA, AFL, MLS, ...) are not
- * entries: they are members of a family and are reached from its page (FamilyNav, "Other leagues") and from the chart.
+ * One of the five categories the header, the kicker, the archive chart, the home cards and the footer list. It is built from
+ * league families, so each league keeps its own page, records and family page; only the way the sports are listed is shared.
+ */
+export interface Category extends Group {
+  id: CategoryId;
+  /** The league families it holds, in the order they are listed. */
+  families: readonly FamilyId[];
+  /** The category's main page (`/nhl`, `/football`, `/soccer`). */
+  href: string;
+  sport: LeagueFamily["sport"];
+}
+
+const familyById = (id: FamilyId): LeagueFamily => FAMILIES.find((f) => f.id === id)!;
+
+function category(id: CategoryId, families: readonly FamilyId[], plus: boolean, href?: string): Category {
+  const first = familyById(families[0]!);
+  return {
+    id, families, plus, sport: first.sport, primary: first.primary,
+    members: families.flatMap((f) => familyById(f).members),
+    ...(families.length > 1 ? { lanes: families.map((f) => familyById(f)) } : {}),
+    href: href ?? (id === "soccer" ? SOCCER_PATH : `/${first.primary}`),
+  };
+}
+
+/** Football holds the NFL family, college football and the CFL; Soccer and Football have no "+" (the NHL, NBA and MLB do). */
+export const CATEGORIES: readonly Category[] = [
+  category("nhl", ["nhl"], true),
+  category("nba", ["nba"], true),
+  category("mlb", ["mlb"], true),
+  category("football", FOOTBALL_FAMILIES, false, FOOTBALL_PATH),
+  category("soccer", ["soccer"], false),
+];
+
+/** The words a category takes from the dictionary, so one place spells its name. */
+export interface CategoryWords { soccer?: string; football?: string }
+
+/** NHL+, NBA+, MLB+, Football, Soccer: the one name of a category for the header, the kicker, the chart and the cards. */
+export function categoryLabel(c: Pick<Category, "id" | "primary" | "plus">, words: CategoryWords = {}): string {
+  if (c.id === "soccer") return words.soccer ?? "Soccer";
+  if (c.id === "football") return words.football ?? "Football";
+  return `${LG[c.primary as LeagueCode] ?? c.primary.toUpperCase()}${c.plus ? "+" : ""}`;
+}
+
+export const categoryOf = (code: string): Category | undefined => CATEGORIES.find((c) => c.members.includes(code));
+
+/** Categories that have at least one season in the list, in CATEGORIES order. */
+export function categoriesWithData(seasons: readonly { league: string }[]): Category[] {
+  const have = new Set(seasons.map((s) => s.league));
+  return CATEGORIES.filter((c) => c.members.some((m) => have.has(m)));
+}
+
+/**
+ * The header's menu: one entry per category, so the menu cannot drift from the archive chart and the home cards. Women's, rival and
+ * predecessor leagues (PWHL, WNBA, NWSL, NHA, AFL, MLS, ...) are not entries: they are members of a category and are reached from its page
+ * (FamilyNav, "Other leagues") and from the chart. Every league keeps its own address and its own pages.
  */
 export interface MenuEntry {
-  id: MenuId;
-  /** The family's main page (`/nhl`, `/soccer`). */
+  id: CategoryId;
+  /** The category's main page (`/nhl`, `/football`, `/soccer`). */
   href: string;
-  /** NHL+, NBA+, MLB+, NFL+, CFL, Soccer: "+" when the family has siblings, but never on Soccer in the menu. */
+  /** NHL+, NBA+, MLB+, Football, Soccer: "+" when the category has siblings (Football and Soccer have none). */
   label: string;
-  /** The league whose all-time page the footer links (none for soccer: it has no single table). */
+  /** The league whose all-time page the footer links (none for football and soccer: the footer lists the football leagues itself). */
   allTime: string | null;
 }
 
-/** Soccer is plain in the menu (John, 2026-10-18): the page itself is "Soccer+". */
-export function menuLabel(family: LeagueFamily, soccerWord = "Soccer"): string {
-  return family.id === "soccer" ? soccerWord : familyTitle(family, soccerWord);
-}
-
-export function familyEntries(soccerWord = "Soccer"): MenuEntry[] {
-  return FAMILIES.map((f) => ({
-    id: f.id,
-    href: familyHref(f),
-    label: menuLabel(f, soccerWord),
-    allTime: f.id === "soccer" ? null : f.primary,
+export function menuEntries(soccerWord = "Soccer", footballWord = "Football"): MenuEntry[] {
+  return CATEGORIES.map((c) => ({
+    id: c.id,
+    href: c.href,
+    label: categoryLabel(c, { soccer: soccerWord, football: footballWord }),
+    allTime: c.families.length === 1 && c.id !== "soccer" ? c.primary : null,
   }));
 }
 
-/**
- * The header's menu: the families of `familyEntries`, with the NFL, college football and the CFL as the one entry "Football" (no plus, as Soccer has none), at the place the NFL held.
- * Every league keeps its own address and its own pages; the footer still lists them one by one.
- */
-export function menuEntries(soccerWord = "Soccer", footballWord = "Football"): MenuEntry[] {
-  const football = (id: MenuId): boolean => (FOOTBALL_FAMILIES as readonly string[]).includes(id);
-  return familyEntries(soccerWord).flatMap((e) => {
-    if (!football(e.id)) return [e];
-    return e.id === FOOTBALL_FAMILIES[0] ? [{ id: "football" as const, href: FOOTBALL_PATH, label: footballWord, allTime: null }] : [];
-  });
+/** The footer's "All-time" column: one page per league that has a table, labelled as its league (NFL+, College football, CFL). */
+export function allTimeLinks(words: CategoryWords = {}): { href: string; label: string }[] {
+  return CATEGORIES.flatMap((c) => c.families.flatMap((id) => {
+    const f = familyById(id);
+    if (f.id === "soccer") return [];
+    return [{ href: `/${f.primary}/all-time`, label: c.families.length === 1 ? categoryLabel(c, words) : familyTitle(f) }];
+  }));
 }
 
-/** The family a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer, `nfl`, `afl`, `ncaaf`, `cfl` and `football` -> football, the More hockey page and its leagues -> nhl): the menu entry to light. */
-export function menuFamilyOf(segment: string | undefined): MenuId | undefined {
+/** The category a first address segment belongs to (`wnba` -> nba, `pwhl` -> nhl, `worldcup` and `mls` -> soccer, `nfl`, `afl`, `ncaaf`, `cfl` and `football` -> football, the More hockey page and its leagues -> nhl): the menu entry to light. */
+export function menuFamilyOf(segment: string | undefined): CategoryId | undefined {
   if (!segment) return undefined;
   if (segment === "worldcup") return "soccer";
   if (segment === FOOTBALL_PATH.slice(1)) return "football";
   if (segment === MORE_HOCKEY_PATH.slice(1) || isMoreHockey(segment)) return "nhl";
-  const id = familyOf(segment)?.id;
-  return id && (FOOTBALL_FAMILIES as readonly string[]).includes(id) ? "football" : id;
+  return categoryOf(segment)?.id;
 }
 
-export function familyHref(family: LeagueFamily): string {
+export function familyHref(family: Pick<LeagueFamily, "primary">): string {
   return family.primary === "soccer" ? SOCCER_PATH : `/${family.primary}`;
 }
 
@@ -171,7 +221,7 @@ export function indexSeasons(seasons: readonly HeatSeasonLike[]): Map<string, Ma
 
 export function familyYearCell(
   year: number,
-  family: LeagueFamily,
+  family: Pick<LeagueFamily, "primary" | "members">,
   byLeagueYear: Map<string, Map<number, HeatSeasonLike>>,
 ): FamilyYearCell | null {
   const present = family.members.flatMap((lg) => {
@@ -184,13 +234,13 @@ export function familyYearCell(
 }
 
 /** Years any member of the family holds, oldest first. */
-export function familyYears(family: LeagueFamily, seasons: readonly { league: string; year: number }[]): number[] {
+export function familyYears(family: Pick<LeagueFamily, "members">, seasons: readonly { league: string; year: number }[]): number[] {
   const set = new Set(family.members);
   return [...new Set(seasons.filter((s) => set.has(s.league)).map((s) => s.year))].sort((a, b) => a - b);
 }
 
 /** Members that have at least one season, in family order: the expanded chart's rows. */
-export function expandedLeagues(family: LeagueFamily, seasons: readonly { league: string }[]): string[] {
+export function expandedLeagues(family: Pick<LeagueFamily, "members">, seasons: readonly { league: string }[]): string[] {
   const have = new Set(seasons.map((s) => s.league));
   return family.members.filter((m) => have.has(m));
 }
@@ -224,6 +274,8 @@ export function heatCellColor(league: string): string {
     fl: "color-mix(in srgb, var(--mlb) 68%, #1a4a8a)",
     afl: "color-mix(in srgb, var(--nfl) 68%, #2a8a40)",
     aafc: "color-mix(in srgb, var(--nfl) 68%, #0a4a30)",
+    ncaaf: "color-mix(in srgb, var(--nfl) 68%, #b8a21a)",
+    cfl: "color-mix(in srgb, var(--nfl) 68%, #0a7a8a)",
     soccer: "var(--soccer)",
     mls: "color-mix(in srgb, var(--soccer) 75%, #0a4a40)",
   };

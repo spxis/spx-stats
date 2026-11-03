@@ -6,7 +6,7 @@ import { packHeat, type HeatSeason } from "@/lib/heatWire";
 import { SOCIAL_IMAGES } from "@/lib/brandAssets";
 import { withCoverage } from "@/lib/coverage";
 import { getSummary } from "@/lib/data";
-import { FAMILIES, familyHref, memberHref, memberName, menuEntries } from "@/lib/leagueFamilies";
+import { CATEGORIES, categoryLabel, codeLabel, heatCellColor, memberHref, memberName, menuEntries } from "@/lib/leagueFamilies";
 import { playerTotal } from "@/lib/playerIndex";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
 import { LEAGUES, leagueInfo } from "@/lib/leagues";
@@ -29,7 +29,7 @@ export async function generateMetadata() {
   };
 }
 
-const tint = (code: string) => (code === "soccer" || code === "mls" ? "var(--soccer)" : `var(--${code})`);
+const tint = (code: string) => (code === "soccer" || code === "mls" ? "var(--soccer)" : heatCellColor(code));
 
 function asHeat(list: { league: string; year: number; label: string; games: number; finals: number; share: number; champion: string | null }[]): HeatSeason[] {
   return list.map((x) => ({ league: x.league, year: x.year, label: x.label, games: x.games, finals: x.finals, share: x.share, champion: x.champion }));
@@ -80,21 +80,26 @@ export default guard(async function Home() {
     return lineOf(code, name, short, tint(code), linesFor(code), href);
   };
 
-  const familyCards: HomeFamilyCard[] = FAMILIES.flatMap((f) => {
-    const members = f.members.filter((m) => linesFor(m).some((x) => x.games > 0 || x.champion));
+  const words = { soccer: soccerWord, football: say("nav.football") };
+  const familyCards: HomeFamilyCard[] = CATEGORIES.flatMap((c) => {
+    const members = c.members.filter((m) => linesFor(m).some((x) => x.games > 0 || x.champion));
     if (!members.length) return [];
-    const face = card(f.primary);
+    const face = card(c.primary);
     const all = members.flatMap((m) => linesFor(m));
     const played = all.filter((x) => x.games > 0).sort((a, b) => a.year - b.year);
+    // A category that holds several league families (Football) is named after its leagues; a single family keeps its league's own name.
+    const several = c.families.length > 1;
     return [{
       ...face,
-      family: f.id,
-      plus: f.plus,
-      href: familyHref(f),
+      family: c.id,
+      plus: c.plus,
+      short: categoryLabel({ ...c, plus: false }, words),
+      ...(several ? { name: c.families.map((f) => codeLabel(f)).join(" · ") } : {}),
+      href: c.href,
       from: played[0]?.year ?? face.from,
       to: played.at(-1)?.year ?? face.to,
       seasons: played.length,
-      kids: f.members.filter((m) => m !== f.primary).map(card).filter((k) => k.seasons > 0 || k.championTeam),
+      kids: c.members.filter((m) => several || m !== c.primary).map(card).filter((k) => k.seasons > 0 || k.championTeam),
     }];
   });
 

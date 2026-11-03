@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.180.0", date: "2026-11-03", href: "/",
+    title: "Five categories everywhere",
+    text: "The home page now lists the same five categories as the top of every page: NHL+, NBA+, MLB+, Football and Soccer (no \"+\"). Football holds the NFL family, college football and the CFL, each still shown inside it: as three thin rows in the archive chart and as its leagues in the Football card. The footer follows the same five.",
+  },
   { version: "0.179.1", date: "2026-11-02", href: "/nhl", needsReview: true,
     title: "Today in history takes Meigen Sports 0.21.0",
     text: "The site now uses Meigen Sports 0.21.0. Its new facts are about sports the site does not cover, so no fact in \"Today in history\" changed.",

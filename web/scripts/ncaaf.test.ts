@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { familyEntries, menuEntries, menuFamilyOf } from "../src/lib/leagueFamilies.ts";
+import { allTimeLinks, menuEntries, menuFamilyOf } from "../src/lib/leagueFamilies.ts";
 import { ALL_LEAGUES, hasPlayers, hasSeries, isOutsideConference, LG, LEAGUES, OUTSIDE_CONFERENCE, PARENT, seasonLabel, seasonSeg } from "../src/lib/leagues.ts";
 import { bowlName, ncaafChampNote, groupOf, isVacated, playoffRound, roundTag, titleGame, titleGameOf, type PostGame } from "../src/lib/postseason.ts";
 
@@ -11,7 +11,7 @@ test("college football is a league of its own, under no parent, listed with the 
   assert.equal(PARENT.ncaaf, undefined);
   assert.ok(LEAGUES.some((l) => l.code === "ncaaf"));
   assert.ok(!menuEntries().some((m) => m.href === "/ncaaf" || m.href === "/nfl" || m.href === "/cfl"), "the header menu has the one Football entry instead");
-  assert.deepEqual(familyEntries().filter((m) => m.id === "nfl" || m.id === "ncaaf" || m.id === "cfl").map((m) => [m.label, m.href]), [["NFL+", "/nfl"], ["College football", "/ncaaf"], ["CFL", "/cfl"]]);
+  assert.deepEqual(allTimeLinks().filter((l) => /\/(nfl|ncaaf|cfl)\//.test(l.href)).map((l) => [l.label, l.href]), [["NFL+", "/nfl/all-time"], ["College football", "/ncaaf/all-time"], ["CFL", "/cfl/all-time"]]);
   assert.equal(menuFamilyOf("ncaaf"), "football");
   assert.equal(menuFamilyOf("nfl"), "football");
   assert.equal(LG.ncaaf, "College football");

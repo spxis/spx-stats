@@ -10,7 +10,7 @@ import { SoccerFooterLinks } from "./SoccerFooterLinks";
 import { authEnabled } from "@/lib/auth/config";
 import { latestDataVersion } from "@/lib/releases/client";
 import { currentSpeaker } from "@/lib/i18n/currentLocale";
-import { familyEntries } from "@/lib/leagueFamilies";
+import { allTimeLinks, menuEntries } from "@/lib/leagueFamilies";
 import pkg from "../../package.json";
 
 export async function SiteHeader() {
@@ -38,7 +38,8 @@ export async function SiteHeader() {
 export async function SiteFooter() {
   const [{ say }, dataVersion] = await Promise.all([currentSpeaker(), latestDataVersion()]);
   const sha = process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7);
-  const menu = familyEntries(say("nav.soccer"));
+  const words = { soccer: say("nav.soccer"), football: say("nav.football") };
+  const menu = menuEntries(words.soccer, words.football);
   return (
     <footer className="foot">
       <div className="foot-cols">
@@ -52,7 +53,7 @@ export async function SiteFooter() {
         <nav className="foot-col" aria-label={say("nav.allTime")}>
           <b>{say("nav.allTime")}</b>
           <div className="foot-links">
-            <LinkList links={menu.flatMap((m) => (m.allTime ? [[`/${m.allTime}/all-time`, m.label] as const] : []))} />
+            <LinkList links={allTimeLinks(words).map((l) => [l.href, l.label] as const)} />
           </div>
         </nav>
         <nav className="foot-col" aria-label={say("footer.colData")}>

@@ -5,8 +5,8 @@ import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, useSyncExternalStore, type KeyboardEvent, type MouseEvent, type PointerEvent } from "react";
 import {
-  codeLabel, expandedLeagues, familiesWithData, familyHref, familyTitle, familyYearCell, heatCellColor,
-  indexSeasons, memberHref, seasonHref, type LeagueFamily,
+  categoriesWithData, categoryLabel, codeLabel, expandedLeagues, familyYearCell, heatCellColor,
+  indexSeasons, memberHref, seasonHref, type Category, type Group,
 } from "@/lib/leagueFamilies";
 import { useSpeaker } from "./i18n/LocaleProvider";
 import { GrowToggle, useArchiveGrow } from "./archiveGrow";
@@ -28,10 +28,11 @@ const LABEL_PX = 46; // the least room a year label gets
 const TICK_STEPS = [1, 2, 5, 10, 20, 25, 50];
 const ROW = 26;
 const CHIP = 6;
+const LANE = 13; // a league's thin lane inside a category that holds several (Football)
 
 /** The chart's width the least box is drawn at, and the height of a row and the year labels: the box keeps its size before the squares are drawn, so the page below does not jump. */
 const MIN_W = 640;
-const boxHeight = (rows: number, chips: boolean) => 22 + rows * (chips ? ROW + CHIP + 3 : ROW);
+const boxHeight = (rows: number, chips: boolean, lanes = 0) => 22 + (rows - (lanes ? 1 : 0)) * (chips ? ROW + CHIP + 3 : ROW) + lanes * LANE + (lanes ? 6 : 0);
 
 /**
  * Each square is a season, shaded by how many of its games have a result. A range slider narrows the years shown. The squares are a drawing with no words a
@@ -42,9 +43,10 @@ export function Heatmap({ wire }: { wire: HeatWire }) {
   const [box, drawn] = useSeen<HTMLDivElement>();
   const { grown } = useArchiveGrow();
   const y0 = min(seasons, (s) => s.year) ?? 0, y1 = max(seasons, (s) => s.year) ?? 0;
-  const families = useMemo(() => familiesWithData(seasons), [seasons]);
+  const families = useMemo(() => categoriesWithData(seasons), [seasons]);
   const canGrow = families.some((f) => expandedLeagues(f, seasons).length > 1);
   const groups = grown ? undefined : families;
+  const laneCount = groups?.reduce((n, g) => n + (g.lanes?.length ?? 0), 0) ?? 0;
   const leagues = grown
     ? families.flatMap((f) => expandedLeagues(f, seasons))
     : families.map((f) => f.id);
@@ -65,12 +67,12 @@ export function Heatmap({ wire }: { wire: HeatWire }) {
   const query = span.from <= y0 && span.to >= y1 ? "" : `?from=${span.from}&to=${span.to}`;
   const linkFor = useCallback((id: string) => {
     const fam = families.find((f) => f.id === id);
-    return `${fam && !grown ? familyHref(fam) : memberHref(id)}${query}`;
+    return `${fam && !grown ? fam.href : memberHref(id)}${query}`;
   }, [families, grown, query]);
   return (
     <div className="yr-hold">
       <YearRange min={y0} max={y1} from={span.from} to={span.to} onChange={onRange} extra={<GrowToggle canGrow={canGrow} />} />
-      <div ref={box} style={drawn ? undefined : { aspectRatio: `${MIN_W} / ${boxHeight(leagues.length, !!groups)}`, maxHeight: boxHeight(leagues.length, !!groups) }}>
+      <div ref={box} style={drawn ? undefined : { aspectRatio: `${MIN_W} / ${boxHeight(leagues.length, !!groups, laneCount)}`, maxHeight: boxHeight(leagues.length, !!groups, laneCount) }}>
         {drawn ? <HeatRowsLazy seasons={seasons} leagues={leagues} years={years} labels linkFor={linkFor} groups={groups} /> : null}
       </div>
     </div>
@@ -78,13 +80,13 @@ export function Heatmap({ wire }: { wire: HeatWire }) {
 }
 
 /** The rows of the chart: a square per season, a label per league (a link when `linkFor` gives its address).
- *  When `groups` is set, each `leagues` id is a family and a year may carry smaller sibling chips underneath. */
+ *  When `groups` is set, each `leagues` id is a category (or a league family) and a year may carry smaller sibling chips underneath. */
 export function HeatRows({ seasons, leagues, years, labels = false, linkFor, groups }: {
-  seasons: HeatSeason[]; leagues: string[]; years: number[]; labels?: boolean; linkFor?: (league: string) => string; groups?: readonly LeagueFamily[];
+  seasons: HeatSeason[]; leagues: string[]; years: number[]; labels?: boolean; linkFor?: (league: string) => string; groups?: readonly Group[];
 }) {
   const router = useRouter();
   const { say, fmt } = useSpeaker();
-  const soccerWord = say("nav.soccer");
+  const words = { soccer: say("nav.soccer"), football: say("nav.football") };
   const internationalWord = say("nav.international");
   const [ref, W] = useChartWidth(1180, 300);
   const card = useHeatCard();
@@ -93,13 +95,14 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
 
   const byLeague = useMemo(() => indexSeasons(seasons), [seasons]);
   const familyOfRow = useMemo(() => {
-    if (!groups) return new Map<string, LeagueFamily>();
+    if (!groups) return new Map<string, Group>();
     return new Map(groups.map((f) => [f.id, f]));
   }, [groups]);
 
   // One height for every row: if any family shows sibling chips, all rows make room for them.
-  const anyChips = [...familyOfRow.values()].some((fam) => years.some((y) => (familyYearCell(y, fam, byLeague)?.chips.length ?? 0) > 0));
-  const rowHOf = () => (anyChips ? ROW + CHIP + 3 : ROW);
+  const flat = (fam: Group): readonly Group[] => fam.lanes ?? [fam];
+  const anyChips = [...familyOfRow.values()].some((fam) => !fam.lanes && years.some((y) => (familyYearCell(y, fam, byLeague)?.chips.length ?? 0) > 0));
+  const rowHOf = (id: string) => { const lanes = familyOfRow.get(id)?.lanes; return lanes ? lanes.length * LANE + 6 : anyChips ? ROW + CHIP + 3 : ROW; };
   const rowHs = leagues.map(rowHOf);
   const rowTop = (i: number) => rowHs.slice(0, i).reduce((n, h) => n + h, 0);
 
@@ -115,7 +118,7 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
 
   const nameOf = (id: string) => {
     const fam = familyOfRow.get(id);
-    return fam ? (fam.chart ? `${fam.chart}${fam.plus ? "+" : ""}` : familyTitle(fam, soccerWord)) : codeLabel(id, internationalWord);
+    return fam ? categoryLabel(fam as Pick<Category, "id" | "primary" | "plus">, words) : codeLabel(id, internationalWord);
   };
   const cardOf = (lg: string, s: HeatSeason) => ({
     title: `${codeLabel(lg, internationalWord)} ${s.label}`,
@@ -128,10 +131,10 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
   const cellsIn = (id: string): { lg: string; yr: number }[] => {
     const fam = familyOfRow.get(id);
     if (!fam) return years.filter((y) => byLeague.get(id)?.has(y)).map((yr) => ({ lg: id, yr }));
-    return years.flatMap((yr) => {
-      const cell = familyYearCell(yr, fam, byLeague);
+    return years.flatMap((yr) => flat(fam).flatMap((lane) => {
+      const cell = familyYearCell(yr, lane, byLeague);
       return cell ? [{ lg: cell.main.league, yr }, ...cell.chips.map((c) => ({ lg: c.league, yr }))] : [];
-    });
+    }));
   };
   const inRow = (id: string) => [...new Set(cellsIn(id).map((c) => c.yr))];
   // Tab reaches one square of the chart (the last one the arrows stood on, else the first); the arrow keys move among the rest.
@@ -165,7 +168,7 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
   };
   function mainOf(rowId: string, yr: number): string {
     const fam = familyOfRow.get(rowId);
-    return fam ? (familyYearCell(yr, fam, byLeague)?.main.league ?? rowId) : rowId;
+    return fam ? (familyYearCell(yr, flat(fam)[0]!, byLeague)?.main.league ?? flat(fam).flatMap((l) => familyYearCell(yr, l, byLeague)?.main.league ?? [])[0] ?? rowId) : rowId;
   }
   const showCard = (el: Element, lg: string, s: HeatSeason) => {
     const c = cardOf(lg, s);
@@ -209,6 +212,28 @@ export function HeatRows({ seasons, leagues, years, labels = false, linkFor, gro
             <g key={id} transform={`translate(0,${top + rowTop(i)})`}>
               {labels ? (linkFor ? <LeagueLabel name={name} href={linkFor(id)} h={rh} w={left} /> : <text className="lab" x={0} y={rh / 2 + 5}>{name}</text>) : null}
               {years.map((yr) => {
+                if (fam?.lanes) {
+                  return (
+                    <g key={yr}>
+                      {fam.lanes.map((lane, li) => {
+                        const cell = familyYearCell(yr, lane, byLeague);
+                        if (!cell) return null;
+                        const chipBand = cell.chips.length ? 4 : 0;
+                        const mainH = Math.max(3, LANE - 2 - chipBand);
+                        const top0 = 3 + li * LANE;
+                        const n = cell.chips.length;
+                        const gap = 0.4;
+                        const chipW = Math.max(1, (cw - 1 - gap * Math.max(0, n - 1)) / Math.max(1, n));
+                        return (
+                          <g key={lane.id}>
+                            {square(cell.main.league, cell.main, id, { x: x(yr) + 0.5, y: top0, w: Math.max(1, cw - 1), h: mainH }, keyOf(cell.main.league, yr))}
+                            {cell.chips.map((ch, ci) => square(ch.league, ch, id, { x: x(yr) + 0.5 + ci * (chipW + gap), y: top0 + mainH + 1, w: chipW, h: 3 }, keyOf(ch.league, yr)))}
+                          </g>
+                        );
+                      })}
+                    </g>
+                  );
+                }
                 if (fam) {
                   const cell = familyYearCell(yr, fam, byLeague);
                   if (!cell) return null;

@@ -2,6 +2,11 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { test } from "node:test";
 import {
+  allTimeLinks,
+  categoriesWithData,
+  CATEGORIES,
+  categoryLabel,
+  categoryOf,
   codeLabel,
   expandedLeagues,
   FAMILIES,
@@ -16,7 +21,6 @@ import {
   heatCellColor,
   indexSeasons,
   memberHref,
-  familyEntries,
   FOOTBALL_FAMILIES,
   menuEntries,
   menuFamilyOf,
@@ -179,9 +183,9 @@ test("the top menu is the families, football as one entry: NHL+, NBA+, MLB+, Foo
   assert.deepEqual(menu.map((m) => m.href), ["/nhl", "/nba", "/mlb", "/football", SOCCER_PATH]);
   assert.equal(menuEntries("サッカー").at(-1)!.label, "サッカー");
   assert.equal(menuEntries("Soccer", "Fútbol americano")[3].label, "Fútbol americano");
-  // the footer still lists every family on its own
-  assert.deepEqual(familyEntries("Soccer").map((m) => m.label), ["NHL+", "NBA+", "MLB+", "NFL+", "College football", "CFL", "Soccer"]);
-  assert.deepEqual(familyEntries("Soccer").map((m) => m.allTime), ["nhl", "nba", "mlb", "nfl", "ncaaf", "cfl", null]);
+  // the footer's all-time column still lists every league that has a table, one by one
+  assert.deepEqual(allTimeLinks({ soccer: "Soccer" }).map((l) => l.label), ["NHL+", "NBA+", "MLB+", "NFL+", "College football", "CFL"]);
+  assert.deepEqual(allTimeLinks().map((l) => l.href), ["/nhl/all-time", "/nba/all-time", "/mlb/all-time", "/nfl/all-time", "/ncaaf/all-time", "/cfl/all-time"]);
   // no woman's, rival or predecessor league is an entry of its own
   const hrefs = new Set(menu.map((m) => m.href));
   for (const lg of ["pwhl", "wnba", "nwsl", "nha", "pcha", "wchl", "wha", "afl", "aafc"]) assert.ok(!hrefs.has(`/${lg}`), `${lg} is not a menu entry`);
@@ -202,4 +206,37 @@ test("every league and virtual member lights its family's menu entry and is link
   assert.equal(menuFamilyOf("afl"), "football");
   for (const code of ["nfl", "aafc", "ncaaf", "cfl", "football"]) assert.equal(menuFamilyOf(code), "football", `${code} lights Football`);
   assert.equal(menuFamilyOf("teams"), undefined);
+});
+
+test("five categories are the one list the header, the kicker, the chart, the cards and the footer read", () => {
+  assert.deepEqual(CATEGORIES.map((c) => c.id), ["nhl", "nba", "mlb", "football", "soccer"]);
+  assert.deepEqual(CATEGORIES.map((c) => categoryLabel(c)), ["NHL+", "NBA+", "MLB+", "Football", "Soccer"]);
+  assert.deepEqual(CATEGORIES.map((c) => categoryLabel(c)), menuEntries().map((m) => m.label), "the header menu is the categories");
+  assert.deepEqual(CATEGORIES.map((c) => c.href), menuEntries().map((m) => m.href));
+  assert.equal(categoryLabel(CATEGORIES[4]!, { soccer: "サッカー" }), "サッカー", "Soccer has no plus in any language");
+  assert.equal(categoryLabel(CATEGORIES[3]!, { football: "Fútbol americano" }), "Fútbol americano");
+  const football = CATEGORIES.find((c) => c.id === "football")!;
+  assert.deepEqual(football.members, ["nfl", "afl", "aafc", "ncaaf", "cfl"], "football holds the NFL family, college football and the CFL, each its own league");
+  assert.equal(football.primary, "nfl");
+  assert.equal(football.plus, false);
+  assert.equal(CATEGORIES.find((c) => c.id === "soccer")!.plus, false);
+  assert.deepEqual(CATEGORIES.filter((c) => c.plus).map((c) => c.id), ["nhl", "nba", "mlb"]);
+  // every member of every league family sits in exactly one category, and the menu lights the same category
+  for (const f of FAMILIES) for (const m of f.members) {
+    assert.equal(CATEGORIES.filter((c) => c.members.includes(m)).length, 1, `${m} is in one category`);
+    assert.equal(categoryOf(m)?.id, menuFamilyOf(m));
+  }
+  assert.equal(categoryOf("cfl")?.id, "football");
+  assert.equal(categoryOf("ncaaf")?.id, "football");
+  assert.equal(categoryOf("aafc")?.id, "football");
+  assert.deepEqual(categoriesWithData([{ league: "cfl" }, { league: "pwhl" }]).map((c) => c.id), ["nhl", "football"]);
+});
+
+test("a football year's square is the NFL's, with the other football leagues as chips under it", () => {
+  const football = CATEGORIES.find((c) => c.id === "football")!;
+  const cell = familyYearCell(1970, football, indexSeasons([s("nfl", 1970), s("cfl", 1970), s("ncaaf", 1970), s("afl", 1970)]));
+  assert.equal(cell?.main.league, "nfl");
+  assert.deepEqual(cell?.chips.map((c) => c.league), ["afl", "ncaaf", "cfl"]);
+  assert.equal(familyYearCell(2000, football, indexSeasons([s("cfl", 2000), s("ncaaf", 2000)]))?.main.league, "ncaaf", "no NFL season: the first member that played");
+  for (const lg of ["afl", "aafc", "ncaaf", "cfl"]) assert.match(heatCellColor(lg), /var\(--nfl\)/, `${lg} takes the football colour`);
 });

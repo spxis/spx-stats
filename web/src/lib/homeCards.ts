@@ -1,4 +1,4 @@
-import { memberHref, type FamilyId } from "./leagueFamilies.ts";
+import { memberHref, type CategoryId } from "./leagueFamilies.ts";
 
 export interface HomeCardLine {
   code: string;
@@ -14,7 +14,7 @@ export interface HomeCardLine {
 }
 
 export interface HomeFamilyCard extends HomeCardLine {
-  family: FamilyId;
+  family: CategoryId;
   plus: boolean;
   kids: HomeCardLine[];
 }
