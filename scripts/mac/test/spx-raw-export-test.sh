@@ -267,11 +267,13 @@ newenv
 run --install-schedule
 P="$HOME/Library/LaunchAgents/ca.johnmorris.spx-raw-export.plist"
 check "plist written" test -f "$P"
-check "plist is valid XML" python3 -c "import plistlib,sys; d=plistlib.load(open(sys.argv[1],'rb')); assert d['StartInterval']==3600 and d['Label']=='ca.johnmorris.spx-raw-export' and d['ProgramArguments'][-1]=='--scheduled'" "$P"
+check "plist is valid XML" python3 -c "import plistlib,sys; d=plistlib.load(open(sys.argv[1],'rb')); assert d['StartInterval']==3600 and d['Label']=='ca.johnmorris.spx-raw-export' and d['ProgramArguments'][0]=='/usr/bin/open' and d['ProgramArguments'][-1].endswith('/Applications/SPX Raw Export.app')" "$P"
+check "the app that runs the export is built" test -f "$HOME/Applications/SPX Raw Export.app/Contents/Info.plist"
 check "plist logs to ~/Library/Logs/spx-raw-export.log" has "$P" "$HOME/Library/Logs/spx-raw-export.log"
 check "launchctl asked to load" has "$STUB_LOG" 'launchctl bootstrap'
 run --remove-schedule
 check "plist removed" test ! -e "$P"
+check "the app is removed" test ! -e "$HOME/Applications/SPX Raw Export.app"
 check "launchctl asked to unload" has "$STUB_LOG" 'launchctl bootout'
 
 echo "(n) the run is reported to DS1 (ingest.raw_export_run, for /admin/ops)"

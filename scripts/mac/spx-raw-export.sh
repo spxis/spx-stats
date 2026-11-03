@@ -24,6 +24,9 @@ set -u -o pipefail
 LABEL="ca.johnmorris.spx-raw-export"
 KEYCHAIN_SERVICE="spx-stats-db DS1 55440"
 PLIST="$HOME/Library/LaunchAgents/$LABEL.plist"
+# macOS lets a launchd job read the Dropbox folder only through an app the user allowed once ("Operation not permitted" otherwise:
+# every file read as "exists but cannot be read", 2026-11-03). The schedule runs the export inside this small app.
+APP="$HOME/Applications/SPX Raw Export.app"
 LOGFILE="$HOME/Library/Logs/spx-raw-export.log"
 DB_NAME="spx_stats"
 DB_USER="postgres"
@@ -496,11 +499,27 @@ do_export() {
 
 xml_escape() { local s=$1; s=${s//&/&amp;}; s=${s//</&lt;}; s=${s//>/&gt;}; printf '%s' "$s"; }
 
+# build_app: a background app that runs this script with --scheduled and appends to the log. The Dropbox permission
+# macOS asks for belongs to this app; rebuilding it (a new install) may ask once more.
+build_app() {
+  local me=$1 src
+  src=$(mktemp -t spx-raw-export) || die "Cannot make a temporary file."
+  printf 'do shell script "export PATH=/opt/homebrew/bin:/opt/homebrew/opt/libpq/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin; /bin/bash " & quoted form of "%s" & " --scheduled >> " & quoted form of "%s" & " 2>&1"\n' "$me" "$LOGFILE" >"$src"
+  rm -rf "$APP"
+  osacompile -o "$APP" "$src" || { rm -f "$src"; die "osacompile could not build $APP."; }
+  rm -f "$src"
+  /usr/libexec/PlistBuddy -c "Add :LSUIElement bool true" "$APP/Contents/Info.plist" >/dev/null 2>&1 || true
+  /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $LABEL" "$APP/Contents/Info.plist" >/dev/null 2>&1 \
+    || /usr/libexec/PlistBuddy -c "Add :CFBundleIdentifier string $LABEL" "$APP/Contents/Info.plist" >/dev/null 2>&1 || true
+  codesign --force --sign - "$APP" >/dev/null 2>&1 || die "codesign could not sign $APP."
+}
+
 install_schedule() {
   local me uid
   me="$(cd "$(dirname "$0")" 2>/dev/null && pwd)/$(basename "$0")"
   [ -f "$me" ] || die "Save the script to a file first (for example ~/bin/spx-raw-export.sh), then run --install-schedule from there."
-  mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs" || die "Cannot create the LaunchAgents folder."
+  mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs" "$HOME/Applications" || die "Cannot create the LaunchAgents folder."
+  build_app "$me"
   cat >"$PLIST" <<EOF
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -509,9 +528,11 @@ install_schedule() {
   <key>Label</key><string>$LABEL</string>
   <key>ProgramArguments</key>
   <array>
-    <string>/bin/bash</string>
-    <string>$(xml_escape "$me")</string>
-    <string>--scheduled</string>
+    <string>/usr/bin/open</string>
+    <string>-W</string>
+    <string>-g</string>
+    <string>-j</string>
+    <string>$(xml_escape "$APP")</string>
   </array>
   <key>StartInterval</key><integer>3600</integer>
   <key>RunAtLoad</key><true/>
@@ -529,7 +550,8 @@ EOF
   if ! launchctl bootstrap "gui/$uid" "$PLIST" 2>/dev/null; then
     launchctl load -w "$PLIST" || die "Wrote $PLIST but launchctl would not load it."
   fi
-  say "Schedule installed: $me runs now and then every hour."
+  say "Schedule installed: $me runs now and then every hour, inside $APP."
+  say "  The first run asks once to let \"SPX Raw Export\" use the Dropbox folder: click Allow."
   say "  agent: $PLIST"
   say "  log:   $LOGFILE   (a run with DS1 out of reach skips and logs one line)"
   say "  undo:  $me --remove-schedule"
@@ -539,6 +561,7 @@ remove_schedule() {
   local uid
   uid=$(id -u)
   launchctl bootout "gui/$uid/$LABEL" >/dev/null 2>&1 || launchctl unload "$PLIST" >/dev/null 2>&1 || true
+  [ -d "$APP" ] && rm -rf "$APP"
   if [ -e "$PLIST" ]; then rm -f "$PLIST"; say "Schedule removed ($PLIST deleted, agent unloaded)."
   else say "No schedule was installed ($PLIST does not exist)."; fi
 }
