@@ -267,7 +267,7 @@ def wind_of(text):
 
 NUM = re.compile(r"^\d{1,2}(?:\.\d{1,3})?$")
 CLOCK = re.compile(r"^(\d{1,2}):(\d{2}(?:\.\d+)?)$")
-STATUS = re.compile(r"\b(DNS|DNF|DQ|DSQ|NM|DNQ|ND)\b|disqualif", re.I)
+STATUS = re.compile(r"\b(DNS|DNF|DQ|DSQ|NM|DNQ|ND)\b|disqualif|(did not start)|(did not finish)", re.I)
 MARK = re.compile(r"(?<![A-Za-z])(Q|q|qR|QR|qB|WR|OR|NR|AR|CR|PB|SB|WL|EL|NU20R|TR|ER|AF|SA|OC|AS|WJ|QSO|WD|QS|qs|QF|qf|AM)(?![A-Za-z])")
 
 
@@ -346,7 +346,7 @@ def row_fields(cells, hm, year):
     st = None
     for src in (pt or "", tt, tht, plain(notes_raw), plain(strip_refs(name_c))):
         m = STATUS.search(src)
-        if m: st = (m.group(1) or "DQ").upper(); break
+        if m: st = (m.group(1) or ("DNS" if m.group(2) else "DNF" if m.group(3) else "DQ")).upper(); break
     out["status"] = {"DSQ": "DQ"}.get(st, st)
     hc = cell("heat")
     ht = plain(hc) if hc is not None else ""
@@ -414,14 +414,10 @@ def parse_article(text, key, year):
             continue
         i += 1
     for sp in tbl_seq.get("splits", []):
-        hit = 0
-        for r in races.values():
-            if r["round_code"] != sp["rcode"]: continue
-            for f in r["rows"]:
-                if (sp["link"] and f["link_title"] == sp["link"]) or (not sp["link"] and f["name"] == sp["name"]):
-                    f["splits"] = sp["splits"]; hit += 1
-        if hit != 1:
-            unparsed.append({"event": key, "year": year, "section": sp["section"], "note": f"splits of {sp['name']} matched {hit} athlete lines"})
+        rows = [f for r in races.values() if r["round_code"] == sp["rcode"] for f in r["rows"]]
+        hits = [f for f in rows if sp["link"] and f["link_title"] == sp["link"]] or [f for f in rows if f["name"] == sp["name"]]
+        if len(hits) == 1: hits[0]["splits"] = sp["splits"]
+        else: unparsed.append({"event": key, "year": year, "section": sp["section"], "note": f"splits of {sp['name']} matched {len(hits)} athlete lines"})
     for (tag, rc), rd in [(k, v) for k, v in tbl_seq.items() if isinstance(k, tuple)]:
         for r in races.values():
             if r["round_code"] == rc and r["wind_ms"] is None and r["race_no"] in rd and r["place_scope"] == "race":
@@ -451,8 +447,8 @@ def handle_table(body, above, below, path, section, key, year, races, unparsed, 
             sl = []
             for i, a, b in split_cols:
                 v = plain(cells[i])
-                if re.fullmatch(r"\d{1,2}(?:\.\d{1,3})?", v):
-                    sl.append({"m": a, "s": float(v)} if b is None else {"m": b, "from": a, "s": float(v), "interval": True})
+                if NUM.match(v) or CLOCK.match(v):
+                    sl.append({"m": a, "s": to_seconds(v)} if b is None else {"m": b, "from": a, "s": to_seconds(v), "interval": True})
             if sl: tbl_seq.setdefault("splits", []).append({"rcode": rcode, "name": nm, "link": link, "splits": sl, "section": section})
         return
     if "name" not in hm or "time" not in hm and "time_hand" not in hm and "place" not in hm:

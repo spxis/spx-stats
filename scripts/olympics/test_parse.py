@@ -146,6 +146,13 @@ class Swimming(unittest.TestCase):
         self.assertEqual((unparsed, list(races)), ([], [(8, 1)]))
         self.assertEqual(races[(8, 1)]["rows"][0]["splits"], [{"m": 15, "s": 5.45}, {"m": 50, "s": 22.28}, {"m": 65, "from": 50, "s": 6.57, "interval": True}])
 
+    def test_clock_splits_and_written_out_status(self):
+        t = article("===Final===\n" + SWIM_HEADER + "|-\n| 1 || 4 || [[A B]] || {{flagIOC|ITA|2024 Summer}} || 14:30.67 ||\n|-\n| \u2014 || 5 || C || {{flagIOC|ITA|2024 Summer}} || Did not finish ||\n|}\n"
+                    "{| class=\"wikitable\"\n|+ Statistics\n! Name\n! 500 metre split\n! 1000 metre split\n! Time\n|-\n! scope=\"row\" | [[A B]]\n| 04:49.10\n| 09:41.72\n| 14:30.67\n|}\n")
+        races, unparsed = self.parse(t)
+        rows = races[(8, 1)]["rows"]
+        self.assertEqual((unparsed, rows[0]["splits"], rows[1]["status"]), ([], [{"m": 500, "s": 289.1}, {"m": 1000, "s": 581.72}], "DNF"))
+
     def test_status_words_are_not_marks(self):
         races, _ = self.parse(article("===Final===\n" + SWIM_HEADER + "|-\n| \u2014 || 4 || A || {{flagIOC|AUS|2000 Summer}} || 10.40 {{abbr|DSQ|Disqualified}} ||\n|}\n"))
         row = races[(8, 1)]["rows"][0]
