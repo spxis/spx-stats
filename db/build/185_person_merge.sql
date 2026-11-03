@@ -6,20 +6,27 @@
 --  * the names fit: same family name (accents and punctuation ignored), a first name that is the same, a longer form of the other
 --    (Alex, Alexander) or a known short form (Bob, Robert), no different middle initials, and the same Jr/Sr/II suffix unless the
 --    birth dates are the same;
---  * nothing contradicts: no two different birth dates, no different shooting or batting hand, no two different ids from the SAME
---    source (two Lahman ids are two people, whatever their names), and a league in common;
+--  * nothing contradicts: no two different birth dates (one exception below), no different shooting or batting hand, no two different
+--    ids from the SAME source (two Lahman ids are two people, whatever their names), and a league in common;
 --  * and there is evidence beyond the name, one of
 --      - the same birth date;
 --      - a club and season in common (a roster entry, statistics, an award, or being the head coach or captain, for the same team season);
 --      - Wikidata (the person's own item, or the item a Wikipedia article title points to) lists a team he played for, the other record
 --        has him with that franchise, and the seasons fit his life (at least 15 years after his birth, not after his death);
 --      - a Wikidata hockey player and an NHL API player with the very same name once accents are ignored, each the only one of its
---        source with that name (the rule 180 uses, with accents folded).
+--        source with that name (the rule 180 uses, with accents folded);
+--      - a birth date typo: the two birth dates differ in exactly one digit (1942-01-25 and 1942-02-25), the names are the same once
+--        spaced initials are joined ("L. C. Greenwood" and "L.C. Greenwood"; no nicknames, no dropped middle name), a league is in
+--        common and the careers touch (each starts within a season of the other's end: one human split by source era, as the NFL's
+--        1972 and 1973 records are). A different league (Chuck Dressen in MLB and the NFL) or careers apart (C.J. Wilson the
+--        pitcher and C.J. Wilson the football player) is NOT a typo: two humans. The two dates are the only contradiction this lifts.
 -- A record in more than one such pair is left alone. Pairs that fit the names and contradict nothing but have no evidence are NOT
 -- merged: they are logged in meta.data_issue ('possible-duplicate:...') for a person to decide.
 --
 -- Which record is kept: an SPX record where one exists, else the Wikidata record (the build keeps rewriting those from Wikidata), else
--- the one with more data. The kept record fills its empty fields from the other. Everything that pointed at the old record is moved:
+-- the one with more data. The kept record fills its empty fields from the other. Where the two birth dates were a typo, the kept
+-- record takes the birth date of the record that is keyed by Wikidata (Wikidata's date wins); when neither is keyed by Wikidata it
+-- keeps its own date (the record kept by the rule above: SPX's, else the one with more data), and the merge log names both dates. Everything that pointed at the old record is moved:
 -- every table with a foreign key to core.person (found in pg_constraint at run time), id arrays such as core.game_event.person_ids, external ids.
 -- Where the old record's row would clash with one the kept record has on a unique key, the kept record's row stays. Each merge is logged in meta.data_issue
 -- ('merge:...') and the old id goes to core.person_redirect (migration 061).
@@ -52,7 +59,8 @@ create index on nick (a, b);
 create temp table np on commit drop as
 select p.person_id, p.full_name, p.kind, p.birth_date, p.throws_or_shoots as tos, p.bats, core.fold_text(p.full_name) as fn,
        (regexp_match(core.fold_text(p.full_name), ' (jr|sr|ii|iii|iv)$'))[1] as suffix,
-       string_to_array(regexp_replace(core.fold_text(p.full_name), ' (jr|sr|ii|iii|iv)$', ''), ' ') as toks
+       string_to_array(regexp_replace(core.fold_text(p.full_name), ' (jr|sr|ii|iii|iv)$', ''), ' ') as toks,
+       regexp_replace(core.fold_text(p.full_name), '\m([a-z]) (?=[a-z]\M)', '\1', 'g') as jn
 from core.person p;
 alter table np add column g text, add column f text, add column mid text;
 update np set g = toks[1], f = toks[cardinality(toks)], mid = case when cardinality(toks) > 2 then toks[2] end;
@@ -83,6 +91,15 @@ create temp table pfy on commit drop as
 select p.person_id, ts.franchise_id, se.start_year as yr from pts p join core.team_season ts using (team_season_id) join core.season se using (season_id);
 create index on pfy (person_id, franchise_id);
 
+-- the first and last season (start year) of each person's career, for the birth date typo rule
+create temp table span on commit drop as select person_id, min(yr) as y0, max(yr) as y1 from pfy group by 1;
+create index on span (person_id);
+
+-- two birth dates that differ in exactly one digit of YYYYMMDD
+create function pg_temp.one_digit(x date, y date) returns boolean language sql immutable as $$
+  select x is not null and y is not null and x <> y
+     and (select count(*) from generate_series(1, 8) i where substr(to_char(x, 'YYYYMMDD'), i, 1) <> substr(to_char(y, 'YYYYMMDD'), i, 1)) = 1 $$;
+
 create temp table keys on commit drop as
 select x.entity_id as person_id, x.source_id, s.code as source, x.external_key
 from core.external_id x join meta.source s using (source_id) where x.entity_kind = 'person';
@@ -93,26 +110,30 @@ create temp table cand0 on commit drop as
 select a.person_id as a, b.person_id as b, coalesce(a.birth_date = b.birth_date, false) as birth_eq,
        coalesce(a.birth_date <> b.birth_date, false) as birth_conf,
        ((a.tos is not null and b.tos is not null and a.tos <> b.tos) or (a.bats is not null and b.bats is not null and a.bats <> b.bats)) as hand_conf,
-       (a.suffix is distinct from b.suffix) as suffix_diff, (a.fn = b.fn) as fn_eq
+       (a.suffix is distinct from b.suffix) as suffix_diff, (a.fn = b.fn) as fn_eq,
+       (a.jn = b.jn and pg_temp.one_digit(a.birth_date, b.birth_date)) as typo_names
 from np a join np b on a.f = b.f and a.person_id < b.person_id
-where (a.g = b.g
-       or (least(length(a.g), length(b.g)) >= 3 and greatest(length(a.g), length(b.g)) - least(length(a.g), length(b.g)) >= 2
-           and (a.g like b.g || '%' or b.g like a.g || '%'))
-       or exists (select 1 from nick n where n.a = a.g and n.b = b.g))
-  and (a.mid is null or b.mid is null or left(a.mid, 1) = left(b.mid, 1));
+where ((a.g = b.g
+        or (least(length(a.g), length(b.g)) >= 3 and greatest(length(a.g), length(b.g)) - least(length(a.g), length(b.g)) >= 2
+            and (a.g like b.g || '%' or b.g like a.g || '%'))
+        or exists (select 1 from nick n where n.a = a.g and n.b = b.g))
+       and (a.mid is null or b.mid is null or left(a.mid, 1) = left(b.mid, 1)))
+   or (a.jn = b.jn and pg_temp.one_digit(a.birth_date, b.birth_date));
 
 create temp table cand on commit drop as
 select c.*,
        exists (select 1 from keys ka join keys kb on kb.source_id = ka.source_id and kb.external_key <> ka.external_key
                 where ka.person_id = c.a and kb.person_id = c.b) as same_src_key,
        exists (select 1 from pts x join pts y using (team_season_id) where x.person_id = c.a and y.person_id = c.b) as overlap,
-       coalesce((select la.lg && lb.lg from lg la, lg lb where la.person_id = c.a and lb.person_id = c.b), false) as lg_ok
+       coalesce((select la.lg && lb.lg from lg la, lg lb where la.person_id = c.a and lb.person_id = c.b), false) as lg_ok,
+       coalesce((select sa.y0 <= sb.y1 + 1 and sb.y0 <= sa.y1 + 1 from span sa, span sb where sa.person_id = c.a and sb.person_id = c.b), false) as touching
 from cand0 c;
 
--- Names fit and nothing contradicts: the pairs a person can look at.
+-- Names fit and nothing contradicts: the pairs a person can look at. A birth date typo (names the same once spaced initials are joined, one
+-- digit apart, a league in common, careers touching) is not a contradiction.
 create temp table fit on commit drop as
-select * from cand
-where not birth_conf and not hand_conf and not same_src_key and lg_ok and (birth_eq or not suffix_diff);
+select c.*, (c.birth_conf and c.typo_names and c.touching) as typo from cand c
+where (not c.birth_conf or (c.typo_names and c.touching)) and not c.hand_conf and not c.same_src_key and c.lg_ok and (c.birth_eq or not c.suffix_diff);
 
 -- A Wikidata hockey player and an NHL API player with the same name (accents ignored), each alone in its source with that name.
 create temp table wd_hockey on commit drop as
@@ -171,12 +192,14 @@ where exists (
 
 create temp table pair0 on commit drop as
 select least(a, b) as a, greatest(a, b) as b, case when birth_eq then 'the same birth date' else 'the same team in the same season' end as why,
-       case when birth_eq then 1 else 2 end as rank
+       case when birth_eq then 1.0 else 2.0 end as rank
 from fit where birth_eq or overlap
 union all
-select least(a, b), greatest(a, b), 'Wikidata lists the same club and the seasons fit his life', 3 from wd_club
+select least(a, b), greatest(a, b), 'the same name, birth dates one digit apart (a typo), a league in common and touching careers', 2.5 from fit where typo
 union all
-select least(a, b), greatest(a, b), 'the same name and sport, the only one of each source', 4 from name_pair;
+select least(a, b), greatest(a, b), 'Wikidata lists the same club and the seasons fit his life', 3.0 from wd_club
+union all
+select least(a, b), greatest(a, b), 'the same name and sport, the only one of each source', 4.0 from name_pair;
 -- the same two records found by more than one rule are one pair; the strongest evidence is the one named
 create temp table pair on commit drop as
 select distinct on (a, b) a, b, why from pair0 order by a, b, rank;
@@ -184,7 +207,9 @@ select distinct on (a, b) a, b, why from pair0 order by a, b, rank;
 create temp table once on commit drop as
 select p from (select a as p from pair union all select b from pair) z group by p having count(*) = 1;
 create temp table ok_pair on commit drop as
-select a, b, why from pair where a in (select p from once) and b in (select p from once);
+select pr.a, pr.b, pr.why, coalesce(f.birth_conf, false) as bconf
+from pair pr left join fit f on (f.a, f.b) = (pr.a, pr.b)
+where pr.a in (select p from once) and pr.b in (select p from once);
 
 -- 2. Which record stays --------------------------------------------------------------------------------------------------------
 create temp table score on commit drop as
@@ -197,8 +222,19 @@ from core.person p where p.person_id in (select a from ok_pair union select b fr
 
 create temp table m on commit drop as
 select case when sa.sc > sb.sc or (sa.sc = sb.sc and o.a < o.b) then o.a else o.b end as kept,
-       case when sa.sc > sb.sc or (sa.sc = sb.sc and o.a < o.b) then o.b else o.a end as loser, o.why
+       case when sa.sc > sb.sc or (sa.sc = sb.sc and o.a < o.b) then o.b else o.a end as loser, o.why, o.bconf
 from ok_pair o join score sa on sa.person_id = o.a join score sb on sb.person_id = o.b;
+-- a birth date typo: the record keyed by Wikidata gives the date; if neither is, the kept record's own date stays (both cannot be:
+-- two Wikidata ids are two different ids of one source, which vetoes the pair)
+alter table m add column bd date, add column bd_note text;
+update m set bd = case when exists (select 1 from keys where person_id = m.loser and source = 'wikidata')
+                        and not exists (select 1 from keys where person_id = m.kept and source = 'wikidata')
+                       then (select birth_date from core.person where person_id = m.loser) else (select birth_date from core.person where person_id = m.kept) end
+ where bconf;
+update m set bd_note = format('birth dates %s and %s; %s is kept, %s', (select birth_date from core.person where person_id = m.kept), (select birth_date from core.person where person_id = m.loser), m.bd,
+                              case when exists (select 1 from keys where person_id = m.kept and source = 'wikidata') or exists (select 1 from keys where person_id = m.loser and source = 'wikidata')
+                                   then 'the date of the record Wikidata keys' else 'neither record is keyed by Wikidata, so the date of the record kept' end)
+ where bconf;
 
 create temp table people_before on commit drop as select count(*) as n from core.person;
 
@@ -209,8 +245,8 @@ create function pg_temp.pkey(p bigint) returns text language sql stable as $$
 insert into meta.data_issue (source_id, entity_kind, entity_key, issue, resolution)
 select (select source_id from meta.source where code = 'spx_stats_derived'), 'person',
        'merge:' || pg_temp.pkey(m.loser) || '+' || pg_temp.pkey(m.kept),
-       format('%s (person %s, %s) and %s (person %s, %s) are one person: %s',
-              l.full_name, m.loser, pg_temp.pkey(m.loser), k.full_name, m.kept, pg_temp.pkey(m.kept), m.why),
+       format('%s (person %s, %s) and %s (person %s, %s) are one person: %s%s',
+              l.full_name, m.loser, pg_temp.pkey(m.loser), k.full_name, m.kept, pg_temp.pkey(m.kept), m.why, coalesce(' (' || m.bd_note || ')', '')),
        format('Merged into person %s; the old id %s redirects to it', m.kept, m.loser)
 from m join core.person l on l.person_id = m.loser join core.person k on k.person_id = m.kept
 where not exists (select 1 from meta.data_issue d where d.entity_kind = 'person'
@@ -300,7 +336,7 @@ update core.external_id s set entity_id = m.kept from m where s.entity_kind = 'p
 -- the kept record fills what it lacks from the old one
 update core.person k set
   given_name = coalesce(k.given_name, l.given_name), family_name = coalesce(k.family_name, l.family_name),
-  birth_date = coalesce(k.birth_date, l.birth_date), birth_place = coalesce(k.birth_place, l.birth_place),
+  birth_date = coalesce(m.bd, k.birth_date, l.birth_date), birth_place = coalesce(k.birth_place, l.birth_place),
   birth_country_code = coalesce(k.birth_country_code, l.birth_country_code), death_date = coalesce(k.death_date, l.death_date),
   height_cm = coalesce(k.height_cm, l.height_cm), handedness = coalesce(k.handedness, l.handedness), nickname = coalesce(k.nickname, l.nickname),
   nationality_code = coalesce(k.nationality_code, l.nationality_code), bats = coalesce(k.bats, l.bats),

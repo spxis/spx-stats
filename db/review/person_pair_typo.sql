@@ -1,8 +1,9 @@
 -- what: pairs of core.person with the same name (accents, punctuation and spaced initials ignored: "L. C." and "L.C.") whose birth dates are one digit apart,
 --       that share a league and whose careers touch (each starts within a season of the other's end), and the reason db/build/185_person_merge.sql did not merge
---       them. Read-only: run with  bash scripts/mac/ds1-apply.sh db/review/person_pair_typo.sql --dry-run  (select only; nothing is written). Not a db/checks file.
+--       them (the careers are the ones 185 counts: roster, statistics, head coach, captain, award; the lists of 2026-11-03 add the 2 pairs of coaches Banister and Zimmer). Read-only: run with  bash scripts/mac/ds1-apply.sh db/review/person_pair_typo.sql --dry-run  (select only; nothing is written). Not a db/checks file.
 -- why: 185 treats two different birth dates as a contradiction, so one wrong digit in a source keeps one human in two records (SPX-866: Carl Eller 1942-01-25 and
---       1942-02-25, Bill Bradley, Forrest Blue, Tommy Casanova ...). Replayed on api.people on 2026-11-02 this finds 29 pairs (27 NFL, 2 MLB: Minnie Minoso, Jim Spencer).
+--       1942-02-25, Bill Bradley, Forrest Blue, Tommy Casanova ...). Replayed on api.people on 2026-11-02 this found 29 pairs (27 NFL, 2 MLB: Minnie Minoso, Jim Spencer); with head coach, captain and award careers counted it is 31 (the coaches Banister and Zimmer),
+--       the pairs 185 now merges. After that merge list 1 holds only the pairs still apart.
 -- Columns: a, b, name_a, name_b, born_a, born_b, leagues, seasons_a, seasons_b, same_source_key (185's veto: two different ids of one source), shared_team_season.
 -- Built in materialized steps (SPX-866: the single-query form ran over 16 minutes on DS1 and was cancelled; its planner joined the careers of everyone to every name pair):
 -- first the name pairs, then only the people in them, then the careers of those people alone.
@@ -16,9 +17,13 @@ cand as materialized (
   where a.b8 <> b.b8 and (select count(*) from generate_series(1, 8) i where substr(a.b8, i, 1) <> substr(b.b8, i, 1)) = 1),
 who as materialized (select a as person_id from cand union select b from cand),
 career as materialized (
-  select person_id, array_agg(distinct league) as leagues, min(yr) as y0, max(yr) as y1 from (
-    select rs.person_id, s.league_code as league, s.start_year as yr from who w join core.roster_stint rs using (person_id) join core.team_season ts using (team_season_id) join core.season s using (season_id)
-    union all select x.person_id, s.league_code, s.start_year from who w join core.player_season_stat x using (person_id) join core.team_season ts using (team_season_id) join core.season s using (season_id)) z
+  -- the leagues count from roster, statistics and awards; the years from those and from head coach and captain seasons (as 185 counts them)
+  select person_id, array_agg(distinct league) filter (where in_league) as leagues, min(yr) as y0, max(yr) as y1 from (
+    select rs.person_id, s.league_code as league, s.start_year as yr, true as in_league from who w join core.roster_stint rs using (person_id) join core.team_season ts using (team_season_id) join core.season s using (season_id)
+    union all select x.person_id, s.league_code, s.start_year, true from who w join core.player_season_stat x using (person_id) join core.team_season ts using (team_season_id) join core.season s using (season_id)
+    union all select aw.person_id, s.league_code, null::int, true from who w join core.award_winner aw on aw.person_id = w.person_id join core.season s on s.season_id = aw.season_id
+    union all select aw.person_id, s.league_code, s.start_year, false from who w join core.award_winner aw on aw.person_id = w.person_id join core.team_season ts on ts.team_season_id = aw.team_season_id join core.season s on s.season_id = ts.season_id
+    union all select w.person_id, s.league_code, s.start_year, false from who w join core.team_season ts on w.person_id in (ts.head_coach_person_id, ts.captain_person_id) join core.season s using (season_id)) z
   group by person_id),
 pairs as materialized (
   select c.a, c.b, c.name_a, c.name_b, c.born_a, c.born_b,

@@ -156,7 +156,9 @@ EXCLUSIVE lock for the whole rebuild. So:
    a conference or division, a stale season summary): each must stay at its baseline. A load that skips one is how the NFL 1973-1998
    seasons went live with no champions and no conferences.
    **People who might be one person.** `db/build/185_person_merge.sql` merges two records only with a confirming fact (same birth date,
-   a team season in common, or a club Wikidata lists that the other record has within his lifetime); every other fitting pair is
+   a team season in common, a club Wikidata lists that the other record has within his lifetime, or a birth date typo: dates one digit apart,
+   the same name once spaced initials are joined, a league in common and careers that touch; the merged record keeps the date of the
+   record Wikidata keys; `bash db/tests/person-typo-merge.sh` on a scratch copy proves it, C.J. Wilson the pitcher and the footballer stay apart); every other fitting pair is
    logged as `possible-duplicate:` in `meta.data_issue` and never merged on the name. `db/review/person_review.sql` (read-only,
    `ds1-apply.sh --dry-run`) lists them as `db/seed/person_review.csv`; `python3 -I scripts/people/review_to_ts.py` copies the list
    to the admin page `/admin/people` (admin only, a snapshot in the code, not read from the database). Rerun both after a merge.
