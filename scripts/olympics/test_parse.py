@@ -97,5 +97,60 @@ class Article(unittest.TestCase):
         self.assertEqual((len(races), len(unparsed)), (0, 1))
 
 
+SWIM_HEADER = "{| class=\"wikitable\"\n! Rank !! Lane !! Swimmer !! Nation !! Time !! Notes\n"
+
+
+class Swimming(unittest.TestCase):
+    def parse(self, text):
+        return P.parse_article(text, "100free-m", 2000)
+
+    def test_rows_without_a_results_heading(self):
+        t = "==Heats==\n" + SWIM_HEADER + "|-\n| 1 || 4 || [[A B]] || {{flagIOC|AUS|2000 Summer}} || 1:13.6 WR || \n|}\n==Final==\n" + SWIM_HEADER + \
+            "|-\n| {{gold01}} || 4 || [[A B]] || {{flagIOC|AUS|2000 Summer}} || 47.21 ||\n|}\n"
+        races, unparsed = self.parse(t)
+        self.assertEqual((unparsed, sorted(races)), ([], [(2, 1), (8, 1)]))
+        first = races[(2, 1)]["rows"][0]
+        self.assertEqual((first["time_s"], first["marks"], first["nation"]), (73.6, ["WR"], "AUS"))
+
+    def test_swim_off_and_lettered_finals(self):
+        t = article("===Heats===\n" + SWIM_HEADER + "|-\n| 1 || 4 || A || {{flagIOC|AUS|2000 Summer}} || 50.1 ||\n|}\n; Swim-off\n\n" + SWIM_HEADER +
+                    "|-\n| 1 || 4 || A || {{flagIOC|AUS|2000 Summer}} || 50.0 ||\n|}\n===Finals===\n====Final B====\n" + SWIM_HEADER +
+                    "|-\n| 9 || 4 || B || {{flagIOC|AUS|2000 Summer}} || 51.0 ||\n|}\n====Final A====\n" + SWIM_HEADER + "|-\n| 1 || 4 || C || {{flagIOC|AUS|2000 Summer}} || 49.0 ||\n|}\n")
+        races, unparsed = self.parse(t)
+        self.assertEqual(unparsed, [])
+        self.assertEqual(sorted(races), [(2, 1), (2, 91), (8, 1), (8, 2)])
+        self.assertEqual((races[(2, 91)]["heat_label"], races[(8, 1)]["heat_label"], races[(8, 1)]["rows"][0]["name"], races[(8, 2)]["heat_label"]), ("Swim-off", "Final A", "C", "Final B"))
+
+    def test_rowspan_in_the_last_columns(self):
+        t = article("===Heats===\n" + SWIM_HEADER + "|-\n| rowspan=2|16 || 6 || [[A]] || {{flagIOC|FRA|2000 Summer}} || rowspan=2|53.71 || rowspan=2|{{abbr|QSO|x}}\n|-\n| 7 || [[B]] || {{flagIOC|NED|2000 Summer}}\n|}\n")
+        races, unparsed = self.parse(t)
+        self.assertEqual(unparsed, [])
+        second = races[(2, 1)]["rows"][1]
+        self.assertEqual((second["place"], second["lane"], second["time_s"], second["marks"]), (16, 7, 53.71, ["QSO"]))
+
+    def test_single_final_table_under_results(self):
+        races, unparsed = self.parse("==Results==\n{| class=\"wikitable\"\n! Rank || Swimmer || Nation || Time\n|-\n| {{gold01}}\n| [[A B]] || {{flagIOC|HUN|1896 Summer}}\n| 1:22.2\n|}\n")
+        self.assertEqual((unparsed, list(races)), ([], [(8, 1)]))
+
+    def test_medal_icon_and_unlinked_flag_name(self):
+        t = article("===Final===\n{| class=\"wikitable\"\n! Rank !! Athlete !! Country !! Time !! Notes\n|-\n| [[File:gold medal icon.svg|1]] || [[A B]] || {{FlagIOC|DEN|1948 Summer}} || 1:06.3 || \n|-\n| 4 || {{flagIOCathlete|Regina Kari|FIN|1912 Summer}} || || 1:09.1 ||\n|}\n")
+        races, _ = self.parse(t)
+        rows = races[(8, 1)]["rows"]
+        self.assertEqual((rows[0]["place"], rows[0]["time_s"], rows[1]["name"], rows[1]["nation"]), (1, 66.3, "Regina Kari", "FIN"))
+
+    def test_split_statistics_table(self):
+        t = article("===Final===\n" + SWIM_HEADER + "|-\n| {{gold01}} || 4 || [[A B]] || {{flagIOC|CHN|2024 Summer}} || 46.40 ||\n|}\n"
+                    "{| class=\"wikitable\"\n|+ Statistics\n! Name\n! 15 metre split (s)\n! 50 metre split (s)\n! 50–65 metre split (s)\n! Time (s)\n! Stroke rate\n"
+                    "|-\n! scope=\"row\" | [[A B]]\n| 5.45\n| 22.28\n| 6.57\n| 46.40\n| 51.6\n|}\n")
+        races, unparsed = self.parse(t)
+        self.assertEqual((unparsed, list(races)), ([], [(8, 1)]))
+        self.assertEqual(races[(8, 1)]["rows"][0]["splits"], [{"m": 15, "s": 5.45}, {"m": 50, "s": 22.28}, {"m": 65, "from": 50, "s": 6.57, "interval": True}])
+
+    def test_status_words_are_not_marks(self):
+        races, _ = self.parse(article("===Final===\n" + SWIM_HEADER + "|-\n| \u2014 || 4 || A || {{flagIOC|AUS|2000 Summer}} || 10.40 {{abbr|DSQ|Disqualified}} ||\n|}\n"))
+        row = races[(8, 1)]["rows"][0]
+        self.assertEqual((row["status"], row["time_s"], row["marks"]), ("DQ", None, []))
+
+
 if __name__ == "__main__":
     unittest.main(argv=[sys.argv[0]] + sys.argv[1:])

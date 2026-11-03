@@ -7,6 +7,9 @@ GAMES = [1896, 1900, 1904, 1908, 1912, 1920, 1924, 1928, 1932, 1936, 1948, 1952,
 EVENTS = {
     "100m-m": {"title": "Athletics at the {y} Summer Olympics – Men's 100 metres", "years": GAMES},
     "100m-w": {"title": "Athletics at the {y} Summer Olympics – Women's 100 metres", "years": [y for y in GAMES if y >= 1928]},
+    # Swimming: no 100 m freestyle at 1900 (200 m) or 1904 (100 yards); women swam from 1912. The 2024 articles are titled "100-metre" and the API follows the redirect.
+    "100free-m": {"title": "Swimming at the {y} Summer Olympics – Men's 100 metre freestyle", "years": [y for y in GAMES if y not in (1900, 1904)]},
+    "100free-w": {"title": "Swimming at the {y} Summer Olympics – Women's 100 metre freestyle", "years": [y for y in GAMES if y >= 1912]},
 }
 
 

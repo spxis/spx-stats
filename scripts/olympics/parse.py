@@ -89,11 +89,17 @@ def athlete_of(cell):
     m = re.search(r"\{\{\s*flag(?:ioc)?athlete\s*\|([^{}]*?)\|\s*([A-Za-z]{3})\s*(?:\||\}\})", cell, re.I)
     if m:
         code = m.group(2).upper()
-        cell = m.group(1) + " " + cell[m.end():]
-    s = re.search(r"\{\{\s*sortname\s*\|\s*([^|{}]*)\|\s*([^|{}]*)(?:\|\s*([^|{}=]*))?", cell, re.I)
+        rest = cell[m.end():]
+        if cell[m.end() - 1] == "|" and "}}" in rest: rest = rest.split("}}", 1)[1]
+        cell = m.group(1) + " " + rest
+    s = re.search(r"\{\{\s*sortname\s*\|([^{}]*)\}\}", cell, re.I)
     if s:
-        first, last, art = s.group(1).strip(), s.group(2).strip(), (s.group(3) or "").strip()
-        return (first + " " + last).strip(), (art or (first + " " + last)).strip(), code
+        args = [x.strip() for x in s.group(1).split("|")]
+        pos = [x for x in args if "=" not in x]
+        dab = next((x.split("=", 1)[1].strip() for x in args if x.lower().startswith("dab=")), "")
+        first, last, art = (pos + ["", "", ""])[:3]
+        name = (first + " " + last).strip()
+        return name, (art or (name + (" (" + dab + ")" if dab else ""))).strip(), code
     tgt, shown = find_link(cell)
     if tgt: return shown, tgt, code
     return plain(cell), None, code
@@ -147,6 +153,9 @@ def table_rows(lines):
     def finish():
         nonlocal cur
         if cur is not None and cur["cells"]:
+            while len(cur["cells"]) in carry and carry[len(cur["cells"])][1] > 0:
+                c = carry[len(cur["cells"])]
+                cur["cells"].append(c[0]); carry[len(cur["cells"]) - 1] = (c[0], c[1] - 1)
             rows.append(cur)
         cur = None
 
@@ -194,7 +203,7 @@ def header_map(cells):
         t = re.sub(r"\s+", " ", t)
         if re.fullmatch(r"(rank|place|pos\.?|position|pl\.?)", t): m.setdefault("place", i)
         elif t.startswith("lane"): m.setdefault("lane", i)
-        elif t in ("athlete", "name", "competitor", "runner", "sprinter", "athletes", "player"): m.setdefault("name", i)
+        elif t in ("athlete", "name", "competitor", "runner", "sprinter", "athletes", "player", "swimmer", "swimmers"): m.setdefault("name", i)
         elif t in ("nation", "country", "noc", "team", "nationality"): m.setdefault("nation", i)
         elif t.startswith("reaction") or t in ("react", "rt", "reac."): m.setdefault("reaction", i)
         elif t == "heat": m.setdefault("heat", i)
@@ -259,13 +268,15 @@ def wind_of(text):
 NUM = re.compile(r"^\d{1,2}(?:\.\d{1,3})?$")
 CLOCK = re.compile(r"^(\d{1,2}):(\d{2}(?:\.\d+)?)$")
 STATUS = re.compile(r"\b(DNS|DNF|DQ|DSQ|NM|DNQ|ND)\b|disqualif", re.I)
-MARK = re.compile(r"(?<![A-Za-z])(Q|q|qR|QR|qB|WR|OR|NR|AR|CR|PB|SB|WL|EL|NU20R|TR)(?![A-Za-z])")
+MARK = re.compile(r"(?<![A-Za-z])(Q|q|qR|QR|qB|WR|OR|NR|AR|CR|PB|SB|WL|EL|NU20R|TR|ER|AF|SA|OC|AS|WJ|QSO|WD|QS|qs|QF|qf|AM)(?![A-Za-z])")
 
 
 def to_seconds(s):
     s = s.strip()
     m0 = re.match(r"^(\d{1,2}(?:\.\d{1,3})?)\s*(?:[,;]\s*\S|\()", s)
     if m0: return float(m0.group(1))
+    m1 = re.match(r"^(?:(\d{1,2}):)?(\d{1,2}(?:\.\d{1,3})?)\s+(?!DSQ|DQ|DNS|DNF|DNQ)[A-Za-z]", s)
+    if m1: return int(m1.group(1) or 0) * 60 + float(m1.group(2))
     if NUM.match(s): return float(s)
     m = CLOCK.match(s)
     if m: return int(m.group(1)) * 60 + float(m.group(2))
@@ -297,7 +308,7 @@ def row_fields(cells, hm, year):
     def cell(k):
         i = hm.get(k)
         return cells[i] if isinstance(i, int) and i < len(cells) else None
-    out = {"cells": {}}
+    out = {"cells": {}, "splits": None}
     name_c, nat_c = cell("name"), cell("nation")
     if name_c is None: return None
     nm, link, code = athlete_of(name_c)
@@ -306,6 +317,9 @@ def row_fields(cells, hm, year):
     out.update(name=nm, link_title=link, nation=nat, nation_text=plain(nat_c) if nat_c is not None else None)
     pc = cell("place")
     pt = plain(pc) if pc is not None else None
+    if pc is not None and not pt:
+        mi = re.search(r"\b(gold|silver|bronze)\s+medal", pc, re.I)
+        if mi: pt = {"gold": "1", "silver": "2", "bronze": "3"}[mi.group(1).lower()]
     out["place_text"] = pt or None
     pm = re.match(r"^=?\s*(\d{1,3})\s*(?:=|st|nd|rd|th)?\b", pt or "")
     out["place"] = int(pm.group(1)) if pm else None
@@ -326,8 +340,8 @@ def row_fields(cells, hm, year):
     out["notes"] = plain(notes_raw) or None
     out["marks"] = marks_of(notes_raw)
     for extra in (tc, th):
-        if extra is not None and re.match(r"^\s*\d{1,2}(?:\.\d{1,3})?\s*[,;]", plain(extra)):
-            for mk in marks_of(re.sub(r"^\s*[\d.]+\s*[,;]", "", extra)):
+        if extra is not None and re.match(r"^\s*(?:\d{1,2}:)?\d{1,2}(?:\.\d{1,3})?\s*(?:[,;]|\s(?=(?!DSQ|DQ|DNS|DNF|DNQ)[A-Za-z]))", plain(extra)):
+            for mk in marks_of(re.sub(r"^\s*[\d.:]+\s*[,;]?", "", extra)):
                 if mk not in out["marks"]: out["marks"].append(mk)
     st = None
     for src in (pt or "", tt, tht, plain(notes_raw), plain(strip_refs(name_c))):
@@ -359,6 +373,7 @@ def parse_article(text, key, year):
     races, unparsed = {}, []
     path = []          # [(level, title)]
     in_results, seen_results, last_round = False, False, None
+    has_results = any(HEAD.match(x) and len(HEAD.match(x).group(1)) == 2 and plain(HEAD.match(x).group(2)).lower() == "results" for x in lines)
     i = 0
     last_head_i = 0
     pending_wind_text = ""
@@ -371,7 +386,7 @@ def parse_article(text, key, year):
             path = [p for p in path if p[0] < lvl] + [(lvl, title)]
             if lvl == 2:
                 if plain(title).lower() == "results": in_results, seen_results, last_round = True, True, None
-                elif seen_results and classify(title): in_results = True
+                elif (seen_results or not has_results) and classify(title): in_results = True
                 else: in_results = False
             if classify(title): last_round = classify(title)
             last_head_i = i + 1
@@ -398,6 +413,15 @@ def parse_article(text, key, year):
             last_head_i = j
             continue
         i += 1
+    for sp in tbl_seq.get("splits", []):
+        hit = 0
+        for r in races.values():
+            if r["round_code"] != sp["rcode"]: continue
+            for f in r["rows"]:
+                if (sp["link"] and f["link_title"] == sp["link"]) or (not sp["link"] and f["name"] == sp["name"]):
+                    f["splits"] = sp["splits"]; hit += 1
+        if hit != 1:
+            unparsed.append({"event": key, "year": year, "section": sp["section"], "note": f"splits of {sp['name']} matched {hit} athlete lines"})
     for (tag, rc), rd in [(k, v) for k, v in tbl_seq.items() if isinstance(k, tuple)]:
         for r in races.values():
             if r["round_code"] == rc and r["wind_ms"] is None and r["race_no"] in rd and r["place_scope"] == "race":
@@ -415,6 +439,22 @@ def handle_table(body, above, below, path, section, key, year, races, unparsed, 
     while n < len(rows) and rows[n][0]:
         hdr_cells += rows[n][1]; n += 1
     hm = header_map(hdr_cells)
+    split_cols = []
+    for i, c in enumerate(hdr_cells):
+        m = re.match(r"^(\d+)(?:\s*-\s*(\d+))?\s*(?:metres?|meters?|m)\b.*split", plain(c), re.I)
+        if m: split_cols.append((i, int(m.group(1)), int(m.group(2)) if m.group(2) else None))
+    if split_cols and "name" in hm:
+        rcode = next((classify(t) for l, t in reversed(path) if classify(t)), last_round)
+        for hdr, cells in rows[n:]:
+            if hdr or len(cells) <= max(i for i, a, b in split_cols): continue
+            nm, link, _ = athlete_of(cells[hm["name"]])
+            sl = []
+            for i, a, b in split_cols:
+                v = plain(cells[i])
+                if re.fullmatch(r"\d{1,2}(?:\.\d{1,3})?", v):
+                    sl.append({"m": a, "s": float(v)} if b is None else {"m": b, "from": a, "s": float(v), "interval": True})
+            if sl: tbl_seq.setdefault("splits", []).append({"rcode": rcode, "name": nm, "link": link, "splits": sl, "section": section})
+        return
     if "name" not in hm or "time" not in hm and "time_hand" not in hm and "place" not in hm:
         unparsed.append({"event": key, "year": year, "section": section, "note": "no athlete or time column: " + " | ".join(plain(c) for c in hdr_cells)[:120]}); return
     rcode, heat_no = None, None
@@ -422,11 +462,18 @@ def handle_table(body, above, below, path, section, key, year, races, unparsed, 
         c = classify(title)
         if c: rcode = c; break
     rcode = rcode or last_round
+    forced_final = rcode is None and len(path) == 1 and plain(path[0][1]).lower() == "results"
+    if forced_final: rcode = "final"
     if rcode is None:
         unparsed.append({"event": key, "year": year, "section": section, "note": "round not recognised"}); return
     inner_title = path[-1][1]
     heat_no = trailing_int(inner_title) if re.search(r"(heat|final|round)\s*\d+\s*$", plain(inner_title), re.I) else None
+    dl = re.findall(r"^;\s*(.+?)\s*$", above, re.M)
+    dl_label = plain(dl[-1]) if dl else None
+    swimoff = bool(re.search(r"swim-?off", (dl_label or "") + " " + plain(inner_title), re.I))
+    letter = re.search(r"\bfinal\s+([A-D])\b", (dl_label or "") + " " + plain(inner_title), re.I)
     round_label = next((plain(t) for l, t in reversed(path) if classify(t) == rcode and trailing_int(t) is None), plain(path[-1][1]))
+    if forced_final: round_label = "Final"
     wind_row = None
     data = []
     for hdr, cells in rows[n:]:
@@ -450,14 +497,20 @@ def handle_table(body, above, below, path, section, key, year, races, unparsed, 
         for f in data: groups.setdefault(f["heat_col"], []).append(f)
         scope = "round"
     else:
-        tbl_seq[rcode] = tbl_seq.get(rcode, 0) + 1
-        groups[heat_no or tbl_seq[rcode]] = data
+        if swimoff:
+            tbl_seq["so:" + rcode] = tbl_seq.get("so:" + rcode, 0) + 1
+            groups[90 + tbl_seq["so:" + rcode]] = data
+        elif letter:
+            groups[ord(letter.group(1).upper()) - 64] = data
+        else:
+            tbl_seq[rcode] = tbl_seq.get(rcode, 0) + 1
+            groups[heat_no or tbl_seq[rcode]] = data
         scope = "race"
     for no, fs in groups.items():
         rk = (ord_, no)
         if rk in races:
             unparsed.append({"event": key, "year": year, "section": section, "note": f"race {rcode} {no} read twice; the second table is dropped"}); continue
-        races[rk] = {"round_ord": ord_, "round_code": rcode, "round_label": round_label, "race_no": no, "heat_label": plain(path[-1][1]),
+        races[rk] = {"round_ord": ord_, "round_code": rcode, "round_label": round_label, "race_no": no, "heat_label": dl_label if (swimoff or letter) and dl_label else ("Final" if forced_final else plain(path[-1][1])),
                      "wind_text": wt[0] if scope == "race" else None, "wind_ms": wt[1] if scope == "race" else None, "section": section, "place_scope": scope, "rows": fs}
 
 
@@ -538,12 +591,13 @@ def main(raw, out_sql, out_json=None):
         lv = []
         for r in rs:
             for n, f in enumerate(r["rows"], 1):
-                lv.append("(%s,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" % (
+                lv.append("(%s,%d,%d,%d,%d,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)" % (
                     q(a["event"]), a["year"], r["round_ord"], r["race_no"], n, q(f["lane"]), q(f["place"]), q(f["place_text"]), q(f["name"]), q(f["link_title"]),
                     q(f["nation"]), q(f["nation_text"]), q(f["reaction_s"]), q(f["time_text"]), q(f["time_s"]), q(f["time_hand_text"]), q(f["time_hand_s"]),
-                    q(f["notes"]), qa(f["marks"]), q(f["status"]), q(json.dumps(f["cells"], ensure_ascii=False)) + "::jsonb"))
+                    q(f["notes"]), qa(f["marks"]), q(f["status"]), q(json.dumps(f["cells"], ensure_ascii=False)) + "::jsonb",
+                    "null" if f["splits"] is None else q(json.dumps(f["splits"])) + "::jsonb"))
         for b in batches(lv):
-            body.append("insert into legacy_wikipedia_olympics.line (event_key, games_year, round_ord, race_no, row_ord, lane, place, place_text, name, link_title, nation, nation_text, reaction_s, time_text, time_s, time_hand_text, time_hand_s, notes, marks, status, cells) values\n" + ",\n".join(b) + ";")
+            body.append("insert into legacy_wikipedia_olympics.line (event_key, games_year, round_ord, race_no, row_ord, lane, place, place_text, name, link_title, nation, nation_text, reaction_s, time_text, time_s, time_hand_text, time_hand_s, notes, marks, status, cells, splits) values\n" + ",\n".join(b) + ";")
         counts[(a["event"], a["year"])] = {r["round_code"]: 0 for r in rs}
         for r in rs: counts[(a["event"], a["year"])][r["round_code"]] += len(r["rows"])
     sql.append("delete from legacy_wikipedia_olympics.article where (event_key, games_year) in (%s);" % ", ".join("(%s,%d)" % (q(k), y) for k, y in keys))
@@ -558,7 +612,8 @@ def main(raw, out_sql, out_json=None):
         x = titles.get(t)
         if x: tv.append("(%s,%s,%s,%s,%s,true)" % (q(t), q(x["resolved_title"]), q(x["qid"]), q(x["disambiguation"]), q(x["missing"])))
         else: tv.append("(%s,null,null,false,false,false)" % q(t))
-    sql.append("delete from legacy_wikipedia_olympics.link_title where title in (select title from legacy_wikipedia_olympics.link_title);")
+    for b in batches(sorted(used), 300):
+        sql.append("delete from legacy_wikipedia_olympics.link_title where title in (%s);" % ",".join(q(t) for t in b))
     for b in batches(tv, 300):
         sql.append("insert into legacy_wikipedia_olympics.link_title (title, resolved_title, qid, disambiguation, missing, looked_up) values\n" + ",\n".join(b) + ";")
     sql.append("delete from legacy_wikipedia_olympics.unparsed where (event_key, games_year) in (%s);" % ", ".join("(%s,%d)" % (q(k), y) for k, y in keys))
