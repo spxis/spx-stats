@@ -1,3 +1,5 @@
 event_key,sport,gender,distance_m,stroke
 100m-m,athletics,men,100,
 100m-w,athletics,women,100,
+100free-m,swimming,men,100,freestyle
+100free-w,swimming,women,100,freestyle

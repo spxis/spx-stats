@@ -69,7 +69,7 @@ create table if not exists core.olympic_result (
   time_text     text,                              -- the time cell as printed (Unknown, DNS, 12.2, OR)
   marks         text[] not null default '{}',      -- Q q WR OR NR AR PB SB ... as printed
   notes         text,
-  splits        jsonb,                             -- [{"m": 50, "s": 24.1}, ...] where a source prints splits (swimming); null for the 100 metres
+  splits        jsonb,                             -- [{"m": 50, "s": 24.1}, ...] where a source prints splits (swimming; an interval is {"m": 65, "from": 50, "s": 6.57, "interval": true}); null for the 100 metres
   source_id     smallint references meta.source,
   source_key    text not null,                     -- enwiki:<article title>@<revision id>
   primary key (race_id, row_ord)

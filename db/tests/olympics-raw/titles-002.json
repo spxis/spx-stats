@@ -1,0 +1,57 @@
+{
+ "requested": [
+  "Alain Bernard",
+  "Eamon Sullivan",
+  "Jason Lezak",
+  "César Cielo",
+  "Dominik Meichtry",
+  "Christian Galenda",
+  "Nobody Linked"
+ ],
+ "normalized": [],
+ "redirects": [],
+ "pages": [
+  {
+   "title": "Alain Bernard",
+   "missing": false,
+   "qid": "Q297477",
+   "disambiguation": false
+  },
+  {
+   "title": "Eamon Sullivan",
+   "missing": false,
+   "qid": "Q379832",
+   "disambiguation": false
+  },
+  {
+   "title": "Jason Lezak",
+   "missing": false,
+   "qid": "Q313384",
+   "disambiguation": false
+  },
+  {
+   "title": "César Cielo",
+   "missing": false,
+   "qid": "Q295786",
+   "disambiguation": false
+  },
+  {
+   "title": "Dominik Meichtry",
+   "missing": false,
+   "qid": "Q666561",
+   "disambiguation": false
+  },
+  {
+   "title": "Christian Galenda",
+   "missing": false,
+   "qid": "Q714084",
+   "disambiguation": false
+  },
+  {
+   "title": "Nobody Linked",
+   "missing": true,
+   "qid": null,
+   "disambiguation": false
+  }
+ ]
+}

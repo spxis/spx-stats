@@ -45,21 +45,30 @@ ids() { q "select md5(string_agg(g.year || e.event_key || e.event_id || r.race_i
 
 if [ "$RAW" != "$HERE/olympics-raw" ]; then
   # the real raw folder: counts and spot checks, nothing fixed
-  psql_ -c "insert into core.person (full_name) values ('Usain Bolt'); insert into core.external_id (entity_kind, entity_id, source_id, external_key) select 'person', person_id, (select source_id from meta.source where code = 'wikidata'), 'Q1189' from core.person where full_name = 'Usain Bolt';" >/dev/null
+  psql_ -c "insert into core.person (full_name) values ('Usain Bolt'), ('Alain Bernard'); insert into core.external_id (entity_kind, entity_id, source_id, external_key) select 'person', person_id, (select source_id from meta.source where code = 'wikidata'), case full_name when 'Usain Bolt' then 'Q1189' else 'Q297477' end from core.person where full_name in ('Usain Bolt', 'Alain Bernard');" >/dev/null
   step
   q "select g.year, e.event_key, count(distinct r.race_id) as races, count(*) as lines from core.olympic_result x join core.olympic_race r using (race_id) join core.olympic_event e using (event_id) join core.olympic_games g using (games_id) group by g.year, e.event_key order by 1, 2"
-  check "2008 men's final: Bolt, lane 4, 0.165, 9.69, WR, wind 0.0" "$(q "select concat_ws(' ', place, lane, athlete_name, reaction_s, time_s, marks, wind_ms, person_id is not null) from api.olympic_result where games_year = 2008 and event_key = '100m-m' and round_code = 'final' and place = 1")" "1 4 Usain Bolt 0.165 9.690 {WR} 0.0 t"
-  check "1988 men's final: Lewis 9.92 first, Johnson DQ" "$(q "select string_agg(concat_ws(' ', coalesce(place::text, status), athlete_name, time_s), '; ' order by row_ord) from api.olympic_result where games_year = 1988 and event_key = '100m-m' and round_code = 'final' and (place = 1 or status = 'DQ')")" "1 Carl Lewis 9.920; DQ Ben Johnson 9.790"
-  check "2020 women's final: Thompson-Herah, lane 4, 10.61, OR NR" "$(q "select concat_ws(' ', place, lane, athlete_name, reaction_s, time_s, marks) from api.olympic_result where games_year = 2020 and event_key = '100m-w' and round_code = 'final' and place = 1")" "1 4 Elaine Thompson-Herah 0.150 10.610 {OR,NR}"
+  have() { [ "$(q "select count(*) from core.olympic_event where event_key = '$1'")" != 0 ]; }
+  if have 100m-m; then
+    check "2008 men's final: Bolt, lane 4, 0.165, 9.69, WR, wind 0.0" "$(q "select concat_ws(' ', place, lane, athlete_name, reaction_s, time_s, marks, wind_ms, person_id is not null) from api.olympic_result where games_year = 2008 and event_key = '100m-m' and round_code = 'final' and place = 1")" "1 4 Usain Bolt 0.165 9.690 {WR} 0.0 t"
+    check "1988 men's final: Lewis 9.92 first, Johnson DQ" "$(q "select string_agg(concat_ws(' ', coalesce(place::text, status), athlete_name, time_s), '; ' order by row_ord) from api.olympic_result where games_year = 1988 and event_key = '100m-m' and round_code = 'final' and (place = 1 or status = 'DQ')")" "1 Carl Lewis 9.920; DQ Ben Johnson 9.790"
+    check "2020 women's final: Thompson-Herah, lane 4, 10.61, OR NR" "$(q "select concat_ws(' ', place, lane, athlete_name, reaction_s, time_s, marks) from api.olympic_result where games_year = 2020 and event_key = '100m-w' and round_code = 'final' and place = 1")" "1 4 Elaine Thompson-Herah 0.150 10.610 {OR,NR}"
+  fi
+  if have 100free-m; then
+  check "2008 men's 100 m freestyle final: Bernard lane 5, 47.21, tied for Bernard's person by Wikidata id" "$(q "select concat_ws(' ', place, lane, athlete_name, time_s, person_id is not null) from api.olympic_result where games_year = 2008 and event_key = '100free-m' and round_code = 'final' and place = 1")" "1 5 Alain Bernard 47.210 t"
+  check "2008 men's final: Sullivan 47.32, Lezak and Cielo tied for bronze at 47.67" "$(q "select string_agg(place || ' ' || athlete_name || ' ' || time_s, '; ' order by row_ord) from api.olympic_result where games_year = 2008 and event_key = '100free-m' and round_code = 'final' and place between 2 and 3")" "2 Eamon Sullivan 47.320; 3 Jason Lezak 47.670; 3 César Cielo 47.670"
+  check "2008 men's semifinal 2: Sullivan 47.05 WR" "$(q "select concat_ws(' ', place, athlete_name, time_s, marks) from api.olympic_result where games_year = 2008 and event_key = '100free-m' and round_code = 'semifinals' and place = 1")" "1 Eamon Sullivan 47.050 {Q,WR}"
+  check "2024 men's final: Pan Zhanle 46.40 WR with 15 m and 50 m splits" "$(q "select concat_ws(' ', place, lane, athlete_name, time_s, marks, splits -> 1 ->> 's') from api.olympic_result where games_year = 2024 and event_key = '100free-m' and round_code = 'final' and place = 1")" "1 4 Pan Zhanle 46.400 {WR} 22.28"
+  fi
   A="$(ids)"; step; check "rerun keeps every id" "$(ids)" "$A"
   echo "passed $pass, failed $fail"; [ "$fail" = 0 ]; exit
 fi
 
 psql_ -o /dev/null < "$HERE/olympics-fixture.sql"
 step
-check "articles, races, lines of the fixture" "$(q "select (select count(*) from legacy_wikipedia_olympics.article) || ' ' || (select count(*) from legacy_wikipedia_olympics.race) || ' ' || count(*) from legacy_wikipedia_olympics.line")" "4 10 20"
+check "articles, races, lines of the fixture" "$(q "select (select count(*) from legacy_wikipedia_olympics.article) || ' ' || (select count(*) from legacy_wikipedia_olympics.race) || ' ' || count(*) from legacy_wikipedia_olympics.line")" "5 16 32"
 check "nothing unparsed (the Records table is not a result)" "$(q "select count(*) from legacy_wikipedia_olympics.unparsed")" "0"
-check "Games from the seed (30) and the four events" "$(q "select (select count(*) from core.olympic_games) || ' ' || count(*) from core.olympic_event")" "30 4"
+check "Games from the seed (30) and the five events" "$(q "select (select count(*) from core.olympic_games) || ' ' || count(*) from core.olympic_event")" "30 5"
 check "Tokyo 2020 was held in 2021" "$(q "select held_year from core.olympic_games where year = 2020")" "2021"
 check "event name from the infobox, qid and source key" "$(q "select concat_ws(' ', e.name, e.gender, e.distance_m, e.qid, e.source_key) from core.olympic_event e join core.olympic_games g using (games_id) where g.year = 2008 and event_key = '100m-m'")" "Men's 100 metres men 100 Q754844 enwiki:Athletics at the 2008 Summer Olympics – Men's 100 metres@1001"
 check "2008 men: rounds heats 2, semifinals 1, final 1" "$(q "select string_agg(round_code || ':' || n, ' ' order by o) from (select round_code, round_ord o, count(*) n from core.olympic_race r join core.olympic_event e using (event_id) join core.olympic_games g using (games_id) where g.year = 2008 and e.event_key = '100m-m' group by 1, 2) s")" "heats:2 semifinals:1 final:1"
@@ -77,19 +86,29 @@ check "1988: no lane, no reaction time where the article prints none" "$(q "sele
 check "1968: hand and automatic times (9.9 and 9.95), both marks" "$(q "select concat_ws(' ', time_hand_s, time_s, marks) from api.olympic_result where games_year = 1968 and place = 1 and round_code = 'final'")" "9.900 9.950 {WR}"
 check "1968: a note that is not a mark stays a note" "$(q "select notes from api.olympic_result where games_year = 1968 and place = 8")" "Photo-finish shows 10.275"
 check "the Records table of the 2008 article is not read" "$(q "select count(*) from api.olympic_result where athlete_name = 'Bolt'")" "0"
-check "people tied only through a Wikidata id: Bolt x3, Lewis, Johnson (merged item followed), Fraser" "$(q "select string_agg(athlete_name, ', ' order by athlete_name) from core.olympic_result where person_id is not null")" "Ben Johnson, Carl Lewis, Shelly-Ann Fraser, Usain Bolt, Usain Bolt, Usain Bolt"
+check "people tied only through a Wikidata id: Bernard x3, Bolt x3, Lewis, Johnson (merged item followed), Fraser" "$(q "select string_agg(athlete_name, ', ' order by athlete_name) from core.olympic_result where person_id is not null")" "Alain Bernard, Alain Bernard, Alain Bernard, Ben Johnson, Carl Lewis, Shelly-Ann Fraser, Usain Bolt, Usain Bolt, Usain Bolt"
 check "Walter Dix: born after the Games less 10 years, shown as text with his item kept" "$(q "select concat_ws(' ', coalesce(person_id::text, 'text'), athlete_qid) from core.olympic_result where athlete_name = 'Walter Dix'")" "text Q331093"
 check "Vicente de Lima: a person of that name without an id is never matched" "$(q "select coalesce(person_id::text, 'text') from core.olympic_result where athlete_name = 'Vicente de Lima'")" "text"
 check "no person without evidence" "$(q "select count(*) from core.olympic_result x where person_id is not null and not exists (select 1 from core.external_id e where e.entity_kind = 'person' and e.entity_id = x.person_id)")" "0"
-check "data issues: one row per event with names shown as text" "$(q "select count(*) from meta.data_issue where entity_kind = 'olympic_result'")" "4"
-check "views answer as anon" "$(psql_ -F ' ' -c "set role anon; select count(*) from api.olympic_result" | tail -1)" "20"
+check "data issues: one row per event with names shown as text" "$(q "select count(*) from meta.data_issue where entity_kind = 'olympic_result'")" "5"
+check "views answer as anon" "$(psql_ -F ' ' -c "set role anon; select count(*) from api.olympic_result" | tail -1)" "32"
+check "swimming event: sport, gender, distance, stroke, name from the infobox" "$(q "select concat_ws(' ', e.sport, e.gender, e.distance_m, e.stroke, e.name) from core.olympic_event e where e.event_key = '100free-m'")" "swimming men 100 freestyle Men's 100 metre freestyle"
+check "swimming 2008: heats 3 (the Heat column), a swim-off, a semifinal and the final" "$(q "select string_agg(round_code || ':' || race_no || ':' || n, ' ' order by round_ord, race_no) from (select r.round_code, r.round_ord, r.race_no, count(*) n from core.olympic_result x join core.olympic_race r using (race_id) join core.olympic_event e using (event_id) where e.event_key = '100free-m' group by 1, 2, 3) s")" "heats:7:1 heats:8:2 heats:9:2 heats:91:2 semifinals:1:1 final:1:4"
+check "swim-off race is labelled and ranked on its own" "$(q "select concat_ws(' ', r.heat_label, r.place_scope, string_agg(x.athlete_name || ' ' || x.place, ', ' order by x.row_ord)) from core.olympic_result x join core.olympic_race r using (race_id) join core.olympic_event e using (event_id) where e.event_key = '100free-m' and r.race_no = 91 group by r.heat_label, r.place_scope")" "Swim-off race Dominik Meichtry 1, Christian Galenda 2"
+check "rowspan on time and notes: Galenda shares Meichtry's time and marks" "$(q "select concat_ws(' ', place, heat_label, lane, time_s, marks) from api.olympic_result a join core.olympic_race r using (race_id) where athlete_name = 'Christian Galenda' and r.race_no = 8")" "2 Heats 8 48.550 {QSO,NR}"
+check "bronze tie in the final: both place 3, the continental record mark" "$(q "select string_agg(athlete_name || ' ' || place || ' ' || time_s || ' ' || marks::text, '; ' order by row_ord) from api.olympic_result where event_key = '100free-m' and round_code = 'final' and place = 3")" "Jason Lezak 3 47.670 {}; César Cielo 3 47.670 {SA}"
+check "semifinal marks: Q and ER" "$(q "select marks from api.olympic_result where event_key = '100free-m' and round_code = 'semifinals'")" "{Q,ER}"
+check "splits of the final: 15 m, 50 m and the 50-65 m interval" "$(q "select splits::text from api.olympic_result where event_key = '100free-m' and round_code = 'final' and athlete_name = 'Alain Bernard'")" '[{"m": 15, "s": 5.45}, {"m": 50, "s": 22.28}, {"m": 65, "s": 6.57, "from": 50, "interval": true}]'
+check "no splits where the article prints none" "$(q "select count(splits) from api.olympic_result where event_key <> '100free-m' or round_code <> 'final'")" "0"
+check "Alain Bernard tied through his Wikidata item (3 lines), Eamon Sullivan has no person and stays text" "$(q "select athlete_name || ' ' || count(person_id) || '/' || count(*) from core.olympic_result where athlete_name in ('Alain Bernard', 'Eamon Sullivan') group by athlete_name order by 1")" "Alain Bernard 3/3
+Eamon Sullivan 0/2"
 A="$(ids)"; I="$(q "select count(*) from meta.data_issue where entity_kind = 'olympic_result'")"
 step
 check "rerun keeps every id and row" "$(ids)" "$A"
 check "rerun writes no extra data issue" "$(q "select count(*) from meta.data_issue where entity_kind = 'olympic_result'")" "$I"
 psql_ -c "delete from legacy_wikipedia_olympics.line where event_key = '100m-m' and games_year = 1968 and round_ord = 8; delete from legacy_wikipedia_olympics.race where event_key = '100m-m' and games_year = 1968 and round_ord = 8; delete from legacy_wikipedia_olympics.article where games_year = 1988;" >/dev/null
 step
-check "a row the legacy tables no longer hold is deleted, nothing else" "$(q "select (select count(*) from core.olympic_result) || ' ' || (select count(*) from core.olympic_race) || ' ' || (select count(*) from core.olympic_event)")" "15 8 3"
-check "the ids that remain are the first ones" "$(q "select count(*) from core.olympic_event where event_id in (select event_id from core.olympic_event e join core.olympic_games g using (games_id) where g.year in (1968, 2008))")" "3"
+check "a row the legacy tables no longer hold is deleted, nothing else" "$(q "select (select count(*) from core.olympic_result) || ' ' || (select count(*) from core.olympic_race) || ' ' || (select count(*) from core.olympic_event)")" "27 14 4"
+check "the ids that remain are the first ones" "$(q "select count(*) from core.olympic_event where event_id in (select event_id from core.olympic_event e join core.olympic_games g using (games_id) where g.year in (1968, 2008))")" "4"
 echo "passed $pass, failed $fail"
 [ "$fail" = 0 ]

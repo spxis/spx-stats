@@ -44,7 +44,7 @@ on conflict (event_id, round_ord, race_no) do update set round_code = excluded.r
 -- ---- 3. Each line's Wikidata item and person -----------------------------------------------------------------------------------------------
 create temp table ln on commit drop as
 select e.event_id, rc.race_id, l.row_ord, l.lane, l.place, l.place_text, l.status, l.name, l.link_title, g.year as games_year,
-       coalesce(rd.to_qid, lt.qid) as qid, l.nation, l.reaction_s, l.time_s, l.time_hand_s, l.time_text, l.marks, l.notes, e.source_key
+       coalesce(rd.to_qid, lt.qid) as qid, l.nation, l.reaction_s, l.time_s, l.time_hand_s, l.time_text, l.marks, l.notes, l.splits, e.source_key
 from legacy_wikipedia_olympics.line l
 join core.olympic_games g on g.season = 'summer' and g.year = l.games_year
 join core.olympic_event e on e.games_id = g.games_id and e.event_key = l.event_key
@@ -69,15 +69,15 @@ having count(distinct pq.person_id) = 1;
 
 -- ---- 4. Results ------------------------------------------------------------------------------------------------------------------------
 insert into core.olympic_result (race_id, row_ord, lane, place, place_text, status, athlete_name, athlete_qid, wiki_title, person_id, matched_by, nation_ioc,
-                                 reaction_s, time_s, time_hand_s, time_text, marks, notes, source_id, source_key)
+                                 reaction_s, time_s, time_hand_s, time_text, marks, notes, splits, source_id, source_key)
 select ln.race_id, ln.row_ord, ln.lane, ln.place, ln.place_text, ln.status, ln.name, ln.qid, ln.link_title, w.person_id,
-       case when w.person_id is not null then 'wikidata' end, ln.nation, ln.reaction_s, ln.time_s, ln.time_hand_s, ln.time_text, ln.marks, ln.notes,
+       case when w.person_id is not null then 'wikidata' end, ln.nation, ln.reaction_s, ln.time_s, ln.time_hand_s, ln.time_text, ln.marks, ln.notes, ln.splits,
        (select source_id from src), ln.source_key
 from ln left join by_wd w on w.race_id = ln.race_id and w.row_ord = ln.row_ord
 on conflict (race_id, row_ord) do update set lane = excluded.lane, place = excluded.place, place_text = excluded.place_text, status = excluded.status,
   athlete_name = excluded.athlete_name, athlete_qid = excluded.athlete_qid, wiki_title = excluded.wiki_title, person_id = excluded.person_id,
   matched_by = excluded.matched_by, nation_ioc = excluded.nation_ioc, reaction_s = excluded.reaction_s, time_s = excluded.time_s,
-  time_hand_s = excluded.time_hand_s, time_text = excluded.time_text, marks = excluded.marks, notes = excluded.notes,
+  time_hand_s = excluded.time_hand_s, time_text = excluded.time_text, marks = excluded.marks, notes = excluded.notes, splits = excluded.splits,
   source_id = excluded.source_id, source_key = excluded.source_key;
 
 -- ---- 5. Delete only what this source wrote and the legacy tables no longer hold ---------------------------------------------------------------

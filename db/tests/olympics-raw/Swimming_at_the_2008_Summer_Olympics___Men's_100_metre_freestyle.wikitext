@@ -1,0 +1,84 @@
+{{Infobox Olympic event
+|event = Men's 100 metre freestyle
+|games = 2008 Summer
+|venue = [[Beijing National Aquatics Centre]]
+|gold = [[Alain Bernard]]
+|goldNOC = FRA
+}}
+The men's 100 metre freestyle at the 2008 Olympic Games.
+
+==Records==
+{| class="wikitable"
+! Date !! Event !! Name !! Nationality !! Time !! Record
+|-
+| 13 August || Semifinal 2 || align=left |[[Eamon Sullivan]] || align=left |{{flagIOC|AUS|2008 Summer}} || 47.05 || {{WR|swimming}}
+|}
+
+==Results==
+
+===Heats===
+
+{| class='wikitable sortable' style='text-align:center'
+! Rank !! Heat !! Lane !! Swimmer !! Nation !! Time !! Notes
+|-bgcolor=bbf3bb
+| 1 || 8 || 4 ||align=left| [[Eamon Sullivan]] ||align=left| {{FlagIOC|AUS|2008 Summer}} || 47.80 || {{abbr|Q|Qualified for semifinals}}
+|-bgcolor=bbf3bb
+| rowspan=2|2 || 7 || 7 ||align=left| [[Dominik Meichtry]] ||align=left| {{FlagIOC|SUI|2008 Summer}} || rowspan=2|48.55 || rowspan=2|{{abbr|QSO|Qualified for a swim-off}}, '''[[List of Swiss records in swimming|NR]]'''
+|-
+| 8 || 8 ||align=left| [[Christian Galenda]] ||align=left| {{FlagIOC|ITA|2008 Summer}}
+|-
+| 4 || 9 || 4 ||align=left| [[Alain Bernard]] ||align=left| {{FlagIOC|FRA|2008 Summer}} || 47.85 || {{abbr|Q|Qualified for semifinals}}
+|-
+| 5 || 9 || 5 ||align=left| [[Nobody Linked]] ||align=left| {{FlagIOC|PNG|2008 Summer}} || {{abbr|DNS|Did not start}} ||
+|}
+
+; Swim-off
+
+{| class="wikitable sortable" style="text-align:center"
+! Rank !! Lane !! Swimmer !! Nation !! Time !! Notes
+|-
+| 1 || 4 || [[Dominik Meichtry]] || {{FlagIOC|SUI|2008 Summer}} || 48.40 || {{abbr|Q|Qualified for semifinals}}
+|-
+| 2 || 5 || [[Christian Galenda]] || {{FlagIOC|ITA|2008 Summer}} || 48.61 ||
+|}
+
+===Semifinals===
+
+====Semifinal 1====
+
+{| class="wikitable sortable" style="text-align:center"
+! Rank !! Lane !! Swimmer !! Nation !! Time !! Notes
+|-
+| 1 || 5 || [[Alain Bernard]] || {{FlagIOC|FRA|2008 Summer}} || 47.20 || {{abbr|Q|Qualified for final}}, '''[[List of European records in swimming|ER]]'''
+|}
+
+===Final===
+
+{| class="wikitable sortable" style="text-align:center"
+! Rank !! Lane !! Swimmer !! Nation !! Time !! Notes
+|-
+| {{gold01}} || 5 ||align=left| [[Alain Bernard]] ||align=left| {{FlagIOC|FRA|2008 Summer}} ||47.21 ||
+|-
+| {{silver02}} || 4 ||align=left| [[Eamon Sullivan]] ||align=left| {{FlagIOC|AUS|2008 Summer}} ||47.32 ||
+|-
+| rowspan=2|{{bronze03}} || 7 ||align=left| [[Jason Lezak]] ||align=left| {{FlagIOC|USA|2008 Summer}} || 47.67 ||
+|-
+| 8 ||align=left| [[César Cielo]] ||align=left| {{FlagIOC|BRA|2008 Summer}} || 47.67 || '''[[List of South American records in swimming|SA]]'''
+|}
+
+{| class="wikitable sortable"
+|+ Statistics
+! scope="col" | Name
+! scope="col" | 15 metre split (s)
+! scope="col" | 50 metre split (s)
+! scope="col" | 50–65 metre split (s)
+! scope="col" | Time (s)
+|-
+! scope="row" | [[Alain Bernard]]
+| 5.45
+| 22.28
+| 6.57
+| 47.21
+|}
+
+==References==
