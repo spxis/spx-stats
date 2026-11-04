@@ -144,7 +144,7 @@ data repair. If you start a subagent, copy this section into its instructions (t
 - **John's rules for his other projects too** (his npm packages: dougu-sports, senshu-jerseys, kyogijo-stadiums, taisen-brackets,
   meigen-sports, hata, chizu, kuni, address-plus and the rest; their tickets live on this board): publish patch and minor releases by
   tag only when every check is green, and ask John first for a new package name, a first publish, a major version, a deprecation or a
-  licence change; never put John's SPX, SPXN or SPXIS marks in an MIT package; a docs page is in one language (a languages-comparison
+  licence change; never put John's SPX, SPXN or SPXIS marks in an MIT package (one exception, John 2026-11-04: uchusen-rockets' fictional fleet ships are designated SPX-, maker "SPX"); a docs page is in one language (a languages-comparison
   page is the only exception; one page per language, linked); each project uses only its own port block (John's port table); nothing
   that bills (GitHub Actions only on public repositories, no paid plan, service or add-on without John's yes); whenever you write
   Japanese that John will see or send, give him the English beside it, because he does not read Japanese.
