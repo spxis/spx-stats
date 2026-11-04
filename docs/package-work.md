@@ -167,7 +167,7 @@ Sweep and file: when you touch a demo or site page, count its folds first. A pag
 
 ## Checks, push, release
 
-1. All green locally before every push: `pnpm check` (which includes the must-have check), `pnpm test:readme`, `pnpm test:usage` (every way to use the package), the demo e2e (in kyogijo: `pnpm test:demo`), and the freeze test where the package has live 3D (`pnpm test:freeze`).
+1. All green locally before every push (the whole list, see "Main stays green"): `pnpm check` (which includes the must-have check), `pnpm test:readme`, `pnpm test:usage` (every way to use the package), the demo e2e (in kyogijo: `pnpm test:demo`), and the freeze test where the package has live 3D (`pnpm test:freeze`).
 2. Fetch and rebase on `origin/main`, push fast-forward to `main`. A push starts CI (kyogijo: about 16 minutes).
 3. Make a release commit: bump `package.json` (and `src/version.ts` where it exists) from the highest tag, regenerate
    version-dependent fixtures and snapshots, move the CHANGELOG's Unreleased block under the version. Push it.
@@ -179,6 +179,16 @@ Sweep and file: when you touch a demo or site page, count its folds first. A pag
    on npm yet; right after, log it (`coord.py log --as <you> --kind release --ticket <id> --text "<pkg> <version>"`) so the
    other session does not start a second run.
 5. Ask John first for a new package name, a first publish, a major version, a deprecation or a licence change.
+
+## Main stays green (John, 2026-11-03)
+
+On 2026-11-03 six package mains were red and John's inbox filled with "Run failed" mails. A red main hides the next real failure, blocks releases (fuda 0.10.0, hako 0.16.0) and lowers the scorecard's Crashes grade, so it is something to solve, not part of development. The causes were a shared template change that broke the repos with a strict CSP, pushes after only part of the checks, flaky or slow tests, and several sessions pushing to one repo at once. The rules:
+
+- **a. Run all of what a release runs before every push to main**, not a subset: `pnpm check`, the browser tests (`pnpm test:demo`, or the repo's own), `pnpm test:usage`, and `pnpm test:freeze` where there is live 3D.
+- **b. A change to a shared file (the family template, the thumbnail, `docs-site.mjs`, `check-standard.mjs`, a workflow) is tried in every repo's CI before it lands in any.** Push it to a branch of each repo, watch every run go green, then push it to each main. New Hotaru gates its changes this way.
+- **c. Whoever turns a main red fixes it or reverts it within the hour, and says so** (`coord.py log --kind note`, naming the repo and the commit).
+- **d. A flaky test gets a ticket at once and is fixed.** Never run it again until it goes green.
+- **e. machine1 checks every main once a day**, with one `gh run list --branch main --limit 1` for each repo (it costs nothing), puts the red ones in the day's hand-off and names the owner, the session that pushed last. GitHub's failure mails can go to a filter, so that John's inbox gets only that list.
 
 ## Moving a repo to the shared release workflow
 
