@@ -57,13 +57,15 @@ select p.game_id, 'cfbd:' || p.source_key || ':' || l.provider as source_key, l.
        case when l.spread < 0 then 'home' when l.spread > 0 then 'away' end as fav_cfbd, p.swapped,
        abs(l.spread)::numeric as point_spread, (case when l.over_under >= 0 then l.over_under end)::numeric as total, l.home_moneyline, l.away_moneyline
 from pairs p join legacy_cfbd.betting_line l on l.game_id = p.cfbd_id
-where l.spread is not null or l.over_under is not null or l.home_moneyline is not null or l.away_moneyline is not null
+where (l.spread is not null or l.over_under is not null or l.home_moneyline is not null or l.away_moneyline is not null)
+  and l.provider not ilike '%espn%'   -- John, 2026-11-03: no ESPN, not even ESPN Bet's lines through CFBD
 union all
 select p.game_id, 'cfbd:' || p.source_key || ':' || l.provider || ':open', l.provider, 'open',
        case when l.spread_open < 0 then 'home' when l.spread_open > 0 then 'away' end, p.swapped,
        abs(l.spread_open)::numeric, (case when l.over_under_open >= 0 then l.over_under_open end)::numeric, null, null
 from pairs p join legacy_cfbd.betting_line l on l.game_id = p.cfbd_id
-where l.spread_open is not null or l.over_under_open is not null;
+where (l.spread_open is not null or l.over_under_open is not null)
+  and l.provider not ilike '%espn%';
 
 create temp table final as
 select game_id, source_key, set_by, line_moment, point_spread, total,
