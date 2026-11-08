@@ -306,12 +306,16 @@ no database query on Sumilabu; a short id (`SPX-142`) is looked up as one ticket
     pnpm task done <id> --by "<who>" --version "<short commit sha>" [--entry "<deployment id or note>"]
     pnpm task drop <id> --by "<who>"     /     pnpm task reopen <id> --by "<who>"
     pnpm task grade <id> --priority high|normal|low|none --effort small|medium|large|none
-    pnpm task edit <id> [--title ".."] [--detail ".." | --append ".."] --by "<who>"   # words only; not on a done ticket
+    pnpm task edit <id> [--title ".."] [--detail ".." | --append ".."] --by "<who>"   # words only; not on a done ticket; --append adds a note
+    pnpm task note <id> "<text>" --by "<who>"                   # a note, up to 16,000 characters; fine on a done ticket; never edited
+    pnpm task notes <id>                                        # a ticket's parent, children, related tickets and notes
+    pnpm task link <id> --parent <id|none> --by "<who>"         # one parent in the project; none clears it
+    pnpm task link <id> --related <id> [--remove] --by "<who>"  # a two-way link
     pnpm task history <id>                                      # every title/detail edit (needs the Sumilabu edit-history release)
 
 - `<id>` is the whole cuid or, once Sumilabu has short ids, `SPX-142`. An older Sumilabu says so plainly and edit/history report "not supported yet".
 - Order: file it, claim it, build it, then the coordinating session deploys it and runs `done` (an agent does either only if its brief directs it; section 7). File **before** starting work.
-- A title is 8 to 120 characters, detail up to 4000, and every write names an actor (`--by`, or the name after `claim`).
+- A title is 8 to 120 characters, detail up to 16,000, and every write names an actor (`--by`, or the name after `claim`).
 - A hold lasts six hours and a live hold is not taken over; a lapsed one shows as "stale hold" and `claim` takes it.
 - `done` is the only way to finish a ticket. If you stop, `release` it.
 - `/tickets` on the site is a read-only view of the board. It answers 404 unless `TICKETS_PAGE=1`, which must never be

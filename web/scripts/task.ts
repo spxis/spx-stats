@@ -1,17 +1,18 @@
 import { boardKey } from "./boardKey.ts";
 import { diskReadCache } from "./boardReadCache.ts";
-import { boardCreate, boardEdit, boardGet, boardGrade, boardHistory, boardHost, boardList, boardMove, boardResolveId, boardShip, installBoardReadCache, type MoveOutcome } from "../src/lib/board/client.ts";
+import { boardAddNote, boardCreate, boardEdit, boardGet, boardGrade, boardHistory, boardHost, boardList, boardMove, boardNotes, boardRelate, boardResolveId, boardSetParent, boardShip, installBoardReadCache, type MoveOutcome } from "../src/lib/board/client.ts";
 import {
   BOARD_EFFORTS,
   BOARD_PRIORITIES,
   CAPS,
-  appendedDetail,
   byQuickWin,
   draftProblems,
   editProblems,
   isHeldNow,
   leaseExpired,
+  noteProblems,
   ticketLine,
+  underParents,
   type BoardEffort,
   type BoardKind,
   type BoardPriority,
@@ -30,7 +31,11 @@ import {
  *   pnpm task drop <id> --by "<who>"              answered no, kept on the record
  *   pnpm task reopen <id> --by "<who>"            a no reconsidered
  *   pnpm task grade <id> [--priority high|normal|low|none] [--effort small|medium|large|none]
- *   pnpm task edit <id> [--title "…"] [--detail "…" | --append "…"] --by "<who>"
+ *   pnpm task edit <id> [--title "…"] [--detail "…" | --append "…"] --by "<who>"   (--append adds a note)
+ *   pnpm task note <id> "<text>" --by "<who>"     add a note (up to 16,000 characters; allowed on a done ticket)
+ *   pnpm task notes <id>                          the ticket's parent, children, related tickets and notes
+ *   pnpm task link <id> --parent <id|none> --by "<who>"
+ *   pnpm task link <id> --related <id> [--remove] --by "<who>"
  *   pnpm task history <id>                        every edit of a ticket's title or detail
  *
  * <id> is the whole cuid the board prints, never a prefix, or the short id
@@ -67,7 +72,7 @@ if (!process.env.SUMILABU_BOARD_TOKEN) {
 /* Reads send the last answer's ETag and an unchanged board answers 304 (scripts/boardReadCache.ts, SUMILABU-15). */
 installBoardReadCache(diskReadCache());
 
-const ID_COMMANDS = ["claim", "release", "done", "drop", "reopen", "grade", "edit", "history"];
+const ID_COMMANDS = ["claim", "release", "done", "drop", "reopen", "grade", "edit", "history", "note", "notes", "link"];
 
 function flag(name: string, rest: string[]): string | undefined {
   const at = rest.indexOf(`--${name}`);
@@ -88,6 +93,10 @@ function usage(): never {
       '  pnpm task reopen <id> --by "<who>"',
       "  pnpm task grade <id> [--priority high|normal|low|none] [--effort small|medium|large|none]",
       '  pnpm task edit <id> [--title "…"] [--detail "…" | --append "…"] --by "<who>"',
+      '  pnpm task note <id> "<text>" --by "<who>"',
+      "  pnpm task notes <id>",
+      '  pnpm task link <id> --parent <id|none> --by "<who>"',
+      '  pnpm task link <id> --related <id> [--remove] --by "<who>"',
       "  pnpm task history <id>",
       "",
       "Use the whole cuid the board prints, not a prefix, or the short id (SPX-142).",
@@ -126,6 +135,14 @@ function grade<T extends string>(name: string, rest: string[], allowed: readonly
   return raw as T;
 }
 
+async function note(id: string, text: string, who: string): Promise<void> {
+  const problems = noteProblems(text);
+  if (problems.length > 0) fail(problems.join("\n"));
+  const o = await boardAddNote(id, text.trim(), who);
+  if (!o.ok) fail(o.reason === "invalid" ? o.problems.join("\n") : o.message);
+  console.log(`${id} note added by ${who} on ${boardHost()}`);
+}
+
 async function main(): Promise<void> {
   const [command = "list", ...rest] = process.argv.slice(2);
   if (rest[0] && ID_COMMANDS.includes(command)) rest[0] = await boardResolveId(rest[0]);
@@ -139,9 +156,10 @@ async function main(): Promise<void> {
       const stale = tasks.filter((t) => t.claimedBy && !isHeldNow(t));
       const waiting = tasks.filter((t) => !t.claimedBy).sort(byQuickWin);
       console.log(`${waiting.length + stale.length} waiting · ${held.length} in progress · on ${boardHost()}\n`);
-      for (const t of [...held, ...waiting, ...stale]) {
-        console.log(ticketLine(t));
-        if (t.detail) console.log(`        ${t.detail.replace(/\n/g, "\n        ")}`);
+      for (const { ticket: t, depth } of underParents([...held, ...waiting, ...stale])) {
+        const pad = "    ".repeat(depth);
+        console.log(`${pad}${ticketLine(t)}`);
+        if (t.detail) console.log(`${pad}        ${t.detail.replace(/\n/g, `\n${pad}        `)}`);
       }
       if (tasks.length === 0) console.log("Nothing on the board.");
       break;
@@ -240,21 +258,62 @@ async function main(): Promise<void> {
       const detail = flag("detail", rest);
       const append = flag("append", rest);
       if (title === undefined && detail === undefined && append === undefined) usage();
-      if (detail !== undefined && append !== undefined) fail("Use --detail to replace the detail or --append to add to it, not both.");
-      let newDetail = detail;
-      if (append !== undefined) {
-        const task = await boardGet(id);
-        if (!task) fail(`No task ${id}.`);
-        newDetail = appendedDetail(task.detail, append);
-      }
-      const problems = editProblems({ title, detail: newDetail });
+      if (detail !== undefined && append !== undefined) fail("Use --detail to replace the detail or --append to add a note, not both.");
+      const problems = [...editProblems({ title, detail }), ...(append !== undefined ? noteProblems(append) : [])];
       if (problems.length > 0) fail(problems.join("\n"));
-      const edited = await boardEdit(id, { ...(title !== undefined ? { title } : {}), ...(newDetail !== undefined ? { detail: newDetail } : {}) }, who);
-      if (!edited.ok) fail(edited.reason === "invalid" ? edited.problems.join("\n") : edited.message);
-      const fields = [title !== undefined && "title", newDetail !== undefined && "detail"].filter(Boolean).join(" and ");
-      console.log(`${id} ${fields} edited by ${who} on ${boardHost()}`);
-      const kept = await boardHistory(id);
-      if (kept === null) console.log("note: this Sumilabu does not keep an edit history yet, so the old text was not saved.");
+      if (title !== undefined || detail !== undefined) {
+        const edited = await boardEdit(id, { ...(title !== undefined ? { title } : {}), ...(detail !== undefined ? { detail } : {}) }, who);
+        if (!edited.ok) fail(edited.reason === "invalid" ? edited.problems.join("\n") : edited.message);
+        const fields = [title !== undefined && "title", detail !== undefined && "detail"].filter(Boolean).join(" and ");
+        console.log(`${id} ${fields} edited by ${who} on ${boardHost()}`);
+        const kept = await boardHistory(id);
+        if (kept === null) console.log("note: this Sumilabu does not keep an edit history yet, so the old text was not saved.");
+      }
+      if (append !== undefined) await note(id, append, who);
+      break;
+    }
+    case "note": {
+      const [id, text] = rest;
+      if (!id || text === undefined) usage();
+      await note(id, text, actorFrom(rest));
+      break;
+    }
+    case "notes": {
+      const [id] = rest;
+      if (!id) usage();
+      const task = await boardGet(id);
+      if (!task) fail(`No task ${id}.`);
+      const notes = await boardNotes(id);
+      if (notes === "missing") fail(`No task ${id}.`);
+      if (notes === null) fail("This Sumilabu does not keep notes yet.");
+      console.log(ticketLine(task));
+      if (task.parent) console.log(`    parent:   ${task.parent}`);
+      if (task.children?.length) console.log(`    children: ${task.children.join(", ")}`);
+      if (task.related?.length) console.log(`    related:  ${task.related.join(", ")}`);
+      if (notes.length === 0) console.log(`${id} has no notes.`);
+      for (const n of notes) {
+        console.log(`\n${n.createdAt}  ${n.by ?? "?"}`);
+        console.log(`    ${n.body.replace(/\n/g, "\n    ")}`);
+      }
+      break;
+    }
+    case "link": {
+      const [id] = rest;
+      if (!id) usage();
+      const who = actorFrom(rest);
+      const parent = flag("parent", rest);
+      const related = flag("related", rest);
+      if ((parent === undefined) === (related === undefined)) usage();
+      if (parent !== undefined) {
+        const o = await boardSetParent(id, parent === "none" ? null : parent, who);
+        if (!o.ok) fail(o.reason === "invalid" ? o.problems.join("\n") : o.message);
+        console.log(parent === "none" ? `${id} has no parent now, on ${boardHost()}` : `${id} is under ${parent} on ${boardHost()}`);
+      } else {
+        const remove = rest.includes("--remove");
+        const o = await boardRelate(id, related as string, who, remove);
+        if (!o.ok) fail(o.reason === "invalid" ? o.problems.join("\n") : o.message);
+        console.log(`${id} ${remove ? (o.changed ? "no longer related to" : "was not related to") : o.changed ? "related to" : "was already related to"} ${related} on ${boardHost()}`);
+      }
       break;
     }
     case "history": {

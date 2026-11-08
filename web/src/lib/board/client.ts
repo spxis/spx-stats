@@ -254,3 +254,49 @@ export async function boardHistory(id: string): Promise<HistoryEntry[] | null | 
   if (status === 200) return (body.edits as HistoryEntry[]) ?? [];
   return status === 404 && body.error === "missing" ? "missing" : null;
 }
+
+export type Note = { id: string; ticketId: string; body: string; by: string | null; createdAt: string };
+
+/** Oldest first, read through the ETag cache. Null when this Sumilabu has no notes yet. */
+export async function boardNotes(id: string): Promise<Note[] | null | "missing"> {
+  const { status, body } = await call(`/tickets/${encodeURIComponent(id)}/notes`);
+  if (status === 200) return (body.notes as Note[]) ?? [];
+  return status === 404 && body.error === "missing" ? "missing" : null;
+}
+
+export type WriteOutcome<T = Record<string, never>> =
+  | ({ ok: true } & T)
+  | { ok: false; reason: "missing" | "done" | "unsupported" | "actor"; message: string }
+  | { ok: false; reason: "invalid"; problems: string[] };
+
+function refusal(id: string, status: number, body: Json): WriteOutcome<never> {
+  if (status === 404 && body.error === "missing") return { ok: false, reason: "missing", message: `No task ${id}.` };
+  if (status === 409 && body.error === "done") return { ok: false, reason: "done", message: `${id} is done: the board does not allow that on a done ticket.` };
+  if (status === 422) return { ok: false, reason: "invalid", problems: (body.problems as string[]) ?? [String(body.error ?? "refused")] };
+  if (body.error === "actor_required") return { ok: false, reason: "actor", message: 'The board needs your name: pass --by "<who>".' };
+  return { ok: false, reason: "unsupported", message: "This Sumilabu does not support that yet. Nothing was changed." };
+}
+
+/** Appends a note, on a ticket in any status. A note is never edited or removed. */
+export async function boardAddNote(id: string, body: string, actor: string): Promise<WriteOutcome<{ note: Note }>> {
+  const r = await call(`/tickets/${encodeURIComponent(id)}/notes`, { method: "POST", actor, body: { body } });
+  return r.status === 201 ? { ok: true, note: r.body.note as Note } : refusal(id, r.status, r.body);
+}
+
+/** Puts the ticket under a parent (short id or cuid), or takes it out from under one with null. */
+export async function boardSetParent(id: string, parentId: string | null, actor: string): Promise<WriteOutcome<{ ticket: Ticket }>> {
+  const r = await call(`/tickets/${encodeURIComponent(id)}`, { method: "PATCH", actor, body: { parentId } });
+  if (r.status !== 200) return refusal(id, r.status, r.body);
+  const ticket = asTicket(r.body);
+  /* An older Sumilabu ignores the field and answers 200: no parentId on the ticket means it was not kept. */
+  return ticket.parentId === undefined ? refusal(id, 0, {}) : { ok: true, ticket };
+}
+
+/** Links two tickets, or removes the link; either end names the pair. `changed` is false when it already was so. */
+export async function boardRelate(id: string, otherId: string, actor: string, remove = false): Promise<WriteOutcome<{ changed: boolean; related: string[] }>> {
+  const r = remove
+    ? await call(`/tickets/${encodeURIComponent(id)}/links/${encodeURIComponent(otherId)}`, { method: "DELETE", actor })
+    : await call(`/tickets/${encodeURIComponent(id)}/links`, { method: "POST", actor, body: { otherId } });
+  if (r.status !== 200 && r.status !== 201) return refusal(id, r.status, r.body);
+  return { ok: true, changed: remove ? r.body.removed === true : r.status === 201, related: (r.body.related as string[]) ?? [] };
+}

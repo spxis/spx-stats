@@ -9,7 +9,7 @@ export function TicketForm() {
   return (
     <form action={action} className="ticketform">
       <label>Title<input name="title" required minLength={8} maxLength={120} /></label>
-      <label>Detail<textarea name="detail" rows={6} maxLength={4000} /></label>
+      <label>Detail<textarea name="detail" rows={6} maxLength={16000} /></label>
       <label>Kind
         <select name="kind" defaultValue="feature">
           <option value="feature">Feature</option>

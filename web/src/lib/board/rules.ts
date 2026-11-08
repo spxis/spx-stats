@@ -35,6 +35,11 @@ export type Ticket = {
   releasedAt: string | null;
   createdAt: string;
   movedAt: string;
+  /** The parent's cuid on every row; `parent`, `children` and `related` are short ids and come with a single-ticket read. */
+  parentId?: string | null;
+  parent?: string | null;
+  children?: string[];
+  related?: string[];
 };
 
 /** Invariant 3: a hold lasts six hours without renewal. */
@@ -51,14 +56,14 @@ export function isHeldNow(row: { claimedBy: string | null; claimedAt?: string | 
 }
 
 /** Invariant 6: the caps, refused here in words before the board refuses them. */
-export const CAPS = { titleMin: 8, titleMax: 120, detail: 4000, askedBy: 60, claimedBy: 80 } as const;
+export const CAPS = { titleMin: 8, titleMax: 120, detail: 16000, note: 16000, askedBy: 60, claimedBy: 80 } as const;
 
 export function draftProblems(draft: { title: string; detail: string; askedBy: string }): string[] {
   const problems: string[] = [];
   const title = draft.title.trim();
   if (title.length < CAPS.titleMin) problems.push(`Say what is wanted in at least ${CAPS.titleMin} characters.`);
   if (title.length > CAPS.titleMax) problems.push(`A title is at most ${CAPS.titleMax} characters; the rest belongs in the detail.`);
-  if (draft.detail.length > CAPS.detail) problems.push("The detail is at most 4,000 characters.");
+  if (draft.detail.length > CAPS.detail) problems.push(`The detail is at most ${CAPS.detail.toLocaleString("en-US")} characters.`);
   if (draft.askedBy.trim().length > CAPS.askedBy) problems.push(`A name is at most ${CAPS.askedBy} characters.`);
   return problems;
 }
@@ -80,10 +85,22 @@ export function editProblems(edit: { title?: string | null; detail?: string | nu
   return problems;
 }
 
-/** --append: the new text goes after the old detail, a blank line between; nothing to separate when there was no detail. */
-export function appendedDetail(current: string | null, addition: string): string {
-  const text = addition.trim();
-  return current && current.trim() ? `${current.trimEnd()}\n\n${text}` : text;
+/** A note is appended whole, so it has words and fits the cap. */
+export function noteProblems(body: string): string[] {
+  if (!body.trim()) return ["A note needs some words."];
+  return body.trim().length > CAPS.note ? [`A note is at most ${CAPS.note.toLocaleString("en-US")} characters.`] : [];
+}
+
+/** Rows in print order, each child directly under its parent when both are in the listing; any other row stays where it was. */
+export function underParents(rows: Ticket[]): { ticket: Ticket; depth: number }[] {
+  const ids = new Set(rows.map((t) => t.id));
+  const out: { ticket: Ticket; depth: number }[] = [];
+  const put = (ticket: Ticket, depth: number) => {
+    out.push({ ticket, depth });
+    for (const child of rows) if (child.parentId === ticket.id && child.id !== ticket.id) put(child, depth + 1);
+  };
+  for (const t of rows) if (!t.parentId || !ids.has(t.parentId)) put(t, 0);
+  return out;
 }
 
 /** Invariant 7: priority descending, effort ascending, newest move first; ungraded last on both. */
