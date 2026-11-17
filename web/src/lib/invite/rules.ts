@@ -54,7 +54,7 @@ export function isDataPath(pathname: string): boolean {
   return /\.[a-z0-9]{2,8}$/i.test(pathname.slice(pathname.lastIndexOf("/") + 1));
 }
 
-/** A browser opening a page (as opposed to a crawler or a script): such a request is worth the one dynamic render of the invite page. */
+/** A browser opening a page (as opposed to a crawler or a script): such a request is drawn the invite page, the kept one when signed out. */
 export function isBrowserNavigation(headers: Headers, method: string): boolean {
   if (method !== "GET") return false;
   return headers.get("sec-fetch-dest") === "document" && headers.get("sec-fetch-mode") === "navigate";
@@ -66,6 +66,12 @@ export const CLOSED_HEADERS: Record<string, string> = {
 };
 /** What a refusal carries on top: never kept by the data cache, the CDN or a browser. */
 export const REFUSAL_HEADERS: Record<string, string> = { ...CLOSED_HEADERS, "cache-control": "private, no-store" };
+
+/**
+ * The kept invite page (app/[locale]/s/closed), by language: what a signed-out browser is drawn. It is static and kept a day like every page in s/, so
+ * a crowd of signed-out visitors costs no render. It has no address of its own: /closed is no page, and only the gate's rewrite leads here.
+ */
+export const closedPage = (locale: string): string => `/${locale}/s/closed`;
 
 export const robotsClosed = (): string => "User-agent: *\nDisallow: /\n";
 

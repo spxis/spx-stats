@@ -17,6 +17,10 @@ export type SiteRelease = {
 };
 
 export const SITE_RELEASES: readonly SiteRelease[] = [
+  { version: "0.180.2", date: "2026-11-17", needsReview: true,
+    title: "The invite page is kept",
+    text: "While the site is invite only, a signed-out visitor now gets a stored copy of the invite page in English, French or Japanese instead of one drawn for each visit, so a crowd of visitors no longer makes the server work. Signing in still returns you to the page you asked for.",
+  },
   { version: "0.180.1", date: "2026-11-03", needsReview: true,
     title: "Admin alerts clear themselves",
     text: "The red alerts on the admin pages now work out for themselves when the problem is gone: a refused release once a later one of the same tables is applied, a drift report once a clean check or its fix releases are done, and a failed job once it runs clean. They show as fixed and drop off after three days.",

@@ -5,7 +5,7 @@ import { encode } from "next-auth/jwt";
 import { NextRequest } from "next/server.js";
 import { decideGate, type GateRequest } from "../src/lib/invite/gate.ts";
 import {
-  bypassOk, gateExempt, isBrowserNavigation, isDataPath, isEnvAdmin, normalizeEmail, robotsClosed, siteAccess, siteClosed, validEmail, verdict, type GateSession,
+  bypassOk, closedPage, GATE_MARKER, gateExempt, isBrowserNavigation, isDataPath, isEnvAdmin, normalizeEmail, robotsClosed, siteAccess, siteClosed, validEmail, verdict, type GateSession,
 } from "../src/lib/invite/rules.ts";
 import { sessionOfRequest } from "../src/lib/invite/session.ts";
 import { addInvite, forgetList, invitedEmails, isInvited, removeInvite } from "../src/lib/invite/store.ts";
@@ -34,9 +34,9 @@ test("SITE_ACCESS decides, and Vercel is closed unless someone writes open", () 
   assert.equal(siteClosed({ VERCEL: "1" }), true);
 });
 
-test("signed out: no session, no list read, a browser is drawn the invite page and everything else a few bytes", async () => {
+test("signed out: no session, no list read, a browser is drawn the kept invite page and everything else a few bytes", async () => {
   const page = await decide(req({ headers: navigation, search: "?x=1" }), null);
-  assert.deepEqual(page.answer, { action: "rewrite", to: "/invite-only?next=%2Fnhl%3Fx%3D1" });
+  assert.deepEqual(page.answer, { action: "kept", to: "/en/s/closed" });
   assert.equal(page.reads.list, 0, "a signed-out visitor costs no list read");
 
   const crawler = await decide(req(), null);
@@ -52,6 +52,59 @@ test("signed out: no session, no list read, a browser is drawn the invite page a
     assert.equal(d.answer.action === "refuse" && d.answer.contentType.startsWith("application/json"), true, pathname);
     assert.doesNotMatch(d.answer.action === "refuse" ? d.answer.body : "", /nhl|canadiens/i, "no data in a refusal");
   }
+});
+
+test("the kept invite page is one per language, chosen as the pages are: the cookie, then Accept-Language, then English", async () => {
+  const nav = (h: Record<string, string>) => hdr({ "sec-fetch-dest": "document", "sec-fetch-mode": "navigate", ...h });
+  const to = async (h: Record<string, string>, pathname = "/nhl/2012-13") => {
+    const { answer } = await decide(req({ pathname, search: "?view=wildcard", headers: nav(h) }), null);
+    return answer.action === "kept" ? answer.to : answer.action;
+  };
+  assert.equal(await to({}), "/en/s/closed");
+  assert.equal(await to({ cookie: "spxn-locale=fr" }), "/fr/s/closed");
+  assert.equal(await to({ cookie: "x=1; spxn-locale=ja", "accept-language": "fr" }), "/ja/s/closed");
+  assert.equal(await to({ "accept-language": "fr-CA,fr;q=0.9,en;q=0.8" }), "/fr/s/closed");
+  assert.equal(await to({ "accept-language": "ja,en-US;q=0.9" }), "/ja/s/closed");
+  assert.equal(await to({ cookie: "spxn-locale=xx", "accept-language": "de,es;q=0.8" }), "/en/s/closed");
+  // Every page address gets the same copy: nothing of the address reaches the kept page, so it cannot be drawn per address.
+  for (const pathname of ["/", "/players", "/wp-login", "/closed", "/admin/data", "/me"]) assert.equal(await to({}, pathname), "/en/s/closed", pathname);
+  assert.equal(closedPage("fr"), "/fr/s/closed");
+});
+
+test("the page drawn per request stays for a signed-in stranger and for the DS1 preview's own sign-in", async () => {
+  const stranger = await decide(req({ headers: navigation, search: "?x=1" }), session("stranger@example.com"), false);
+  assert.deepEqual(stranger.answer, { action: "rewrite", to: "/invite-only?next=%2Fnhl%3Fx%3D1" });
+  const unverified = await decide(req({ headers: navigation }), session("friend@example.com", { emailVerified: false }), true);
+  assert.equal(unverified.answer.action, "rewrite");
+
+  // "Sign in (this Mac)" is offered by the server only for a loopback request to the preview: the kept page cannot know, so that request keeps /invite-only.
+  const preview = { ...CLOSED, SPX_PREVIEW: "1" };
+  const local = hdr({ "sec-fetch-dest": "document", "sec-fetch-mode": "navigate", host: "localhost:7700" });
+  assert.deepEqual((await decide(req({ env: preview, headers: local }), null)).answer, { action: "rewrite", to: "/invite-only?next=%2Fnhl" });
+  const tunnelled = hdr({ "sec-fetch-dest": "document", "sec-fetch-mode": "navigate", host: "localhost:7700", "x-forwarded-host": "preview.example.com" });
+  assert.equal((await decide(req({ env: preview, headers: tunnelled }), null)).answer.action, "kept", "not this Mac");
+  assert.equal((await decide(req({ env: { ...preview, VERCEL: "1" }, headers: local }), null)).answer.action, "kept", "Vercel never has the preview sign-in");
+  assert.equal((await decide(req({ headers: local }), null)).answer.action, "kept", "a loopback request to a server with no preview sign-in");
+});
+
+test("the kept invite page reads nothing of the request, keeps the gate marker, and goes out without no-store", () => {
+  const read = (path: string) => readFileSync(new URL(`../src/${path}`, import.meta.url), "utf8");
+  const page = read("app/[locale]/s/closed/page.tsx");
+  assert.match(page, /export const revalidate = 86400;/);
+  assert.ok(page.includes(GATE_MARKER), "scripts/mac/check-live-auth.sh looks for the marker");
+  assert.match(page, /robots: \{ index: false, follow: false \}/);
+  assert.doesNotMatch(page, /searchParams|cookies\(|headers\(|currentUser|isInvited|force-dynamic/);
+  const button = read("components/auth/ClosedSignIn.tsx");
+  assert.match(button, /^"use client";/);
+  assert.match(button, /safeDestination\(/, "where to go after sign-in comes from the address bar, so it is checked");
+  assert.doesNotMatch(button, /useSearchParams/, "would leave the button out of the kept HTML");
+  const proxy = read("proxy.ts");
+  const kept = /case "kept": \{[\s\S]*?\n    \}/.exec(proxy)?.[0] ?? "";
+  assert.match(kept, /withHeaders\(NextResponse\.rewrite\(url\), CLOSED_HEADERS\)/, "noindex, and no private, no-store on a page the CDN keeps");
+  assert.doesNotMatch(kept, /REFUSAL_HEADERS/);
+  assert.match(kept, /url\.search = "";/);
+  // The page drawn per request is still there for the cases above.
+  assert.match(read("app/(dyn)/invite-only/page.tsx"), /export const dynamic = "force-dynamic";/);
 });
 
 test("invited, admin, not invited, unverified", async () => {

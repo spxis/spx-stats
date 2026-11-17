@@ -5,7 +5,7 @@ import { test } from "node:test";
 import { createRequire } from "node:module";
 import { TEAMS_CLIENT_KEYS } from "../src/lib/teamBoard.ts";
 import { isQueryVariant, QUERY_ROBOTS, queryFollowRel } from "../src/lib/queryLink.ts";
-import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, RESERVED_ROOTS, resolvePageDestination } from "../src/lib/routing.ts";
+import { acceptsFirst, ALWAYS_STATIC, CITY_CLIENT_KEYS, hideInternalPaths, MAX_CONDITIONS, pageRewrites, PAGE_ROOTS, PLAYER_CLIENT_KEYS, QUERY_KEYS, requestLocale, RESERVED_ROOTS, resolvePageDestination } from "../src/lib/routing.ts";
 
 /** Run in web/: pnpm test:routing */
 
@@ -358,6 +358,15 @@ test("resolvePageDestination matches the rewrite table (src/proxy.ts uses it for
     { path: "/teams/lineage", query: { league: "nhl" } },
   ];
   for (const c of cases) assert.equal(dest(c), route(c), JSON.stringify(c));
+});
+
+test("the kept invite page (app/[locale]/s/closed) has no address of its own, and its language is chosen as the rewrites choose", () => {
+  assert.ok(statSync(join(SRC, "app", "[locale]", "s", "closed", "page.tsx")).isFile());
+  assert.ok(!(ALWAYS_STATIC as readonly string[]).includes("closed") && !(PAGE_ROOTS as readonly string[]).includes("closed"));
+  assert.equal(route({ path: "/closed" }), "/en/q/closed", "the 404, like any address that is no page");
+  assert.ok(match(hideInternalPaths.source, { decode: decodeURIComponent })("/en/s/closed"), "and its place in the language tree is closed to readers");
+  const cases: Omit<Req, "path">[] = [{}, { cookie: "spxn-locale=fr" }, { cookie: "x=1; spxn-locale=ja; y=2", acceptLanguage: "fr" }, { cookie: "spxn-locale=xx", acceptLanguage: "fr" }, { acceptLanguage: "fr-CA,fr;q=0.9,en;q=0.8" }, { acceptLanguage: "de,ja;q=0.8,en;q=0.5" }, { acceptLanguage: "de,es;q=0.8" }, { acceptLanguage: "*" }];
+  for (const c of cases) assert.equal(`/${requestLocale(c.cookie, c.acceptLanguage)}/s/about`, route({ path: "/about", ...c }), JSON.stringify(c));
 });
 
 test("the proxy rewrites public pages and leaves reserved first segments alone", () => {

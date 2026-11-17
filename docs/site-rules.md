@@ -34,6 +34,7 @@ Moved word for word from [AGENTS.md](../AGENTS.md) on 2026-10-30, so that file s
     (`components/LocalTime.tsx`), or put `mark(iso)` (`lib/localTime.ts`) in a sentence and draw it with `<Stamped text=...>`. The
     server and the first browser render show UTC (no hydration mismatch), the browser then swaps in the local form, the tooltip
     keeps the UTC value. Never write "UTC" after a time by hand. `pnpm test:localtime`.
+  - **The closed site's invite page is a kept page too** (`app/[locale]/s/closed`, SPX-917): the gate rewrites a signed-out browser to it, so it follows the rules for `s/` and takes the address after sign-in from the browser. It has no address of its own (not in `ALWAYS_STATIC` or `PAGE_ROOTS`), so it needs no twin in `q/`. A rewrite to a kept page carries `CLOSED_HEADERS`, never `REFUSAL_HEADERS` (`no-store` would go out with the page).
   - Check a change with `pnpm build` (the route table shows `●` for kept pages, `ƒ` for `q/` and `(dyn)`) and `pnpm start`:
     a second request to the same address answers with `x-nextjs-cache: HIT`.
 - **Page weight: every public page stays under about 300 KB of HTML (about 50 KB gzipped).** Next sends each server-rendered element twice (in the

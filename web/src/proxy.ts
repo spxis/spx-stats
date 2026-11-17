@@ -13,7 +13,8 @@ import { resolvePageDestination } from "@/lib/routing";
  * 1. THE GATE (lib/invite, ticket "invite-only site"). While SITE_ACCESS says the site is closed (always on Vercel unless SITE_ACCESS=open), a request
  *    gets through only with a session cookie whose address is an admin (ADMIN_EMAILS) or on the invite list, or with the deploy-check bypass header.
  *    The session is read from the cookie alone: a signed-out request costs no database read and renders nothing (a browser opening a page is
- *    rewritten to the one small /invite-only page, anything else gets a few bytes). A signed-in request reads the invite list from a copy
+ *    rewritten to the kept invite page of its language, app/[locale]/s/closed; anything else gets a few bytes). A signed-in visitor who is not
+ *    invited is rewritten to /invite-only, drawn per request. A signed-in request reads the invite list from a copy
  *    this instance keeps for a minute. The kept pages behind the gate stay kept (static, `x-nextjs-cache: HIT`): the proxy only decides whether
  *    the visitor may have them. Always reachable: the release runner's POST /api/revalidate (its own secret), /api/auth/*, /api/me, /login,
  *    /invite-only, the site's icons, and robots.txt (answered here as Disallow all). Every response carries X-Robots-Tag noindex while closed.
@@ -73,6 +74,13 @@ async function gate(request: NextRequest): Promise<NextResponse | null> {
       return null;
     case "robots":
       return new NextResponse(answer.body, { status: 200, headers: { ...REFUSAL_HEADERS, "content-type": "text/plain; charset=utf-8" } });
+    case "kept": {
+      // Only noindex: a no-store here would go out with the kept page. The query is dropped: one copy serves every address.
+      const url = request.nextUrl.clone();
+      url.pathname = answer.to;
+      url.search = "";
+      return withHeaders(NextResponse.rewrite(url), CLOSED_HEADERS);
+    }
     case "rewrite": {
       const url = request.nextUrl.clone();
       const [path, query] = answer.to.split("?");

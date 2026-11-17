@@ -26,6 +26,11 @@ import { test } from "node:test";
  *   teams              9      30      7   (the same: a first-draw logo is 404 on a Mac without the exported files)
  *   cities             4      28      2
  * A page that goes over its budget has added a request per page view: look at what it fetches (the list in the failure message) before raising the number.
+ *
+ * The closed site (lib/invite): a signed-out browser is drawn the kept invite page, whatever address it asks for, so a crowd of them costs proxy runs and no render.
+ * Checked against a second server of the same build started with SITE_ACCESS=invite (the last test; skipped without CLOSED_URL):
+ *   CLOSED_URL=http://localhost:7716 pnpm test:pagecalls
+ *   invite page        2       -      1   (the document; before, each view was also a render of /invite-only)
  */
 const BASE = process.env.PAGES_URL;
 const MATCHER = (() => {
@@ -127,3 +132,50 @@ for (const { kind, path, budget } of KINDS) {
     }
   });
 }
+
+const CLOSED = process.env.CLOSED_URL;
+test("closed site: a signed-out view of any address is the kept invite page (a cache HIT, no render), in at most 2 requests through the proxy", async (t) => {
+  if (!CLOSED) return t.skip("set CLOSED_URL to the built site started with SITE_ACCESS=invite");
+  let browser;
+  try {
+    browser = await (await import("playwright-core")).chromium.launch();
+  } catch (e) {
+    return t.skip(`no Chromium for playwright-core: ${(e as Error).message.split("\n")[0]}`);
+  }
+  try {
+    const origin = new URL(CLOSED).origin;
+    for (const [path, cookie, lang] of [["/nhl/2012-13?view=wildcard", "", "en"], ["/players", "fr", "fr"], ["/no-such-page", "ja", "ja"]] as const) {
+      const ctx = await browser.newContext({ viewport: { width: 1280, height: 900 } });
+      if (cookie) await ctx.addCookies([{ name: "spxn-locale", value: cookie, url: CLOSED }]);
+      const page = await ctx.newPage();
+      const through: string[] = [];
+      page.on("request", (req) => {
+        const url = new URL(req.url());
+        if (url.origin === origin && MATCHER.test(url.pathname)) through.push(url.pathname);
+      });
+      const res = await page.goto(`${CLOSED}${path}`, { waitUntil: "load" });
+      await page.waitForLoadState("networkidle").catch(() => {});
+      await page.waitForTimeout(1000);
+      assert.equal(res?.status(), 200, path);
+      assert.equal(res?.headers()["x-nextjs-cache"], "HIT", `${path}: the invite page was drawn for this request`);
+      assert.doesNotMatch(res?.headers()["cache-control"] ?? "", /no-store|private/, `${path}: the CDN may keep it`);
+      assert.match(res?.headers()["x-robots-tag"] ?? "", /noindex/, path);
+      assert.equal(await page.locator('[data-site-gate="closed"]').count(), 1, `${path}: the gate's marker`);
+      assert.equal(await page.locator("html").getAttribute("lang"), lang, path);
+      assert.equal(await page.locator("button.signin-btn").count(), 1, `${path}: the sign-in button`);
+      assert.ok(through.length <= 2, `${path} made ${through.length} requests through the proxy against a budget of 2:\n  ${through.join("\n  ")}`);
+      // Sign-in sends the reader back to the address in the bar, read in the browser.
+      let callback = "";
+      await page.route("**/api/auth/signin/**", (route) => {
+        callback = new URLSearchParams(route.request().postData() ?? "").get("callbackUrl") ?? "";
+        return route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ url: `${CLOSED}${path}` }) });
+      });
+      await page.click("button.signin-btn");
+      await page.waitForTimeout(1200);
+      assert.equal(callback, path, "where sign-in returns to");
+      await ctx.close();
+    }
+  } finally {
+    await browser.close();
+  }
+});

@@ -12,10 +12,11 @@ import { siteClosed, verdict } from "@/lib/invite/rules";
 import { isInvited } from "@/lib/invite/store";
 
 /**
- * What a signed-out visitor, or a signed-in one who is not on the invite list, sees while the site is closed (lib/invite/rules.ts): one short
- * message and a sign-in button, no data. The proxy rewrites a browser's page request here (the address in the bar stays the page asked for, in
- * `next`), and a refused Google sign-in lands here with ?error=. It reads no database for a signed-out visitor. Once the site is open again, or the
- * visitor is let in, it sends them on to where they were going.
+ * The invite page drawn per request, for the cases the kept one (app/[locale]/s/closed, where the proxy sends a signed-out browser) cannot answer:
+ * a signed-in visitor who is not on the invite list (the proxy rewrites that page request here; the address in the bar stays the page asked for, in
+ * `next`), a refused Google sign-in, which lands here with ?error=, the link of the short refusal and of /login, and the DS1 preview's own sign-in.
+ * One short message and a sign-in button, no data, no database read for a signed-out visitor. Once the site is open again, or the visitor is let
+ * in, it sends them on to where they were going.
  */
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { title: "Invite only", robots: { index: false, follow: false } };

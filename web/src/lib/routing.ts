@@ -96,6 +96,11 @@ function localeCookieValue(cookie: string | null | undefined): string | null {
   }
 }
 
+/** The language a request is answered in: the picker's cookie, then Accept-Language, then English (as the rewrites choose it). */
+export function requestLocale(cookie?: string | null, acceptLanguage?: string | null): Locale {
+  return effectiveLocale(localeCookieValue(cookie), acceptLanguage);
+}
+
 /**
  * Whether this address with these query keys is drawn from q/ (per request) rather than s/ (kept).
  * Player pages keep PLAYER_CLIENT_KEYS in the browser; city pages keep from/to. /teams never reaches
@@ -129,7 +134,7 @@ export function resolvePageDestination(
   const segs = pathname === "/" ? [] : pathname.split("/").filter(Boolean);
   const first = segs[0] ?? "";
   if (first && RESERVED_FIRST.has(first)) return null;
-  const locale = effectiveLocale(localeCookieValue(cookie), acceptLanguage);
+  const locale = requestLocale(cookie, acceptLanguage);
   const present = presentQueryKeys(query);
   const tail = segs.length > 1 ? `/${segs.slice(1).join("/")}` : "";
   if (segs.length === 0) return `/${locale}/s`;
