@@ -7,7 +7,7 @@ legacy_team_brand.wikipedia_logo through psql. Rerunnable: it replaces the table
 import json, os, re, subprocess, sys, time, urllib.parse, urllib.request, urllib.error
 out, day = sys.argv[1:3]
 os.makedirs(out, exist_ok=True)
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 PSQL = ["psql", "-h", "/tmp", "-p", "55432", "-U", "postgres", "-d", "spx_stats", "-X", "-At", "-v", "ON_ERROR_STOP=1"]
 INFOBOX_LOGO = re.compile(
     r"^\s*\|\s*(?:logo|logo_image|team_logo|image|image_name)\s*=\s*(?:\[\[)?(?:File:|Image:)?([^|\]\n]+?\.(?:svg|png|gif|jpe?g|webp))",

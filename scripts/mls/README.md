@@ -9,7 +9,7 @@ Sources, and what each allows:
   openfootball has no MLS file before 2005, and no stadiums for it.
 - **English Wikipedia** season articles (`<year> Major League Soccer season`) and club-season articles (`<year> <club> season`), through the
   MediaWiki API: CC BY-SA 4.0. Tables, leaders, awards, infobox, match boxes (date, score, stadium, city, attendance). One request at a time, at
-  least 1.3 s apart, identified User-Agent (`spx-stats/1.0 (https://spxn.com; john@spxis.com)`), backs off on 429/503.
+  least 1.3 s apart, identified User-Agent (`spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)`), backs off on 429/503.
 - **Wikidata** item ids (CC0), read from the Wikipedia pages' page properties (`wikibase_item`), also giving the redirect each club link leads to.
 - **mlssoccer.com: not used.** Its Terms of Service (https://www.mlssoccer.com/legal/terms-of-service, "As of September 30, 2023") say in
   section 5.2 that a user may not engage "in spidering, screen scraping, database scraping or other such activity" (item i) nor use "browsers,

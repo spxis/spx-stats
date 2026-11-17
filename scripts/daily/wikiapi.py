@@ -17,7 +17,7 @@ import json, os, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import limiter as LM, sources as SRC
 
-UA = os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; john@spxis.com)")
+UA = os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)")
 API = "https://en.wikipedia.org/w/api.php"
 GAP = float(os.environ.get("SPX_WIKI_GAP", "1.0"))      # seconds between requests
 CONTENT_BATCH = 10                                      # titles per wikitext request (a few MB at most)

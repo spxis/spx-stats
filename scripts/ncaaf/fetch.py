@@ -15,7 +15,7 @@ Opponents outside the division (FCS and lower) are not fetched: the FBS team's o
 """
 import datetime, json, os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 
-UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@johnmorris.ca)"
+UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 GAP = 2.5
 BATCH = 10
 RUN_DATE = os.environ.get("NCAAF_RUN_DATE", datetime.date.today().isoformat())

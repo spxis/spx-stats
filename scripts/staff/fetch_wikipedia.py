@@ -11,7 +11,7 @@ Usage: fetch_wikipedia.py [--raw DIR] [--leagues nhl,nba,cfl]
 """
 import argparse, datetime, glob, hashlib, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 
-UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@spxis.com)"
+UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 API = "https://en.wikipedia.org/w/api.php"
 GAP, BATCH = 2.0, 25
 

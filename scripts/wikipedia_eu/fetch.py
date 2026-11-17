@@ -11,7 +11,7 @@ from datetime import date, datetime, timezone
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import standings as S
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 GAP = 1.3
 API = "https://en.wikipedia.org/w/api.php"
 def span(y):

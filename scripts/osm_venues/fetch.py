@@ -24,7 +24,7 @@ Resumable: a file that exists is kept, so a rerun only fetches what is missing. 
 import hashlib, json, math, os, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import date, datetime, timezone
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 ENDPOINT = os.environ.get("OVERPASS_URL", "https://overpass-api.de/api/interpreter")   # OVERPASS_URL=https://lambert.openstreetmap.de/api/interpreter is the same service's own announced endpoint (api/status), for when the gateway answers 504
 GAP = 8.0          # seconds between two requests (the policy asks for no parallel use; we leave a pause on top)
 CHUNK = 40         # venues per wikidata request

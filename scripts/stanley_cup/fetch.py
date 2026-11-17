@@ -5,7 +5,7 @@ Usage: fetch.py <raw dir>     e.g. ~/Projects/backups/spx-stats/raw/wikipedia_st
 Writes <title with underscores>.wikitext and a fetched.json (title, url, revision id, day). No NHL API request is made."""
 import json, os, re, ssl, sys, time, urllib.error, urllib.parse, urllib.request, datetime
 
-UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@spxis.com)"
+UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 TITLES = ["List of Stanley Cup champions", "1915 Stanley Cup Final", "1916 Stanley Cup Final", "1917 Stanley Cup Final"]
 CTX = ssl.create_default_context()
 _last = [0.0]

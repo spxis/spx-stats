@@ -6,7 +6,7 @@ is its English sitelink in the venues-*.json files scripts/game_venue/fetch.py s
 published pitch size (42 of them) is not fetched again: pitch_size.py reuses kyogijo's figure and revision. Keeps files that exist.
 Action API, one request per 2.5 s, User-Agent with a contact address, backing off on 429/503. Wikipedia text is CC BY-SA 4.0."""
 import csv, glob, gzip, hashlib, json, os, sys, time, urllib.error, urllib.parse, urllib.request
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 out = os.path.expanduser(sys.argv[1])
 kyo = json.load(open(os.path.expanduser(sys.argv[2]), encoding="utf-8"))
 raws = [os.path.expanduser(a) for a in sys.argv[3:]]

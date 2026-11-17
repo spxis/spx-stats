@@ -92,7 +92,7 @@ class Throttled(Exception):
 def _request(url, key):
     """ONE request to balldontlie (the caller holds the source's slot). -> the parsed JSON."""
     SRC.guard_url(url)
-    req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; john@spxis.com)")})
+    req = urllib.request.Request(url, headers={"Authorization": key, "User-Agent": os.environ.get("SPX_WIKI_UA", "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)")})
     try:
         with urllib.request.urlopen(req, timeout=60) as r:
             return json.loads(r.read().decode("utf-8"))

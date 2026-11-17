@@ -16,7 +16,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, os.path.join(HERE, "..", "daily"))
 import limiter as LM, sources as SRC
 
-UA = os.environ.get("SPX_GREY_UA", "spx-stats/1.0 (https://spxn.com; john@johnmorris.ca)")
+UA = os.environ.get("SPX_GREY_UA", "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)")
 _ca = os.environ.get("SSL_CERT_FILE")
 CTX = ssl.create_default_context(cafile=_ca) if _ca and os.path.exists(_ca) else ssl.create_default_context()
 

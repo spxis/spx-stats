@@ -15,7 +15,7 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import wikihtml as W
 import season as S
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 GAP = 1.3
 HOST = "raw." + "git" + "hubusercontent.com"
 OF = f"https://{HOST}/openfootball/world/master/north-america/major-league-soccer/"

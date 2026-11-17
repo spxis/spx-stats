@@ -7,7 +7,7 @@ league files of the seasons the loader reads, at the same paths as in the reposi
 Rerunnable: files are replaced by the same bytes."""
 import hashlib, json, os, re, sys, tarfile, time, urllib.request
 
-UA = "spx-stats/1.0 (https://spxn.com; john@spxis.com)"
+UA = "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"
 REPOS = ["england", "deutschland", "espana", "italy", "europe"]
 # paths (inside a repository) the loader reads: the league files (a digit first: 1-premierleague.txt) and, for France, europe/france/<season>_fr1|fr2.txt
 KEEP = [

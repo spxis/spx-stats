@@ -10,7 +10,7 @@ HERE = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, HERE)
 import lists  # noqa: E402
 
-UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@johnmorris.ca)"
+UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 CTX = ssl.create_default_context()
 _last = [0.0]
 

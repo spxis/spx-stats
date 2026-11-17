@@ -5,7 +5,7 @@ Writes <out>/wikidata/venues-<hash>.json (50 items each: labels, sitelinks and t
 P131 and P17 targets of the level before) and labels-<hash>.json (labels of the P31 classes); the hash is of the ids in the file. Keeps
 files that exist, so a rerun only fetches batches it has not seen. Action API, one request per 2.5 s, User-Agent with a contact address, backing off on 429/503."""
 import hashlib, json, os, sys, time, urllib.error, urllib.parse, urllib.request
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 ids_file, out = sys.argv[1], sys.argv[2]
 os.makedirs(f"{out}/wikidata", exist_ok=True)
 

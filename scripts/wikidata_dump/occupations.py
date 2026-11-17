@@ -22,7 +22,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 OUT = HERE / "occupations.tsv"
-UA = "spx-stats/wikidata-dump (https://spxn.com; john@spxis.com)"
+UA = "spx-stats/wikidata-dump (https://spxn.com; https://github.com/spxis/spx-stats)"
 ROOTS = {
     "Q2066131": "athlete",
     "Q41583": "coach",

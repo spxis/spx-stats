@@ -44,7 +44,7 @@ ODbL is share-alike. Everything derived from these elements is ODbL data, so:
 ## Overpass politeness
 
 Policy (wiki.openstreetmap.org/wiki/Overpass_API): one-off use is fine under 10,000 queries and 1 GB a day and 10 minutes of processing in all; regular use should
-divide that by 100. This is a yearly run: one request at a time, 8 s apart, a User-Agent naming spx-stats and john@spxis.com, 429/406 wait at least 30 s,
+divide that by 100. This is a yearly run: one request at a time, 8 s apart, a User-Agent naming spx-stats and its repository, 429/406 wait at least 30 s,
 502/503/504 wait longer each time. One wikidata request per 40 venues and one search of a 400 m box round each venue per 4 venues: about 130
 requests and 30-50 MB for 460 venues. If the gateway overpass-api.de answers 504 to everything (it did on 2026-10-13), set
 `OVERPASS_URL=https://lambert.openstreetmap.de/api/interpreter`, the endpoint its own `/api/status` announces; same service, same policy.

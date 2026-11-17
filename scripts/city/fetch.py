@@ -9,7 +9,7 @@ Run from the repo root. make_seed.py turns the raw files into db/seed/city_place
 import csv, hashlib, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import date, datetime, timezone
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)", "Accept": "application/sparql-results+json"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)", "Accept": "application/sparql-results+json"}
 # Wikidata's English label where it is not the city's usual name.
 LABEL = {"new-york": "New York City"}
 # Cities that the label and region search does not find (Wikidata gives the item's region through a chain that stops short of the state):

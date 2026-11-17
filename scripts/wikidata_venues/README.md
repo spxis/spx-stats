@@ -2,7 +2,7 @@
 
 Name history and basic facts (capacity, year opened, owner, surface, roof, address) of every home venue of the five leagues.
 Sources: Wikidata items (CC0) and the "Former names" of English Wikipedia infoboxes (CC BY-SA 4.0). Never Sports Reference or ESPN.
-Requests use the User-Agent `spx-stats/1.0 (https://spxn.com; john@spxis.com)`, 50 ids or 20 titles per request, one request every 2.5 s.
+Requests use the User-Agent `spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)`, 50 ids or 20 titles per request, one request every 2.5 s.
 
 Tables: `legacy_wikidata_venues.venue`, `.name` and `.fact` (raw, DS1 only, migrations 051 and 089) feed `core.brand_venue_name` and
 `core.brand_venue_info` (migration 052) through `db/build/193_venue_names.sql`; the site reads the views `api.venue_name` and

@@ -15,7 +15,7 @@ Usage: fetch.py --source nhl|nflverse [--raw DIR]
 """
 import argparse, datetime, hashlib, json, os, subprocess, sys, time, urllib.error, urllib.request
 
-UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@spxis.com)"
+UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 GAP = 1.5
 NHL_REFUSAL = "NHL endpoints are not used for new requests: AGENTS.md section 3 (John, 2026-10-14). Loaded data stays; --source nflverse still works."
 

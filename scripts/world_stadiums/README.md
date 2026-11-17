@@ -17,7 +17,7 @@ loads venues a second way. Two more pieces: the pitch size where English Wikiped
 ## Sources
 
 - Wikidata (CC0): the items, coordinates, capacity, opened and closed dates, the places up the P131 chain (`scripts/game_venue/fetch.py`, one request per 2.5 s,
-  User-Agent `spx-stats/1.0 (https://spxn.com; john@spxis.com)`).
+  User-Agent `spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)`).
 - English Wikipedia (CC BY-SA 4.0, text by the articles' editors): the infobox `dimensions` of each stadium, the article revision cited in
   `core.venue_pitch.wikipedia_key` (`enwiki:<title>@<revision id>`). 42 sizes are kyogijo's own readings at its revisions (`grounds.data.json`, not fetched
   again); the other 135 are read by `pitch_size.py`: exactly one "length x width" pair, in metres, yards or feet, that a football pitch can have (length

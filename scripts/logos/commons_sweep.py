@@ -10,7 +10,7 @@ One request at a time, 1.5 s apart, a User-Agent that names the project, Retry-A
 Commons content is licensed per file; the licence is read from each file's own extmetadata and stored with it."""
 import json, os, re, sys, time, urllib.error, urllib.parse, urllib.request
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 API = "https://commons.wikimedia.org/w/api.php"
 PAUSE = 1.5
 IMAGE_EXT = re.compile(r"\.(svg|png|gif|webp|jpe?g)$", re.I)

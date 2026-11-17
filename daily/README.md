@@ -39,7 +39,7 @@ A failed run is tried again after an hour, up to 3 times that day (`DAILY_MAX_TR
   Changing the `Dockerfile` or `entry.sh` needs a rebuild the same way.
 - State and downloads: the `data` folder next to `docker-compose.yml` (`data/cache/state.json`, `data/cache/raw/` the wikitext as served,
   `data/logs/` the run output and the DS1 transaction logs, kept 60 days, `last_ok` and `tries` for the schedule). Deleting `data/cache`
-  only makes the next run fetch everything again. The User-Agent stays `spx-stats/1.0 (https://spxn.com; john@spxis.com)`.
+  only makes the next run fetch everything again. The User-Agent stays `spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)`.
 - One transaction: the rehearsal (rolled back) runs first and any failed check or error means nothing was written; the load is one
   transaction that commits only if every check passed. A run that fails leaves DS1 as it was (the raw pages are archived first, on their
   own, which only adds rows). The run exits non-zero and the log says why.

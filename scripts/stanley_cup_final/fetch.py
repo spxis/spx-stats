@@ -6,7 +6,7 @@ Usage: fetch.py <raw dir> [FIRST_YEAR [LAST_YEAR]]   e.g. ~/Projects/backups/spx
 Writes <title with underscores>.wikitext and fetched.json (title -> url, revision id, timestamp, day fetched)."""
 import datetime, json, os, ssl, sys, time, urllib.error, urllib.parse, urllib.request
 
-UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats; john@johnmorris.ca)"
+UA = "spx-stats/0.1 (https://github.com/spxis/spx-stats)"
 CTX = ssl.create_default_context()
 _last = [0.0]
 

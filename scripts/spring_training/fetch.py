@@ -14,7 +14,7 @@ import hashlib, json, os, sys, time, urllib.error, urllib.parse, urllib.request
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import parse_list
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 out = os.path.expanduser(sys.argv[1])
 os.makedirs(f"{out}/wikipedia", exist_ok=True)
 os.makedirs(f"{out}/wikidata", exist_ok=True)

@@ -1,4 +1,4 @@
-const UA = "spx-stats/jersey-banner (https://spxn.com; john@johnmorris.ca)";
+const UA = "spx-stats/jersey-banner (https://spxn.com; https://github.com/spxis/spx-stats)";
 
 /** Fetch a public logo so an SVG used as `<img>` can show it (SVG-as-image cannot load external hrefs). */
 export async function fetchLogo(url: string | null, origin: string): Promise<string | undefined> {

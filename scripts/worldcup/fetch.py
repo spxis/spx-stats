@@ -10,7 +10,7 @@ Never FIFA.com, FBref/Sports Reference, Transfermarkt, ESPN or the FIFA game rat
 import csv, hashlib, json, os, subprocess, sys, time, urllib.error, urllib.parse, urllib.request
 from datetime import date, datetime, timezone
 
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 HOST = "raw." + "git" + "hubusercontent.com"
 JF = f"https://{HOST}/jfjelstul/worldcup/master/data-csv/"
 OF = f"https://{HOST}/openfootball/worldcup/master/"

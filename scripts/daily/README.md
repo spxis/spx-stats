@@ -48,7 +48,7 @@ holds the wikitext exactly as served.
 checks + 14 content batches of 10 pages); a run when nothing changed is 3 API requests plus 1 conditional nflverse request
 (answered 304, no body). A busy day, with every club article edited, is 3 + about 14, plus nflverse. One request at a time,
 1 s apart, `maxlag=5`, wait for `Retry-After` on 429/5xx. User-Agent
-`spx-stats/1.0 (https://spxn.com; john@spxis.com)` (`SPX_WIKI_UA` overrides).
+`spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)` (`SPX_WIKI_UA` overrides).
 
 ## Sources, licences and credits
 

@@ -14,7 +14,7 @@ honoured, and the run stops at the first 403. Only ask for pages and images of m
 import hashlib, html, json, os, re, struct, sys, time, urllib.error, urllib.request
 
 PAUSE = 6.0
-UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; john@spxis.com)"}
+UA = {"User-Agent": "spx-stats/1.0 (https://spxn.com; https://github.com/spxis/spx-stats)"}
 BASE = "https://www.sportslogos.net"
 _last = [0.0]
 
