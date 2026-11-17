@@ -111,12 +111,21 @@ Read 2026-11-17, one request per page:
 ## What the package must do (conditions of the allowed route)
 
 1. **Source: Space-Track only** (element-set histories from `gp_history`, launch and decay dates from SATCAT and decay). Nothing from CelesTrak's SATCAT or archive.
-2. **Cite, in the package and wherever its data is shown.** The page says "appropriate citation" and does not define it. Proposed wording, for John to approve: "Orbital data: US Space Command, 18th Space Defense Squadron, via Space-Track.org (https://www.space-track.org), retrieved <date>." Put it in the package's README and NOTICE, in each data file's header, and on the site page that shows it. The same applies to any analysis built on it (a "height over the years" chart is analysis): "Publications of analysis based on USSPACECOM data also require appropriate citations."
+2. **Cite, in the package and wherever its data is shown.** The page says "appropriate citation" and does not define it. Use the wording chikyu-earth already uses, so one credit reads the same everywhere: **"Data from Space-Track.org (USSPACECOM)"** (its NOTICE.md and `docs/satellite-sources.md`), with the retrieval date beside it. Put it in the package's README and NOTICE, in each data file's header, and on the site page that shows it. The same applies to any analysis built on it (a "height over the years" chart is analysis): "Publications of analysis based on USSPACECOM data also require appropriate citations."
 3. **Say plainly the data is not ours to relicense.** The package's MIT licence covers our code; the data files are US Government data under the citation condition above. Say so in NOTICE, as the site footer already does ("data under each source's terms").
 4. **Basic data only.** Elements, SATCAT fields, decay and reentry. No conjunction messages (CDM), no emergency or advanced services data, nothing from the Files panel.
 5. **Collect once, politely.** One fetch per object's history, kept on our own storage, no loop, no timer, under 30 requests a minute and 300 an hour, on John's own account only; the yearly zips for bulk. Stop at the first error and look.
 6. **Re-read before each package release.** The government may change the terms without notice and the approval is undated. Record the date read in the package's NOTICE each time. For a firm written permission, submit an Orbital Data Request first (optional; it is the page's own channel for "permission to redistribute").
 7. **Show the caveat** that public elements are mean elements and not for conjunction assessment or operations.
+
+## Earlier readings that agree
+
+chikyu-earth read the same Space-Track page on 2026-11-08 and 2026-11-11 (`~/Projects/chikyu-earth/docs/satellite-sources.md`, "Space-Track in the build" and the Space Shuttle paragraph; `NOTICE.md`) and reached the same answer: basic SSA data, `gp_history` included, may be passed on with the citation. It already holds the `gp_history` sets of 134 Shuttle-flight craft as demo-site files (`demo/missions/*.json`, asked once on 2026-11-08 with John's own account, thinned to one set in three hours at most) and chose to keep them as **site files, not package data**, because "the package ships no elements" (a decision about size and policy, not a ban: "Redistribution of basic SSA data is allowed with the citation, so the package could carry them"). Two consequences for this ticket:
+
+- Do not fetch again what is already held. Before any collection, list which of the ticket's first set (ISS 25544, Hubble 20580, Mir 16609, Skylab, Tiangong-1, Tiangong-2, Tiangong, Sputnik 1, Explorer 1, Vanguard 1) already has a `gp_history` file there; `gp_history` is one ask per object in its lifetime.
+- The existing precedent is the site-files route. Choosing the package route for history would be a new decision to make on purpose, with the cost that every install of the package carries the files.
+
+The site's own use of CelesTrak data (`satellites.json`, `satcat.json`, in spaceprogramx `docs/data.md`) is separate from this: it is the site serving its own copy with a credit, where CelesTrak states no licence. This note does not change that.
 
 ## What this changes for the tickets
 
